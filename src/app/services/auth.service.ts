@@ -25,7 +25,8 @@ export interface RegisterData {
 // Roles permitidos
 export enum RolesPermitidos {
   ADMINISTRADOR = 3,
-  ORGANIZADOR = 2 // Asumiendo que organizador es id 2, ajusta si es diferente
+  ORGANIZADOR = 2,
+  CLIENTE = 1 // Asumiendo que cliente es id 1
 }
 
 @Injectable({
@@ -410,7 +411,16 @@ export class AuthService {
    */
   hasRolePermitido(tipoUsuarioId: number): boolean {
     return tipoUsuarioId === RolesPermitidos.ADMINISTRADOR || 
-           tipoUsuarioId === RolesPermitidos.ORGANIZADOR;
+           tipoUsuarioId === RolesPermitidos.ORGANIZADOR ||
+           tipoUsuarioId === RolesPermitidos.CLIENTE;
+  }
+
+  /**
+   * Verifica si el usuario es cliente
+   */
+  isCliente(): boolean {
+    const usuario = this.usuarioSubject.value;
+    return usuario?.tipo_usuario_id === RolesPermitidos.CLIENTE;
   }
 
   /**
@@ -434,6 +444,72 @@ export class AuthService {
    */
   getSession(): Session | null {
     return this.sessionSubject.value;
+  }
+
+  /**
+   * Obtiene el ID del usuario actual (útil para organizador_id)
+   */
+  getUsuarioId(): number | null {
+    const usuario = this.usuarioSubject.value;
+    return usuario?.id || null;
+  }
+
+  /**
+   * Actualiza la contraseña del usuario
+   */
+  async updatePassword(currentPassword: string, newPassword: string): Promise<{ error: any }> {
+    try {
+      // Verificar la contraseña actual
+      const { data: { user } } = await this.supabase.auth.getUser();
+      if (!user) {
+        return { error: { message: 'Usuario no autenticado' } };
+      }
+
+      // Actualizar la contraseña
+      const { error } = await this.supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        return { error };
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: { message: error.message || 'Error al actualizar la contraseña' } };
+    }
+  }
+
+  /**
+   * Refresca la información del usuario desde la base de datos
+   */
+  refreshUsuario(): void {
+    const usuarioId = this.getUsuarioId();
+    if (!usuarioId) return;
+
+    from(
+      this.supabase
+        .from('usuarios')
+        .select('*')
+        .eq('id', usuarioId)
+        .single()
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) {
+          console.error('Error refrescando usuario:', error);
+          return null;
+        }
+        return data as Usuario;
+      }),
+      catchError((error) => {
+        console.error('Error en refreshUsuario:', error);
+        return of(null);
+      })
+    ).subscribe((usuario) => {
+      if (usuario) {
+        this.usuarioSubject.next(usuario);
+      }
+    });
   }
 }
 

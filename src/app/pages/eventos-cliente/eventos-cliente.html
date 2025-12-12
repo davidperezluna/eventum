@@ -1,0 +1,74 @@
+<div class="eventos-cliente-page">
+  <header class="page-header">
+    <div>
+      <h1>
+        <span class="material-icons">event</span>
+        Eventos Disponibles
+      </h1>
+      <p>Descubre los mejores eventos y compra tus boletas</p>
+    </div>
+  </header>
+
+  <!-- Filtros -->
+  <div class="filters-card">
+    <input
+      type="text"
+      [(ngModel)]="searchTerm"
+      (ngModelChange)="onSearchChange()"
+      placeholder="Buscar eventos..."
+      class="search-input"
+    />
+    <select [(ngModel)]="categoriaFiltro" (ngModelChange)="onCategoriaChange()" class="select-input">
+      <option [value]="null">Todas las categorías</option>
+      <option *ngFor="let categoria of categorias" [value]="categoria.id">{{ categoria.nombre }}</option>
+    </select>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Cargando eventos...</p>
+  </div>
+
+  <!-- Grid de eventos -->
+  <div *ngIf="!loading && eventosFiltrados.length > 0" class="eventos-grid">
+    <div *ngFor="let evento of eventosFiltrados" class="evento-card" [routerLink]="['/detalle-evento', evento.id]">
+      <div class="evento-image">
+        <img [src]="getImageUrl(evento)" [alt]="evento.titulo" />
+        <div class="evento-badge" *ngIf="evento.destacado">
+          <span class="material-icons">star</span>
+          Destacado
+        </div>
+      </div>
+      <div class="evento-content">
+        <h3>{{ evento.titulo }}</h3>
+        <p *ngIf="evento.descripcion_corta" class="evento-descripcion">{{ evento.descripcion_corta }}</p>
+        <div class="evento-info">
+          <div class="info-item">
+            <span class="material-icons">calendar_today</span>
+            <span>{{ evento.fecha_inicio | date:'short' }}</span>
+          </div>
+          <div class="info-item" *ngIf="evento.precio_minimo !== undefined">
+            <span class="material-icons">attach_money</span>
+            <span>{{ evento.es_gratis ? 'Gratis' : formatCurrency(evento.precio_minimo) }}</span>
+          </div>
+          <div class="info-item" *ngIf="evento.edad_minima && evento.edad_minima > 0">
+            <span class="material-icons">person</span>
+            <span>+{{ evento.edad_minima }} años</span>
+          </div>
+        </div>
+        <button class="btn-primary btn-full">
+          Ver Detalles y Comprar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div *ngIf="!loading && eventosFiltrados.length === 0" class="empty-state">
+    <span class="material-icons">event_busy</span>
+    <p>No hay eventos disponibles en este momento</p>
+    <p class="empty-subtitle">Vuelve pronto para descubrir nuevos eventos</p>
+  </div>
+</div>
+

@@ -54,22 +54,22 @@ export class LugaresService {
 
     return from(query).pipe(
       map(({ data, error, count }) => {
-        if (error) {
-          console.error('Error en getLugares:', error);
+            if (error) {
+              console.error('Error en getLugares:', error);
           throw error;
-        }
-        
-        const total = count || 0;
-        const lugares = (data as Lugar[]) || [];
-        console.log('Lugares cargados:', lugares.length, 'de', total);
-        
+            }
+            
+            const total = count || 0;
+            const lugares = (data as Lugar[]) || [];
+            console.log('Lugares cargados:', lugares.length, 'de', total);
+            
         return {
-          data: lugares,
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit)
-        };
+              data: lugares,
+              total,
+              page,
+              limit,
+              totalPages: Math.ceil(total / limit)
+            };
       }),
       catchError((error) => throwError(() => error))
     );
@@ -81,9 +81,9 @@ export class LugaresService {
   getLugarById(id: number): Observable<Lugar> {
     return from(
       this.supabase
-        .from('lugares')
-        .select('*')
-        .eq('id', id)
+            .from('lugares')
+            .select('*')
+            .eq('id', id)
         .single()
     ).pipe(
       map(({ data, error }) => {
@@ -142,22 +142,22 @@ export class LugaresService {
    * Crea un nuevo lugar
    */
   createLugar(lugar: Partial<Lugar>): Observable<Lugar> {
-    const normalizedLugar = this.normalizeLugarData(lugar);
-    console.log('Creando lugar con datos normalizados:', normalizedLugar);
-    
+          const normalizedLugar = this.normalizeLugarData(lugar);
+          console.log('Creando lugar con datos normalizados:', normalizedLugar);
+
     return from(
       this.supabase
-        .from('lugares')
-        .insert(normalizedLugar)
-        .select()
+            .from('lugares')
+            .insert(normalizedLugar)
+            .select()
         .single()
     ).pipe(
       map(({ data, error }) => {
-        if (error) {
-          console.error('Error creando lugar:', error);
+            if (error) {
+              console.error('Error creando lugar:', error);
           throw error;
         }
-        console.log('Lugar creado exitosamente:', data);
+              console.log('Lugar creado exitosamente:', data);
         return data as Lugar;
       }),
       catchError((error) => throwError(() => error))
@@ -168,23 +168,23 @@ export class LugaresService {
    * Actualiza un lugar
    */
   updateLugar(id: number, lugar: Partial<Lugar>): Observable<Lugar> {
-    const normalizedLugar = this.normalizeLugarData(lugar);
-    console.log('Actualizando lugar con datos normalizados:', normalizedLugar);
-    
+          const normalizedLugar = this.normalizeLugarData(lugar);
+          console.log('Actualizando lugar con datos normalizados:', normalizedLugar);
+
     return from(
       this.supabase
-        .from('lugares')
-        .update(normalizedLugar)
-        .eq('id', id)
-        .select()
+            .from('lugares')
+            .update(normalizedLugar)
+            .eq('id', id)
+            .select()
         .single()
     ).pipe(
       map(({ data, error }) => {
-        if (error) {
-          console.error('Error actualizando lugar:', error);
+            if (error) {
+              console.error('Error actualizando lugar:', error);
           throw error;
         }
-        console.log('Lugar actualizado exitosamente:', data);
+              console.log('Lugar actualizado exitosamente:', data);
         return data as Lugar;
       }),
       catchError((error) => throwError(() => error))
@@ -197,8 +197,8 @@ export class LugaresService {
   deleteLugar(id: number): Observable<void> {
     return from(
       this.supabase
-        .from('lugares')
-        .update({ activo: false })
+            .from('lugares')
+            .update({ activo: false })
         .eq('id', id)
     ).pipe(
       map(({ error }) => {

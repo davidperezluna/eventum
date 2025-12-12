@@ -51,7 +51,7 @@ export class Eventos implements OnInit {
     private categoriasService: CategoriasService,
     private lugaresService: LugaresService,
     private usuariosService: UsuariosService,
-    private authService: AuthService,
+    public authService: AuthService,
     private storageService: StorageService,
     private imageOptimizationService: ImageOptimizationService,
     private cdr: ChangeDetectorRef
@@ -107,15 +107,26 @@ export class Eventos implements OnInit {
   loadEventos() {
     console.log('loadEventos llamado');
     this.loading = true;
-    this.cdr.detectChanges();
     
-    this.eventosService.getEventos({
+    // Si es organizador, filtrar por su ID
+    const filters: any = {
       page: this.page,
       limit: this.limit,
       search: this.searchTerm || undefined,
       categoria_id: this.categoriaFiltro || undefined,
       estado: this.estadoFiltro || undefined
-    }).subscribe({
+    };
+    
+    // Si es organizador, agregar filtro de organizador_id
+    if (this.authService.isOrganizador()) {
+      const organizadorId = this.authService.getUsuarioId();
+      if (organizadorId) {
+        filters.organizador_id = organizadorId;
+      }
+    }
+    this.cdr.detectChanges();
+    
+    this.eventosService.getEventos(filters).subscribe({
       next: (response: PaginatedResponse<Evento>) => {
         console.log('Response recibida en eventos:', response);
         this.eventos = response.data || [];
@@ -144,6 +155,14 @@ export class Eventos implements OnInit {
     // Resetear imagen
     this.previewUrl = null;
     this.selectedFile = null;
+    
+    // Si es organizador, siempre usar su ID
+    if (this.authService.isOrganizador()) {
+      const organizadorId = this.authService.getUsuarioId();
+      if (organizadorId) {
+        this.formData.organizador_id = organizadorId;
+      }
+    }
     
     if (evento) {
       // Convertir fechas a formato datetime-local
@@ -295,7 +314,16 @@ export class Eventos implements OnInit {
       alert('La categoría es requerida');
       return;
     }
-    if (!this.formData.organizador_id) {
+    // Si es organizador, asegurar que se use su ID
+    if (this.authService.isOrganizador()) {
+      const organizadorId = this.authService.getUsuarioId();
+      if (organizadorId) {
+        this.formData.organizador_id = organizadorId;
+      } else {
+        alert('No se pudo identificar el organizador');
+        return;
+      }
+    } else if (!this.formData.organizador_id) {
       alert('El organizador es requerido');
       return;
     }

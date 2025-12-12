@@ -68,6 +68,7 @@ export enum TipoGenero {
 
 /**
  * Método de pago
+ * Todos los métodos soportados por Wompi en Colombia
  */
 export enum MetodoPago {
   TARJETA_CREDITO = 'tarjeta_credito',
@@ -77,6 +78,9 @@ export enum MetodoPago {
   PSE = 'pse',
   NEQUI = 'nequi',
   DAVIPLATA = 'daviplata',
+  PUNTOS_COLOMBIA = 'puntos_colombia',
+  BNPL_BANCOLOMBIA = 'bnpl_bancolombia',
+  SU_PLUS = 'su_plus',
   OTRO = 'otro'
 }
 

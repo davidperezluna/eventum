@@ -1,0 +1,89 @@
+<div class="mis-compras-page">
+  <header class="page-header">
+    <div>
+      <h1>
+        <span class="material-icons">shopping_bag</span>
+        Mis Compras
+      </h1>
+      <p>Historial de todas tus compras de boletas</p>
+    </div>
+  </header>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Cargando compras...</p>
+  </div>
+
+  <!-- Lista de compras -->
+  <div *ngIf="!loading && comprasConBoletas.length > 0" class="compras-list">
+    <div *ngFor="let item of comprasConBoletas" class="compra-card">
+      <div class="compra-header">
+        <div class="compra-info">
+          <h3>Compra #{{ item.compra.numero_transaccion }}</h3>
+          <p class="compra-fecha">{{ item.compra.fecha_compra | date:'full' }}</p>
+          <div class="compra-estados">
+            <span class="badge" [class]="getEstadoClass(item.compra.estado_pago)">
+              Pago: {{ getEstadoPagoLabel(item.compra.estado_pago) }}
+            </span>
+            <span class="badge" [class]="getEstadoClass(item.compra.estado_compra)">
+              Estado: {{ getEstadoCompraLabel(item.compra.estado_compra) }}
+            </span>
+          </div>
+        </div>
+        <div class="compra-total">
+          <span class="total-label">Total</span>
+          <span class="total-value">{{ formatCurrency(item.compra.total) }}</span>
+        </div>
+      </div>
+
+      <!-- Boletas de la compra -->
+      <div class="boletas-section" *ngIf="item.boletas.length > 0">
+        <h4>Boletas ({{ item.boletas.length }})</h4>
+        <div class="boletas-grid">
+          <div *ngFor="let boleta of item.boletas" class="boleta-card">
+            <div class="boleta-header">
+              <div class="boleta-info">
+                <span class="boleta-codigo">Código: {{ boleta.codigo_qr }}</span>
+                <span class="boleta-precio">{{ formatCurrency(boleta.precio_unitario) }}</span>
+              </div>
+              <span class="badge" [class]="getEstadoClass(boleta.estado)">
+                {{ getEstadoBoletaLabel(boleta.estado) }}
+              </span>
+            </div>
+            <div class="boleta-datos" *ngIf="boleta.nombre_asistente">
+              <p><strong>Asistente:</strong> {{ boleta.nombre_asistente }}</p>
+              <p *ngIf="boleta.documento_asistente"><strong>Documento:</strong> {{ boleta.documento_asistente }}</p>
+              <p *ngIf="boleta.email_asistente"><strong>Email:</strong> {{ boleta.email_asistente }}</p>
+            </div>
+            <div class="boleta-qr" *ngIf="boleta.codigo_qr">
+              <div class="qr-code">
+                <span class="material-icons">qr_code</span>
+                <span>{{ boleta.codigo_qr }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div *ngIf="!loading && comprasConBoletas.length === 0" class="empty-state">
+    <span class="material-icons">shopping_bag</span>
+    <p>No has realizado ninguna compra aún</p>
+    <p class="empty-subtitle">Explora los eventos disponibles y compra tus boletas</p>
+    <a routerLink="/eventos-cliente" class="btn-primary">
+      <span class="material-icons">event</span>
+      Ver Eventos
+    </a>
+  </div>
+
+  <!-- Paginación -->
+  <div *ngIf="!loading && total > limit" class="pagination">
+    <button (click)="page = page - 1; loadCompras()" [disabled]="page === 1">Anterior</button>
+    <span>Página {{ page }} de {{ Math.ceil(total / limit) }}</span>
+    <button (click)="page = page + 1; loadCompras()" [disabled]="page >= Math.ceil(total / limit)">Siguiente</button>
+  </div>
+</div>
+

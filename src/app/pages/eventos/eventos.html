@@ -3,9 +3,9 @@
     <div>
       <h1>
         <span class="material-icons">event</span>
-        Eventos
+        {{ authService.isOrganizador() ? 'Mis Eventos' : 'Eventos' }}
       </h1>
-      <p>Gestiona todos los eventos del sistema</p>
+      <p>{{ authService.isOrganizador() ? 'Gestiona tus eventos' : 'Gestiona todos los eventos del sistema' }}</p>
     </div>
     <button class="btn-primary" (click)="openModal()">
       <span class="material-icons">add</span>
@@ -114,7 +114,7 @@
           <textarea [(ngModel)]="formData.descripcion" rows="5" placeholder="Descripción detallada del evento"></textarea>
         </div>
         <div class="form-row">
-          <div class="form-group">
+          <div class="form-group" *ngIf="!authService.isOrganizador()">
             <label>Organizador *</label>
             <select [(ngModel)]="formData.organizador_id" required>
               <option [value]="undefined">Selecciona organizador</option>

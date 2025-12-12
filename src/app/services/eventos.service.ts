@@ -59,22 +59,22 @@ export class EventosService {
 
     return from(query).pipe(
       map(({ data, error, count }) => {
-        if (error) {
-          console.error('Error en getEventos:', error);
+            if (error) {
+              console.error('Error en getEventos:', error);
           throw error;
-        }
-        
-        const total = count || 0;
-        const eventos = (data as Evento[]) || [];
-        console.log('Eventos cargados:', eventos.length, 'de', total);
-        
+            }
+            
+            const total = count || 0;
+            const eventos = (data as Evento[]) || [];
+            console.log('Eventos cargados:', eventos.length, 'de', total);
+            
         return {
-          data: eventos,
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit)
-        };
+              data: eventos,
+              total,
+              page,
+              limit,
+              totalPages: Math.ceil(total / limit)
+            };
       }),
       catchError((error) => {
         console.error('Error catch en getEventos:', error);
@@ -89,9 +89,9 @@ export class EventosService {
   getEventoById(id: number): Observable<Evento> {
     return from(
       this.supabase
-        .from(this.tableName)
-        .select('*')
-        .eq('id', id)
+            .from(this.tableName)
+            .select('*')
+            .eq('id', id)
         .single()
     ).pipe(
       map(({ data, error }) => {
@@ -108,9 +108,9 @@ export class EventosService {
   createEvento(evento: Partial<Evento>): Observable<Evento> {
     return from(
       this.supabase
-        .from(this.tableName)
-        .insert(evento)
-        .select()
+            .from(this.tableName)
+            .insert(evento)
+            .select()
         .single()
     ).pipe(
       map(({ data, error }) => {
@@ -127,10 +127,10 @@ export class EventosService {
   updateEvento(id: number, evento: Partial<Evento>): Observable<Evento> {
     return from(
       this.supabase
-        .from(this.tableName)
-        .update({ ...evento, fecha_actualizacion: new Date().toISOString() })
-        .eq('id', id)
-        .select()
+            .from(this.tableName)
+            .update({ ...evento, fecha_actualizacion: new Date().toISOString() })
+            .eq('id', id)
+            .select()
         .single()
     ).pipe(
       map(({ data, error }) => {
@@ -147,8 +147,8 @@ export class EventosService {
   deleteEvento(id: number): Observable<void> {
     return from(
       this.supabase
-        .from(this.tableName)
-        .update({ activo: false })
+            .from(this.tableName)
+            .update({ activo: false })
         .eq('id', id)
     ).pipe(
       map(({ error }) => {
@@ -166,11 +166,11 @@ export class EventosService {
     const now = new Date().toISOString();
     return from(
       this.supabase
-        .from(this.tableName)
-        .select('*')
-        .eq('activo', true)
-        .gte('fecha_inicio', now)
-        .order('fecha_inicio', { ascending: true })
+            .from(this.tableName)
+            .select('*')
+            .eq('activo', true)
+            .gte('fecha_inicio', now)
+            .order('fecha_inicio', { ascending: true })
         .limit(limit)
     ).pipe(
       map(({ data, error }) => {

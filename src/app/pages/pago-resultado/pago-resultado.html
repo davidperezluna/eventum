@@ -1,0 +1,74 @@
+<div class="pago-resultado-page">
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Verificando estado del pago...</p>
+  </div>
+
+  <div *ngIf="!loading && error" class="error-message">
+    <span class="material-icons">error</span>
+    <p>{{ error }}</p>
+    <button class="btn-primary" (click)="router.navigate(['/mis-compras'])">
+      Ir a Mis Compras
+    </button>
+  </div>
+
+  <div *ngIf="!loading && !error && compra" class="resultado-container">
+    <div class="resultado-card" [class]="'resultado-' + getEstadoPagoClass()">
+      <div class="resultado-icon">
+        <span class="material-icons" *ngIf="compra.estado_pago === 'completado'">check_circle</span>
+        <span class="material-icons" *ngIf="compra.estado_pago === 'pendiente'">schedule</span>
+        <span class="material-icons" *ngIf="compra.estado_pago === 'fallido'">error</span>
+      </div>
+      
+      <h1>{{ getEstadoPagoLabel() }}</h1>
+      
+      <div class="compra-info">
+        <div class="info-item">
+          <strong>Número de Transacción:</strong>
+          <span>{{ compra.numero_transaccion }}</span>
+        </div>
+        <div class="info-item" *ngIf="compra.wompi_reference">
+          <strong>Referencia Wompi:</strong>
+          <span>{{ compra.wompi_reference }}</span>
+        </div>
+        <div class="info-item">
+          <strong>Total:</strong>
+          <span>{{ formatCurrency(compra.total) }}</span>
+        </div>
+        <div class="info-item" *ngIf="compra.wompi_payment_method">
+          <strong>Método de Pago:</strong>
+          <span>{{ compra.wompi_payment_method }}</span>
+        </div>
+        <div class="info-item" *ngIf="compra.fecha_compra">
+          <strong>Fecha:</strong>
+          <span>{{ compra.fecha_compra | date:'medium' }}</span>
+        </div>
+      </div>
+
+      <div class="resultado-actions">
+        <button 
+          *ngIf="compra.estado_pago === 'completado'" 
+          class="btn-primary" 
+          (click)="router.navigate(['/mis-compras'])"
+        >
+          Ver Mis Boletas
+        </button>
+        <button 
+          *ngIf="compra.estado_pago === 'pendiente'" 
+          class="btn-secondary" 
+          (click)="router.navigate(['/mis-compras'])"
+        >
+          Ver Estado en Mis Compras
+        </button>
+        <button 
+          *ngIf="compra.estado_pago === 'fallido'" 
+          class="btn-primary" 
+          (click)="router.navigate(['/eventos-cliente'])"
+        >
+          Intentar de Nuevo
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+

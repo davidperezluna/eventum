@@ -1,0 +1,258 @@
+<div class="perfil-page">
+  <header class="page-header">
+    <div>
+      <h1>
+        <span class="material-icons">person</span>
+        Mi Perfil
+      </h1>
+      <p>Gestiona tu información personal</p>
+    </div>
+  </header>
+
+  <!-- Loading state -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Cargando información del perfil...</p>
+  </div>
+
+  <!-- Error message -->
+  <div *ngIf="error && !loading" class="error-message">
+    <span class="material-icons">error</span>
+    <p>{{ error }}</p>
+  </div>
+
+  <!-- Success message -->
+  <div *ngIf="success && !loading" class="success-message">
+    <span class="material-icons">check_circle</span>
+    <p>{{ success }}</p>
+  </div>
+
+  <!-- Perfil content -->
+  <div *ngIf="!loading && usuario" class="perfil-content">
+    <!-- Información del usuario -->
+    <div class="content-card">
+      <div class="card-header">
+        <h2>
+          <span class="material-icons">info</span>
+          Información Personal
+        </h2>
+      </div>
+
+      <div class="perfil-header">
+        <div class="foto-perfil-container">
+          <div class="foto-perfil-wrapper">
+            <img 
+              [src]="previewUrl || '/assets/default-avatar.png'" 
+              [alt]="getNombreCompleto()"
+              class="foto-perfil"
+            />
+            <div class="foto-overlay">
+              <button type="button" class="btn-icon" (click)="selectImage()" [disabled]="uploadingImage">
+                <span class="material-icons">{{ uploadingImage ? 'hourglass_empty' : 'camera_alt' }}</span>
+              </button>
+              <button 
+                *ngIf="previewUrl && selectedFile" 
+                type="button" 
+                class="btn-icon btn-danger" 
+                (click)="removeImage()"
+              >
+                <span class="material-icons">delete</span>
+              </button>
+            </div>
+          </div>
+          <p class="foto-help">Haz clic en la cámara para cambiar tu foto</p>
+        </div>
+        <div class="usuario-info">
+          <h3>{{ getNombreCompleto() }}</h3>
+          <p class="usuario-email">{{ usuario.email }}</p>
+          <span class="badge badge-primary">{{ getRolNombre() }}</span>
+        </div>
+      </div>
+
+      <form (ngSubmit)="savePerfil()" class="perfil-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre *</label>
+            <input 
+              type="text" 
+              [(ngModel)]="formData.nombre" 
+              name="nombre"
+              placeholder="Tu nombre"
+            />
+          </div>
+          <div class="form-group">
+            <label>Apellido *</label>
+            <input 
+              type="text" 
+              [(ngModel)]="formData.apellido" 
+              name="apellido"
+              placeholder="Tu apellido"
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email</label>
+            <input 
+              type="email" 
+              [value]="usuario.email" 
+              disabled
+              class="disabled-input"
+            />
+            <small class="form-help">El email no se puede cambiar</small>
+          </div>
+          <div class="form-group">
+            <label>Teléfono</label>
+            <input 
+              type="tel" 
+              [(ngModel)]="formData.telefono" 
+              name="telefono"
+              placeholder="+57 300 123 4567"
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Fecha de Nacimiento</label>
+            <input 
+              type="date" 
+              [(ngModel)]="formData.fecha_nacimiento" 
+              name="fecha_nacimiento"
+            />
+          </div>
+          <div class="form-group">
+            <label>Género</label>
+            <select [(ngModel)]="formData.genero" name="genero">
+              <option *ngFor="let genero of generos" [value]="genero.value">
+                {{ genero.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Documento de Identidad</label>
+          <input 
+            type="text" 
+            [(ngModel)]="formData.documento_identidad" 
+            name="documento_identidad"
+            placeholder="Número de documento"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Dirección</label>
+          <input 
+            type="text" 
+            [(ngModel)]="formData.direccion" 
+            name="direccion"
+            placeholder="Dirección completa"
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ciudad</label>
+            <input 
+              type="text" 
+              [(ngModel)]="formData.ciudad" 
+              name="ciudad"
+              placeholder="Ciudad"
+            />
+          </div>
+          <div class="form-group">
+            <label>País</label>
+            <input 
+              type="text" 
+              [(ngModel)]="formData.pais" 
+              name="pais"
+              placeholder="País"
+            />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="saving || uploadingImage">
+            <span class="material-icons" *ngIf="!saving">save</span>
+            <span class="spinner-small" *ngIf="saving"></span>
+            {{ saving ? 'Guardando...' : 'Guardar Cambios' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Cambio de contraseña -->
+    <div class="content-card">
+      <div class="card-header">
+        <h2>
+          <span class="material-icons">lock</span>
+          Cambiar Contraseña
+        </h2>
+        <button 
+          type="button" 
+          class="btn-secondary" 
+          (click)="cambiarPassword = !cambiarPassword"
+        >
+          <span class="material-icons">{{ cambiarPassword ? 'expand_less' : 'expand_more' }}</span>
+          {{ cambiarPassword ? 'Ocultar' : 'Cambiar Contraseña' }}
+        </button>
+      </div>
+
+      <div *ngIf="cambiarPassword" class="password-form">
+        <div class="form-group">
+          <label>Contraseña Actual *</label>
+          <input 
+            type="password" 
+            [(ngModel)]="passwordActual" 
+            name="passwordActual"
+            placeholder="Ingresa tu contraseña actual"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Nueva Contraseña *</label>
+          <input 
+            type="password" 
+            [(ngModel)]="passwordNueva" 
+            name="passwordNueva"
+            placeholder="Mínimo 6 caracteres"
+          />
+          <small class="form-help">La contraseña debe tener al menos 6 caracteres</small>
+        </div>
+
+        <div class="form-group">
+          <label>Confirmar Nueva Contraseña *</label>
+          <input 
+            type="password" 
+            [(ngModel)]="passwordConfirmar" 
+            name="passwordConfirmar"
+            placeholder="Confirma tu nueva contraseña"
+          />
+        </div>
+
+        <div class="form-actions">
+          <button 
+            type="button" 
+            class="btn-primary" 
+            (click)="cambiarContrasena()"
+            [disabled]="saving"
+          >
+            <span class="material-icons" *ngIf="!saving">lock_reset</span>
+            <span class="spinner-small" *ngIf="saving"></span>
+            {{ saving ? 'Cambiando...' : 'Cambiar Contraseña' }}
+          </button>
+          <button 
+            type="button" 
+            class="btn-secondary" 
+            (click)="cambiarPassword = false; passwordActual = ''; passwordNueva = ''; passwordConfirmar = ''"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

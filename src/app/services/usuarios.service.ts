@@ -58,25 +58,25 @@ export class UsuariosService {
 
     return from(query).pipe(
       map(({ data, error, count }) => {
-        if (error) {
-          console.error('Error en getUsuarios:', error);
+            if (error) {
+              console.error('Error en getUsuarios:', error);
           throw error;
-        }
-        
-        const total = count || 0;
-        const usuarios = (data as Usuario[]) || [];
-        console.log('Usuarios cargados:', usuarios.length, 'de', total);
-        
+            }
+            
+            const total = count || 0;
+            const usuarios = (data as Usuario[]) || [];
+            console.log('Usuarios cargados:', usuarios.length, 'de', total);
+            
         return {
-          data: usuarios,
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit)
-        };
+              data: usuarios,
+              total,
+              page,
+              limit,
+              totalPages: Math.ceil(total / limit)
+            };
       }),
       catchError((error) => {
-        console.error('Error catch en getUsuarios:', error);
+          console.error('Error catch en getUsuarios:', error);
         return throwError(() => error);
       })
     );
@@ -88,9 +88,9 @@ export class UsuariosService {
   getUsuarioById(id: number): Observable<Usuario> {
     return from(
       this.supabase
-        .from('usuarios')
-        .select('*')
-        .eq('id', id)
+            .from('usuarios')
+            .select('*')
+            .eq('id', id)
         .single()
     ).pipe(
       map(({ data, error }) => {
@@ -146,12 +146,12 @@ export class UsuariosService {
             .select()
             .single();
 
-          if (error) {
-            console.error('Error creando registro en tabla usuarios:', error);
+            if (error) {
+              console.error('Error creando registro en tabla usuarios:', error);
             throw error;
           }
 
-          console.log('Usuario creado exitosamente:', data);
+              console.log('Usuario creado exitosamente:', data);
           return data as Usuario;
         } catch (error: any) {
           console.error('Error catch en createUsuario:', error);
@@ -169,10 +169,10 @@ export class UsuariosService {
   updateUsuario(id: number, usuario: Partial<Usuario>): Observable<Usuario> {
     return from(
       this.supabase
-        .from('usuarios')
-        .update({ ...usuario, fecha_actualizacion: new Date().toISOString() })
-        .eq('id', id)
-        .select()
+            .from('usuarios')
+            .update({ ...usuario, fecha_actualizacion: new Date().toISOString() })
+            .eq('id', id)
+            .select()
         .single()
     ).pipe(
       map(({ data, error }) => {
@@ -189,8 +189,8 @@ export class UsuariosService {
   deleteUsuario(id: number): Observable<void> {
     return from(
       this.supabase
-        .from('usuarios')
-        .update({ activo: false })
+            .from('usuarios')
+            .update({ activo: false })
         .eq('id', id)
     ).pipe(
       map(({ error }) => {
@@ -207,9 +207,9 @@ export class UsuariosService {
   getTiposUsuario(): Observable<TipoUsuario[]> {
     return from(
       this.supabase
-        .from('tipos_usuario')
-        .select('*')
-        .eq('activo', true)
+            .from('tipos_usuario')
+            .select('*')
+            .eq('activo', true)
         .order('id')
     ).pipe(
       map(({ data, error }) => {
@@ -244,35 +244,35 @@ export class UsuariosService {
           const elapsedTime = Date.now() - startTime;
           console.log(`Consulta completada en ${elapsedTime}ms`);
           
-          if (error) {
-            console.error('Error en getOrganizadores:', error);
-            
-            // Si hay error de RLS o permisos, intentar sin filtro de activo
-            if (error.code === 'PGRST116' || error.message?.includes('permission') || error.message?.includes('RLS')) {
-              console.log('Error de permisos detectado, intentando consulta alternativa...');
-              const { data: dataAlt, error: errorAlt } = await this.supabase
-                .from('usuarios')
-                .select('*')
-                .eq('tipo_usuario_id', 2)
-                .order('nombre', { ascending: true });
+            if (error) {
+              console.error('Error en getOrganizadores:', error);
               
-              if (errorAlt) {
-                console.error('Error en consulta alternativa:', errorAlt);
+              // Si hay error de RLS o permisos, intentar sin filtro de activo
+              if (error.code === 'PGRST116' || error.message?.includes('permission') || error.message?.includes('RLS')) {
+                console.log('Error de permisos detectado, intentando consulta alternativa...');
+                    const { data: dataAlt, error: errorAlt } = await this.supabase
+                      .from('usuarios')
+                      .select('*')
+                      .eq('tipo_usuario_id', 2)
+                      .order('nombre', { ascending: true });
+                    
+                      if (errorAlt) {
+                        console.error('Error en consulta alternativa:', errorAlt);
                 throw errorAlt;
               }
               
-              const organizadores = (dataAlt as Usuario[]) || [];
-              console.log('Organizadores encontrados (sin filtro activo):', organizadores.length);
+                        const organizadores = (dataAlt as Usuario[]) || [];
+                        console.log('Organizadores encontrados (sin filtro activo):', organizadores.length);
               return organizadores;
-            }
+                      }
             
             throw error;
           }
           
-          const organizadores = (data as Usuario[]) || [];
-          console.log('Organizadores procesados:', organizadores.length);
+              const organizadores = (data as Usuario[]) || [];
+              console.log('Organizadores procesados:', organizadores.length);
           if (organizadores.length === 0) {
-            console.warn('No se encontraron organizadores con tipo_usuario_id = 2 y activo = true');
+                console.warn('No se encontraron organizadores con tipo_usuario_id = 2 y activo = true');
           }
           
           return organizadores;

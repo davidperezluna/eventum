@@ -140,8 +140,8 @@ export class Boletas implements OnInit {
     this.formData = { 
       activo: true, 
       evento_id: eventoId || 0,
-      cantidad_vendidas: 0,
-      cantidad_disponibles: 0
+      cantidad_vendidas: 0
+      // cantidad_disponibles se calculará automáticamente cuando se ingrese cantidad_total
     };
     this.showModal = true;
   }
@@ -176,6 +176,17 @@ export class Boletas implements OnInit {
     this.tiposBoletaEvento = [];
   }
 
+  calcularCantidades() {
+    if (this.formData.cantidad_total) {
+      const cantidadVendidas = this.editingTipo 
+        ? (this.editingTipo.cantidad_vendidas || 0)
+        : 0;
+      
+      this.formData.cantidad_disponibles = this.formData.cantidad_total - cantidadVendidas;
+      this.formData.cantidad_vendidas = cantidadVendidas;
+    }
+  }
+
   formatDateForInput(date: Date | string | undefined): string {
     if (!date) return '';
     const d = new Date(date);
@@ -207,9 +218,23 @@ export class Boletas implements OnInit {
       return;
     }
 
-    // Calcular cantidad_disponibles si no está definida
-    if (this.formData.cantidad_total && this.formData.cantidad_disponibles === undefined) {
-      this.formData.cantidad_disponibles = this.formData.cantidad_total - (this.formData.cantidad_vendidas || 0);
+    // Calcular cantidad_disponibles basado en cantidad_total y cantidad_vendidas
+    if (this.formData.cantidad_total) {
+      // Si es edición, mantener cantidad_vendidas existente del tipo original
+      // Si es nuevo, cantidad_vendidas debe ser 0
+      const cantidadVendidas = this.editingTipo 
+        ? (this.editingTipo.cantidad_vendidas || 0)
+        : 0;
+      
+      // Calcular cantidad_disponibles
+      this.formData.cantidad_disponibles = this.formData.cantidad_total - cantidadVendidas;
+      this.formData.cantidad_vendidas = cantidadVendidas;
+      
+      console.log('Cálculo de cantidades:', {
+        cantidad_total: this.formData.cantidad_total,
+        cantidad_vendidas: cantidadVendidas,
+        cantidad_disponibles: this.formData.cantidad_disponibles
+      });
     }
 
     // Preparar datos para envío

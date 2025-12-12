@@ -39,6 +39,9 @@ export class Layout implements OnInit {
         } else if (usuario.tipo_usuario_id === 2) {
           this.userRole = 'Organizador';
           this.loadMenuOrganizador();
+        } else if (usuario.tipo_usuario_id === 1) {
+          this.userRole = 'Cliente';
+          this.loadMenuCliente();
         } else {
           this.userRole = 'Usuario';
         }
@@ -58,15 +61,25 @@ export class Layout implements OnInit {
       { path: '/calificaciones', label: 'Calificaciones', icon: 'star' },
       { path: '/notificaciones', label: 'Notificaciones', icon: 'notifications' },
       { path: '/reportes', label: 'Reportes', icon: 'assessment' },
+      { path: '/perfil', label: 'Mi Perfil', icon: 'person' },
     ];
   }
 
   loadMenuOrganizador() {
     this.menuItems = [
-      { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
-      { path: '/eventos', label: 'Eventos', icon: 'event' },
+      { path: '/dashboard-organizador', label: 'Dashboard', icon: 'dashboard' },
+      { path: '/eventos', label: 'Mis Eventos', icon: 'event' },
       { path: '/boletas', label: 'Boletas', icon: 'confirmation_number' },
-      { path: '/ventas', label: 'Ventas', icon: 'attach_money' },
+      { path: '/ventas', label: 'Mis Ventas', icon: 'attach_money' },
+      { path: '/perfil', label: 'Mi Perfil', icon: 'person' },
+    ];
+  }
+
+  loadMenuCliente() {
+    this.menuItems = [
+      { path: '/eventos-cliente', label: 'Eventos', icon: 'event' },
+      { path: '/mis-compras', label: 'Mis Compras', icon: 'shopping_bag' },
+      { path: '/perfil', label: 'Mi Perfil', icon: 'person' },
     ];
   }
 

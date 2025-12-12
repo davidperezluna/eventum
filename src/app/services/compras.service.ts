@@ -2,9 +2,10 @@
    COMPRAS SERVICE
    ============================================ */
 
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Observable, from } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, catchError } from 'rxjs/operators';
+import { throwError } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { Compra, CompraFilters, PaginatedResponse } from '../types';
 
@@ -13,8 +14,7 @@ import { Compra, CompraFilters, PaginatedResponse } from '../types';
 })
 export class ComprasService {
   constructor(
-    private supabase: SupabaseService,
-    private ngZone: NgZone
+    private supabase: SupabaseService
   ) {}
   private tableName = 'compras';
 
@@ -56,132 +56,84 @@ export class ComprasService {
     const toIndex = fromIndex + limit - 1;
     query = query.range(fromIndex, toIndex);
 
-    return new Observable(observer => {
-      this.ngZone.runOutsideAngular(async () => {
-        try {
-          const { data, error, count } = await query;
-          this.ngZone.run(() => {
+    return from(query).pipe(
+      map(({ data, error, count }) => {
             if (error) {
               console.error('Error en getCompras:', error);
-              observer.error(error);
-              return;
+          throw error;
             }
             
             const total = count || 0;
             const compras = (data as Compra[]) || [];
             console.log('Compras cargadas:', compras.length, 'de', total);
-            console.log('Datos de compras:', compras);
             
-            const response: PaginatedResponse<Compra> = {
+        return {
               data: compras,
               total,
               page,
               limit,
               totalPages: Math.ceil(total / limit)
             };
-            
-            console.log('Enviando respuesta al observer:', response);
-            observer.next(response);
-            observer.complete();
-            console.log('Observer completado en compras');
-          });
-        } catch (error: any) {
-          this.ngZone.run(() => {
-            observer.error(error);
-          });
-        }
-      });
-    });
+      }),
+      catchError((error) => throwError(() => error))
+    );
   }
 
   /**
    * Obtiene una compra por ID
    */
   getCompraById(id: number): Observable<Compra> {
-    return new Observable(observer => {
-      this.ngZone.runOutsideAngular(async () => {
-        try {
-          const { data, error } = await this.supabase
+    return from(
+      this.supabase
             .from(this.tableName)
             .select('*')
             .eq('id', id)
-            .single();
-          
-          this.ngZone.run(() => {
-            if (error) {
-              observer.error(error);
-            } else {
-              observer.next(data as Compra);
-              observer.complete();
-            }
-          });
-        } catch (error: any) {
-          this.ngZone.run(() => {
-            observer.error(error);
-          });
-        }
-      });
-    });
+        .single()
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) throw error;
+        return data as Compra;
+      }),
+      catchError((error) => throwError(() => error))
+    );
   }
 
   /**
    * Crea una nueva compra
    */
   createCompra(compra: Partial<Compra>): Observable<Compra> {
-    return new Observable(observer => {
-      this.ngZone.runOutsideAngular(async () => {
-        try {
-          const { data, error } = await this.supabase
+    return from(
+      this.supabase
             .from(this.tableName)
             .insert(compra)
             .select()
-            .single();
-          
-          this.ngZone.run(() => {
-            if (error) {
-              observer.error(error);
-            } else {
-              observer.next(data as Compra);
-              observer.complete();
-            }
-          });
-        } catch (error: any) {
-          this.ngZone.run(() => {
-            observer.error(error);
-          });
-        }
-      });
-    });
+        .single()
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) throw error;
+        return data as Compra;
+      }),
+      catchError((error) => throwError(() => error))
+    );
   }
 
   /**
    * Actualiza una compra
    */
   updateCompra(id: number, compra: Partial<Compra>): Observable<Compra> {
-    return new Observable(observer => {
-      this.ngZone.runOutsideAngular(async () => {
-        try {
-          const { data, error } = await this.supabase
+    return from(
+      this.supabase
             .from(this.tableName)
             .update(compra)
             .eq('id', id)
             .select()
-            .single();
-          
-          this.ngZone.run(() => {
-            if (error) {
-              observer.error(error);
-            } else {
-              observer.next(data as Compra);
-              observer.complete();
-            }
-          });
-        } catch (error: any) {
-          this.ngZone.run(() => {
-            observer.error(error);
-          });
-        }
-      });
-    });
+        .single()
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) throw error;
+        return data as Compra;
+      }),
+      catchError((error) => throwError(() => error))
+    );
   }
 }

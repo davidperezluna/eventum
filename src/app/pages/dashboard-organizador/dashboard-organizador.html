@@ -1,0 +1,240 @@
+<div class="dashboard">
+  <header class="dashboard-header">
+    <div>
+      <h1>
+        <span class="material-icons">dashboard</span>
+        Mi Dashboard
+      </h1>
+      <p>Panel de control de tus eventos y ventas</p>
+    </div>
+    <button class="btn-refresh" (click)="loadStats()" [disabled]="loading">
+      <span class="material-icons">refresh</span>
+      Actualizar
+    </button>
+  </header>
+
+  <!-- Mensaje de error -->
+  <div *ngIf="error" class="error-message">
+    <span class="material-icons">error</span>
+    <p>{{ error }}</p>
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Cargando estadísticas...</p>
+  </div>
+
+  <!-- Stats Grid Principal -->
+  <div *ngIf="!loading && !error" class="stats-grid">
+    <div class="stat-card stat-primary">
+      <div class="stat-icon-wrapper">
+        <span class="material-icons stat-icon">event</span>
+      </div>
+      <div class="stat-content">
+        <h3>Mis Eventos Activos</h3>
+        <p class="stat-value">{{ stats.eventos_activos }}</p>
+        <p class="stat-subtitle">de {{ stats.eventos_totales || 0 }} totales</p>
+      </div>
+    </div>
+
+    <div class="stat-card stat-success">
+      <div class="stat-icon-wrapper">
+        <span class="material-icons stat-icon">confirmation_number</span>
+      </div>
+      <div class="stat-content">
+        <h3>Boletas Vendidas</h3>
+        <p class="stat-value">{{ stats.boletas_vendidas | number }}</p>
+        <p class="stat-subtitle">Total de boletas</p>
+      </div>
+    </div>
+
+    <div class="stat-card stat-warning">
+      <div class="stat-icon-wrapper">
+        <span class="material-icons stat-icon">attach_money</span>
+      </div>
+      <div class="stat-content">
+        <h3>Ingresos Totales</h3>
+        <p class="stat-value">{{ formatCurrency(stats.ingresos_totales) }}</p>
+        <p class="stat-subtitle" *ngIf="stats.ingresos_mes_anterior">
+          <span [class]="getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior) >= 0 ? 'positive' : 'negative'">
+            {{ getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior) >= 0 ? '↑' : '↓' }}
+            {{ Math.abs(getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior)) }}%
+          </span>
+          vs mes anterior
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-card stat-info">
+      <div class="stat-icon-wrapper">
+        <span class="material-icons stat-icon">people</span>
+      </div>
+      <div class="stat-content">
+        <h3>Clientes</h3>
+        <p class="stat-value">{{ stats.clientes }}</p>
+        <p class="stat-subtitle">Clientes únicos</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Grid Secundario -->
+  <div *ngIf="!loading && !error" class="stats-grid-secondary">
+    <div class="stat-card-mini">
+      <span class="material-icons">trending_up</span>
+      <div>
+        <p class="stat-mini-value">{{ formatCurrency(stats.ingresos_mes_actual || 0) }}</p>
+        <p class="stat-mini-label">Este Mes</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard Content -->
+  <div *ngIf="!loading && !error" class="dashboard-content">
+    <!-- Ventas Recientes -->
+    <div class="content-card">
+      <div class="card-header">
+        <h2>
+          <span class="material-icons">receipt</span>
+          Ventas Recientes
+        </h2>
+      </div>
+      <div *ngIf="stats.ventas_recientes && stats.ventas_recientes.length > 0; else noVentas" class="ventas-list">
+        <div *ngFor="let venta of stats.ventas_recientes" class="venta-item">
+          <div class="venta-info">
+            <div class="venta-header">
+              <span class="venta-transaccion">{{ venta.numero_transaccion }}</span>
+              <span class="venta-fecha">{{ venta.fecha_compra | date:'short' }}</span>
+            </div>
+            <div class="venta-details">
+              <span class="venta-total">{{ formatCurrency(venta.total || 0) }}</span>
+              <span class="venta-estado" [class]="venta.estado_pago === 'completado' ? 'badge-success' : 'badge-warning'">
+                {{ venta.estado_pago || 'Pendiente' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <ng-template #noVentas>
+        <div class="empty-state">
+          <span class="material-icons">shopping_cart</span>
+          <p>No hay ventas recientes</p>
+        </div>
+      </ng-template>
+    </div>
+
+    <!-- Eventos Próximos -->
+    <div class="content-card">
+      <div class="card-header">
+        <h2>
+          <span class="material-icons">calendar_today</span>
+          Mis Próximos Eventos
+        </h2>
+      </div>
+      <div *ngIf="stats.eventos_proximos && stats.eventos_proximos.length > 0; else noEventos" class="eventos-list">
+        <div *ngFor="let evento of stats.eventos_proximos" class="evento-item">
+          <div class="evento-image" *ngIf="evento.imagen_principal">
+            <img [src]="evento.imagen_principal" [alt]="evento.titulo" />
+          </div>
+          <div class="evento-info">
+            <h3>{{ evento.titulo }}</h3>
+            <p class="evento-fecha">
+              <span class="material-icons">schedule</span>
+              {{ evento.fecha_inicio | date:'medium' }}
+            </p>
+            <p *ngIf="evento.descripcion_corta" class="evento-descripcion">{{ evento.descripcion_corta }}</p>
+          </div>
+        </div>
+      </div>
+      <ng-template #noEventos>
+        <div class="empty-state">
+          <span class="material-icons">event_busy</span>
+          <p>No tienes eventos próximos</p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- Sección de Estadísticas Adicionales -->
+  <div *ngIf="!loading && !error" class="dashboard-content">
+    <!-- Boletas por Estado -->
+    <div class="content-card">
+      <div class="card-header">
+        <h2>
+          <span class="material-icons">pie_chart</span>
+          Boletas por Estado
+        </h2>
+      </div>
+      <div *ngIf="stats.boletas_por_estado && stats.boletas_por_estado.length > 0; else noBoletasEstado" class="estados-list">
+        <div *ngFor="let item of stats.boletas_por_estado" class="estado-item">
+          <div class="estado-header">
+            <span class="estado-label">{{ getEstadoBoletaLabel(item.estado) }}</span>
+            <span class="estado-cantidad">{{ item.cantidad }}</span>
+          </div>
+          <div class="estado-bar">
+            <div class="estado-bar-fill" 
+                 [style.width.%]="(item.cantidad / stats.boletas_vendidas) * 100"
+                 [class]="'estado-' + item.estado">
+            </div>
+          </div>
+        </div>
+      </div>
+      <ng-template #noBoletasEstado>
+        <div class="empty-state">
+          <p>No hay datos de boletas</p>
+        </div>
+      </ng-template>
+    </div>
+
+    <!-- Top Eventos -->
+    <div class="content-card">
+      <div class="card-header">
+        <h2>
+          <span class="material-icons">star</span>
+          Mis Eventos Más Populares
+        </h2>
+      </div>
+      <div *ngIf="stats.top_eventos && stats.top_eventos.length > 0; else noTopEventos" class="top-eventos-list">
+        <div *ngFor="let evento of stats.top_eventos; let i = index" class="top-evento-item">
+          <div class="top-evento-rank">{{ i + 1 }}</div>
+          <div class="top-evento-image" *ngIf="evento.imagen_principal">
+            <img [src]="evento.imagen_principal" [alt]="evento.titulo" />
+          </div>
+          <div class="top-evento-info">
+            <h3>{{ evento.titulo }}</h3>
+            <p class="top-evento-boletas">
+              <span class="material-icons">confirmation_number</span>
+              {{ evento.boletas_vendidas || 0 }} boletas vendidas
+            </p>
+          </div>
+        </div>
+      </div>
+      <ng-template #noTopEventos>
+        <div class="empty-state">
+          <span class="material-icons">trending_flat</span>
+          <p>No hay eventos con ventas aún</p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- Accesos Rápidos -->
+  <div *ngIf="!loading && !error" class="quick-actions">
+    <h2>Accesos Rápidos</h2>
+    <div class="actions-grid">
+      <a routerLink="/eventos" class="action-card">
+        <span class="material-icons">event</span>
+        <span>Mis Eventos</span>
+      </a>
+      <a routerLink="/boletas" class="action-card">
+        <span class="material-icons">confirmation_number</span>
+        <span>Ver Boletas</span>
+      </a>
+      <a routerLink="/ventas" class="action-card">
+        <span class="material-icons">attach_money</span>
+        <span>Mis Ventas</span>
+      </a>
+    </div>
+  </div>
+</div>
+

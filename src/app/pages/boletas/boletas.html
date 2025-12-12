@@ -9,9 +9,9 @@
     </div>
     <div style="display: flex; gap: var(--spacing-md);">
       <button class="btn-secondary" (click)="openModalTipo()" style="display: flex; align-items: center; gap: var(--spacing-xs);">
-        <span class="material-icons">add</span>
-        Nuevo Tipo de Boletas
-      </button>
+      <span class="material-icons">add</span>
+      Nuevo Tipo de Boletas
+    </button>
       <button class="btn-primary" (click)="showTiposSection = !showTiposSection">
         <span class="material-icons">confirmation_number</span>
         {{ showTiposSection ? 'Ocultar' : 'Ver' }} Tipos de Boletas
@@ -22,10 +22,10 @@
   <!-- Filtros -->
   <div class="filters-card">
     <div class="filters-row">
-      <select [(ngModel)]="estadoFiltro" (ngModelChange)="loadBoletas()" class="select-input">
-        <option [value]="null">Todos los estados</option>
-        <option *ngFor="let estado of estados" [value]="estado.value">{{ estado.label }}</option>
-      </select>
+    <select [(ngModel)]="estadoFiltro" (ngModelChange)="loadBoletas()" class="select-input">
+      <option [value]="null">Todos los estados</option>
+      <option *ngFor="let estado of estados" [value]="estado.value">{{ estado.label }}</option>
+    </select>
       <select [(ngModel)]="eventoFiltro" (ngModelChange)="loadBoletas()" class="select-input">
         <option [value]="null">Todos los eventos</option>
         <option *ngFor="let evento of eventos" [value]="evento.id">{{ evento.titulo }}</option>
@@ -96,41 +96,41 @@
     
     <div *ngIf="!loading && boletas.length > 0" class="boletas-container">
       <table class="data-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Código QR</th>
-            <th>Asistente</th>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Código QR</th>
+          <th>Asistente</th>
             <th>Email</th>
             <th>Teléfono</th>
-            <th>Precio</th>
-            <th>Estado</th>
-            <th>Fecha Creación</th>
+          <th>Precio</th>
+          <th>Estado</th>
+          <th>Fecha Creación</th>
             <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let boleta of boletas">
-            <td>{{ boleta.id }}</td>
-            <td class="code-cell">{{ boleta.codigo_qr }}</td>
-            <td>{{ boleta.nombre_asistente || 'Sin nombre' }}</td>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let boleta of boletas">
+          <td>{{ boleta.id }}</td>
+          <td class="code-cell">{{ boleta.codigo_qr }}</td>
+          <td>{{ boleta.nombre_asistente || 'Sin nombre' }}</td>
             <td>{{ boleta.email_asistente || '-' }}</td>
             <td>{{ boleta.telefono_asistente || '-' }}</td>
-            <td>${{ boleta.precio_unitario | number:'1.2-2' }}</td>
-            <td>
+          <td>${{ boleta.precio_unitario | number:'1.2-2' }}</td>
+          <td>
               <span [class]="boleta.estado === 'usada' ? 'badge-success' : boleta.estado === 'cancelada' ? 'badge-danger' : boleta.estado === 'reembolsada' ? 'badge-danger' : 'badge-warning'">
-                {{ getEstadoLabel(boleta.estado) }}
-              </span>
-            </td>
-            <td>{{ boleta.fecha_creacion | date:'short' }}</td>
+              {{ getEstadoLabel(boleta.estado) }}
+            </span>
+          </td>
+          <td>{{ boleta.fecha_creacion | date:'short' }}</td>
             <td>
               <button class="btn-icon" (click)="openTiposModalFromTipo(boleta.tipo_boleta_id)" title="Ver tipos de boleta del evento">
                 <span class="material-icons">info</span>
               </button>
             </td>
-          </tr>
-        </tbody>
-      </table>
+        </tr>
+      </tbody>
+    </table>
     </div>
 
     <div *ngIf="!loading && boletas.length === 0" class="empty-state">
@@ -183,8 +183,11 @@
           </div>
           <div class="form-group">
             <label>Cantidad Total *</label>
-            <input type="number" min="1" [(ngModel)]="formData.cantidad_total" required />
+            <input type="number" min="1" [(ngModel)]="formData.cantidad_total" (ngModelChange)="calcularCantidades()" required />
             <small class="form-help">Total de boletas disponibles para este tipo</small>
+            <small class="form-help" *ngIf="formData.cantidad_total && !editingTipo">
+              Disponibles: {{ formData.cantidad_total - (formData.cantidad_vendidas || 0) }}
+            </small>
           </div>
         </div>
         <div class="form-row">

@@ -46,22 +46,22 @@ export class CategoriasService {
 
     return from(query).pipe(
       map(({ data, error, count }) => {
-        if (error) {
-          console.error('Error en getCategorias:', error);
+            if (error) {
+              console.error('Error en getCategorias:', error);
           throw error;
-        }
-        
-        const total = count || 0;
-        const categorias = (data as CategoriaEvento[]) || [];
-        console.log('Categorías cargadas:', categorias.length, 'de', total);
-        
+            }
+            
+            const total = count || 0;
+            const categorias = (data as CategoriaEvento[]) || [];
+            console.log('Categorías cargadas:', categorias.length, 'de', total);
+            
         return {
-          data: categorias,
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit)
-        };
+              data: categorias,
+              total,
+              page,
+              limit,
+              totalPages: Math.ceil(total / limit)
+            };
       }),
       catchError((error) => throwError(() => error))
     );
@@ -73,9 +73,9 @@ export class CategoriasService {
   getCategoriaById(id: number): Observable<CategoriaEvento> {
     return from(
       this.supabase
-        .from('categorias_evento')
-        .select('*')
-        .eq('id', id)
+            .from('categorias_evento')
+            .select('*')
+            .eq('id', id)
         .single()
     ).pipe(
       map(({ data, error }) => {
@@ -92,9 +92,9 @@ export class CategoriasService {
   createCategoria(categoria: Partial<CategoriaEvento>): Observable<CategoriaEvento> {
     return from(
       this.supabase
-        .from('categorias_evento')
-        .insert(categoria)
-        .select()
+            .from('categorias_evento')
+            .insert(categoria)
+            .select()
         .single()
     ).pipe(
       map(({ data, error }) => {
@@ -111,10 +111,10 @@ export class CategoriasService {
   updateCategoria(id: number, categoria: Partial<CategoriaEvento>): Observable<CategoriaEvento> {
     return from(
       this.supabase
-        .from('categorias_evento')
-        .update(categoria)
-        .eq('id', id)
-        .select()
+            .from('categorias_evento')
+            .update(categoria)
+            .eq('id', id)
+            .select()
         .single()
     ).pipe(
       map(({ data, error }) => {
@@ -131,8 +131,8 @@ export class CategoriasService {
   deleteCategoria(id: number): Observable<void> {
     return from(
       this.supabase
-        .from('categorias_evento')
-        .update({ activo: false })
+            .from('categorias_evento')
+            .update({ activo: false })
         .eq('id', id)
     ).pipe(
       map(({ error }) => {

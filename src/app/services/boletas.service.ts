@@ -48,22 +48,22 @@ export class BoletasService {
 
     return from(query).pipe(
       map(({ data, error, count }) => {
-        if (error) {
-          console.error('Error en getBoletasCompradas:', error);
+            if (error) {
+              console.error('Error en getBoletasCompradas:', error);
           throw error;
-        }
-        
-        const total = count || 0;
-        const boletas = (data as BoletaComprada[]) || [];
-        console.log('Boletas cargadas:', boletas.length, 'de', total);
-        
+            }
+            
+            const total = count || 0;
+            const boletas = (data as BoletaComprada[]) || [];
+            console.log('Boletas cargadas:', boletas.length, 'de', total);
+            
         return {
-          data: boletas,
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit)
-        };
+              data: boletas,
+              total,
+              page,
+              limit,
+              totalPages: Math.ceil(total / limit)
+            };
       }),
       catchError((error) => throwError(() => error))
     );
@@ -75,10 +75,10 @@ export class BoletasService {
   getTiposBoleta(eventoId: number): Observable<TipoBoleta[]> {
     return from(
       this.supabase
-        .from('tipos_boleta')
-        .select('*')
-        .eq('evento_id', eventoId)
-        .eq('activo', true)
+            .from('tipos_boleta')
+            .select('*')
+            .eq('evento_id', eventoId)
+            .eq('activo', true)
         .order('precio', { ascending: true })
     ).pipe(
       map(({ data, error }) => {
@@ -95,9 +95,9 @@ export class BoletasService {
   createTipoBoleta(tipoBoleta: Partial<TipoBoleta>): Observable<TipoBoleta> {
     return from(
       this.supabase
-        .from('tipos_boleta')
-        .insert(tipoBoleta)
-        .select()
+            .from('tipos_boleta')
+            .insert(tipoBoleta)
+            .select()
         .single()
     ).pipe(
       map(({ data, error }) => {
@@ -114,10 +114,10 @@ export class BoletasService {
   updateTipoBoleta(id: number, tipoBoleta: Partial<TipoBoleta>): Observable<TipoBoleta> {
     return from(
       this.supabase
-        .from('tipos_boleta')
-        .update(tipoBoleta)
-        .eq('id', id)
-        .select()
+            .from('tipos_boleta')
+            .update(tipoBoleta)
+            .eq('id', id)
+            .select()
         .single()
     ).pipe(
       map(({ data, error }) => {

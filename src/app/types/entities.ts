@@ -152,7 +152,7 @@ export interface Compra {
   evento_id: number;
   numero_transaccion: string;
   total: number;
-  metodo_pago: MetodoPago;
+  metodo_pago?: MetodoPago; // Opcional ahora, viene de Wompi
   estado_pago?: TipoEstadoPago;
   estado_compra?: TipoEstadoCompra;
   fecha_compra?: Date | string;
@@ -161,6 +161,14 @@ export interface Compra {
   motivo_cancelacion?: string;
   datos_facturacion?: Record<string, any>;
   notas?: string;
+  // Campos de Wompi
+  wompi_transaction_id?: string;
+  wompi_reference?: string;
+  wompi_payment_method?: string;
+  wompi_payment_method_type?: string;
+  wompi_status?: string;
+  wompi_response?: Record<string, any>;
+  wompi_webhook_data?: Record<string, any>;
 }
 
 /**

@@ -50,5 +50,12 @@ export class SupabaseService {
   get realtime() {
     return this.supabase.realtime;
   }
+
+  /**
+   * Edge Functions
+   */
+  get functions() {
+    return this.supabase.functions;
+  }
 }
 

@@ -29,9 +29,20 @@ export class Login implements OnInit {
   }
 
   ngOnInit() {
-    // Si ya está autenticado, redirigir al dashboard
+    // Si ya está autenticado, redirigir al dashboard correcto
     if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/dashboard']);
+      const usuario = this.authService.getUsuario();
+      if (usuario) {
+        let dashboardRoute = '/dashboard';
+        if (usuario.tipo_usuario_id === 2) {
+          dashboardRoute = '/dashboard-organizador';
+        } else if (usuario.tipo_usuario_id === 1) {
+          dashboardRoute = '/eventos-cliente';
+        }
+        this.router.navigate([dashboardRoute]);
+      } else {
+        this.router.navigate(['/dashboard']);
+      }
       return;
     }
 
@@ -64,10 +75,21 @@ export class Login implements OnInit {
         }
         
         if (response.usuario && response.user) {
-          console.log('Login exitoso, redirigiendo a:', this.returnUrl);
+          console.log('Login exitoso, redirigiendo según tipo de usuario');
+          // Determinar dashboard según tipo de usuario
+          let dashboardRoute = '/dashboard';
+          if (response.usuario.tipo_usuario_id === 2) {
+            dashboardRoute = '/dashboard-organizador';
+          } else if (response.usuario.tipo_usuario_id === 1) {
+            dashboardRoute = '/eventos-cliente';
+          }
+          
+          // Si returnUrl es /dashboard, usar el dashboard correcto
+          const finalUrl = this.returnUrl === '/dashboard' ? dashboardRoute : this.returnUrl;
+          
           // Login exitoso y usuario válido, redirigir
           this.loading = false;
-          this.router.navigate([this.returnUrl]).then(
+          this.router.navigate([finalUrl]).then(
             (success) => {
               console.log('Navegación exitosa:', success);
             },

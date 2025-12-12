@@ -26,15 +26,15 @@ export class DashboardService {
     // Eventos activos
     const eventosActivos$ = from(
       this.supabase
-        .from('eventos')
-        .select('*', { count: 'exact' })
-        .eq('activo', true)
-        .eq('estado', 'publicado')
+            .from('eventos')
+            .select('*', { count: 'exact' })
+            .eq('activo', true)
+            .eq('estado', 'publicado')
         .gte('fecha_fin', now)
     ).pipe(
       map(({ count, error }) => {
-        if (error) {
-          console.error('Error en eventos activos:', error);
+            if (error) {
+              console.error('Error en eventos activos:', error);
           return 0;
         }
         return count || 0;
@@ -45,12 +45,12 @@ export class DashboardService {
     // Boletas vendidas
     const boletasVendidas$ = from(
       this.supabase
-        .from('boletas_compradas')
+            .from('boletas_compradas')
         .select('*', { count: 'exact' })
     ).pipe(
       map(({ count, error }) => {
-        if (error) {
-          console.error('Error en boletas vendidas:', error);
+            if (error) {
+              console.error('Error en boletas vendidas:', error);
           return 0;
         }
         return count || 0;
@@ -61,18 +61,18 @@ export class DashboardService {
     // Ingresos totales
     const ingresosTotales$ = from(
       this.supabase
-        .from('compras')
-        .select('total')
+            .from('compras')
+            .select('total')
         .eq('estado_pago', 'completado')
     ).pipe(
       map(({ data, error }) => {
-        if (error) {
-          console.error('Error en ingresos totales:', error);
+            if (error) {
+              console.error('Error en ingresos totales:', error);
           return 0;
         }
         if (data) {
           return data.reduce((sum, compra) => sum + Number(compra.total || 0), 0);
-        }
+            }
         return 0;
       }),
       catchError(() => of(0))
@@ -81,18 +81,18 @@ export class DashboardService {
     // Clientes únicos
     const clientes$ = from(
       this.supabase
-        .from('compras')
+            .from('compras')
         .select('cliente_id')
     ).pipe(
       map(({ data, error }) => {
-        if (error) {
-          console.error('Error en clientes:', error);
+            if (error) {
+              console.error('Error en clientes:', error);
           return 0;
         }
         if (data) {
-          const uniqueClients = new Set(data.map((c) => c.cliente_id));
+              const uniqueClients = new Set(data.map((c) => c.cliente_id));
           return uniqueClients.size;
-        }
+            }
         return 0;
       }),
       catchError(() => of(0))
@@ -101,14 +101,14 @@ export class DashboardService {
     // Ventas recientes (últimas 5)
     const ventasRecientes$ = from(
       this.supabase
-        .from('compras')
-        .select('*')
-        .order('fecha_compra', { ascending: false })
+            .from('compras')
+            .select('*')
+            .order('fecha_compra', { ascending: false })
         .limit(5)
     ).pipe(
       map(({ data, error }) => {
-        if (error) {
-          console.error('Error en ventas recientes:', error);
+            if (error) {
+              console.error('Error en ventas recientes:', error);
           return [];
         }
         return data || [];
@@ -119,11 +119,11 @@ export class DashboardService {
     // Eventos próximos (próximos 5)
     const eventosProximos$ = from(
       this.supabase
-        .from('eventos')
-        .select('*')
-        .eq('activo', true)
-        .gte('fecha_inicio', now)
-        .order('fecha_inicio', { ascending: true })
+            .from('eventos')
+            .select('*')
+            .eq('activo', true)
+            .gte('fecha_inicio', now)
+            .order('fecha_inicio', { ascending: true })
         .limit(5)
     ).pipe(
       map(({ data, error }) => {
@@ -274,7 +274,7 @@ export class DashboardService {
 
           if (eventosIds.length === 0) {
             return [];
-          }
+            }
 
           const { data: eventosData, error: eventosError } = await this.supabase
             .from('eventos')
