@@ -1,0 +1,289 @@
+<div class="boletas-page">
+  <header class="page-header">
+    <div>
+      <h1>
+        <span class="material-icons">confirmation_number</span>
+        Boletas
+      </h1>
+      <p>Administra las boletas compradas y tipos de boletas de tus eventos</p>
+    </div>
+    <div style="display: flex; gap: var(--spacing-md);">
+      <button class="btn-secondary" (click)="openModalTipo()" style="display: flex; align-items: center; gap: var(--spacing-xs);">
+        <span class="material-icons">add</span>
+        Nuevo Tipo de Boletas
+      </button>
+      <button class="btn-primary" (click)="showTiposSection = !showTiposSection">
+        <span class="material-icons">confirmation_number</span>
+        {{ showTiposSection ? 'Ocultar' : 'Ver' }} Tipos de Boletas
+      </button>
+    </div>
+  </header>
+
+  <!-- Filtros -->
+  <div class="filters-card">
+    <div class="filters-row">
+      <select [(ngModel)]="estadoFiltro" (ngModelChange)="loadBoletas()" class="select-input">
+        <option [value]="null">Todos los estados</option>
+        <option *ngFor="let estado of estados" [value]="estado.value">{{ estado.label }}</option>
+      </select>
+      <select [(ngModel)]="eventoFiltro" (ngModelChange)="loadBoletas()" class="select-input">
+        <option [value]="null">Todos los eventos</option>
+        <option *ngFor="let evento of eventos" [value]="evento.id">{{ evento.titulo }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Sección de Tipos de Boletas -->
+  <div *ngIf="showTiposSection" class="content-card" style="margin-bottom: var(--spacing-lg);">
+    <div class="section-header">
+      <h2>Tipos de Boletas</h2>
+      <button class="btn-primary" (click)="openModalTipo()">
+        <span class="material-icons">add</span>
+        Nuevo Tipo
+      </button>
+    </div>
+    
+    <div *ngIf="loadingTipos" class="loading-state">Cargando tipos de boletas...</div>
+    
+    <div *ngIf="!loadingTipos && tiposBoleta.length > 0" class="tipos-boleta-grid">
+      <div *ngFor="let tipo of tiposBoleta" class="tipo-boleta-card">
+        <div class="tipo-boleta-header">
+          <h3>{{ tipo.nombre }}</h3>
+          <div class="tipo-boleta-actions">
+            <button class="btn-icon" (click)="openModalEditTipo(tipo)">
+              <span class="material-icons">edit</span>
+            </button>
+            <button class="btn-icon" (click)="openTiposModal(tipo.evento_id)">
+              <span class="material-icons">visibility</span>
+            </button>
+          </div>
+        </div>
+        <p *ngIf="tipo.descripcion" class="tipo-descripcion">{{ tipo.descripcion }}</p>
+        <div class="tipo-info">
+          <div class="info-item">
+            <span class="material-icons">event</span>
+            <span>{{ getEventoNombre(tipo.evento_id) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="material-icons">attach_money</span>
+            <span>${{ tipo.precio | number:'1.2-2' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="material-icons">confirmation_number</span>
+            <span>{{ tipo.cantidad_disponibles }} / {{ tipo.cantidad_total }} disponibles</span>
+          </div>
+          <div class="info-item" *ngIf="tipo.limite_por_persona">
+            <span class="material-icons">person</span>
+            <span>Máx. {{ tipo.limite_por_persona }} por persona</span>
+          </div>
+        </div>
+        <div class="tipo-footer">
+          <span [class]="tipo.activo ? 'badge-success' : 'badge-danger'">
+            {{ tipo.activo ? 'Activo' : 'Inactivo' }}
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    <div *ngIf="!loadingTipos && tiposBoleta.length === 0" class="empty-state">
+      No hay tipos de boletas creados. ¡Crea tu primer tipo de boletas!
+    </div>
+  </div>
+
+  <!-- Tabla de boletas -->
+  <div class="content-card">
+    <div *ngIf="loading" class="loading-state">Cargando boletas...</div>
+    
+    <div *ngIf="!loading && boletas.length > 0" class="boletas-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Código QR</th>
+            <th>Asistente</th>
+            <th>Email</th>
+            <th>Teléfono</th>
+            <th>Precio</th>
+            <th>Estado</th>
+            <th>Fecha Creación</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let boleta of boletas">
+            <td>{{ boleta.id }}</td>
+            <td class="code-cell">{{ boleta.codigo_qr }}</td>
+            <td>{{ boleta.nombre_asistente || 'Sin nombre' }}</td>
+            <td>{{ boleta.email_asistente || '-' }}</td>
+            <td>{{ boleta.telefono_asistente || '-' }}</td>
+            <td>${{ boleta.precio_unitario | number:'1.2-2' }}</td>
+            <td>
+              <span [class]="boleta.estado === 'usada' ? 'badge-success' : boleta.estado === 'cancelada' ? 'badge-danger' : boleta.estado === 'reembolsada' ? 'badge-danger' : 'badge-warning'">
+                {{ getEstadoLabel(boleta.estado) }}
+              </span>
+            </td>
+            <td>{{ boleta.fecha_creacion | date:'short' }}</td>
+            <td>
+              <button class="btn-icon" (click)="openTiposModalFromTipo(boleta.tipo_boleta_id)" title="Ver tipos de boleta del evento">
+                <span class="material-icons">info</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="!loading && boletas.length === 0" class="empty-state">
+      <p>No hay boletas compradas aún.</p>
+      <p style="margin-top: var(--spacing-md);">Crea tipos de boletas para tus eventos y comienza a vender!</p>
+      <div style="margin-top: var(--spacing-lg);">
+        <button class="btn-primary" (click)="openModalTipo()">
+          <span class="material-icons">add</span>
+          Crear Tipo de Boletas
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="total > limit" class="pagination">
+      <button (click)="page = page - 1; loadBoletas()" [disabled]="page === 1">Anterior</button>
+      <span>Página {{ page }} de {{ Math.ceil(total / limit) }}</span>
+      <button (click)="page = page + 1; loadBoletas()" [disabled]="page >= Math.ceil(total / limit)">Siguiente</button>
+    </div>
+  </div>
+
+  <!-- Modal Tipo Boletas -->
+  <div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ editingTipo ? 'Editar Tipo de Boletas' : 'Nuevo Tipo de Boletas' }}</h2>
+        <button class="btn-close" (click)="closeModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Evento *</label>
+          <select [(ngModel)]="formData.evento_id" required>
+            <option [value]="undefined">Selecciona un evento</option>
+            <option *ngFor="let evento of eventos" [value]="evento.id">{{ evento.titulo }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Nombre *</label>
+          <input type="text" [(ngModel)]="formData.nombre" required />
+        </div>
+        <div class="form-group">
+          <label>Descripción</label>
+          <textarea [(ngModel)]="formData.descripcion" rows="3"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Precio *</label>
+            <input type="number" step="0.01" min="0" [(ngModel)]="formData.precio" required />
+          </div>
+          <div class="form-group">
+            <label>Cantidad Total *</label>
+            <input type="number" min="1" [(ngModel)]="formData.cantidad_total" required />
+            <small class="form-help">Total de boletas disponibles para este tipo</small>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Fecha Venta Inicio</label>
+            <input type="datetime-local" [(ngModel)]="formData.fecha_venta_inicio" />
+            <small class="form-help">Cuándo comienza la venta de este tipo</small>
+          </div>
+          <div class="form-group">
+            <label>Fecha Venta Fin</label>
+            <input type="datetime-local" [(ngModel)]="formData.fecha_venta_fin" />
+            <small class="form-help">Cuándo termina la venta de este tipo</small>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Límite por Persona</label>
+          <input type="number" min="1" [(ngModel)]="formData.limite_por_persona" />
+          <small class="form-help">Máximo de boletas de este tipo que puede comprar una persona</small>
+        </div>
+        <div class="form-group" *ngIf="editingTipo">
+          <div class="info-box">
+            <p><strong>Cantidad Vendidas:</strong> {{ editingTipo.cantidad_vendidas || 0 }}</p>
+            <p><strong>Cantidad Disponibles:</strong> {{ editingTipo.cantidad_disponibles || 0 }}</p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" [(ngModel)]="formData.activo" />
+            Activo
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeModal()">Cancelar</button>
+        <button class="btn-primary" (click)="saveTipoBoleta()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Tipos de Boletas por Evento -->
+  <div *ngIf="showTiposModal" class="modal-overlay" (click)="closeTiposModal()">
+    <div class="modal-content modal-large" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Tipos de Boletas - {{ getEventoNombre(eventoSeleccionado || 0) }}</h2>
+        <button class="btn-close" (click)="closeTiposModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-actions-header">
+          <button class="btn-primary" (click)="openModalTipo(eventoSeleccionado || 0)">
+            <span class="material-icons">add</span>
+            Nuevo Tipo
+          </button>
+        </div>
+        
+        <div *ngIf="tiposBoletaEvento.length === 0" class="empty-state">
+          No hay tipos de boletas para este evento
+        </div>
+        
+        <div *ngIf="tiposBoletaEvento.length > 0" class="tipos-boleta-grid">
+          <div *ngFor="let tipo of tiposBoletaEvento" class="tipo-boleta-card">
+            <div class="tipo-boleta-header">
+              <h3>{{ tipo.nombre }}</h3>
+              <div class="tipo-boleta-actions">
+                <button class="btn-icon" (click)="openModalEditTipo(tipo)">
+                  <span class="material-icons">edit</span>
+                </button>
+                <button class="btn-icon" (click)="deleteTipoBoleta(tipo)">
+                  <span class="material-icons">delete</span>
+                </button>
+              </div>
+            </div>
+            <p *ngIf="tipo.descripcion" class="tipo-descripcion">{{ tipo.descripcion }}</p>
+            <div class="tipo-info">
+              <div class="info-item">
+                <span class="material-icons">attach_money</span>
+                <span>${{ tipo.precio | number:'1.2-2' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="material-icons">confirmation_number</span>
+                <span>{{ tipo.cantidad_disponibles }} / {{ tipo.cantidad_total }} disponibles</span>
+              </div>
+              <div class="info-item" *ngIf="tipo.limite_por_persona">
+                <span class="material-icons">person</span>
+                <span>Máx. {{ tipo.limite_por_persona }} por persona</span>
+              </div>
+            </div>
+            <div class="tipo-footer">
+              <span [class]="tipo.activo ? 'badge-success' : 'badge-danger'">
+                {{ tipo.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeTiposModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>

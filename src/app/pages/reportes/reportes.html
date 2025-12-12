@@ -1,0 +1,134 @@
+<div class="reportes-page">
+  <header class="page-header">
+    <div>
+      <h1>
+        <span class="material-icons">assessment</span>
+        Reportes
+      </h1>
+      <p>Genera reportes y estadísticas del sistema</p>
+    </div>
+  </header>
+
+  <!-- Filtros de fecha -->
+  <div class="filters-card">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Fecha Inicio</label>
+        <input type="date" [(ngModel)]="fechaInicio" />
+      </div>
+      <div class="form-group">
+        <label>Fecha Fin</label>
+        <input type="date" [(ngModel)]="fechaFin" />
+      </div>
+      <div class="form-group">
+        <button class="btn-primary" (click)="generarReporte()">
+          <span class="material-icons">refresh</span>
+          Generar Reporte
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading-state">Generando reportes...</div>
+
+  <!-- Reporte de Ventas -->
+  <div *ngIf="!loading && reporteVentas" class="content-card">
+    <h2>
+      <span class="material-icons">attach_money</span>
+      Reporte de Ventas
+    </h2>
+    
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="material-icons stat-icon">shopping_cart</span>
+        <div class="stat-content">
+          <h3>Total Compras</h3>
+          <p class="stat-value">{{ reporteVentas.totalCompras }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="material-icons stat-icon">check_circle</span>
+        <div class="stat-content">
+          <h3>Completadas</h3>
+          <p class="stat-value">{{ reporteVentas.comprasCompletadas }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="material-icons stat-icon">attach_money</span>
+        <div class="stat-content">
+          <h3>Total Ingresos</h3>
+          <p class="stat-value">${{ reporteVentas.totalIngresos | number:'1.0-0' }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-section">
+      <h3>Compras por Estado de Pago</h3>
+      <div class="chart-data">
+        <div *ngFor="let item of reporteVentas.comprasPorEstado | keyvalue" class="chart-item">
+          <span class="chart-label">{{ item.key }}</span>
+          <span class="chart-value">{{ item.value }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-section">
+      <h3>Compras por Método de Pago</h3>
+      <div class="chart-data">
+        <div *ngFor="let item of reporteVentas.comprasPorMetodo | keyvalue" class="chart-item">
+          <span class="chart-label">{{ item.key }}</span>
+          <span class="chart-value">{{ item.value }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reporte de Eventos -->
+  <div *ngIf="!loading && reporteEventos" class="content-card">
+    <h2>
+      <span class="material-icons">event</span>
+      Reporte de Eventos
+    </h2>
+    
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="material-icons stat-icon">event</span>
+        <div class="stat-content">
+          <h3>Total Eventos</h3>
+          <p class="stat-value">{{ reporteEventos.totalEventos }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="material-icons stat-icon">check_circle</span>
+        <div class="stat-content">
+          <h3>Eventos Activos</h3>
+          <p class="stat-value">{{ reporteEventos.eventosActivos }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="material-icons stat-icon">star</span>
+        <div class="stat-content">
+          <h3>Eventos Destacados</h3>
+          <p class="stat-value">{{ reporteEventos.eventosDestacados }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-section">
+      <h3>Eventos por Estado</h3>
+      <div class="chart-data">
+        <div *ngFor="let item of reporteEventos.eventosPorEstado | keyvalue" class="chart-item">
+          <span class="chart-label">{{ item.key }}</span>
+          <span class="chart-value">{{ item.value }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <button class="btn-primary" (click)="exportarReporte()">
+      <span class="material-icons">download</span>
+      Exportar Reporte
+    </button>
+  </div>
+</div>

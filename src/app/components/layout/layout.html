@@ -1,0 +1,42 @@
+<div class="layout-container">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1>
+        <span class="material-icons">celebration</span>
+        Eventum
+      </h1>
+      <p class="subtitle">Panel de Administración</p>
+    </div>
+    <nav class="sidebar-nav">
+      <a
+        *ngFor="let item of menuItems"
+        [routerLink]="item.path"
+        routerLinkActive="active"
+        class="nav-item"
+      >
+        <span class="material-icons nav-icon">{{ item.icon }}</span>
+        <span class="nav-label">{{ item.label }}</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div *ngIf="currentUser && usuario" class="user-info">
+        <div class="user-email">
+          <span class="material-icons">person</span>
+          <span class="email-text">{{ userEmail }}</span>
+        </div>
+        <div class="user-role" *ngIf="userRole">
+          <span class="material-icons">badge</span>
+          <span>{{ userRole }}</span>
+        </div>
+        <button class="btn-logout" (click)="logout()">
+          <span class="material-icons">logout</span>
+          <span>Cerrar Sesión</span>
+        </button>
+      </div>
+      <p>© 2025 Eventum</p>
+    </div>
+  </aside>
+  <main class="main-content">
+    <router-outlet />
+  </main>
+</div>

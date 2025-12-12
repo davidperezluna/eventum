@@ -1,0 +1,257 @@
+<div class="eventos-page">
+  <header class="page-header">
+    <div>
+      <h1>
+        <span class="material-icons">event</span>
+        Eventos
+      </h1>
+      <p>Gestiona todos los eventos del sistema</p>
+    </div>
+    <button class="btn-primary" (click)="openModal()">
+      <span class="material-icons">add</span>
+      Nuevo Evento
+    </button>
+  </header>
+
+  <!-- Filtros -->
+  <div class="filters-card">
+    <input
+      type="text"
+      [(ngModel)]="searchTerm"
+      (ngModelChange)="loadEventos()"
+      placeholder="Buscar eventos..."
+      class="search-input"
+    />
+    <select [(ngModel)]="categoriaFiltro" (ngModelChange)="loadEventos()" class="select-input">
+      <option [value]="null">Todas las categorías</option>
+      <option *ngFor="let categoria of categorias" [value]="categoria.id">{{ categoria.nombre }}</option>
+    </select>
+    <select [(ngModel)]="estadoFiltro" (ngModelChange)="loadEventos()" class="select-input">
+      <option [value]="null">Todos los estados</option>
+      <option *ngFor="let estado of estados" [value]="estado.value">{{ estado.label }}</option>
+    </select>
+  </div>
+
+  <!-- Lista de eventos -->
+  <div class="content-card">
+    <div *ngIf="loading" class="loading-state">Cargando eventos...</div>
+    
+    <div *ngIf="!loading && eventos.length > 0" class="eventos-grid">
+      <div *ngFor="let evento of eventos" class="evento-card">
+        <div class="evento-header">
+          <div class="evento-badges">
+            <span *ngIf="evento.destacado" class="badge-highlight">Destacado</span>
+            <span [class]="evento.activo ? 'badge-success' : 'badge-danger'">
+              {{ evento.activo ? 'Activo' : 'Inactivo' }}
+            </span>
+            <span class="badge-info">{{ getEstadoLabel(evento.estado) }}</span>
+          </div>
+          <div class="evento-actions">
+            <button class="btn-icon" (click)="openModal(evento)">
+              <span class="material-icons">edit</span>
+            </button>
+            <button class="btn-icon" (click)="toggleDestacado(evento)" [title]="evento.destacado ? 'Quitar destacado' : 'Marcar destacado'">
+              <span class="material-icons">{{ evento.destacado ? 'star' : 'star_border' }}</span>
+            </button>
+            <button class="btn-icon" (click)="toggleActivo(evento)">
+              <span class="material-icons">{{ evento.activo ? 'block' : 'check_circle' }}</span>
+            </button>
+          </div>
+        </div>
+        <h3>{{ evento.titulo }}</h3>
+        <p *ngIf="evento.descripcion_corta" class="evento-descripcion">{{ evento.descripcion_corta }}</p>
+        <div class="evento-info">
+          <div class="info-item">
+            <span class="material-icons">calendar_today</span>
+            <span>{{ evento.fecha_inicio | date:'short' }}</span>
+          </div>
+          <div class="info-item" *ngIf="evento.precio_minimo !== undefined">
+            <span class="material-icons">attach_money</span>
+            <span>{{ evento.es_gratis ? 'Gratis' : '$' + evento.precio_minimo }}</span>
+          </div>
+          <div class="info-item" *ngIf="evento.edad_minima && evento.edad_minima > 0">
+            <span class="material-icons">person</span>
+            <span>+{{ evento.edad_minima }} años</span>
+          </div>
+        </div>
+        <div *ngIf="evento.tags" class="evento-tags">
+          <span *ngFor="let tag of evento.tags.split(',')" class="tag">{{ tag.trim() }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="!loading && eventos.length === 0" class="empty-state">
+      No hay eventos creados aún. ¡Crea tu primer evento y comienza la fiesta!
+    </div>
+
+    <div *ngIf="total > limit" class="pagination">
+      <button (click)="page = page - 1; loadEventos()" [disabled]="page === 1">Anterior</button>
+      <span>Página {{ page }} de {{ Math.ceil(total / limit) }}</span>
+      <button (click)="page = page + 1; loadEventos()" [disabled]="page >= Math.ceil(total / limit)">Siguiente</button>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content modal-large" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ editingEvento ? 'Editar Evento' : 'Nuevo Evento' }}</h2>
+        <button class="btn-close" (click)="closeModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Título *</label>
+          <input type="text" [(ngModel)]="formData.titulo" required placeholder="Ej: Festival de Música 2024" />
+        </div>
+        <div class="form-group">
+          <label>Descripción Corta</label>
+          <input type="text" [(ngModel)]="formData.descripcion_corta" placeholder="Breve descripción para mostrar en listados" maxlength="200" />
+        </div>
+        <div class="form-group">
+          <label>Descripción Completa</label>
+          <textarea [(ngModel)]="formData.descripcion" rows="5" placeholder="Descripción detallada del evento"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Organizador *</label>
+            <select [(ngModel)]="formData.organizador_id" required>
+              <option [value]="undefined">Selecciona organizador</option>
+              <option *ngFor="let organizador of organizadores" [value]="organizador.id">
+                {{ organizador.nombre || '' }} {{ organizador.apellido || '' }} ({{ organizador.email }})
+              </option>
+            </select>
+            <small class="form-help" *ngIf="organizadores.length === 0">
+              No hay organizadores disponibles. Crea un usuario con tipo "Organizador" primero.
+            </small>
+            <small class="form-help" *ngIf="organizadores.length > 0">
+              {{ organizadores.length }} organizador(es) disponible(s)
+            </small>
+          </div>
+          <div class="form-group">
+            <label>Categoría *</label>
+            <select [(ngModel)]="formData.categoria_id" required>
+              <option [value]="undefined">Selecciona categoría</option>
+              <option *ngFor="let categoria of categorias" [value]="categoria.id">{{ categoria.nombre }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Lugar</label>
+            <select [(ngModel)]="formData.lugar_id">
+              <option [value]="undefined">Sin lugar</option>
+              <option *ngFor="let lugar of lugares" [value]="lugar.id">{{ lugar.nombre }} - {{ lugar.ciudad }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Imagen Principal</label>
+            <button type="button" class="btn-secondary" (click)="selectImage()" [disabled]="uploadingImage">
+              <span class="material-icons">image</span>
+              {{ uploadingImage ? 'Subiendo...' : 'Seleccionar Imagen' }}
+            </button>
+            <input 
+              type="file" 
+              id="eventoImageInput" 
+              accept="image/*" 
+              (change)="onFileSelected($event)"
+              style="display: none;">
+            
+            <!-- Preview de imagen -->
+            <div *ngIf="previewUrl" class="image-preview-container">
+              <img [src]="previewUrl" alt="Preview" class="image-preview" />
+              <button type="button" class="btn-remove-image" (click)="removeImage()" title="Eliminar imagen">
+                <span class="material-icons">close</span>
+              </button>
+            </div>
+            
+            <!-- Mostrar URL actual si existe y no hay preview -->
+            <div *ngIf="formData.imagen_principal && !previewUrl && !selectedFile" class="current-image-info">
+              <small>Imagen actual: <a [href]="formData.imagen_principal" target="_blank">Ver imagen</a></small>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Fecha Inicio *</label>
+            <input type="datetime-local" [(ngModel)]="formData.fecha_inicio" required />
+          </div>
+          <div class="form-group">
+            <label>Fecha Fin *</label>
+            <input type="datetime-local" [(ngModel)]="formData.fecha_fin" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Venta Inicio *</label>
+            <input type="datetime-local" [(ngModel)]="formData.fecha_venta_inicio" required />
+          </div>
+          <div class="form-group">
+            <label>Venta Fin *</label>
+            <input type="datetime-local" [(ngModel)]="formData.fecha_venta_fin" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Estado</label>
+            <select [(ngModel)]="formData.estado">
+              <option *ngFor="let estado of estados" [value]="estado.value">{{ estado.label }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Edad Mínima</label>
+            <input type="number" [(ngModel)]="formData.edad_minima" min="0" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>
+              <input type="checkbox" [(ngModel)]="formData.es_gratis" />
+              Evento Gratis
+            </label>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" [(ngModel)]="formData.destacado" />
+              Destacado
+            </label>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" [(ngModel)]="formData.activo" />
+              Activo
+            </label>
+          </div>
+        </div>
+        <div class="form-row" *ngIf="!formData.es_gratis">
+          <div class="form-group">
+            <label>Precio Mínimo</label>
+            <input type="number" step="0.01" [(ngModel)]="formData.precio_minimo" min="0" placeholder="0.00" />
+          </div>
+          <div class="form-group">
+            <label>Precio Máximo</label>
+            <input type="number" step="0.01" [(ngModel)]="formData.precio_maximo" min="0" placeholder="0.00" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Tags</label>
+          <input type="text" [(ngModel)]="formData.tags" placeholder="música, festival, rock (separados por comas)" />
+          <small class="form-help">Separa los tags con comas</small>
+        </div>
+        <div class="form-group">
+          <label>Términos y Condiciones</label>
+          <textarea [(ngModel)]="formData.terminos_condiciones" rows="4" placeholder="Términos y condiciones del evento"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Política de Reembolso</label>
+          <textarea [(ngModel)]="formData.politica_reembolso" rows="4" placeholder="Política de reembolso y cancelación"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeModal()">Cancelar</button>
+        <button class="btn-primary" (click)="saveEvento()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>

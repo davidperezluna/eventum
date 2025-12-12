@@ -1,0 +1,120 @@
+<div class="categorias-page">
+  <header class="page-header">
+    <div>
+      <h1>
+        <span class="material-icons">category</span>
+        Categorías
+      </h1>
+      <p>Gestiona las categorías de eventos</p>
+    </div>
+    <button class="btn-primary" (click)="openModal()">
+      <span class="material-icons">add</span>
+      Nueva Categoría
+    </button>
+  </header>
+
+  <div class="filters-card">
+    <input
+      type="text"
+      [(ngModel)]="searchTerm"
+      (ngModelChange)="loadCategorias()"
+      placeholder="Buscar categorías..."
+      class="search-input"
+    />
+  </div>
+
+  <div class="content-card">
+    <div *ngIf="loading" class="loading-state">Cargando categorías...</div>
+    
+    <div *ngIf="!loading && categorias.length > 0" class="grid-cards">
+      <div *ngFor="let categoria of categorias" class="category-card">
+        <div class="category-header">
+          <div class="category-icon" [style.background-color]="categoria.color || '#667eea'">
+            <ion-icon *ngIf="categoria.icono" [name]="categoria.icono"></ion-icon>
+            <ion-icon *ngIf="!categoria.icono" name="folder"></ion-icon>
+          </div>
+          <div class="category-actions">
+            <button class="btn-icon" (click)="openModal(categoria)">
+              <span class="material-icons">edit</span>
+            </button>
+            <button class="btn-icon" (click)="toggleActivo(categoria)">
+              <span class="material-icons">{{ categoria.activo ? 'block' : 'check_circle' }}</span>
+            </button>
+          </div>
+        </div>
+        <h3>{{ categoria.nombre }}</h3>
+        <p *ngIf="categoria.descripcion">{{ categoria.descripcion }}</p>
+        <div class="category-footer">
+          <span [class]="categoria.activo ? 'badge-success' : 'badge-danger'">
+            {{ categoria.activo ? 'Activa' : 'Inactiva' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="!loading && categorias.length === 0" class="empty-state">
+      No hay categorías creadas
+    </div>
+
+    <div *ngIf="total > limit" class="pagination">
+      <button (click)="page = page - 1; loadCategorias()" [disabled]="page === 1">Anterior</button>
+      <span>Página {{ page }} de {{ Math.ceil(total / limit) }}</span>
+      <button (click)="page = page + 1; loadCategorias()" [disabled]="page >= Math.ceil(total / limit)">Siguiente</button>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ editingCategoria ? 'Editar Categoría' : 'Nueva Categoría' }}</h2>
+        <button class="btn-close" (click)="closeModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Nombre *</label>
+          <input type="text" [(ngModel)]="formData.nombre" required />
+        </div>
+        <div class="form-group">
+          <label>Descripción</label>
+          <textarea [(ngModel)]="formData.descripcion" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Icono</label>
+          <div class="icon-selector">
+            <div class="selected-icon-preview" *ngIf="formData.icono">
+              <ion-icon [name]="formData.icono"></ion-icon>
+              <span>{{ formData.icono }}</span>
+            </div>
+            <div class="icon-grid">
+              <div 
+                *ngFor="let icono of iconosDisponibles" 
+                class="icon-option"
+                [class.selected]="formData.icono === icono"
+                (click)="selectIcon(icono)"
+                [title]="icono">
+                <ion-icon [name]="icono"></ion-icon>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Color</label>
+          <input type="color" [(ngModel)]="formData.color" />
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" [(ngModel)]="formData.activo" />
+            Activa
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="closeModal()">Cancelar</button>
+        <button type="button" class="btn-primary" (click)="saveCategoria()" [disabled]="!formData.nombre || formData.nombre.trim() === ''">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>

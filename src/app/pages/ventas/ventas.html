@@ -1,0 +1,119 @@
+<div class="ventas-page">
+  <header class="page-header">
+    <div>
+      <h1>
+        <span class="material-icons">attach_money</span>
+        Ventas
+      </h1>
+      <p>Revisa y gestiona todas las ventas del sistema</p>
+    </div>
+  </header>
+
+  <!-- Filtros -->
+  <div class="filters-card">
+    <select [(ngModel)]="estadoPagoFiltro" (ngModelChange)="loadCompras()" class="select-input">
+      <option [value]="null">Todos los estados de pago</option>
+      <option *ngFor="let estado of estadosPago" [value]="estado.value">{{ estado.label }}</option>
+    </select>
+    <select [(ngModel)]="estadoCompraFiltro" (ngModelChange)="loadCompras()" class="select-input">
+      <option [value]="null">Todos los estados de compra</option>
+      <option *ngFor="let estado of estadosCompra" [value]="estado.value">{{ estado.label }}</option>
+    </select>
+  </div>
+
+  <!-- Tabla de ventas -->
+  <div class="content-card">
+    <div *ngIf="loading" class="loading-state">Cargando ventas...</div>
+    
+    <table *ngIf="!loading && compras.length > 0" class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Transacción</th>
+          <th>Cliente ID</th>
+          <th>Evento ID</th>
+          <th>Total</th>
+          <th>Método Pago</th>
+          <th>Estado Pago</th>
+          <th>Estado Compra</th>
+          <th>Fecha</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let compra of compras">
+          <td>{{ compra.id }}</td>
+          <td>{{ compra.numero_transaccion }}</td>
+          <td>{{ compra.cliente_id }}</td>
+          <td>{{ compra.evento_id }}</td>
+          <td>${{ compra.total | number:'1.2-2' }}</td>
+          <td>{{ compra.metodo_pago }}</td>
+          <td>
+            <span [class]="compra.estado_pago === 'completado' ? 'badge-success' : 'badge-warning'">
+              {{ getEstadoPagoLabel(compra.estado_pago) }}
+            </span>
+          </td>
+          <td>
+            <span [class]="compra.estado_compra === 'confirmada' ? 'badge-success' : 'badge-warning'">
+              {{ getEstadoCompraLabel(compra.estado_compra) }}
+            </span>
+          </td>
+          <td>{{ compra.fecha_compra | date:'short' }}</td>
+          <td class="actions">
+            <button class="btn-icon" (click)="openModal(compra)" title="Editar">
+              <span class="material-icons">edit</span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="!loading && compras.length === 0" class="empty-state">
+      No hay ventas registradas. ¡Cuando comiences a vender boletas, aparecerán aquí!
+    </div>
+
+    <div *ngIf="total > limit" class="pagination">
+      <button (click)="page = page - 1; loadCompras()" [disabled]="page === 1">Anterior</button>
+      <span>Página {{ page }} de {{ Math.ceil(total / limit) }}</span>
+      <button (click)="page = page + 1; loadCompras()" [disabled]="page >= Math.ceil(total / limit)">Siguiente</button>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Editar Compra</h2>
+        <button class="btn-close" (click)="closeModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Estado de Pago</label>
+          <select [(ngModel)]="formData.estado_pago">
+            <option *ngFor="let estado of estadosPago" [value]="estado.value">{{ estado.label }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Estado de Compra</label>
+          <select [(ngModel)]="formData.estado_compra">
+            <option *ngFor="let estado of estadosCompra" [value]="estado.value">{{ estado.label }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Motivo de Cancelación</label>
+          <textarea [(ngModel)]="formData.motivo_cancelacion" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Notas</label>
+          <textarea [(ngModel)]="formData.notas" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeModal()">Cancelar</button>
+        <button class="btn-primary" (click)="saveCompra()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>

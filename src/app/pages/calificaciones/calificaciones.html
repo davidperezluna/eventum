@@ -1,0 +1,60 @@
+<div class="calificaciones-page">
+  <header class="page-header">
+    <div>
+      <h1>
+        <span class="material-icons">star</span>
+        Calificaciones
+      </h1>
+      <p>Modera las calificaciones y comentarios de eventos</p>
+    </div>
+  </header>
+
+  <div class="filters-card">
+    <div class="filter-group">
+      <select [(ngModel)]="activoFiltro" (ngModelChange)="loadCalificaciones()" class="select-input">
+        <option [value]="null">Todas</option>
+        <option [value]="true">Activas</option>
+        <option [value]="false">Desactivadas</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <div *ngIf="loading" class="loading-state">Cargando calificaciones...</div>
+    
+    <div *ngIf="!loading && calificaciones.length > 0" class="calificaciones-list">
+      <div *ngFor="let calificacion of calificaciones" class="calificacion-card">
+        <div class="calificacion-header">
+          <div class="calificacion-rating">
+            <span *ngFor="let star of getStars(calificacion.calificacion)" class="material-icons">{{ star }}</span>
+            <span class="rating-number">{{ calificacion.calificacion }}/5</span>
+          </div>
+          <div class="calificacion-actions">
+            <button class="btn-icon" (click)="toggleActivo(calificacion)" [title]="calificacion.activo ? 'Desactivar' : 'Activar'">
+              <span class="material-icons">{{ calificacion.activo ? 'visibility_off' : 'visibility' }}</span>
+            </button>
+          </div>
+        </div>
+        <div class="calificacion-body">
+          <p *ngIf="calificacion.comentario" class="comentario">{{ calificacion.comentario }}</p>
+          <p *ngIf="!calificacion.comentario" class="sin-comentario">Sin comentario</p>
+        </div>
+        <div class="calificacion-footer">
+          <span>Evento ID: {{ calificacion.evento_id }}</span>
+          <span>Cliente ID: {{ calificacion.cliente_id }}</span>
+          <span>{{ calificacion.fecha_calificacion | date:'short' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="!loading && calificaciones.length === 0" class="empty-state">
+      No hay calificaciones
+    </div>
+
+    <div *ngIf="total > limit" class="pagination">
+      <button (click)="page = page - 1; loadCalificaciones()" [disabled]="page === 1">Anterior</button>
+      <span>Página {{ page }} de {{ Math.ceil(total / limit) }}</span>
+      <button (click)="page = page + 1; loadCalificaciones()" [disabled]="page >= Math.ceil(total / limit)">Siguiente</button>
+    </div>
+  </div>
+</div>
