@@ -7,6 +7,7 @@ import { Router } from '@angular/router';
 import { Observable, BehaviorSubject, from, of, throwError } from 'rxjs';
 import { map, catchError, switchMap, tap } from 'rxjs/operators';
 import { SupabaseService } from './supabase.service';
+import { SupabaseObservableHelper } from './supabase-observable.helper';
 import { User, Session } from '@supabase/supabase-js';
 import { Usuario } from '../types/entities';
 
@@ -49,7 +50,8 @@ export class AuthService {
   constructor(
     private supabase: SupabaseService,
     private router: Router,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private supabaseHelper: SupabaseObservableHelper
   ) {
     this.initAuth();
   }
@@ -338,7 +340,7 @@ export class AuthService {
    * Registra un nuevo usuario
    */
   register(data: RegisterData): Observable<{ user: User | null; error: any }> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -348,16 +350,24 @@ export class AuthService {
             apellido: data.apellido
           }
         }
+      }).then((authResponse: any) => {
+        // Normalizar la respuesta de auth.signUp a formato SupabaseResponse
+        return {
+          data: { user: authResponse.user, session: authResponse.session },
+          error: authResponse.error,
+          count: null
+        };
       })
     ).pipe(
       map((response) => {
         if (response.error) {
           return { user: null, error: response.error };
         }
-        return { user: response.data.user, error: null };
+        const authData = response.data as { user: User | null; session: Session | null };
+        return { user: authData?.user || null, error: null };
       }),
       catchError((error) => {
-        return [{ user: null, error }];
+        return throwError(() => ({ user: null, error }));
       })
     );
   }

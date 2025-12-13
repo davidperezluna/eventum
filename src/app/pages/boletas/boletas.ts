@@ -1,6 +1,9 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil, debounceTime, switchMap, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { BoletasService } from '../../services/boletas.service';
 import { EventosService } from '../../services/eventos.service';
 import { BoletaComprada, TipoBoleta, PaginatedResponse, TipoEstadoBoleta, Evento } from '../../types';
@@ -11,7 +14,10 @@ import { BoletaComprada, TipoBoleta, PaginatedResponse, TipoEstadoBoleta, Evento
   templateUrl: './boletas.html',
   styleUrl: './boletas.css',
 })
-export class Boletas implements OnInit {
+export class Boletas implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+  private loadBoletasSubject = new Subject<void>();
+
   boletas: BoletaComprada[] = [];
   tiposBoleta: TipoBoleta[] = [];
   eventos: Evento[] = [];
@@ -22,14 +28,32 @@ export class Boletas implements OnInit {
   limit = 10;
   estadoFiltro: string | null = null;
   eventoFiltro: number | null = null;
+  tipoBoletaFiltro: number | null = null;
+  searchFiltro: string = '';
+  codigoQRFiltro: string = '';
+  nombreFiltro: string = '';
+  emailFiltro: string = '';
+  telefonoFiltro: string = '';
+  fechaDesdeFiltro: string = '';
+  fechaHastaFiltro: string = '';
   showTiposSection = false;
+  showFiltrosAvanzados = false;
 
   showModal = false;
   showTiposModal = false;
+  showValidarModal = false;
+  showScannerModal = false;
   editingTipo: TipoBoleta | null = null;
   formData: Partial<TipoBoleta> = { activo: true };
   eventoSeleccionado: number | null = null;
   tiposBoletaEvento: TipoBoleta[] = [];
+  codigoQRValidar: string = '';
+  documentoValidar: string = '';
+  boletaEncontrada: BoletaComprada | null = null;
+  boletasEncontradasPorDocumento: BoletaComprada[] = [];
+  boletaSeleccionada: BoletaComprada | null = null;
+  modoBusqueda: 'qr' | 'documento' = 'qr';
+  validandoBoleta = false;
 
   estados: { value: TipoEstadoBoleta; label: string }[] = [
     { value: TipoEstadoBoleta.PENDIENTE, label: 'Pendiente' },
@@ -46,49 +70,17 @@ export class Boletas implements OnInit {
 
   ngOnInit() {
     this.loadEventos();
-    this.loadBoletas();
     this.loadAllTiposBoleta();
-  }
-
-  loadAllTiposBoleta() {
-    this.loadingTipos = true;
-    this.boletasService.getAllTiposBoleta({ activo: true }).subscribe({
-      next: (tipos) => {
-        this.tiposBoleta = tipos || [];
-        this.loadingTipos = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error cargando tipos de boleta:', err);
-        this.tiposBoleta = [];
-        this.loadingTipos = false;
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
-  loadEventos() {
-    this.eventosService.getEventos({ limit: 1000, page: 1 }).subscribe({
-      next: (response) => {
-        this.eventos = response.data || [];
-      },
-      error: (err) => console.error('Error cargando eventos:', err)
-    });
-  }
-
-  loadBoletas() {
-    console.log('loadBoletas llamado');
-    this.loading = true;
-    this.cdr.detectChanges();
     
-    this.boletasService.getBoletasCompradas({
-      page: this.page,
-      limit: this.limit,
-      estado: this.estadoFiltro || undefined,
-      tipo_boleta_id: this.eventoFiltro ? undefined : undefined // Filtro por tipo si se implementa
-    }).subscribe({
-      next: (response: PaginatedResponse<BoletaComprada>) => {
-        console.log('Response recibida en boletas:', response);
+    // Configurar debounce para loadBoletas
+    this.loadBoletasSubject.pipe(
+      debounceTime(300),
+      switchMap(() => {
+        return this.loadBoletasInternal();
+      }),
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (response) => {
         this.boletas = response.data || [];
         this.total = response.total || 0;
         this.loading = false;
@@ -100,36 +92,319 @@ export class Boletas implements OnInit {
         this.boletas = [];
         this.total = 0;
         this.cdr.detectChanges();
-      },
-      complete: () => {
-        console.log('Observable completado en boletas');
+      }
+    });
+
+    // Cargar boletas inicialmente
+    this.loadBoletas();
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  onEventoFiltroChange() {
+    // Cuando cambia el evento, cargar los tipos de boleta de ese evento
+    if (this.eventoFiltro) {
+      this.loadTiposBoleta(this.eventoFiltro);
+    } else {
+      this.tipoBoletaFiltro = null;
+      this.tiposBoletaEvento = [];
+    }
+    this.loadBoletas();
+  }
+
+  loadAllTiposBoleta() {
+    this.loadingTipos = true;
+    this.boletasService.getAllTiposBoleta({ activo: true }).pipe(
+      takeUntil(this.destroy$),
+      catchError((err) => {
+        console.error('Error cargando tipos de boleta:', err);
+        return of([]);
+      })
+    ).subscribe({
+      next: (tipos) => {
+        this.tiposBoleta = tipos || [];
+        this.loadingTipos = false;
         this.cdr.detectChanges();
       }
     });
   }
 
-  loadTiposBoleta(eventoId: number) {
-    this.boletasService.getTiposBoleta(eventoId).subscribe({
-      next: (tipos) => {
-        this.tiposBoletaEvento = tipos || [];
+  loadEventos() {
+    // Para el selector de eventos en boletas, solo necesitamos eventos activos
+    // Reducir el límite para mejor rendimiento
+    this.eventosService.getEventos({ 
+      limit: 500, // Reducido de 1000
+      page: 1,
+      activo: true
+    }).pipe(
+      takeUntil(this.destroy$),
+      catchError((err) => {
+        console.error('Error cargando eventos:', err);
+        // Si falla, intentar con menos eventos
+        return this.eventosService.getEventos({ limit: 100, page: 1, activo: true }).pipe(
+          catchError(() => of({ data: [], total: 0, page: 1, limit: 100, totalPages: 0 }))
+        );
+      })
+    ).subscribe({
+      next: (response) => {
+        this.eventos = response.data || [];
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  loadBoletas() {
+    this.loading = true;
+    this.page = 1; // Resetear a primera página al filtrar
+    this.cdr.detectChanges();
+    this.loadBoletasSubject.next();
+  }
+
+  private loadBoletasInternal() {
+    const filters: any = {
+      page: this.page,
+      limit: this.limit,
+    };
+
+    if (this.estadoFiltro) {
+      filters.estado = this.estadoFiltro;
+    }
+    if (this.eventoFiltro) {
+      filters.evento_id = this.eventoFiltro;
+    }
+    if (this.tipoBoletaFiltro) {
+      filters.tipo_boleta_id = this.tipoBoletaFiltro;
+    }
+    if (this.searchFiltro.trim()) {
+      filters.search = this.searchFiltro.trim();
+    }
+    if (this.codigoQRFiltro.trim()) {
+      filters.codigo_qr = this.codigoQRFiltro.trim();
+    }
+    if (this.nombreFiltro.trim()) {
+      filters.nombre_asistente = this.nombreFiltro.trim();
+    }
+    if (this.emailFiltro.trim()) {
+      filters.email_asistente = this.emailFiltro.trim();
+    }
+    if (this.telefonoFiltro.trim()) {
+      filters.telefono_asistente = this.telefonoFiltro.trim();
+    }
+    if (this.fechaDesdeFiltro) {
+      filters.fecha_desde = new Date(this.fechaDesdeFiltro).toISOString();
+    }
+    if (this.fechaHastaFiltro) {
+      const fechaHasta = new Date(this.fechaHastaFiltro);
+      fechaHasta.setHours(23, 59, 59, 999); // Incluir todo el día
+      filters.fecha_hasta = fechaHasta.toISOString();
+    }
+    
+    return this.boletasService.getBoletasCompradas(filters).pipe(
+      takeUntil(this.destroy$),
+      catchError((err) => {
+        console.error('Error cargando boletas:', err);
+        return of({ data: [], total: 0, page: 1, limit: this.limit, totalPages: 0 });
+      })
+    );
+  }
+
+  limpiarFiltros() {
+    this.estadoFiltro = null;
+    this.eventoFiltro = null;
+    this.tipoBoletaFiltro = null;
+    this.searchFiltro = '';
+    this.codigoQRFiltro = '';
+    this.nombreFiltro = '';
+    this.emailFiltro = '';
+    this.telefonoFiltro = '';
+    this.fechaDesdeFiltro = '';
+    this.fechaHastaFiltro = '';
+    this.loadBoletas();
+  }
+
+  validarBoleta(boleta: BoletaComprada) {
+    if (boleta.estado === 'usada') {
+      alert('Esta boleta ya ha sido validada');
+      return;
+    }
+    if (boleta.estado === 'cancelada' || boleta.estado === 'reembolsada') {
+      alert('No se puede validar una boleta cancelada o reembolsada');
+      return;
+    }
+    
+    if (confirm(`¿Validar la boleta ${boleta.codigo_qr}?`)) {
+      this.validandoBoleta = true;
+      this.boletasService.validarBoleta(boleta.id).pipe(
+        takeUntil(this.destroy$),
+        catchError((err) => {
+          console.error('Error validando boleta:', err);
+          alert('Error al validar la boleta: ' + (err.message || 'Error desconocido'));
+          this.validandoBoleta = false;
+          this.cdr.detectChanges();
+          return of(null);
+        })
+      ).subscribe({
+        next: () => {
+          alert('¡Boleta validada exitosamente! 🎉');
+          this.loadBoletas();
+          this.validandoBoleta = false;
+          this.cdr.detectChanges();
+        }
+      });
+    }
+  }
+
+  abrirValidarModal() {
+    this.showValidarModal = true;
+    this.codigoQRValidar = '';
+    this.documentoValidar = '';
+    this.boletaEncontrada = null;
+    this.boletasEncontradasPorDocumento = [];
+    this.boletaSeleccionada = null;
+    this.modoBusqueda = 'qr';
+  }
+
+  cerrarValidarModal() {
+    this.showValidarModal = false;
+    this.showScannerModal = false;
+    this.codigoQRValidar = '';
+    this.documentoValidar = '';
+    this.boletaEncontrada = null;
+    this.boletasEncontradasPorDocumento = [];
+    this.boletaSeleccionada = null;
+    this.modoBusqueda = 'qr';
+  }
+
+  cambiarModoBusqueda(modo: 'qr' | 'documento') {
+    this.modoBusqueda = modo;
+    this.codigoQRValidar = '';
+    this.documentoValidar = '';
+    this.boletaEncontrada = null;
+    this.boletasEncontradasPorDocumento = [];
+    this.boletaSeleccionada = null;
+  }
+
+  buscarBoletaPorQR() {
+    if (!this.codigoQRValidar.trim()) {
+      alert('Por favor ingresa un código QR');
+      return;
+    }
+
+    this.validandoBoleta = true;
+    this.boletaEncontrada = null;
+    this.boletasEncontradasPorDocumento = [];
+    this.boletaSeleccionada = null;
+    
+    this.boletasService.buscarBoletaPorCodigoQR(this.codigoQRValidar.trim()).subscribe({
+      next: (boleta) => {
+        this.validandoBoleta = false;
+        if (!boleta) {
+          alert('No se encontró ninguna boleta con ese código QR');
+          this.boletaEncontrada = null;
+        } else {
+          this.boletaEncontrada = boleta;
+          this.boletaSeleccionada = boleta;
+        }
         this.cdr.detectChanges();
       },
       error: (err) => {
+        console.error('Error buscando boleta:', err);
+        alert('Error al buscar la boleta: ' + (err.message || 'Error desconocido'));
+        this.validandoBoleta = false;
+        this.boletaEncontrada = null;
+        this.boletaSeleccionada = null;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  buscarBoletasPorDocumento() {
+    if (!this.documentoValidar.trim()) {
+      alert('Por favor ingresa un número de cédula');
+      return;
+    }
+
+    this.validandoBoleta = true;
+    this.boletaEncontrada = null;
+    this.boletasEncontradasPorDocumento = [];
+    this.boletaSeleccionada = null;
+    
+    this.boletasService.buscarBoletasPorDocumento(this.documentoValidar.trim()).pipe(
+      takeUntil(this.destroy$),
+      catchError((err) => {
+        console.error('Error buscando boletas:', err);
+        alert('Error al buscar las boletas: ' + (err.message || 'Error desconocido'));
+        this.validandoBoleta = false;
+        this.boletasEncontradasPorDocumento = [];
+        this.boletaSeleccionada = null;
+        this.cdr.detectChanges();
+        return of([]);
+      })
+    ).subscribe({
+      next: (boletas) => {
+        this.validandoBoleta = false;
+        if (!boletas || boletas.length === 0) {
+          alert('No se encontraron boletas con ese número de cédula');
+          this.boletasEncontradasPorDocumento = [];
+        } else {
+          this.boletasEncontradasPorDocumento = boletas;
+          // Si solo hay una, seleccionarla automáticamente
+          if (boletas.length === 1) {
+            this.boletaSeleccionada = boletas[0];
+          }
+        }
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  seleccionarBoleta(boleta: BoletaComprada) {
+    this.boletaSeleccionada = boleta;
+    this.cdr.detectChanges();
+  }
+
+  validarBoletaDesdeModal() {
+    const boletaAValidar = this.boletaSeleccionada || this.boletaEncontrada;
+    if (!boletaAValidar) {
+      alert('Por favor selecciona una boleta para validar');
+      return;
+    }
+    this.validarBoleta(boletaAValidar);
+    this.cerrarValidarModal();
+  }
+
+  loadTiposBoleta(eventoId: number) {
+    this.boletasService.getTiposBoleta(eventoId).pipe(
+      takeUntil(this.destroy$),
+      catchError((err) => {
         console.error('Error cargando tipos de boleta:', err);
-        this.tiposBoletaEvento = [];
+        return of([]);
+      })
+    ).subscribe({
+      next: (tipos) => {
+        this.tiposBoletaEvento = tipos || [];
+        this.cdr.detectChanges();
       }
     });
   }
 
   openTiposModalFromTipo(tipoBoletaId: number) {
     // Obtener el tipo de boleta para conseguir el evento_id
-    this.boletasService.getTipoBoletaById(tipoBoletaId).subscribe({
-      next: (tipo) => {
-        this.openTiposModal(tipo.evento_id);
-      },
-      error: (err) => {
+    this.boletasService.getTipoBoletaById(tipoBoletaId).pipe(
+      takeUntil(this.destroy$),
+      catchError((err) => {
         console.error('Error obteniendo tipo de boleta:', err);
         alert('Error al obtener información del tipo de boleta');
+        return of(null);
+      })
+    ).subscribe({
+      next: (tipo) => {
+        if (tipo) {
+          this.openTiposModal(tipo.evento_id);
+        }
       }
     });
   }
@@ -256,7 +531,14 @@ export class Boletas implements OnInit {
     if (!tipoData.fecha_venta_fin) delete tipoData.fecha_venta_fin;
 
     if (this.editingTipo) {
-      this.boletasService.updateTipoBoleta(this.editingTipo.id, tipoData).subscribe({
+      this.boletasService.updateTipoBoleta(this.editingTipo.id, tipoData).pipe(
+        takeUntil(this.destroy$),
+        catchError((err) => {
+          console.error('Error guardando tipo de boleta:', err);
+          alert('Error al guardar tipo de boleta: ' + (err.message || 'Error desconocido'));
+          return of(null);
+        })
+      ).subscribe({
         next: () => {
           this.closeModal();
           this.loadBoletas();
@@ -264,14 +546,17 @@ export class Boletas implements OnInit {
           if (this.eventoSeleccionado) {
             this.loadTiposBoleta(this.eventoSeleccionado);
           }
-        },
-        error: (err) => {
-          console.error('Error guardando tipo de boleta:', err);
-          alert('Error al guardar tipo de boleta: ' + (err.message || 'Error desconocido'));
         }
       });
     } else {
-      this.boletasService.createTipoBoleta(tipoData).subscribe({
+      this.boletasService.createTipoBoleta(tipoData).pipe(
+        takeUntil(this.destroy$),
+        catchError((err) => {
+          console.error('Error creando tipo de boleta:', err);
+          alert('Error al crear tipo de boleta: ' + (err.message || 'Error desconocido'));
+          return of(null);
+        })
+      ).subscribe({
         next: () => {
           this.closeModal();
           this.loadBoletas();
@@ -279,10 +564,6 @@ export class Boletas implements OnInit {
           if (this.eventoSeleccionado) {
             this.loadTiposBoleta(this.eventoSeleccionado);
           }
-        },
-        error: (err) => {
-          console.error('Error creando tipo de boleta:', err);
-          alert('Error al crear tipo de boleta: ' + (err.message || 'Error desconocido'));
         }
       });
     }
@@ -290,16 +571,19 @@ export class Boletas implements OnInit {
 
   deleteTipoBoleta(tipo: TipoBoleta) {
     if (confirm(`¿Estás seguro de desactivar el tipo de boleta "${tipo.nombre}"?`)) {
-      this.boletasService.updateTipoBoleta(tipo.id, { activo: false }).subscribe({
+      this.boletasService.updateTipoBoleta(tipo.id, { activo: false }).pipe(
+        takeUntil(this.destroy$),
+        catchError((err) => {
+          console.error('Error desactivando tipo de boleta:', err);
+          alert('Error al desactivar tipo de boleta');
+          return of(null);
+        })
+      ).subscribe({
         next: () => {
           this.loadAllTiposBoleta();
           if (this.eventoSeleccionado) {
             this.loadTiposBoleta(this.eventoSeleccionado);
           }
-        },
-        error: (err) => {
-          console.error('Error desactivando tipo de boleta:', err);
-          alert('Error al desactivar tipo de boleta');
         }
       });
     }
@@ -313,6 +597,49 @@ export class Boletas implements OnInit {
   getEstadoLabel(estado?: string): string {
     const estadoObj = this.estados.find(e => e.value === estado);
     return estadoObj?.label || estado || 'Sin estado';
+  }
+
+  puedeValidar(boleta: BoletaComprada): boolean {
+    return boleta.estado === 'pendiente';
+  }
+
+  getTotalPages(): number {
+    return Math.ceil(this.total / this.limit);
+  }
+
+  getPageNumbers(): number[] {
+    const totalPages = this.getTotalPages();
+    const pages: number[] = [];
+    const maxPages = 5; // Mostrar máximo 5 números de página
+    
+    if (totalPages <= maxPages) {
+      // Si hay 5 o menos páginas, mostrar todas
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Si hay más de 5 páginas, mostrar páginas alrededor de la actual
+      let start = Math.max(1, this.page - 2);
+      let end = Math.min(totalPages, start + maxPages - 1);
+      
+      // Ajustar el inicio si estamos cerca del final
+      if (end - start < maxPages - 1) {
+        start = Math.max(1, end - maxPages + 1);
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+    }
+    
+    return pages;
+  }
+
+  goToPage(pageNum: number) {
+    if (pageNum >= 1 && pageNum <= this.getTotalPages()) {
+      this.page = pageNum;
+      this.loadBoletas();
+    }
   }
 
   Math = Math;

@@ -1,6 +1,8 @@
-import { Component, OnInit, ChangeDetectorRef, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { CategoriasService } from '../../services/categorias.service';
 import { CategoriaEvento, PaginatedResponse } from '../../types';
 
@@ -11,7 +13,8 @@ import { CategoriaEvento, PaginatedResponse } from '../../types';
   styleUrl: './categorias.css',
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
-export class Categorias implements OnInit {
+export class Categorias implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
   categorias: CategoriaEvento[] = [];
   loading = false;
   total = 0;
@@ -55,7 +58,9 @@ export class Categorias implements OnInit {
       page: this.page,
       limit: this.limit,
       search: this.searchTerm || undefined
-    }).subscribe({
+    }).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (response: PaginatedResponse<CategoriaEvento>) => {
         console.log('Response recibida en categorias:', response);
         this.categorias = response.data || [];
@@ -101,7 +106,9 @@ export class Categorias implements OnInit {
 
     if (this.editingCategoria) {
       console.log('Actualizando categoría ID:', this.editingCategoria.id);
-      this.categoriasService.updateCategoria(this.editingCategoria.id, this.formData).subscribe({
+      this.categoriasService.updateCategoria(this.editingCategoria.id, this.formData).pipe(
+        takeUntil(this.destroy$)
+      ).subscribe({
         next: (data) => {
           console.log('Categoría actualizada exitosamente:', data);
           this.closeModal();
@@ -114,7 +121,9 @@ export class Categorias implements OnInit {
       });
     } else {
       console.log('Creando nueva categoría');
-      this.categoriasService.createCategoria(this.formData).subscribe({
+      this.categoriasService.createCategoria(this.formData).pipe(
+        takeUntil(this.destroy$)
+      ).subscribe({
         next: (data) => {
           console.log('Categoría creada exitosamente:', data);
           this.closeModal();
@@ -130,7 +139,9 @@ export class Categorias implements OnInit {
 
   deleteCategoria(id: number) {
     if (confirm('¿Estás seguro de desactivar esta categoría?')) {
-      this.categoriasService.deleteCategoria(id).subscribe({
+      this.categoriasService.deleteCategoria(id).pipe(
+        takeUntil(this.destroy$)
+      ).subscribe({
         next: () => this.loadCategorias(),
         error: (err) => {
           console.error('Error eliminando categoría:', err);
@@ -141,13 +152,20 @@ export class Categorias implements OnInit {
   }
 
   toggleActivo(categoria: CategoriaEvento) {
-    this.categoriasService.updateCategoria(categoria.id, { activo: !categoria.activo }).subscribe({
+    this.categoriasService.updateCategoria(categoria.id, { activo: !categoria.activo }).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: () => this.loadCategorias(),
       error: (err) => {
         console.error('Error actualizando categoría:', err);
         alert('Error al actualizar categoría');
       }
     });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   selectIcon(icono: string) {

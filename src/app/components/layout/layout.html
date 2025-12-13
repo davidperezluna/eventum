@@ -1,10 +1,27 @@
 <div class="layout-container">
-  <aside class="sidebar">
+  <!-- Botón hamburguesa para móviles -->
+  <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
+    <span class="material-icons">menu</span>
+  </button>
+
+  <!-- Overlay para móviles -->
+  <div 
+    class="sidebar-overlay" 
+    *ngIf="sidebarOpen"
+    (click)="closeSidebar()"
+  ></div>
+
+  <aside class="sidebar" [class.open]="sidebarOpen">
     <div class="sidebar-header">
-      <h1>
-        <span class="material-icons">celebration</span>
-        Eventum
-      </h1>
+      <div class="sidebar-header-content">
+        <h1>
+          <span class="material-icons">celebration</span>
+          <span class="sidebar-title">Eventum</span>
+        </h1>
+        <button class="sidebar-close" (click)="closeSidebar()" aria-label="Close menu">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
       <p class="subtitle">Panel de Administración</p>
     </div>
     <nav class="sidebar-nav">
@@ -13,6 +30,7 @@
         [routerLink]="item.path"
         routerLinkActive="active"
         class="nav-item"
+        (click)="closeSidebar()"
       >
         <span class="material-icons nav-icon">{{ item.icon }}</span>
         <span class="nav-label">{{ item.label }}</span>

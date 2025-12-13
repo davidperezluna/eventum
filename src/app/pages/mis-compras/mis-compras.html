@@ -9,6 +9,80 @@
     </div>
   </header>
 
+  <!-- Filtros -->
+  <div class="filters-card">
+    <div class="filters-row">
+      <div class="filter-group">
+        <label>Estado de Pago</label>
+        <select [(ngModel)]="estadoPagoFiltro" (ngModelChange)="loadCompras()" class="select-input">
+          <option [value]="null">Todos</option>
+          <option *ngFor="let estado of estadosPago" [value]="estado.value">{{ estado.label }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Estado de Compra</label>
+        <select [(ngModel)]="estadoCompraFiltro" (ngModelChange)="loadCompras()" class="select-input">
+          <option [value]="null">Todos</option>
+          <option *ngFor="let estado of estadosCompra" [value]="estado.value">{{ estado.label }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Evento</label>
+        <select 
+          [(ngModel)]="eventoFiltro" 
+          (ngModelChange)="loadCompras()" 
+          class="select-input"
+          [disabled]="loadingEventos"
+        >
+          <option [value]="null">Todos los eventos</option>
+          <option *ngFor="let evento of eventosDisponibles" [value]="evento.id">
+            {{ evento.titulo }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Fecha Desde</label>
+        <input 
+          type="date" 
+          [(ngModel)]="fechaDesde" 
+          (ngModelChange)="loadCompras()"
+          class="input-field"
+        />
+      </div>
+
+      <div class="filter-group">
+        <label>Fecha Hasta</label>
+        <input 
+          type="date" 
+          [(ngModel)]="fechaHasta" 
+          (ngModelChange)="loadCompras()"
+          class="input-field"
+        />
+      </div>
+
+      <div class="filter-group filter-search">
+        <label>Buscar Transacción</label>
+        <input 
+          type="text" 
+          [(ngModel)]="searchTerm" 
+          (ngModelChange)="loadCompras()"
+          placeholder="Número de transacción..."
+          class="input-field"
+        />
+      </div>
+
+      <div class="filter-actions">
+        <button class="btn-clear" (click)="limpiarFiltros()" type="button">
+          <span class="material-icons">clear</span>
+          Limpiar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Loading -->
   <div *ngIf="loading" class="loading-state">
     <div class="spinner"></div>
@@ -62,6 +136,22 @@
                 <span>{{ boleta.codigo_qr }}</span>
               </div>
             </div>
+            <div class="boleta-actions" *ngIf="item.compra.estado_pago === 'completado'">
+              <button 
+                class="btn-view" 
+                (click)="verBoleta(boleta, item.compra)"
+                title="Ver boleta">
+                <span class="material-icons">visibility</span>
+                Ver Boleta
+              </button>
+              <button 
+                class="btn-print" 
+                (click)="imprimirBoletaPDF(boleta, item.compra)"
+                title="Imprimir boleta en PDF">
+                <span class="material-icons">print</span>
+                Imprimir
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -81,9 +171,118 @@
 
   <!-- Paginación -->
   <div *ngIf="!loading && total > limit" class="pagination">
-    <button (click)="page = page - 1; loadCompras()" [disabled]="page === 1">Anterior</button>
-    <span>Página {{ page }} de {{ Math.ceil(total / limit) }}</span>
-    <button (click)="page = page + 1; loadCompras()" [disabled]="page >= Math.ceil(total / limit)">Siguiente</button>
+    <div class="pagination-info">
+      <span>Mostrando {{ (page - 1) * limit + 1 }} - {{ Math.min(page * limit, total) }} de {{ total }} resultados</span>
+    </div>
+    <div class="pagination-controls">
+      <button 
+        class="pagination-btn" 
+        (click)="goToPage(1)" 
+        [disabled]="page === 1"
+        title="Primera página"
+      >
+        <span class="material-icons">first_page</span>
+      </button>
+      <button 
+        class="pagination-btn" 
+        (click)="goToPage(page - 1)" 
+        [disabled]="page === 1"
+        title="Página anterior"
+      >
+        <span class="material-icons">chevron_left</span>
+      </button>
+      
+      <div class="pagination-numbers">
+        <button
+          *ngFor="let pageNum of getPageNumbers()"
+          class="pagination-number"
+          [class.active]="pageNum === page"
+          (click)="goToPage(pageNum)"
+        >
+          {{ pageNum }}
+        </button>
+      </div>
+
+      <button 
+        class="pagination-btn" 
+        (click)="goToPage(page + 1)" 
+        [disabled]="page >= totalPages"
+        title="Página siguiente"
+      >
+        <span class="material-icons">chevron_right</span>
+      </button>
+      <button 
+        class="pagination-btn" 
+        (click)="goToPage(totalPages)" 
+        [disabled]="page >= totalPages"
+        title="Última página"
+      >
+        <span class="material-icons">last_page</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de vista previa de boleta -->
+<div class="modal-overlay" *ngIf="showBoletaModal" (click)="cerrarBoletaModal()">
+  <div class="modal-content boleta-modal" (click)="$event.stopPropagation()">
+    <button class="modal-close" (click)="cerrarBoletaModal()">
+      <span class="material-icons">close</span>
+    </button>
+    
+    <div class="boleta-preview" *ngIf="boletaSeleccionada && eventoSeleccionado && tipoBoletaSeleccionado">
+      <!-- Encabezado -->
+      <div class="boleta-header-preview">
+        <h2>{{ eventoSeleccionado.titulo }}</h2>
+        <p class="boleta-tipo">{{ tipoBoletaSeleccionado.nombre }}</p>
+      </div>
+
+      <!-- QR Code -->
+      <div class="boleta-qr-preview">
+        <div *ngIf="loadingQR" class="qr-loading">
+          <div class="spinner"></div>
+          <p>Generando código QR...</p>
+        </div>
+        <img *ngIf="qrCodeUrl && !loadingQR" [src]="qrCodeUrl" alt="Código QR" class="qr-image">
+        <p class="qr-code-text" *ngIf="!loadingQR">{{ boletaSeleccionada.codigo_qr }}</p>
+      </div>
+
+      <!-- Información -->
+      <div class="boleta-info-preview">
+        <div class="info-row">
+          <span class="info-label">Precio:</span>
+          <span class="info-value">{{ formatCurrency(boletaSeleccionada.precio_unitario) }}</span>
+        </div>
+        
+        <div class="info-row" *ngIf="eventoSeleccionado.fecha_inicio">
+          <span class="info-label">Fecha:</span>
+          <span class="info-value">{{ eventoSeleccionado.fecha_inicio | date:'full' }}</span>
+        </div>
+
+        <div class="info-row" *ngIf="boletaSeleccionada.nombre_asistente">
+          <span class="info-label">Asistente:</span>
+          <span class="info-value">{{ boletaSeleccionada.nombre_asistente }}</span>
+        </div>
+
+        <div class="info-row" *ngIf="boletaSeleccionada.documento_asistente">
+          <span class="info-label">Documento:</span>
+          <span class="info-value">{{ boletaSeleccionada.documento_asistente }}</span>
+        </div>
+
+        <div class="info-row" *ngIf="compraSeleccionada">
+          <span class="info-label">Transacción:</span>
+          <span class="info-value">{{ compraSeleccionada.numero_transaccion }}</span>
+        </div>
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="boleta-actions-preview">
+        <button class="btn-primary" (click)="imprimirBoletaPDF(boletaSeleccionada, compraSeleccionada!)">
+          <span class="material-icons">print</span>
+          Imprimir PDF
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 

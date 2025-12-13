@@ -79,6 +79,13 @@ export interface BoletaFilters extends BaseFilters {
   evento_id?: number;
   tipo_boleta_id?: number;
   estado?: string;
+  codigo_qr?: string;
+  nombre_asistente?: string;
+  email_asistente?: string;
+  telefono_asistente?: string;
+  fecha_desde?: Date | string;
+  fecha_hasta?: Date | string;
+  documento_asistente?: string;
 }
 
 /**
@@ -99,5 +106,18 @@ export interface DashboardStats {
   boletas_por_estado?: { estado: string; cantidad: number }[];
   eventos_por_categoria?: { categoria: string; cantidad: number }[];
   top_eventos?: any[];
+  // Métricas adicionales
+  boletas_usadas?: number;
+  boletas_pendientes?: number;
+  boletas_canceladas?: number;
+  tasa_asistencia?: number;
+  ventas_por_dia?: { fecha: string; ventas: number; ingresos: number }[];
+  ventas_por_mes?: { mes: string; ventas: number; ingresos: number }[];
+  eventos_por_estado?: { estado: string; cantidad: number }[];
+  ingresos_por_evento?: { evento_id: number; evento_titulo: string; ingresos: number; boletas_vendidas: number }[];
+  asistencia_por_evento?: { evento_id: number; evento_titulo: string; boletas_vendidas: number; boletas_usadas: number; tasa_asistencia: number }[];
+  metodo_pago_distribucion?: { metodo: string; cantidad: number; porcentaje: number }[];
+  promedio_ticket?: number;
+  ticket_promedio_por_evento?: { evento_id: number; evento_titulo: string; promedio: number }[];
 }
 

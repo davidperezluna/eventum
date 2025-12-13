@@ -1,6 +1,9 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { UsuariosService } from '../../services/usuarios.service';
 import { Usuario, TipoUsuario, PaginatedResponse } from '../../types';
 
@@ -10,7 +13,9 @@ import { Usuario, TipoUsuario, PaginatedResponse } from '../../types';
   templateUrl: './usuarios.html',
   styleUrl: './usuarios.css',
 })
-export class Usuarios implements OnInit {
+export class Usuarios implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+
   usuarios: Usuario[] = [];
   tiposUsuario: TipoUsuario[] = [];
   loading = false;
@@ -37,12 +42,22 @@ export class Usuarios implements OnInit {
     this.loadUsuarios();
   }
 
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   loadTiposUsuario() {
-    this.usuariosService.getTiposUsuario().subscribe({
+    this.usuariosService.getTiposUsuario().pipe(
+      takeUntil(this.destroy$),
+      catchError((err) => {
+        console.error('Error cargando tipos:', err);
+        return of([]);
+      })
+    ).subscribe({
       next: (tipos) => {
         this.tiposUsuario = tipos;
-      },
-      error: (err) => console.error('Error cargando tipos:', err)
+      }
     });
   }
 
@@ -57,7 +72,13 @@ export class Usuarios implements OnInit {
       search: this.searchTerm || undefined,
       tipo_usuario_id: this.tipoFiltro || undefined,
       activo: this.activoFiltro !== null ? this.activoFiltro : undefined
-    }).subscribe({
+    }).pipe(
+      takeUntil(this.destroy$),
+      catchError((err) => {
+        console.error('Error cargando usuarios:', err);
+        return of({ data: [], total: 0, page: this.page, limit: this.limit, totalPages: 0 });
+      })
+    ).subscribe({
       next: (response: PaginatedResponse<Usuario>) => {
         console.log('Response recibida en componente:', response);
         console.log('Datos recibidos:', response.data);
@@ -66,17 +87,6 @@ export class Usuarios implements OnInit {
         this.loading = false;
         console.log('Usuarios asignados:', this.usuarios);
         console.log('Loading desactivado');
-        this.cdr.detectChanges(); // Forzar detección de cambios
-      },
-      error: (err) => {
-        console.error('Error cargando usuarios:', err);
-        this.loading = false;
-        this.usuarios = [];
-        this.total = 0;
-        this.cdr.detectChanges(); // Forzar detección de cambios
-      },
-      complete: () => {
-        console.log('Observable completado en componente');
         this.cdr.detectChanges(); // Forzar detección de cambios
       }
     });
@@ -125,43 +135,54 @@ export class Usuarios implements OnInit {
         tipo_usuario_id: this.formData.tipo_usuario_id,
         telefono: this.formData.telefono,
         activo: this.formData.activo !== undefined ? this.formData.activo : true
-      }).subscribe({
-        next: (usuario) => {
-          console.log('Usuario creado exitosamente:', usuario);
-          alert('Usuario creado exitosamente');
-          this.closeModal();
-          this.loadUsuarios();
-        },
-        error: (err) => {
+      }).pipe(
+        takeUntil(this.destroy$),
+        catchError((err) => {
           console.error('Error creando usuario:', err);
           const errorMessage = err?.message || err?.error?.message || 'Error al crear usuario';
           alert(`Error al crear usuario: ${errorMessage}`);
+          return of(null);
+        })
+      ).subscribe({
+        next: (usuario) => {
+          if (usuario) {
+            console.log('Usuario creado exitosamente:', usuario);
+            alert('Usuario creado exitosamente');
+            this.closeModal();
+            this.loadUsuarios();
+          }
         }
       });
     } else {
       // Actualizar usuario existente
-      this.usuariosService.updateUsuario(this.formData.id, this.formData).subscribe({
+      this.usuariosService.updateUsuario(this.formData.id, this.formData).pipe(
+        takeUntil(this.destroy$),
+        catchError((err) => {
+          console.error('Error guardando usuario:', err);
+          const errorMessage = err?.message || err?.error?.message || 'Error al guardar usuario';
+          alert(`Error al guardar usuario: ${errorMessage}`);
+          return of(null);
+        })
+      ).subscribe({
         next: () => {
           console.log('Usuario actualizado exitosamente');
           this.closeModal();
           this.loadUsuarios();
-        },
-        error: (err) => {
-          console.error('Error guardando usuario:', err);
-          const errorMessage = err?.message || err?.error?.message || 'Error al guardar usuario';
-          alert(`Error al guardar usuario: ${errorMessage}`);
         }
       });
     }
   }
 
   toggleActivo(usuario: Usuario) {
-    this.usuariosService.updateUsuario(usuario.id, { activo: !usuario.activo }).subscribe({
-      next: () => this.loadUsuarios(),
-      error: (err) => {
+    this.usuariosService.updateUsuario(usuario.id, { activo: !usuario.activo }).pipe(
+      takeUntil(this.destroy$),
+      catchError((err) => {
         console.error('Error actualizando usuario:', err);
         alert('Error al actualizar usuario');
-      }
+        return of(null);
+      })
+    ).subscribe({
+      next: () => this.loadUsuarios()
     });
   }
 
@@ -173,6 +194,42 @@ export class Usuarios implements OnInit {
   onPageChange(page: number) {
     this.page = page;
     this.loadUsuarios();
+  }
+
+  getTotalPages(): number {
+    return Math.ceil(this.total / this.limit);
+  }
+
+  getPageNumbers(): number[] {
+    const totalPages = this.getTotalPages();
+    const pages: number[] = [];
+    const maxPages = 5;
+    
+    if (totalPages <= maxPages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      let start = Math.max(1, this.page - 2);
+      let end = Math.min(totalPages, start + maxPages - 1);
+      
+      if (end - start < maxPages - 1) {
+        start = Math.max(1, end - maxPages + 1);
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+    }
+    
+    return pages;
+  }
+
+  goToPage(pageNum: number) {
+    if (pageNum >= 1 && pageNum <= this.getTotalPages()) {
+      this.page = pageNum;
+      this.loadUsuarios();
+    }
   }
 
   Math = Math;

@@ -7,6 +7,7 @@ import { Observable, from } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 import { SupabaseService } from './supabase.service';
+import { SupabaseObservableHelper } from './supabase-observable.helper';
 import { Lugar, PaginatedResponse, BaseFilters } from '../types';
 
 export interface LugarFilters extends BaseFilters {
@@ -20,7 +21,8 @@ export interface LugarFilters extends BaseFilters {
 })
 export class LugaresService {
   constructor(
-    private supabase: SupabaseService
+    private supabase: SupabaseService,
+    private supabaseHelper: SupabaseObservableHelper
   ) {}
 
   /**
@@ -52,7 +54,7 @@ export class LugaresService {
     const toIndex = fromIndex + limit - 1;
     query = query.range(fromIndex, toIndex);
 
-    return from(query).pipe(
+    return this.supabaseHelper.fromSupabase(query).pipe(
       map(({ data, error, count }) => {
             if (error) {
               console.error('Error en getLugares:', error);
@@ -79,7 +81,7 @@ export class LugaresService {
    * Obtiene un lugar por ID
    */
   getLugarById(id: number): Observable<Lugar> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from('lugares')
             .select('*')
@@ -145,7 +147,7 @@ export class LugaresService {
           const normalizedLugar = this.normalizeLugarData(lugar);
           console.log('Creando lugar con datos normalizados:', normalizedLugar);
 
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from('lugares')
             .insert(normalizedLugar)
@@ -171,7 +173,7 @@ export class LugaresService {
           const normalizedLugar = this.normalizeLugarData(lugar);
           console.log('Actualizando lugar con datos normalizados:', normalizedLugar);
 
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from('lugares')
             .update(normalizedLugar)
@@ -195,7 +197,7 @@ export class LugaresService {
    * Elimina un lugar (soft delete)
    */
   deleteLugar(id: number): Observable<void> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from('lugares')
             .update({ activo: false })

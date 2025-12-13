@@ -16,6 +16,7 @@ import { Lugares } from './pages/lugares/lugares';
 import { Calificaciones } from './pages/calificaciones/calificaciones';
 import { Notificaciones } from './pages/notificaciones/notificaciones';
 import { Reportes } from './pages/reportes/reportes';
+import { DashboardEventos } from './pages/dashboard-eventos/dashboard-eventos';
 import { Login } from './pages/login/login';
 import { authGuard } from './guards/auth.guard';
 
@@ -32,6 +33,7 @@ export const routes: Routes = [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: Dashboard }, // Admin dashboard
       { path: 'dashboard-organizador', component: DashboardOrganizador }, // Organizador dashboard
+      { path: 'dashboard-eventos', component: DashboardEventos }, // Dashboard completo de eventos
       { path: 'usuarios', component: Usuarios },
       { path: 'eventos', component: Eventos },
       { path: 'eventos-cliente', component: EventosCliente }, // Cliente: ver eventos

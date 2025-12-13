@@ -1,0 +1,504 @@
+<div class="dashboard-eventos">
+  <header class="dashboard-header">
+    <div class="header-content">
+      <h1>
+        <span class="material-icons">analytics</span>
+        <span class="header-title">Dashboard de Eventos</span>
+      </h1>
+      <p class="header-subtitle">Reportes completos de ventas, asistencia y métricas de eventos</p>
+    </div>
+    <button class="btn-refresh" (click)="loadStats()" [disabled]="loading">
+      <span class="material-icons">refresh</span>
+      <span class="btn-text">Actualizar</span>
+    </button>
+  </header>
+
+  <!-- Filtros -->
+  <div class="filters-card">
+    <div class="filters-row">
+      <div class="filter-group">
+        <label>Evento</label>
+        <select [(ngModel)]="eventoFiltro" (ngModelChange)="aplicarFiltros()" class="select-input">
+          <option [value]="null">Todos los eventos</option>
+          <option *ngFor="let evento of eventos" [value]="evento.id">{{ evento.titulo }}</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Fecha desde</label>
+        <input type="date" [(ngModel)]="fechaDesde" (ngModelChange)="aplicarFiltros()" class="select-input" />
+      </div>
+      <div class="filter-group">
+        <label>Fecha hasta</label>
+        <input type="date" [(ngModel)]="fechaHasta" (ngModelChange)="aplicarFiltros()" class="select-input" />
+      </div>
+      <div class="filter-group">
+        <button class="btn-secondary" (click)="limpiarFiltros()">
+          <span class="material-icons">clear</span>
+          Limpiar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mensaje de error -->
+  <div *ngIf="error" class="error-message">
+    <span class="material-icons">error</span>
+    <p>{{ error }}</p>
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Cargando estadísticas...</p>
+  </div>
+
+  <!-- Tabs -->
+  <div *ngIf="!loading && !error" class="tabs-container">
+    <div class="tabs">
+      <button 
+        class="tab" 
+        [class.active]="tabActivo === 'general'"
+        (click)="cambiarTab('general')"
+      >
+        <span class="material-icons">dashboard</span>
+        General
+      </button>
+      <button 
+        class="tab" 
+        [class.active]="tabActivo === 'ventas'"
+        (click)="cambiarTab('ventas')"
+      >
+        <span class="material-icons">trending_up</span>
+        Ventas
+      </button>
+      <button 
+        class="tab" 
+        [class.active]="tabActivo === 'asistencia'"
+        (click)="cambiarTab('asistencia')"
+      >
+        <span class="material-icons">people</span>
+        Asistencia
+      </button>
+      <button 
+        class="tab" 
+        [class.active]="tabActivo === 'eventos'"
+        (click)="cambiarTab('eventos')"
+      >
+        <span class="material-icons">event</span>
+        Eventos
+      </button>
+    </div>
+
+    <!-- Tab General -->
+    <div *ngIf="tabActivo === 'general'" class="tab-content">
+      <!-- Stats Grid Principal -->
+      <div class="stats-grid">
+        <div class="stat-card stat-primary">
+          <div class="stat-icon-wrapper">
+            <span class="material-icons stat-icon">event</span>
+          </div>
+          <div class="stat-content">
+            <h3>Eventos Activos</h3>
+            <p class="stat-value">{{ stats.eventos_activos }}</p>
+            <p class="stat-subtitle">de {{ stats.eventos_totales || 0 }} totales</p>
+          </div>
+        </div>
+
+        <div class="stat-card stat-success">
+          <div class="stat-icon-wrapper">
+            <span class="material-icons stat-icon">confirmation_number</span>
+          </div>
+          <div class="stat-content">
+            <h3>Boletas Vendidas</h3>
+            <p class="stat-value">{{ stats.boletas_vendidas | number }}</p>
+            <p class="stat-subtitle">Total de boletas</p>
+          </div>
+        </div>
+
+        <div class="stat-card stat-warning">
+          <div class="stat-icon-wrapper">
+            <span class="material-icons stat-icon">attach_money</span>
+          </div>
+          <div class="stat-content">
+            <h3>Ingresos Totales</h3>
+            <p class="stat-value">{{ formatCurrency(stats.ingresos_totales) }}</p>
+            <p class="stat-subtitle">Total acumulado</p>
+          </div>
+        </div>
+
+        <div class="stat-card stat-info">
+          <div class="stat-icon-wrapper">
+            <span class="material-icons stat-icon">people</span>
+          </div>
+          <div class="stat-content">
+            <h3>Clientes</h3>
+            <p class="stat-value">{{ stats.clientes | number }}</p>
+            <p class="stat-subtitle">Clientes únicos</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ingresos Mensuales -->
+      <div class="stats-grid-secondary">
+        <div class="stat-card">
+          <div class="stat-content">
+            <h3>Ingresos Mes Actual</h3>
+            <p class="stat-value">{{ formatCurrency(stats.ingresos_mes_actual || 0) }}</p>
+            <div class="stat-comparison" *ngIf="stats.ingresos_mes_anterior">
+              <span [class]="getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior) >= 0 ? 'positive' : 'negative'">
+                <span class="material-icons">{{ getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior) >= 0 ? 'trending_up' : 'trending_down' }}</span>
+                {{ Math.abs(getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior)) }}%
+              </span>
+              <span class="stat-subtitle">vs mes anterior</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-content">
+            <h3>Ingresos Mes Anterior</h3>
+            <p class="stat-value">{{ formatCurrency(stats.ingresos_mes_anterior || 0) }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Boletas por Estado -->
+      <div class="report-card">
+        <h2>Boletas por Estado</h2>
+        <div class="boletas-estado-grid">
+          <div *ngFor="let item of stats.boletas_por_estado" class="estado-item">
+            <div class="estado-header">
+              <span class="estado-label">{{ getEstadoBoletaLabel(item.estado) }}</span>
+              <span class="estado-cantidad">{{ item.cantidad | number }}</span>
+            </div>
+            <div class="estado-bar">
+              <div 
+                class="estado-bar-fill" 
+                [style.width.%]="(item.cantidad / stats.boletas_vendidas) * 100"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Eventos -->
+      <div class="report-card">
+        <h2>Top 5 Eventos</h2>
+        <div class="top-eventos-list">
+          <div *ngFor="let evento of stats.top_eventos; let i = index" class="top-evento-item">
+            <div class="top-evento-rank">#{{ i + 1 }}</div>
+            <div class="top-evento-info">
+              <h4>{{ evento.titulo }}</h4>
+              <p>{{ evento.boletas_vendidas || 0 }} boletas vendidas</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Ventas -->
+    <div *ngIf="tabActivo === 'ventas'" class="tab-content">
+      <!-- Ventas por Día -->
+      <div class="report-card">
+        <h2>Ventas por Día</h2>
+        <div class="chart-container">
+          <div *ngFor="let item of ventasPorDia" class="chart-bar-item">
+            <div class="chart-bar-label">{{ item.fecha | date:'shortDate' }}</div>
+            <div class="chart-bar-wrapper">
+              <div class="chart-bar" [style.width.%]="getBarWidth(item.ventas, getMaxValue(ventasPorDia, 'ventas'))">
+                <span class="chart-bar-value">{{ item.ventas }}</span>
+              </div>
+            </div>
+            <div class="chart-bar-amount">{{ formatCurrency(item.ingresos) }}</div>
+          </div>
+          <div *ngIf="ventasPorDia.length === 0" class="empty-state">
+            No hay datos de ventas para el período seleccionado
+          </div>
+        </div>
+      </div>
+
+      <!-- Ventas por Mes -->
+      <div class="report-card">
+        <h2>Ventas por Mes</h2>
+        <div class="chart-container">
+          <div *ngFor="let item of ventasPorMes" class="chart-bar-item">
+            <div class="chart-bar-label">{{ item.mes }}</div>
+            <div class="chart-bar-wrapper">
+              <div class="chart-bar" [style.width.%]="getBarWidth(item.ingresos, getMaxValue(ventasPorMes, 'ingresos'))">
+                <span class="chart-bar-value">{{ formatCurrency(item.ingresos) }}</span>
+              </div>
+            </div>
+            <div class="chart-bar-amount">{{ item.ventas }} ventas</div>
+          </div>
+          <div *ngIf="ventasPorMes.length === 0" class="empty-state">
+            No hay datos de ventas mensuales
+          </div>
+        </div>
+      </div>
+
+      <!-- Ingresos por Evento -->
+      <div class="report-card">
+        <h2>Ingresos por Evento</h2>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Evento</th>
+                <th>Ingresos</th>
+                <th>Boletas Vendidas</th>
+                <th>Ticket Promedio</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of getIngresosPaginated()">
+                <td>{{ item.evento_titulo }}</td>
+                <td>{{ formatCurrency(item.ingresos) }}</td>
+                <td>{{ item.boletas_vendidas | number }}</td>
+                <td>{{ formatCurrency(item.boletas_vendidas > 0 ? item.ingresos / item.boletas_vendidas : 0) }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div *ngIf="ingresosPorEvento.length === 0" class="empty-state">
+            No hay datos de ingresos por evento
+          </div>
+          
+          <!-- Paginación Ingresos -->
+          <div *ngIf="ingresosTotal > ingresosLimit" class="pagination">
+            <div class="pagination-info">
+              <span>Mostrando {{ (ingresosPage - 1) * ingresosLimit + 1 }} - {{ Math.min(ingresosPage * ingresosLimit, ingresosTotal) }} de {{ ingresosTotal }} resultados</span>
+            </div>
+            <div class="pagination-controls">
+              <button 
+                class="pagination-btn" 
+                (click)="goToIngresosPage(1)" 
+                [disabled]="ingresosPage === 1"
+                title="Primera página"
+              >
+                <span class="material-icons">first_page</span>
+              </button>
+              <button 
+                class="pagination-btn" 
+                (click)="goToIngresosPage(ingresosPage - 1)" 
+                [disabled]="ingresosPage === 1"
+                title="Página anterior"
+              >
+                <span class="material-icons">chevron_left</span>
+              </button>
+              
+              <div class="pagination-numbers">
+                <button
+                  *ngFor="let pageNum of getIngresosPageNumbers()"
+                  class="pagination-number"
+                  [class.active]="pageNum === ingresosPage"
+                  (click)="goToIngresosPage(pageNum)"
+                >
+                  {{ pageNum }}
+                </button>
+              </div>
+              
+              <button 
+                class="pagination-btn" 
+                (click)="goToIngresosPage(ingresosPage + 1)" 
+                [disabled]="ingresosPage >= getIngresosTotalPages()"
+                title="Página siguiente"
+              >
+                <span class="material-icons">chevron_right</span>
+              </button>
+              <button 
+                class="pagination-btn" 
+                (click)="goToIngresosPage(getIngresosTotalPages())" 
+                [disabled]="ingresosPage >= getIngresosTotalPages()"
+                title="Última página"
+              >
+                <span class="material-icons">last_page</span>
+              </button>
+            </div>
+            <div class="pagination-page-info">
+              <span>Página {{ ingresosPage }} de {{ getIngresosTotalPages() }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Distribución Método de Pago -->
+      <div class="report-card">
+        <h2>Distribución por Método de Pago</h2>
+        <div class="metodo-pago-list">
+          <div *ngFor="let item of distribucionMetodoPago" class="metodo-pago-item">
+            <div class="metodo-pago-header">
+              <span class="metodo-pago-label">{{ item.metodo }}</span>
+              <span class="metodo-pago-cantidad">{{ item.cantidad }} ({{ item.porcentaje }}%)</span>
+            </div>
+            <div class="metodo-pago-bar">
+              <div class="metodo-pago-bar-fill" [style.width.%]="item.porcentaje"></div>
+            </div>
+          </div>
+          <div *ngIf="distribucionMetodoPago.length === 0" class="empty-state">
+            No hay datos de métodos de pago
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Asistencia -->
+    <div *ngIf="tabActivo === 'asistencia'" class="tab-content">
+      <div class="report-card">
+        <h2>Reporte de Asistencia por Evento</h2>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Evento</th>
+                <th>Boletas Vendidas</th>
+                <th>Boletas Usadas</th>
+                <th>Boletas Pendientes</th>
+                <th>Tasa de Asistencia</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of getAsistenciaPaginated()">
+                <td>{{ item.evento_titulo }}</td>
+                <td>{{ item.boletas_vendidas | number }}</td>
+                <td>{{ item.boletas_usadas | number }}</td>
+                <td>{{ item.boletas_pendientes | number }}</td>
+                <td>
+                  <span class="tasa-asistencia" [class.high]="item.tasa_asistencia >= 80" [class.medium]="item.tasa_asistencia >= 50 && item.tasa_asistencia < 80" [class.low]="item.tasa_asistencia < 50">
+                    {{ item.tasa_asistencia }}%
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div *ngIf="asistenciaPorEvento.length === 0" class="empty-state">
+            No hay datos de asistencia
+          </div>
+          
+          <!-- Paginación Asistencia -->
+          <div *ngIf="asistenciaTotal > asistenciaLimit" class="pagination">
+            <div class="pagination-info">
+              <span>Mostrando {{ (asistenciaPage - 1) * asistenciaLimit + 1 }} - {{ Math.min(asistenciaPage * asistenciaLimit, asistenciaTotal) }} de {{ asistenciaTotal }} resultados</span>
+            </div>
+            <div class="pagination-controls">
+              <button 
+                class="pagination-btn" 
+                (click)="goToAsistenciaPage(1)" 
+                [disabled]="asistenciaPage === 1"
+                title="Primera página"
+              >
+                <span class="material-icons">first_page</span>
+              </button>
+              <button 
+                class="pagination-btn" 
+                (click)="goToAsistenciaPage(asistenciaPage - 1)" 
+                [disabled]="asistenciaPage === 1"
+                title="Página anterior"
+              >
+                <span class="material-icons">chevron_left</span>
+              </button>
+              
+              <div class="pagination-numbers">
+                <button
+                  *ngFor="let pageNum of getAsistenciaPageNumbers()"
+                  class="pagination-number"
+                  [class.active]="pageNum === asistenciaPage"
+                  (click)="goToAsistenciaPage(pageNum)"
+                >
+                  {{ pageNum }}
+                </button>
+              </div>
+              
+              <button 
+                class="pagination-btn" 
+                (click)="goToAsistenciaPage(asistenciaPage + 1)" 
+                [disabled]="asistenciaPage >= getAsistenciaTotalPages()"
+                title="Página siguiente"
+              >
+                <span class="material-icons">chevron_right</span>
+              </button>
+              <button 
+                class="pagination-btn" 
+                (click)="goToAsistenciaPage(getAsistenciaTotalPages())" 
+                [disabled]="asistenciaPage >= getAsistenciaTotalPages()"
+                title="Última página"
+              >
+                <span class="material-icons">last_page</span>
+              </button>
+            </div>
+            <div class="pagination-page-info">
+              <span>Página {{ asistenciaPage }} de {{ getAsistenciaTotalPages() }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráfico de Asistencia -->
+      <div class="report-card">
+        <h2>Comparativa de Asistencia</h2>
+        <div class="chart-container">
+          <div *ngFor="let item of asistenciaPorEvento" class="chart-bar-item">
+            <div class="chart-bar-label">{{ item.evento_titulo }}</div>
+            <div class="chart-bar-wrapper">
+              <div class="chart-bar asistencia-bar" [style.width.%]="item.tasa_asistencia">
+                <span class="chart-bar-value">{{ item.tasa_asistencia }}%</span>
+              </div>
+            </div>
+            <div class="chart-bar-amount">{{ item.boletas_usadas }} / {{ item.boletas_vendidas }}</div>
+          </div>
+          <div *ngIf="asistenciaPorEvento.length === 0" class="empty-state">
+            No hay datos de asistencia
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Eventos -->
+    <div *ngIf="tabActivo === 'eventos'" class="tab-content">
+      <div *ngIf="reporteEventoSeleccionado" class="report-card">
+        <h2>Reporte Detallado: {{ reporteEventoSeleccionado.evento_titulo }}</h2>
+        <div class="evento-detalle-grid">
+          <div class="detalle-item">
+            <span class="detalle-label">Ingresos Totales</span>
+            <span class="detalle-value">{{ formatCurrency(reporteEventoSeleccionado.ingresos) }}</span>
+          </div>
+          <div class="detalle-item">
+            <span class="detalle-label">Boletas Vendidas</span>
+            <span class="detalle-value">{{ reporteEventoSeleccionado.boletas_vendidas | number }}</span>
+          </div>
+          <div class="detalle-item">
+            <span class="detalle-label">Boletas Usadas</span>
+            <span class="detalle-value">{{ reporteEventoSeleccionado.boletas_usadas | number }}</span>
+          </div>
+          <div class="detalle-item">
+            <span class="detalle-label">Clientes Únicos</span>
+            <span class="detalle-value">{{ reporteEventoSeleccionado.clientes_unicos | number }}</span>
+          </div>
+          <div class="detalle-item">
+            <span class="detalle-label">Fecha Inicio</span>
+            <span class="detalle-value">{{ reporteEventoSeleccionado.fecha_inicio | date:'short' }}</span>
+          </div>
+          <div class="detalle-item">
+            <span class="detalle-label">Fecha Fin</span>
+            <span class="detalle-value">{{ reporteEventoSeleccionado.fecha_fin | date:'short' }}</span>
+          </div>
+          <div class="detalle-item">
+            <span class="detalle-label">Ticket Promedio</span>
+            <span class="detalle-value">{{ formatCurrency(reporteEventoSeleccionado.boletas_vendidas > 0 ? reporteEventoSeleccionado.ingresos / reporteEventoSeleccionado.boletas_vendidas : 0) }}</span>
+          </div>
+          <div class="detalle-item">
+            <span class="detalle-label">Tasa de Asistencia</span>
+            <span class="detalle-value tasa-asistencia" [class.high]="(reporteEventoSeleccionado.boletas_usadas / reporteEventoSeleccionado.boletas_vendidas * 100) >= 80">
+              {{ reporteEventoSeleccionado.boletas_vendidas > 0 ? Math.round((reporteEventoSeleccionado.boletas_usadas / reporteEventoSeleccionado.boletas_vendidas) * 100) : 0 }}%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!reporteEventoSeleccionado" class="report-card">
+        <div class="empty-state">
+          <p>Selecciona un evento en los filtros para ver su reporte detallado</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

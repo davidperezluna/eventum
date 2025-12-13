@@ -7,6 +7,7 @@ import { Observable, forkJoin, from } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { SupabaseService } from './supabase.service';
+import { SupabaseObservableHelper } from './supabase-observable.helper';
 import { DashboardStats } from '../types';
 
 @Injectable({
@@ -14,7 +15,8 @@ import { DashboardStats } from '../types';
 })
 export class DashboardService {
   constructor(
-    private supabase: SupabaseService
+    private supabase: SupabaseService,
+    private supabaseHelper: SupabaseObservableHelper
   ) {}
 
   /**
@@ -24,7 +26,7 @@ export class DashboardService {
     const now = new Date().toISOString();
 
     // Eventos activos
-    const eventosActivos$ = from(
+    const eventosActivos$ = this.supabaseHelper.fromSupabase(
       this.supabase
             .from('eventos')
             .select('*', { count: 'exact' })
@@ -43,7 +45,7 @@ export class DashboardService {
     );
 
     // Boletas vendidas
-    const boletasVendidas$ = from(
+    const boletasVendidas$ = this.supabaseHelper.fromSupabase(
       this.supabase
             .from('boletas_compradas')
         .select('*', { count: 'exact' })
@@ -59,7 +61,7 @@ export class DashboardService {
     );
 
     // Ingresos totales
-    const ingresosTotales$ = from(
+    const ingresosTotales$ = this.supabaseHelper.fromSupabase(
       this.supabase
             .from('compras')
             .select('total')
@@ -70,8 +72,8 @@ export class DashboardService {
               console.error('Error en ingresos totales:', error);
           return 0;
         }
-        if (data) {
-          return data.reduce((sum, compra) => sum + Number(compra.total || 0), 0);
+        if (data && Array.isArray(data)) {
+          return (data as any[]).reduce((sum: number, compra: any) => sum + Number(compra.total || 0), 0);
             }
         return 0;
       }),
@@ -79,7 +81,7 @@ export class DashboardService {
     );
 
     // Clientes únicos
-    const clientes$ = from(
+    const clientes$ = this.supabaseHelper.fromSupabase(
       this.supabase
             .from('compras')
         .select('cliente_id')
@@ -89,8 +91,8 @@ export class DashboardService {
               console.error('Error en clientes:', error);
           return 0;
         }
-        if (data) {
-              const uniqueClients = new Set(data.map((c) => c.cliente_id));
+        if (data && Array.isArray(data)) {
+              const uniqueClients = new Set((data as any[]).map((c: any) => c.cliente_id));
           return uniqueClients.size;
             }
         return 0;
@@ -99,7 +101,7 @@ export class DashboardService {
     );
 
     // Ventas recientes (últimas 5)
-    const ventasRecientes$ = from(
+    const ventasRecientes$ = this.supabaseHelper.fromSupabase(
       this.supabase
             .from('compras')
             .select('*')
@@ -117,7 +119,7 @@ export class DashboardService {
     );
 
     // Eventos próximos (próximos 5)
-    const eventosProximos$ = from(
+    const eventosProximos$ = this.supabaseHelper.fromSupabase(
       this.supabase
             .from('eventos')
             .select('*')
@@ -137,7 +139,7 @@ export class DashboardService {
     );
 
     // Eventos totales
-    const eventosTotales$ = from(
+    const eventosTotales$ = this.supabaseHelper.fromSupabase(
       this.supabase
         .from('eventos')
         .select('*', { count: 'exact' })
@@ -147,7 +149,7 @@ export class DashboardService {
     );
 
     // Categorías activas
-    const categoriasActivas$ = from(
+    const categoriasActivas$ = this.supabaseHelper.fromSupabase(
       this.supabase
         .from('categorias_evento')
         .select('*', { count: 'exact' })
@@ -158,7 +160,7 @@ export class DashboardService {
     );
 
     // Lugares activos
-    const lugaresActivos$ = from(
+    const lugaresActivos$ = this.supabaseHelper.fromSupabase(
       this.supabase
         .from('lugares')
         .select('*', { count: 'exact' })
@@ -174,7 +176,7 @@ export class DashboardService {
       inicioMes.setDate(1);
       inicioMes.setHours(0, 0, 0, 0);
       
-      return from(
+      return this.supabaseHelper.fromSupabase(
         this.supabase
           .from('compras')
           .select('total')
@@ -183,8 +185,8 @@ export class DashboardService {
       ).pipe(
         map(({ data, error }) => {
           if (error) return 0;
-          if (data) {
-            return data.reduce((sum, compra) => sum + Number(compra.total || 0), 0);
+          if (data && Array.isArray(data)) {
+            return (data as any[]).reduce((sum: number, compra: any) => sum + Number(compra.total || 0), 0);
           }
           return 0;
         }),
@@ -203,7 +205,7 @@ export class DashboardService {
       finMesAnterior.setDate(0);
       finMesAnterior.setHours(23, 59, 59, 999);
       
-      return from(
+      return this.supabaseHelper.fromSupabase(
         this.supabase
           .from('compras')
           .select('total')
@@ -213,8 +215,8 @@ export class DashboardService {
       ).pipe(
         map(({ data, error }) => {
           if (error) return 0;
-          if (data) {
-            return data.reduce((sum, compra) => sum + Number(compra.total || 0), 0);
+          if (data && Array.isArray(data)) {
+            return (data as any[]).reduce((sum: number, compra: any) => sum + Number(compra.total || 0), 0);
           }
           return 0;
         }),

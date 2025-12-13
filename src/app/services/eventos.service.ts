@@ -7,6 +7,7 @@ import { Observable, from } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 import { SupabaseService } from './supabase.service';
+import { SupabaseObservableHelper } from './supabase-observable.helper';
 import { Evento, EventoFilters, ApiResponse, PaginatedResponse } from '../types';
 
 @Injectable({
@@ -14,7 +15,8 @@ import { Evento, EventoFilters, ApiResponse, PaginatedResponse } from '../types'
 })
 export class EventosService {
   constructor(
-    private supabase: SupabaseService
+    private supabase: SupabaseService,
+    private supabaseHelper: SupabaseObservableHelper
   ) {}
   private tableName = 'eventos';
 
@@ -23,7 +25,12 @@ export class EventosService {
    */
   getEventos(filters?: EventoFilters): Observable<PaginatedResponse<Evento>> {
     // Seleccionar eventos (las relaciones se pueden agregar después si es necesario)
-    let query = this.supabase.from(this.tableName).select('*', { count: 'exact' });
+    // Usar 'estimated' para consultas grandes (limit > 100) para mejor rendimiento
+    const limit = filters?.limit || 10;
+    const useEstimatedCount = limit > 100;
+    let query = this.supabase.from(this.tableName).select('*', { 
+      count: useEstimatedCount ? 'estimated' : 'exact' 
+    });
 
     // Aplicar filtros
     if (filters?.categoria_id) {
@@ -50,14 +57,15 @@ export class EventosService {
     const sortOrder = filters?.sortOrder || 'desc';
     query = query.order(sortBy, { ascending: sortOrder === 'asc' });
 
-    // Paginación
+    // Paginación (limit ya está declarado arriba)
     const page = filters?.page || 1;
-    const limit = filters?.limit || 10;
     const fromIndex = (page - 1) * limit;
     const toIndex = fromIndex + limit - 1;
     query = query.range(fromIndex, toIndex);
 
-    return from(query).pipe(
+    // Usar timeout más largo para consultas grandes
+    const timeout = limit > 100 ? 30000 : 15000; // 30s para consultas grandes, 15s para normales
+    return this.supabaseHelper.fromSupabase(query, timeout).pipe(
       map(({ data, error, count }) => {
             if (error) {
               console.error('Error en getEventos:', error);
@@ -87,7 +95,7 @@ export class EventosService {
    * Obtiene un evento por ID
    */
   getEventoById(id: number): Observable<Evento> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from(this.tableName)
             .select('*')
@@ -106,7 +114,7 @@ export class EventosService {
    * Crea un nuevo evento
    */
   createEvento(evento: Partial<Evento>): Observable<Evento> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from(this.tableName)
             .insert(evento)
@@ -125,7 +133,7 @@ export class EventosService {
    * Actualiza un evento
    */
   updateEvento(id: number, evento: Partial<Evento>): Observable<Evento> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from(this.tableName)
             .update({ ...evento, fecha_actualizacion: new Date().toISOString() })
@@ -145,7 +153,7 @@ export class EventosService {
    * Elimina un evento (soft delete)
    */
   deleteEvento(id: number): Observable<void> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from(this.tableName)
             .update({ activo: false })
@@ -164,7 +172,7 @@ export class EventosService {
    */
   getEventosProximos(limit: number = 5): Observable<Evento[]> {
     const now = new Date().toISOString();
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from(this.tableName)
             .select('*')

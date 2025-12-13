@@ -91,9 +91,58 @@
 
     <!-- Paginación -->
     <div *ngIf="total > limit" class="pagination">
-      <button (click)="onPageChange(page - 1)" [disabled]="page === 1">Anterior</button>
-      <span>Página {{ page }} de {{ Math.ceil(total / limit) }}</span>
-      <button (click)="onPageChange(page + 1)" [disabled]="page >= Math.ceil(total / limit)">Siguiente</button>
+      <div class="pagination-info">
+        <span>Mostrando {{ (page - 1) * limit + 1 }} - {{ Math.min(page * limit, total) }} de {{ total }} resultados</span>
+      </div>
+      <div class="pagination-controls">
+        <button 
+          class="pagination-btn" 
+          (click)="goToPage(1)" 
+          [disabled]="page === 1"
+          title="Primera página"
+        >
+          <span class="material-icons">first_page</span>
+        </button>
+        <button 
+          class="pagination-btn" 
+          (click)="goToPage(page - 1)" 
+          [disabled]="page === 1"
+          title="Página anterior"
+        >
+          <span class="material-icons">chevron_left</span>
+        </button>
+        
+        <div class="pagination-numbers">
+          <button
+            *ngFor="let pageNum of getPageNumbers()"
+            class="pagination-number"
+            [class.active]="pageNum === page"
+            (click)="goToPage(pageNum)"
+          >
+            {{ pageNum }}
+          </button>
+        </div>
+        
+        <button 
+          class="pagination-btn" 
+          (click)="goToPage(page + 1)" 
+          [disabled]="page >= getTotalPages()"
+          title="Página siguiente"
+        >
+          <span class="material-icons">chevron_right</span>
+        </button>
+        <button 
+          class="pagination-btn" 
+          (click)="goToPage(getTotalPages())" 
+          [disabled]="page >= getTotalPages()"
+          title="Última página"
+        >
+          <span class="material-icons">last_page</span>
+        </button>
+      </div>
+      <div class="pagination-page-info">
+        <span>Página {{ page }} de {{ getTotalPages() }}</span>
+      </div>
     </div>
   </div>
 

@@ -1,6 +1,8 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { LugaresService } from '../../services/lugares.service';
 import { StorageService } from '../../services/storage.service';
 import { ImageOptimizationService } from '../../services/image-optimization.service';
@@ -13,7 +15,8 @@ import { Lugar, PaginatedResponse } from '../../types';
   templateUrl: './lugares.html',
   styleUrl: './lugares.css',
 })
-export class Lugares implements OnInit {
+export class Lugares implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
   lugares: Lugar[] = [];
   loading = false;
   total = 0;
@@ -51,7 +54,9 @@ export class Lugares implements OnInit {
       page: this.page,
       limit: this.limit,
       search: this.searchTerm || undefined
-    }).subscribe({
+    }).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (response: PaginatedResponse<Lugar>) => {
         console.log('Response recibida en lugares:', response);
         this.lugares = response.data || [];
@@ -264,7 +269,9 @@ export class Lugares implements OnInit {
     console.log('Datos a guardar (antes de normalización):', lugarData);
 
     if (this.editingLugar) {
-      this.lugaresService.updateLugar(this.editingLugar.id, lugarData).subscribe({
+      this.lugaresService.updateLugar(this.editingLugar.id, lugarData).pipe(
+        takeUntil(this.destroy$)
+      ).subscribe({
         next: () => {
           console.log('Lugar actualizado exitosamente');
           this.closeModal();
@@ -277,7 +284,9 @@ export class Lugares implements OnInit {
         }
       });
     } else {
-      this.lugaresService.createLugar(lugarData).subscribe({
+      this.lugaresService.createLugar(lugarData).pipe(
+        takeUntil(this.destroy$)
+      ).subscribe({
         next: () => {
           console.log('Lugar creado exitosamente');
           this.closeModal();
@@ -293,13 +302,20 @@ export class Lugares implements OnInit {
   }
 
   toggleActivo(lugar: Lugar) {
-    this.lugaresService.updateLugar(lugar.id, { activo: !lugar.activo }).subscribe({
+    this.lugaresService.updateLugar(lugar.id, { activo: !lugar.activo }).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: () => this.loadLugares(),
       error: (err) => {
         console.error('Error actualizando lugar:', err);
         alert('Error al actualizar lugar');
       }
     });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   Math = Math;

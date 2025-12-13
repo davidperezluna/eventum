@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { User } from '@supabase/supabase-js';
+import { filter, Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-layout',
@@ -10,13 +11,15 @@ import { User } from '@supabase/supabase-js';
   templateUrl: './layout.html',
   styleUrl: './layout.css',
 })
-export class Layout implements OnInit {
+export class Layout implements OnInit, OnDestroy {
   menuItems: any[] = [];
 
   currentUser: User | null = null;
   usuario: any = null;
   userEmail: string = '';
   userRole: string = '';
+  sidebarOpen: boolean = false;
+  private routerSubscription?: Subscription;
 
   constructor(
     private authService: AuthService,
@@ -47,6 +50,21 @@ export class Layout implements OnInit {
         }
       }
     });
+
+    // Cerrar sidebar cuando cambia la ruta (solo en móviles)
+    this.routerSubscription = this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe(() => {
+        if (window.innerWidth <= 768) {
+          this.closeSidebar();
+        }
+      });
+  }
+
+  ngOnDestroy() {
+    if (this.routerSubscription) {
+      this.routerSubscription.unsubscribe();
+    }
   }
 
   loadMenuAdministrador() {
@@ -81,6 +99,14 @@ export class Layout implements OnInit {
       { path: '/mis-compras', label: 'Mis Compras', icon: 'shopping_bag' },
       { path: '/perfil', label: 'Mi Perfil', icon: 'person' },
     ];
+  }
+
+  toggleSidebar() {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  closeSidebar() {
+    this.sidebarOpen = false;
   }
 
   logout() {

@@ -1,6 +1,9 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { ComprasService } from '../../services/compras.service';
 import { Compra, PaginatedResponse, TipoEstadoPago, TipoEstadoCompra, MetodoPago } from '../../types';
 
@@ -10,7 +13,9 @@ import { Compra, PaginatedResponse, TipoEstadoPago, TipoEstadoCompra, MetodoPago
   templateUrl: './ventas.html',
   styleUrl: './ventas.css',
 })
-export class Ventas implements OnInit {
+export class Ventas implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+
   compras: Compra[] = [];
   loading = false;
   total = 0;
@@ -47,6 +52,11 @@ export class Ventas implements OnInit {
     this.loadCompras();
   }
 
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   loadCompras() {
     console.log('loadCompras llamado');
     this.loading = true;
@@ -57,23 +67,18 @@ export class Ventas implements OnInit {
       limit: this.limit,
       estado_pago: this.estadoPagoFiltro || undefined,
       estado_compra: this.estadoCompraFiltro || undefined
-    }).subscribe({
+    }).pipe(
+      takeUntil(this.destroy$),
+      catchError((err) => {
+        console.error('Error cargando compras:', err);
+        return of({ data: [], total: 0, page: this.page, limit: this.limit, totalPages: 0 });
+      })
+    ).subscribe({
       next: (response: PaginatedResponse<Compra>) => {
         console.log('Response recibida en ventas:', response);
         this.compras = response.data || [];
         this.total = response.total || 0;
         this.loading = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error cargando compras:', err);
-        this.loading = false;
-        this.compras = [];
-        this.total = 0;
-        this.cdr.detectChanges();
-      },
-      complete: () => {
-        console.log('Observable completado en ventas');
         this.cdr.detectChanges();
       }
     });
@@ -93,14 +98,17 @@ export class Ventas implements OnInit {
 
   saveCompra() {
     if (this.editingCompra) {
-      this.comprasService.updateCompra(this.editingCompra.id, this.formData).subscribe({
+      this.comprasService.updateCompra(this.editingCompra.id, this.formData).pipe(
+        takeUntil(this.destroy$),
+        catchError((err) => {
+          console.error('Error guardando compra:', err);
+          alert('Error al guardar compra');
+          return of(null);
+        })
+      ).subscribe({
         next: () => {
           this.closeModal();
           this.loadCompras();
-        },
-        error: (err) => {
-          console.error('Error guardando compra:', err);
-          alert('Error al guardar compra');
         }
       });
     }
@@ -114,6 +122,42 @@ export class Ventas implements OnInit {
   getEstadoCompraLabel(estado?: string): string {
     const estadoObj = this.estadosCompra.find(e => e.value === estado);
     return estadoObj?.label || estado || 'Sin estado';
+  }
+
+  getTotalPages(): number {
+    return Math.ceil(this.total / this.limit);
+  }
+
+  getPageNumbers(): number[] {
+    const totalPages = this.getTotalPages();
+    const pages: number[] = [];
+    const maxPages = 5;
+    
+    if (totalPages <= maxPages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      let start = Math.max(1, this.page - 2);
+      let end = Math.min(totalPages, start + maxPages - 1);
+      
+      if (end - start < maxPages - 1) {
+        start = Math.max(1, end - maxPages + 1);
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+    }
+    
+    return pages;
+  }
+
+  goToPage(pageNum: number) {
+    if (pageNum >= 1 && pageNum <= this.getTotalPages()) {
+      this.page = pageNum;
+      this.loadCompras();
+    }
   }
 
   Math = Math;

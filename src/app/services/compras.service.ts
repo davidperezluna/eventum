@@ -7,6 +7,7 @@ import { Observable, from } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 import { SupabaseService } from './supabase.service';
+import { SupabaseObservableHelper } from './supabase-observable.helper';
 import { Compra, CompraFilters, PaginatedResponse } from '../types';
 
 @Injectable({
@@ -14,7 +15,8 @@ import { Compra, CompraFilters, PaginatedResponse } from '../types';
 })
 export class ComprasService {
   constructor(
-    private supabase: SupabaseService
+    private supabase: SupabaseService,
+    private supabaseHelper: SupabaseObservableHelper
   ) {}
   private tableName = 'compras';
 
@@ -43,6 +45,10 @@ export class ComprasService {
     if (filters?.fecha_hasta) {
       query = query.lte('fecha_compra', filters.fecha_hasta);
     }
+    if (filters?.search) {
+      // Buscar por número de transacción
+      query = query.ilike('numero_transaccion', `%${filters.search}%`);
+    }
 
     // Ordenamiento
     const sortBy = filters?.sortBy || 'fecha_compra';
@@ -56,7 +62,7 @@ export class ComprasService {
     const toIndex = fromIndex + limit - 1;
     query = query.range(fromIndex, toIndex);
 
-    return from(query).pipe(
+    return this.supabaseHelper.fromSupabase(query).pipe(
       map(({ data, error, count }) => {
             if (error) {
               console.error('Error en getCompras:', error);
@@ -83,7 +89,7 @@ export class ComprasService {
    * Obtiene una compra por ID
    */
   getCompraById(id: number): Observable<Compra> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from(this.tableName)
             .select('*')
@@ -102,7 +108,7 @@ export class ComprasService {
    * Crea una nueva compra
    */
   createCompra(compra: Partial<Compra>): Observable<Compra> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from(this.tableName)
             .insert(compra)
@@ -121,7 +127,7 @@ export class ComprasService {
    * Actualiza una compra
    */
   updateCompra(id: number, compra: Partial<Compra>): Observable<Compra> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from(this.tableName)
             .update(compra)

@@ -1,7 +1,9 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { Subject, of } from 'rxjs';
+import { catchError, takeUntil } from 'rxjs/operators';
 import { EventosService } from '../../services/eventos.service';
 import { CategoriasService } from '../../services/categorias.service';
 import { Evento, CategoriaEvento, TipoEstadoEvento } from '../../types';
@@ -12,7 +14,8 @@ import { Evento, CategoriaEvento, TipoEstadoEvento } from '../../types';
   templateUrl: './eventos-cliente.html',
   styleUrl: './eventos-cliente.css',
 })
-export class EventosCliente implements OnInit {
+export class EventosCliente implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
   eventos: Evento[] = [];
   eventosFiltrados: Evento[] = [];
   categorias: CategoriaEvento[] = [];
@@ -32,11 +35,17 @@ export class EventosCliente implements OnInit {
   }
 
   loadCategorias() {
-    this.categoriasService.getCategorias({ limit: 1000, activo: true }).subscribe({
+    // Reducir límite para evitar timeouts - normalmente no hay más de 100 categorías
+    this.categoriasService.getCategorias({ limit: 200, activo: true }).pipe(
+      takeUntil(this.destroy$),
+      catchError((err) => {
+        console.error('Error cargando categorías:', err);
+        return of({ data: [], total: 0, page: 1, limit: 200, totalPages: 0 });
+      })
+    ).subscribe({
       next: (response) => {
-        this.categorias = response.data;
-      },
-      error: (err) => console.error('Error cargando categorías:', err)
+        this.categorias = response.data || [];
+      }
     });
   }
 
@@ -46,29 +55,54 @@ export class EventosCliente implements OnInit {
 
     console.log('Cargando eventos para cliente...');
     
-    // Primero intentar con estado PUBLICADO, si no hay resultados, intentar sin filtro de estado
-    this.eventosService.getEventos({
+    // Reducir el límite para evitar timeouts - 500 eventos deberían ser suficientes
+    // Si necesitan más, pueden usar paginación
+    const loadEventosWithFallback = (filters: any) => {
+      return this.eventosService.getEventos({
+        ...filters,
+        limit: 500, // Reducido de 1000
+        sortBy: 'fecha_inicio',
+        sortOrder: 'asc'
+      }).pipe(
+        catchError((err) => {
+          console.error('Error cargando eventos:', err);
+          // Si falla con 500, intentar con 200
+          if (filters.limit !== 200) {
+            return this.eventosService.getEventos({
+              ...filters,
+              limit: 200,
+              sortBy: 'fecha_inicio',
+              sortOrder: 'asc'
+            }).pipe(
+              catchError(() => {
+                return of({ data: [], total: 0, page: 1, limit: 200, totalPages: 0 });
+              })
+            );
+          }
+          return of({ data: [], total: 0, page: 1, limit: 200, totalPages: 0 });
+        })
+      );
+    };
+    
+    // Primero intentar con estado PUBLICADO
+    loadEventosWithFallback({
       activo: true,
-      estado: TipoEstadoEvento.PUBLICADO,
-      limit: 1000,
-      sortBy: 'fecha_inicio',
-      sortOrder: 'asc'
-    }).subscribe({
+      estado: TipoEstadoEvento.PUBLICADO
+    }).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (response) => {
         console.log('Eventos recibidos (con filtro PUBLICADO):', response);
-        console.log('Total de eventos:', response.data?.length || 0);
-        
         let eventos = response.data || [];
         
         // Si no hay eventos con estado PUBLICADO, intentar sin filtro de estado
         if (eventos.length === 0) {
           console.log('No hay eventos con estado PUBLICADO, intentando sin filtro de estado...');
-          this.eventosService.getEventos({
-            activo: true,
-            limit: 1000,
-            sortBy: 'fecha_inicio',
-            sortOrder: 'asc'
-          }).subscribe({
+          loadEventosWithFallback({
+            activo: true
+          }).pipe(
+            takeUntil(this.destroy$)
+          ).subscribe({
             next: (responseSinEstado) => {
               console.log('Eventos recibidos (sin filtro estado):', responseSinEstado);
               eventos = responseSinEstado.data || [];
@@ -84,26 +118,15 @@ export class EventosCliente implements OnInit {
         }
       },
       error: (err) => {
-        console.error('Error cargando eventos:', err);
-        console.error('Detalles del error:', JSON.stringify(err, null, 2));
-        // Intentar sin filtro de estado si falla
-        console.log('Intentando cargar eventos sin filtro de estado...');
-        this.eventosService.getEventos({
-          activo: true,
-          limit: 1000,
-          sortBy: 'fecha_inicio',
-          sortOrder: 'asc'
-        }).subscribe({
-          next: (response) => {
-            this.procesarEventos(response.data || []);
-          },
-          error: (err2) => {
-            console.error('Error cargando eventos sin filtro:', err2);
-            this.procesarEventos([]);
-          }
-        });
+        console.error('Error final cargando eventos:', err);
+        this.procesarEventos([]);
       }
     });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   procesarEventos(eventos: Evento[]) {

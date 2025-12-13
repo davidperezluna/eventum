@@ -1,6 +1,8 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { EventosService } from '../../services/eventos.service';
 import { CategoriasService } from '../../services/categorias.service';
 import { LugaresService } from '../../services/lugares.service';
@@ -16,7 +18,8 @@ import { Evento, CategoriaEvento, Lugar, Usuario, PaginatedResponse, TipoEstadoE
   templateUrl: './eventos.html',
   styleUrl: './eventos.css',
 })
-export class Eventos implements OnInit {
+export class Eventos implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
   eventos: Evento[] = [];
   categorias: CategoriaEvento[] = [];
   lugares: Lugar[] = [];
@@ -65,7 +68,9 @@ export class Eventos implements OnInit {
   }
 
   loadCategorias() {
-    this.categoriasService.getCategorias({ limit: 1000 }).subscribe({
+    this.categoriasService.getCategorias({ limit: 1000 }).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (response) => {
         this.categorias = response.data;
       },
@@ -74,7 +79,9 @@ export class Eventos implements OnInit {
   }
 
   loadLugares() {
-    this.lugaresService.getLugares({ limit: 1000 }).subscribe({
+    this.lugaresService.getLugares({ limit: 1000 }).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (response) => {
         this.lugares = response.data;
       },
@@ -84,7 +91,9 @@ export class Eventos implements OnInit {
 
   loadOrganizadores() {
     console.log('loadOrganizadores llamado');
-    this.usuariosService.getOrganizadores().subscribe({
+    this.usuariosService.getOrganizadores().pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (organizadores) => {
         console.log('Organizadores recibidos en componente:', organizadores);
         console.log('Cantidad de organizadores:', organizadores.length);
@@ -126,7 +135,9 @@ export class Eventos implements OnInit {
     }
     this.cdr.detectChanges();
     
-    this.eventosService.getEventos(filters).subscribe({
+    this.eventosService.getEventos(filters).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (response: PaginatedResponse<Evento>) => {
         console.log('Response recibida en eventos:', response);
         this.eventos = response.data || [];
@@ -146,6 +157,11 @@ export class Eventos implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   openModal(evento?: Evento) {
@@ -369,7 +385,9 @@ export class Eventos implements OnInit {
     if (!eventoData.politica_reembolso) delete eventoData.politica_reembolso;
 
     if (this.editingEvento) {
-      this.eventosService.updateEvento(this.editingEvento.id, eventoData).subscribe({
+      this.eventosService.updateEvento(this.editingEvento.id, eventoData).pipe(
+        takeUntil(this.destroy$)
+      ).subscribe({
         next: () => {
           this.closeModal();
           this.loadEventos();
@@ -380,7 +398,9 @@ export class Eventos implements OnInit {
         }
       });
     } else {
-      this.eventosService.createEvento(eventoData).subscribe({
+      this.eventosService.createEvento(eventoData).pipe(
+        takeUntil(this.destroy$)
+      ).subscribe({
         next: () => {
           this.closeModal();
           this.loadEventos();
@@ -394,7 +414,9 @@ export class Eventos implements OnInit {
   }
 
   toggleDestacado(evento: Evento) {
-    this.eventosService.updateEvento(evento.id, { destacado: !evento.destacado }).subscribe({
+    this.eventosService.updateEvento(evento.id, { destacado: !evento.destacado }).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: () => this.loadEventos(),
       error: (err) => {
         console.error('Error actualizando evento:', err);
@@ -404,7 +426,9 @@ export class Eventos implements OnInit {
   }
 
   toggleActivo(evento: Evento) {
-    this.eventosService.updateEvento(evento.id, { activo: !evento.activo }).subscribe({
+    this.eventosService.updateEvento(evento.id, { activo: !evento.activo }).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: () => this.loadEventos(),
       error: (err) => {
         console.error('Error actualizando evento:', err);

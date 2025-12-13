@@ -1,6 +1,8 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { NotificacionesService } from '../../services/notificaciones.service';
 import { Notificacion, PaginatedResponse, TipoTipoNotificacion } from '../../types';
 import { UsuariosService } from '../../services/usuarios.service';
@@ -12,7 +14,8 @@ import { Usuario } from '../../types';
   templateUrl: './notificaciones.html',
   styleUrl: './notificaciones.css',
 })
-export class Notificaciones implements OnInit {
+export class Notificaciones implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
   notificaciones: Notificacion[] = [];
   usuarios: Usuario[] = [];
   loading = false;
@@ -46,7 +49,9 @@ export class Notificaciones implements OnInit {
   }
 
   loadUsuarios() {
-    this.usuariosService.getUsuarios({ limit: 1000 }).subscribe({
+    this.usuariosService.getUsuarios({ limit: 1000 }).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (response) => {
         this.usuarios = response.data;
       },
@@ -62,7 +67,9 @@ export class Notificaciones implements OnInit {
     this.notificacionesService.getNotificaciones({
       page: this.page,
       limit: this.limit
-    }).subscribe({
+    }).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (response: PaginatedResponse<Notificacion>) => {
         console.log('Response recibida en notificaciones:', response);
         this.notificaciones = response.data || [];
@@ -104,6 +111,8 @@ export class Notificaciones implements OnInit {
         this.formData.titulo!,
         this.formData.mensaje!,
         this.formData.tipo || TipoTipoNotificacion.INFO
+      ).pipe(
+        takeUntil(this.destroy$)
       ).subscribe({
         next: () => {
           this.closeModal();
@@ -115,7 +124,9 @@ export class Notificaciones implements OnInit {
         }
       });
     } else if (this.formData.usuario_id) {
-      this.notificacionesService.createNotificacion(this.formData).subscribe({
+      this.notificacionesService.createNotificacion(this.formData).pipe(
+        takeUntil(this.destroy$)
+      ).subscribe({
         next: () => {
           this.closeModal();
           this.loadNotificaciones();
@@ -132,7 +143,9 @@ export class Notificaciones implements OnInit {
 
   deleteNotificacion(id: number) {
     if (confirm('¿Estás seguro de eliminar esta notificación?')) {
-      this.notificacionesService.deleteNotificacion(id).subscribe({
+      this.notificacionesService.deleteNotificacion(id).pipe(
+        takeUntil(this.destroy$)
+      ).subscribe({
         next: () => this.loadNotificaciones(),
         error: (err) => {
           console.error('Error eliminando notificación:', err);
@@ -140,6 +153,11 @@ export class Notificaciones implements OnInit {
         }
       });
     }
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   Math = Math;

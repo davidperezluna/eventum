@@ -21,15 +21,123 @@
 
   <!-- Filtros -->
   <div class="filters-card">
+    <div class="filters-header">
+      <h3>Filtros de búsqueda</h3>
+      <div class="filters-actions">
+        <button class="btn-secondary" (click)="showFiltrosAvanzados = !showFiltrosAvanzados">
+          <span class="material-icons">{{ showFiltrosAvanzados ? 'expand_less' : 'expand_more' }}</span>
+          {{ showFiltrosAvanzados ? 'Ocultar' : 'Mostrar' }} filtros avanzados
+        </button>
+        <button class="btn-secondary" (click)="limpiarFiltros()">
+          <span class="material-icons">clear</span>
+          Limpiar filtros
+        </button>
+        <button class="btn-primary" (click)="abrirValidarModal()">
+          <span class="material-icons">qr_code_scanner</span>
+          Validar boleta
+        </button>
+      </div>
+    </div>
+
+    <!-- Filtros básicos -->
     <div class="filters-row">
-    <select [(ngModel)]="estadoFiltro" (ngModelChange)="loadBoletas()" class="select-input">
-      <option [value]="null">Todos los estados</option>
-      <option *ngFor="let estado of estados" [value]="estado.value">{{ estado.label }}</option>
-    </select>
-      <select [(ngModel)]="eventoFiltro" (ngModelChange)="loadBoletas()" class="select-input">
-        <option [value]="null">Todos los eventos</option>
-        <option *ngFor="let evento of eventos" [value]="evento.id">{{ evento.titulo }}</option>
-      </select>
+      <div class="filter-group">
+        <label>Búsqueda rápida</label>
+        <input 
+          type="text" 
+          [(ngModel)]="searchFiltro" 
+          (ngModelChange)="loadBoletas()"
+          placeholder="Buscar por código QR, nombre o email..."
+          class="select-input"
+        />
+      </div>
+      <div class="filter-group">
+        <label>Estado</label>
+        <select [(ngModel)]="estadoFiltro" (ngModelChange)="loadBoletas()" class="select-input">
+          <option [value]="null">Todos los estados</option>
+          <option *ngFor="let estado of estados" [value]="estado.value">{{ estado.label }}</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Evento</label>
+        <select [(ngModel)]="eventoFiltro" (ngModelChange)="onEventoFiltroChange()" class="select-input">
+          <option [value]="null">Todos los eventos</option>
+          <option *ngFor="let evento of eventos" [value]="evento.id">{{ evento.titulo }}</option>
+        </select>
+      </div>
+      <div class="filter-group" *ngIf="eventoFiltro">
+        <label>Tipo de boleta</label>
+        <select [(ngModel)]="tipoBoletaFiltro" (ngModelChange)="loadBoletas()" class="select-input">
+          <option [value]="null">Todos los tipos</option>
+          <option *ngFor="let tipo of tiposBoletaEvento" [value]="tipo.id">{{ tipo.nombre }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Filtros avanzados -->
+    <div *ngIf="showFiltrosAvanzados" class="filters-advanced">
+      <div class="filters-row">
+        <div class="filter-group">
+          <label>Código QR</label>
+          <input 
+            type="text" 
+            [(ngModel)]="codigoQRFiltro" 
+            (ngModelChange)="loadBoletas()"
+            placeholder="Buscar por código QR..."
+            class="select-input"
+          />
+        </div>
+        <div class="filter-group">
+          <label>Nombre del asistente</label>
+          <input 
+            type="text" 
+            [(ngModel)]="nombreFiltro" 
+            (ngModelChange)="loadBoletas()"
+            placeholder="Buscar por nombre..."
+            class="select-input"
+          />
+        </div>
+        <div class="filter-group">
+          <label>Email</label>
+          <input 
+            type="email" 
+            [(ngModel)]="emailFiltro" 
+            (ngModelChange)="loadBoletas()"
+            placeholder="Buscar por email..."
+            class="select-input"
+          />
+        </div>
+        <div class="filter-group">
+          <label>Teléfono</label>
+          <input 
+            type="text" 
+            [(ngModel)]="telefonoFiltro" 
+            (ngModelChange)="loadBoletas()"
+            placeholder="Buscar por teléfono..."
+            class="select-input"
+          />
+        </div>
+      </div>
+      <div class="filters-row">
+        <div class="filter-group">
+          <label>Fecha desde</label>
+          <input 
+            type="date" 
+            [(ngModel)]="fechaDesdeFiltro" 
+            (ngModelChange)="loadBoletas()"
+            class="select-input"
+          />
+        </div>
+        <div class="filter-group">
+          <label>Fecha hasta</label>
+          <input 
+            type="date" 
+            [(ngModel)]="fechaHastaFiltro" 
+            (ngModelChange)="loadBoletas()"
+            class="select-input"
+          />
+        </div>
+      </div>
     </div>
   </div>
 
@@ -94,43 +202,114 @@
   <div class="content-card">
     <div *ngIf="loading" class="loading-state">Cargando boletas...</div>
     
-    <div *ngIf="!loading && boletas.length > 0" class="boletas-container">
-      <table class="data-table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Código QR</th>
-          <th>Asistente</th>
-            <th>Email</th>
-            <th>Teléfono</th>
-          <th>Precio</th>
-          <th>Estado</th>
-          <th>Fecha Creación</th>
-            <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let boleta of boletas">
-          <td>{{ boleta.id }}</td>
-          <td class="code-cell">{{ boleta.codigo_qr }}</td>
-          <td>{{ boleta.nombre_asistente || 'Sin nombre' }}</td>
-            <td>{{ boleta.email_asistente || '-' }}</td>
-            <td>{{ boleta.telefono_asistente || '-' }}</td>
-          <td>${{ boleta.precio_unitario | number:'1.2-2' }}</td>
-          <td>
-              <span [class]="boleta.estado === 'usada' ? 'badge-success' : boleta.estado === 'cancelada' ? 'badge-danger' : boleta.estado === 'reembolsada' ? 'badge-danger' : 'badge-warning'">
-              {{ getEstadoLabel(boleta.estado) }}
-            </span>
-          </td>
-          <td>{{ boleta.fecha_creacion | date:'short' }}</td>
-            <td>
-              <button class="btn-icon" (click)="openTiposModalFromTipo(boleta.tipo_boleta_id)" title="Ver tipos de boleta del evento">
+    <div *ngIf="!loading && boletas.length > 0">
+      <!-- Vista de tabla para desktop -->
+      <div class="boletas-container table-view">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Código QR</th>
+              <th>Asistente</th>
+              <th>Email</th>
+              <th>Teléfono</th>
+              <th>Precio</th>
+              <th>Estado</th>
+              <th>Fecha Creación</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let boleta of boletas">
+              <td>{{ boleta.id }}</td>
+              <td class="code-cell">{{ boleta.codigo_qr }}</td>
+              <td>{{ boleta.nombre_asistente || 'Sin nombre' }}</td>
+              <td>{{ boleta.email_asistente || '-' }}</td>
+              <td>{{ boleta.telefono_asistente || '-' }}</td>
+              <td>${{ boleta.precio_unitario | number:'1.2-2' }}</td>
+              <td>
+                <span [class]="boleta.estado === 'usada' ? 'badge-success' : boleta.estado === 'cancelada' ? 'badge-danger' : boleta.estado === 'reembolsada' ? 'badge-danger' : 'badge-warning'">
+                  {{ getEstadoLabel(boleta.estado) }}
+                </span>
+              </td>
+              <td>{{ boleta.fecha_creacion | date:'short' }}</td>
+              <td>
+                <div class="table-actions">
+                  <button 
+                    *ngIf="puedeValidar(boleta)"
+                    class="btn-icon btn-validate" 
+                    (click)="validarBoleta(boleta)" 
+                    title="Validar boleta"
+                    [disabled]="validandoBoleta"
+                  >
+                    <span class="material-icons">check_circle</span>
+                  </button>
+                  <button class="btn-icon" (click)="openTiposModalFromTipo(boleta.tipo_boleta_id)" title="Ver tipos de boleta del evento">
+                    <span class="material-icons">info</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Vista de cards para móviles -->
+      <div class="boletas-cards card-view">
+        <div *ngFor="let boleta of boletas" class="boleta-card">
+          <div class="boleta-card-header">
+            <div class="boleta-card-id">#{{ boleta.id }}</div>
+            <div class="boleta-card-actions">
+              <button 
+                *ngIf="puedeValidar(boleta)"
+                class="btn-icon btn-validate" 
+                (click)="validarBoleta(boleta)" 
+                title="Validar boleta"
+                [disabled]="validandoBoleta"
+              >
+                <span class="material-icons">check_circle</span>
+              </button>
+              <button class="btn-icon" (click)="openTiposModalFromTipo(boleta.tipo_boleta_id)" title="Ver tipos de boleta">
                 <span class="material-icons">info</span>
               </button>
-            </td>
-        </tr>
-      </tbody>
-    </table>
+            </div>
+          </div>
+          <div class="boleta-card-body">
+            <div class="boleta-card-row">
+              <span class="boleta-card-label">Código QR:</span>
+              <span class="boleta-card-value code-value">{{ boleta.codigo_qr }}</span>
+            </div>
+            <div class="boleta-card-row">
+              <span class="boleta-card-label">Asistente:</span>
+              <span class="boleta-card-value">{{ boleta.nombre_asistente || 'Sin nombre' }}</span>
+            </div>
+            <div class="boleta-card-row">
+              <span class="boleta-card-label">Email:</span>
+              <span class="boleta-card-value">{{ boleta.email_asistente || '-' }}</span>
+            </div>
+            <div class="boleta-card-row">
+              <span class="boleta-card-label">Teléfono:</span>
+              <span class="boleta-card-value">{{ boleta.telefono_asistente || '-' }}</span>
+            </div>
+            <div class="boleta-card-row">
+              <span class="boleta-card-label">Precio:</span>
+              <span class="boleta-card-value">${{ boleta.precio_unitario | number:'1.2-2' }}</span>
+            </div>
+            <div class="boleta-card-row">
+              <span class="boleta-card-label">Estado:</span>
+              <span class="boleta-card-value">
+                <span [class]="boleta.estado === 'usada' ? 'badge-success' : boleta.estado === 'cancelada' ? 'badge-danger' : boleta.estado === 'reembolsada' ? 'badge-danger' : 'badge-warning'">
+                  {{ getEstadoLabel(boleta.estado) }}
+                </span>
+              </span>
+            </div>
+            <div class="boleta-card-row">
+              <span class="boleta-card-label">Fecha:</span>
+              <span class="boleta-card-value">{{ boleta.fecha_creacion | date:'short' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div *ngIf="!loading && boletas.length === 0" class="empty-state">
@@ -144,10 +323,60 @@
       </div>
     </div>
 
+    <!-- Paginación -->
     <div *ngIf="total > limit" class="pagination">
-      <button (click)="page = page - 1; loadBoletas()" [disabled]="page === 1">Anterior</button>
-      <span>Página {{ page }} de {{ Math.ceil(total / limit) }}</span>
-      <button (click)="page = page + 1; loadBoletas()" [disabled]="page >= Math.ceil(total / limit)">Siguiente</button>
+      <div class="pagination-info">
+        <span>Mostrando {{ (page - 1) * limit + 1 }} - {{ Math.min(page * limit, total) }} de {{ total }} resultados</span>
+      </div>
+      <div class="pagination-controls">
+        <button 
+          class="pagination-btn" 
+          (click)="goToPage(1)" 
+          [disabled]="page === 1"
+          title="Primera página"
+        >
+          <span class="material-icons">first_page</span>
+        </button>
+        <button 
+          class="pagination-btn" 
+          (click)="goToPage(page - 1)" 
+          [disabled]="page === 1"
+          title="Página anterior"
+        >
+          <span class="material-icons">chevron_left</span>
+        </button>
+        
+        <div class="pagination-numbers">
+          <button
+            *ngFor="let pageNum of getPageNumbers()"
+            class="pagination-number"
+            [class.active]="pageNum === page"
+            (click)="goToPage(pageNum)"
+          >
+            {{ pageNum }}
+          </button>
+        </div>
+        
+        <button 
+          class="pagination-btn" 
+          (click)="goToPage(page + 1)" 
+          [disabled]="page >= getTotalPages()"
+          title="Página siguiente"
+        >
+          <span class="material-icons">chevron_right</span>
+        </button>
+        <button 
+          class="pagination-btn" 
+          (click)="goToPage(getTotalPages())" 
+          [disabled]="page >= getTotalPages()"
+          title="Última página"
+        >
+          <span class="material-icons">last_page</span>
+        </button>
+      </div>
+      <div class="pagination-page-info">
+        <span>Página {{ page }} de {{ getTotalPages() }}</span>
+      </div>
     </div>
   </div>
 
@@ -286,6 +515,218 @@
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" (click)="closeTiposModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Validar Boleta -->
+  <div *ngIf="showValidarModal" class="modal-overlay" (click)="cerrarValidarModal()">
+    <div class="modal-content modal-large" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Validar Boleta</h2>
+        <button class="btn-close" (click)="cerrarValidarModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- Selector de modo de búsqueda -->
+        <div class="search-mode-selector">
+          <button 
+            class="btn-mode" 
+            [class.active]="modoBusqueda === 'qr'"
+            (click)="cambiarModoBusqueda('qr')"
+          >
+            <span class="material-icons">qr_code</span>
+            Por Código QR
+          </button>
+          <button 
+            class="btn-mode" 
+            [class.active]="modoBusqueda === 'documento'"
+            (click)="cambiarModoBusqueda('documento')"
+          >
+            <span class="material-icons">badge</span>
+            Por Cédula
+          </button>
+        </div>
+
+        <!-- Búsqueda por QR -->
+        <div *ngIf="modoBusqueda === 'qr'" class="form-group">
+          <label>Código QR de la boleta</label>
+          <div class="input-with-button">
+            <input 
+              type="text" 
+              [(ngModel)]="codigoQRValidar" 
+              placeholder="Ingresa o escanea el código QR"
+              class="select-input"
+              (keyup.enter)="buscarBoletaPorQR()"
+            />
+            <button class="btn-primary" (click)="buscarBoletaPorQR()" [disabled]="validandoBoleta || !codigoQRValidar.trim()">
+              <span class="material-icons">search</span>
+              Buscar
+            </button>
+          </div>
+        </div>
+
+        <!-- Búsqueda por Documento -->
+        <div *ngIf="modoBusqueda === 'documento'" class="form-group">
+          <label>Número de Cédula</label>
+          <div class="input-with-button">
+            <input 
+              type="text" 
+              [(ngModel)]="documentoValidar" 
+              placeholder="Ingresa el número de cédula"
+              class="select-input"
+              (keyup.enter)="buscarBoletasPorDocumento()"
+            />
+            <button class="btn-primary" (click)="buscarBoletasPorDocumento()" [disabled]="validandoBoleta || !documentoValidar.trim()">
+              <span class="material-icons">search</span>
+              Buscar
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="validandoBoleta" class="loading-state">
+          Buscando boleta{{ modoBusqueda === 'documento' ? 's' : '' }}...
+        </div>
+
+        <!-- Resultado: Una sola boleta (QR) -->
+        <div *ngIf="boletaEncontrada && !validandoBoleta && modoBusqueda === 'qr'" class="boleta-info-card">
+          <h3>Información de la boleta</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Código QR:</span>
+              <span class="info-value code-value">{{ boletaEncontrada.codigo_qr }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Asistente:</span>
+              <span class="info-value">{{ boletaEncontrada.nombre_asistente || 'Sin nombre' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Cédula:</span>
+              <span class="info-value">{{ boletaEncontrada.documento_asistente || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Email:</span>
+              <span class="info-value">{{ boletaEncontrada.email_asistente || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Teléfono:</span>
+              <span class="info-value">{{ boletaEncontrada.telefono_asistente || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Precio:</span>
+              <span class="info-value">${{ boletaEncontrada.precio_unitario | number:'1.2-2' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Estado:</span>
+              <span [class]="boletaEncontrada.estado === 'usada' ? 'badge-success' : boletaEncontrada.estado === 'cancelada' ? 'badge-danger' : boletaEncontrada.estado === 'reembolsada' ? 'badge-danger' : 'badge-warning'">
+                {{ getEstadoLabel(boletaEncontrada.estado) }}
+              </span>
+            </div>
+            <div class="info-item" *ngIf="boletaEncontrada.fecha_uso">
+              <span class="info-label">Fecha de uso:</span>
+              <span class="info-value">{{ boletaEncontrada.fecha_uso | date:'short' }}</span>
+            </div>
+          </div>
+
+          <div *ngIf="puedeValidar(boletaEncontrada)" class="validation-actions">
+            <button class="btn-primary btn-validate-large" (click)="validarBoletaDesdeModal()" [disabled]="validandoBoleta">
+              <span class="material-icons">check_circle</span>
+              Validar esta boleta
+            </button>
+          </div>
+          <div *ngIf="!puedeValidar(boletaEncontrada)" class="validation-warning">
+            <span class="material-icons">info</span>
+            <span *ngIf="boletaEncontrada.estado === 'usada'">Esta boleta ya ha sido validada</span>
+            <span *ngIf="boletaEncontrada.estado === 'cancelada' || boletaEncontrada.estado === 'reembolsada'">Esta boleta no puede ser validada ({{ getEstadoLabel(boletaEncontrada.estado) }})</span>
+          </div>
+        </div>
+
+        <!-- Resultado: Múltiples boletas (Documento) -->
+        <div *ngIf="boletasEncontradasPorDocumento.length > 0 && !validandoBoleta && modoBusqueda === 'documento'" class="boletas-list-container">
+          <h3>Boletas encontradas ({{ boletasEncontradasPorDocumento.length }})</h3>
+          <p class="search-info">Se encontraron {{ boletasEncontradasPorDocumento.length }} boleta{{ boletasEncontradasPorDocumento.length > 1 ? 's' : '' }}. Selecciona la que deseas validar:</p>
+          
+          <div class="boletas-list">
+            <div 
+              *ngFor="let boleta of boletasEncontradasPorDocumento" 
+              class="boleta-item"
+              [class.selected]="boletaSeleccionada?.id === boleta.id"
+              (click)="seleccionarBoleta(boleta)"
+            >
+              <div class="boleta-item-header">
+                <div class="boleta-item-main">
+                  <div class="boleta-item-title">
+                    <span class="material-icons">confirmation_number</span>
+                    <strong>{{ boleta.codigo_qr }}</strong>
+                  </div>
+                  <div class="boleta-item-subtitle">
+                    <span>{{ boleta.nombre_asistente || 'Sin nombre' }}</span>
+                    <span class="separator">•</span>
+                    <span>${{ boleta.precio_unitario | number:'1.2-2' }}</span>
+                  </div>
+                </div>
+                <div class="boleta-item-status">
+                  <span [class]="boleta.estado === 'usada' ? 'badge-success' : boleta.estado === 'cancelada' ? 'badge-danger' : boleta.estado === 'reembolsada' ? 'badge-danger' : 'badge-warning'">
+                    {{ getEstadoLabel(boleta.estado) }}
+                  </span>
+                </div>
+              </div>
+              <div class="boleta-item-details">
+                <div class="detail-item">
+                  <span class="material-icons">email</span>
+                  <span>{{ boleta.email_asistente || '-' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="material-icons">phone</span>
+                  <span>{{ boleta.telefono_asistente || '-' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="material-icons">event</span>
+                  <span>{{ boleta.fecha_creacion | date:'short' }}</span>
+                </div>
+                <div class="detail-item" *ngIf="boleta.fecha_uso">
+                  <span class="material-icons">check_circle</span>
+                  <span>Usada: {{ boleta.fecha_uso | date:'short' }}</span>
+                </div>
+              </div>
+              <div *ngIf="boletaSeleccionada?.id === boleta.id" class="boleta-item-selected">
+                <span class="material-icons">check_circle</span>
+                <span>Seleccionada para validar</span>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="boletaSeleccionada" class="validation-actions">
+            <div class="selected-boleta-info">
+              <p><strong>Boleta seleccionada:</strong> {{ boletaSeleccionada.codigo_qr }}</p>
+            </div>
+            <button 
+              class="btn-primary btn-validate-large" 
+              (click)="validarBoletaDesdeModal()" 
+              [disabled]="validandoBoleta || !puedeValidar(boletaSeleccionada)"
+            >
+              <span class="material-icons">check_circle</span>
+              Validar boleta seleccionada
+            </button>
+            <div *ngIf="!puedeValidar(boletaSeleccionada)" class="validation-warning">
+              <span class="material-icons">info</span>
+              <span *ngIf="boletaSeleccionada.estado === 'usada'">Esta boleta ya ha sido validada</span>
+              <span *ngIf="boletaSeleccionada.estado === 'cancelada' || boletaSeleccionada.estado === 'reembolsada'">Esta boleta no puede ser validada ({{ getEstadoLabel(boletaSeleccionada.estado) }})</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mensajes de no encontrado -->
+        <div *ngIf="!boletaEncontrada && !boletasEncontradasPorDocumento.length && !validandoBoleta && modoBusqueda === 'qr' && codigoQRValidar.trim()" class="empty-state">
+          No se encontró ninguna boleta con ese código QR
+        </div>
+        <div *ngIf="!boletasEncontradasPorDocumento.length && !validandoBoleta && modoBusqueda === 'documento' && documentoValidar.trim()" class="empty-state">
+          No se encontraron boletas con ese número de cédula
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="cerrarValidarModal()">Cerrar</button>
       </div>
     </div>
   </div>

@@ -7,6 +7,7 @@ import { Observable, from } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 import { SupabaseService } from './supabase.service';
+import { SupabaseObservableHelper } from './supabase-observable.helper';
 import { CategoriaEvento, PaginatedResponse, BaseFilters } from '../types';
 
 export interface CategoriaFilters extends BaseFilters {
@@ -18,7 +19,8 @@ export interface CategoriaFilters extends BaseFilters {
 })
 export class CategoriasService {
   constructor(
-    private supabase: SupabaseService
+    private supabase: SupabaseService,
+    private supabaseHelper: SupabaseObservableHelper
   ) {}
 
   /**
@@ -44,7 +46,7 @@ export class CategoriasService {
     const toIndex = fromIndex + limit - 1;
     query = query.range(fromIndex, toIndex);
 
-    return from(query).pipe(
+    return this.supabaseHelper.fromSupabase(query).pipe(
       map(({ data, error, count }) => {
             if (error) {
               console.error('Error en getCategorias:', error);
@@ -71,7 +73,7 @@ export class CategoriasService {
    * Obtiene una categoría por ID
    */
   getCategoriaById(id: number): Observable<CategoriaEvento> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from('categorias_evento')
             .select('*')
@@ -90,7 +92,7 @@ export class CategoriasService {
    * Crea una nueva categoría
    */
   createCategoria(categoria: Partial<CategoriaEvento>): Observable<CategoriaEvento> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from('categorias_evento')
             .insert(categoria)
@@ -109,7 +111,7 @@ export class CategoriasService {
    * Actualiza una categoría
    */
   updateCategoria(id: number, categoria: Partial<CategoriaEvento>): Observable<CategoriaEvento> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from('categorias_evento')
             .update(categoria)
@@ -129,7 +131,7 @@ export class CategoriasService {
    * Elimina una categoría (soft delete)
    */
   deleteCategoria(id: number): Observable<void> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from('categorias_evento')
             .update({ activo: false })

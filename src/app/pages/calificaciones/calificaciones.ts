@@ -1,6 +1,8 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { CalificacionesService } from '../../services/calificaciones.service';
 import { Calificacion, PaginatedResponse } from '../../types';
 
@@ -10,7 +12,8 @@ import { Calificacion, PaginatedResponse } from '../../types';
   templateUrl: './calificaciones.html',
   styleUrl: './calificaciones.css',
 })
-export class Calificaciones implements OnInit {
+export class Calificaciones implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
   calificaciones: Calificacion[] = [];
   loading = false;
   total = 0;
@@ -38,7 +41,9 @@ export class Calificaciones implements OnInit {
       limit: this.limit,
       evento_id: this.eventoFiltro || undefined,
       activo: this.activoFiltro !== null ? this.activoFiltro : undefined
-    }).subscribe({
+    }).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (response: PaginatedResponse<Calificacion>) => {
         console.log('Response recibida en calificaciones:', response);
         this.calificaciones = response.data || [];
@@ -61,13 +66,20 @@ export class Calificaciones implements OnInit {
   }
 
   toggleActivo(calificacion: Calificacion) {
-    this.calificacionesService.desactivarCalificacion(calificacion.id).subscribe({
+    this.calificacionesService.desactivarCalificacion(calificacion.id).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: () => this.loadCalificaciones(),
       error: (err) => {
         console.error('Error actualizando calificación:', err);
         alert('Error al actualizar calificación');
       }
     });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   getStars(rating: number): string[] {

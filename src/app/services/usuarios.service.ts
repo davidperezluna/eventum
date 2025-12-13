@@ -7,6 +7,7 @@ import { Observable, from } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 import { SupabaseService } from './supabase.service';
+import { SupabaseObservableHelper } from './supabase-observable.helper';
 import { Usuario, TipoUsuario, PaginatedResponse, BaseFilters } from '../types';
 
 export interface UsuarioFilters extends BaseFilters {
@@ -21,7 +22,8 @@ export interface UsuarioFilters extends BaseFilters {
 })
 export class UsuariosService {
   constructor(
-    private supabase: SupabaseService
+    private supabase: SupabaseService,
+    private supabaseHelper: SupabaseObservableHelper
   ) {}
 
   /**
@@ -56,7 +58,7 @@ export class UsuariosService {
     const toIndex = fromIndex + limit - 1;
     query = query.range(fromIndex, toIndex);
 
-    return from(query).pipe(
+    return this.supabaseHelper.fromSupabase(query).pipe(
       map(({ data, error, count }) => {
             if (error) {
               console.error('Error en getUsuarios:', error);
@@ -86,7 +88,7 @@ export class UsuariosService {
    * Obtiene un usuario por ID
    */
   getUsuarioById(id: number): Observable<Usuario> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from('usuarios')
             .select('*')
@@ -105,7 +107,7 @@ export class UsuariosService {
    * Crea un nuevo usuario con Supabase Auth
    */
   createUsuario(usuarioData: { email: string; password: string; nombre?: string; apellido?: string; tipo_usuario_id: number; telefono?: string; activo?: boolean }): Observable<Usuario> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       (async () => {
         try {
           console.log('Creando usuario en Supabase Auth:', usuarioData.email);
@@ -152,13 +154,17 @@ export class UsuariosService {
           }
 
               console.log('Usuario creado exitosamente:', data);
-          return data as Usuario;
+          return { data: data as Usuario, error: null };
         } catch (error: any) {
           console.error('Error catch en createUsuario:', error);
           throw error;
         }
       })()
     ).pipe(
+      map((response) => {
+        if (response.error) throw response.error;
+        return response.data as Usuario;
+      }),
       catchError((error) => throwError(() => error))
     );
   }
@@ -167,7 +173,7 @@ export class UsuariosService {
    * Actualiza un usuario
    */
   updateUsuario(id: number, usuario: Partial<Usuario>): Observable<Usuario> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from('usuarios')
             .update({ ...usuario, fecha_actualizacion: new Date().toISOString() })
@@ -187,7 +193,7 @@ export class UsuariosService {
    * Elimina un usuario (soft delete)
    */
   deleteUsuario(id: number): Observable<void> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from('usuarios')
             .update({ activo: false })
@@ -205,7 +211,7 @@ export class UsuariosService {
    * Obtiene todos los tipos de usuario
    */
   getTiposUsuario(): Observable<TipoUsuario[]> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
             .from('tipos_usuario')
             .select('*')
@@ -226,7 +232,7 @@ export class UsuariosService {
   getOrganizadores(): Observable<Usuario[]> {
     console.log('getOrganizadores llamado en servicio');
     
-    return from(
+    return this.supabaseHelper.fromSupabase(
       (async () => {
         try {
           console.log('Ejecutando consulta de organizadores con tipo_usuario_id = 2...');
@@ -263,7 +269,7 @@ export class UsuariosService {
               
                         const organizadores = (dataAlt as Usuario[]) || [];
                         console.log('Organizadores encontrados (sin filtro activo):', organizadores.length);
-              return organizadores;
+              return { data: organizadores, error: null };
                       }
             
             throw error;
@@ -275,13 +281,17 @@ export class UsuariosService {
                 console.warn('No se encontraron organizadores con tipo_usuario_id = 2 y activo = true');
           }
           
-          return organizadores;
+          return { data: organizadores, error: null };
         } catch (error: any) {
           console.error('Error catch en getOrganizadores:', error);
           throw error;
         }
       })()
     ).pipe(
+      map((response) => {
+        if (response.error) throw response.error;
+        return (response.data as Usuario[]) || [];
+      }),
       catchError((error) => {
         console.error('Error en observable getOrganizadores:', error);
         return throwError(() => error);

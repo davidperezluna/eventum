@@ -7,6 +7,7 @@ import { Observable, forkJoin, from } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { SupabaseService } from './supabase.service';
+import { SupabaseObservableHelper } from './supabase-observable.helper';
 import { DashboardStats } from '../types';
 
 @Injectable({
@@ -14,7 +15,8 @@ import { DashboardStats } from '../types';
 })
 export class DashboardOrganizadorService {
   constructor(
-    private supabase: SupabaseService
+    private supabase: SupabaseService,
+    private supabaseHelper: SupabaseObservableHelper
   ) {}
 
   /**
@@ -24,7 +26,7 @@ export class DashboardOrganizadorService {
     const now = new Date().toISOString();
 
     // Eventos activos del organizador
-    const eventosActivos$ = from(
+    const eventosActivos$ = this.supabaseHelper.fromSupabase(
       this.supabase
         .from('eventos')
         .select('*', { count: 'exact' })
@@ -44,7 +46,7 @@ export class DashboardOrganizadorService {
     );
 
     // Boletas vendidas de eventos del organizador
-    const boletasVendidas$ = from(
+    const boletasVendidas$ = this.supabaseHelper.fromSupabase(
       (async () => {
         try {
           // Obtener todos los tipos de boleta de eventos del organizador
@@ -54,10 +56,10 @@ export class DashboardOrganizadorService {
             .eq('eventos.organizador_id', organizadorId);
 
           if (tiposError || !tiposData || tiposData.length === 0) {
-            return 0;
+            return { data: 0, error: null };
           }
 
-          const tiposIds = tiposData.map(t => t.id);
+          const tiposIds = tiposData.map((t: any) => t.id);
           
           // Contar boletas compradas de esos tipos
           const { count, error } = await this.supabase
@@ -67,20 +69,24 @@ export class DashboardOrganizadorService {
 
           if (error) {
             console.error('Error en boletas vendidas:', error);
-            return 0;
+            return { data: 0, error: null };
           }
-          return count || 0;
+          return { data: count || 0, error: null };
         } catch (error) {
           console.error('Error en boletas vendidas:', error);
-          return 0;
+          return { data: 0, error: null };
         }
       })()
     ).pipe(
+      map((response) => {
+        if (response.error) return 0;
+        return response.data as number;
+      }),
       catchError(() => of(0))
     );
 
     // Ingresos totales del organizador
-    const ingresosTotales$ = from(
+    const ingresosTotales$ = this.supabaseHelper.fromSupabase(
       this.supabase
         .from('compras')
         .select('total, evento_id, eventos!inner(organizador_id)')
@@ -93,7 +99,7 @@ export class DashboardOrganizadorService {
           return 0;
         }
         if (data) {
-          return data.reduce((sum, compra) => sum + Number(compra.total || 0), 0);
+          return data.reduce((sum: number, compra: any) => sum + Number(compra.total || 0), 0);
         }
         return 0;
       }),
@@ -101,7 +107,7 @@ export class DashboardOrganizadorService {
     );
 
     // Clientes únicos que compraron eventos del organizador
-    const clientes$ = from(
+    const clientes$ = this.supabaseHelper.fromSupabase(
       this.supabase
         .from('compras')
         .select('cliente_id, evento_id, eventos!inner(organizador_id)')
@@ -113,7 +119,7 @@ export class DashboardOrganizadorService {
           return 0;
         }
         if (data) {
-          const uniqueClients = new Set(data.map((c) => c.cliente_id));
+          const uniqueClients = new Set(data.map((c: any) => c.cliente_id));
           return uniqueClients.size;
         }
         return 0;
@@ -122,7 +128,7 @@ export class DashboardOrganizadorService {
     );
 
     // Ventas recientes del organizador (últimas 5)
-    const ventasRecientes$ = from(
+    const ventasRecientes$ = this.supabaseHelper.fromSupabase(
       this.supabase
         .from('compras')
         .select('*, eventos!inner(organizador_id)')
@@ -141,7 +147,7 @@ export class DashboardOrganizadorService {
     );
 
     // Eventos próximos del organizador (próximos 5)
-    const eventosProximos$ = from(
+    const eventosProximos$ = this.supabaseHelper.fromSupabase(
       this.supabase
         .from('eventos')
         .select('*')
@@ -162,7 +168,7 @@ export class DashboardOrganizadorService {
     );
 
     // Eventos totales del organizador
-    const eventosTotales$ = from(
+    const eventosTotales$ = this.supabaseHelper.fromSupabase(
       this.supabase
         .from('eventos')
         .select('*', { count: 'exact' })
@@ -178,7 +184,7 @@ export class DashboardOrganizadorService {
       inicioMes.setDate(1);
       inicioMes.setHours(0, 0, 0, 0);
       
-      return from(
+      return this.supabaseHelper.fromSupabase(
         this.supabase
           .from('compras')
           .select('total, evento_id, eventos!inner(organizador_id)')
@@ -188,8 +194,8 @@ export class DashboardOrganizadorService {
       ).pipe(
         map(({ data, error }) => {
           if (error) return 0;
-          if (data) {
-            return data.reduce((sum, compra) => sum + Number(compra.total || 0), 0);
+          if (data && Array.isArray(data)) {
+            return (data as any[]).reduce((sum: number, compra: any) => sum + Number(compra.total || 0), 0);
           }
           return 0;
         }),
@@ -208,7 +214,7 @@ export class DashboardOrganizadorService {
       finMesAnterior.setDate(0);
       finMesAnterior.setHours(23, 59, 59, 999);
       
-      return from(
+      return this.supabaseHelper.fromSupabase(
         this.supabase
           .from('compras')
           .select('total, evento_id, eventos!inner(organizador_id)')
@@ -219,8 +225,8 @@ export class DashboardOrganizadorService {
       ).pipe(
         map(({ data, error }) => {
           if (error) return 0;
-          if (data) {
-            return data.reduce((sum, compra) => sum + Number(compra.total || 0), 0);
+          if (data && Array.isArray(data)) {
+            return (data as any[]).reduce((sum: number, compra: any) => sum + Number(compra.total || 0), 0);
           }
           return 0;
         }),
@@ -229,7 +235,7 @@ export class DashboardOrganizadorService {
     })();
 
     // Boletas por estado del organizador
-    const boletasPorEstado$ = from(
+    const boletasPorEstado$ = this.supabaseHelper.fromSupabase(
       (async () => {
         try {
           // Obtener tipos de boleta de eventos del organizador
@@ -239,10 +245,10 @@ export class DashboardOrganizadorService {
             .eq('eventos.organizador_id', organizadorId);
 
           if (tiposError || !tiposData || tiposData.length === 0) {
-            return [];
+            return { data: [], error: null };
           }
 
-          const tiposIds = tiposData.map(t => t.id);
+          const tiposIds = tiposData.map((t: any) => t.id);
           
           // Obtener boletas compradas
           const { data, error } = await this.supabase
@@ -250,26 +256,30 @@ export class DashboardOrganizadorService {
             .select('estado')
             .in('tipo_boleta_id', tiposIds);
 
-          if (error) return [];
+          if (error) return { data: [], error: null };
           if (data) {
             const estados: { [key: string]: number } = {};
-            data.forEach(boleta => {
+            data.forEach((boleta: any) => {
               const estado = boleta.estado || 'pendiente';
               estados[estado] = (estados[estado] || 0) + 1;
             });
-            return Object.entries(estados).map(([estado, cantidad]) => ({ estado, cantidad }));
+            return { data: Object.entries(estados).map(([estado, cantidad]) => ({ estado, cantidad })), error: null };
           }
-          return [];
+          return { data: [], error: null };
         } catch (error) {
-          return [];
+          return { data: [], error: null };
         }
       })()
     ).pipe(
+      map((response) => {
+        if (response.error) return [];
+        return (response.data as { estado: string; cantidad: number }[]) || [];
+      }),
       catchError(() => of([]))
     );
 
     // Top eventos del organizador (por boletas vendidas)
-    const topEventos$ = from(
+    const topEventos$ = this.supabaseHelper.fromSupabase(
       (async () => {
         try {
           // Obtener eventos del organizador
@@ -280,12 +290,12 @@ export class DashboardOrganizadorService {
             .eq('activo', true);
 
           if (eventosError || !eventosData || eventosData.length === 0) {
-            return [];
+            return { data: [], error: null };
           }
 
           // Para cada evento, contar boletas vendidas
           const eventosConVentas = await Promise.all(
-            eventosData.map(async (evento) => {
+            eventosData.map(async (evento: any) => {
               // Obtener tipos de boleta del evento
               const { data: tiposData } = await this.supabase
                 .from('tipos_boleta')
@@ -296,7 +306,7 @@ export class DashboardOrganizadorService {
                 return { ...evento, boletas_vendidas: 0 };
               }
 
-              const tiposIds = tiposData.map(t => t.id);
+              const tiposIds = tiposData.map((t: any) => t.id);
               
               // Contar boletas vendidas
               const { count } = await this.supabase
@@ -312,14 +322,18 @@ export class DashboardOrganizadorService {
           );
 
           // Ordenar por boletas vendidas y tomar top 5
-          eventosConVentas.sort((a, b) => b.boletas_vendidas - a.boletas_vendidas);
-          return eventosConVentas.slice(0, 5);
+          eventosConVentas.sort((a: any, b: any) => b.boletas_vendidas - a.boletas_vendidas);
+          return { data: eventosConVentas.slice(0, 5), error: null };
         } catch (error: any) {
           console.error('Error en top eventos:', error);
-          return [];
+          return { data: [], error: null };
         }
       })()
     ).pipe(
+      map((response) => {
+        if (response.error) return [];
+        return (response.data as any[]) || [];
+      }),
       catchError(() => of([]))
     );
 

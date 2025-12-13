@@ -7,10 +7,16 @@
       </h1>
       <p>Panel de control y estadísticas de Eventum</p>
     </div>
-    <button class="btn-refresh" (click)="loadStats()" [disabled]="loading">
-      <span class="material-icons">refresh</span>
-      Actualizar
-    </button>
+    <div style="display: flex; gap: var(--spacing-md); align-items: center;">
+      <a routerLink="/dashboard-eventos" class="btn-primary" style="text-decoration: none; display: flex; align-items: center; gap: var(--spacing-xs);">
+        <span class="material-icons">analytics</span>
+        Dashboard Completo
+      </a>
+      <button class="btn-refresh" (click)="loadStats()" [disabled]="loading">
+        <span class="material-icons">refresh</span>
+        Actualizar
+      </button>
+    </div>
   </header>
 
   <!-- Mensaje de error -->

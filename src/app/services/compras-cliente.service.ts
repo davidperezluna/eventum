@@ -8,6 +8,7 @@ import { Observable, from, forkJoin } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 import { SupabaseService } from './supabase.service';
+import { SupabaseObservableHelper } from './supabase-observable.helper';
 import { Compra, BoletaComprada, TipoBoleta, MetodoPago, TipoEstadoPago, TipoEstadoCompra, TipoEstadoBoleta } from '../types';
 
 export interface ItemCompra {
@@ -33,7 +34,8 @@ export interface DatosCompra {
 })
 export class ComprasClienteService {
   constructor(
-    private supabase: SupabaseService
+    private supabase: SupabaseService,
+    private supabaseHelper: SupabaseObservableHelper
   ) {}
 
   /**
@@ -58,7 +60,7 @@ export class ComprasClienteService {
    * Valida que haya disponibilidad de boletas
    */
   validarDisponibilidad(items: ItemCompra[]): Observable<{ valido: boolean; errores: string[] }> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       (async () => {
         const errores: string[] = [];
         
@@ -85,11 +87,18 @@ export class ComprasClienteService {
         }
 
         return {
-          valido: errores.length === 0,
-          errores
+          data: {
+            valido: errores.length === 0,
+            errores
+          },
+          error: null
         };
       })()
     ).pipe(
+      map((response) => {
+        if (response.error) throw response.error;
+        return response.data as { valido: boolean; errores: string[] };
+      }),
       catchError(() => {
         return throwError(() => ({ valido: false, errores: ['Error al validar disponibilidad'] }));
       })
@@ -116,7 +125,7 @@ export class ComprasClienteService {
       datos_facturacion: datosCompra.datos_facturacion
     };
 
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
         .from('compras')
         .insert(compraData)
@@ -150,7 +159,7 @@ export class ComprasClienteService {
         // Insertar todas las boletas
         // NOTA: La actualización de cantidad_vendidas y cantidad_disponibles
         // se maneja automáticamente por triggers en la base de datos
-        return from(
+        return this.supabaseHelper.fromSupabase(
           this.supabase
             .from('boletas_compradas')
             .insert(boletasPromises)
@@ -178,7 +187,7 @@ export class ComprasClienteService {
    * Agrupa items por tipo_boleta_id para evitar actualizaciones duplicadas
    */
   private actualizarCantidadesVendidas(items: ItemCompra[]): Observable<void> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       (async () => {
         // Agrupar items por tipo_boleta_id para sumar las cantidades
         const itemsAgrupados = new Map<number, number>();
@@ -233,9 +242,13 @@ export class ComprasClienteService {
             throw error;
           }
         }
+        return { data: null, error: null };
       })()
     ).pipe(
-      map(() => void 0),
+      map((response) => {
+        if (response.error) throw response.error;
+        return void 0;
+      }),
       catchError((error) => {
         console.error('Error en actualizarCantidadesVendidas:', error);
         return throwError(() => error);
@@ -247,7 +260,7 @@ export class ComprasClienteService {
    * Obtiene una compra por ID
    */
   getCompraById(compraId: number): Observable<Compra> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
         .from('compras')
         .select('*')
@@ -266,7 +279,7 @@ export class ComprasClienteService {
    * Confirma el pago de una compra
    */
   confirmarPago(compraId: number): Observable<Compra> {
-    return from(
+    return this.supabaseHelper.fromSupabase(
       this.supabase
         .from('compras')
         .update({
