@@ -1,0 +1,92 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch: # Permite ejecutar manualmente desde GitHub
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify project structure
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -la
+          echo ""
+          echo "Checking for admin-panel/eventum:"
+          if [ -d "admin-panel/eventum" ]; then
+            echo "✓ Directory exists"
+            echo "Checking for package.json:"
+            if [ -f "admin-panel/eventum/package.json" ]; then
+              echo "✓ package.json found"
+            else
+              echo "✗ package.json not found"
+              exit 1
+            fi
+          else
+            echo "✗ Directory 'admin-panel/eventum' does not exist in repository"
+            echo ""
+            echo "Available directories:"
+            find . -maxdepth 2 -type d | head -20
+            echo ""
+            echo "ERROR: The Angular project directory 'admin-panel/eventum' was not found."
+            echo "Please ensure you have committed and pushed the project files to the repository."
+            exit 1
+          fi
+
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: admin-panel/eventum/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('admin-panel/eventum/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Install dependencies
+        working-directory: admin-panel/eventum
+        run: npm ci
+
+      - name: Build application
+        working-directory: admin-panel/eventum
+        run: npm run build:gh-pages
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: admin-panel/eventum/dist/admin-panel
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
