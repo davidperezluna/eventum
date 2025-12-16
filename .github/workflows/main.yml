@@ -27,8 +27,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: admin-panel/eventum/package-lock.json
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: admin-panel/eventum/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('admin-panel/eventum/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
       - name: Install dependencies
         working-directory: admin-panel/eventum
