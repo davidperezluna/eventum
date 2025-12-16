@@ -42,12 +42,16 @@ El build se generará en `dist/admin-panel/`
 
 Este proyecto está configurado para desplegarse automáticamente en GitHub Pages usando GitHub Actions.
 
-### Configuración Manual
+### Configuración Inicial
 
-1. Ve a la configuración de tu repositorio en GitHub
-2. Navega a **Settings** > **Pages**
-3. En **Source**, selecciona **GitHub Actions**
-4. El workflow se ejecutará automáticamente cuando hagas push a la rama `main` o `master`
+1. **Habilita GitHub Pages en tu repositorio:**
+   - Ve a **Settings** > **Pages** en tu repositorio de GitHub
+   - En **Source**, selecciona **GitHub Actions**
+   - Guarda los cambios
+
+2. **El workflow se ejecutará automáticamente:**
+   - Al hacer push a la rama `main` o `master`
+   - O manualmente desde la pestaña **Actions** > **Deploy to GitHub Pages** > **Run workflow**
 
 ### URL de Despliegue
 
@@ -55,6 +59,21 @@ Una vez desplegado, tu aplicación estará disponible en:
 ```
 https://[tu-usuario].github.io/[nombre-repositorio]/eventum-admin/
 ```
+
+**Ejemplo:** Si tu usuario es `johndoe` y tu repositorio es `eventum`, la URL será:
+```
+https://johndoe.github.io/eventum/eventum-admin/
+```
+
+### Workflow de GitHub Actions
+
+El workflow (`.github/workflows/deploy-gh-pages.yml`) realiza lo siguiente:
+
+1. ✅ Verifica el código del repositorio
+2. ✅ Configura Node.js 20
+3. ✅ Instala las dependencias con `npm ci`
+4. ✅ Construye la aplicación con `npm run build:gh-pages`
+5. ✅ Despliega automáticamente a GitHub Pages
 
 **Nota:** Asegúrate de actualizar el `base-href` en `angular.json` y `package.json` si cambias el nombre del repositorio o la ruta de despliegue.
 
@@ -76,7 +95,7 @@ admin-panel/
 │   └── styles.css              # Estilos globales
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml           # Workflow de GitHub Actions
+│       └── deploy-gh-pages.yml   # Workflow de GitHub Actions para GitHub Pages
 └── angular.json                 # Configuración de Angular
 ```
 
