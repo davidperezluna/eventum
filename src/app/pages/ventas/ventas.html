@@ -58,7 +58,7 @@
               {{ getEstadoCompraLabel(compra.estado_compra) }}
             </span>
           </td>
-          <td>{{ compra.fecha_compra | date:'short' }}</td>
+          <td>{{ compra.fecha_compra | dateFormat:'short' }}</td>
           <td class="actions">
             <button class="btn-icon" (click)="openModal(compra)" title="Editar">
               <span class="material-icons">edit</span>

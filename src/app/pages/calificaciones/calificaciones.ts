@@ -5,10 +5,11 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { CalificacionesService } from '../../services/calificaciones.service';
 import { Calificacion, PaginatedResponse } from '../../types';
+import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 @Component({
   selector: 'app-calificaciones',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DateFormatPipe],
   templateUrl: './calificaciones.html',
   styleUrl: './calificaciones.css',
 })

@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ComprasClienteService } from '../../services/compras-cliente.service';
 import { Compra } from '../../types';
+import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 @Component({
   selector: 'app-pago-resultado',
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, DateFormatPipe],
   templateUrl: './pago-resultado.html',
   styleUrl: './pago-resultado.css',
 })

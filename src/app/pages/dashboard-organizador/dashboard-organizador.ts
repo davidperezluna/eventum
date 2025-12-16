@@ -4,10 +4,11 @@ import { RouterModule } from '@angular/router';
 import { DashboardOrganizadorService } from '../../services/dashboard-organizador.service';
 import { AuthService } from '../../services/auth.service';
 import { DashboardStats } from '../../types';
+import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 @Component({
   selector: 'app-dashboard-organizador',
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, DateFormatPipe],
   templateUrl: './dashboard-organizador.html',
   styleUrl: './dashboard-organizador.css',
 })

@@ -10,10 +10,11 @@ import { ReportesService, ReporteVentas, ReporteAsistencia, ReporteEvento } from
 import { EventosService } from '../../services/eventos.service';
 import { AuthService } from '../../services/auth.service';
 import { DashboardStats, Evento } from '../../types';
+import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 @Component({
   selector: 'app-dashboard-eventos',
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, DateFormatPipe],
   templateUrl: './dashboard-eventos.html',
   styleUrl: './dashboard-eventos.css',
 })

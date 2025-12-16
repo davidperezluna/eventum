@@ -6,6 +6,7 @@ import { Injectable, NgZone } from '@angular/core';
 import { Observable, from } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { SupabaseService } from './supabase.service';
+import { TimezoneService } from './timezone.service';
 import { Calificacion, PaginatedResponse, BaseFilters } from '../types';
 
 export interface CalificacionFilters extends BaseFilters {
@@ -22,7 +23,8 @@ export interface CalificacionFilters extends BaseFilters {
 export class CalificacionesService {
   constructor(
     private supabase: SupabaseService,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private timezoneService: TimezoneService
   ) {}
 
   /**
@@ -104,7 +106,7 @@ export class CalificacionesService {
         try {
           const { data, error } = await this.supabase
             .from('calificaciones')
-            .update({ ...calificacion, fecha_actualizacion: new Date().toISOString() })
+            .update({ ...calificacion, fecha_actualizacion: this.timezoneService.getCurrentDateISO() })
             .eq('id', id)
             .select()
             .single();
@@ -135,7 +137,7 @@ export class CalificacionesService {
         try {
           const { error } = await this.supabase
             .from('calificaciones')
-            .update({ activo: false, fecha_actualizacion: new Date().toISOString() })
+            .update({ activo: false, fecha_actualizacion: this.timezoneService.getCurrentDateISO() })
             .eq('id', id);
           
           this.ngZone.run(() => {

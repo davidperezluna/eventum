@@ -8,6 +8,7 @@ import { map, catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { SupabaseObservableHelper } from './supabase-observable.helper';
+import { TimezoneService } from './timezone.service';
 import { Usuario, TipoUsuario, PaginatedResponse, BaseFilters } from '../types';
 
 export interface UsuarioFilters extends BaseFilters {
@@ -23,7 +24,8 @@ export interface UsuarioFilters extends BaseFilters {
 export class UsuariosService {
   constructor(
     private supabase: SupabaseService,
-    private supabaseHelper: SupabaseObservableHelper
+    private supabaseHelper: SupabaseObservableHelper,
+    private timezoneService: TimezoneService
   ) {}
 
   /**
@@ -176,7 +178,7 @@ export class UsuariosService {
     return this.supabaseHelper.fromSupabase(
       this.supabase
             .from('usuarios')
-            .update({ ...usuario, fecha_actualizacion: new Date().toISOString() })
+            .update({ ...usuario, fecha_actualizacion: this.timezoneService.getCurrentDateISO() })
             .eq('id', id)
             .select()
         .single()

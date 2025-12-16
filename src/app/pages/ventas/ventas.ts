@@ -6,10 +6,11 @@ import { takeUntil, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { ComprasService } from '../../services/compras.service';
 import { Compra, PaginatedResponse, TipoEstadoPago, TipoEstadoCompra, MetodoPago } from '../../types';
+import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 @Component({
   selector: 'app-ventas',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DateFormatPipe],
   templateUrl: './ventas.html',
   styleUrl: './ventas.css',
 })

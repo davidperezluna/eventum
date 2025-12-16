@@ -8,6 +8,7 @@ import { map, catchError, switchMap } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { SupabaseObservableHelper } from './supabase-observable.helper';
+import { TimezoneService } from './timezone.service';
 import { BoletaComprada, TipoBoleta, BoletaFilters, PaginatedResponse } from '../types';
 
 @Injectable({
@@ -16,7 +17,8 @@ import { BoletaComprada, TipoBoleta, BoletaFilters, PaginatedResponse } from '..
 export class BoletasService {
   constructor(
     private supabase: SupabaseService,
-    private supabaseHelper: SupabaseObservableHelper
+    private supabaseHelper: SupabaseObservableHelper,
+    private timezoneService: TimezoneService
   ) {}
 
   /**
@@ -311,7 +313,7 @@ export class BoletasService {
         .from('boletas_compradas')
         .update({ 
           estado: 'usada',
-          fecha_uso: new Date().toISOString()
+          fecha_uso: this.timezoneService.getCurrentDateISO()
         })
         .eq('id', boletaId)
         .select()

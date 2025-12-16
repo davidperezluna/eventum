@@ -6,6 +6,7 @@ import { Injectable, NgZone } from '@angular/core';
 import { Observable, from } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { SupabaseService } from './supabase.service';
+import { TimezoneService } from './timezone.service';
 import { Notificacion, PaginatedResponse, BaseFilters, TipoTipoNotificacion } from '../types';
 
 export interface NotificacionFilters extends BaseFilters {
@@ -20,7 +21,8 @@ export interface NotificacionFilters extends BaseFilters {
 export class NotificacionesService {
   constructor(
     private supabase: SupabaseService,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private timezoneService: TimezoneService
   ) {}
 
   /**
@@ -162,7 +164,7 @@ export class NotificacionesService {
         try {
           const { data, error } = await this.supabase
             .from('notificaciones')
-            .update({ leida: true, fecha_lectura: new Date().toISOString() })
+            .update({ leida: true, fecha_lectura: this.timezoneService.getCurrentDateISO() })
             .eq('id', id)
             .select()
             .single();

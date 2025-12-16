@@ -40,28 +40,28 @@
             <span class="material-icons">calendar_today</span>
             <div>
               <strong>Fecha de inicio:</strong>
-              <span>{{ evento.fecha_inicio | date:'full' }} a las {{ evento.fecha_inicio | date:'shortTime' }}</span>
+              <span>{{ evento.fecha_inicio | dateFormat:'full' }}</span>
             </div>
           </div>
           <div class="meta-item">
             <span class="material-icons">event</span>
             <div>
               <strong>Fecha de fin:</strong>
-              <span>{{ evento.fecha_fin | date:'full' }} a las {{ evento.fecha_fin | date:'shortTime' }}</span>
+              <span>{{ evento.fecha_fin | dateFormat:'full' }}</span>
             </div>
           </div>
           <div class="meta-item" *ngIf="evento.fecha_venta_inicio">
             <span class="material-icons">shopping_cart</span>
             <div>
               <strong>Venta inicia:</strong>
-              <span>{{ evento.fecha_venta_inicio | date:'medium' }}</span>
+              <span>{{ evento.fecha_venta_inicio | dateFormat:'medium' }}</span>
             </div>
           </div>
           <div class="meta-item" *ngIf="evento.fecha_venta_fin">
             <span class="material-icons">schedule</span>
             <div>
               <strong>Venta termina:</strong>
-              <span>{{ evento.fecha_venta_fin | date:'medium' }}</span>
+              <span>{{ evento.fecha_venta_fin | dateFormat:'medium' }}</span>
             </div>
           </div>
           <div class="meta-item" *ngIf="evento.edad_minima && evento.edad_minima > 0">

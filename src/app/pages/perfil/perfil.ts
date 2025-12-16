@@ -5,6 +5,7 @@ import { AuthService } from '../../services/auth.service';
 import { UsuariosService } from '../../services/usuarios.service';
 import { StorageService } from '../../services/storage.service';
 import { ImageOptimizationService } from '../../services/image-optimization.service';
+import { TimezoneService } from '../../services/timezone.service';
 import { Usuario, TipoGenero } from '../../types';
 
 @Component({
@@ -44,6 +45,7 @@ export class Perfil implements OnInit {
     private usuariosService: UsuariosService,
     private storageService: StorageService,
     private imageOptimizationService: ImageOptimizationService,
+    private timezoneService: TimezoneService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -94,7 +96,9 @@ export class Perfil implements OnInit {
 
   formatDateForInput(date: Date | string | undefined): string {
     if (!date) return '';
-    const d = new Date(date);
+    // Para fecha de nacimiento (solo fecha, sin hora), extraer solo la parte de fecha
+    const dateStr = typeof date === 'string' ? date : date.toISOString();
+    const d = new Date(dateStr);
     if (isNaN(d.getTime())) return '';
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -190,7 +194,7 @@ export class Perfil implements OnInit {
         apellido: this.formData.apellido || undefined,
         telefono: this.formData.telefono || undefined,
         fecha_nacimiento: this.formData.fecha_nacimiento 
-          ? new Date(this.formData.fecha_nacimiento as string).toISOString() 
+          ? this.timezoneService.datetimeLocalToISO(this.formData.fecha_nacimiento as string + 'T00:00')
           : undefined,
         genero: this.formData.genero,
         documento_identidad: this.formData.documento_identidad || undefined,

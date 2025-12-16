@@ -46,7 +46,7 @@
         <div class="evento-info">
           <div class="info-item">
             <span class="material-icons">calendar_today</span>
-            <span>{{ evento.fecha_inicio | date:'short' }}</span>
+            <span>{{ evento.fecha_inicio | dateFormat:'short' }}</span>
           </div>
           <div class="info-item" *ngIf="evento.precio_minimo !== undefined">
             <span class="material-icons">attach_money</span>

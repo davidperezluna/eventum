@@ -10,11 +10,14 @@ import { UsuariosService } from '../../services/usuarios.service';
 import { AuthService } from '../../services/auth.service';
 import { StorageService } from '../../services/storage.service';
 import { ImageOptimizationService } from '../../services/image-optimization.service';
+import { TimezoneService } from '../../services/timezone.service';
+import { AlertService } from '../../services/alert.service';
 import { Evento, CategoriaEvento, Lugar, Usuario, PaginatedResponse, TipoEstadoEvento } from '../../types';
+import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 @Component({
   selector: 'app-eventos',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DateFormatPipe],
   templateUrl: './eventos.html',
   styleUrl: './eventos.css',
 })
@@ -55,8 +58,10 @@ export class Eventos implements OnInit, OnDestroy {
     private lugaresService: LugaresService,
     private usuariosService: UsuariosService,
     public authService: AuthService,
+    private timezoneService: TimezoneService,
     private storageService: StorageService,
     private imageOptimizationService: ImageOptimizationService,
+    private alertService: AlertService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -209,15 +214,8 @@ export class Eventos implements OnInit, OnDestroy {
 
   formatDateForInput(date: Date | string | undefined): string {
     if (!date) return '';
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return '';
-    // Formato: YYYY-MM-DDTHH:mm
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    // Usar el servicio de timezone para convertir de ISO a datetime-local
+    return this.timezoneService.isoToDatetimeLocal(typeof date === 'string' ? date : date.toISOString());
   }
 
   closeModal() {
@@ -243,7 +241,7 @@ export class Eventos implements OnInit, OnDestroy {
       try {
         // Validar tamaño (máximo 10MB)
         if (!this.imageOptimizationService.validateFileSize(file, 10)) {
-          alert('La imagen es demasiado grande. Máximo 10MB.');
+          this.alertService.warning('Imagen demasiado grande', 'La imagen es demasiado grande. Máximo 10MB.');
           return;
         }
         
@@ -254,7 +252,7 @@ export class Eventos implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       } catch (error) {
         console.error('Error al procesar la imagen:', error);
-        alert('Error al procesar la imagen. Intenta con otro archivo.');
+        this.alertService.error('Error al procesar imagen', 'Error al procesar la imagen. Intenta con otro archivo.');
       }
     }
   }
@@ -292,7 +290,7 @@ export class Eventos implements OnInit, OnDestroy {
       
       if (error) {
         console.error('❌ Error subiendo imagen:', error);
-        alert('Error al subir la imagen: ' + (error.message || 'Error desconocido'));
+        this.alertService.error('Error al subir imagen', 'Error al subir la imagen: ' + (error.message || 'Error desconocido'));
         return null;
       }
       
@@ -304,7 +302,7 @@ export class Eventos implements OnInit, OnDestroy {
       return publicUrl;
     } catch (error: any) {
       console.error('❌ Error inesperado subiendo imagen:', error);
-      alert('Error inesperado al subir la imagen: ' + (error.message || 'Error desconocido'));
+      this.alertService.error('Error inesperado', 'Error inesperado al subir la imagen: ' + (error.message || 'Error desconocido'));
       return null;
     } finally {
       this.uploadingImage = false;
@@ -323,11 +321,11 @@ export class Eventos implements OnInit, OnDestroy {
   async saveEvento() {
     // Validaciones básicas
     if (!this.formData.titulo || !this.formData.titulo.trim()) {
-      alert('El título es requerido');
+      this.alertService.warning('Campo requerido', 'El título es requerido');
       return;
     }
     if (!this.formData.categoria_id) {
-      alert('La categoría es requerida');
+      this.alertService.warning('Campo requerido', 'La categoría es requerida');
       return;
     }
     // Si es organizador, asegurar que se use su ID
@@ -336,19 +334,19 @@ export class Eventos implements OnInit, OnDestroy {
       if (organizadorId) {
         this.formData.organizador_id = organizadorId;
       } else {
-        alert('No se pudo identificar el organizador');
+        this.alertService.error('Error', 'No se pudo identificar el organizador');
         return;
       }
     } else if (!this.formData.organizador_id) {
-      alert('El organizador es requerido');
+      this.alertService.warning('Campo requerido', 'El organizador es requerido');
       return;
     }
     if (!this.formData.fecha_inicio || !this.formData.fecha_fin) {
-      alert('Las fechas de inicio y fin son requeridas');
+      this.alertService.warning('Campo requerido', 'Las fechas de inicio y fin son requeridas');
       return;
     }
     if (!this.formData.fecha_venta_inicio || !this.formData.fecha_venta_fin) {
-      alert('Las fechas de venta son requeridas');
+      this.alertService.warning('Campo requerido', 'Las fechas de venta son requeridas');
       return;
     }
 
@@ -357,7 +355,7 @@ export class Eventos implements OnInit, OnDestroy {
     if (this.selectedFile) {
       imagenUrl = await this.uploadImage() || imagenUrl;
       if (!imagenUrl && this.selectedFile) {
-        alert('Error al subir la imagen. Intenta de nuevo.');
+        this.alertService.error('Error al subir imagen', 'Error al subir la imagen. Intenta de nuevo.');
         return;
       }
     }
@@ -365,11 +363,11 @@ export class Eventos implements OnInit, OnDestroy {
     // Preparar datos para envío
     const eventoData: Partial<Evento> = {
       ...this.formData,
-      // Convertir fechas de string a ISO
-      fecha_inicio: new Date(this.formData.fecha_inicio as string).toISOString(),
-      fecha_fin: new Date(this.formData.fecha_fin as string).toISOString(),
-      fecha_venta_inicio: new Date(this.formData.fecha_venta_inicio as string).toISOString(),
-      fecha_venta_fin: new Date(this.formData.fecha_venta_fin as string).toISOString(),
+      // Convertir fechas de datetime-local a ISO usando el servicio de timezone
+      fecha_inicio: this.timezoneService.datetimeLocalToISO(this.formData.fecha_inicio as string),
+      fecha_fin: this.timezoneService.datetimeLocalToISO(this.formData.fecha_fin as string),
+      fecha_venta_inicio: this.timezoneService.datetimeLocalToISO(this.formData.fecha_venta_inicio as string),
+      fecha_venta_fin: this.timezoneService.datetimeLocalToISO(this.formData.fecha_venta_fin as string),
       // Asegurar que organizador_id esté presente
       organizador_id: this.formData.organizador_id || 0,
       // Agregar URL de imagen
@@ -394,7 +392,7 @@ export class Eventos implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error guardando evento:', err);
-          alert('Error al guardar evento: ' + (err.message || 'Error desconocido'));
+          this.alertService.error('Error al guardar', 'Error al guardar evento: ' + (err.message || 'Error desconocido'));
         }
       });
     } else {
@@ -407,7 +405,7 @@ export class Eventos implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error creando evento:', err);
-          alert('Error al crear evento: ' + (err.message || 'Error desconocido'));
+          this.alertService.error('Error al crear', 'Error al crear evento: ' + (err.message || 'Error desconocido'));
         }
       });
     }
@@ -420,7 +418,7 @@ export class Eventos implements OnInit, OnDestroy {
       next: () => this.loadEventos(),
       error: (err) => {
         console.error('Error actualizando evento:', err);
-        alert('Error al actualizar evento');
+        this.alertService.error('Error', 'Error al actualizar evento');
       }
     });
   }
@@ -432,7 +430,7 @@ export class Eventos implements OnInit, OnDestroy {
       next: () => this.loadEventos(),
       error: (err) => {
         console.error('Error actualizando evento:', err);
-        alert('Error al actualizar evento');
+        this.alertService.error('Error', 'Error al actualizar evento');
       }
     });
   }

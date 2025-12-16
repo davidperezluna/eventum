@@ -33,7 +33,7 @@
         <p>{{ notificacion.mensaje }}</p>
         <div class="notificacion-footer">
           <span>Usuario ID: {{ notificacion.usuario_id }}</span>
-          <span>{{ notificacion.fecha_creacion | date:'short' }}</span>
+          <span>{{ notificacion.fecha_creacion | dateFormat:'short' }}</span>
           <span *ngIf="notificacion.leida" class="badge-success">Leída</span>
         </div>
       </div>

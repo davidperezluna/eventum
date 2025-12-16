@@ -203,7 +203,7 @@
         <h2>Ventas por Día</h2>
         <div class="chart-container">
           <div *ngFor="let item of ventasPorDia" class="chart-bar-item">
-            <div class="chart-bar-label">{{ item.fecha | date:'shortDate' }}</div>
+            <div class="chart-bar-label">{{ item.fecha | dateFormat:'shortDate' }}</div>
             <div class="chart-bar-wrapper">
               <div class="chart-bar" [style.width.%]="getBarWidth(item.ventas, getMaxValue(ventasPorDia, 'ventas'))">
                 <span class="chart-bar-value">{{ item.ventas }}</span>
@@ -474,11 +474,11 @@
           </div>
           <div class="detalle-item">
             <span class="detalle-label">Fecha Inicio</span>
-            <span class="detalle-value">{{ reporteEventoSeleccionado.fecha_inicio | date:'short' }}</span>
+            <span class="detalle-value">{{ reporteEventoSeleccionado.fecha_inicio | dateFormat:'short' }}</span>
           </div>
           <div class="detalle-item">
             <span class="detalle-label">Fecha Fin</span>
-            <span class="detalle-value">{{ reporteEventoSeleccionado.fecha_fin | date:'short' }}</span>
+            <span class="detalle-value">{{ reporteEventoSeleccionado.fecha_fin | dateFormat:'short' }}</span>
           </div>
           <div class="detalle-item">
             <span class="detalle-label">Ticket Promedio</span>

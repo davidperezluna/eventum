@@ -11,10 +11,11 @@ import { AuthService } from '../../services/auth.service';
 import { Compra, BoletaComprada, PaginatedResponse, TipoBoleta, Evento, TipoEstadoPago, TipoEstadoCompra } from '../../types';
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
+import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 @Component({
   selector: 'app-mis-compras',
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, DateFormatPipe],
   templateUrl: './mis-compras.html',
   styleUrl: './mis-compras.css',
 })

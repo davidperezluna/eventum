@@ -8,6 +8,7 @@ import { map, catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { SupabaseObservableHelper } from './supabase-observable.helper';
+import { TimezoneService } from './timezone.service';
 import { Evento, EventoFilters, ApiResponse, PaginatedResponse } from '../types';
 
 @Injectable({
@@ -16,7 +17,8 @@ import { Evento, EventoFilters, ApiResponse, PaginatedResponse } from '../types'
 export class EventosService {
   constructor(
     private supabase: SupabaseService,
-    private supabaseHelper: SupabaseObservableHelper
+    private supabaseHelper: SupabaseObservableHelper,
+    private timezoneService: TimezoneService
   ) {}
   private tableName = 'eventos';
 
@@ -136,7 +138,7 @@ export class EventosService {
     return this.supabaseHelper.fromSupabase(
       this.supabase
             .from(this.tableName)
-            .update({ ...evento, fecha_actualizacion: new Date().toISOString() })
+            .update({ ...evento, fecha_actualizacion: this.timezoneService.getCurrentDateISO() })
             .eq('id', id)
             .select()
         .single()
@@ -171,7 +173,7 @@ export class EventosService {
    * Obtiene eventos próximos
    */
   getEventosProximos(limit: number = 5): Observable<Evento[]> {
-    const now = new Date().toISOString();
+    const now = this.timezoneService.getCurrentDateISO();
     return this.supabaseHelper.fromSupabase(
       this.supabase
             .from(this.tableName)

@@ -5,11 +5,13 @@ import { Subject } from 'rxjs';
 import { takeUntil, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { UsuariosService } from '../../services/usuarios.service';
+import { AlertService } from '../../services/alert.service';
 import { Usuario, TipoUsuario, PaginatedResponse } from '../../types';
+import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 @Component({
   selector: 'app-usuarios',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DateFormatPipe],
   templateUrl: './usuarios.html',
   styleUrl: './usuarios.css',
 })
@@ -34,6 +36,7 @@ export class Usuarios implements OnInit, OnDestroy {
 
   constructor(
     private usuariosService: UsuariosService,
+    private alertService: AlertService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -109,19 +112,19 @@ export class Usuarios implements OnInit, OnDestroy {
   saveUsuario() {
     // Validaciones
     if (!this.formData.email) {
-      alert('El email es requerido');
+      this.alertService.warning('Campo requerido', 'El email es requerido');
       return;
     }
 
     if (!this.formData.tipo_usuario_id) {
-      alert('El tipo de usuario es requerido');
+      this.alertService.warning('Campo requerido', 'El tipo de usuario es requerido');
       return;
     }
 
     if (!this.formData.id) {
       // Crear nuevo usuario
       if (!this.password || this.password.length < 6) {
-        alert('La contraseña es requerida y debe tener al menos 6 caracteres');
+        this.alertService.warning('Contraseña inválida', 'La contraseña es requerida y debe tener al menos 6 caracteres');
         return;
       }
 
@@ -140,14 +143,14 @@ export class Usuarios implements OnInit, OnDestroy {
         catchError((err) => {
           console.error('Error creando usuario:', err);
           const errorMessage = err?.message || err?.error?.message || 'Error al crear usuario';
-          alert(`Error al crear usuario: ${errorMessage}`);
+          this.alertService.error('Error al crear usuario', errorMessage);
           return of(null);
         })
       ).subscribe({
         next: (usuario) => {
           if (usuario) {
             console.log('Usuario creado exitosamente:', usuario);
-            alert('Usuario creado exitosamente');
+            this.alertService.success('¡Usuario creado!', 'Usuario creado exitosamente');
             this.closeModal();
             this.loadUsuarios();
           }
@@ -160,7 +163,7 @@ export class Usuarios implements OnInit, OnDestroy {
         catchError((err) => {
           console.error('Error guardando usuario:', err);
           const errorMessage = err?.message || err?.error?.message || 'Error al guardar usuario';
-          alert(`Error al guardar usuario: ${errorMessage}`);
+          this.alertService.error('Error al guardar usuario', errorMessage);
           return of(null);
         })
       ).subscribe({
@@ -178,7 +181,7 @@ export class Usuarios implements OnInit, OnDestroy {
       takeUntil(this.destroy$),
       catchError((err) => {
         console.error('Error actualizando usuario:', err);
-        alert('Error al actualizar usuario');
+        this.alertService.error('Error', 'Error al actualizar usuario');
         return of(null);
       })
     ).subscribe({

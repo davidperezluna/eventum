@@ -124,7 +124,7 @@
           <div class="venta-info">
             <div class="venta-header">
               <span class="venta-transaccion">{{ venta.numero_transaccion }}</span>
-              <span class="venta-fecha">{{ venta.fecha_compra | date:'short' }}</span>
+              <span class="venta-fecha">{{ venta.fecha_compra | dateFormat:'short' }}</span>
             </div>
             <div class="venta-details">
               <span class="venta-total">{{ formatCurrency(venta.total || 0) }}</span>
@@ -160,7 +160,7 @@
             <h3>{{ evento.titulo }}</h3>
             <p class="evento-fecha">
               <span class="material-icons">schedule</span>
-              {{ evento.fecha_inicio | date:'medium' }}
+              {{ evento.fecha_inicio | dateFormat:'medium' }}
             </p>
             <p *ngIf="evento.descripcion_corta" class="evento-descripcion">{{ evento.descripcion_corta }}</p>
           </div>

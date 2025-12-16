@@ -11,12 +11,14 @@ import { LugaresService } from '../../services/lugares.service';
 import { CategoriasService } from '../../services/categorias.service';
 import { WompiService } from '../../services/wompi.service';
 import { SupabaseService } from '../../services/supabase.service';
+import { AlertService } from '../../services/alert.service';
 import { Evento, TipoBoleta, Usuario, Lugar, CategoriaEvento } from '../../types';
 import { supabaseConfig } from '../../config/supabase.config';
+import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 @Component({
   selector: 'app-detalle-evento',
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, DateFormatPipe],
   templateUrl: './detalle-evento.html',
   styleUrl: './detalle-evento.css',
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
@@ -52,6 +54,7 @@ export class DetalleEvento implements OnInit {
     private comprasClienteService: ComprasClienteService,
     private authService: AuthService,
     private usuariosService: UsuariosService,
+    private alertService: AlertService,
     private lugaresService: LugaresService,
     private categoriasService: CategoriasService,
     private wompiService: WompiService,
@@ -101,7 +104,7 @@ export class DetalleEvento implements OnInit {
       item.datosAsistente = { ...datosUsuario };
       this.cdr.detectChanges();
     } else {
-      alert('No tienes información guardada en tu perfil. Completa tu perfil primero.');
+      this.alertService.warning('Perfil incompleto', 'No tienes información guardada en tu perfil. Completa tu perfil primero.');
     }
   }
 
@@ -183,7 +186,7 @@ export class DetalleEvento implements OnInit {
       if (existente.cantidad < tipo.cantidad_disponibles) {
         existente.cantidad++;
       } else {
-        alert(`Solo hay ${tipo.cantidad_disponibles} boletas disponibles`);
+        this.alertService.warning('Stock limitado', `Solo hay ${tipo.cantidad_disponibles} boletas disponibles`);
       }
     } else {
       if (tipo.cantidad_disponibles > 0) {
@@ -234,20 +237,20 @@ export class DetalleEvento implements OnInit {
 
   async procesarCompra() {
     if (!this.evento || this.itemsCompra.length === 0) {
-      alert('Debes agregar al menos una boleta al carrito');
+      this.alertService.warning('Carrito vacío', 'Debes agregar al menos una boleta al carrito');
       return;
     }
 
     const clienteId = this.authService.getUsuarioId();
     if (!clienteId) {
-      alert('No se pudo identificar el cliente');
+      this.alertService.error('Error de autenticación', 'No se pudo identificar el cliente');
       return;
     }
 
     // Validar datos de asistente para cada boleta
     for (const item of this.itemsCompra) {
       if (!item.datosAsistente.nombre || !item.datosAsistente.documento) {
-        alert('Debes completar el nombre y documento del asistente para todas las boletas');
+        this.alertService.warning('Datos incompletos', 'Debes completar el nombre y documento del asistente para todas las boletas');
         return;
       }
     }
@@ -268,14 +271,14 @@ export class DetalleEvento implements OnInit {
     this.comprasClienteService.validarDisponibilidad(items).subscribe({
       next: (validacion) => {
         if (!validacion.valido) {
-          alert('Error de disponibilidad:\n' + validacion.errores.join('\n'));
+          this.alertService.error('Error de disponibilidad', validacion.errores.join('\n'));
           this.comprando = false;
           return;
         }
 
         // Procesar compra
         if (!this.evento) {
-          alert('Error: evento no disponible');
+          this.alertService.error('Error', 'Error: evento no disponible');
           this.comprando = false;
           return;
         }
@@ -339,25 +342,25 @@ export class DetalleEvento implements OnInit {
                 window.location.href = checkoutUrl;
               } else {
                 console.error('Respuesta de Wompi:', responseData);
-                alert('Error: No se obtuvo la URL de pago de Wompi');
+                this.alertService.error('Error de pago', 'Error: No se obtuvo la URL de pago de Wompi');
                 this.comprando = false;
               }
             } catch (err: any) {
               console.error('Error creando transacción Wompi:', err);
-              alert('Error al crear transacción en Wompi: ' + (err.message || 'Error desconocido'));
+              this.alertService.error('Error de pago', 'Error al crear transacción en Wompi: ' + (err.message || 'Error desconocido'));
               this.comprando = false;
             }
           },
           error: (err) => {
             console.error('Error procesando compra:', err);
-            alert('Error al procesar la compra: ' + (err.message || 'Error desconocido'));
+            this.alertService.error('Error al procesar compra', 'Error al procesar la compra: ' + (err.message || 'Error desconocido'));
             this.comprando = false;
           }
         });
       },
       error: (err) => {
         console.error('Error validando disponibilidad:', err);
-        alert('Error al validar disponibilidad');
+        this.alertService.error('Error', 'Error al validar disponibilidad');
         this.comprando = false;
       }
     });

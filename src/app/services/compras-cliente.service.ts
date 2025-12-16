@@ -9,6 +9,7 @@ import { map, catchError, switchMap } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { SupabaseObservableHelper } from './supabase-observable.helper';
+import { TimezoneService } from './timezone.service';
 import { Compra, BoletaComprada, TipoBoleta, MetodoPago, TipoEstadoPago, TipoEstadoCompra, TipoEstadoBoleta } from '../types';
 
 export interface ItemCompra {
@@ -35,7 +36,8 @@ export interface DatosCompra {
 export class ComprasClienteService {
   constructor(
     private supabase: SupabaseService,
-    private supabaseHelper: SupabaseObservableHelper
+    private supabaseHelper: SupabaseObservableHelper,
+    private timezoneService: TimezoneService
   ) {}
 
   /**
@@ -121,7 +123,7 @@ export class ComprasClienteService {
       metodo_pago: datosCompra.metodo_pago, // Opcional
       estado_pago: TipoEstadoPago.PENDIENTE,
       estado_compra: TipoEstadoCompra.PENDIENTE,
-      fecha_compra: new Date().toISOString(),
+      fecha_compra: this.timezoneService.getCurrentDateISO(),
       datos_facturacion: datosCompra.datos_facturacion
     };
 
@@ -285,7 +287,7 @@ export class ComprasClienteService {
         .update({
           estado_pago: TipoEstadoPago.COMPLETADO,
           estado_compra: TipoEstadoCompra.CONFIRMADA,
-          fecha_confirmacion: new Date().toISOString()
+          fecha_confirmacion: this.timezoneService.getCurrentDateISO()
         })
         .eq('id', compraId)
         .select()

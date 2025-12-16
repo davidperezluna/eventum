@@ -72,7 +72,7 @@
               {{ usuario.email_verificado ? 'Sí' : 'No' }}
             </span>
           </td>
-          <td>{{ usuario.fecha_creacion | date:'short' }}</td>
+          <td>{{ usuario.fecha_creacion | dateFormat:'short' }}</td>
           <td class="actions">
             <button class="btn-icon" (click)="openModal(usuario)" title="Editar">
               <span class="material-icons">edit</span>

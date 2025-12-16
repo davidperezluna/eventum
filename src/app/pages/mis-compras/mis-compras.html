@@ -95,7 +95,7 @@
       <div class="compra-header">
         <div class="compra-info">
           <h3>Compra #{{ item.compra.numero_transaccion }}</h3>
-          <p class="compra-fecha">{{ item.compra.fecha_compra | date:'full' }}</p>
+          <p class="compra-fecha">{{ item.compra.fecha_compra | dateFormat:'full' }}</p>
           <div class="compra-estados">
             <span class="badge" [class]="getEstadoClass(item.compra.estado_pago)">
               Pago: {{ getEstadoPagoLabel(item.compra.estado_pago) }}
@@ -256,7 +256,7 @@
         
         <div class="info-row" *ngIf="eventoSeleccionado.fecha_inicio">
           <span class="info-label">Fecha:</span>
-          <span class="info-value">{{ eventoSeleccionado.fecha_inicio | date:'full' }}</span>
+          <span class="info-value">{{ eventoSeleccionado.fecha_inicio | dateFormat:'full' }}</span>
         </div>
 
         <div class="info-row" *ngIf="boletaSeleccionada.nombre_asistente">

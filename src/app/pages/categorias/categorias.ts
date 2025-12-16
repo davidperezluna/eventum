@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { CategoriasService } from '../../services/categorias.service';
+import { AlertService } from '../../services/alert.service';
 import { CategoriaEvento, PaginatedResponse } from '../../types';
 
 @Component({
@@ -42,6 +43,7 @@ export class Categorias implements OnInit, OnDestroy {
 
   constructor(
     private categoriasService: CategoriasService,
+    private alertService: AlertService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -97,7 +99,7 @@ export class Categorias implements OnInit, OnDestroy {
   saveCategoria() {
     // Validar que el nombre esté presente
     if (!this.formData.nombre || this.formData.nombre.trim() === '') {
-      alert('El nombre de la categoría es requerido');
+      this.alertService.warning('Campo requerido', 'El nombre de la categoría es requerido');
       return;
     }
 
@@ -116,7 +118,7 @@ export class Categorias implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error guardando categoría:', err);
-          alert('Error al guardar categoría: ' + (err.message || 'Error desconocido'));
+          this.alertService.error('Error al guardar', 'Error al guardar categoría: ' + (err.message || 'Error desconocido'));
         }
       });
     } else {
@@ -131,21 +133,22 @@ export class Categorias implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error creando categoría:', err);
-          alert('Error al crear categoría: ' + (err.message || 'Error desconocido'));
+          this.alertService.error('Error al crear', 'Error al crear categoría: ' + (err.message || 'Error desconocido'));
         }
       });
     }
   }
 
-  deleteCategoria(id: number) {
-    if (confirm('¿Estás seguro de desactivar esta categoría?')) {
+  async deleteCategoria(id: number) {
+    const confirmed = await this.alertService.confirm('Desactivar categoría', '¿Estás seguro de desactivar esta categoría?');
+    if (confirmed) {
       this.categoriasService.deleteCategoria(id).pipe(
         takeUntil(this.destroy$)
       ).subscribe({
         next: () => this.loadCategorias(),
         error: (err) => {
           console.error('Error eliminando categoría:', err);
-          alert('Error al eliminar categoría');
+          this.alertService.error('Error', 'Error al eliminar categoría');
         }
       });
     }
@@ -158,7 +161,7 @@ export class Categorias implements OnInit, OnDestroy {
       next: () => this.loadCategorias(),
       error: (err) => {
         console.error('Error actualizando categoría:', err);
-        alert('Error al actualizar categoría');
+        this.alertService.error('Error', 'Error al actualizar categoría');
       }
     });
   }

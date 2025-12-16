@@ -232,7 +232,7 @@
                   {{ getEstadoLabel(boleta.estado) }}
                 </span>
               </td>
-              <td>{{ boleta.fecha_creacion | date:'short' }}</td>
+              <td>{{ boleta.fecha_creacion | dateFormat:'short' }}</td>
               <td>
                 <div class="table-actions">
                   <button 
@@ -305,7 +305,7 @@
             </div>
             <div class="boleta-card-row">
               <span class="boleta-card-label">Fecha:</span>
-              <span class="boleta-card-value">{{ boleta.fecha_creacion | date:'short' }}</span>
+              <span class="boleta-card-value">{{ boleta.fecha_creacion | dateFormat:'short' }}</span>
             </div>
           </div>
         </div>
@@ -625,7 +625,7 @@
             </div>
             <div class="info-item" *ngIf="boletaEncontrada.fecha_uso">
               <span class="info-label">Fecha de uso:</span>
-              <span class="info-value">{{ boletaEncontrada.fecha_uso | date:'short' }}</span>
+              <span class="info-value">{{ boletaEncontrada.fecha_uso | dateFormat:'short' }}</span>
             </div>
           </div>
 
@@ -683,11 +683,11 @@
                 </div>
                 <div class="detail-item">
                   <span class="material-icons">event</span>
-                  <span>{{ boleta.fecha_creacion | date:'short' }}</span>
+                  <span>{{ boleta.fecha_creacion | dateFormat:'short' }}</span>
                 </div>
                 <div class="detail-item" *ngIf="boleta.fecha_uso">
                   <span class="material-icons">check_circle</span>
-                  <span>Usada: {{ boleta.fecha_uso | date:'short' }}</span>
+                  <span>Usada: {{ boleta.fecha_uso | dateFormat:'short' }}</span>
                 </div>
               </div>
               <div *ngIf="boletaSeleccionada?.id === boleta.id" class="boleta-item-selected">

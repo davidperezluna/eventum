@@ -7,10 +7,11 @@ import { catchError, takeUntil } from 'rxjs/operators';
 import { EventosService } from '../../services/eventos.service';
 import { CategoriasService } from '../../services/categorias.service';
 import { Evento, CategoriaEvento, TipoEstadoEvento } from '../../types';
+import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 @Component({
   selector: 'app-eventos-cliente',
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, DateFormatPipe],
   templateUrl: './eventos-cliente.html',
   styleUrl: './eventos-cliente.css',
 })

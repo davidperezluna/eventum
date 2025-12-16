@@ -7,10 +7,11 @@ import { NotificacionesService } from '../../services/notificaciones.service';
 import { Notificacion, PaginatedResponse, TipoTipoNotificacion } from '../../types';
 import { UsuariosService } from '../../services/usuarios.service';
 import { Usuario } from '../../types';
+import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 @Component({
   selector: 'app-notificaciones',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DateFormatPipe],
   templateUrl: './notificaciones.html',
   styleUrl: './notificaciones.css',
 })

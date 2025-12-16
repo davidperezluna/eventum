@@ -7,6 +7,7 @@ import { LugaresService } from '../../services/lugares.service';
 import { StorageService } from '../../services/storage.service';
 import { ImageOptimizationService } from '../../services/image-optimization.service';
 import { AuthService } from '../../services/auth.service';
+import { AlertService } from '../../services/alert.service';
 import { Lugar, PaginatedResponse } from '../../types';
 
 @Component({
@@ -38,6 +39,7 @@ export class Lugares implements OnInit, OnDestroy {
     private storageService: StorageService,
     private imageOptimizationService: ImageOptimizationService,
     private authService: AuthService,
+    private alertService: AlertService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -120,7 +122,7 @@ export class Lugares implements OnInit, OnDestroy {
       try {
         // Validar tamaño (máximo 10MB)
         if (!this.imageOptimizationService.validateFileSize(file, 10)) {
-          alert('La imagen es demasiado grande. Máximo 10MB.');
+          this.alertService.warning('Imagen demasiado grande', 'La imagen es demasiado grande. Máximo 10MB.');
           return;
         }
         
@@ -131,7 +133,7 @@ export class Lugares implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       } catch (error) {
         console.error('Error al procesar la imagen:', error);
-        alert('Error al procesar la imagen. Intenta con otro archivo.');
+        this.alertService.error('Error al procesar imagen', 'Error al procesar la imagen. Intenta con otro archivo.');
       }
     }
   }
@@ -169,7 +171,7 @@ export class Lugares implements OnInit, OnDestroy {
       
       if (error) {
         console.error('❌ Error subiendo imagen:', error);
-        alert('Error al subir la imagen: ' + (error.message || 'Error desconocido'));
+        this.alertService.error('Error al subir imagen', 'Error al subir la imagen: ' + (error.message || 'Error desconocido'));
         return null;
       }
       
@@ -181,7 +183,7 @@ export class Lugares implements OnInit, OnDestroy {
       return publicUrl;
     } catch (error: any) {
       console.error('❌ Error inesperado subiendo imagen:', error);
-      alert('Error inesperado al subir la imagen: ' + (error.message || 'Error desconocido'));
+      this.alertService.error('Error inesperado', 'Error inesperado al subir la imagen: ' + (error.message || 'Error desconocido'));
       return null;
     } finally {
       this.uploadingImage = false;
@@ -200,7 +202,7 @@ export class Lugares implements OnInit, OnDestroy {
   async saveLugar() {
     // Validaciones básicas
     if (!this.formData.nombre || !this.formData.direccion || !this.formData.ciudad) {
-      alert('Nombre, dirección y ciudad son campos requeridos');
+      this.alertService.warning('Campos requeridos', 'Nombre, dirección y ciudad son campos requeridos');
       return;
     }
 
