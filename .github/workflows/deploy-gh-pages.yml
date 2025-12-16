@@ -34,41 +34,34 @@ jobs:
           echo "Directory contents:"
           ls -la
           echo ""
-          echo "Checking for admin-panel/eventum:"
-          if [ -d "admin-panel/eventum" ]; then
-            echo "✓ Directory exists"
-            echo "Checking for package.json:"
-            if [ -f "admin-panel/eventum/package.json" ]; then
-              echo "✓ package.json found"
-            else
-              echo "✗ package.json not found"
-              exit 1
-            fi
+          echo "Checking for package.json:"
+          if [ -f "package.json" ]; then
+            echo "✓ package.json found"
           else
-            echo "✗ Directory 'admin-panel/eventum' does not exist in repository"
-            echo ""
-            echo "Available directories:"
-            find . -maxdepth 2 -type d | head -20
-            echo ""
-            echo "ERROR: The Angular project directory 'admin-panel/eventum' was not found."
-            echo "Please ensure you have committed and pushed the project files to the repository."
+            echo "✗ package.json not found"
+            exit 1
+          fi
+          echo ""
+          echo "Checking for angular.json:"
+          if [ -f "angular.json" ]; then
+            echo "✓ angular.json found"
+          else
+            echo "✗ angular.json not found"
             exit 1
           fi
 
       - name: Cache node modules
         uses: actions/cache@v4
         with:
-          path: admin-panel/eventum/node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('admin-panel/eventum/package-lock.json') }}
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-modules-
 
       - name: Install dependencies
-        working-directory: admin-panel/eventum
         run: npm ci
 
       - name: Build application
-        working-directory: admin-panel/eventum
         run: npm run build:gh-pages
 
       - name: Setup Pages
@@ -77,7 +70,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: admin-panel/eventum/dist/admin-panel
+          path: dist/admin-panel
 
   deploy:
     environment:
