@@ -8,6 +8,7 @@ import { ComprasService } from '../../services/compras.service';
 import { BoletasService } from '../../services/boletas.service';
 import { EventosService } from '../../services/eventos.service';
 import { AuthService } from '../../services/auth.service';
+import { AlertService } from '../../services/alert.service';
 import { Compra, BoletaComprada, PaginatedResponse, TipoBoleta, Evento, TipoEstadoPago, TipoEstadoCompra } from '../../types';
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
@@ -72,6 +73,7 @@ export class MisCompras implements OnInit, OnDestroy {
     private boletasService: BoletasService,
     private eventosService: EventosService,
     private authService: AuthService,
+    private alertService: AlertService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -427,7 +429,7 @@ export class MisCompras implements OnInit, OnDestroy {
       tipoBoleta$.subscribe({
         next: async (tipoBoleta: TipoBoleta | null) => {
           if (!tipoBoleta) {
-            alert('No se pudo obtener la información del tipo de boleta');
+            this.alertService.error('Error', 'No se pudo obtener la información del tipo de boleta');
             return;
           }
 
@@ -443,7 +445,7 @@ export class MisCompras implements OnInit, OnDestroy {
           evento$.subscribe({
             next: async (evento: Evento | null) => {
               if (!evento) {
-                alert('No se pudo obtener la información del evento');
+                this.alertService.error('Error', 'No se pudo obtener la información del evento');
                 return;
               }
 
@@ -455,7 +457,7 @@ export class MisCompras implements OnInit, OnDestroy {
       });
     } catch (error) {
       console.error('Error al generar PDF:', error);
-      alert('Error al generar el PDF de la boleta');
+      this.alertService.error('Error', 'Error al generar el PDF de la boleta');
     }
   }
 

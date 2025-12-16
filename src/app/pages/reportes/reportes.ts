@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ComprasService } from '../../services/compras.service';
 import { EventosService } from '../../services/eventos.service';
+import { AlertService } from '../../services/alert.service';
 import { Compra, Evento } from '../../types';
 
 @Component({
@@ -21,7 +22,8 @@ export class Reportes implements OnInit {
 
   constructor(
     private comprasService: ComprasService,
-    private eventosService: EventosService
+    private eventosService: EventosService,
+    private alertService: AlertService
   ) {
     // Establecer fechas por defecto (último mes)
     const hoy = new Date();
@@ -102,6 +104,6 @@ export class Reportes implements OnInit {
   }
 
   exportarReporte() {
-    alert('Funcionalidad de exportación próximamente');
+    this.alertService.info('Próximamente', 'Funcionalidad de exportación próximamente');
   }
 }

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { CalificacionesService } from '../../services/calificaciones.service';
+import { AlertService } from '../../services/alert.service';
 import { Calificacion, PaginatedResponse } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
@@ -25,6 +26,7 @@ export class Calificaciones implements OnInit, OnDestroy {
 
   constructor(
     private calificacionesService: CalificacionesService,
+    private alertService: AlertService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -73,7 +75,7 @@ export class Calificaciones implements OnInit, OnDestroy {
       next: () => this.loadCalificaciones(),
       error: (err) => {
         console.error('Error actualizando calificación:', err);
-        alert('Error al actualizar calificación');
+        this.alertService.error('Error', 'Error al actualizar calificación');
       }
     });
   }

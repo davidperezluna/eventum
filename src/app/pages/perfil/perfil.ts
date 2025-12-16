@@ -6,6 +6,7 @@ import { UsuariosService } from '../../services/usuarios.service';
 import { StorageService } from '../../services/storage.service';
 import { ImageOptimizationService } from '../../services/image-optimization.service';
 import { TimezoneService } from '../../services/timezone.service';
+import { AlertService } from '../../services/alert.service';
 import { Usuario, TipoGenero } from '../../types';
 
 @Component({
@@ -46,6 +47,7 @@ export class Perfil implements OnInit {
     private storageService: StorageService,
     private imageOptimizationService: ImageOptimizationService,
     private timezoneService: TimezoneService,
+    private alertService: AlertService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -121,7 +123,7 @@ export class Perfil implements OnInit {
 
   onFileSelected(file: File) {
     if (!this.imageOptimizationService.validateFileSize(file, 5)) {
-      alert('La imagen es demasiado grande. Máximo 5MB.');
+      this.alertService.warning('Imagen demasiado grande', 'La imagen es demasiado grande. Máximo 5MB.');
       return;
     }
 

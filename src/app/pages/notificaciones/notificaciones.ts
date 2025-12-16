@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { NotificacionesService } from '../../services/notificaciones.service';
+import { AlertService } from '../../services/alert.service';
 import { Notificacion, PaginatedResponse, TipoTipoNotificacion } from '../../types';
 import { UsuariosService } from '../../services/usuarios.service';
 import { Usuario } from '../../types';
@@ -41,6 +42,7 @@ export class Notificaciones implements OnInit, OnDestroy {
   constructor(
     private notificacionesService: NotificacionesService,
     private usuariosService: UsuariosService,
+    private alertService: AlertService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -121,7 +123,7 @@ export class Notificaciones implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error creando notificaciones:', err);
-          alert('Error al crear notificaciones');
+          this.alertService.error('Error', 'Error al crear notificaciones');
         }
       });
     } else if (this.formData.usuario_id) {
@@ -134,23 +136,24 @@ export class Notificaciones implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error creando notificación:', err);
-          alert('Error al crear notificación');
+          this.alertService.error('Error', 'Error al crear notificación');
         }
       });
     } else {
-      alert('Selecciona al menos un usuario');
+      this.alertService.warning('Selección requerida', 'Selecciona al menos un usuario');
     }
   }
 
-  deleteNotificacion(id: number) {
-    if (confirm('¿Estás seguro de eliminar esta notificación?')) {
+  async deleteNotificacion(id: number) {
+    const confirmed = await this.alertService.confirm('Eliminar notificación', '¿Estás seguro de eliminar esta notificación?');
+    if (confirmed) {
       this.notificacionesService.deleteNotificacion(id).pipe(
         takeUntil(this.destroy$)
       ).subscribe({
         next: () => this.loadNotificaciones(),
         error: (err) => {
           console.error('Error eliminando notificación:', err);
-          alert('Error al eliminar notificación');
+          this.alertService.error('Error', 'Error al eliminar notificación');
         }
       });
     }

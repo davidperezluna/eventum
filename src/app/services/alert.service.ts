@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import Swal, { SweetAlertOptions, SweetAlertResult } from 'sweetalert2';
+import Swal from 'sweetalert2';
+import type { SweetAlertOptions, SweetAlertResult } from 'sweetalert2';
 
 /**
  * Servicio centralizado para manejar alertas usando SweetAlert2
@@ -102,8 +103,8 @@ export class AlertService {
   /**
    * Muestra un mensaje de confirmación con opciones personalizadas
    */
-  confirmCustom(options: SweetAlertOptions): Promise<boolean> {
-    const defaultOptions: SweetAlertOptions = {
+  confirmCustom(options: Partial<SweetAlertOptions>): Promise<boolean> {
+    const defaultOptions: Partial<SweetAlertOptions> = {
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, continuar',
@@ -113,7 +114,7 @@ export class AlertService {
       reverseButtons: true
     };
 
-    return Swal.fire({ ...defaultOptions, ...options }).then((result) => {
+    return Swal.fire({ ...defaultOptions, ...options } as SweetAlertOptions).then((result) => {
       return result.isConfirmed;
     });
   }

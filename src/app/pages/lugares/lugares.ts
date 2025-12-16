@@ -211,7 +211,7 @@ export class Lugares implements OnInit, OnDestroy {
     if (this.selectedFile) {
       imagenUrl = await this.uploadImage() || imagenUrl;
       if (!imagenUrl && this.selectedFile) {
-        alert('Error al subir la imagen. Intenta de nuevo.');
+        this.alertService.error('Error al subir imagen', 'Error al subir la imagen. Intenta de nuevo.');
         return;
       }
     }
@@ -282,7 +282,7 @@ export class Lugares implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Error guardando lugar:', err);
           const errorMessage = err?.message || err?.error?.message || 'Error al guardar lugar';
-          alert(`Error al guardar lugar: ${errorMessage}`);
+          this.alertService.error('Error al guardar', `Error al guardar lugar: ${errorMessage}`);
         }
       });
     } else {
@@ -297,7 +297,7 @@ export class Lugares implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Error creando lugar:', err);
           const errorMessage = err?.message || err?.error?.message || 'Error al crear lugar';
-          alert(`Error al crear lugar: ${errorMessage}`);
+          this.alertService.error('Error al crear', `Error al crear lugar: ${errorMessage}`);
         }
       });
     }
@@ -310,7 +310,7 @@ export class Lugares implements OnInit, OnDestroy {
       next: () => this.loadLugares(),
       error: (err) => {
         console.error('Error actualizando lugar:', err);
-        alert('Error al actualizar lugar');
+        this.alertService.error('Error', 'Error al actualizar lugar');
       }
     });
   }

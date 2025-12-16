@@ -5,6 +5,7 @@ import { Subject } from 'rxjs';
 import { takeUntil, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { ComprasService } from '../../services/compras.service';
+import { AlertService } from '../../services/alert.service';
 import { Compra, PaginatedResponse, TipoEstadoPago, TipoEstadoCompra, MetodoPago } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
@@ -46,6 +47,7 @@ export class Ventas implements OnInit, OnDestroy {
 
   constructor(
     private comprasService: ComprasService,
+    private alertService: AlertService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -103,7 +105,7 @@ export class Ventas implements OnInit, OnDestroy {
         takeUntil(this.destroy$),
         catchError((err) => {
           console.error('Error guardando compra:', err);
-          alert('Error al guardar compra');
+          this.alertService.error('Error', 'Error al guardar compra');
           return of(null);
         })
       ).subscribe({
