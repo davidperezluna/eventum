@@ -66,34 +66,36 @@ export class Perfil implements OnInit {
       return;
     }
 
-    this.usuariosService.getUsuarioById(usuarioId).subscribe({
-      next: (usuario) => {
-        this.usuario = usuario;
-        this.formData = {
-          nombre: usuario.nombre || '',
-          apellido: usuario.apellido || '',
-          telefono: usuario.telefono || '',
-          fecha_nacimiento: usuario.fecha_nacimiento 
-            ? this.formatDateForInput(usuario.fecha_nacimiento) 
-            : '',
-          genero: usuario.genero || TipoGenero.NO_ESPECIFICADO,
-          documento_identidad: usuario.documento_identidad || '',
-          direccion: usuario.direccion || '',
-          ciudad: usuario.ciudad || '',
-          pais: usuario.pais || '',
-          foto_perfil: usuario.foto_perfil || ''
-        };
-        this.previewUrl = usuario.foto_perfil || null;
-        this.loading = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error cargando usuario:', err);
-        this.error = 'Error al cargar la información del usuario';
-        this.loading = false;
-        this.cdr.detectChanges();
-      }
-    });
+    this.loadUsuarioData(usuarioId);
+  }
+
+  async loadUsuarioData(usuarioId: number) {
+    try {
+      const usuario = await this.usuariosService.getUsuarioById(usuarioId);
+      this.usuario = usuario;
+      this.formData = {
+        nombre: usuario.nombre || '',
+        apellido: usuario.apellido || '',
+        telefono: usuario.telefono || '',
+        fecha_nacimiento: usuario.fecha_nacimiento 
+          ? this.formatDateForInput(usuario.fecha_nacimiento) 
+          : '',
+        genero: usuario.genero || TipoGenero.NO_ESPECIFICADO,
+        documento_identidad: usuario.documento_identidad || '',
+        direccion: usuario.direccion || '',
+        ciudad: usuario.ciudad || '',
+        pais: usuario.pais || '',
+        foto_perfil: usuario.foto_perfil || ''
+      };
+      this.previewUrl = usuario.foto_perfil || null;
+      this.loading = false;
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('Error cargando usuario:', err);
+      this.error = 'Error al cargar la información del usuario';
+      this.loading = false;
+      this.cdr.detectChanges();
+    }
   }
 
   formatDateForInput(date: Date | string | undefined): string {
@@ -214,34 +216,43 @@ export class Perfil implements OnInit {
       });
 
       // Actualizar usuario
-      this.usuariosService.updateUsuario(this.usuario.id, updateData).subscribe({
-        next: (usuarioActualizado) => {
-          // Actualizar el usuario en el auth service
-          this.authService.refreshUsuario();
-          this.usuario = usuarioActualizado;
-          this.formData.foto_perfil = usuarioActualizado.foto_perfil || '';
-          this.previewUrl = usuarioActualizado.foto_perfil || null;
-          this.selectedFile = null;
-          this.success = 'Perfil actualizado correctamente';
-          this.saving = false;
-          this.cdr.detectChanges();
-          
-          // Limpiar mensaje de éxito después de 3 segundos
-          setTimeout(() => {
-            this.success = null;
-            this.cdr.detectChanges();
-          }, 3000);
-        },
-        error: (err) => {
-          console.error('Error actualizando perfil:', err);
-          this.error = 'Error al actualizar el perfil: ' + (err.message || 'Error desconocido');
-          this.saving = false;
-          this.cdr.detectChanges();
-        }
-      });
+      await this.updateUsuarioData(updateData);
     } catch (err: any) {
-      console.error('Error en savePerfil:', err);
-      this.error = err.message || 'Error al guardar el perfil';
+      console.error('Error preparando datos:', err);
+      this.error = 'Error al preparar los datos: ' + (err.message || 'Error desconocido');
+      this.saving = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  async updateUsuarioData(updateData: Partial<Usuario>) {
+    if (!this.usuario) {
+      this.error = 'No se pudo obtener la información del usuario';
+      this.saving = false;
+      this.cdr.detectChanges();
+      return;
+    }
+    
+    try {
+      const usuarioActualizado = await this.usuariosService.updateUsuario(this.usuario.id, updateData);
+      // Actualizar el usuario en el auth service
+      this.authService.refreshUsuario();
+      this.usuario = usuarioActualizado;
+      this.formData.foto_perfil = usuarioActualizado.foto_perfil || '';
+      this.previewUrl = usuarioActualizado.foto_perfil || null;
+      this.selectedFile = null;
+      this.success = 'Perfil actualizado correctamente';
+      this.saving = false;
+      this.cdr.detectChanges();
+      
+      // Limpiar mensaje de éxito después de 3 segundos
+      setTimeout(() => {
+        this.success = null;
+        this.cdr.detectChanges();
+      }, 3000);
+    } catch (err: any) {
+      console.error('Error actualizando perfil:', err);
+      this.error = 'Error al actualizar el perfil: ' + (err.message || 'Error desconocido');
       this.saving = false;
       this.cdr.detectChanges();
     }

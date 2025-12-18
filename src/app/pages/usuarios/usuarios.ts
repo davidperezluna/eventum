@@ -50,49 +50,44 @@ export class Usuarios implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  loadTiposUsuario() {
-    this.usuariosService.getTiposUsuario().pipe(
-      takeUntil(this.destroy$),
-      catchError((err) => {
-        console.error('Error cargando tipos:', err);
-        return of([]);
-      })
-    ).subscribe({
-      next: (tipos) => {
-        this.tiposUsuario = tipos;
-      }
-    });
+  async loadTiposUsuario() {
+    try {
+      const tipos = await this.usuariosService.getTiposUsuario();
+      this.tiposUsuario = tipos;
+    } catch (err) {
+      console.error('Error cargando tipos:', err);
+      this.tiposUsuario = [];
+    }
   }
 
-  loadUsuarios() {
+  async loadUsuarios() {
     console.log('loadUsuarios llamado');
     this.loading = true;
     this.cdr.detectChanges(); // Forzar detección de cambios para mostrar loading
     
-    this.usuariosService.getUsuarios({
-      page: this.page,
-      limit: this.limit,
-      search: this.searchTerm || undefined,
-      tipo_usuario_id: this.tipoFiltro || undefined,
-      activo: this.activoFiltro !== null ? this.activoFiltro : undefined
-    }).pipe(
-      takeUntil(this.destroy$),
-      catchError((err) => {
-        console.error('Error cargando usuarios:', err);
-        return of({ data: [], total: 0, page: this.page, limit: this.limit, totalPages: 0 });
-      })
-    ).subscribe({
-      next: (response: PaginatedResponse<Usuario>) => {
-        console.log('Response recibida en componente:', response);
-        console.log('Datos recibidos:', response.data);
-        this.usuarios = response.data || [];
-        this.total = response.total || 0;
-        this.loading = false;
-        console.log('Usuarios asignados:', this.usuarios);
-        console.log('Loading desactivado');
-        this.cdr.detectChanges(); // Forzar detección de cambios
-      }
-    });
+    try {
+      const response: PaginatedResponse<Usuario> = await this.usuariosService.getUsuarios({
+        page: this.page,
+        limit: this.limit,
+        search: this.searchTerm || undefined,
+        tipo_usuario_id: this.tipoFiltro || undefined,
+        activo: this.activoFiltro !== null ? this.activoFiltro : undefined
+      });
+      console.log('Response recibida en componente:', response);
+      console.log('Datos recibidos:', response.data);
+      this.usuarios = response.data || [];
+      this.total = response.total || 0;
+      this.loading = false;
+      console.log('Usuarios asignados:', this.usuarios);
+      console.log('Loading desactivado');
+      this.cdr.detectChanges(); // Forzar detección de cambios
+    } catch (err) {
+      console.error('Error cargando usuarios:', err);
+      this.usuarios = [];
+      this.total = 0;
+      this.loading = false;
+      this.cdr.detectChanges();
+    }
   }
 
   openModal(usuario?: Usuario) {
@@ -109,7 +104,7 @@ export class Usuarios implements OnInit, OnDestroy {
     this.password = '';
   }
 
-  saveUsuario() {
+  async saveUsuario() {
     // Validaciones
     if (!this.formData.email) {
       this.alertService.warning('Campo requerido', 'El email es requerido');
@@ -130,7 +125,20 @@ export class Usuarios implements OnInit, OnDestroy {
 
       console.log('Creando nuevo usuario:', this.formData.email);
       
-      this.usuariosService.createUsuario({
+      await this.createUsuarioInternal();
+    } else {
+      // Actualizar usuario existente
+      await this.updateUsuarioInternal();
+    }
+  }
+
+  private async createUsuarioInternal() {
+    try {
+      if (!this.formData.email || !this.formData.tipo_usuario_id || !this.password) {
+        throw new Error('Datos incompletos para crear usuario');
+      }
+      
+      const usuario = await this.usuariosService.createUsuario({
         email: this.formData.email,
         password: this.password,
         nombre: this.formData.nombre,
@@ -138,55 +146,42 @@ export class Usuarios implements OnInit, OnDestroy {
         tipo_usuario_id: this.formData.tipo_usuario_id,
         telefono: this.formData.telefono,
         activo: this.formData.activo !== undefined ? this.formData.activo : true
-      }).pipe(
-        takeUntil(this.destroy$),
-        catchError((err) => {
-          console.error('Error creando usuario:', err);
-          const errorMessage = err?.message || err?.error?.message || 'Error al crear usuario';
-          this.alertService.error('Error al crear usuario', errorMessage);
-          return of(null);
-        })
-      ).subscribe({
-        next: (usuario) => {
-          if (usuario) {
-            console.log('Usuario creado exitosamente:', usuario);
-            this.alertService.success('¡Usuario creado!', 'Usuario creado exitosamente');
-            this.closeModal();
-            this.loadUsuarios();
-          }
-        }
       });
-    } else {
-      // Actualizar usuario existente
-      this.usuariosService.updateUsuario(this.formData.id, this.formData).pipe(
-        takeUntil(this.destroy$),
-        catchError((err) => {
-          console.error('Error guardando usuario:', err);
-          const errorMessage = err?.message || err?.error?.message || 'Error al guardar usuario';
-          this.alertService.error('Error al guardar usuario', errorMessage);
-          return of(null);
-        })
-      ).subscribe({
-        next: () => {
-          console.log('Usuario actualizado exitosamente');
-          this.closeModal();
-          this.loadUsuarios();
-        }
-      });
+      console.log('Usuario creado exitosamente:', usuario);
+      this.alertService.success('¡Usuario creado!', 'Usuario creado exitosamente');
+      this.closeModal();
+      this.loadUsuarios();
+    } catch (err: any) {
+      console.error('Error creando usuario:', err);
+      const errorMessage = err?.message || err?.error?.message || 'Error al crear usuario';
+      this.alertService.error('Error al crear usuario', errorMessage);
     }
   }
 
-  toggleActivo(usuario: Usuario) {
-    this.usuariosService.updateUsuario(usuario.id, { activo: !usuario.activo }).pipe(
-      takeUntil(this.destroy$),
-      catchError((err) => {
-        console.error('Error actualizando usuario:', err);
-        this.alertService.error('Error', 'Error al actualizar usuario');
-        return of(null);
-      })
-    ).subscribe({
-      next: () => this.loadUsuarios()
-    });
+  private async updateUsuarioInternal() {
+    try {
+      if (!this.formData.id) {
+        throw new Error('ID de usuario no disponible');
+      }
+      await this.usuariosService.updateUsuario(this.formData.id, this.formData);
+      console.log('Usuario actualizado exitosamente');
+      this.closeModal();
+      this.loadUsuarios();
+    } catch (err: any) {
+      console.error('Error guardando usuario:', err);
+      const errorMessage = err?.message || err?.error?.message || 'Error al guardar usuario';
+      this.alertService.error('Error al guardar usuario', errorMessage);
+    }
+  }
+
+  async toggleActivo(usuario: Usuario) {
+    try {
+      await this.usuariosService.updateUsuario(usuario.id, { activo: !usuario.activo });
+      this.loadUsuarios();
+    } catch (err) {
+      console.error('Error actualizando usuario:', err);
+      this.alertService.error('Error', 'Error al actualizar usuario');
+    }
   }
 
   getTipoNombre(tipoId: number): string {

@@ -36,24 +36,22 @@ export class PagoResultado implements OnInit {
     });
   }
 
-  verificarEstadoCompra() {
+  async verificarEstadoCompra() {
     if (!this.compraId) return;
 
     // Esperar un momento para que el webhook procese
-    setTimeout(() => {
-      this.comprasClienteService.getCompraById(this.compraId!).subscribe({
-        next: (compra) => {
-          this.compra = compra;
-          this.loading = false;
-          this.cdr.detectChanges();
-        },
-        error: (err) => {
-          console.error('Error cargando compra:', err);
-          this.error = 'Error al cargar la información de la compra';
-          this.loading = false;
-          this.cdr.detectChanges();
-        }
-      });
+    setTimeout(async () => {
+      try {
+        const compra = await this.comprasClienteService.getCompraById(this.compraId!);
+        this.compra = compra;
+        this.loading = false;
+        this.cdr.detectChanges();
+      } catch (err: any) {
+        console.error('Error cargando compra:', err);
+        this.error = 'Error al cargar la información de la compra';
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
     }, 2000); // Esperar 2 segundos para que el webhook procese
   }
 

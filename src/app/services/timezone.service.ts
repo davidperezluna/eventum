@@ -79,14 +79,14 @@ export class TimezoneService {
   getTimezoneInfo(): any {
     return {
       current: this.currentTimezone,
-      browser: DateTimeUtil.getTimezone(),
+      browser: DateTimeUtil.getTimezone(), 
       offset: DateTimeUtil.getTimezoneOffset(),
       offsetHours: DateTimeUtil.getTimezoneOffset() / 60,
       isColombian: this.isColombianTimezone(this.currentTimezone),
       currentTime: new Date().toISOString(),
-      localTime: new Date().toString()
+      localTime: new Date().toString() 
     };
-  }
+  } 
 
   /**
    * Formatea una fecha usando la zona horaria configurada

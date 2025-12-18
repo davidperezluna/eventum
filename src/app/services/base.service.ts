@@ -2,10 +2,6 @@
    BASE SERVICE - Utilidades comunes para servicios
    ============================================ */
 
-import { Observable, from } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
-import { throwError } from 'rxjs';
-
 /**
  * Maneja la respuesta de Supabase y convierte errores en excepciones
  */
@@ -43,22 +39,21 @@ export function handlePaginatedResponse<T>(
 }
 
 /**
- * Crea un Observable desde una promesa de Supabase con manejo de errores
+ * Maneja una promesa de Supabase y retorna los datos o lanza un error
+ * Versión síncrona sin observables
  */
-export function fromSupabase<T>(promise: Promise<any>): Observable<T> {
-  return from(promise).pipe(
-    map((response) => {
-      if (response.error) {
-        console.error('Error de Supabase:', response.error);
-        throw response.error;
-      }
-      return response.data as T;
-    }),
-    catchError((error) => {
-      console.error('Error en Observable:', error);
-      return throwError(() => error);
-    })
-  );
+export async function fromSupabasePromise<T>(promise: Promise<any>): Promise<T> {
+  try {
+    const response = await promise;
+    if (response.error) {
+      console.error('Error de Supabase:', response.error);
+      throw response.error;
+    }
+    return response.data as T;
+  } catch (error) {
+    console.error('Error en promesa de Supabase:', error);
+    throw error;
+  }
 }
 
 

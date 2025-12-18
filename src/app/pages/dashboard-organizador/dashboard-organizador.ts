@@ -55,7 +55,7 @@ export class DashboardOrganizador implements OnInit {
     });
   }
 
-  loadStats() {
+  async loadStats() {
     if (!this.organizadorId) {
       this.error = 'ID de organizador no disponible';
       this.loading = false;
@@ -67,24 +67,18 @@ export class DashboardOrganizador implements OnInit {
     this.error = null;
     this.cdr.detectChanges();
 
-    this.dashboardService.getStats(this.organizadorId).subscribe({
-      next: (stats) => {
-        console.log('Stats recibidas en componente organizador:', stats);
-        this.stats = stats;
-        this.loading = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error cargando estadísticas:', err);
-        this.error = 'Error al cargar las estadísticas. Verifica tu conexión con Supabase.';
-        this.loading = false;
-        this.cdr.detectChanges();
-      },
-      complete: () => {
-        console.log('Observable completado en dashboard organizador');
-        this.cdr.detectChanges();
-      }
-    });
+    try {
+      const stats = await this.dashboardService.getStats(this.organizadorId);
+      console.log('Stats recibidas en componente organizador:', stats);
+      this.stats = stats;
+      this.loading = false;
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('Error cargando estadísticas:', err);
+      this.error = 'Error al cargar las estadísticas. Verifica tu conexión con Supabase.';
+      this.loading = false;
+      this.cdr.detectChanges();
+    }
   }
 
   formatCurrency(value: number): string {

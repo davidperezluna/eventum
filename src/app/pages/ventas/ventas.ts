@@ -71,26 +71,29 @@ export class Ventas implements OnInit, OnDestroy {
     this.loading = true;
     this.cdr.detectChanges();
     
-    this.comprasService.getCompras({
-      page: this.page,
-      limit: this.limit,
-      estado_pago: this.estadoPagoFiltro || undefined,
-      estado_compra: this.estadoCompraFiltro || undefined
-    }).pipe(
-      takeUntil(this.destroy$),
-      catchError((err) => {
-        console.error('Error cargando compras:', err);
-        return of({ data: [], total: 0, page: this.page, limit: this.limit, totalPages: 0 });
-      })
-    ).subscribe({
-      next: (response: PaginatedResponse<Compra>) => {
-        console.log('Response recibida en ventas:', response);
-        this.compras = response.data || [];
-        this.total = response.total || 0;
-        this.loading = false;
-        this.cdr.detectChanges();
-      }
-    });
+    this.loadComprasInternal();
+  }
+
+  private async loadComprasInternal() {
+    try {
+      const response: PaginatedResponse<Compra> = await this.comprasService.getCompras({
+        page: this.page,
+        limit: this.limit,
+        estado_pago: this.estadoPagoFiltro || undefined,
+        estado_compra: this.estadoCompraFiltro || undefined
+      });
+      console.log('Response recibida en ventas:', response);
+      this.compras = response.data || [];
+      this.total = response.total || 0;
+      this.loading = false;
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('Error cargando compras:', err);
+      this.compras = [];
+      this.total = 0;
+      this.loading = false;
+      this.cdr.detectChanges();
+    }
   }
 
   openModal(compra: Compra) {
@@ -105,21 +108,16 @@ export class Ventas implements OnInit, OnDestroy {
     this.formData = {};
   }
 
-  saveCompra() {
+  async saveCompra() {
     if (this.editingCompra) {
-      this.comprasService.updateCompra(this.editingCompra.id, this.formData).pipe(
-        takeUntil(this.destroy$),
-        catchError((err) => {
-          console.error('Error guardando compra:', err);
-          this.alertService.error('Error', 'Error al guardar compra');
-          return of(null);
-        })
-      ).subscribe({
-        next: () => {
-          this.closeModal();
-          this.loadCompras();
-        }
-      });
+      try {
+        await this.comprasService.updateCompra(this.editingCompra.id, this.formData);
+        this.closeModal();
+        this.loadCompras();
+      } catch (err) {
+        console.error('Error guardando compra:', err);
+        this.alertService.error('Error', 'Error al guardar compra');
+      }
     }
   }
 

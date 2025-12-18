@@ -74,15 +74,17 @@ export class DetalleEvento implements OnInit {
   loadUsuario() {
     const usuarioId = this.authService.getUsuarioId();
     if (usuarioId) {
-      this.usuariosService.getUsuarioById(usuarioId).subscribe({
-        next: (usuario) => {
-          this.usuario = usuario;
-          this.cdr.detectChanges();
-        },
-        error: (err) => {
-          console.error('Error cargando información del usuario:', err);
-        }
-      });
+      this.loadUsuarioById(usuarioId);
+    }
+  }
+
+  async loadUsuarioById(usuarioId: number) {
+    try {
+      const usuario = await this.usuariosService.getUsuarioById(usuarioId);
+      this.usuario = usuario;
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('Error cargando información del usuario:', err);
     }
   }
 
@@ -108,76 +110,68 @@ export class DetalleEvento implements OnInit {
     }
   }
 
-  loadEvento(id: number) {
+  async loadEvento(id: number) {
     this.loading = true;
-    this.eventosService.getEventoById(id).subscribe({
-      next: (evento) => {
-        this.evento = evento;
-        this.loading = false;
-        // Cargar lugar si existe
-        if (evento.lugar_id) {
-          this.loadLugar(evento.lugar_id);
-        }
-        // Cargar categoría
-        if (evento.categoria_id) {
-          this.loadCategoria(evento.categoria_id);
-        }
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error cargando evento:', err);
-        this.loading = false;
-        this.router.navigate(['/eventos-cliente']);
+    try {
+      const evento = await this.eventosService.getEventoById(id);
+      this.evento = evento;
+      this.loading = false;
+      // Cargar lugar si existe
+      if (evento.lugar_id) {
+        this.loadLugar(evento.lugar_id);
       }
-    });
+      // Cargar categoría
+      if (evento.categoria_id) {
+        this.loadCategoria(evento.categoria_id);
+      }
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('Error cargando evento:', err);
+      this.loading = false;
+      this.router.navigate(['/eventos-cliente']);
+    }
   }
 
-  loadCategoria(categoriaId: number) {
+  async loadCategoria(categoriaId: number) {
     this.loadingCategoria = true;
-    this.categoriasService.getCategoriaById(categoriaId).subscribe({
-      next: (categoria) => {
-        this.categoria = categoria;
-        this.loadingCategoria = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error cargando categoría:', err);
-        this.loadingCategoria = false;
-        this.cdr.detectChanges();
-      }
-    });
+    try {
+      const categoria = await this.categoriasService.getCategoriaById(categoriaId);
+      this.categoria = categoria;
+      this.loadingCategoria = false;
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('Error cargando categoría:', err);
+      this.loadingCategoria = false;
+      this.cdr.detectChanges();
+    }
   }
 
-  loadLugar(lugarId: number) {
+  async loadLugar(lugarId: number) {
     this.loadingLugar = true;
-    this.lugaresService.getLugarById(lugarId).subscribe({
-      next: (lugar) => {
-        this.lugar = lugar;
-        this.loadingLugar = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error cargando lugar:', err);
-        this.loadingLugar = false;
-        this.cdr.detectChanges();
-      }
-    });
+    try {
+      const lugar = await this.lugaresService.getLugarById(lugarId);
+      this.lugar = lugar;
+      this.loadingLugar = false;
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('Error cargando lugar:', err);
+      this.loadingLugar = false;
+      this.cdr.detectChanges();
+    }
   }
 
-  loadTiposBoleta(eventoId: number) {
+  async loadTiposBoleta(eventoId: number) {
     this.loadingBoletas = true;
-    this.boletasService.getTiposBoleta(eventoId).subscribe({
-      next: (tipos) => {
-        this.tiposBoleta = tipos.filter(t => t.activo && t.cantidad_disponibles > 0);
-        this.loadingBoletas = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error cargando tipos de boleta:', err);
-        this.loadingBoletas = false;
-        this.cdr.detectChanges();
-      }
-    });
+    try {
+      const tipos = await this.boletasService.getTiposBoleta(eventoId);
+      this.tiposBoleta = tipos.filter(t => t.activo && t.cantidad_disponibles > 0);
+      this.loadingBoletas = false;
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('Error cargando tipos de boleta:', err);
+      this.loadingBoletas = false;
+      this.cdr.detectChanges();
+    }
   }
 
   agregarAlCarrito(tipo: TipoBoleta) {
@@ -268,102 +262,94 @@ export class DetalleEvento implements OnInit {
 
     // Validar disponibilidad
     this.comprando = true;
-    this.comprasClienteService.validarDisponibilidad(items).subscribe({
-      next: (validacion) => {
-        if (!validacion.valido) {
-          this.alertService.error('Error de disponibilidad', validacion.errores.join('\n'));
-          this.comprando = false;
-          return;
-        }
+    try {
+      const validacion = await this.comprasClienteService.validarDisponibilidad(items);
+      
+      if (!validacion.valido) {
+        this.alertService.error('Error de disponibilidad', validacion.errores.join('\n'));
+        this.comprando = false;
+        return;
+      }
 
-        // Procesar compra
-        if (!this.evento) {
-          this.alertService.error('Error', 'Error: evento no disponible');
-          this.comprando = false;
-          return;
-        }
+      // Procesar compra
+      if (!this.evento) {
+        this.alertService.error('Error', 'Error: evento no disponible');
+        this.comprando = false;
+        return;
+      }
 
-        // Crear la compra primero
-        this.comprasClienteService.procesarCompra({
-          evento_id: this.evento.id,
-          cliente_id: clienteId,
-          items
-        }).subscribe({
-          next: async (resultado) => {
-            console.log('Compra creada:', resultado.compra.id);
-            
-            // Crear transacción en Wompi usando fetch directo
-            const redirectUrl = `${window.location.origin}/pago-resultado?compra_id=${resultado.compra.id}`;
-            
-            try {
-              // Obtener URL de Supabase y token de autenticación
-              const supabaseUrl = supabaseConfig.url;
-              const { data: { session } } = await this.supabaseService.auth.getSession();
-              const accessToken = session?.access_token;
-              
-              if (!accessToken) {
-                throw new Error('No se pudo obtener el token de autenticación');
-              }
-              
-              // Obtener email del cliente
-              const customerEmail = this.usuario?.email || items[0]?.email_asistente || '';
-              
-              // Llamar a la Edge Function con fetch directo
-              const response = await fetch(
-                `${supabaseUrl}/functions/v1/wompi-payment`,
-                {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${accessToken}`,
-                    'apikey': supabaseConfig.anonKey
-                  },
-                  body: JSON.stringify({
-                    compra_id: resultado.compra.id,
-                    amount_in_cents: Math.round(resultado.compra.total * 100),
-                    redirect_url: redirectUrl,
-                    customer_email: customerEmail
-                  })
-                }
-              );
-              
-              const responseData = await response.json();
-              
-              // Verificar si hay error en la respuesta
-              if (!response.ok || !responseData.success) {
-                throw new Error(responseData.error || 'Error al crear transacción en Wompi');
-              }
-              
-              // La respuesta tiene checkout_url directamente o dentro de transaction
-              const checkoutUrl = responseData.checkout_url || responseData.transaction?.checkout_url;
-              
-              if (checkoutUrl) {
-                console.log('Redirigiendo a checkout de Wompi:', checkoutUrl);
-                window.location.href = checkoutUrl;
-              } else {
-                console.error('Respuesta de Wompi:', responseData);
-                this.alertService.error('Error de pago', 'Error: No se obtuvo la URL de pago de Wompi');
-                this.comprando = false;
-              }
-            } catch (err: any) {
-              console.error('Error creando transacción Wompi:', err);
-              this.alertService.error('Error de pago', 'Error al crear transacción en Wompi: ' + (err.message || 'Error desconocido'));
-              this.comprando = false;
-            }
-          },
-          error: (err) => {
-            console.error('Error procesando compra:', err);
-            this.alertService.error('Error al procesar compra', 'Error al procesar la compra: ' + (err.message || 'Error desconocido'));
-            this.comprando = false;
+      // Crear la compra primero
+      const resultado = await this.comprasClienteService.procesarCompra({
+        evento_id: this.evento.id,
+        cliente_id: clienteId,
+        items
+      });
+
+      console.log('Compra creada:', resultado.compra.id);
+      
+      // Crear transacción en Wompi usando fetch directo
+      const redirectUrl = `${window.location.origin}/pago-resultado?compra_id=${resultado.compra.id}`;
+      
+      try {
+        // Obtener URL de Supabase y token de autenticación
+        const supabaseUrl = supabaseConfig.url;
+        const { data: { session } } = await this.supabaseService.auth.getSession();
+        const accessToken = session?.access_token;
+        
+        if (!accessToken) {
+          throw new Error('No se pudo obtener el token de autenticación');
+        }
+        
+        // Obtener email del cliente
+        const customerEmail = this.usuario?.email || items[0]?.email_asistente || '';
+        
+        // Llamar a la Edge Function con fetch directo
+        const response = await fetch(
+          `${supabaseUrl}/functions/v1/wompi-payment`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`,
+              'apikey': supabaseConfig.anonKey
+            },
+            body: JSON.stringify({
+              compra_id: resultado.compra.id,
+              amount_in_cents: Math.round(resultado.compra.total * 100),
+              redirect_url: redirectUrl,
+              customer_email: customerEmail
+            })
           }
-        });
-      },
-      error: (err) => {
-        console.error('Error validando disponibilidad:', err);
-        this.alertService.error('Error', 'Error al validar disponibilidad');
+        );
+        
+        const responseData = await response.json();
+        
+        // Verificar si hay error en la respuesta
+        if (!response.ok || !responseData.success) {
+          throw new Error(responseData.error || 'Error al crear transacción en Wompi');
+        }
+        
+        // La respuesta tiene checkout_url directamente o dentro de transaction
+        const checkoutUrl = responseData.checkout_url || responseData.transaction?.checkout_url;
+        
+        if (checkoutUrl) {
+          console.log('Redirigiendo a checkout de Wompi:', checkoutUrl);
+          window.location.href = checkoutUrl;
+        } else {
+          console.error('Respuesta de Wompi:', responseData);
+          this.alertService.error('Error de pago', 'Error: No se obtuvo la URL de pago de Wompi');
+          this.comprando = false;
+        }
+      } catch (err: any) {
+        console.error('Error creando transacción Wompi:', err);
+        this.alertService.error('Error de pago', 'Error al crear transacción en Wompi: ' + (err.message || 'Error desconocido'));
         this.comprando = false;
       }
-    });
+    } catch (err: any) {
+      console.error('Error procesando compra:', err);
+      this.alertService.error('Error al procesar compra', 'Error al procesar la compra: ' + (err.message || 'Error desconocido'));
+      this.comprando = false;
+    }
   }
 
   getImageUrl(evento: Evento): string {

@@ -37,52 +37,56 @@ export class Reportes implements OnInit {
     this.generarReporte();
   }
 
-  generarReporte() {
+  async generarReporte() {
     this.loading = true;
     
     // Reporte de ventas
-    this.comprasService.getCompras({
-      fecha_desde: this.fechaInicio,
-      fecha_hasta: this.fechaFin,
-      limit: 1000
-    }).subscribe({
-      next: (response) => {
-        const compras = response.data;
-        const totalVentas = compras.reduce((sum, c) => sum + Number(c.total || 0), 0);
-        const comprasCompletadas = compras.filter(c => c.estado_pago === 'completado');
-        
-        this.reporteVentas = {
-          totalCompras: compras.length,
-          comprasCompletadas: comprasCompletadas.length,
-          totalIngresos: totalVentas,
-          comprasPorEstado: this.agruparPorEstado(compras, 'estado_pago'),
-          comprasPorMetodo: this.agruparPorMetodo(compras)
-        };
-        this.loading = false;
-      },
-      error: (err) => {
-        console.error('Error generando reporte de ventas:', err);
-        this.loading = false;
-      }
-    });
+    await this.loadVentasReporte();
 
     // Reporte de eventos
-    this.eventosService.getEventos({
-      limit: 1000
-    }).subscribe({
-      next: (response) => {
-        const eventos = response.data;
-        this.reporteEventos = {
-          totalEventos: eventos.length,
-          eventosActivos: eventos.filter(e => e.activo).length,
-          eventosPorEstado: this.agruparPorEstado(eventos, 'estado'),
-          eventosDestacados: eventos.filter(e => e.destacado).length
-        };
-      },
-      error: (err) => {
-        console.error('Error generando reporte de eventos:', err);
-      }
-    });
+    this.loadEventosReporte();
+  }
+
+  private async loadVentasReporte() {
+    try {
+      const response = await this.comprasService.getCompras({
+        fecha_desde: this.fechaInicio,
+        fecha_hasta: this.fechaFin,
+        limit: 1000
+      });
+      const compras = response.data;
+      const totalVentas = compras.reduce((sum: number, c: any) => sum + Number(c.total || 0), 0);
+      const comprasCompletadas = compras.filter((c: any) => c.estado_pago === 'completado');
+      
+      this.reporteVentas = {
+        totalCompras: compras.length,
+        comprasCompletadas: comprasCompletadas.length,
+        totalIngresos: totalVentas,
+        comprasPorEstado: this.agruparPorEstado(compras, 'estado_pago'),
+        comprasPorMetodo: this.agruparPorMetodo(compras)
+      };
+      this.loading = false;
+    } catch (err) {
+      console.error('Error generando reporte de ventas:', err);
+      this.loading = false;
+    }
+  }
+
+  private async loadEventosReporte() {
+    try {
+      const response = await this.eventosService.getEventos({
+        limit: 1000
+      });
+      const eventos = response.data;
+      this.reporteEventos = {
+        totalEventos: eventos.length,
+        eventosActivos: eventos.filter(e => e.activo).length,
+        eventosPorEstado: this.agruparPorEstado(eventos, 'estado'),
+        eventosDestacados: eventos.filter(e => e.destacado).length
+      };
+    } catch (err) {
+      console.error('Error generando reporte de eventos:', err);
+    }
   }
 
   agruparPorEstado(items: any[], campo: string): any {

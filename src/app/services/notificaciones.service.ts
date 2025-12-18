@@ -3,8 +3,6 @@
    ============================================ */
 
 import { Injectable, NgZone } from '@angular/core';
-import { Observable, from } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { SupabaseService } from './supabase.service';
 import { TimezoneService } from './timezone.service';
 import { Notificacion, PaginatedResponse, BaseFilters, TipoTipoNotificacion } from '../types';
@@ -28,37 +26,38 @@ export class NotificacionesService {
   /**
    * Obtiene todas las notificaciones
    */
-  getNotificaciones(filters?: NotificacionFilters): Observable<PaginatedResponse<Notificacion>> {
-    let query = this.supabase.from('notificaciones').select('*', { count: 'exact' });
-
-    if (filters?.usuario_id) {
-      query = query.eq('usuario_id', filters.usuario_id);
-    }
-    if (filters?.tipo) {
-      query = query.eq('tipo', filters.tipo);
-    }
-    if (filters?.leida !== undefined) {
-      query = query.eq('leida', filters.leida);
-    }
-
-    const sortBy = filters?.sortBy || 'fecha_creacion';
-    const sortOrder = filters?.sortOrder || 'desc';
-    query = query.order(sortBy, { ascending: sortOrder === 'asc' });
-
-    const page = filters?.page || 1;
-    const limit = filters?.limit || 10;
-    const fromIndex = (page - 1) * limit;
-    const toIndex = fromIndex + limit - 1;
-    query = query.range(fromIndex, toIndex);
-
-    return new Observable(observer => {
+  async getNotificaciones(filters?: NotificacionFilters): Promise<PaginatedResponse<Notificacion>> {
+    return new Promise((resolve, reject) => {
       this.ngZone.runOutsideAngular(async () => {
         try {
+          let query = this.supabase.from('notificaciones').select('*', { count: 'exact' });
+
+          if (filters?.usuario_id) {
+            query = query.eq('usuario_id', filters.usuario_id);
+          }
+          if (filters?.tipo) {
+            query = query.eq('tipo', filters.tipo);
+          }
+          if (filters?.leida !== undefined) {
+            query = query.eq('leida', filters.leida);
+          }
+
+          const sortBy = filters?.sortBy || 'fecha_creacion';
+          const sortOrder = filters?.sortOrder || 'desc';
+          query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+
+          const page = filters?.page || 1;
+          const limit = filters?.limit || 10;
+          const fromIndex = (page - 1) * limit;
+          const toIndex = fromIndex + limit - 1;
+          query = query.range(fromIndex, toIndex);
+
           const { data, error, count } = await query;
+          
           this.ngZone.run(() => {
             if (error) {
               console.error('Error en getNotificaciones:', error);
-              observer.error(error);
+              reject(error);
               return;
             }
             
@@ -75,14 +74,12 @@ export class NotificacionesService {
               totalPages: Math.ceil(total / limit)
             };
             
-            console.log('Enviando respuesta al observer:', response);
-            observer.next(response);
-            observer.complete();
-            console.log('Observer completado en notificaciones');
+            console.log('Enviando respuesta:', response);
+            resolve(response);
           });
         } catch (error: any) {
           this.ngZone.run(() => {
-            observer.error(error);
+            reject(error);
           });
         }
       });
@@ -92,8 +89,8 @@ export class NotificacionesService {
   /**
    * Crea una nueva notificación
    */
-  createNotificacion(notificacion: Partial<Notificacion>): Observable<Notificacion> {
-    return new Observable(observer => {
+  async createNotificacion(notificacion: Partial<Notificacion>): Promise<Notificacion> {
+    return new Promise((resolve, reject) => {
       this.ngZone.runOutsideAngular(async () => {
         try {
           const { data, error } = await this.supabase
@@ -104,15 +101,14 @@ export class NotificacionesService {
           
           this.ngZone.run(() => {
             if (error) {
-              observer.error(error);
+              reject(error);
             } else {
-              observer.next(data as Notificacion);
-              observer.complete();
+              resolve(data as Notificacion);
             }
           });
         } catch (error: any) {
           this.ngZone.run(() => {
-            observer.error(error);
+            reject(error);
           });
         }
       });
@@ -122,7 +118,7 @@ export class NotificacionesService {
   /**
    * Crea notificaciones masivas para múltiples usuarios
    */
-  createNotificacionesMasivas(usuarioIds: number[], titulo: string, mensaje: string, tipo?: TipoTipoNotificacion): Observable<Notificacion[]> {
+  async createNotificacionesMasivas(usuarioIds: number[], titulo: string, mensaje: string, tipo?: TipoTipoNotificacion): Promise<Notificacion[]> {
     const notificaciones = usuarioIds.map(usuario_id => ({
       usuario_id,
       titulo,
@@ -130,7 +126,7 @@ export class NotificacionesService {
       tipo: tipo || TipoTipoNotificacion.INFO
     }));
 
-    return new Observable(observer => {
+    return new Promise((resolve, reject) => {
       this.ngZone.runOutsideAngular(async () => {
         try {
           const { data, error } = await this.supabase
@@ -140,15 +136,14 @@ export class NotificacionesService {
           
           this.ngZone.run(() => {
             if (error) {
-              observer.error(error);
+              reject(error);
             } else {
-              observer.next((data as Notificacion[]) || []);
-              observer.complete();
+              resolve((data as Notificacion[]) || []);
             }
           });
         } catch (error: any) {
           this.ngZone.run(() => {
-            observer.error(error);
+            reject(error);
           });
         }
       });
@@ -158,8 +153,8 @@ export class NotificacionesService {
   /**
    * Marca una notificación como leída
    */
-  marcarComoLeida(id: number): Observable<Notificacion> {
-    return new Observable(observer => {
+  async marcarComoLeida(id: number): Promise<Notificacion> {
+    return new Promise((resolve, reject) => {
       this.ngZone.runOutsideAngular(async () => {
         try {
           const { data, error } = await this.supabase
@@ -171,15 +166,14 @@ export class NotificacionesService {
           
           this.ngZone.run(() => {
             if (error) {
-              observer.error(error);
+              reject(error);
             } else {
-              observer.next(data as Notificacion);
-              observer.complete();
+              resolve(data as Notificacion);
             }
           });
         } catch (error: any) {
           this.ngZone.run(() => {
-            observer.error(error);
+            reject(error);
           });
         }
       });
@@ -189,8 +183,8 @@ export class NotificacionesService {
   /**
    * Elimina una notificación
    */
-  deleteNotificacion(id: number): Observable<void> {
-    return new Observable(observer => {
+  async deleteNotificacion(id: number): Promise<void> {
+    return new Promise((resolve, reject) => {
       this.ngZone.runOutsideAngular(async () => {
         try {
           const { error } = await this.supabase
@@ -200,15 +194,14 @@ export class NotificacionesService {
           
           this.ngZone.run(() => {
             if (error) {
-              observer.error(error);
+              reject(error);
             } else {
-              observer.next();
-              observer.complete();
+              resolve();
             }
           });
         } catch (error: any) {
           this.ngZone.run(() => {
-            observer.error(error);
+            reject(error);
           });
         }
       });

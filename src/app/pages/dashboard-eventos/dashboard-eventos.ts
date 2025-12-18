@@ -2,8 +2,8 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { Subject, forkJoin, of } from 'rxjs';
-import { takeUntil, debounceTime, switchMap, catchError } from 'rxjs/operators';
+import { Subject, from } from 'rxjs';
+import { takeUntil, debounceTime, switchMap } from 'rxjs/operators';
 import { DashboardService } from '../../services/dashboard.service';
 import { DashboardOrganizadorService } from '../../services/dashboard-organizador.service';
 import { ReportesService, ReporteVentas, ReporteAsistencia, ReporteEvento } from '../../services/reportes.service';
@@ -90,7 +90,7 @@ export class DashboardEventos implements OnInit, OnDestroy {
     this.loadReportesSubject.pipe(
       debounceTime(300), // Esperar 300ms antes de ejecutar
       switchMap(() => {
-        return this.loadReportesInternal();
+        return from(this.loadReportesInternal());
       }),
       takeUntil(this.destroy$)
     ).subscribe({
@@ -123,7 +123,7 @@ export class DashboardEventos implements OnInit, OnDestroy {
     }
   }
 
-  loadEventos() {
+  async loadEventos() {
     // Para el selector de eventos, no necesitamos todos, solo los activos y publicados
     // Reducir el límite y optimizar la consulta
     const filters: any = {
@@ -137,53 +137,52 @@ export class DashboardEventos implements OnInit, OnDestroy {
       filters.organizador_id = this.organizadorId;
     }
     
-    this.eventosService.getEventos(filters).pipe(
-      takeUntil(this.destroy$),
-      catchError((err) => {
-        console.error('Error cargando eventos:', err);
-        // Si falla, intentar con menos eventos
-        return this.eventosService.getEventos({ limit: 100, page: 1, activo: true }).pipe(
-          catchError(() => of({ data: [], total: 0, page: 1, limit: 100, totalPages: 0 }))
-        );
-      })
-    ).subscribe({
-      next: (response) => {
+    try {
+      const response = await this.eventosService.getEventos(filters);
+      if (this.esOrganizador && this.organizadorId) {
+        this.eventos = (response.data || []).filter(e => e.organizador_id === this.organizadorId);
+      } else {
+        this.eventos = response.data || [];
+      }
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('Error cargando eventos:', err);
+      // Si falla, intentar con menos eventos
+      try {
+        const response = await this.eventosService.getEventos({ limit: 100, page: 1, activo: true });
         if (this.esOrganizador && this.organizadorId) {
           this.eventos = (response.data || []).filter(e => e.organizador_id === this.organizadorId);
         } else {
           this.eventos = response.data || [];
         }
         this.cdr.detectChanges();
+      } catch {
+        this.eventos = [];
+        this.cdr.detectChanges();
       }
-    });
+    }
   }
 
-  loadStats() {
+  async loadStats() {
     this.loading = true;
     this.error = null;
     this.cdr.detectChanges();
 
-    const stats$ = this.esOrganizador && this.organizadorId
-      ? this.dashboardOrganizadorService.getStats(this.organizadorId)
-      : this.dashboardService.getStats();
-
-    stats$.pipe(
-      takeUntil(this.destroy$),
-      catchError((err) => {
-        console.error('Error cargando estadísticas:', err);
-        this.error = 'Error al cargar las estadísticas';
-        this.loading = false;
-        this.cdr.detectChanges();
-        return of(this.stats);
-      })
-    ).subscribe({
-      next: (stats) => {
-        this.stats = stats;
-        this.loading = false;
-        this.loadReportes();
-        this.cdr.detectChanges();
-      }
-    });
+    try {
+      const stats = this.esOrganizador && this.organizadorId
+        ? await this.dashboardOrganizadorService.getStats(this.organizadorId)
+        : await this.dashboardService.getStats();
+      
+      this.stats = stats;
+      this.loading = false;
+      this.loadReportes();
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('Error cargando estadísticas:', err);
+      this.error = 'Error al cargar las estadísticas';
+      this.loading = false;
+      this.cdr.detectChanges();
+    }
   }
 
   loadReportes() {
@@ -191,55 +190,69 @@ export class DashboardEventos implements OnInit, OnDestroy {
     this.loadReportesSubject.next();
   }
 
-  private loadReportesInternal() {
-    // Usar forkJoin para hacer todas las peticiones en paralelo y cancelar las anteriores
+  private async loadReportesInternal() {
+    // Usar Promise.all para hacer todas las peticiones en paralelo
     const organizadorId = this.organizadorId || undefined;
     const fechaDesde = this.fechaDesde || undefined;
     const fechaHasta = this.fechaHasta || undefined;
     const eventoFiltro = this.eventoFiltro || undefined;
 
-    return forkJoin({
-      ventasPorDia: this.reportesService.getVentasPorDia(fechaDesde, fechaHasta, organizadorId).pipe(
-        catchError((err) => {
+    try {
+      const [
+        ventasPorDia,
+        ventasPorMes,
+        asistenciaPorEvento,
+        ingresosPorEvento,
+        distribucionMetodoPago,
+        reporteEvento
+      ] = await Promise.all([
+        this.reportesService.getVentasPorDia(fechaDesde, fechaHasta, organizadorId).catch((err) => {
           console.error('Error cargando ventas por día:', err);
-          return of([]);
-        })
-      ),
-      ventasPorMes: this.reportesService.getVentasPorMes(organizadorId).pipe(
-        catchError((err) => {
+          return [];
+        }),
+        this.reportesService.getVentasPorMes(organizadorId).catch((err) => {
           console.error('Error cargando ventas por mes:', err);
-          return of([]);
-        })
-      ),
-      asistenciaPorEvento: this.reportesService.getAsistenciaPorEvento(organizadorId, eventoFiltro).pipe(
-        catchError((err) => {
+          return [];
+        }),
+        this.reportesService.getAsistenciaPorEvento(organizadorId, eventoFiltro).catch((err) => {
           console.error('Error cargando asistencia:', err);
-          return of([]);
-        })
-      ),
-      ingresosPorEvento: this.reportesService.getIngresosPorEvento(organizadorId).pipe(
-        catchError((err) => {
+          return [];
+        }),
+        this.reportesService.getIngresosPorEvento(organizadorId).catch((err) => {
           console.error('Error cargando ingresos por evento:', err);
-          return of([]);
-        })
-      ),
-      distribucionMetodoPago: this.reportesService.getDistribucionMetodoPago(organizadorId).pipe(
-        catchError((err) => {
+          return [];
+        }),
+        this.reportesService.getDistribucionMetodoPago(organizadorId).catch((err) => {
           console.error('Error cargando distribución método pago:', err);
-          return of([]);
-        })
-      ),
-      reporteEvento: eventoFiltro 
-        ? this.reportesService.getReporteEvento(eventoFiltro).pipe(
-            catchError((err) => {
+          return [];
+        }),
+        eventoFiltro 
+          ? this.reportesService.getReporteEvento(eventoFiltro).catch((err) => {
               console.error('Error cargando reporte evento:', err);
-              return of(null);
+              return null;
             })
-          )
-        : of(null)
-    }).pipe(
-      takeUntil(this.destroy$)
-    );
+          : Promise.resolve(null)
+      ]);
+
+      return {
+        ventasPorDia,
+        ventasPorMes,
+        asistenciaPorEvento,
+        ingresosPorEvento,
+        distribucionMetodoPago,
+        reporteEvento
+      };
+    } catch (error) {
+      console.error('Error general cargando reportes:', error);
+      return {
+        ventasPorDia: [],
+        ventasPorMes: [],
+        asistenciaPorEvento: [],
+        ingresosPorEvento: [],
+        distribucionMetodoPago: [],
+        reporteEvento: null
+      };
+    }
   }
 
   aplicarFiltros() {

@@ -34,50 +34,41 @@ export class Calificaciones implements OnInit, OnDestroy {
     this.loadCalificaciones();
   }
 
-  loadCalificaciones() {
+  async loadCalificaciones() {
     console.log('loadCalificaciones llamado');
     this.loading = true;
     this.cdr.detectChanges();
     
-    this.calificacionesService.getCalificaciones({
-      page: this.page,
-      limit: this.limit,
-      evento_id: this.eventoFiltro || undefined,
-      activo: this.activoFiltro !== null ? this.activoFiltro : undefined
-    }).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe({
-      next: (response: PaginatedResponse<Calificacion>) => {
-        console.log('Response recibida en calificaciones:', response);
-        this.calificaciones = response.data || [];
-        this.total = response.total || 0;
-        this.loading = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error cargando calificaciones:', err);
-        this.loading = false;
-        this.calificaciones = [];
-        this.total = 0;
-        this.cdr.detectChanges();
-      },
-      complete: () => {
-        console.log('Observable completado en calificaciones');
-        this.cdr.detectChanges();
-      }
-    });
+    try {
+      const response = await this.calificacionesService.getCalificaciones({
+        page: this.page,
+        limit: this.limit,
+        evento_id: this.eventoFiltro || undefined,
+        activo: this.activoFiltro !== null ? this.activoFiltro : undefined
+      });
+      
+      console.log('Response recibida en calificaciones:', response);
+      this.calificaciones = response.data || [];
+      this.total = response.total || 0;
+      this.loading = false;
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('Error cargando calificaciones:', err);
+      this.loading = false;
+      this.calificaciones = [];
+      this.total = 0;
+      this.cdr.detectChanges();
+    }
   }
 
-  toggleActivo(calificacion: Calificacion) {
-    this.calificacionesService.desactivarCalificacion(calificacion.id).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe({
-      next: () => this.loadCalificaciones(),
-      error: (err) => {
-        console.error('Error actualizando calificación:', err);
-        this.alertService.error('Error', 'Error al actualizar calificación');
-      }
-    });
+  async toggleActivo(calificacion: Calificacion) {
+    try {
+      await this.calificacionesService.desactivarCalificacion(calificacion.id);
+      this.loadCalificaciones();
+    } catch (err) {
+      console.error('Error actualizando calificación:', err);
+      this.alertService.error('Error', 'Error al actualizar calificación');
+    }
   }
 
   ngOnDestroy() {

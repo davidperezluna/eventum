@@ -51,47 +51,38 @@ export class Notificaciones implements OnInit, OnDestroy {
     this.loadUsuarios();
   }
 
-  loadUsuarios() {
-    this.usuariosService.getUsuarios({ limit: 1000 }).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe({
-      next: (response) => {
-        this.usuarios = response.data;
-      },
-      error: (err) => console.error('Error cargando usuarios:', err)
-    });
+  async loadUsuarios() {
+    try {
+      const response = await this.usuariosService.getUsuarios({ limit: 1000 });
+      this.usuarios = response.data;
+    } catch (err) {
+      console.error('Error cargando usuarios:', err);
+    }
   }
 
-  loadNotificaciones() {
+  async loadNotificaciones() {
     console.log('loadNotificaciones llamado');
     this.loading = true;
     this.cdr.detectChanges();
     
-    this.notificacionesService.getNotificaciones({
-      page: this.page,
-      limit: this.limit
-    }).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe({
-      next: (response: PaginatedResponse<Notificacion>) => {
-        console.log('Response recibida en notificaciones:', response);
-        this.notificaciones = response.data || [];
-        this.total = response.total || 0;
-        this.loading = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error cargando notificaciones:', err);
-        this.loading = false;
-        this.notificaciones = [];
-        this.total = 0;
-        this.cdr.detectChanges();
-      },
-      complete: () => {
-        console.log('Observable completado en notificaciones');
-        this.cdr.detectChanges();
-      }
-    });
+    try {
+      const response = await this.notificacionesService.getNotificaciones({
+        page: this.page,
+        limit: this.limit
+      });
+      
+      console.log('Response recibida en notificaciones:', response);
+      this.notificaciones = response.data || [];
+      this.total = response.total || 0;
+      this.loading = false;
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('Error cargando notificaciones:', err);
+      this.loading = false;
+      this.notificaciones = [];
+      this.total = 0;
+      this.cdr.detectChanges();
+    }
   }
 
   openModal() {
@@ -107,55 +98,40 @@ export class Notificaciones implements OnInit, OnDestroy {
     this.selectedUserIds = [];
   }
 
-  saveNotificacion() {
-    if (this.enviarMasivo && this.selectedUserIds.length > 0) {
-      this.notificacionesService.createNotificacionesMasivas(
-        this.selectedUserIds,
-        this.formData.titulo!,
-        this.formData.mensaje!,
-        this.formData.tipo || TipoTipoNotificacion.INFO
-      ).pipe(
-        takeUntil(this.destroy$)
-      ).subscribe({
-        next: () => {
-          this.closeModal();
-          this.loadNotificaciones();
-        },
-        error: (err) => {
-          console.error('Error creando notificaciones:', err);
-          this.alertService.error('Error', 'Error al crear notificaciones');
-        }
-      });
-    } else if (this.formData.usuario_id) {
-      this.notificacionesService.createNotificacion(this.formData).pipe(
-        takeUntil(this.destroy$)
-      ).subscribe({
-        next: () => {
-          this.closeModal();
-          this.loadNotificaciones();
-        },
-        error: (err) => {
-          console.error('Error creando notificación:', err);
-          this.alertService.error('Error', 'Error al crear notificación');
-        }
-      });
-    } else {
-      this.alertService.warning('Selección requerida', 'Selecciona al menos un usuario');
+  async saveNotificacion() {
+    try {
+      if (this.enviarMasivo && this.selectedUserIds.length > 0) {
+        await this.notificacionesService.createNotificacionesMasivas(
+          this.selectedUserIds,
+          this.formData.titulo!,
+          this.formData.mensaje!,
+          this.formData.tipo || TipoTipoNotificacion.INFO
+        );
+        this.closeModal();
+        this.loadNotificaciones();
+      } else if (this.formData.usuario_id) {
+        await this.notificacionesService.createNotificacion(this.formData);
+        this.closeModal();
+        this.loadNotificaciones();
+      } else {
+        this.alertService.warning('Selección requerida', 'Selecciona al menos un usuario');
+      }
+    } catch (err) {
+      console.error('Error creando notificación:', err);
+      this.alertService.error('Error', 'Error al crear notificación');
     }
   }
 
   async deleteNotificacion(id: number) {
     const confirmed = await this.alertService.confirm('Eliminar notificación', '¿Estás seguro de eliminar esta notificación?');
     if (confirmed) {
-      this.notificacionesService.deleteNotificacion(id).pipe(
-        takeUntil(this.destroy$)
-      ).subscribe({
-        next: () => this.loadNotificaciones(),
-        error: (err) => {
-          console.error('Error eliminando notificación:', err);
-          this.alertService.error('Error', 'Error al eliminar notificación');
-        }
-      });
+      try {
+        await this.notificacionesService.deleteNotificacion(id);
+        this.loadNotificaciones();
+      } catch (err) {
+        console.error('Error eliminando notificación:', err);
+        this.alertService.error('Error', 'Error al eliminar notificación');
+      }
     }
   }
 

@@ -80,8 +80,8 @@ export class Boletas implements OnInit, OnDestroy {
     // Configurar debounce para loadBoletas
     this.loadBoletasSubject.pipe(
       debounceTime(300),
-      switchMap(() => {
-        return this.loadBoletasInternal();
+      switchMap(async () => {
+        return await this.loadBoletasInternal();
       }),
       takeUntil(this.destroy$)
     ).subscribe({
@@ -120,45 +120,44 @@ export class Boletas implements OnInit, OnDestroy {
     this.loadBoletas();
   }
 
-  loadAllTiposBoleta() {
+  async loadAllTiposBoleta() {
     this.loadingTipos = true;
-    this.boletasService.getAllTiposBoleta({ activo: true }).pipe(
-      takeUntil(this.destroy$),
-      catchError((err) => {
-        console.error('Error cargando tipos de boleta:', err);
-        return of([]);
-      })
-    ).subscribe({
-      next: (tipos) => {
-        this.tiposBoleta = tipos || [];
-        this.loadingTipos = false;
-        this.cdr.detectChanges();
-      }
-    });
+    try {
+      const tipos = await this.boletasService.getAllTiposBoleta({ activo: true });
+      this.tiposBoleta = tipos || [];
+      this.loadingTipos = false;
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('Error cargando tipos de boleta:', err);
+      this.tiposBoleta = [];
+      this.loadingTipos = false;
+      this.cdr.detectChanges();
+    }
   }
 
-  loadEventos() {
+  async loadEventos() {
     // Para el selector de eventos en boletas, solo necesitamos eventos activos
     // Reducir el límite para mejor rendimiento
-    this.eventosService.getEventos({ 
-      limit: 500, // Reducido de 1000
-      page: 1,
-      activo: true
-    }).pipe(
-      takeUntil(this.destroy$),
-      catchError((err) => {
-        console.error('Error cargando eventos:', err);
-        // Si falla, intentar con menos eventos
-        return this.eventosService.getEventos({ limit: 100, page: 1, activo: true }).pipe(
-          catchError(() => of({ data: [], total: 0, page: 1, limit: 100, totalPages: 0 }))
-        );
-      })
-    ).subscribe({
-      next: (response) => {
+    try {
+      const response = await this.eventosService.getEventos({ 
+        limit: 500, // Reducido de 1000
+        page: 1,
+        activo: true
+      });
+      this.eventos = response.data || [];
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('Error cargando eventos:', err);
+      // Si falla, intentar con menos eventos
+      try {
+        const response = await this.eventosService.getEventos({ limit: 100, page: 1, activo: true });
         this.eventos = response.data || [];
         this.cdr.detectChanges();
+      } catch {
+        this.eventos = [];
+        this.cdr.detectChanges();
       }
-    });
+    }
   }
 
   loadBoletas() {
@@ -168,7 +167,7 @@ export class Boletas implements OnInit, OnDestroy {
     this.loadBoletasSubject.next();
   }
 
-  private loadBoletasInternal() {
+  private async loadBoletasInternal() {
     const filters: any = {
       page: this.page,
       limit: this.limit,
@@ -207,13 +206,12 @@ export class Boletas implements OnInit, OnDestroy {
       filters.fecha_hasta = fechaHasta.toISOString();
     }
     
-    return this.boletasService.getBoletasCompradas(filters).pipe(
-      takeUntil(this.destroy$),
-      catchError((err) => {
-        console.error('Error cargando boletas:', err);
-        return of({ data: [], total: 0, page: 1, limit: this.limit, totalPages: 0 });
-      })
-    );
+    try {
+      return await this.boletasService.getBoletasCompradas(filters);
+    } catch (err) {
+      console.error('Error cargando boletas:', err);
+      return { data: [], total: 0, page: 1, limit: this.limit, totalPages: 0 };
+    }
   }
 
   limpiarFiltros() {
@@ -243,23 +241,18 @@ export class Boletas implements OnInit, OnDestroy {
     const confirmed = await this.alertService.confirm('Validar boleta', `¿Validar la boleta ${boleta.codigo_qr}?`);
     if (confirmed) {
       this.validandoBoleta = true;
-      this.boletasService.validarBoleta(boleta.id).pipe(
-        takeUntil(this.destroy$),
-        catchError((err) => {
-          console.error('Error validando boleta:', err);
-          this.alertService.error('Error al validar', 'Error al validar la boleta: ' + (err.message || 'Error desconocido'));
-          this.validandoBoleta = false;
-          this.cdr.detectChanges();
-          return of(null);
-        })
-      ).subscribe({
-        next: () => {
-          this.alertService.success('¡Boleta validada!', 'Boleta validada exitosamente');
-          this.loadBoletas();
-          this.validandoBoleta = false;
-          this.cdr.detectChanges();
-        }
-      });
+      try {
+        await this.boletasService.validarBoleta(boleta.id);
+        this.alertService.success('¡Boleta validada!', 'Boleta validada exitosamente');
+        this.loadBoletas();
+        this.validandoBoleta = false;
+        this.cdr.detectChanges();
+      } catch (err: any) {
+        console.error('Error validando boleta:', err);
+        this.alertService.error('Error al validar', 'Error al validar la boleta: ' + (err.message || 'Error desconocido'));
+        this.validandoBoleta = false;
+        this.cdr.detectChanges();
+      }
     }
   }
 
@@ -293,7 +286,7 @@ export class Boletas implements OnInit, OnDestroy {
     this.boletaSeleccionada = null;
   }
 
-  buscarBoletaPorQR() {
+  async buscarBoletaPorQR() {
     if (!this.codigoQRValidar.trim()) {
       this.alertService.warning('Campo requerido', 'Por favor ingresa un código QR');
       return;
@@ -304,30 +297,28 @@ export class Boletas implements OnInit, OnDestroy {
     this.boletasEncontradasPorDocumento = [];
     this.boletaSeleccionada = null;
     
-    this.boletasService.buscarBoletaPorCodigoQR(this.codigoQRValidar.trim()).subscribe({
-      next: (boleta) => {
-        this.validandoBoleta = false;
-        if (!boleta) {
-          this.alertService.info('No encontrado', 'No se encontró ninguna boleta con ese código QR');
-          this.boletaEncontrada = null;
-        } else {
-          this.boletaEncontrada = boleta;
-          this.boletaSeleccionada = boleta;
-        }
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error buscando boleta:', err);
-        this.alertService.error('Error al buscar', 'Error al buscar la boleta: ' + (err.message || 'Error desconocido'));
-        this.validandoBoleta = false;
+    try {
+      const boleta = await this.boletasService.buscarBoletaPorCodigoQR(this.codigoQRValidar.trim());
+      this.validandoBoleta = false;
+      if (!boleta) {
+        this.alertService.info('No encontrado', 'No se encontró ninguna boleta con ese código QR');
         this.boletaEncontrada = null;
-        this.boletaSeleccionada = null;
-        this.cdr.detectChanges();
+      } else {
+        this.boletaEncontrada = boleta;
+        this.boletaSeleccionada = boleta;
       }
-    });
+      this.cdr.detectChanges();
+    } catch (err: any) {
+      console.error('Error buscando boleta:', err);
+      this.alertService.error('Error al buscar', 'Error al buscar la boleta: ' + (err.message || 'Error desconocido'));
+      this.validandoBoleta = false;
+      this.boletaEncontrada = null;
+      this.boletaSeleccionada = null;
+      this.cdr.detectChanges();
+    }
   }
 
-  buscarBoletasPorDocumento() {
+  async buscarBoletasPorDocumento() {
     if (!this.documentoValidar.trim()) {
       this.alertService.warning('Campo requerido', 'Por favor ingresa un número de cédula');
       return;
@@ -338,33 +329,28 @@ export class Boletas implements OnInit, OnDestroy {
     this.boletasEncontradasPorDocumento = [];
     this.boletaSeleccionada = null;
     
-    this.boletasService.buscarBoletasPorDocumento(this.documentoValidar.trim()).pipe(
-      takeUntil(this.destroy$),
-      catchError((err) => {
-        console.error('Error buscando boletas:', err);
-        this.alertService.error('Error al buscar', 'Error al buscar las boletas: ' + (err.message || 'Error desconocido'));
-        this.validandoBoleta = false;
+    try {
+      const boletas = await this.boletasService.buscarBoletasPorDocumento(this.documentoValidar.trim());
+      this.validandoBoleta = false;
+      if (!boletas || boletas.length === 0) {
+        this.alertService.info('No encontrado', 'No se encontraron boletas con ese número de cédula');
         this.boletasEncontradasPorDocumento = [];
-        this.boletaSeleccionada = null;
-        this.cdr.detectChanges();
-        return of([]);
-      })
-    ).subscribe({
-      next: (boletas) => {
-        this.validandoBoleta = false;
-        if (!boletas || boletas.length === 0) {
-          this.alertService.info('No encontrado', 'No se encontraron boletas con ese número de cédula');
-          this.boletasEncontradasPorDocumento = [];
-        } else {
-          this.boletasEncontradasPorDocumento = boletas;
-          // Si solo hay una, seleccionarla automáticamente
-          if (boletas.length === 1) {
-            this.boletaSeleccionada = boletas[0];
-          }
+      } else {
+        this.boletasEncontradasPorDocumento = boletas;
+        // Si solo hay una, seleccionarla automáticamente
+        if (boletas.length === 1) {
+          this.boletaSeleccionada = boletas[0];
         }
-        this.cdr.detectChanges();
       }
-    });
+      this.cdr.detectChanges();
+    } catch (err: any) {
+      console.error('Error buscando boletas:', err);
+      this.alertService.error('Error al buscar', 'Error al buscar las boletas: ' + (err.message || 'Error desconocido'));
+      this.validandoBoleta = false;
+      this.boletasEncontradasPorDocumento = [];
+      this.boletaSeleccionada = null;
+      this.cdr.detectChanges();
+    }
   }
 
   seleccionarBoleta(boleta: BoletaComprada) {
@@ -382,37 +368,29 @@ export class Boletas implements OnInit, OnDestroy {
     this.cerrarValidarModal();
   }
 
-  loadTiposBoleta(eventoId: number) {
-    this.boletasService.getTiposBoleta(eventoId).pipe(
-      takeUntil(this.destroy$),
-      catchError((err) => {
-        console.error('Error cargando tipos de boleta:', err);
-        return of([]);
-      })
-    ).subscribe({
-      next: (tipos) => {
-        this.tiposBoletaEvento = tipos || [];
-        this.cdr.detectChanges();
-      }
-    });
+  async loadTiposBoleta(eventoId: number) {
+    try {
+      const tipos = await this.boletasService.getTiposBoleta(eventoId);
+      this.tiposBoletaEvento = tipos || [];
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('Error cargando tipos de boleta:', err);
+      this.tiposBoletaEvento = [];
+      this.cdr.detectChanges();
+    }
   }
 
-  openTiposModalFromTipo(tipoBoletaId: number) {
+  async openTiposModalFromTipo(tipoBoletaId: number) {
     // Obtener el tipo de boleta para conseguir el evento_id
-    this.boletasService.getTipoBoletaById(tipoBoletaId).pipe(
-      takeUntil(this.destroy$),
-      catchError((err) => {
-        console.error('Error obteniendo tipo de boleta:', err);
-        this.alertService.error('Error', 'Error al obtener información del tipo de boleta');
-        return of(null);
-      })
-    ).subscribe({
-      next: (tipo) => {
-        if (tipo) {
-          this.openTiposModal(tipo.evento_id);
-        }
+    try {
+      const tipo = await this.boletasService.getTipoBoletaById(tipoBoletaId);
+      if (tipo) {
+        this.openTiposModal(tipo.evento_id);
       }
-    });
+    } catch (err) {
+      console.error('Error obteniendo tipo de boleta:', err);
+      this.alertService.error('Error', 'Error al obtener información del tipo de boleta');
+    }
   }
 
   openModalTipo(eventoId?: number) {
@@ -474,7 +452,7 @@ export class Boletas implements OnInit, OnDestroy {
     return this.timezoneService.isoToDatetimeLocal(typeof date === 'string' ? date : date.toISOString());
   }
 
-  saveTipoBoleta() {
+  async saveTipoBoleta() {
     // Validaciones
     if (!this.formData.evento_id) {
       this.alertService.warning('Campo requerido', 'El evento es requerido');
@@ -531,62 +509,47 @@ export class Boletas implements OnInit, OnDestroy {
     if (!tipoData.fecha_venta_fin) delete tipoData.fecha_venta_fin;
 
     if (this.editingTipo) {
-      this.boletasService.updateTipoBoleta(this.editingTipo.id, tipoData).pipe(
-        takeUntil(this.destroy$),
-        catchError((err) => {
-          console.error('Error guardando tipo de boleta:', err);
-          this.alertService.error('Error al guardar', 'Error al guardar tipo de boleta: ' + (err.message || 'Error desconocido'));
-          return of(null);
-        })
-      ).subscribe({
-        next: () => {
-          this.closeModal();
-          this.loadBoletas();
-          this.loadAllTiposBoleta();
-          if (this.eventoSeleccionado) {
-            this.loadTiposBoleta(this.eventoSeleccionado);
-          }
+      try {
+        await this.boletasService.updateTipoBoleta(this.editingTipo.id, tipoData);
+        this.closeModal();
+        this.loadBoletas();
+        this.loadAllTiposBoleta();
+        if (this.eventoSeleccionado) {
+          this.loadTiposBoleta(this.eventoSeleccionado);
         }
-      });
+      } catch (err: any) {
+        console.error('Error guardando tipo de boleta:', err);
+        this.alertService.error('Error al guardar', 'Error al guardar tipo de boleta: ' + (err.message || 'Error desconocido'));
+      }
     } else {
-      this.boletasService.createTipoBoleta(tipoData).pipe(
-        takeUntil(this.destroy$),
-        catchError((err) => {
-          console.error('Error creando tipo de boleta:', err);
-          this.alertService.error('Error al crear', 'Error al crear tipo de boleta: ' + (err.message || 'Error desconocido'));
-          return of(null);
-        })
-      ).subscribe({
-        next: () => {
-          this.closeModal();
-          this.loadBoletas();
-          this.loadAllTiposBoleta();
-          if (this.eventoSeleccionado) {
-            this.loadTiposBoleta(this.eventoSeleccionado);
-          }
+      try {
+        await this.boletasService.createTipoBoleta(tipoData);
+        this.closeModal();
+        this.loadBoletas();
+        this.loadAllTiposBoleta();
+        if (this.eventoSeleccionado) {
+          this.loadTiposBoleta(this.eventoSeleccionado);
         }
-      });
+      } catch (err: any) {
+        console.error('Error creando tipo de boleta:', err);
+        this.alertService.error('Error al crear', 'Error al crear tipo de boleta: ' + (err.message || 'Error desconocido'));
+      }
     }
   }
 
   async deleteTipoBoleta(tipo: TipoBoleta) {
     const confirmed = await this.alertService.confirm('Desactivar tipo de boleta', `¿Estás seguro de desactivar el tipo de boleta "${tipo.nombre}"?`);
     if (confirmed) {
-      this.boletasService.updateTipoBoleta(tipo.id, { activo: false }).pipe(
-        takeUntil(this.destroy$),
-        catchError((err) => {
-          console.error('Error desactivando tipo de boleta:', err);
-          this.alertService.error('Error', 'Error al desactivar tipo de boleta');
-          return of(null);
-        })
-      ).subscribe({
-        next: () => {
-          this.loadAllTiposBoleta();
-          if (this.eventoSeleccionado) {
-            this.loadTiposBoleta(this.eventoSeleccionado);
-          }
+      try {
+        await this.boletasService.updateTipoBoleta(tipo.id, { activo: false });
+        this.loadAllTiposBoleta();
+        if (this.eventoSeleccionado) {
+          this.loadTiposBoleta(this.eventoSeleccionado);
         }
-      });
+      } catch (err) {
+        console.error('Error desactivando tipo de boleta:', err);
+        this.alertService.error('Error', 'Error al desactivar tipo de boleta');
+      }
     }
   }
 

@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, of, forkJoin } from 'rxjs';
+import { Subject, of, forkJoin, firstValueFrom, from } from 'rxjs';
 import { takeUntil, catchError, debounceTime, switchMap } from 'rxjs/operators';
 import { ComprasService } from '../../services/compras.service';
 import { BoletasService } from '../../services/boletas.service';
@@ -81,7 +81,7 @@ export class MisCompras implements OnInit, OnDestroy {
     // Configurar debounce para búsqueda
     this.loadComprasSubject.pipe(
       debounceTime(300),
-      switchMap(() => this.loadComprasInternal()),
+      switchMap(() => from(this.loadComprasInternal())),
       takeUntil(this.destroy$)
     ).subscribe({
       next: (response: PaginatedResponse<Compra>) => {
@@ -114,11 +114,11 @@ export class MisCompras implements OnInit, OnDestroy {
     this.loadComprasSubject.next();
   }
 
-  private loadComprasInternal() {
+  private async loadComprasInternal(): Promise<PaginatedResponse<Compra>> {
     const clienteId = this.authService.getUsuarioId();
     if (!clienteId) {
       console.error('No se pudo identificar el cliente');
-      return of({ data: [], total: 0, page: 1, limit: this.limit, totalPages: 0 });
+      return { data: [], total: 0, page: 1, limit: this.limit, totalPages: 0 };
     }
 
     const filters: any = {
@@ -148,12 +148,12 @@ export class MisCompras implements OnInit, OnDestroy {
       filters.evento_id = this.eventoFiltro;
     }
 
-    return this.comprasService.getCompras(filters).pipe(
-      catchError((err) => {
-        console.error('Error en loadComprasInternal:', err);
-        return of({ data: [], total: 0, page: 1, limit: this.limit, totalPages: 0 });
-      })
-    );
+    try {
+      return await this.comprasService.getCompras(filters);
+    } catch (err) {
+      console.error('Error en loadComprasInternal:', err);
+      return { data: [], total: 0, page: 1, limit: this.limit, totalPages: 0 };
+    }
   }
 
   limpiarFiltros() {
@@ -178,60 +178,54 @@ export class MisCompras implements OnInit, OnDestroy {
     this.loadingEventos = true;
     
     // Obtener todas las compras del usuario (sin paginación para obtener todos los eventos)
-    this.comprasService.getCompras({
-      cliente_id: clienteId,
-      limit: 1000 // Límite alto para obtener todas las compras
-    }).pipe(
-      takeUntil(this.destroy$),
-      catchError((err) => {
-        console.error('Error cargando compras para eventos:', err);
-        return of({ data: [], total: 0, page: 1, limit: 1000, totalPages: 0 });
-      })
-    ).subscribe({
-      next: (response: PaginatedResponse<Compra>) => {
-        // Extraer evento_id únicos
-        const eventoIds = new Set<number>();
-        response.data.forEach(compra => {
-          if (compra.evento_id) {
-            eventoIds.add(compra.evento_id);
+    this.loadEventosDisponiblesInternal(clienteId);
+  }
+
+  private async loadEventosDisponiblesInternal(clienteId: number) {
+    try {
+      const response: PaginatedResponse<Compra> = await this.comprasService.getCompras({
+        cliente_id: clienteId,
+        limit: 1000 // Límite alto para obtener todas las compras
+      });
+      
+      // Extraer evento_id únicos
+      const eventoIds = new Set<number>();
+      response.data.forEach(compra => {
+        if (compra.evento_id) {
+          eventoIds.add(compra.evento_id);
+        }
+      });
+
+      // Cargar información de los eventos
+      if (eventoIds.size > 0) {
+        const eventoIdsArray = Array.from(eventoIds);
+        const eventosPromises = eventoIdsArray.map(async (eventoId) => {
+          try {
+            return await this.eventosService.getEventoById(eventoId);
+          } catch {
+            return null;
           }
         });
 
-        // Cargar información de los eventos
-        if (eventoIds.size > 0) {
-          const eventoIdsArray = Array.from(eventoIds);
-          const eventosPromises = eventoIdsArray.map(eventoId => 
-            this.eventosService.getEventoById(eventoId).pipe(
-              catchError(() => of(null))
-            )
-          );
-
-          // Usar forkJoin para cargar todos los eventos en paralelo
-          forkJoin(eventosPromises).pipe(
-            takeUntil(this.destroy$)
-          ).subscribe({
-            next: (eventos: (Evento | null)[]) => {
-              this.eventosDisponibles = eventos.filter((e): e is Evento => e !== null)
-                .sort((a, b) => {
-                  // Ordenar por título
-                  return a.titulo.localeCompare(b.titulo);
-                });
-              this.loadingEventos = false;
-              this.cdr.detectChanges();
-            },
-            error: (err) => {
-              console.error('Error cargando eventos:', err);
-              this.loadingEventos = false;
-              this.cdr.detectChanges();
-            }
+        // Usar Promise.all para cargar todos los eventos en paralelo
+        const eventos = await Promise.all(eventosPromises);
+        this.eventosDisponibles = eventos.filter((e): e is Evento => e !== null)
+          .sort((a, b) => {
+            // Ordenar por título
+            return a.titulo.localeCompare(b.titulo);
           });
-        } else {
-          this.eventosDisponibles = [];
-          this.loadingEventos = false;
-          this.cdr.detectChanges();
-        }
+        this.loadingEventos = false;
+        this.cdr.detectChanges();
+      } else {
+        this.eventosDisponibles = [];
+        this.loadingEventos = false;
+        this.cdr.detectChanges();
       }
-    });
+    } catch (err) {
+      console.error('Error cargando compras para eventos:', err);
+      this.loadingEventos = false;
+      this.cdr.detectChanges();
+    }
   }
 
   goToPage(pageNum: number) {
@@ -259,33 +253,29 @@ export class MisCompras implements OnInit, OnDestroy {
     return pages;
   }
 
-  loadBoletasPorCompra() {
+  async loadBoletasPorCompra() {
     this.comprasConBoletas = [];
     
-    this.compras.forEach(compra => {
-      this.boletasService.getBoletasCompradas({
-        compra_id: compra.id,
-        limit: 1000
-      }).pipe(
-        takeUntil(this.destroy$)
-      ).subscribe({
-        next: (response: PaginatedResponse<BoletaComprada>) => {
-          this.comprasConBoletas.push({
-            compra,
-            boletas: response.data || []
-          });
-          this.cdr.detectChanges();
-        },
-        error: (err) => {
-          console.error('Error cargando boletas para compra:', compra.id, err);
-          this.comprasConBoletas.push({
-            compra,
-            boletas: []
-          });
-          this.cdr.detectChanges();
-        }
-      });
-    });
+    for (const compra of this.compras) {
+      try {
+        const response = await this.boletasService.getBoletasCompradas({
+          compra_id: compra.id,
+          limit: 1000
+        });
+        this.comprasConBoletas.push({
+          compra,
+          boletas: response.data || []
+        });
+        this.cdr.detectChanges();
+      } catch (err) {
+        console.error('Error cargando boletas para compra:', compra.id, err);
+        this.comprasConBoletas.push({
+          compra,
+          boletas: []
+        });
+        this.cdr.detectChanges();
+      }
+    }
   }
 
   ngOnDestroy() {
@@ -367,37 +357,31 @@ export class MisCompras implements OnInit, OnDestroy {
     }
 
     // Obtener información del evento y tipo de boleta
-    this.boletasService.getTipoBoletaById(boleta.tipo_boleta_id).pipe(
-      takeUntil(this.destroy$),
-      catchError((err) => {
-        console.error('Error obteniendo tipo de boleta:', err);
-        return of(null);
-      })
-    ).subscribe({
-      next: async (tipoBoleta: TipoBoleta | null) => {
-        if (!tipoBoleta) {
-          this.loadingQR = false;
-          this.cdr.detectChanges();
-          return;
-        }
-
-        this.tipoBoletaSeleccionado = tipoBoleta;
-
-        this.eventosService.getEventoById(tipoBoleta.evento_id).pipe(
-          takeUntil(this.destroy$),
-          catchError((err) => {
-            console.error('Error obteniendo evento:', err);
-            return of(null);
-          })
-        ).subscribe({
-          next: (evento: Evento | null) => {
-            this.eventoSeleccionado = evento;
-            this.loadingQR = false;
-            this.cdr.detectChanges();
-          }
-        });
+    try {
+      const tipoBoleta = await this.boletasService.getTipoBoletaById(boleta.tipo_boleta_id);
+      if (!tipoBoleta) {
+        this.loadingQR = false;
+        this.cdr.detectChanges();
+        return;
       }
-    });
+
+      this.tipoBoletaSeleccionado = tipoBoleta;
+
+      try {
+        const evento = await this.eventosService.getEventoById(tipoBoleta.evento_id);
+        this.eventoSeleccionado = evento;
+        this.loadingQR = false;
+        this.cdr.detectChanges();
+      } catch (err) {
+        console.error('Error obteniendo evento:', err);
+        this.loadingQR = false;
+        this.cdr.detectChanges();
+      }
+    } catch (err) {
+      console.error('Error obteniendo tipo de boleta:', err);
+      this.loadingQR = false;
+      this.cdr.detectChanges();
+    }
   }
 
   /**
@@ -418,43 +402,23 @@ export class MisCompras implements OnInit, OnDestroy {
   async imprimirBoletaPDF(boleta: BoletaComprada, compra: Compra) {
     try {
       // Obtener información del tipo de boleta y evento
-      const tipoBoleta$ = this.boletasService.getTipoBoletaById(boleta.tipo_boleta_id).pipe(
-        takeUntil(this.destroy$),
-        catchError((err) => {
-          console.error('Error obteniendo tipo de boleta:', err);
-          return of(null);
-        })
-      );
+      const tipoBoleta = await this.boletasService.getTipoBoletaById(boleta.tipo_boleta_id);
+      
+      if (!tipoBoleta) {
+        this.alertService.error('Error', 'No se pudo obtener la información del tipo de boleta');
+        return;
+      }
 
-      tipoBoleta$.subscribe({
-        next: async (tipoBoleta: TipoBoleta | null) => {
-          if (!tipoBoleta) {
-            this.alertService.error('Error', 'No se pudo obtener la información del tipo de boleta');
-            return;
-          }
+      // Obtener información del evento
+      const evento = await this.eventosService.getEventoById(tipoBoleta.evento_id);
+      
+      if (!evento) {
+        this.alertService.error('Error', 'No se pudo obtener la información del evento');
+        return;
+      }
 
-          // Obtener información del evento
-          const evento$ = this.eventosService.getEventoById(tipoBoleta.evento_id).pipe(
-            takeUntil(this.destroy$),
-            catchError((err) => {
-              console.error('Error obteniendo evento:', err);
-              return of(null);
-            })
-          );
-
-          evento$.subscribe({
-            next: async (evento: Evento | null) => {
-              if (!evento) {
-                this.alertService.error('Error', 'No se pudo obtener la información del evento');
-                return;
-              }
-
-              // Generar el PDF
-              await this.generarPDF(boleta, compra, tipoBoleta, evento);
-            }
-          });
-        }
-      });
+      // Generar el PDF
+      await this.generarPDF(boleta, compra, tipoBoleta, evento);
     } catch (error) {
       console.error('Error al generar PDF:', error);
       this.alertService.error('Error', 'Error al generar el PDF de la boleta');

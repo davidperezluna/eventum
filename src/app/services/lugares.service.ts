@@ -3,11 +3,7 @@
    ============================================ */
 
 import { Injectable } from '@angular/core';
-import { Observable, from } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
-import { throwError } from 'rxjs';
 import { SupabaseService } from './supabase.service';
-import { SupabaseObservableHelper } from './supabase-observable.helper';
 import { Lugar, PaginatedResponse, BaseFilters } from '../types';
 
 export interface LugarFilters extends BaseFilters {
@@ -21,79 +17,78 @@ export interface LugarFilters extends BaseFilters {
 })
 export class LugaresService {
   constructor(
-    private supabase: SupabaseService,
-    private supabaseHelper: SupabaseObservableHelper
+    private supabase: SupabaseService
   ) {}
 
   /**
    * Obtiene todos los lugares
    */
-  getLugares(filters?: LugarFilters): Observable<PaginatedResponse<Lugar>> {
-    let query = this.supabase.from('lugares').select('*', { count: 'exact' });
+  async getLugares(filters?: LugarFilters): Promise<PaginatedResponse<Lugar>> {
+    try {
+      let query = this.supabase.from('lugares').select('*', { count: 'exact' });
 
-    if (filters?.activo !== undefined) {
-      query = query.eq('activo', filters.activo);
-    }
-    if (filters?.ciudad) {
-      query = query.eq('ciudad', filters.ciudad);
-    }
-    if (filters?.pais) {
-      query = query.eq('pais', filters.pais);
-    }
-    if (filters?.search) {
-      query = query.or(`nombre.ilike.%${filters.search}%,direccion.ilike.%${filters.search}%,ciudad.ilike.%${filters.search}%`);
-    }
+      if (filters?.activo !== undefined) {
+        query = query.eq('activo', filters.activo);
+      }
+      if (filters?.ciudad) {
+        query = query.eq('ciudad', filters.ciudad);
+      }
+      if (filters?.pais) {
+        query = query.eq('pais', filters.pais);
+      }
+      if (filters?.search) {
+        query = query.or(`nombre.ilike.%${filters.search}%,direccion.ilike.%${filters.search}%,ciudad.ilike.%${filters.search}%`);
+      }
 
-    const sortBy = filters?.sortBy || 'nombre';
-    const sortOrder = filters?.sortOrder || 'asc';
-    query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+      const sortBy = filters?.sortBy || 'nombre';
+      const sortOrder = filters?.sortOrder || 'asc';
+      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
 
-    const page = filters?.page || 1;
-    const limit = filters?.limit || 10;
-    const fromIndex = (page - 1) * limit;
-    const toIndex = fromIndex + limit - 1;
-    query = query.range(fromIndex, toIndex);
+      const page = filters?.page || 1;
+      const limit = filters?.limit || 10;
+      const fromIndex = (page - 1) * limit;
+      const toIndex = fromIndex + limit - 1;
+      query = query.range(fromIndex, toIndex);
 
-    return this.supabaseHelper.fromSupabase(query).pipe(
-      map(({ data, error, count }) => {
-            if (error) {
-              console.error('Error en getLugares:', error);
-          throw error;
-            }
-            
-            const total = count || 0;
-            const lugares = (data as Lugar[]) || [];
-            console.log('Lugares cargados:', lugares.length, 'de', total);
-            
-        return {
-              data: lugares,
-              total,
-              page,
-              limit,
-              totalPages: Math.ceil(total / limit)
-            };
-      }),
-      catchError((error) => throwError(() => error))
-    );
+      const { data, error, count } = await query;
+      
+      if (error) {
+        console.error('Error en getLugares:', error);
+        throw error;
+      }
+      
+      const total = count || 0;
+      const lugares = (data as Lugar[]) || [];
+      console.log('Lugares cargados:', lugares.length, 'de', total);
+      
+      return {
+        data: lugares,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
    * Obtiene un lugar por ID
    */
-  getLugarById(id: number): Observable<Lugar> {
-    return this.supabaseHelper.fromSupabase(
-      this.supabase
-            .from('lugares')
-            .select('*')
-            .eq('id', id)
-        .single()
-    ).pipe(
-      map(({ data, error }) => {
-        if (error) throw error;
-        return data as Lugar;
-      }),
-      catchError((error) => throwError(() => error))
-    );
+  async getLugarById(id: number): Promise<Lugar> {
+    try {
+      const { data, error } = await this.supabase
+        .from('lugares')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      return data as Lugar;
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
@@ -143,71 +138,67 @@ export class LugaresService {
   /**
    * Crea un nuevo lugar
    */
-  createLugar(lugar: Partial<Lugar>): Observable<Lugar> {
-          const normalizedLugar = this.normalizeLugarData(lugar);
-          console.log('Creando lugar con datos normalizados:', normalizedLugar);
+  async createLugar(lugar: Partial<Lugar>): Promise<Lugar> {
+    try {
+      const normalizedLugar = this.normalizeLugarData(lugar);
+      console.log('Creando lugar con datos normalizados:', normalizedLugar);
 
-    return this.supabaseHelper.fromSupabase(
-      this.supabase
-            .from('lugares')
-            .insert(normalizedLugar)
-            .select()
-        .single()
-    ).pipe(
-      map(({ data, error }) => {
-            if (error) {
-              console.error('Error creando lugar:', error);
-          throw error;
-        }
-              console.log('Lugar creado exitosamente:', data);
-        return data as Lugar;
-      }),
-      catchError((error) => throwError(() => error))
-    );
+      const { data, error } = await this.supabase
+        .from('lugares')
+        .insert(normalizedLugar)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error creando lugar:', error);
+        throw error;
+      }
+      console.log('Lugar creado exitosamente:', data);
+      return data as Lugar;
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
    * Actualiza un lugar
    */
-  updateLugar(id: number, lugar: Partial<Lugar>): Observable<Lugar> {
-          const normalizedLugar = this.normalizeLugarData(lugar);
-          console.log('Actualizando lugar con datos normalizados:', normalizedLugar);
+  async updateLugar(id: number, lugar: Partial<Lugar>): Promise<Lugar> {
+    try {
+      const normalizedLugar = this.normalizeLugarData(lugar);
+      console.log('Actualizando lugar con datos normalizados:', normalizedLugar);
 
-    return this.supabaseHelper.fromSupabase(
-      this.supabase
-            .from('lugares')
-            .update(normalizedLugar)
-            .eq('id', id)
-            .select()
-        .single()
-    ).pipe(
-      map(({ data, error }) => {
-            if (error) {
-              console.error('Error actualizando lugar:', error);
-          throw error;
-        }
-              console.log('Lugar actualizado exitosamente:', data);
-        return data as Lugar;
-      }),
-      catchError((error) => throwError(() => error))
-    );
+      const { data, error } = await this.supabase
+        .from('lugares')
+        .update(normalizedLugar)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error actualizando lugar:', error);
+        throw error;
+      }
+      console.log('Lugar actualizado exitosamente:', data);
+      return data as Lugar;
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
    * Elimina un lugar (soft delete)
    */
-  deleteLugar(id: number): Observable<void> {
-    return this.supabaseHelper.fromSupabase(
-      this.supabase
-            .from('lugares')
-            .update({ activo: false })
-        .eq('id', id)
-    ).pipe(
-      map(({ error }) => {
-        if (error) throw error;
-        return;
-      }),
-      catchError((error) => throwError(() => error))
-    );
+  async deleteLugar(id: number): Promise<void> {
+    try {
+      const { error } = await this.supabase
+        .from('lugares')
+        .update({ activo: false })
+        .eq('id', id);
+      
+      if (error) throw error;
+    } catch (error) {
+      throw error;
+    }
   }
 }

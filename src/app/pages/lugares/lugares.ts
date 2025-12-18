@@ -47,37 +47,30 @@ export class Lugares implements OnInit, OnDestroy {
     this.loadLugares();
   }
 
-  loadLugares() {
+  async loadLugares() {
     console.log('loadLugares llamado');
     this.loading = true;
     this.cdr.detectChanges();
     
-    this.lugaresService.getLugares({
-      page: this.page,
-      limit: this.limit,
-      search: this.searchTerm || undefined
-    }).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe({
-      next: (response: PaginatedResponse<Lugar>) => {
-        console.log('Response recibida en lugares:', response);
-        this.lugares = response.data || [];
-        this.total = response.total || 0;
-        this.loading = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error cargando lugares:', err);
-        this.loading = false;
-        this.lugares = [];
-        this.total = 0;
-        this.cdr.detectChanges();
-      },
-      complete: () => {
-        console.log('Observable completado en lugares');
-        this.cdr.detectChanges();
-      }
-    });
+    try {
+      const response: PaginatedResponse<Lugar> = await this.lugaresService.getLugares({
+        page: this.page,
+        limit: this.limit,
+        search: this.searchTerm || undefined
+      });
+      console.log('Response recibida en lugares:', response);
+      this.lugares = response.data || [];
+      this.total = response.total || 0;
+      this.loading = false;
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('Error cargando lugares:', err);
+      this.loading = false;
+      this.lugares = [];
+      this.total = 0;
+      this.cdr.detectChanges();
+      this.cdr.detectChanges();
+    }
   }
 
   openModal(lugar?: Lugar) {
@@ -271,48 +264,38 @@ export class Lugares implements OnInit, OnDestroy {
     console.log('Datos a guardar (antes de normalización):', lugarData);
 
     if (this.editingLugar) {
-      this.lugaresService.updateLugar(this.editingLugar.id, lugarData).pipe(
-        takeUntil(this.destroy$)
-      ).subscribe({
-        next: () => {
-          console.log('Lugar actualizado exitosamente');
-          this.closeModal();
-          this.loadLugares();
-        },
-        error: (err) => {
-          console.error('Error guardando lugar:', err);
-          const errorMessage = err?.message || err?.error?.message || 'Error al guardar lugar';
-          this.alertService.error('Error al guardar', `Error al guardar lugar: ${errorMessage}`);
-        }
-      });
+      this.saveLugarInternal(this.editingLugar.id, lugarData, true);
     } else {
-      this.lugaresService.createLugar(lugarData).pipe(
-        takeUntil(this.destroy$)
-      ).subscribe({
-        next: () => {
-          console.log('Lugar creado exitosamente');
-          this.closeModal();
-          this.loadLugares();
-        },
-        error: (err) => {
-          console.error('Error creando lugar:', err);
-          const errorMessage = err?.message || err?.error?.message || 'Error al crear lugar';
-          this.alertService.error('Error al crear', `Error al crear lugar: ${errorMessage}`);
-        }
-      });
+      this.saveLugarInternal(null, lugarData, false);
     }
   }
 
-  toggleActivo(lugar: Lugar) {
-    this.lugaresService.updateLugar(lugar.id, { activo: !lugar.activo }).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe({
-      next: () => this.loadLugares(),
-      error: (err) => {
-        console.error('Error actualizando lugar:', err);
-        this.alertService.error('Error', 'Error al actualizar lugar');
+  private async saveLugarInternal(id: number | null, lugarData: Partial<Lugar>, isUpdate: boolean) {
+    try {
+      if (isUpdate && id) {
+        await this.lugaresService.updateLugar(id, lugarData);
+        console.log('Lugar actualizado exitosamente');
+      } else {
+        await this.lugaresService.createLugar(lugarData);
+        console.log('Lugar creado exitosamente');
       }
-    });
+      this.closeModal();
+      this.loadLugares();
+    } catch (err: any) {
+      console.error(`Error ${isUpdate ? 'guardando' : 'creando'} lugar:`, err);
+      const errorMessage = err?.message || err?.error?.message || `Error al ${isUpdate ? 'guardar' : 'crear'} lugar`;
+      this.alertService.error(`Error al ${isUpdate ? 'guardar' : 'crear'}`, errorMessage);
+    }
+  }
+
+  async toggleActivo(lugar: Lugar) {
+    try {
+      await this.lugaresService.updateLugar(lugar.id, { activo: !lugar.activo });
+      this.loadLugares();
+    } catch (err) {
+      console.error('Error actualizando lugar:', err);
+      this.alertService.error('Error', 'Error al actualizar lugar');
+    }
   }
 
   ngOnDestroy() {

@@ -72,50 +72,39 @@ export class Eventos implements OnInit, OnDestroy {
     this.loadEventos();
   }
 
-  loadCategorias() {
-    this.categoriasService.getCategorias({ limit: 1000 }).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe({
-      next: (response) => {
-        this.categorias = response.data;
-      },
-      error: (err) => console.error('Error cargando categorías:', err)
-    });
+  async loadCategorias() {
+    try {
+      const response = await this.categoriasService.getCategorias({ limit: 1000 });
+      this.categorias = response.data;
+    } catch (err) {
+      console.error('Error cargando categorías:', err);
+    }
   }
 
-  loadLugares() {
-    this.lugaresService.getLugares({ limit: 1000 }).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe({
-      next: (response) => {
-        this.lugares = response.data;
-      },
-      error: (err) => console.error('Error cargando lugares:', err)
-    });
+  async loadLugares() {
+    try {
+      const response = await this.lugaresService.getLugares({ limit: 1000 });
+      this.lugares = response.data;
+    } catch (err) {
+      console.error('Error cargando lugares:', err);
+    }
   }
 
-  loadOrganizadores() {
+  async loadOrganizadores() {
     console.log('loadOrganizadores llamado');
-    this.usuariosService.getOrganizadores().pipe(
-      takeUntil(this.destroy$)
-    ).subscribe({
-      next: (organizadores) => {
-        console.log('Organizadores recibidos en componente:', organizadores);
-        console.log('Cantidad de organizadores:', organizadores.length);
-        this.organizadores = organizadores || [];
-        this.cdr.detectChanges();
-        console.log('Organizadores asignados:', this.organizadores.length);
-      },
-      error: (err) => {
-        console.error('Error cargando organizadores:', err);
-        this.organizadores = [];
-        this.cdr.detectChanges();
-      },
-      complete: () => {
-        console.log('Observable completado en loadOrganizadores');
-        this.cdr.detectChanges();
-      }
-    });
+    try {
+      const organizadores = await this.usuariosService.getOrganizadores();
+      console.log('Organizadores recibidos en componente:', organizadores);
+      console.log('Cantidad de organizadores:', organizadores.length);
+      this.organizadores = organizadores || [];
+      this.cdr.detectChanges();
+      console.log('Organizadores asignados:', this.organizadores.length);
+    } catch (err) {
+      console.error('Error cargando organizadores:', err);
+      this.organizadores = [];
+      this.cdr.detectChanges();
+      this.cdr.detectChanges();
+    }
   }
 
   loadEventos() {
@@ -140,28 +129,24 @@ export class Eventos implements OnInit, OnDestroy {
     }
     this.cdr.detectChanges();
     
-    this.eventosService.getEventos(filters).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe({
-      next: (response: PaginatedResponse<Evento>) => {
-        console.log('Response recibida en eventos:', response);
-        this.eventos = response.data || [];
-        this.total = response.total || 0;
-        this.loading = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error cargando eventos:', err);
-        this.loading = false;
-        this.eventos = [];
-        this.total = 0;
-        this.cdr.detectChanges();
-      },
-      complete: () => {
-        console.log('Observable completado en eventos');
-        this.cdr.detectChanges();
-      }
-    });
+    this.loadEventosInternal(filters);
+  }
+
+  private async loadEventosInternal(filters: any) {
+    try {
+      const response: PaginatedResponse<Evento> = await this.eventosService.getEventos(filters);
+      console.log('Response recibida en eventos:', response);
+      this.eventos = response.data || [];
+      this.total = response.total || 0;
+      this.loading = false;
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('Error cargando eventos:', err);
+      this.loading = false;
+      this.eventos = [];
+      this.total = 0;
+      this.cdr.detectChanges();
+    }
   }
 
   ngOnDestroy() {
@@ -383,56 +368,45 @@ export class Eventos implements OnInit, OnDestroy {
     if (!eventoData.politica_reembolso) delete eventoData.politica_reembolso;
 
     if (this.editingEvento) {
-      this.eventosService.updateEvento(this.editingEvento.id, eventoData).pipe(
-        takeUntil(this.destroy$)
-      ).subscribe({
-        next: () => {
-          this.closeModal();
-          this.loadEventos();
-        },
-        error: (err) => {
-          console.error('Error guardando evento:', err);
-          this.alertService.error('Error al guardar', 'Error al guardar evento: ' + (err.message || 'Error desconocido'));
-        }
-      });
+      this.saveEventoInternal(this.editingEvento.id, eventoData, true);
     } else {
-      this.eventosService.createEvento(eventoData).pipe(
-        takeUntil(this.destroy$)
-      ).subscribe({
-        next: () => {
-          this.closeModal();
-          this.loadEventos();
-        },
-        error: (err) => {
-          console.error('Error creando evento:', err);
-          this.alertService.error('Error al crear', 'Error al crear evento: ' + (err.message || 'Error desconocido'));
-        }
-      });
+      this.saveEventoInternal(null, eventoData, false);
     }
   }
 
-  toggleDestacado(evento: Evento) {
-    this.eventosService.updateEvento(evento.id, { destacado: !evento.destacado }).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe({
-      next: () => this.loadEventos(),
-      error: (err) => {
-        console.error('Error actualizando evento:', err);
-        this.alertService.error('Error', 'Error al actualizar evento');
+  private async saveEventoInternal(id: number | null, eventoData: Partial<Evento>, isUpdate: boolean) {
+    try {
+      if (isUpdate && id) {
+        await this.eventosService.updateEvento(id, eventoData);
+      } else {
+        await this.eventosService.createEvento(eventoData);
       }
-    });
+      this.closeModal();
+      this.loadEventos();
+    } catch (err: any) {
+      console.error(`Error ${isUpdate ? 'guardando' : 'creando'} evento:`, err);
+      this.alertService.error(`Error al ${isUpdate ? 'guardar' : 'crear'}`, `Error al ${isUpdate ? 'guardar' : 'crear'} evento: ` + (err.message || 'Error desconocido'));
+    }
   }
 
-  toggleActivo(evento: Evento) {
-    this.eventosService.updateEvento(evento.id, { activo: !evento.activo }).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe({
-      next: () => this.loadEventos(),
-      error: (err) => {
-        console.error('Error actualizando evento:', err);
-        this.alertService.error('Error', 'Error al actualizar evento');
-      }
-    });
+  async toggleDestacado(evento: Evento) {
+    try {
+      await this.eventosService.updateEvento(evento.id, { destacado: !evento.destacado });
+      this.loadEventos();
+    } catch (err) {
+      console.error('Error actualizando evento:', err);
+      this.alertService.error('Error', 'Error al actualizar evento');
+    }
+  }
+
+  async toggleActivo(evento: Evento) {
+    try {
+      await this.eventosService.updateEvento(evento.id, { activo: !evento.activo });
+      this.loadEventos();
+    } catch (err) {
+      console.error('Error actualizando evento:', err);
+      this.alertService.error('Error', 'Error al actualizar evento');
+    }
   }
 
   getEstadoLabel(estado?: string): string {
