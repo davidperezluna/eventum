@@ -30,8 +30,8 @@
         <tr>
           <th>ID</th>
           <th>Transacción</th>
-          <th>Cliente ID</th>
-          <th>Evento ID</th>
+          <th>Cliente</th>
+          <th>Evento</th>
           <th>Total</th>
           <th>Método Pago</th>
           <th>Estado Pago</th>
@@ -44,8 +44,16 @@
         <tr *ngFor="let compra of compras">
           <td>{{ compra.id }}</td>
           <td>{{ compra.numero_transaccion }}</td>
-          <td>{{ compra.cliente_id }}</td>
-          <td>{{ compra.evento_id }}</td>
+          <td>
+            <button class="btn-link" (click)="openClienteModal(compra)" title="Ver detalles del cliente">
+              {{ getClienteNombre(compra) }}
+            </button>
+          </td>
+          <td>
+            <button class="btn-link" (click)="openEventoModal(compra)" title="Ver detalles del evento">
+              {{ getEventoTitulo(compra) }}
+            </button>
+          </td>
           <td>${{ compra.total | number:'1.2-2' }}</td>
           <td>{{ compra.metodo_pago }}</td>
           <td>
@@ -129,7 +137,7 @@
     </div>
   </div>
 
-  <!-- Modal -->
+  <!-- Modal Editar Compra -->
   <div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
@@ -163,6 +171,115 @@
       <div class="modal-footer">
         <button class="btn-secondary" (click)="closeModal()">Cancelar</button>
         <button class="btn-primary" (click)="saveCompra()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detalles Cliente -->
+  <div *ngIf="showClienteModal" class="modal-overlay" (click)="closeClienteModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>
+          <span class="material-icons">person</span>
+          Detalles del Cliente
+        </h2>
+        <button class="btn-close" (click)="closeClienteModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="modal-body" *ngIf="selectedCliente">
+        <div class="detail-group">
+          <label>ID:</label>
+          <span>{{ selectedCliente.id }}</span>
+        </div>
+        <div class="detail-group">
+          <label>Nombre:</label>
+          <span>{{ selectedCliente.nombre || 'N/A' }}</span>
+        </div>
+        <div class="detail-group">
+          <label>Apellido:</label>
+          <span>{{ selectedCliente.apellido || 'N/A' }}</span>
+        </div>
+        <div class="detail-group">
+          <label>Email:</label>
+          <span>{{ selectedCliente.email }}</span>
+        </div>
+        <div class="detail-group">
+          <label>Teléfono:</label>
+          <span>{{ selectedCliente.telefono || 'N/A' }}</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" (click)="closeClienteModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detalles Evento -->
+  <div *ngIf="showEventoModal" class="modal-overlay" (click)="closeEventoModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>
+          <span class="material-icons">event</span>
+          Detalles del Evento
+        </h2>
+        <button class="btn-close" (click)="closeEventoModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="modal-body" *ngIf="selectedEvento">
+        <div class="detail-group">
+          <label>ID:</label>
+          <span>{{ selectedEvento.id }}</span>
+        </div>
+        <div class="detail-group">
+          <label>Título:</label>
+          <span>{{ selectedEvento.titulo }}</span>
+        </div>
+        <div class="detail-group">
+          <label>Fecha de Inicio:</label>
+          <span>{{ selectedEvento.fecha_inicio | dateFormat:'short' }}</span>
+        </div>
+        
+        <div class="detail-group" *ngIf="selectedEvento.lugar">
+          <label style="font-size: var(--font-size-lg); margin-top: var(--spacing-md); margin-bottom: var(--spacing-sm);">
+            <span class="material-icons" style="vertical-align: middle; font-size: 1.2rem;">place</span>
+            Lugar
+          </label>
+          <div style="padding: var(--spacing-md); background: var(--color-background); border-radius: var(--border-radius-sm); border-left: 3px solid var(--color-secondary);">
+            <div class="detail-group" style="margin-bottom: var(--spacing-sm);">
+              <label>Nombre:</label>
+              <span>{{ selectedEvento.lugar.nombre }}</span>
+            </div>
+            <div class="detail-group" style="margin-bottom: var(--spacing-sm);">
+              <label>Dirección:</label>
+              <span>{{ selectedEvento.lugar.direccion }}</span>
+            </div>
+            <div class="detail-group" style="margin-bottom: var(--spacing-sm);">
+              <label>Ciudad:</label>
+              <span>{{ selectedEvento.lugar.ciudad }}</span>
+            </div>
+            <div class="detail-group" style="margin-bottom: var(--spacing-sm);" *ngIf="selectedEvento.lugar.pais">
+              <label>País:</label>
+              <span>{{ selectedEvento.lugar.pais }}</span>
+            </div>
+            <div class="detail-group" style="margin-bottom: var(--spacing-sm);" *ngIf="selectedEvento.lugar.telefono">
+              <label>Teléfono:</label>
+              <span>{{ selectedEvento.lugar.telefono }}</span>
+            </div>
+            <div class="detail-group" style="margin-bottom: 0;" *ngIf="selectedEvento.lugar.email">
+              <label>Email:</label>
+              <span>{{ selectedEvento.lugar.email }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="detail-group" *ngIf="!selectedEvento.lugar && selectedEvento.lugar_id">
+          <label>Lugar ID:</label>
+          <span>{{ selectedEvento.lugar_id }} (Información no disponible)</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" (click)="closeEventoModal()">Cerrar</button>
       </div>
     </div>
   </div>

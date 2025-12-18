@@ -22,9 +22,23 @@ export class ComprasService {
 
   /**
    * Obtiene todas las compras con filtros opcionales
+   * Incluye datos enriquecidos de cliente y evento
    */
   getCompras(filters?: CompraFilters): Observable<PaginatedResponse<Compra>> {
-    let query = this.supabase.from(this.tableName).select('*', { count: 'exact' });
+    // Incluir relaciones con usuarios (cliente) y eventos (con lugar anidado)
+    let query = this.supabase
+      .from(this.tableName)
+      .select(`
+        *,
+        cliente:usuarios(id, nombre, apellido, email, telefono),
+        evento:eventos(
+          id, 
+          titulo, 
+          fecha_inicio, 
+          lugar_id,
+          lugar:lugares(id, nombre, direccion, ciudad, pais, telefono, email)
+        )
+      `, { count: 'exact' });
 
     // Aplicar filtros
     if (filters?.cliente_id) {

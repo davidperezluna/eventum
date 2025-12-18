@@ -18,12 +18,22 @@ import { Notificaciones } from './pages/notificaciones/notificaciones';
 import { Reportes } from './pages/reportes/reportes';
 import { DashboardEventos } from './pages/dashboard-eventos/dashboard-eventos';
 import { Login } from './pages/login/login';
+import { Register } from './pages/register/register';
+import { AuthCallback } from './pages/auth-callback/auth-callback';
 import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   {
     path: 'login',
     component: Login
+  },
+  {
+    path: 'register',
+    component: Register
+  },
+  {
+    path: 'auth/callback',
+    component: AuthCallback
   },
   {
     path: '',

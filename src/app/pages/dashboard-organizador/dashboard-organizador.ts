@@ -41,13 +41,16 @@ export class DashboardOrganizador implements OnInit {
 
   ngOnInit() {
     // Obtener el ID del organizador desde el usuario actual
-    this.authService.usuario$.subscribe(usuario => {
+    const unsubscribe = this.authService.onAuthStateChange((user, usuario, session) => {
       if (usuario && usuario.tipo_usuario_id === 2) {
         this.organizadorId = usuario.id;
         this.loadStats();
-      } else {
+        unsubscribe();
+      } else if (usuario !== null) {
+        // Si el usuario está cargado pero no es organizador
         this.error = 'No se pudo identificar el organizador';
         this.loading = false;
+        unsubscribe();
       }
     });
   }

@@ -169,6 +169,29 @@ export interface Compra {
   wompi_status?: string;
   wompi_response?: Record<string, any>;
   wompi_webhook_data?: Record<string, any>;
+  // Datos enriquecidos (vienen del join)
+  cliente?: {
+    id: number;
+    nombre?: string;
+    apellido?: string;
+    email: string;
+    telefono?: string;
+  };
+  evento?: {
+    id: number;
+    titulo: string;
+    fecha_inicio: Date | string;
+    lugar_id?: number;
+    lugar?: {
+      id: number;
+      nombre: string;
+      direccion: string;
+      ciudad: string;
+      pais?: string;
+      telefono?: string;
+      email?: string;
+    };
+  };
 }
 
 /**

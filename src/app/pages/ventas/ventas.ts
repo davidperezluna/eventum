@@ -29,6 +29,12 @@ export class Ventas implements OnInit, OnDestroy {
   showModal = false;
   editingCompra: Compra | null = null;
   formData: Partial<Compra> = {};
+  
+  // Modales para mostrar detalles
+  showClienteModal = false;
+  showEventoModal = false;
+  selectedCliente: Compra['cliente'] | null = null;
+  selectedEvento: Compra['evento'] | null = null;
 
   estadosPago: { value: TipoEstadoPago; label: string }[] = [
     { value: TipoEstadoPago.PENDIENTE, label: 'Pendiente' },
@@ -164,4 +170,40 @@ export class Ventas implements OnInit, OnDestroy {
   }
 
   Math = Math;
+
+  // Métodos para mostrar detalles
+  openClienteModal(compra: Compra) {
+    this.selectedCliente = compra.cliente || null;
+    this.showClienteModal = true;
+  }
+
+  closeClienteModal() {
+    this.showClienteModal = false;
+    this.selectedCliente = null;
+  }
+
+  openEventoModal(compra: Compra) {
+    this.selectedEvento = compra.evento || null;
+    this.showEventoModal = true;
+  }
+
+  closeEventoModal() {
+    this.showEventoModal = false;
+    this.selectedEvento = null;
+  }
+
+  // Helper para obtener nombre completo del cliente
+  getClienteNombre(compra: Compra): string {
+    if (compra.cliente) {
+      const nombre = compra.cliente.nombre || '';
+      const apellido = compra.cliente.apellido || '';
+      return `${nombre} ${apellido}`.trim() || compra.cliente.email || `Cliente #${compra.cliente_id}`;
+    }
+    return `Cliente #${compra.cliente_id}`;
+  }
+
+  // Helper para obtener título del evento
+  getEventoTitulo(compra: Compra): string {
+    return compra.evento?.titulo || `Evento #${compra.evento_id}`;
+  }
 }

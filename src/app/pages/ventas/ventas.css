@@ -136,6 +136,21 @@
   color: var(--color-secondary);
 }
 
+.btn-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-secondary);
+  text-decoration: underline;
+  padding: 0;
+  font-size: inherit;
+  transition: color var(--transition-fast);
+}
+
+.btn-link:hover {
+  color: var(--color-primary);
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -168,6 +183,13 @@
 .modal-header h2 {
   margin: 0;
   color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.modal-header h2 .material-icons {
+  font-size: 1.5rem;
 }
 
 .btn-close {
@@ -201,6 +223,27 @@
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-md);
   font-family: inherit;
+}
+
+.detail-group {
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.detail-group label {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.detail-group span {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  padding: var(--spacing-sm);
+  background: var(--color-background);
+  border-radius: var(--border-radius-sm);
 }
 
 .modal-footer {

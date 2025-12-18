@@ -3,7 +3,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } fro
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { User } from '@supabase/supabase-js';
-import { filter, Subscription } from 'rxjs';
+import { filter } from 'rxjs';
 
 @Component({
   selector: 'app-layout',
@@ -19,7 +19,8 @@ export class Layout implements OnInit, OnDestroy {
   userEmail: string = '';
   userRole: string = '';
   sidebarOpen: boolean = false;
-  private routerSubscription?: Subscription;
+  private routerSubscription?: any;
+  private unsubscribeAuthState?: () => void;
 
   constructor(
     private authService: AuthService,
@@ -27,13 +28,12 @@ export class Layout implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.authService.currentUser$.subscribe(user => {
+    // Suscribirse a cambios de estado de autenticación
+    this.unsubscribeAuthState = this.authService.onAuthStateChange((user, usuario, session) => {
       this.currentUser = user;
       this.userEmail = user?.email || '';
-    });
-
-    this.authService.usuario$.subscribe(usuario => {
       this.usuario = usuario;
+      
       if (usuario) {
         // Determinar el nombre del rol
         if (usuario.tipo_usuario_id === 3) {
@@ -64,6 +64,9 @@ export class Layout implements OnInit, OnDestroy {
   ngOnDestroy() {
     if (this.routerSubscription) {
       this.routerSubscription.unsubscribe();
+    }
+    if (this.unsubscribeAuthState) {
+      this.unsubscribeAuthState();
     }
   }
 
@@ -109,9 +112,8 @@ export class Layout implements OnInit, OnDestroy {
     this.sidebarOpen = false;
   }
 
-  logout() {
-    this.authService.logout().subscribe(() => {
-      this.router.navigate(['/login']);
-    });
+  async logout() {
+    await this.authService.logout();
+    this.router.navigate(['/login']);
   }
 }

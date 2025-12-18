@@ -106,6 +106,22 @@
   font-size: 1.25rem;
 }
 
+.alert-success {
+  background: #efe;
+  border: 1px solid #cfc;
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: #3c3;
+  font-size: var(--font-size-sm);
+}
+
+.alert-success .material-icons {
+  font-size: 1.25rem;
+}
+
 .btn-login {
   background: var(--gradient-button);
   color: var(--color-text-inverse);
@@ -131,44 +147,6 @@
 .btn-login:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.login-footer {
-  margin-top: var(--spacing-xl);
-  text-align: center;
-  padding-top: var(--spacing-lg);
-  border-top: 1px solid var(--color-border-light);
-}
-
-.login-footer p {
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-xs);
-  margin: 0.5rem 0;
-}
-
-.login-footer a {
-  color: var(--color-secondary);
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-.login-footer a:hover {
-  color: var(--color-primary);
 }
 
 .divider {
@@ -219,6 +197,44 @@
   cursor: not-allowed;
 }
 
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.login-footer {
+  margin-top: var(--spacing-xl);
+  text-align: center;
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.login-footer p {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  margin: 0.5rem 0;
+}
+
+.login-footer a {
+  color: var(--color-secondary);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.login-footer a:hover {
+  color: var(--color-primary);
+}
+
 @media (max-width: 480px) {
   .login-card {
     padding: var(--spacing-lg);
@@ -228,6 +244,5 @@
     font-size: 3rem;
   }
 }
-
 
 

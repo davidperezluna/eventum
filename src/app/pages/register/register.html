@@ -1,17 +1,49 @@
 <div class="login-container">
   <div class="login-card">
     <div class="login-header">
-      <span class="material-icons logo-icon">celebration</span>
-      <h1>Eventum</h1>
-      <p class="subtitle">Panel de Administración</p>
+      <span class="material-icons logo-icon">person_add</span>
+      <h1>Crear Cuenta</h1>
+      <p class="subtitle">Regístrate en Eventum</p>
     </div>
 
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="login-form">
+      <!-- Nombre -->
+      <div class="form-group">
+        <label for="nombre">
+          <span class="material-icons">person</span>
+          Nombre *
+        </label>
+        <input
+          type="text"
+          id="nombre"
+          formControlName="nombre"
+          placeholder="Tu nombre"
+          [class.error]="nombre?.invalid && nombre?.touched"
+        />
+        <div *ngIf="nombre?.invalid && nombre?.touched" class="error-message">
+          <span *ngIf="nombre?.errors?.['required']">El nombre es requerido</span>
+        </div>
+      </div>
+
+      <!-- Apellido -->
+      <div class="form-group">
+        <label for="apellido">
+          <span class="material-icons">person</span>
+          Apellido
+        </label>
+        <input
+          type="text"
+          id="apellido"
+          formControlName="apellido"
+          placeholder="Tu apellido (opcional)"
+        />
+      </div>
+
       <!-- Email -->
       <div class="form-group">
         <label for="email">
           <span class="material-icons">email</span>
-          Email
+          Email *
         </label>
         <input
           type="email"
@@ -30,7 +62,7 @@
       <div class="form-group">
         <label for="password">
           <span class="material-icons">lock</span>
-          Contraseña
+          Contraseña *
         </label>
         <input
           type="password"
@@ -45,21 +77,46 @@
         </div>
       </div>
 
+      <!-- Confirm Password -->
+      <div class="form-group">
+        <label for="confirmPassword">
+          <span class="material-icons">lock</span>
+          Confirmar Contraseña *
+        </label>
+        <input
+          type="password"
+          id="confirmPassword"
+          formControlName="confirmPassword"
+          placeholder="••••••••"
+          [class.error]="confirmPassword?.invalid && confirmPassword?.touched"
+        />
+        <div *ngIf="confirmPassword?.invalid && confirmPassword?.touched" class="error-message">
+          <span *ngIf="confirmPassword?.errors?.['required']">Confirma tu contraseña</span>
+          <span *ngIf="confirmPassword?.errors?.['passwordMismatch']">Las contraseñas no coinciden</span>
+        </div>
+      </div>
+
       <!-- Error general -->
       <div *ngIf="error" class="alert-error">
         <span class="material-icons">error</span>
         <span>{{ error }}</span>
       </div>
 
+      <!-- Success message -->
+      <div *ngIf="success" class="alert-success">
+        <span class="material-icons">check_circle</span>
+        <span>¡Cuenta creada exitosamente! Redirigiendo al login...</span>
+      </div>
+
       <!-- Submit Button -->
       <button
         type="submit"
         class="btn-login"
-        [disabled]="loginForm.invalid || loading"
+        [disabled]="registerForm.invalid || loading"
       >
-        <span *ngIf="!loading" class="material-icons">login</span>
+        <span *ngIf="!loading" class="material-icons">person_add</span>
         <span *ngIf="loading" class="spinner"></span>
-        {{ loading ? 'Iniciando sesión...' : 'Iniciar Sesión' }}
+        {{ loading ? 'Creando cuenta...' : 'Crear Cuenta' }}
       </button>
 
       <!-- Divider -->
@@ -67,11 +124,11 @@
         <span>o</span>
       </div>
 
-      <!-- Google Login Button -->
+      <!-- Google Register Button -->
       <button
         type="button"
         class="btn-google"
-        (click)="onLoginWithGoogle()"
+        (click)="onRegisterWithGoogle()"
         [disabled]="loading"
       >
         <svg width="18" height="18" viewBox="0 0 18 18" style="margin-right: 8px;">
@@ -80,13 +137,15 @@
           <path fill="#FBBC05" d="M3.953 10.701c-.18-.54-.282-1.117-.282-1.701s.102-1.161.282-1.701V4.968H.957C.348 6.175 0 7.55 0 9s.348 2.825.957 4.032l3.006-2.331z"/>
           <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.968L3.953 7.299C4.662 5.168 6.651 3.58 9 3.58z"/>
         </svg>
-        Continuar con Google
+        Registrarse con Google
       </button>
     </form>
 
     <div class="login-footer">
-      <p>¿No tienes una cuenta? <a routerLink="/register">Regístrate aquí</a></p>
+      <p>¿Ya tienes una cuenta? <a (click)="onLogin()">Inicia sesión</a></p>
       <p>© 2025 Eventum - Todos los derechos reservados</p>
     </div>
   </div>
 </div>
+
+

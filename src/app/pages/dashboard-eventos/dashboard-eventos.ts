@@ -21,6 +21,7 @@ import { DateFormatPipe } from '../../pipes/date-format.pipe';
 export class DashboardEventos implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private loadReportesSubject = new Subject<void>();
+  private unsubscribeAuthState?: () => void;
 
   stats: DashboardStats = {
     eventos_activos: 0,
@@ -76,9 +77,7 @@ export class DashboardEventos implements OnInit, OnDestroy {
 
   ngOnInit() {
     // Verificar si es organizador
-    this.authService.usuario$.pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(usuario => {
+    this.unsubscribeAuthState = this.authService.onAuthStateChange((user, usuario, session) => {
       if (usuario && usuario.tipo_usuario_id === 2) {
         this.esOrganizador = true;
         this.organizadorId = usuario.id;
@@ -119,6 +118,9 @@ export class DashboardEventos implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.unsubscribeAuthState) {
+      this.unsubscribeAuthState();
+    }
   }
 
   loadEventos() {
