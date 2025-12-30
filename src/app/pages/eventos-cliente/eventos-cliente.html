@@ -1,74 +1,222 @@
-<div class="eventos-cliente-page">
-  <header class="page-header">
-    <div>
-      <h1>
-        <span class="material-icons">event</span>
-        Eventos Disponibles
-      </h1>
-      <p>Descubre los mejores eventos y compra tus boletas</p>
-    </div>
-  </header>
+<div class="home-container">
 
-  <!-- Filtros -->
-  <div class="filters-card">
-    <input
-      type="text"
-      [(ngModel)]="searchTerm"
-      (ngModelChange)="onSearchChange()"
-      placeholder="Buscar eventos..."
-      class="search-input"
-    />
-    <select [(ngModel)]="categoriaFiltro" (ngModelChange)="onCategoriaChange()" class="select-input">
-      <option [value]="null">Todas las categorías</option>
-      <option *ngFor="let categoria of categorias" [value]="categoria.id">{{ categoria.nombre }}</option>
-    </select>
-  </div>
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-content">
+      <h1 class="hero-title">Vive momentos <span class="gradient-text">inolvidables</span></h1>
+      <p class="hero-subtitle">Descubre y asegura tu lugar en los mejores conciertos, festivales y eventos culturales.
+      </p>
 
-  <!-- Loading -->
-  <div *ngIf="loading" class="loading-state">
-    <div class="spinner"></div>
-    <p>Cargando eventos...</p>
-  </div>
-
-  <!-- Grid de eventos -->
-  <div *ngIf="!loading && eventosFiltrados.length > 0" class="eventos-grid">
-    <div *ngFor="let evento of eventosFiltrados" class="evento-card" [routerLink]="['/detalle-evento', evento.id]">
-      <div class="evento-image">
-        <img [src]="getImageUrl(evento)" [alt]="evento.titulo" />
-        <div class="evento-badge" *ngIf="evento.destacado">
-          <span class="material-icons">star</span>
-          Destacado
-        </div>
-      </div>
-      <div class="evento-content">
-        <h3>{{ evento.titulo }}</h3>
-        <p *ngIf="evento.descripcion_corta" class="evento-descripcion">{{ evento.descripcion_corta }}</p>
-        <div class="evento-info">
-          <div class="info-item">
-            <span class="material-icons">calendar_today</span>
-            <span>{{ evento.fecha_inicio | dateFormat:'short' }}</span>
-          </div>
-          <div class="info-item" *ngIf="evento.precio_minimo !== undefined">
-            <span class="material-icons">attach_money</span>
-            <span>{{ evento.es_gratis ? 'Gratis' : formatCurrency(evento.precio_minimo) }}</span>
-          </div>
-          <div class="info-item" *ngIf="evento.edad_minima && evento.edad_minima > 0">
-            <span class="material-icons">person</span>
-            <span>+{{ evento.edad_minima }} años</span>
-          </div>
-        </div>
-        <button class="btn-primary btn-full">
-          Ver Detalles y Comprar
-        </button>
+      <div class="hero-search-container">
+        <span class="material-icons search-icon">search</span>
+        <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()"
+          placeholder="Buscar eventos, conciertos..." class="hero-search-input" />
       </div>
     </div>
+  </section>
+
+  <!-- Main Content -->
+  <div class="content-wrapper">
+
+    <!-- Categories Carousel (Recreated with Ionic Icons) -->
+    <section class="categories-section">
+      <div class="section-header">
+        <h2>Categorías</h2>
+        <div class="carousel-nav">
+          <button class="nav-btn prev" (click)="scrollLeft()">
+            <span class="material-icons">chevron_left</span>
+          </button>
+          <button class="nav-btn next" (click)="scrollRight()">
+            <span class="material-icons">chevron_right</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="cat-carousel-container">
+        <div class="cat-track" #carouselTrack>
+          <!-- 'All' Card -->
+          <div class="cat-card" [class.active]="categoriaFiltro === null" (click)="setCategoria(null)">
+            <div class="icon-contain">
+              <ion-icon name="apps"></ion-icon>
+            </div>
+            <span>Todo</span>
+          </div>
+
+          <!-- Dynamic Categories -->
+          <div *ngFor="let cat of categorias" class="cat-card" [class.active]="categoriaFiltro === cat.id"
+            (click)="setCategoria(cat.id)">
+
+            <div class="icon-contain">
+              <ion-icon [name]="getCategoryIcon(cat)"></ion-icon>
+            </div>
+            <span>{{ cat.nombre.trim() }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-state" style="text-align: center; padding: 3rem;">
+      <div class="spinner" style="margin-bottom: 1rem;"></div>
+      <p>Cargando experiencias...</p>
+    </div>
+
+    <!-- Featured Events -->
+    <section class="events-section" *ngIf="!loading && !searchTerm && !categoriaFiltro && eventosDestacados.length > 0">
+      <div class="section-header">
+        <h2>Destacados 🔥</h2>
+      </div>
+
+      <div class="events-grid featured">
+        <article *ngFor="let evento of eventosDestacados" class="event-card featured-card"
+          [routerLink]="['/detalle-evento', evento.id]">
+          <div class="card-image">
+            <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
+          </div>
+          <div class="card-content">
+            <p class="location"><span class="material-icons" style="font-size: 1rem">place</span> {{ evento.lugar_id ||
+              'Ubicación' }}</p>
+            <h3>{{ evento.titulo }}</h3>
+            <div class="price-action">
+              <span class="price">{{ formatCurrency(evento.precio_minimo) }}</span>
+              <button class="btn-icon">
+                <span class="material-icons">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Regular Events -->
+    <section class="events-section" *ngIf="!loading">
+      <div class="section-header">
+        <h2>{{ categoriaFiltro ? 'Resultados' : 'Próximos Eventos' }}</h2>
+      </div>
+
+      <div class="events-grid">
+        <article *ngFor="let evento of eventosRegulares" class="event-card"
+          [routerLink]="['/detalle-evento', evento.id]">
+          <div class="card-image">
+            <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
+          </div>
+          <div class="card-content">
+            <p class="location"><span class="material-icons" style="font-size: 1rem">calendar_today</span> {{
+              evento.fecha_inicio | dateFormat:'shortDate' }}</p>
+            <h3>{{ evento.titulo }}</h3>
+            <div class="price-action">
+              <span class="price">{{ formatCurrency(evento.precio_minimo) }}</span>
+              <button class="btn-icon">
+                <span class="material-icons">add</span>
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <!-- Empty State -->
+        <div *ngIf="eventosRegulares.length === 0" class="empty-state" style="grid-column: 1/-1;">
+          <div class="empty-icon">
+            <span class="material-icons">event_busy</span>
+          </div>
+          <h3>No se encontraron eventos</h3>
+          <p>Prueba ajustando tus filtros de búsqueda.</p>
+          <button class="btn-reset" (click)="setCategoria(null); searchTerm = '';">Ver todos</button>
+        </div>
+      </div>
+    </section>
+
   </div>
 
-  <!-- Empty state -->
-  <div *ngIf="!loading && eventosFiltrados.length === 0" class="empty-state">
-    <span class="material-icons">event_busy</span>
-    <p>No hay eventos disponibles en este momento</p>
-    <p class="empty-subtitle">Vuelve pronto para descubrir nuevos eventos</p>
-  </div>
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <!-- Sección de la plataforma -->
+      <div class="footer-section">
+        <div class="footer-logo">
+          <span class="material-icons">confirmation_number</span>
+          <h3>Eventum</h3>
+        </div>
+        <p class="footer-description">
+          <strong>Tu plataforma integral para eventos.</strong> Eventum conecta a organizadores y asistentes
+          en un ecosistema completo de gestión de eventos. Descubre experiencias inolvidables, adquiere
+          boletas digitales de forma segura con códigos QR únicos, y disfruta de un proceso de compra
+          rápido y confiable con integración de pagos Wompi.
+        </p>
+        <p class="footer-description">
+          <strong>¿Eres organizador?</strong> Lleva tus eventos al siguiente nivel con nuestras herramientas
+          profesionales: crea y gestiona eventos, configura múltiples tipos de boletas, controla inventarios
+          en tiempo real, accede a dashboards con métricas detalladas, genera reportes de ventas y asistencia,
+          y administra tus ingresos con total transparencia. Todo desde una plataforma moderna y fácil de usar.
+        </p>
+        <div class="footer-features">
+          <div class="feature-item">
+            <span class="material-icons">verified</span>
+            <span>Compra Segura</span>
+          </div>
+          <div class="feature-item">
+            <span class="material-icons">qr_code</span>
+            <span>Boletas Digitales</span>
+          </div>
+          <div class="feature-item">
+            <span class="material-icons">support_agent</span>
+            <span>Soporte 24/7</span>
+          </div>
+          <div class="feature-item">
+            <span class="material-icons">analytics</span>
+            <span>Reportes en Tiempo Real</span>
+          </div>
+          <div class="feature-item">
+            <span class="material-icons">event</span>
+            <span>Gestión Completa</span>
+          </div>
+          <div class="feature-item">
+            <span class="material-icons">payments</span>
+            <span>Pagos Wompi</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección de contacto -->
+      <div class="footer-section">
+        <h4>Desarrollado por</h4>
+        <div class="developer-card">
+          <div class="developer-header">
+            <span class="material-icons dev-icon">code</span>
+            <div>
+              <h5>Baria Dev</h5>
+              <p class="dev-subtitle">Soluciones Tecnológicas</p>
+            </div>
+          </div>
+          <div class="contact-methods">
+            <a href="https://wa.me/573178954373" target="_blank" rel="noopener noreferrer" class="contact-btn whatsapp">
+              <span class="material-icons">chat</span>
+              <div class="contact-info">
+                <span class="contact-label">WhatsApp</span>
+                <span class="contact-value">317 895 4373</span>
+              </div>
+            </a>
+            <a href="tel:+573178954373" class="contact-btn phone">
+              <span class="material-icons">phone</span>
+              <div class="contact-info">
+                <span class="contact-label">Llamar</span>
+                <span class="contact-value">317 895 4373</span>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Copyright -->
+    <div class="footer-bottom">
+      <p>&copy; {{ currentYear }} Eventum. Todos los derechos reservados.</p>
+      <div class="footer-links">
+        <a href="#" class="footer-link">Términos y Condiciones</a>
+        <span class="separator">•</span>
+        <a href="#" class="footer-link">Política de Privacidad</a>
+        <span class="separator">•</span>
+        <a href="#" class="footer-link">Ayuda</a>
+      </div>
+    </div>
+  </footer>
 </div>
-

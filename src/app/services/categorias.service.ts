@@ -16,7 +16,7 @@ export interface CategoriaFilters extends BaseFilters {
 export class CategoriasService {
   constructor(
     private supabase: SupabaseService
-  ) {}
+  ) { }
 
   /**
    * Obtiene todas las categorías
@@ -43,16 +43,16 @@ export class CategoriasService {
       query = query.range(fromIndex, toIndex);
 
       const response = await query;
-      
+
       if (response.error) {
         console.error('Error en getCategorias:', response.error);
         throw response.error;
       }
-      
+
       const total = response.count || 0;
       const categorias = (response.data as CategoriaEvento[]) || [];
       console.log('Categorías cargadas:', categorias.length, 'de', total);
-      
+
       return {
         data: categorias,
         total,
@@ -76,14 +76,19 @@ export class CategoriasService {
         .select('*')
         .eq('id', id)
         .single();
-      
+
       if (response.error) {
+        console.error('Error en getCategoriaById:', response.error);
         throw response.error;
       }
-      
+
+      if (!response.data) {
+        throw new Error(`Categoría con ID ${id} no encontrada`);
+      }
+
       return response.data as CategoriaEvento;
     } catch (error) {
-      console.error('Error en getCategoriaById:', error);
+      console.error('Error catch en getCategoriaById:', error);
       throw error;
     }
   }
@@ -98,11 +103,11 @@ export class CategoriasService {
         .insert(categoria)
         .select()
         .single();
-      
+
       if (response.error) {
         throw response.error;
       }
-      
+
       return response.data as CategoriaEvento;
     } catch (error) {
       console.error('Error en createCategoria:', error);
@@ -121,11 +126,11 @@ export class CategoriasService {
         .eq('id', id)
         .select()
         .single();
-      
+
       if (response.error) {
         throw response.error;
       }
-      
+
       return response.data as CategoriaEvento;
     } catch (error) {
       console.error('Error en updateCategoria:', error);
@@ -142,7 +147,7 @@ export class CategoriasService {
         .from('categorias_evento')
         .update({ activo: false })
         .eq('id', id);
-      
+
       if (response.error) {
         throw response.error;
       }

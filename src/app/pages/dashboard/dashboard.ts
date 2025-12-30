@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 import { DashboardService } from '../../services/dashboard.service';
 import { DashboardStats } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
@@ -14,9 +15,11 @@ import { DateFormatPipe } from '../../pipes/date-format.pipe';
 export class Dashboard implements OnInit {
   constructor(
     private dashboardService: DashboardService,
-    private cdr: ChangeDetectorRef
-  ) {}
-  
+    private cdr: ChangeDetectorRef,
+    private router: Router,
+    private authService: AuthService
+  ) { }
+
   stats: DashboardStats = {
     eventos_activos: 0,
     boletas_vendidas: 0,
@@ -32,11 +35,16 @@ export class Dashboard implements OnInit {
     boletas_por_estado: [],
     top_eventos: []
   };
-  
+
   loading = true;
   error: string | null = null;
 
   ngOnInit() {
+    // Si es cliente, redirigir inmediatamente a la vista de eventos
+    if (this.authService.isCliente()) {
+      this.router.navigate(['/eventos-cliente']);
+      return;
+    }
     this.loadStats();
   }
 
@@ -61,8 +69,8 @@ export class Dashboard implements OnInit {
   }
 
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-CO', { 
-      style: 'currency', 
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
       currency: 'COP',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0

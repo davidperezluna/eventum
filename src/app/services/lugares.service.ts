@@ -18,7 +18,7 @@ export interface LugarFilters extends BaseFilters {
 export class LugaresService {
   constructor(
     private supabase: SupabaseService
-  ) {}
+  ) { }
 
   /**
    * Obtiene todos los lugares
@@ -51,16 +51,16 @@ export class LugaresService {
       query = query.range(fromIndex, toIndex);
 
       const { data, error, count } = await query;
-      
+
       if (error) {
         console.error('Error en getLugares:', error);
         throw error;
       }
-      
+
       const total = count || 0;
       const lugares = (data as Lugar[]) || [];
       console.log('Lugares cargados:', lugares.length, 'de', total);
-      
+
       return {
         data: lugares,
         total,
@@ -83,10 +83,19 @@ export class LugaresService {
         .select('*')
         .eq('id', id)
         .single();
-      
-      if (error) throw error;
+
+      if (error) {
+        console.error('Error en getLugarById:', error);
+        throw error;
+      }
+
+      if (!data) {
+        throw new Error(`Lugar con ID ${id} no encontrado`);
+      }
+
       return data as Lugar;
     } catch (error) {
+      console.error('Error catch en getLugarById:', error);
       throw error;
     }
   }
@@ -148,7 +157,7 @@ export class LugaresService {
         .insert(normalizedLugar)
         .select()
         .single();
-      
+
       if (error) {
         console.error('Error creando lugar:', error);
         throw error;
@@ -174,7 +183,7 @@ export class LugaresService {
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) {
         console.error('Error actualizando lugar:', error);
         throw error;
@@ -195,7 +204,7 @@ export class LugaresService {
         .from('lugares')
         .update({ activo: false })
         .eq('id', id);
-      
+
       if (error) throw error;
     } catch (error) {
       throw error;

@@ -10,9 +10,9 @@ import { TimezoneService } from '../services/timezone.service';
   standalone: true
 })
 export class DateFormatPipe implements PipeTransform {
-  constructor(private timezoneService: TimezoneService) {}
+  constructor(private timezoneService: TimezoneService) { }
 
-  transform(value: string | Date | null | undefined, format: 'full' | 'short' | 'medium' | 'date' | 'time' | 'datetime' | 'shortDate' = 'short'): string {
+  transform(value: string | Date | null | undefined, format: 'full' | 'short' | 'medium' | 'date' | 'time' | 'datetime' | 'shortDate' | 'day' | 'month' = 'short'): string {
     if (!value) return '';
 
     // Convertir a Date si es string
@@ -29,7 +29,7 @@ export class DateFormatPipe implements PipeTransform {
     } else {
       date = value;
     }
-    
+
     if (isNaN(date.getTime())) {
       return '';
     }
@@ -104,6 +104,18 @@ export class DateFormatPipe implements PipeTransform {
           month: '2-digit',
           day: '2-digit'
         });
+
+      case 'day':
+        // Solo día: "30"
+        return this.timezoneService.formatDate(date, {
+          day: 'numeric'
+        });
+
+      case 'month':
+        // Solo mes corto: "oct"
+        return this.timezoneService.formatDate(date, {
+          month: 'short'
+        }).replace('.', '');
 
       default:
         return this.timezoneService.formatDateTime(date, {

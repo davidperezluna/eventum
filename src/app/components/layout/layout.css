@@ -1,9 +1,22 @@
+/* ============================================
+   LAYOUT STYLES
+   ============================================ */
+
+/* Base container */
 .layout-container {
   display: flex;
   min-height: 100vh;
   background: var(--color-background);
   position: relative;
 }
+
+.layout-container.client-layout {
+  flex-direction: column;
+}
+
+/* ============================================
+   ADMIN/ORGANIZER SIDEBAR STYLES
+   ============================================ */
 
 .menu-toggle {
   display: none;
@@ -42,8 +55,13 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .sidebar {
@@ -262,6 +280,140 @@
   width: calc(100% - var(--sidebar-width));
 }
 
+/* ============================================
+   CLIENT HEADER STYLES (NEW)
+   ============================================ */
+
+.client-header {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.header-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  text-decoration: none;
+  letter-spacing: -0.5px;
+}
+
+.brand-logo .material-icons {
+  font-size: 1.8rem;
+  background: -webkit-linear-gradient(45deg, var(--color-primary), var(--color-secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.client-nav {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.client-nav-item {
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;
+  transition: all 0.2s;
+  position: relative;
+  padding: 0.5rem 0;
+}
+
+.client-nav-item:hover {
+  color: var(--color-primary);
+}
+
+.client-nav-item.active {
+  color: var(--color-primary);
+}
+
+.client-nav-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--color-primary);
+  border-radius: 2px;
+}
+
+.client-user-menu {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.avatar-placeholder:hover {
+  transform: scale(1.05);
+}
+
+.btn-logout-client {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-logout-client:hover {
+  background: var(--color-error-light);
+  color: var(--color-error);
+}
+
+.client-content {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  background: #f8fafc;
+  min-height: calc(100vh - 73px);
+}
+
+/* ============================================
+   MEDIA QUERIES
+   ============================================ */
+
 /* Tablets (768px - 1024px) */
 @media (max-width: 1024px) {
   .main-content {
@@ -328,6 +480,21 @@
   .btn-logout {
     justify-content: flex-start;
   }
+
+  /* Client Mobile Header */
+  .client-nav {
+    display: none;
+    /* Hide nav links on mobile for now, maybe add mobile menu later if time fits */
+    /* Alternatively, make a bottom nav bar for mobile clients */
+  }
+
+  .client-header .brand-logo span {
+    display: block;
+  }
+
+  .header-container {
+    padding: 0.75rem 1rem;
+  }
 }
 
 /* Móviles pequeños */
@@ -389,4 +556,3 @@
     font-size: var(--font-size-xs);
   }
 }
-

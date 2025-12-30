@@ -36,12 +36,14 @@ export class DetalleEvento implements OnInit {
   usuario: Usuario | null = null;
 
   // Datos de compra
-  itemsCompra: { tipo: TipoBoleta; cantidad: number; datosAsistente: {
-    nombre?: string;
-    documento?: string;
-    email?: string;
-    telefono?: string;
-  } }[] = [];
+  itemsCompra: {
+    tipo: TipoBoleta; cantidad: number; datosAsistente: {
+      nombre?: string;
+      documento?: string;
+      email?: string;
+      telefono?: string;
+    }
+  }[] = [];
 
   // Método de pago será determinado por Wompi
   metodoPagoSeleccionado: 'CARD' | 'PSE' | 'NEQUI' | 'BANCOLOMBIA_TRANSFER' | 'BANCOLOMBIA_COLLECT' = 'CARD';
@@ -60,13 +62,12 @@ export class DetalleEvento implements OnInit {
     private wompiService: WompiService,
     private supabaseService: SupabaseService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit() {
     const eventoId = this.route.snapshot.paramMap.get('id');
     if (eventoId) {
       this.loadEvento(Number(eventoId));
-      this.loadTiposBoleta(Number(eventoId));
     }
     this.loadUsuario();
   }
@@ -91,7 +92,7 @@ export class DetalleEvento implements OnInit {
   getDatosUsuario() {
     if (!this.usuario) return null;
     return {
-      nombre: this.usuario.nombre && this.usuario.apellido 
+      nombre: this.usuario.nombre && this.usuario.apellido
         ? `${this.usuario.nombre} ${this.usuario.apellido}`.trim()
         : this.usuario.nombre || '',
       documento: this.usuario.documento_identidad || '',
@@ -113,17 +114,31 @@ export class DetalleEvento implements OnInit {
   async loadEvento(id: number) {
     this.loading = true;
     try {
+      // Cargar evento primero
       const evento = await this.eventosService.getEventoById(id);
       this.evento = evento;
-      this.loading = false;
-      // Cargar lugar si existe
+
+      // Preparar promesas para carga en paralelo
+      const promesas: Promise<any>[] = [];
+
+      // Agregar carga de lugar si existe
       if (evento.lugar_id) {
-        this.loadLugar(evento.lugar_id);
+        promesas.push(this.loadLugar(evento.lugar_id));
       }
-      // Cargar categoría
+
+      // Agregar carga de categoría si existe
       if (evento.categoria_id) {
-        this.loadCategoria(evento.categoria_id);
+        promesas.push(this.loadCategoria(evento.categoria_id));
       }
+
+      // Agregar carga de tipos de boleta
+      promesas.push(this.loadTiposBoleta(id));
+
+      // Esperar a que todas las cargas terminen en paralelo
+      await Promise.all(promesas);
+
+      // Actualizar estado y vista después de que todo esté cargado
+      this.loading = false;
       this.cdr.detectChanges();
     } catch (err) {
       console.error('Error cargando evento:', err);
@@ -141,8 +156,10 @@ export class DetalleEvento implements OnInit {
       this.cdr.detectChanges();
     } catch (err) {
       console.error('Error cargando categoría:', err);
+      this.categoria = null;
       this.loadingCategoria = false;
       this.cdr.detectChanges();
+      // No lanzar el error para que no rompa la carga del evento
     }
   }
 
@@ -155,8 +172,10 @@ export class DetalleEvento implements OnInit {
       this.cdr.detectChanges();
     } catch (err) {
       console.error('Error cargando lugar:', err);
+      this.lugar = null;
       this.loadingLugar = false;
       this.cdr.detectChanges();
+      // No lanzar el error para que no rompa la carga del evento
     }
   }
 
@@ -164,13 +183,15 @@ export class DetalleEvento implements OnInit {
     this.loadingBoletas = true;
     try {
       const tipos = await this.boletasService.getTiposBoleta(eventoId);
-      this.tiposBoleta = tipos.filter(t => t.activo && t.cantidad_disponibles > 0);
+      this.tiposBoleta = tipos.filter(t => t.activo && (t.cantidad_disponibles ?? 0) > 0);
       this.loadingBoletas = false;
       this.cdr.detectChanges();
     } catch (err) {
       console.error('Error cargando tipos de boleta:', err);
+      this.tiposBoleta = [];
       this.loadingBoletas = false;
       this.cdr.detectChanges();
+      // No lanzar el error para que no rompa la carga del evento
     }
   }
 
@@ -221,8 +242,8 @@ export class DetalleEvento implements OnInit {
   }
 
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-CO', { 
-      style: 'currency', 
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
       currency: 'COP',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
@@ -264,7 +285,7 @@ export class DetalleEvento implements OnInit {
     this.comprando = true;
     try {
       const validacion = await this.comprasClienteService.validarDisponibilidad(items);
-      
+
       if (!validacion.valido) {
         this.alertService.error('Error de disponibilidad', validacion.errores.join('\n'));
         this.comprando = false;
@@ -286,23 +307,23 @@ export class DetalleEvento implements OnInit {
       });
 
       console.log('Compra creada:', resultado.compra.id);
-      
+
       // Crear transacción en Wompi usando fetch directo
       const redirectUrl = `${window.location.origin}/pago-resultado?compra_id=${resultado.compra.id}`;
-      
+
       try {
         // Obtener URL de Supabase y token de autenticación
         const supabaseUrl = supabaseConfig.url;
         const { data: { session } } = await this.supabaseService.auth.getSession();
         const accessToken = session?.access_token;
-        
+
         if (!accessToken) {
           throw new Error('No se pudo obtener el token de autenticación');
         }
-        
+
         // Obtener email del cliente
         const customerEmail = this.usuario?.email || items[0]?.email_asistente || '';
-        
+
         // Llamar a la Edge Function con fetch directo
         const response = await fetch(
           `${supabaseUrl}/functions/v1/wompi-payment`,
@@ -321,17 +342,17 @@ export class DetalleEvento implements OnInit {
             })
           }
         );
-        
+
         const responseData = await response.json();
-        
+
         // Verificar si hay error en la respuesta
         if (!response.ok || !responseData.success) {
           throw new Error(responseData.error || 'Error al crear transacción en Wompi');
         }
-        
+
         // La respuesta tiene checkout_url directamente o dentro de transaction
         const checkoutUrl = responseData.checkout_url || responseData.transaction?.checkout_url;
-        
+
         if (checkoutUrl) {
           console.log('Redirigiendo a checkout de Wompi:', checkoutUrl);
           window.location.href = checkoutUrl;
@@ -365,6 +386,13 @@ export class DetalleEvento implements OnInit {
   getTags(): string[] {
     if (!this.evento?.tags) return [];
     return this.evento.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+  }
+
+  getCategoryIcon(cat: CategoriaEvento): string {
+    if (cat.icono && cat.icono.trim().length > 1) {
+      return cat.icono;
+    }
+    return 'pricetag';
   }
 }
 

@@ -58,7 +58,14 @@ export class Layout implements OnInit, OnDestroy {
         if (window.innerWidth <= 768) {
           this.closeSidebar();
         }
+        
+        // Scroll top on route change
+        window.scrollTo(0, 0);
       });
+  }
+
+  isCliente(): boolean {
+    return this.usuario?.tipo_usuario_id === 1;
   }
 
   ngOnDestroy() {

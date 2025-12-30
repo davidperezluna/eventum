@@ -1,60 +1,97 @@
-<div class="layout-container">
-  <!-- Botón hamburguesa para móviles -->
-  <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
-    <span class="material-icons">menu</span>
-  </button>
+<div class="layout-container" [class.client-layout]="isCliente()">
+  
+  <!-- Layout para Administradores y Organizadores (Sidebar) -->
+  <ng-container *ngIf="!isCliente()">
+    <!-- Botón hamburguesa para móviles -->
+    <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
+      <span class="material-icons">menu</span>
+    </button>
+  
+    <!-- Overlay para móviles -->
+    <div 
+      class="sidebar-overlay" 
+      *ngIf="sidebarOpen"
+      (click)="closeSidebar()"
+    ></div>
+  
+    <aside class="sidebar" [class.open]="sidebarOpen">
+      <div class="sidebar-header">
+        <div class="sidebar-header-content">
+          <h1>
+            <span class="material-icons">celebration</span>
+            <span class="sidebar-title">Eventum</span>
+          </h1>
+          <button class="sidebar-close" (click)="closeSidebar()" aria-label="Close menu">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <p class="subtitle">Panel de Administración</p>
+      </div>
+      <nav class="sidebar-nav">
+        <a
+          *ngFor="let item of menuItems"
+          [routerLink]="item.path"
+          routerLinkActive="active"
+          class="nav-item"
+          (click)="closeSidebar()"
+        >
+          <span class="material-icons nav-icon">{{ item.icon }}</span>
+          <span class="nav-label">{{ item.label }}</span>
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div *ngIf="currentUser && usuario" class="user-info">
+          <div class="user-email">
+            <span class="material-icons">person</span>
+            <span class="email-text">{{ userEmail }}</span>
+          </div>
+          <div class="user-role" *ngIf="userRole">
+            <span class="material-icons">badge</span>
+            <span>{{ userRole }}</span>
+          </div>
+          <button class="btn-logout" (click)="logout()">
+            <span class="material-icons">logout</span>
+            <span>Cerrar Sesión</span>
+          </button>
+        </div>
+        <p>© 2025 Eventum</p>
+      </div>
+    </aside>
+  </ng-container>
 
-  <!-- Overlay para móviles -->
-  <div 
-    class="sidebar-overlay" 
-    *ngIf="sidebarOpen"
-    (click)="closeSidebar()"
-  ></div>
-
-  <aside class="sidebar" [class.open]="sidebarOpen">
-    <div class="sidebar-header">
-      <div class="sidebar-header-content">
-        <h1>
+  <!-- Layout para Clientes (Header Top) -->
+  <ng-container *ngIf="isCliente()">
+    <header class="client-header">
+      <div class="header-container">
+        <a routerLink="/eventos-cliente" class="brand-logo">
           <span class="material-icons">celebration</span>
-          <span class="sidebar-title">Eventum</span>
-        </h1>
-        <button class="sidebar-close" (click)="closeSidebar()" aria-label="Close menu">
-          <span class="material-icons">close</span>
-        </button>
-      </div>
-      <p class="subtitle">Panel de Administración</p>
-    </div>
-    <nav class="sidebar-nav">
-      <a
-        *ngFor="let item of menuItems"
-        [routerLink]="item.path"
-        routerLinkActive="active"
-        class="nav-item"
-        (click)="closeSidebar()"
-      >
-        <span class="material-icons nav-icon">{{ item.icon }}</span>
-        <span class="nav-label">{{ item.label }}</span>
-      </a>
-    </nav>
-    <div class="sidebar-footer">
-      <div *ngIf="currentUser && usuario" class="user-info">
-        <div class="user-email">
-          <span class="material-icons">person</span>
-          <span class="email-text">{{ userEmail }}</span>
+          <span>Eventum</span>
+        </a>
+
+        <nav class="client-nav">
+          <a routerLink="/eventos-cliente" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="client-nav-item">
+            Eventos
+          </a>
+          <a routerLink="/mis-compras" routerLinkActive="active" class="client-nav-item">
+            Mis Boletas
+          </a>
+        </nav>
+
+        <div class="client-user-menu">
+          <a routerLink="/perfil" class="user-profile-link" routerLinkActive="active">
+            <div class="avatar-placeholder">
+              {{ userEmail.charAt(0).toUpperCase() }}
+            </div>
+          </a>
+          <button class="btn-logout-client" (click)="logout()" title="Cerrar Sesión">
+            <span class="material-icons">logout</span>
+          </button>
         </div>
-        <div class="user-role" *ngIf="userRole">
-          <span class="material-icons">badge</span>
-          <span>{{ userRole }}</span>
-        </div>
-        <button class="btn-logout" (click)="logout()">
-          <span class="material-icons">logout</span>
-          <span>Cerrar Sesión</span>
-        </button>
       </div>
-      <p>© 2025 Eventum</p>
-    </div>
-  </aside>
-  <main class="main-content">
+    </header>
+  </ng-container>
+
+  <main [class.main-content]="!isCliente()" [class.client-content]="isCliente()">
     <router-outlet />
   </main>
 </div>

@@ -14,7 +14,7 @@ export class EventosService {
   constructor(
     private supabase: SupabaseService,
     private timezoneService: TimezoneService
-  ) {}
+  ) { }
   private tableName = 'eventos';
 
   /**
@@ -26,8 +26,8 @@ export class EventosService {
       // Usar 'estimated' para consultas grandes (limit > 100) para mejor rendimiento
       const limit = filters?.limit || 10;
       const useEstimatedCount = limit > 100;
-      let query = this.supabase.from(this.tableName).select('*', { 
-        count: useEstimatedCount ? 'estimated' : 'exact' 
+      let query = this.supabase.from(this.tableName).select('*', {
+        count: useEstimatedCount ? 'estimated' : 'exact'
       });
 
       // Aplicar filtros
@@ -62,16 +62,16 @@ export class EventosService {
       query = query.range(fromIndex, toIndex);
 
       const { data, error, count } = await query;
-      
+
       if (error) {
         console.error('Error en getEventos:', error);
         throw error;
       }
-      
+
       const total = count || 0;
       const eventos = (data as Evento[]) || [];
       console.log('Eventos cargados:', eventos.length, 'de', total);
-      
+
       return {
         data: eventos,
         total,
@@ -95,10 +95,19 @@ export class EventosService {
         .select('*')
         .eq('id', id)
         .single();
-      
-      if (error) throw error;
+
+      if (error) {
+        console.error('Error en getEventoById:', error);
+        throw error;
+      }
+
+      if (!data) {
+        throw new Error(`Evento con ID ${id} no encontrado`);
+      }
+
       return data as Evento;
     } catch (error) {
+      console.error('Error catch en getEventoById:', error);
       throw error;
     }
   }
@@ -113,7 +122,7 @@ export class EventosService {
         .insert(evento)
         .select()
         .single();
-      
+
       if (error) throw error;
       return data as Evento;
     } catch (error) {
@@ -132,7 +141,7 @@ export class EventosService {
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) throw error;
       return data as Evento;
     } catch (error) {
@@ -149,7 +158,7 @@ export class EventosService {
         .from(this.tableName)
         .update({ activo: false })
         .eq('id', id);
-      
+
       if (error) throw error;
     } catch (error) {
       throw error;
@@ -169,7 +178,7 @@ export class EventosService {
         .gte('fecha_inicio', now)
         .order('fecha_inicio', { ascending: true })
         .limit(limit);
-      
+
       if (error) throw error;
       return (data as Evento[]) || [];
     } catch (error) {

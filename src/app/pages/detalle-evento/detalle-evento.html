@@ -24,8 +24,9 @@
         <div class="evento-title-section">
           <h1>{{ evento.titulo }}</h1>
           <div class="evento-badges">
-            <span class="badge badge-categoria" *ngIf="categoria" [style.background-color]="categoria.color || '#667eea'">
-              <ion-icon *ngIf="categoria.icono" [name]="categoria.icono"></ion-icon>
+            <span class="badge badge-categoria" *ngIf="categoria"
+              [style.background-color]="categoria.color || '#667eea'">
+              <ion-icon [name]="getCategoryIcon(categoria)"></ion-icon>
               {{ categoria.nombre }}
             </span>
             <span class="badge badge-destacado" *ngIf="evento.destacado">
@@ -155,12 +156,8 @@
             </div>
           </div>
           <div class="lugar-map" *ngIf="lugar.latitud && lugar.longitud">
-            <a 
-              [href]="'https://www.google.com/maps?q=' + lugar.latitud + ',' + lugar.longitud" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              class="map-link"
-            >
+            <a [href]="'https://www.google.com/maps?q=' + lugar.latitud + ',' + lugar.longitud" target="_blank"
+              rel="noopener noreferrer" class="map-link">
               <span class="material-icons">map</span>
               <span>Ver en Google Maps</span>
             </a>
@@ -235,12 +232,14 @@
             <div class="cantidad-controls" *ngIf="getCantidadEnCarrito(tipo) > 0">
               <button class="btn-cantidad" (click)="quitarDelCarrito(tipo)">-</button>
               <span class="cantidad">{{ getCantidadEnCarrito(tipo) }}</span>
-              <button class="btn-cantidad" (click)="agregarAlCarrito(tipo)" [disabled]="getCantidadEnCarrito(tipo) >= tipo.cantidad_disponibles">+</button>
+              <button class="btn-cantidad" (click)="agregarAlCarrito(tipo)"
+                [disabled]="getCantidadEnCarrito(tipo) >= tipo.cantidad_disponibles">+</button>
               <button class="btn-remove" (click)="eliminarDelCarrito(tipo)">
                 <span class="material-icons">delete</span>
               </button>
             </div>
-            <button *ngIf="getCantidadEnCarrito(tipo) === 0" class="btn-add" (click)="agregarAlCarrito(tipo)" [disabled]="tipo.cantidad_disponibles === 0">
+            <button *ngIf="getCantidadEnCarrito(tipo) === 0" class="btn-add" (click)="agregarAlCarrito(tipo)"
+              [disabled]="tipo.cantidad_disponibles === 0">
               <span class="material-icons">add_shopping_cart</span>
               Agregar
             </button>
@@ -258,20 +257,22 @@
       <div class="carrito-items">
         <div *ngFor="let item of itemsCompra" class="carrito-item">
           <div class="carrito-item-info">
-            <h4>{{ item.tipo.nombre }}</h4>
-            <p class="carrito-precio">{{ formatCurrency(item.tipo.precio) }} x {{ item.cantidad }}</p>
-            <p class="carrito-subtotal">Subtotal: {{ formatCurrency(item.tipo.precio * item.cantidad) }}</p>
+            <div class="info-main">
+              <h4>{{ item.tipo.nombre }}</h4>
+              <p class="carrito-precio">{{ formatCurrency(item.tipo.precio) }} x {{ item.cantidad }}</p>
+            </div>
+            <div class="info-side">
+              <p class="carrito-subtotal">Subtotal: {{ formatCurrency(item.tipo.precio * item.cantidad) }}</p>
+              <button class="btn-remove-item-static" (click)="eliminarDelCarrito(item.tipo)" title="Quitar item">
+                <span class="material-icons">delete</span>
+              </button>
+            </div>
           </div>
           <div class="carrito-item-datos">
             <div class="datos-header">
               <h5>Datos del Asistente</h5>
-              <button 
-                type="button" 
-                class="btn-usar-datos" 
-                (click)="usarMisDatos(item)"
-                *ngIf="usuario"
-                title="Usar mis datos del perfil"
-              >
+              <button type="button" class="btn-usar-datos" (click)="usarMisDatos(item)" *ngIf="usuario"
+                title="Usar mis datos del perfil">
                 <span class="material-icons">person</span>
                 Usar mis datos
               </button>
@@ -293,32 +294,18 @@
               <input type="tel" [(ngModel)]="item.datosAsistente.telefono" placeholder="300 123 4567" />
             </div>
           </div>
-          <button class="btn-remove-item" (click)="eliminarDelCarrito(item.tipo)">
-            <span class="material-icons">delete</span>
-          </button>
         </div>
       </div>
       <div class="carrito-total">
         <div class="total-info">
           <h3>Total: {{ formatCurrency(getTotal()) }}</h3>
         </div>
-        <div class="metodo-pago">
-          <label>Método de pago *</label>
-          <select [(ngModel)]="metodoPagoSeleccionado" class="select-pago">
-            <option value="CARD">Tarjeta de Crédito/Débito</option>
-            <option value="PSE">PSE</option>
-            <option value="NEQUI">Nequi</option>
-            <option value="BANCOLOMBIA_TRANSFER">Transferencia Bancolombia</option>
-            <option value="BANCOLOMBIA_COLLECT">Recaudo Bancolombia</option>
-          </select>
-          <small class="form-help">Serás redirigido a Wompi para completar el pago</small>
-        </div>
         <button class="btn-comprar" (click)="procesarCompra()" [disabled]="comprando">
           <span class="material-icons">{{ comprando ? 'hourglass_empty' : 'shopping_cart' }}</span>
           {{ comprando ? 'Procesando...' : 'Comprar Boletas' }}
         </button>
+        <p class="wompi-info">Serás redirigido a Wompi para completar el pago de forma segura</p>
       </div>
     </div>
   </div>
 </div>
-
