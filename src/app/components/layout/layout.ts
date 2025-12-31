@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
@@ -24,7 +24,8 @@ export class Layout implements OnInit, OnDestroy {
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -49,6 +50,7 @@ export class Layout implements OnInit, OnDestroy {
           this.userRole = 'Usuario';
         }
       }
+      this.cdr.detectChanges();
     });
 
     // Cerrar sidebar cuando cambia la ruta (solo en móviles)

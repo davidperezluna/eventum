@@ -85,11 +85,13 @@ export class MisCompras implements OnInit, OnDestroy {
       switchMap(() => from(this.loadComprasInternal())),
       takeUntil(this.destroy$)
     ).subscribe({
-      next: (response: PaginatedResponse<Compra>) => {
+      next: async (response: PaginatedResponse<Compra>) => {
         this.compras = response.data || [];
         this.total = response.total || 0;
         this.totalPages = response.totalPages || 0;
-        this.loadBoletasPorCompra();
+        
+        await this.loadBoletasPorCompra();
+        
         this.loading = false;
         this.cdr.detectChanges();
       },

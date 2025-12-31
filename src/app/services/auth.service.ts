@@ -94,18 +94,16 @@ export class AuthService {
         this.supabase.auth.onAuthStateChange(async (event, session) => {
           console.log('Auth state changed:', event, session?.user?.id);
           
-          this.ngZone.run(() => {
+          this.ngZone.run(async () => {
             this.setSession(session);
             this.setCurrentUser(session?.user ?? null);
-          });
-          
-          if (session?.user) {
-            await this.loadUsuarioData(session.user.id);
-          } else {
-            this.ngZone.run(() => {
+            
+            if (session?.user) {
+              await this.loadUsuarioData(session.user.id);
+            } else {
               this.setUsuario(null);
-            });
-          }
+            }
+          });
         });
       } catch (error) {
         console.error('Error en initAuth:', error);

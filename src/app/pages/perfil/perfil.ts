@@ -51,7 +51,10 @@ export class Perfil implements OnInit {
     private cdr: ChangeDetectorRef
   ) {}
 
-  ngOnInit() {
+  async ngOnInit() {
+    this.loading = true;
+    // Esperar a que el servicio de auth esté inicializado
+    await this.authService.waitForInitialization();
     this.loadUsuario();
   }
 
