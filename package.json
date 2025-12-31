@@ -5,7 +5,8 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
-    "build:gh-pages": "ng build --configuration production --base-href /eventum/",
+    "build:prod": "ng build --configuration production",
+    "build:gh-pages": "ng build --configuration production --base-href /",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },

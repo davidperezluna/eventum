@@ -32,7 +32,7 @@
           },
           "configurations": {
             "production": {
-              "baseHref": "/eventum/",
+              "baseHref": "/",
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",

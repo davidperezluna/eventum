@@ -1,0 +1,27 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  
+  # Si el archivo o directorio existe, servirlo directamente
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  
+  # Si no existe, redirigir todo al index.html (para SPA routing)
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# Configuración de seguridad y rendimiento
+<IfModule mod_headers.c>
+  # Habilitar CORS si es necesario
+  Header set Access-Control-Allow-Origin "*"
+  
+  # Cache para assets estáticos
+  <FilesMatch "\.(ico|jpg|jpeg|png|gif|css|js|woff|woff2|ttf|svg)$">
+    Header set Cache-Control "max-age=31536000, public"
+  </FilesMatch>
+</IfModule>
+
+# Compresión GZIP
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
