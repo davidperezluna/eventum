@@ -211,6 +211,16 @@
           <span class="info-value">{{ eventoSeleccionado.fecha_inicio | dateFormat:'full' }}</span>
         </div>
 
+        <div class="info-row" *ngIf="eventoSeleccionado.lugar">
+          <span class="info-label">Lugar:</span>
+          <span class="info-value">{{ eventoSeleccionado.lugar.nombre }}</span>
+        </div>
+
+        <div class="info-row" *ngIf="eventoSeleccionado.lugar">
+          <span class="info-label">Dirección:</span>
+          <span class="info-value">{{ eventoSeleccionado.lugar.direccion }}, {{ eventoSeleccionado.lugar.ciudad }}</span>
+        </div>
+
         <div class="info-row" *ngIf="boletaSeleccionada.nombre_asistente">
           <span class="info-label">Asistente:</span>
           <span class="info-value">{{ boletaSeleccionada.nombre_asistente }}</span>
@@ -233,6 +243,69 @@
           <span class="material-icons">print</span>
           Imprimir PDF
         </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Template oculto para impresión/PDF -->
+<div id="ticket-template" class="ticket-print-container" *ngIf="boletaSeleccionada && eventoSeleccionado && tipoBoletaSeleccionado">
+  <div class="ticket-card">
+    <div class="ticket-left">
+      <div class="ticket-header">
+        <img src="/logo-eventum-horizontal.svg" alt="Eventum" class="ticket-logo" />
+        <div class="ticket-event-type">TICKET DIGITAL</div>
+      </div>
+      
+      <div class="ticket-body">
+        <h1 class="ticket-title">{{ eventoSeleccionado.titulo }}</h1>
+        
+        <div class="ticket-info-grid">
+          <div class="info-item">
+            <span class="label">FECHA Y HORA</span>
+            <span class="value">{{ eventoSeleccionado.fecha_inicio | dateFormat:'full' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">UBICACIÓN</span>
+            <span class="value">{{ eventoSeleccionado.lugar?.nombre || 'Por confirmar' }}</span>
+            <span class="sub-value" *ngIf="eventoSeleccionado.lugar?.direccion">{{ eventoSeleccionado.lugar?.direccion }}, {{ eventoSeleccionado.lugar?.ciudad }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">TIPO DE BOLETA</span>
+            <span class="value">{{ tipoBoletaSeleccionado.nombre }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">PRECIO</span>
+            <span class="value">{{ formatCurrency(boletaSeleccionada.precio_unitario) }}</span>
+          </div>
+        </div>
+        
+        <div class="ticket-asistente">
+          <div class="info-item">
+            <span class="label">ASISTENTE</span>
+            <span class="value">{{ boletaSeleccionada.nombre_asistente || 'N/A' }}</span>
+          </div>
+          <div class="info-item" *ngIf="boletaSeleccionada.documento_asistente">
+            <span class="label">DOCUMENTO</span>
+            <span class="value">{{ boletaSeleccionada.documento_asistente }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="ticket-footer">
+        <div class="ticket-id">TRANSACCIÓN: {{ compraSeleccionada?.numero_transaccion }}</div>
+        <div class="ticket-disclaimer">Este ticket es personal e intransferible. Presenta el código QR al ingresar.</div>
+      </div>
+    </div>
+    
+    <div class="ticket-right">
+      <div class="ticket-qr-container">
+        <img [src]="qrCodeUrl" alt="QR" class="ticket-qr" />
+        <div class="ticket-qr-code">{{ boletaSeleccionada.codigo_qr }}</div>
+      </div>
+      <div class="ticket-stub-info">
+        <span>EVENTUM</span>
+        <span>EXPERIENCIAS INOLVIDABLES</span>
       </div>
     </div>
   </div>

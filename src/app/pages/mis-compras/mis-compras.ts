@@ -12,6 +12,7 @@ import { AlertService } from '../../services/alert.service';
 import { Compra, BoletaComprada, PaginatedResponse, TipoBoleta, Evento, TipoEstadoPago, TipoEstadoCompra } from '../../types';
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
+import html2canvas from 'html2canvas';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 @Component({
@@ -426,154 +427,48 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   /**
-   * Genera el PDF con el mismo diseño que el preview
+   * Genera el PDF usando el diseño HTML
    */
   private async generarPDF(boleta: BoletaComprada, compra: Compra, tipoBoleta: TipoBoleta, evento: Evento) {
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
+    // Asegurarnos de que el template esté actualizado con los datos actuales
+    // (Angular ya se encarga de esto mediante el binding en el HTML)
+    
+    // Esperar un ciclo para que el DOM se actualice
+    await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Colores minimalistas
-    const black: [number, number, number] = [0, 0, 0];
-    const gray: [number, number, number] = [100, 100, 100];
-    const lightGray: [number, number, number] = [240, 240, 240];
+    const element = document.getElementById('ticket-template');
+    if (!element) {
+      console.error('No se encontró el elemento ticket-template');
+      return;
+    }
 
-    // Generar código QR (mismo tamaño que en el preview)
-    let qrCodeDataUrl = '';
     try {
-      qrCodeDataUrl = await QRCode.toDataURL(boleta.codigo_qr, {
-        width: 200,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        }
+      // Convertir HTML a Canvas
+      const canvas = await html2canvas(element, {
+        scale: 2, // Mejor calidad
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false
       });
+
+      const imgData = canvas.toDataURL('image/png');
+      
+      const doc = new jsPDF({
+        orientation: 'landscape', // Diseño horizontal para el ticket
+        unit: 'mm',
+        format: [80, 180] // Tamaño personalizado del ticket
+      });
+
+      // Añadir la imagen al PDF
+      doc.addImage(imgData, 'PNG', 0, 0, 180, 80);
+
+      // Guardar el PDF
+      const fileName = `Ticket_${boleta.codigo_qr}_${evento.titulo.substring(0, 20).replace(/[^a-z0-9]/gi, '_')}.pdf`;
+      doc.save(fileName);
     } catch (err) {
-      console.error('Error generando QR:', err);
+      console.error('Error convirtiendo HTML a PDF:', err);
+      throw err;
     }
-
-    const pageWidth = 210;
-    const margin = 20;
-    const contentWidth = pageWidth - (margin * 2);
-    let yPos = margin;
-
-    // ========== ENCABEZADO ==========
-    doc.setTextColor(black[0], black[1], black[2]);
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    const tituloLines = doc.splitTextToSize(evento.titulo, contentWidth);
-    doc.text(tituloLines, pageWidth / 2, yPos, { align: 'center' });
-    yPos += tituloLines.length * 7 + 5;
-
-    // Tipo de boleta
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(gray[0], gray[1], gray[2]);
-    doc.text(tipoBoleta.nombre, pageWidth / 2, yPos, { align: 'center' });
-    yPos += 10;
-
-    // Línea separadora
-    doc.setDrawColor(lightGray[0], lightGray[1], lightGray[2]);
-    doc.setLineWidth(1);
-    doc.line(margin, yPos, pageWidth - margin, yPos);
-    yPos += 15;
-
-    // ========== CÓDIGO QR (Centrado) ==========
-    if (qrCodeDataUrl) {
-      const qrSize = 60;
-      const qrX = (pageWidth - qrSize) / 2;
-      doc.addImage(qrCodeDataUrl, 'PNG', qrX, yPos, qrSize, qrSize);
-      yPos += qrSize + 8;
-
-      // Código QR texto
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(black[0], black[1], black[2]);
-      doc.text(boleta.codigo_qr, pageWidth / 2, yPos, { align: 'center' });
-      yPos += 15;
-    }
-
-    // ========== INFORMACIÓN EN FILAS ==========
-    const infoStartY = yPos;
-    const rowHeight = 8;
-    let currentY = infoStartY;
-
-    // Precio
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(gray[0], gray[1], gray[2]);
-    doc.text('Precio:', margin, currentY);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(black[0], black[1], black[2]);
-    doc.text(this.formatCurrency(boleta.precio_unitario), pageWidth - margin, currentY, { align: 'right' });
-    currentY += rowHeight;
-
-    // Fecha
-    if (evento.fecha_inicio) {
-      const fechaInicio = new Date(evento.fecha_inicio);
-      const fechaStr = fechaInicio.toLocaleDateString('es-CO', { 
-        weekday: 'long',
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(gray[0], gray[1], gray[2]);
-      doc.text('Fecha:', margin, currentY);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(black[0], black[1], black[2]);
-      const fechaLines = doc.splitTextToSize(fechaStr, contentWidth - 50);
-      doc.text(fechaLines, pageWidth - margin, currentY, { align: 'right' });
-      currentY += fechaLines.length * rowHeight;
-    }
-
-    // Asistente
-    if (boleta.nombre_asistente) {
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(gray[0], gray[1], gray[2]);
-      doc.text('Asistente:', margin, currentY);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(black[0], black[1], black[2]);
-      doc.text(boleta.nombre_asistente, pageWidth - margin, currentY, { align: 'right' });
-      currentY += rowHeight;
-    }
-
-    // Documento
-    if (boleta.documento_asistente) {
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(gray[0], gray[1], gray[2]);
-      doc.text('Documento:', margin, currentY);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(black[0], black[1], black[2]);
-      doc.text(boleta.documento_asistente, pageWidth - margin, currentY, { align: 'right' });
-      currentY += rowHeight;
-    }
-
-    // Transacción
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(gray[0], gray[1], gray[2]);
-    doc.text('Transacción:', margin, currentY);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(black[0], black[1], black[2]);
-    doc.text(compra.numero_transaccion, pageWidth - margin, currentY, { align: 'right' });
-    currentY += rowHeight;
-
-    // Líneas separadoras entre filas
-    for (let i = 0; i < 5; i++) {
-      const lineY = infoStartY + (i * rowHeight) - 3;
-      doc.setDrawColor(lightGray[0], lightGray[1], lightGray[2]);
-      doc.setLineWidth(0.3);
-      doc.line(margin, lineY, pageWidth - margin, lineY);
-    }
-
-    // Guardar el PDF
-    const fileName = `Boleta_${boleta.codigo_qr}_${evento.titulo.substring(0, 20).replace(/[^a-z0-9]/gi, '_')}.pdf`;
-    doc.save(fileName);
   }
 }
 

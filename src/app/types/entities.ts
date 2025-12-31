@@ -110,6 +110,7 @@ export interface Evento {
   activo?: boolean;
   fecha_creacion?: Date | string;
   fecha_actualizacion?: Date | string;
+  lugar?: Lugar;
 }
 
 /**

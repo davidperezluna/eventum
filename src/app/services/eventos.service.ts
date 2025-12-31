@@ -86,13 +86,13 @@ export class EventosService {
   }
 
   /**
-   * Obtiene un evento por ID
+   * Obtiene un evento por ID, incluyendo información del lugar
    */
   async getEventoById(id: number): Promise<Evento> {
     try {
       const { data, error } = await this.supabase
         .from(this.tableName)
-        .select('*')
+        .select('*, lugar(*)')
         .eq('id', id)
         .single();
 
