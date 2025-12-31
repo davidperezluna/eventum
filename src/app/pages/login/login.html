@@ -1,8 +1,14 @@
 <div class="login-container">
   <div class="login-card">
     <div class="login-header">
-      <img src="/logo-eventum.svg" alt="Eventum" class="logo-icon" />
-      <p class="subtitle">Panel de Administración</p>
+      <div class="logo-container">
+        <img src="/logo-eventum.svg" alt="Eventum" class="logo-icon" />
+      </div>
+      <div class="header-text">
+        <span class="badge-admin">ADMIN PANEL</span>
+        <h1>¡Bienvenido de nuevo!</h1>
+        <p class="subtitle">Ingresa tus credenciales para continuar</p>
+      </div>
     </div>
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
