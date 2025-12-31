@@ -1,0 +1,124 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch: # Permite ejecutar manualmente desde GitHub
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify project structure
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -la
+          echo ""
+          echo "Checking for package.json:"
+          if [ -f "package.json" ]; then
+            echo "✓ package.json found"
+          else
+            echo "✗ package.json not found"
+            exit 1
+          fi
+          echo ""
+          echo "Checking for angular.json:"
+          if [ -f "angular.json" ]; then
+            echo "✓ angular.json found"
+          else
+            echo "✗ angular.json not found"
+            exit 1
+          fi
+
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build:gh-pages
+
+      - name: Verify build output and create 404.html
+        id: build-output
+        run: |
+          echo "Checking build output structure..."
+          echo ""
+          echo "Contents of dist/admin-panel:"
+          ls -la dist/admin-panel/ || echo "dist/admin-panel not found"
+          echo ""
+          
+          # Detectar la ruta correcta
+          BUILD_PATH=""
+          if [ -f "dist/admin-panel/browser/index.html" ]; then
+            BUILD_PATH="dist/admin-panel/browser"
+            echo "✓ Using browser subdirectory"
+          elif [ -f "dist/admin-panel/index.html" ]; then
+            BUILD_PATH="dist/admin-panel"
+            echo "✓ Using root directory"
+          else
+            echo "✗ Error: index.html not found in expected locations"
+            exit 1
+          fi
+          
+          echo "Build path: $BUILD_PATH"
+          echo "build-path=$BUILD_PATH" >> $GITHUB_OUTPUT
+          
+          echo ""
+          echo "Checking for 404.html:"
+          if [ -f "$BUILD_PATH/404.html" ]; then
+            echo "✓ 404.html already exists"
+          else
+            echo "Creating 404.html..."
+            cp "$BUILD_PATH/index.html" "$BUILD_PATH/404.html"
+            echo "✓ 404.html created successfully"
+          fi
+          
+          echo ""
+          echo "Verifying files:"
+          ls -la "$BUILD_PATH/" | grep -E "(index|404)\.html"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ steps.build-output.outputs.build-path }}
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+

@@ -1,11 +1,19 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
   
-  # Si el archivo o directorio existe, servirlo directamente
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
+  # Redirigir HTTP a HTTPS (opcional, descomentar si es necesario)
+  # RewriteCond %{HTTPS} off
+  # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
   
-  # Si no existe, redirigir todo al index.html (para SPA routing)
+  # Si el archivo solicitado existe, servirlo directamente
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteRule ^ - [L]
+  
+  # Si el directorio solicitado existe, servirlo directamente
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+  
+  # Si no es un archivo ni directorio, redirigir todo al index.html (para SPA routing)
   RewriteRule ^ index.html [L]
 </IfModule>
 
