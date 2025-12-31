@@ -120,6 +120,19 @@
   flex: 1;
 }
 
+.sidebar-logo {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-logo .logo-img {
+  height: 45px;
+  width: auto;
+  max-width: 100%;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
 .sidebar-title {
   white-space: nowrap;
   overflow: hidden;
@@ -320,6 +333,18 @@
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.brand-logo-img {
+  height: 45px;
+  width: auto;
+  max-width: 220px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
+  transition: transform 0.2s ease;
+}
+
+.brand-logo:hover .brand-logo-img {
+  transform: scale(1.02);
 }
 
 .client-nav {

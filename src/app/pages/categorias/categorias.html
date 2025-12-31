@@ -53,7 +53,12 @@
     </div>
 
     <div *ngIf="!loading && categorias.length === 0" class="empty-state">
-      No hay categorías creadas
+      <div class="empty-icon-wrapper">
+        <span class="material-icons empty-icon">category</span>
+      </div>
+      <h3 class="empty-title">No se encontraron categorías</h3>
+      <p class="empty-subtitle">Crea tu primera categoría para organizar tus eventos.</p>
+      <button class="btn-view-all" (click)="openModal()">Crear Categoría</button>
     </div>
 
     <div *ngIf="total > limit" class="pagination">

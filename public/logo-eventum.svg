@@ -1,0 +1,25 @@
+<svg width="400" height="150" viewBox="0 0 400 150" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradiente exacto: púrpura azulado claro → púrpura rosa brillante -->
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#a78bfa;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#c084fc;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f472b6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Fondo oscuro azul-púrpura -->
+  <rect width="400" height="150" fill="#1e1b4b"/>
+  
+  <!-- Texto EVENTUM con gradiente completo -->
+  <g transform="translate(200, 75)">
+    <text x="0" y="0" font-family="'Inter', 'Segoe UI', system-ui, sans-serif" font-size="64" font-weight="800" text-anchor="middle" letter-spacing="-0.5" fill="url(#textGradient)">
+      EVENTUM
+    </text>
+    
+    <!-- Subtítulo en gris claro -->
+    <text x="0" y="35" font-family="'Inter', 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="400" fill="#c7d2fe" text-anchor="middle" opacity="0.9" letter-spacing="0.5">
+      PLATAFORMA DE EVENTOS
+    </text>
+  </g>
+</svg>

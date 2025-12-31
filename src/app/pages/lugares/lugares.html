@@ -55,7 +55,12 @@
     </div>
 
     <div *ngIf="!loading && lugares.length === 0" class="empty-state">
-      No hay lugares creados
+      <div class="empty-icon-wrapper">
+        <span class="material-icons empty-icon">place</span>
+      </div>
+      <h3 class="empty-title">No se encontraron lugares</h3>
+      <p class="empty-subtitle">Crea tu primer lugar para organizar tus eventos.</p>
+      <button class="btn-view-all" (click)="openModal()">Crear Lugar</button>
     </div>
 
     <div *ngIf="total > limit" class="pagination">

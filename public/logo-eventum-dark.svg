@@ -1,0 +1,52 @@
+<svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Fondo oscuro -->
+    <rect id="bg" width="400" height="300" fill="#1a1a2e"/>
+    
+    <linearGradient id="gradientDark" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#5b8af0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gradientTextDark" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glowDark">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Fondo oscuro -->
+  <use href="#bg"/>
+  
+  <!-- Triángulo estilizado con formas geométricas -->
+  <g transform="translate(200, 100)">
+    <!-- Triángulo principal con gradiente -->
+    <path d="M 0 -80 L 70 60 L -70 60 Z" fill="url(#gradientDark)" opacity="0.95" filter="url(#glowDark)"/>
+    
+    <!-- Líneas geométricas interconectadas -->
+    <line x1="-50" y1="-40" x2="50" y2="20" stroke="url(#gradientDark)" stroke-width="2" opacity="0.7"/>
+    <line x1="-30" y1="-20" x2="30" y2="40" stroke="url(#gradientDark)" stroke-width="2" opacity="0.6"/>
+    <line x1="-60" y1="0" x2="60" y2="0" stroke="url(#gradientDark)" stroke-width="1.5" opacity="0.5"/>
+    
+    <!-- Formas geométricas adicionales -->
+    <circle cx="-40" cy="-20" r="8" fill="url(#gradientDark)" opacity="0.8"/>
+    <circle cx="40" cy="20" r="8" fill="url(#gradientDark)" opacity="0.8"/>
+    <polygon points="-20,20 20,20 0,40" fill="url(#gradientDark)" opacity="0.6"/>
+    
+    <!-- Letra E en el centro -->
+    <text x="0" y="15" font-family="Arial, sans-serif" font-size="72" font-weight="900" fill="white" text-anchor="middle" filter="url(#glowDark)">E</text>
+  </g>
+  
+  <!-- Texto EVENTUM -->
+  <text x="200" y="180" font-family="Arial, sans-serif" font-size="48" font-weight="800" fill="url(#gradientTextDark)" text-anchor="middle" letter-spacing="4">EVENTUM</text>
+  
+  <!-- Eslogan -->
+  <text x="200" y="210" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="url(#gradientTextDark)" text-anchor="middle" opacity="0.9" letter-spacing="2">TU PLATAFORMA DE EVENTOS</text>
+</svg>
+

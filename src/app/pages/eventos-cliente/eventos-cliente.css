@@ -121,9 +121,87 @@
 }
 
 .section-header h2 {
-  font-size: 1.75rem;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+/* =========================================
+   EMPTY STATE - Diseño mejorado
+   ========================================= */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 3rem 0;
+  text-align: left;
+}
+
+.empty-icon-wrapper {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.empty-icon {
+  font-size: 64px !important;
+  color: #64748b;
+  position: relative;
+}
+
+/* Icono con X superpuesto (calendario cancelado) */
+.empty-icon-wrapper::after {
+  content: 'close';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-family: 'Material Icons';
+  font-size: 24px;
+  color: #ef4444;
+  background: white;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.empty-title {
+  font-size: 1.5rem;
   font-weight: 700;
   color: #1e293b;
+  margin: 0 0 0.75rem 0;
+}
+
+.empty-subtitle {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #64748b;
+  margin: 0 0 1.5rem 0;
+  line-height: 1.5;
+}
+
+.btn-view-all {
+  background: transparent;
+  border: 1.5px solid #1e293b;
+  color: #1e293b;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.btn-view-all:hover {
+  background: #1e293b;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(30, 41, 59, 0.1);
 }
 
 .carousel-nav {
@@ -464,6 +542,13 @@
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 1.5rem;
+}
+
+.footer-logo-img {
+  height: 55px;
+  width: auto;
+  max-width: 280px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 .footer-logo .material-icons {

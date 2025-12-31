@@ -115,12 +115,12 @@
 
         <!-- Empty State -->
         <div *ngIf="eventosRegulares.length === 0" class="empty-state" style="grid-column: 1/-1;">
-          <div class="empty-icon">
-            <span class="material-icons">event_busy</span>
+          <div class="empty-icon-wrapper">
+            <span class="material-icons empty-icon">event_busy</span>
           </div>
-          <h3>No se encontraron eventos</h3>
-          <p>Prueba ajustando tus filtros de búsqueda.</p>
-          <button class="btn-reset" (click)="setCategoria(null); searchTerm = '';">Ver todos</button>
+          <h3 class="empty-title">No se encontraron eventos</h3>
+          <p class="empty-subtitle">Prueba ajustando tus filtros de búsqueda.</p>
+          <button class="btn-view-all" (click)="setCategoria(null); searchTerm = '';">Ver todos</button>
         </div>
       </div>
     </section>
@@ -133,8 +133,7 @@
       <!-- Sección de la plataforma -->
       <div class="footer-section">
         <div class="footer-logo">
-          <span class="material-icons">confirmation_number</span>
-          <h3>Eventum</h3>
+          <img src="/logo-eventum-horizontal.svg" alt="Eventum" class="footer-logo-img" />
         </div>
         <p class="footer-description">
           <strong>Tu plataforma integral para eventos.</strong> Eventum conecta a organizadores y asistentes

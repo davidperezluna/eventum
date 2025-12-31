@@ -86,7 +86,11 @@
     </table>
 
     <div *ngIf="!loading && usuarios.length === 0" class="empty-state">
-      No se encontraron usuarios
+      <div class="empty-icon-wrapper">
+        <span class="material-icons empty-icon">people</span>
+      </div>
+      <h3 class="empty-title">No se encontraron usuarios</h3>
+      <p class="empty-subtitle">No hay usuarios registrados en el sistema.</p>
     </div>
 
     <!-- Paginación -->

@@ -17,9 +17,8 @@
     <aside class="sidebar" [class.open]="sidebarOpen">
       <div class="sidebar-header">
         <div class="sidebar-header-content">
-          <h1>
-            <span class="material-icons">celebration</span>
-            <span class="sidebar-title">Eventum</span>
+          <h1 class="sidebar-logo">
+            <img src="/logo-eventum-horizontal.svg" alt="Eventum" class="logo-img" />
           </h1>
           <button class="sidebar-close" (click)="closeSidebar()" aria-label="Close menu">
             <span class="material-icons">close</span>
@@ -64,8 +63,7 @@
     <header class="client-header">
       <div class="header-container">
         <a routerLink="/eventos-cliente" class="brand-logo">
-          <span class="material-icons">celebration</span>
-          <span>Eventum</span>
+          <img src="/logo-eventum-horizontal.svg" alt="Eventum" class="brand-logo-img" />
         </a>
 
         <nav class="client-nav">

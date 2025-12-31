@@ -81,7 +81,12 @@
     </div>
 
     <div *ngIf="!loading && eventos.length === 0" class="empty-state">
-      No hay eventos creados aún. ¡Crea tu primer evento y comienza la fiesta!
+      <div class="empty-icon-wrapper">
+        <span class="material-icons empty-icon">event</span>
+      </div>
+      <h3 class="empty-title">No se encontraron eventos</h3>
+      <p class="empty-subtitle">Crea tu primer evento y comienza la fiesta.</p>
+      <button class="btn-view-all" (click)="openModal()">Crear Evento</button>
     </div>
 
     <div *ngIf="total > limit" class="pagination">

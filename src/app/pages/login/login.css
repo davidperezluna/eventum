@@ -22,6 +22,15 @@
 }
 
 .logo-icon {
+  width: 380px;
+  height: auto;
+  margin: 0 auto var(--spacing-lg) auto;
+  display: block;
+  max-width: 90%;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.2));
+}
+
+.logo-icon.material-icons {
   font-size: 4rem;
   color: var(--color-secondary);
   margin-bottom: var(--spacing-sm);
@@ -29,9 +38,10 @@
 
 .login-header h1 {
   font-size: var(--font-size-2xl);
-  margin: 0 0 var(--spacing-xs) 0;
+  margin: var(--spacing-md) 0 var(--spacing-xs) 0;
   color: var(--color-text-primary);
   font-weight: var(--font-weight-bold);
+  display: none; /* Oculto porque el logo ya incluye el texto */
 }
 
 .subtitle {
