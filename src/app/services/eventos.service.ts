@@ -22,15 +22,15 @@ export class EventosService {
    */
   async getEventos(filters?: EventoFilters): Promise<PaginatedResponse<Evento>> {
     try {
-      // Seleccionar eventos (las relaciones se pueden agregar después si es necesario)
+      // Seleccionar eventos incluyendo información del lugar
       // Usar 'estimated' para consultas grandes (limit > 100) para mejor rendimiento
       const limit = filters?.limit || 10;
       const useEstimatedCount = limit > 100;
-      let query = this.supabase.from(this.tableName).select('*', {
+      let query = this.supabase.from(this.tableName).select('*, lugares(*)', {
         count: useEstimatedCount ? 'estimated' : 'exact'
       });
 
-      // Aplicar filtros
+      // ... resto de los filtros ...
       if (filters?.categoria_id) {
         query = query.eq('categoria_id', filters.categoria_id);
       }
@@ -55,7 +55,7 @@ export class EventosService {
       const sortOrder = filters?.sortOrder || 'desc';
       query = query.order(sortBy, { ascending: sortOrder === 'asc' });
 
-      // Paginación (limit ya está declarado arriba)
+      // Paginación
       const page = filters?.page || 1;
       const fromIndex = (page - 1) * limit;
       const toIndex = fromIndex + limit - 1;
@@ -69,7 +69,18 @@ export class EventosService {
       }
 
       const total = count || 0;
-      const eventos = (data as Evento[]) || [];
+      const rawEventos = data || [];
+      
+      // Mapear lugares a lugar para cada evento
+      const eventos = rawEventos.map((ev: any) => {
+        const evento = { ...ev };
+        if (evento.lugares) {
+          evento.lugar = evento.lugares;
+          delete evento.lugares;
+        }
+        return evento;
+      }) as Evento[];
+
       console.log('Eventos cargados:', eventos.length, 'de', total);
 
       return {
@@ -92,7 +103,7 @@ export class EventosService {
     try {
       const { data, error } = await this.supabase
         .from(this.tableName)
-        .select('*, lugar(*)')
+        .select('*, lugares(*)')
         .eq('id', id)
         .single();
 
@@ -105,7 +116,14 @@ export class EventosService {
         throw new Error(`Evento con ID ${id} no encontrado`);
       }
 
-      return data as Evento;
+      // Mapear lugares a lugar para mantener compatibilidad con el frontend
+      const result = { ...data };
+      if (result.lugares) {
+        result.lugar = result.lugares;
+        delete result.lugares;
+      }
+
+      return result as Evento;
     } catch (error) {
       console.error('Error catch en getEventoById:', error);
       throw error;
@@ -166,21 +184,30 @@ export class EventosService {
   }
 
   /**
-   * Obtiene eventos próximos
+   * Obtiene eventos próximos incluyendo información del lugar
    */
   async getEventosProximos(limit: number = 5): Promise<Evento[]> {
     try {
       const now = this.timezoneService.getCurrentDateISO();
       const { data, error } = await this.supabase
         .from(this.tableName)
-        .select('*')
+        .select('*, lugares(*)')
         .eq('activo', true)
         .gte('fecha_inicio', now)
         .order('fecha_inicio', { ascending: true })
         .limit(limit);
 
       if (error) throw error;
-      return (data as Evento[]) || [];
+      const rawData = data || [];
+      
+      return rawData.map((ev: any) => {
+        const evento = { ...ev };
+        if (evento.lugares) {
+          evento.lugar = evento.lugares;
+          delete evento.lugares;
+        }
+        return evento;
+      }) as Evento[];
     } catch (error) {
       throw error;
     }

@@ -74,7 +74,7 @@
             <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
           </div>
           <div class="card-content">
-            <p class="location"><span class="material-icons" style="font-size: 1rem">place</span> {{ evento.lugar_id ||
+            <p class="location"><span class="material-icons" style="font-size: 1rem">place</span> {{ evento.lugar?.nombre ||
               'Ubicación' }}</p>
             <h3>{{ evento.titulo }}</h3>
             <div class="price-action">
@@ -101,8 +101,11 @@
             <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
           </div>
           <div class="card-content">
-            <p class="location"><span class="material-icons" style="font-size: 1rem">calendar_today</span> {{
-              evento.fecha_inicio | dateFormat:'shortDate' }}</p>
+            <div class="location-date">
+              <p class="location"><span class="material-icons" style="font-size: 1rem">place</span> {{ evento.lugar?.nombre || 'Ubicación' }}</p>
+              <p class="date"><span class="material-icons" style="font-size: 1rem">calendar_today</span> {{
+                evento.fecha_inicio | dateFormat:'shortDate' }}</p>
+            </div>
             <h3>{{ evento.titulo }}</h3>
             <div class="price-action">
               <span class="price">{{ formatCurrency(evento.precio_minimo) }}</span>

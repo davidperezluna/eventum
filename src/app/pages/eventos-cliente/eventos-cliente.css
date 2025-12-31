@@ -391,7 +391,14 @@
   gap: 0.5rem;
 }
 
-.location {
+.location-date {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.location, .date {
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -400,10 +407,9 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 0.25rem;
 }
 
-.location .material-icons {
+.location .material-icons, .date .material-icons {
   color: var(--color-primary);
   font-size: 1rem;
 }
