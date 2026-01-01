@@ -75,14 +75,20 @@
 
 .evento-image-large {
   position: relative;
-  height: 400px;
+  height: auto;
+  min-height: 300px;
   width: 100%;
+  overflow: hidden;
+  background: #000;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
 }
 
 .evento-image-large img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  display: block;
 }
 
 .evento-badge {
@@ -652,7 +658,8 @@
   }
 
   .evento-image-large {
-    height: 250px;
+    height: auto;
+    min-height: 200px;
   }
 
   .evento-info-header {
