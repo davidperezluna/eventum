@@ -359,13 +359,19 @@ export class Eventos implements OnInit, OnDestroy {
       imagen_principal: imagenUrl || undefined
     };
 
-    // Limpiar campos vacíos opcionales
+    // Limpiar campos vacíos opcionales y propiedades de relación que no existen en la BD
     if (!eventoData.descripcion) delete eventoData.descripcion;
     if (!eventoData.descripcion_corta) delete eventoData.descripcion_corta;
     if (!eventoData.imagen_principal) delete eventoData.imagen_principal;
     if (!eventoData.tags) delete eventoData.tags;
     if (!eventoData.terminos_condiciones) delete eventoData.terminos_condiciones;
     if (!eventoData.politica_reembolso) delete eventoData.politica_reembolso;
+    
+    // Eliminar objetos de relación que vienen del join y confunden a la base de datos
+    delete (eventoData as any).lugar;
+    delete (eventoData as any).id;
+    delete (eventoData as any).fecha_creacion;
+    delete (eventoData as any).fecha_actualizacion;
 
     if (this.editingEvento) {
       this.saveEventoInternal(this.editingEvento.id, eventoData, true);

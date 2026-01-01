@@ -163,7 +163,15 @@ export class Usuarios implements OnInit, OnDestroy {
       if (!this.formData.id) {
         throw new Error('ID de usuario no disponible');
       }
-      await this.usuariosService.updateUsuario(this.formData.id, this.formData);
+      
+      // Limpiar datos que no deben enviarse a la BD
+      const updateData = { ...this.formData };
+      delete (updateData as any).id;
+      delete (updateData as any).fecha_creacion;
+      delete (updateData as any).fecha_actualizacion;
+      delete (updateData as any).email_verificado;
+
+      await this.usuariosService.updateUsuario(this.formData.id, updateData);
       console.log('Usuario actualizado exitosamente');
       this.closeModal();
       this.loadUsuarios();

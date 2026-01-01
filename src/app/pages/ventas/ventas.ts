@@ -111,7 +111,15 @@ export class Ventas implements OnInit, OnDestroy {
   async saveCompra() {
     if (this.editingCompra) {
       try {
-        await this.comprasService.updateCompra(this.editingCompra.id, this.formData);
+        // Limpiar datos que no deben enviarse a la BD
+        const updateData = { ...this.formData };
+        delete (updateData as any).cliente;
+        delete (updateData as any).evento;
+        delete (updateData as any).id;
+        delete (updateData as any).fecha_creacion;
+        delete (updateData as any).fecha_actualizacion;
+
+        await this.comprasService.updateCompra(this.editingCompra.id, updateData);
         this.closeModal();
         this.loadCompras();
       } catch (err) {
