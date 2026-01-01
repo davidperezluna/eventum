@@ -135,9 +135,14 @@ export class EventosService {
    */
   async createEvento(evento: Partial<Evento>): Promise<Evento> {
     try {
+      const now = this.timezoneService.getCurrentDateISO();
       const { data, error } = await this.supabase
         .from(this.tableName)
-        .insert(evento)
+        .insert({ 
+          ...evento, 
+          fecha_creacion: now,
+          fecha_actualizacion: now 
+        })
         .select()
         .single();
 

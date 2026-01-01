@@ -208,30 +208,20 @@ export class TimezoneService {
 
   /**
    * Convierte una fecha de input datetime-local a ISO string para guardar en BD
-   * El input datetime-local viene en formato "YYYY-MM-DDTHH:mm" y representa la hora local
+   * Convierte desde la hora local a UTC para almacenamiento (Igual que en compras)
    */
   datetimeLocalToISO(datetimeLocalString: string): string {
     if (!datetimeLocalString) return '';
-    // Crear Date desde el string (se interpreta como hora local)
-    const localDate = new Date(datetimeLocalString);
-    // Convertir a UTC usando toISOString
-    return localDate.toISOString();
+    return DateTimeUtil.datetimeLocalToISO(datetimeLocalString);
   }
 
   /**
    * Convierte una fecha ISO a formato datetime-local para inputs
-   * Convierte desde UTC a la zona horaria local
+   * Convierte desde UTC a la hora local para mostrar al usuario su hora local
    */
   isoToDatetimeLocal(isoString: string): string {
     if (!isoString) return '';
-    const date = new Date(isoString);
-    // Obtener componentes en la zona horaria local
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    return DateTimeUtil.isoToDatetimeLocal(isoString);
   }
 }
 

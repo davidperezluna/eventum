@@ -221,7 +221,10 @@ export class BoletasService {
     try {
       const response = await this.supabase
         .from('tipos_boleta')
-        .insert(tipoBoleta)
+        .insert({
+          ...tipoBoleta,
+          fecha_creacion: this.timezoneService.getCurrentDateISO()
+        })
         .select()
         .single();
       

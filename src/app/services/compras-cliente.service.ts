@@ -125,6 +125,7 @@ export class ComprasClienteService {
       }
 
       // Crear las boletas compradas
+      const now = this.timezoneService.getCurrentDateISO();
       const boletasPromises = datosCompra.items.flatMap(item => {
         const boletas: Partial<BoletaComprada>[] = [];
         for (let i = 0; i < item.cantidad; i++) {
@@ -137,7 +138,8 @@ export class ComprasClienteService {
             documento_asistente: item.documento_asistente,
             email_asistente: item.email_asistente,
             telefono_asistente: item.telefono_asistente,
-            estado: TipoEstadoBoleta.PENDIENTE
+            estado: TipoEstadoBoleta.PENDIENTE,
+            fecha_creacion: now
           });
         }
         return boletas;
