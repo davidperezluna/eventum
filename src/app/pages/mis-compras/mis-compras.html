@@ -172,7 +172,7 @@
 </div>
 
 <!-- Modal de vista previa de boleta -->
-<div class="modal-overlay" *ngIf="showBoletaModal" (click)="cerrarBoletaModal()">
+<div class="modal-overlay" *ngIf="showBoletaModal">
   <div class="modal-content boleta-modal" (click)="$event.stopPropagation()">
     <button class="modal-close" (click)="cerrarBoletaModal()">
       <span class="material-icons">close</span>

@@ -138,7 +138,7 @@
   </div>
 
   <!-- Modal Editar Compra -->
-  <div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
+  <div *ngIf="showModal" class="modal-overlay">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Editar Compra</h2>
@@ -176,7 +176,7 @@
   </div>
 
   <!-- Modal Detalles Cliente -->
-  <div *ngIf="showClienteModal" class="modal-overlay" (click)="closeClienteModal()">
+  <div *ngIf="showClienteModal" class="modal-overlay">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>
@@ -216,7 +216,7 @@
   </div>
 
   <!-- Modal Detalles Evento -->
-  <div *ngIf="showEventoModal" class="modal-overlay" (click)="closeEventoModal()">
+  <div *ngIf="showEventoModal" class="modal-overlay">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>

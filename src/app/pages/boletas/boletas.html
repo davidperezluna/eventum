@@ -381,7 +381,7 @@
   </div>
 
   <!-- Modal Tipo Boletas -->
-  <div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
+  <div *ngIf="showModal" class="modal-overlay">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>{{ editingTipo ? 'Editar Tipo de Boletas' : 'Nuevo Tipo de Boletas' }}</h2>
@@ -457,7 +457,7 @@
   </div>
 
   <!-- Modal Tipos de Boletas por Evento -->
-  <div *ngIf="showTiposModal" class="modal-overlay" (click)="closeTiposModal()">
+  <div *ngIf="showTiposModal" class="modal-overlay">
     <div class="modal-content modal-large" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Tipos de Boletas - {{ getEventoNombre(eventoSeleccionado || 0) }}</h2>
@@ -520,7 +520,7 @@
   </div>
 
   <!-- Modal Validar Boleta -->
-  <div *ngIf="showValidarModal" class="modal-overlay" (click)="cerrarValidarModal()">
+  <div *ngIf="showValidarModal" class="modal-overlay">
     <div class="modal-content modal-large" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Validar Boleta</h2>

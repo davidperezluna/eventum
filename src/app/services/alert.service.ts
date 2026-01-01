@@ -21,7 +21,9 @@ export class AlertService {
       confirmButtonText: '¡Perfecto!',
       confirmButtonColor: '#10b981',
       timer: 3000,
-      timerProgressBar: true
+      timerProgressBar: true,
+      allowOutsideClick: false,
+      allowEscapeKey: false
     });
   }
 
@@ -34,7 +36,9 @@ export class AlertService {
       title,
       text: message,
       confirmButtonText: 'Entendido',
-      confirmButtonColor: '#ef4444'
+      confirmButtonColor: '#ef4444',
+      allowOutsideClick: false,
+      allowEscapeKey: false
     });
   }
 
@@ -47,7 +51,9 @@ export class AlertService {
       title,
       text: message,
       confirmButtonText: 'Entendido',
-      confirmButtonColor: '#f59e0b'
+      confirmButtonColor: '#f59e0b',
+      allowOutsideClick: false,
+      allowEscapeKey: false
     });
   }
 
@@ -60,7 +66,9 @@ export class AlertService {
       title,
       text: message,
       confirmButtonText: 'Entendido',
-      confirmButtonColor: '#3b82f6'
+      confirmButtonColor: '#3b82f6',
+      allowOutsideClick: false,
+      allowEscapeKey: false
     });
   }
 
@@ -72,7 +80,9 @@ export class AlertService {
       title,
       text: message,
       confirmButtonText: 'OK',
-      confirmButtonColor: '#667eea'
+      confirmButtonColor: '#667eea',
+      allowOutsideClick: false,
+      allowEscapeKey: false
     });
   }
 
@@ -94,7 +104,9 @@ export class AlertService {
       cancelButtonText: cancelText,
       confirmButtonColor: '#667eea',
       cancelButtonColor: '#6b7280',
-      reverseButtons: true
+      reverseButtons: true,
+      allowOutsideClick: false,
+      allowEscapeKey: false
     }).then((result) => {
       return result.isConfirmed;
     });
@@ -111,7 +123,9 @@ export class AlertService {
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#667eea',
       cancelButtonColor: '#6b7280',
-      reverseButtons: true
+      reverseButtons: true,
+      allowOutsideClick: false,
+      allowEscapeKey: false
     };
 
     return Swal.fire({ ...defaultOptions, ...options } as SweetAlertOptions).then((result) => {

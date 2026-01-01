@@ -151,7 +151,7 @@
   </div>
 
   <!-- Modal -->
-  <div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
+  <div *ngIf="showModal" class="modal-overlay">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>{{ editingUsuario ? 'Editar Usuario' : 'Nuevo Usuario' }}</h2>

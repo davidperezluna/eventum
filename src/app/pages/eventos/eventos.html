@@ -97,7 +97,7 @@
   </div>
 
   <!-- Modal -->
-  <div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
+  <div *ngIf="showModal" class="modal-overlay">
     <div class="modal-content modal-large" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>{{ editingEvento ? 'Editar Evento' : 'Nuevo Evento' }}</h2>
