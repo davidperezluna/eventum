@@ -160,9 +160,11 @@ export class Boletas implements OnInit, OnDestroy {
     }
   }
 
-  loadBoletas() {
+  loadBoletas(resetPage: boolean = true) {
     this.loading = true;
-    this.page = 1; // Resetear a primera página al filtrar
+    if (resetPage) {
+      this.page = 1; // Resetear a primera página al filtrar
+    }
     this.cdr.detectChanges();
     this.loadBoletasSubject.next();
   }
@@ -608,6 +610,9 @@ export class Boletas implements OnInit, OnDestroy {
   }
 
   getTotalPages(): number {
+    if (this.total === 0 || this.limit === 0) {
+      return 0;
+    }
     return Math.ceil(this.total / this.limit);
   }
 
@@ -642,7 +647,7 @@ export class Boletas implements OnInit, OnDestroy {
   goToPage(pageNum: number) {
     if (pageNum >= 1 && pageNum <= this.getTotalPages()) {
       this.page = pageNum;
-      this.loadBoletas();
+      this.loadBoletas(false); // No resetear la página cuando se cambia de página
     }
   }
 
