@@ -212,6 +212,14 @@ export interface BoletaComprada {
   estado?: TipoEstadoBoleta;
   fecha_uso?: Date | string;
   fecha_creacion?: Date | string;
+  // Información de la compra (viene del join)
+  compra?: {
+    id: number;
+    estado_pago?: TipoEstadoPago;
+    estado_compra?: TipoEstadoCompra;
+  };
+  // Campo directo para facilitar acceso (se puede poblar desde compra)
+  estado_pago?: TipoEstadoPago;
 }
 
 /**

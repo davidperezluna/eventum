@@ -18,9 +18,10 @@ export class BoletasService {
 
   /**
    * Obtiene todas las boletas compradas con filtros opcionales
+   * Incluye información del estado de pago de la compra
    */
   async getBoletasCompradas(filters?: BoletaFilters): Promise<PaginatedResponse<BoletaComprada>> {
-    let query = this.supabase.from('boletas_compradas').select('*', { count: 'exact' });
+    let query = this.supabase.from('boletas_compradas').select('*, compras(estado_pago, estado_compra)', { count: 'exact' });
 
     // Aplicar filtros
     if (filters?.compra_id) {
@@ -58,7 +59,7 @@ export class BoletasService {
         // Ahora filtrar boletas por esos tipos
         let boletasQuery = this.supabase
           .from('boletas_compradas')
-          .select('*', { count: 'exact' })
+          .select('*, compras(estado_pago, estado_compra)', { count: 'exact' })
           .in('tipo_boleta_id', tipoIds);
         
         // Aplicar otros filtros
@@ -111,7 +112,9 @@ export class BoletasService {
         }
         
         const total = boletasResponse.count || 0;
-        const boletas = (boletasResponse.data as BoletaComprada[]) || [];
+        const boletas = ((boletasResponse.data as any[]) || []).map(boleta => 
+          this.normalizarBoletaConCompra(boleta)
+        );
         console.log('Boletas cargadas:', boletas.length, 'de', total);
         
         return {
@@ -175,7 +178,9 @@ export class BoletasService {
       }
       
       const total = response.count || 0;
-      const boletas = (response.data as BoletaComprada[]) || [];
+      const boletas = ((response.data as any[]) || []).map(boleta => 
+        this.normalizarBoletaConCompra(boleta)
+      );
       console.log('Boletas cargadas:', boletas.length, 'de', total);
       
       return {
@@ -341,12 +346,13 @@ export class BoletasService {
 
   /**
    * Busca una boleta por código QR
+   * Incluye información del estado de pago de la compra
    */
   async buscarBoletaPorCodigoQR(codigoQR: string): Promise<BoletaComprada | null> {
     try {
       const response = await this.supabase
         .from('boletas_compradas')
-        .select('*')
+        .select('*, compras(estado_pago, estado_compra)')
         .eq('codigo_qr', codigoQR)
         .single();
       
@@ -358,7 +364,8 @@ export class BoletasService {
         throw response.error;
       }
       
-      return response.data as BoletaComprada;
+      const boleta = this.normalizarBoletaConCompra(response.data);
+      return boleta;
     } catch (error) {
       console.error('Error en buscarBoletaPorCodigoQR:', error);
       throw error;
@@ -367,12 +374,13 @@ export class BoletasService {
 
   /**
    * Busca boletas por documento del asistente
+   * Incluye información del estado de pago de la compra
    */
   async buscarBoletasPorDocumento(documento: string): Promise<BoletaComprada[]> {
     try {
       const response = await this.supabase
         .from('boletas_compradas')
-        .select('*')
+        .select('*, compras(estado_pago, estado_compra)')
         .ilike('documento_asistente', `%${documento}%`)
         .order('fecha_creacion', { ascending: false });
       
@@ -380,10 +388,46 @@ export class BoletasService {
         throw response.error;
       }
       
-      return (response.data as BoletaComprada[]) || [];
+      const boletas = ((response.data as any[]) || []).map(boleta => 
+        this.normalizarBoletaConCompra(boleta)
+      );
+      
+      return boletas;
     } catch (error) {
       console.error('Error en buscarBoletasPorDocumento:', error);
       throw error;
     }
+  }
+
+  /**
+   * Normaliza una boleta para incluir estado_pago directamente desde la compra
+   */
+  private normalizarBoletaConCompra(boleta: any): BoletaComprada {
+    const boletaNormalizada = { ...boleta } as BoletaComprada;
+    
+    // Si viene el objeto compra, extraer estado_pago y estado_compra
+    if (boleta.compras && Array.isArray(boleta.compras) && boleta.compras.length > 0) {
+      const compra = boleta.compras[0];
+      boletaNormalizada.estado_pago = compra.estado_pago;
+      boletaNormalizada.compra = {
+        id: boleta.compra_id,
+        estado_pago: compra.estado_pago,
+        estado_compra: compra.estado_compra
+      };
+    } else if (boleta.compras && !Array.isArray(boleta.compras)) {
+      // Si viene como objeto único (single select)
+      const compra = boleta.compras;
+      boletaNormalizada.estado_pago = compra.estado_pago;
+      boletaNormalizada.compra = {
+        id: boleta.compra_id,
+        estado_pago: compra.estado_pago,
+        estado_compra: compra.estado_compra
+      };
+    }
+    
+    // Limpiar el objeto compras del join (ya lo tenemos en compra)
+    delete (boletaNormalizada as any).compras;
+    
+    return boletaNormalizada;
   }
 }

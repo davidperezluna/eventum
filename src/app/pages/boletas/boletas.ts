@@ -238,6 +238,16 @@ export class Boletas implements OnInit, OnDestroy {
       return;
     }
     
+    // Verificar que el pago esté completado
+    const estadoPago = boleta.estado_pago || boleta.compra?.estado_pago;
+    if (!estadoPago || estadoPago !== 'completado') {
+      this.alertService.warning(
+        'Pago pendiente', 
+        'No se puede validar una boleta cuyo pago esté pendiente. El pago debe estar completado antes de validar la boleta.'
+      );
+      return;
+    }
+    
     const confirmed = await this.alertService.confirm('Validar boleta', `¿Validar la boleta ${boleta.codigo_qr}?`);
     if (confirmed) {
       this.validandoBoleta = true;
@@ -564,7 +574,9 @@ export class Boletas implements OnInit, OnDestroy {
   }
 
   puedeValidar(boleta: BoletaComprada): boolean {
-    return boleta.estado === 'pendiente';
+    // La boleta debe estar pendiente Y el pago debe estar completado
+    const estadoPago = boleta.estado_pago || boleta.compra?.estado_pago;
+    return boleta.estado === 'pendiente' && estadoPago === 'completado';
   }
 
   getTotalPages(): number {

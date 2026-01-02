@@ -639,6 +639,9 @@
             <span class="material-icons">info</span>
             <span *ngIf="boletaEncontrada.estado === 'usada'">Esta boleta ya ha sido validada</span>
             <span *ngIf="boletaEncontrada.estado === 'cancelada' || boletaEncontrada.estado === 'reembolsada'">Esta boleta no puede ser validada ({{ getEstadoLabel(boletaEncontrada.estado) }})</span>
+            <span *ngIf="boletaEncontrada.estado === 'pendiente' && (boletaEncontrada.estado_pago !== 'completado' && boletaEncontrada.compra?.estado_pago !== 'completado')">
+              El pago de esta boleta está pendiente. Debe estar completado para poder validarla.
+            </span>
           </div>
         </div>
 
@@ -713,6 +716,9 @@
               <span class="material-icons">info</span>
               <span *ngIf="boletaSeleccionada.estado === 'usada'">Esta boleta ya ha sido validada</span>
               <span *ngIf="boletaSeleccionada.estado === 'cancelada' || boletaSeleccionada.estado === 'reembolsada'">Esta boleta no puede ser validada ({{ getEstadoLabel(boletaSeleccionada.estado) }})</span>
+              <span *ngIf="boletaSeleccionada.estado === 'pendiente' && (boletaSeleccionada.estado_pago !== 'completado' && boletaSeleccionada.compra?.estado_pago !== 'completado')">
+                El pago de esta boleta está pendiente. Debe estar completado para poder validarla.
+              </span>
             </div>
           </div>
         </div>
