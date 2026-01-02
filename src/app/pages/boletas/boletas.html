@@ -210,6 +210,7 @@
             <tr>
               <th>ID</th>
               <th>Código QR</th>
+              <th>Evento</th>
               <th>Asistente</th>
               <th>Email</th>
               <th>Teléfono</th>
@@ -224,6 +225,15 @@
             <tr *ngFor="let boleta of boletas">
               <td>{{ boleta.id }}</td>
               <td class="code-cell">{{ boleta.codigo_qr }}</td>
+              <td>
+                <div class="evento-info-cell" *ngIf="boleta.evento">
+                  <strong>{{ boleta.evento.titulo }}</strong>
+                  <span class="evento-fecha" *ngIf="boleta.evento.fecha_inicio">
+                    {{ boleta.evento.fecha_inicio | dateFormat:'shortDate' }}
+                  </span>
+                </div>
+                <span *ngIf="!boleta.evento" class="text-muted">-</span>
+              </td>
               <td>{{ boleta.nombre_asistente || 'Sin nombre' }}</td>
               <td>{{ boleta.email_asistente || '-' }}</td>
               <td>{{ boleta.telefono_asistente || '-' }}</td>
@@ -281,6 +291,15 @@
             </div>
           </div>
           <div class="boleta-card-body">
+            <div class="boleta-card-row evento-row" *ngIf="boleta.evento">
+              <span class="boleta-card-label">Evento:</span>
+              <div class="boleta-card-value evento-info">
+                <strong>{{ boleta.evento.titulo }}</strong>
+                <span class="evento-fecha" *ngIf="boleta.evento.fecha_inicio">
+                  {{ boleta.evento.fecha_inicio | dateFormat:'shortDate' }}
+                </span>
+              </div>
+            </div>
             <div class="boleta-card-row">
               <span class="boleta-card-label">Código QR:</span>
               <span class="boleta-card-value code-value">{{ boleta.codigo_qr }}</span>
@@ -607,6 +626,15 @@
         <div *ngIf="boletaEncontrada && !validandoBoleta && modoBusqueda === 'qr'" class="boleta-info-card">
           <h3>Información de la boleta</h3>
           <div class="info-grid">
+            <div class="info-item evento-info-item" *ngIf="boletaEncontrada.evento">
+              <span class="info-label">Evento:</span>
+              <div class="info-value evento-info">
+                <strong>{{ boletaEncontrada.evento.titulo }}</strong>
+                <span class="evento-fecha" *ngIf="boletaEncontrada.evento.fecha_inicio">
+                  {{ boletaEncontrada.evento.fecha_inicio | dateFormat:'full' }}
+                </span>
+              </div>
+            </div>
             <div class="info-item">
               <span class="info-label">Código QR:</span>
               <span class="info-value code-value">{{ boletaEncontrada.codigo_qr }}</span>
@@ -676,6 +704,11 @@
                   <div class="boleta-item-title">
                     <span class="material-icons">confirmation_number</span>
                     <strong>{{ boleta.codigo_qr }}</strong>
+                  </div>
+                  <div class="boleta-item-subtitle evento-subtitle" *ngIf="boleta.evento">
+                    <span class="evento-titulo">{{ boleta.evento.titulo }}</span>
+                    <span class="separator">•</span>
+                    <span *ngIf="boleta.evento.fecha_inicio">{{ boleta.evento.fecha_inicio | dateFormat:'shortDate' }}</span>
                   </div>
                   <div class="boleta-item-subtitle">
                     <span>{{ boleta.nombre_asistente || 'Sin nombre' }}</span>

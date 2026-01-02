@@ -21,7 +21,8 @@ export class BoletasService {
    * Incluye información del estado de pago de la compra
    */
   async getBoletasCompradas(filters?: BoletaFilters): Promise<PaginatedResponse<BoletaComprada>> {
-    let query = this.supabase.from('boletas_compradas').select('*, compras(estado_pago, estado_compra)', { count: 'exact' });
+    let query = this.supabase.from('boletas_compradas')
+      .select('*, compras(estado_pago, estado_compra, evento_id, eventos(titulo, fecha_inicio, lugar_id)), tipos_boleta(evento_id, eventos(id, titulo, fecha_inicio, lugar_id))', { count: 'exact' });
 
     // Aplicar filtros
     if (filters?.compra_id) {
@@ -59,7 +60,7 @@ export class BoletasService {
         // Ahora filtrar boletas por esos tipos
         let boletasQuery = this.supabase
           .from('boletas_compradas')
-          .select('*, compras(estado_pago, estado_compra)', { count: 'exact' })
+          .select('*, compras(estado_pago, estado_compra, evento_id, eventos(titulo, fecha_inicio, lugar_id)), tipos_boleta(evento_id, eventos(id, titulo, fecha_inicio, lugar_id))', { count: 'exact' })
           .in('tipo_boleta_id', tipoIds);
         
         // Aplicar otros filtros
@@ -352,7 +353,7 @@ export class BoletasService {
     try {
       const response = await this.supabase
         .from('boletas_compradas')
-        .select('*, compras(estado_pago, estado_compra)')
+        .select('*, compras(estado_pago, estado_compra, evento_id, eventos(titulo, fecha_inicio, lugar_id)), tipos_boleta(evento_id, eventos(id, titulo, fecha_inicio, lugar_id))')
         .eq('codigo_qr', codigoQR)
         .single();
       
@@ -380,7 +381,7 @@ export class BoletasService {
     try {
       const response = await this.supabase
         .from('boletas_compradas')
-        .select('*, compras(estado_pago, estado_compra)')
+        .select('*, compras(estado_pago, estado_compra, evento_id, eventos(titulo, fecha_inicio, lugar_id)), tipos_boleta(evento_id, eventos(id, titulo, fecha_inicio, lugar_id))')
         .ilike('documento_asistente', `%${documento}%`)
         .order('fecha_creacion', { ascending: false });
       
@@ -400,7 +401,7 @@ export class BoletasService {
   }
 
   /**
-   * Normaliza una boleta para incluir estado_pago directamente desde la compra
+   * Normaliza una boleta para incluir estado_pago directamente desde la compra y información del evento
    */
   private normalizarBoletaConCompra(boleta: any): BoletaComprada {
     const boletaNormalizada = { ...boleta } as BoletaComprada;
@@ -414,6 +415,11 @@ export class BoletasService {
         estado_pago: compra.estado_pago,
         estado_compra: compra.estado_compra
       };
+      
+      // Extraer información del evento desde la compra
+      if (compra.eventos && !Array.isArray(compra.eventos)) {
+        (boletaNormalizada as any).evento = compra.eventos;
+      }
     } else if (boleta.compras && !Array.isArray(boleta.compras)) {
       // Si viene como objeto único (single select)
       const compra = boleta.compras;
@@ -423,10 +429,24 @@ export class BoletasService {
         estado_pago: compra.estado_pago,
         estado_compra: compra.estado_compra
       };
+      
+      // Extraer información del evento desde la compra
+      if (compra.eventos && !Array.isArray(compra.eventos)) {
+        (boletaNormalizada as any).evento = compra.eventos;
+      }
     }
     
-    // Limpiar el objeto compras del join (ya lo tenemos en compra)
+    // También intentar obtener el evento desde tipos_boleta si no está en compra
+    if (!(boletaNormalizada as any).evento && boleta.tipos_boleta) {
+      const tipoBoleta = Array.isArray(boleta.tipos_boleta) ? boleta.tipos_boleta[0] : boleta.tipos_boleta;
+      if (tipoBoleta?.eventos && !Array.isArray(tipoBoleta.eventos)) {
+        (boletaNormalizada as any).evento = tipoBoleta.eventos;
+      }
+    }
+    
+    // Limpiar los objetos del join (ya los tenemos normalizados)
     delete (boletaNormalizada as any).compras;
+    delete (boletaNormalizada as any).tipos_boleta;
     
     return boletaNormalizada;
   }

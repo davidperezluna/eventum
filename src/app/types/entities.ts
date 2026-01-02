@@ -220,6 +220,13 @@ export interface BoletaComprada {
   };
   // Campo directo para facilitar acceso (se puede poblar desde compra)
   estado_pago?: TipoEstadoPago;
+  // Información del evento (viene del join)
+  evento?: {
+    id: number;
+    titulo: string;
+    fecha_inicio?: Date | string;
+    lugar_id?: number;
+  };
 }
 
 /**
