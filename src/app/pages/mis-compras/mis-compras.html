@@ -97,7 +97,8 @@
           <div *ngFor="let boleta of item.boletas" class="boleta-card">
             <div class="boleta-header">
               <div class="boleta-info">
-                <span class="boleta-codigo">Código: {{ boleta.codigo_qr }}</span>
+                <span class="boleta-codigo" *ngIf="item.compra.estado_pago === 'completado'">Código: {{ boleta.codigo_qr }}</span>
+                <span class="boleta-codigo" *ngIf="item.compra.estado_pago !== 'completado'">Código: ******</span>
                 <span class="boleta-precio">{{ formatCurrency(boleta.precio_unitario) }}</span>
               </div>
               <span class="badge" [class]="getEstadoClass(boleta.estado)">
@@ -109,7 +110,7 @@
               <p *ngIf="boleta.documento_asistente"><strong>Documento:</strong> {{ boleta.documento_asistente }}</p>
               <p *ngIf="boleta.email_asistente"><strong>Email:</strong> {{ boleta.email_asistente }}</p>
             </div>
-            <div class="boleta-qr" *ngIf="boleta.codigo_qr">
+            <div class="boleta-qr" *ngIf="boleta.codigo_qr && item.compra.estado_pago === 'completado'">
               <div class="qr-code">
                 <span class="material-icons">qr_code</span>
                 <span>{{ boleta.codigo_qr }}</span>
@@ -185,14 +186,20 @@
         <p class="boleta-tipo">{{ tipoBoletaSeleccionado.nombre }}</p>
       </div>
 
-      <!-- QR Code -->
-      <div class="boleta-qr-preview">
+      <!-- QR Code (solo si el pago está completado) -->
+      <div class="boleta-qr-preview" *ngIf="compraSeleccionada?.estado_pago === 'completado'">
         <div *ngIf="loadingQR" class="qr-loading">
           <div class="spinner"></div>
           <p>Generando código QR...</p>
         </div>
         <img *ngIf="qrCodeUrl && !loadingQR" [src]="qrCodeUrl" alt="Código QR" class="qr-image">
         <p class="qr-code-text" *ngIf="!loadingQR">{{ boletaSeleccionada.codigo_qr }}</p>
+      </div>
+      <div class="boleta-qr-preview" *ngIf="compraSeleccionada?.estado_pago !== 'completado'">
+        <div class="qr-pending">
+          <span class="material-icons">lock</span>
+          <p>El código QR estará disponible una vez que el pago sea completado</p>
+        </div>
       </div>
 
       <!-- Información -->

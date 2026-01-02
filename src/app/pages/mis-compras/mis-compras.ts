@@ -339,23 +339,33 @@ export class MisCompras implements OnInit, OnDestroy {
    * Muestra la vista previa de la boleta con QR
    */
   async verBoleta(boleta: BoletaComprada, compra: Compra) {
+    // Solo permitir ver boleta si el pago está completado
+    if (compra.estado_pago !== 'completado') {
+      this.alertService.warning('Pago pendiente', 'El código QR estará disponible una vez que el pago sea completado');
+      return;
+    }
+
     this.boletaSeleccionada = boleta;
     this.compraSeleccionada = compra;
     this.loadingQR = true;
     this.showBoletaModal = true;
 
-    // Generar QR
-    try {
-      this.qrCodeUrl = await QRCode.toDataURL(boleta.codigo_qr, {
-        width: 200,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        }
-      });
-    } catch (err) {
-      console.error('Error generando QR:', err);
+    // Generar QR solo si el pago está completado
+    if (compra.estado_pago === 'completado') {
+      try {
+        this.qrCodeUrl = await QRCode.toDataURL(boleta.codigo_qr, {
+          width: 200,
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
+      } catch (err) {
+        console.error('Error generando QR:', err);
+        this.qrCodeUrl = '';
+      }
+    } else {
       this.qrCodeUrl = '';
     }
 

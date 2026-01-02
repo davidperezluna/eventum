@@ -472,6 +472,28 @@
   display: inline-block;
 }
 
+.qr-pending {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: #64748b;
+  text-align: center;
+}
+
+.qr-pending .material-icons {
+  font-size: 3rem;
+  color: #cbd5e1;
+  margin-bottom: 1rem;
+}
+
+.qr-pending p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #64748b;
+}
+
 .boleta-info-preview {
   text-align: left;
 }
