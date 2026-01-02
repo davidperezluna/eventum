@@ -46,11 +46,12 @@ export class DashboardService {
       return response.count || 0;
     }, 0);
 
-    // Boletas vendidas
+    // Boletas vendidas (solo con pago completado)
     const boletasVendidas = safeExecute(async () => {
       const response = await this.supabase
         .from('boletas_compradas')
-        .select('*', { count: 'exact' });
+        .select('*, compras!inner(estado_pago)', { count: 'exact' })
+        .eq('compras.estado_pago', 'completado');
       
       if (response.error) {
         console.error('Error en boletas vendidas:', response.error);
@@ -216,13 +217,14 @@ export class DashboardService {
       return [];
     }, []);
 
-    // Top eventos (por boletas vendidas)
+    // Top eventos (por boletas vendidas con pago completado)
     const topEventos = safeExecute(async () => {
       try {
-        // Obtener boletas compradas con información del tipo de boleta y evento
+        // Obtener boletas compradas con información del tipo de boleta, evento y compra (solo con pago completado)
         const { data: boletasData, error: boletasError } = await this.supabase
           .from('boletas_compradas')
-          .select('tipo_boleta_id, tipos_boleta!inner(evento_id)');
+          .select('tipo_boleta_id, tipos_boleta!inner(evento_id), compras!inner(estado_pago)')
+          .eq('compras.estado_pago', 'completado');
         
         if (boletasError || !boletasData) {
           return [];

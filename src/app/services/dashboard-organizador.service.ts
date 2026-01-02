@@ -47,7 +47,7 @@ export class DashboardOrganizadorService {
       return response.count || 0;
     }, 0);
 
-    // Boletas vendidas de eventos del organizador
+    // Boletas vendidas de eventos del organizador (solo con pago completado)
     const boletasVendidas = safeExecute(async () => {
       try {
         // Obtener todos los tipos de boleta de eventos del organizador
@@ -62,11 +62,12 @@ export class DashboardOrganizadorService {
 
         const tiposIds = tiposData.map((t: any) => t.id);
         
-        // Contar boletas compradas de esos tipos
+        // Contar boletas compradas de esos tipos con pago completado
         const { count, error } = await this.supabase
           .from('boletas_compradas')
-          .select('*', { count: 'exact' })
-          .in('tipo_boleta_id', tiposIds);
+          .select('*, compras!inner(estado_pago)', { count: 'exact' })
+          .in('tipo_boleta_id', tiposIds)
+          .eq('compras.estado_pago', 'completado');
 
         if (error) {
           console.error('Error en boletas vendidas:', error);
@@ -270,11 +271,12 @@ export class DashboardOrganizadorService {
 
             const tiposIds = tiposData.map((t: any) => t.id);
             
-            // Contar boletas vendidas
+            // Contar boletas vendidas (solo con pago completado)
             const { count } = await this.supabase
               .from('boletas_compradas')
-              .select('*', { count: 'exact' })
-              .in('tipo_boleta_id', tiposIds);
+              .select('*, compras!inner(estado_pago)', { count: 'exact' })
+              .in('tipo_boleta_id', tiposIds)
+              .eq('compras.estado_pago', 'completado');
 
             return {
               ...evento,
