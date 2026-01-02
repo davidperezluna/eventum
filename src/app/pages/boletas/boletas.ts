@@ -573,6 +573,34 @@ export class Boletas implements OnInit, OnDestroy {
     return estadoObj?.label || estado || 'Sin estado';
   }
 
+  getEstadoPagoLabel(estado?: string): string {
+    const estadosPago: Record<string, string> = {
+      'pendiente': 'Pendiente',
+      'completado': 'Completado',
+      'fallido': 'Fallido',
+      'reembolsado': 'Reembolsado',
+      'cancelado': 'Cancelado'
+    };
+    return estadosPago[estado || ''] || estado || 'Sin estado';
+  }
+
+  getEstadoPagoClass(estado?: string): string {
+    if (!estado) return 'badge-secondary';
+    switch (estado) {
+      case 'completado':
+        return 'badge-success';
+      case 'pendiente':
+        return 'badge-warning';
+      case 'fallido':
+      case 'cancelado':
+        return 'badge-danger';
+      case 'reembolsado':
+        return 'badge-info';
+      default:
+        return 'badge-secondary';
+    }
+  }
+
   puedeValidar(boleta: BoletaComprada): boolean {
     // La boleta debe estar pendiente Y el pago debe estar completado
     const estadoPago = boleta.estado_pago || boleta.compra?.estado_pago;

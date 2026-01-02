@@ -215,6 +215,7 @@
               <th>Teléfono</th>
               <th>Precio</th>
               <th>Estado</th>
+              <th>Estado de Pago</th>
               <th>Fecha Creación</th>
               <th>Acciones</th>
             </tr>
@@ -230,6 +231,11 @@
               <td>
                 <span [class]="boleta.estado === 'usada' ? 'badge-success' : boleta.estado === 'cancelada' ? 'badge-danger' : boleta.estado === 'reembolsada' ? 'badge-danger' : 'badge-warning'">
                   {{ getEstadoLabel(boleta.estado) }}
+                </span>
+              </td>
+              <td>
+                <span [class]="getEstadoPagoClass(boleta.estado_pago || boleta.compra?.estado_pago)">
+                  {{ getEstadoPagoLabel(boleta.estado_pago || boleta.compra?.estado_pago) }}
                 </span>
               </td>
               <td>{{ boleta.fecha_creacion | dateFormat:'short' }}</td>
@@ -300,6 +306,14 @@
               <span class="boleta-card-value">
                 <span [class]="boleta.estado === 'usada' ? 'badge-success' : boleta.estado === 'cancelada' ? 'badge-danger' : boleta.estado === 'reembolsada' ? 'badge-danger' : 'badge-warning'">
                   {{ getEstadoLabel(boleta.estado) }}
+                </span>
+              </span>
+            </div>
+            <div class="boleta-card-row">
+              <span class="boleta-card-label">Estado de Pago:</span>
+              <span class="boleta-card-value">
+                <span [class]="getEstadoPagoClass(boleta.estado_pago || boleta.compra?.estado_pago)">
+                  {{ getEstadoPagoLabel(boleta.estado_pago || boleta.compra?.estado_pago) }}
                 </span>
               </span>
             </div>

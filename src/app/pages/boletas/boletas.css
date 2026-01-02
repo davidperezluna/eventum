@@ -395,6 +395,22 @@
   font-size: var(--font-size-xs);
 }
 
+.badge-info {
+  background: #2196f3;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: var(--font-size-xs);
+}
+
+.badge-secondary {
+  background: #9e9e9e;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: var(--font-size-xs);
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
