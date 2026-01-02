@@ -76,6 +76,9 @@ export class DetalleEvento implements OnInit {
     const usuarioId = this.authService.getUsuarioId();
     if (usuarioId) {
       this.loadUsuarioById(usuarioId);
+    } else {
+      // Si no hay usuario autenticado, no cargar datos del usuario
+      this.usuario = null;
     }
   }
 
@@ -256,9 +259,11 @@ export class DetalleEvento implements OnInit {
       return;
     }
 
+    // Verificar autenticación antes de comprar
     const clienteId = this.authService.getUsuarioId();
     if (!clienteId) {
-      this.alertService.error('Error de autenticación', 'No se pudo identificar el cliente');
+      this.alertService.warning('Inicia sesión para continuar', 'Debes iniciar sesión para comprar boletas');
+      this.router.navigate(['/login'], { queryParams: { returnUrl: `/detalle-evento/${this.evento.id}` } });
       return;
     }
 

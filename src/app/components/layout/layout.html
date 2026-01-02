@@ -1,7 +1,7 @@
-<div class="layout-container" [class.client-layout]="isCliente()">
+<div class="layout-container" [class.client-layout]="isCliente() || !currentUser || !usuario">
   
   <!-- Layout para Administradores y Organizadores (Sidebar) -->
-  <ng-container *ngIf="!isCliente()">
+  <ng-container *ngIf="!isCliente() && currentUser && usuario">
     <!-- Botón hamburguesa para móviles -->
     <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
       <span class="material-icons">menu</span>
@@ -59,7 +59,7 @@
   </ng-container>
 
   <!-- Layout para Clientes (Header Top) -->
-  <ng-container *ngIf="isCliente()">
+  <ng-container *ngIf="isCliente() && currentUser && usuario">
     <header class="client-header">
       <div class="header-container">
         <a routerLink="/eventos-cliente" class="brand-logo">
@@ -89,7 +89,28 @@
     </header>
   </ng-container>
 
-  <main [class.main-content]="!isCliente()" [class.client-content]="isCliente()">
+  <!-- Header público para usuarios no autenticados -->
+  <ng-container *ngIf="!currentUser || !usuario">
+    <header class="client-header public-header">
+      <div class="header-container">
+        <a routerLink="/eventos-cliente" class="brand-logo">
+          <img src="/logo-eventum-horizontal.svg" alt="Eventum" class="brand-logo-img" />
+        </a>
+        <nav class="client-nav">
+          <a routerLink="/eventos-cliente" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="client-nav-item">
+            Eventos
+          </a>
+        </nav>
+        <div class="client-user-menu">
+          <a routerLink="/login" class="btn-login-public">
+            <span>Iniciar Sesión</span>
+          </a>
+        </div>
+      </div>
+    </header>
+  </ng-container>
+
+  <main [class.main-content]="!isCliente() && currentUser && usuario" [class.client-content]="isCliente() && currentUser && usuario" [class.public-content]="!currentUser || !usuario">
     <router-outlet />
   </main>
 </div>

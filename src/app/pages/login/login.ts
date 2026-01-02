@@ -14,7 +14,7 @@ export class Login implements OnInit {
   loginForm: FormGroup;
   loading = false;
   error: string | null = null;
-  returnUrl: string = '/dashboard';
+  returnUrl: string = '/eventos-cliente';
 
   constructor(
     private formBuilder: FormBuilder,
@@ -47,7 +47,7 @@ export class Login implements OnInit {
     }
 
     // Obtener la URL de retorno si existe
-    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/eventos-cliente';
   }
 
   async onSubmit() {

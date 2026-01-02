@@ -35,19 +35,27 @@ export const routes: Routes = [
     path: 'auth/callback',
     component: AuthCallback
   },
+  // Rutas públicas (sin autenticación) - Página principal
+  {
+    path: '',
+    component: Layout,
+    children: [
+      { path: '', redirectTo: 'eventos-cliente', pathMatch: 'full' },
+      { path: 'eventos-cliente', component: EventosCliente }, // Página principal pública
+      { path: 'detalle-evento/:id', component: DetalleEvento }, // Público: detalle de evento
+    ]
+  },
+  // Rutas protegidas (requieren autenticación)
   {
     path: '',
     component: Layout,
     canActivate: [authGuard],
     children: [
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: Dashboard }, // Admin dashboard
       { path: 'dashboard-organizador', component: DashboardOrganizador }, // Organizador dashboard
       { path: 'dashboard-eventos', component: DashboardEventos }, // Dashboard completo de eventos
       { path: 'usuarios', component: Usuarios },
       { path: 'eventos', component: Eventos },
-      { path: 'eventos-cliente', component: EventosCliente }, // Cliente: ver eventos
-      { path: 'detalle-evento/:id', component: DetalleEvento }, // Cliente: detalle y compra
       { path: 'mis-compras', component: MisCompras }, // Cliente: ver compras
       { path: 'pago-resultado', component: PagoResultado }, // Resultado de pago Wompi
       { path: 'categorias', component: Categorias },
@@ -62,6 +70,6 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: '/dashboard'
+    redirectTo: '/eventos-cliente'
   }
 ];

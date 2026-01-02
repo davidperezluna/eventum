@@ -49,6 +49,10 @@ export class Layout implements OnInit, OnDestroy {
         } else {
           this.userRole = 'Usuario';
         }
+      } else {
+        // Si no hay usuario, limpiar menú
+        this.menuItems = [];
+        this.userRole = '';
       }
       this.cdr.detectChanges();
     });
