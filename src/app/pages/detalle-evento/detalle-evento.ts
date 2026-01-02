@@ -46,7 +46,7 @@ export class DetalleEvento implements OnInit {
   }[] = [];
 
   // Método de pago será determinado por Wompi
-  metodoPagoSeleccionado: 'CARD' | 'PSE' | 'NEQUI' | 'BANCOLOMBIA_TRANSFER' | 'BANCOLOMBIA_COLLECT' = 'CARD';
+  metodoPagoSeleccionado: 'CARD' | 'PSE' | 'NEQUI' | 'BANCOLOMBIA_TRANSFER' | 'BANCOLOMBIA_COLLECT' | 'DAVIPLATA' = 'CARD';
 
   constructor(
     private route: ActivatedRoute,
