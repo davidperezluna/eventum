@@ -1030,7 +1030,7 @@
   color: white;
 }
 
-.contact-btn.phone .material-icons {
+.contact-btn.email .material-icons {
   background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
   color: white;
 }
