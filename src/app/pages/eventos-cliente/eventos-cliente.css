@@ -462,6 +462,72 @@
   transform: scale(1.1);
 }
 
+/* Eventos Finalizados */
+.event-finalizado {
+  opacity: 0.85;
+  position: relative;
+}
+
+.event-finalizado .card-image {
+  position: relative;
+}
+
+.event-finalizado .card-image img {
+  filter: grayscale(30%);
+  opacity: 0.9;
+}
+
+.event-finalizado:hover .card-image img {
+  filter: grayscale(20%);
+  opacity: 1;
+}
+
+.finalizado-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(107, 114, 128, 0.95);
+  backdrop-filter: blur(10px);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+.finalizado-badge .material-icons {
+  font-size: 1rem;
+}
+
+.event-finalizado .card-content {
+  position: relative;
+}
+
+.event-finalizado .price {
+  color: #64748b;
+  text-decoration: line-through;
+  font-size: 1rem;
+}
+
+.event-finalizado .price::after {
+  content: ' (Finalizado)';
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-decoration: none;
+}
+
+.event-finalizado:hover {
+  opacity: 0.95;
+}
+
 /* Mobile */
 @media (max-width: 768px) {
   .hero-title {

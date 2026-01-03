@@ -212,7 +212,7 @@
     </div>
 
     <!-- Tipos de boleta disponibles -->
-    <div class="evento-section">
+    <div class="evento-section" *ngIf="!isEventoFinalizado()">
       <h2>Boletas Disponibles</h2>
       <div *ngIf="loadingBoletas" class="loading-small">
         <p>Cargando tipos de boleta...</p>
@@ -251,8 +251,17 @@
       </div>
     </div>
 
+    <!-- Mensaje si el evento está finalizado -->
+    <div class="evento-section" *ngIf="isEventoFinalizado()">
+      <div class="evento-finalizado-message">
+        <span class="material-icons">event_busy</span>
+        <h2>Evento Finalizado</h2>
+        <p>Este evento ya finalizó. Las boletas ya no están disponibles para compra.</p>
+      </div>
+    </div>
+
     <!-- Carrito de compra -->
-    <div class="evento-section" *ngIf="itemsCompra.length > 0">
+    <div class="evento-section" *ngIf="itemsCompra.length > 0 && !isEventoFinalizado()">
       <h2>Mi Carrito</h2>
       <div class="carrito-items">
         <div *ngFor="let item of itemsCompra" class="carrito-item">

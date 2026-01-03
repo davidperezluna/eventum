@@ -6,7 +6,9 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { TimezoneService } from './timezone.service';
-import { Compra, BoletaComprada, TipoBoleta, MetodoPago, TipoEstadoPago, TipoEstadoCompra, TipoEstadoBoleta } from '../types';
+import { EventosService } from './eventos.service';
+import { AuthService } from './auth.service';
+import { Compra, BoletaComprada, TipoBoleta, MetodoPago, TipoEstadoPago, TipoEstadoCompra, TipoEstadoBoleta, TipoEstadoEvento } from '../types';
 
 export interface ItemCompra {
   tipo_boleta_id: number;
@@ -32,7 +34,9 @@ export interface DatosCompra {
 export class ComprasClienteService {
   constructor(
     private supabase: SupabaseService,
-    private timezoneService: TimezoneService
+    private timezoneService: TimezoneService,
+    private eventosService: EventosService,
+    private authService: AuthService
   ) {}
 
   /**
@@ -59,17 +63,50 @@ export class ComprasClienteService {
   async validarDisponibilidad(items: ItemCompra[]): Promise<{ valido: boolean; errores: string[] }> {
     try {
       const errores: string[] = [];
+      const eventosVerificados = new Set<number>();
       
       for (const item of items) {
         const { data: tipoBoleta, error } = await this.supabase
           .from('tipos_boleta')
-          .select('cantidad_total, cantidad_vendidas, cantidad_disponibles, activo, nombre')
+          .select('cantidad_total, cantidad_vendidas, cantidad_disponibles, activo, nombre, evento_id')
           .eq('id', item.tipo_boleta_id)
           .single();
 
         if (error || !tipoBoleta) {
           errores.push(`Tipo de boleta ${item.tipo_boleta_id} no encontrado`);
           continue;
+        }
+
+        // Verificar fecha de finalización del evento (solo una vez por evento)
+        if (tipoBoleta.evento_id && !eventosVerificados.has(tipoBoleta.evento_id)) {
+          eventosVerificados.add(tipoBoleta.evento_id);
+          
+          try {
+            const evento = await this.eventosService.getEventoById(tipoBoleta.evento_id);
+            const ahora = new Date();
+            const fechaFin = new Date(evento.fecha_fin);
+            
+            if (fechaFin < ahora) {
+              // El evento ya finalizó, actualizar estado solo si es cliente (versión pública)
+              const esCliente = this.authService.isCliente();
+              
+              if (esCliente) {
+                try {
+                  await this.eventosService.updateEvento(evento.id, {
+                    estado: TipoEstadoEvento.FINALIZADO,
+                    activo: false
+                  });
+                } catch (updateError) {
+                  console.error('Error actualizando estado del evento:', updateError);
+                }
+              }
+              errores.push('Este evento ya finalizó. No se pueden comprar más boletas.');
+              continue;
+            }
+          } catch (eventoError) {
+            console.error('Error obteniendo evento:', eventoError);
+            // Continuar con otras validaciones aunque falle obtener el evento
+          }
         }
 
         if (!tipoBoleta.activo) {

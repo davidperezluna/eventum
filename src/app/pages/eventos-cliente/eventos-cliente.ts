@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { EventosService } from '../../services/eventos.service';
 import { CategoriasService } from '../../services/categorias.service';
+import { TimezoneService } from '../../services/timezone.service';
 import { Evento, CategoriaEvento, TipoEstadoEvento } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { Subject, Subscription } from 'rxjs';
@@ -21,8 +22,10 @@ export class EventosCliente implements OnInit, OnDestroy {
 
   eventos: Evento[] = [];
   eventosFiltrados: Evento[] = [];
+  eventosFinalizados: Evento[] = [];
   categorias: CategoriaEvento[] = [];
   loading = false;
+  loadingFinalizados = false;
   searchTerm = '';
   categoriaFiltro: number | null = null;
 
@@ -33,12 +36,14 @@ export class EventosCliente implements OnInit, OnDestroy {
   constructor(
     private eventosService: EventosService,
     private categoriasService: CategoriasService,
+    private timezoneService: TimezoneService,
     private cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
     this.loadCategorias();
     this.loadEventos();
+    this.loadEventosFinalizados();
 
     // Configurar búsqueda con debounce
     this.searchSubscription = this.searchSubject.pipe(
@@ -117,7 +122,20 @@ export class EventosCliente implements OnInit, OnDestroy {
   }
 
   procesarEventos(eventos: Evento[]) {
-    this.eventos = eventos.filter(e => e.activo === true);
+    const ahora = new Date();
+    // Filtrar eventos activos y que no hayan finalizado (fecha_fin aún no ha pasado)
+    this.eventos = eventos.filter(e => {
+      if (e.activo !== true) return false;
+      
+      // Excluir eventos cuya fecha de finalización ya pasó
+      if (e.fecha_fin) {
+        const fechaFin = new Date(e.fecha_fin);
+        if (fechaFin < ahora) return false;
+      }
+      
+      return true;
+    });
+    
     // Ya no filtramos localmente por search, el servidor ya lo hizo
     this.aplicarFiltrosLocales();
     this.loading = false;
@@ -149,11 +167,25 @@ export class EventosCliente implements OnInit, OnDestroy {
   setCategoria(id: number | null) {
     this.categoriaFiltro = id;
     this.aplicarFiltrosLocales();
+    
+    // Si se cambia la categoría, ocultar eventos finalizados
+    if (id !== null) {
+      this.eventosFinalizados = [];
+    } else {
+      this.loadEventosFinalizados();
+    }
   }
 
   onSearchChange() {
     // Emitir al subject en lugar de filtrar inmediatamente
     this.searchSubject.next(this.searchTerm);
+    
+    // Si se limpia la búsqueda, recargar eventos finalizados
+    if (!this.searchTerm) {
+      this.loadEventosFinalizados();
+    } else {
+      this.eventosFinalizados = [];
+    }
   }
 
   getCategoryIcon(cat: CategoriaEvento): string {
@@ -186,6 +218,71 @@ export class EventosCliente implements OnInit, OnDestroy {
   scrollRight() {
     if (this.carouselTrack) {
       this.carouselTrack.nativeElement.scrollBy({ left: 250, behavior: 'smooth' });
+    }
+  }
+
+  async loadEventosFinalizados() {
+    // Solo cargar eventos finalizados si no hay búsqueda activa ni filtro de categoría
+    if (this.searchTerm || this.categoriaFiltro) {
+      this.eventosFinalizados = [];
+      return;
+    }
+
+    this.loadingFinalizados = true;
+    this.cdr.detectChanges();
+
+    try {
+      const ahora = this.timezoneService.getCurrentDateISO();
+      
+      // Cargar eventos finalizados (estado finalizado)
+      const response = await this.eventosService.getEventos({
+        estado: TipoEstadoEvento.FINALIZADO,
+        limit: 50,
+        sortBy: 'fecha_fin',
+        sortOrder: 'desc'
+      });
+
+      let eventos = response.data || [];
+      
+      // También incluir eventos cuya fecha_fin ya pasó pero aún no están marcados como finalizados
+      // Solo buscar entre eventos publicados y activos
+      const responseNoFinalizados = await this.eventosService.getEventos({
+        activo: true,
+        estado: TipoEstadoEvento.PUBLICADO,
+        limit: 50,
+        sortBy: 'fecha_fin',
+        sortOrder: 'desc'
+      });
+
+      const ahoraDate = new Date();
+      const eventosConFechaPasada = (responseNoFinalizados.data || []).filter(e => {
+        if (e.fecha_fin) {
+          const fechaFin = new Date(e.fecha_fin);
+          return fechaFin < ahoraDate;
+        }
+        return false;
+      });
+
+      // Combinar y eliminar duplicados
+      const todosEventos = [...eventos, ...eventosConFechaPasada];
+      const eventosUnicos = todosEventos.filter((evento, index, self) =>
+        index === self.findIndex(e => e.id === evento.id)
+      );
+
+      // Ordenar por fecha_fin descendente (más recientes primero)
+      this.eventosFinalizados = eventosUnicos.sort((a, b) => {
+        const fechaA = new Date(a.fecha_fin || 0).getTime();
+        const fechaB = new Date(b.fecha_fin || 0).getTime();
+        return fechaB - fechaA;
+      }).slice(0, 20); // Limitar a 20 eventos
+
+      this.loadingFinalizados = false;
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('Error cargando eventos finalizados:', err);
+      this.eventosFinalizados = [];
+      this.loadingFinalizados = false;
+      this.cdr.detectChanges();
     }
   }
 }

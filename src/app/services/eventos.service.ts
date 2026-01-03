@@ -5,7 +5,7 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { TimezoneService } from './timezone.service';
-import { Evento, EventoFilters, ApiResponse, PaginatedResponse } from '../types';
+import { Evento, EventoFilters, ApiResponse, PaginatedResponse, TipoEstadoEvento } from '../types';
 
 @Injectable({
   providedIn: 'root'
@@ -215,6 +215,83 @@ export class EventosService {
       }) as Evento[];
     } catch (error) {
       throw error;
+    }
+  }
+
+  /**
+   * Verifica y actualiza eventos que han finalizado
+   * Actualiza el estado a 'finalizado' y activo a false si la fecha_fin ya pasó
+   */
+  async verificarYActualizarEventosFinalizados(): Promise<number> {
+    try {
+      const ahora = this.timezoneService.getCurrentDateISO();
+      
+      // Buscar eventos que aún no están finalizados pero cuya fecha_fin ya pasó
+      const { data: eventosFinalizados, error } = await this.supabase
+        .from(this.tableName)
+        .select('id')
+        .neq('estado', TipoEstadoEvento.FINALIZADO)
+        .neq('estado', TipoEstadoEvento.CANCELADO)
+        .lt('fecha_fin', ahora);
+
+      if (error) {
+        console.error('Error buscando eventos finalizados:', error);
+        throw error;
+      }
+
+      if (!eventosFinalizados || eventosFinalizados.length === 0) {
+        return 0;
+      }
+
+      // Actualizar todos los eventos finalizados
+      const ids = eventosFinalizados.map(e => e.id);
+      const { error: updateError } = await this.supabase
+        .from(this.tableName)
+        .update({
+          estado: TipoEstadoEvento.FINALIZADO,
+          activo: false,
+          fecha_actualizacion: ahora
+        })
+        .in('id', ids);
+
+      if (updateError) {
+        console.error('Error actualizando eventos finalizados:', updateError);
+        throw updateError;
+      }
+
+      console.log(`Se actualizaron ${ids.length} eventos a estado finalizado`);
+      return ids.length;
+    } catch (error) {
+      console.error('Error en verificarYActualizarEventosFinalizados:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Verifica si un evento específico ha finalizado y lo actualiza si es necesario
+   * @param eventoId ID del evento a verificar
+   * @param actualizar Si es true, actualiza el estado. Si es false, solo verifica sin actualizar.
+   */
+  async verificarEventoFinalizado(eventoId: number, actualizar: boolean = false): Promise<boolean> {
+    try {
+      const evento = await this.getEventoById(eventoId);
+      const ahora = new Date();
+      const fechaFin = new Date(evento.fecha_fin);
+      
+      if (fechaFin < ahora && evento.estado !== TipoEstadoEvento.FINALIZADO && evento.estado !== TipoEstadoEvento.CANCELADO) {
+        if (actualizar) {
+          await this.updateEvento(eventoId, {
+            estado: TipoEstadoEvento.FINALIZADO,
+            activo: false
+          });
+        }
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error verificando evento finalizado:', error);
+      return false;
     }
   }
 }

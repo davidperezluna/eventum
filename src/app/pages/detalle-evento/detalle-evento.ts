@@ -12,7 +12,7 @@ import { CategoriasService } from '../../services/categorias.service';
 import { WompiService } from '../../services/wompi.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { AlertService } from '../../services/alert.service';
-import { Evento, TipoBoleta, Usuario, Lugar, CategoriaEvento } from '../../types';
+import { Evento, TipoBoleta, Usuario, Lugar, CategoriaEvento, TipoEstadoEvento } from '../../types';
 import { supabaseConfig } from '../../config/supabase.config';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
@@ -119,7 +119,19 @@ export class DetalleEvento implements OnInit {
     try {
       // Cargar evento primero
       const evento = await this.eventosService.getEventoById(id);
-      this.evento = evento;
+      
+      // Verificar si el evento ha finalizado y actualizar su estado solo si es cliente o no está logueado (versión pública)
+      const esCliente = this.authService.isCliente();
+      const noLogueado = !this.authService.getUsuarioId();
+      
+      if (esCliente || noLogueado) {
+        await this.eventosService.verificarEventoFinalizado(id, true);
+        // Recargar el evento para obtener el estado actualizado
+        const eventoActualizado = await this.eventosService.getEventoById(id);
+        this.evento = eventoActualizado;
+      } else {
+        this.evento = evento;
+      }
 
       // Preparar promesas para carga en paralelo
       const promesas: Promise<any>[] = [];
@@ -134,8 +146,20 @@ export class DetalleEvento implements OnInit {
         promesas.push(this.loadCategoria(evento.categoria_id));
       }
 
-      // Agregar carga de tipos de boleta
-      promesas.push(this.loadTiposBoleta(id));
+      // Agregar carga de tipos de boleta solo si el evento no está finalizado
+      const ahora = new Date();
+      const fechaFin = new Date(this.evento.fecha_fin);
+      const estaFinalizado = this.evento.estado === TipoEstadoEvento.FINALIZADO || 
+                            this.evento.estado === TipoEstadoEvento.CANCELADO ||
+                            fechaFin < ahora;
+      
+      if (!estaFinalizado) {
+        promesas.push(this.loadTiposBoleta(id));
+      } else {
+        // Si está finalizado, asegurar que no hay boletas
+        this.tiposBoleta = [];
+        this.loadingBoletas = false;
+      }
 
       // Esperar a que todas las cargas terminen en paralelo
       await Promise.all(promesas);
@@ -198,6 +222,15 @@ export class DetalleEvento implements OnInit {
     }
   }
 
+  isEventoFinalizado(): boolean {
+    if (!this.evento) return false;
+    const ahora = new Date();
+    const fechaFin = new Date(this.evento.fecha_fin);
+    return this.evento.estado === TipoEstadoEvento.FINALIZADO || 
+           this.evento.estado === TipoEstadoEvento.CANCELADO ||
+           fechaFin < ahora;
+  }
+
   agregarAlCarrito(tipo: TipoBoleta) {
     const existente = this.itemsCompra.find(item => item.tipo.id === tipo.id);
     if (existente) {
@@ -256,6 +289,43 @@ export class DetalleEvento implements OnInit {
   async procesarCompra() {
     if (!this.evento || this.itemsCompra.length === 0) {
       this.alertService.warning('Carrito vacío', 'Debes agregar al menos una boleta al carrito');
+      return;
+    }
+
+    // Validar que el evento no haya finalizado (solo para clientes - versión pública)
+    const ahora = new Date();
+    const fechaFin = new Date(this.evento.fecha_fin);
+    
+    if (fechaFin < ahora) {
+      // El evento ya finalizó, actualizar estado solo si es cliente y no permitir compra
+      const esCliente = this.authService.isCliente();
+      
+      if (esCliente) {
+        try {
+          await this.eventosService.updateEvento(this.evento.id, {
+            estado: TipoEstadoEvento.FINALIZADO,
+            activo: false
+          });
+          this.alertService.error(
+            'Evento finalizado', 
+            'Este evento ya finalizó. No se pueden comprar más boletas.'
+          );
+          // Recargar el evento para reflejar el cambio de estado
+          await this.loadEvento(this.evento.id);
+        } catch (err) {
+          console.error('Error actualizando estado del evento:', err);
+          this.alertService.error(
+            'Evento finalizado', 
+            'Este evento ya finalizó. No se pueden comprar más boletas.'
+          );
+        }
+      } else {
+        // Si no es cliente, solo mostrar el error sin actualizar
+        this.alertService.error(
+          'Evento finalizado', 
+          'Este evento ya finalizó. No se pueden comprar más boletas.'
+        );
+      }
       return;
     }
 

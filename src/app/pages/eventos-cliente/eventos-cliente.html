@@ -128,6 +128,41 @@
       </div>
     </section>
 
+    <!-- Eventos Finalizados -->
+    <section class="events-section" *ngIf="!loading && !searchTerm && !categoriaFiltro && eventosFinalizados.length > 0">
+      <div class="section-header">
+        <h2>Eventos Finalizados 📅</h2>
+        <p style="color: #666; font-size: 0.9rem; margin-top: 0.5rem;">Revive los mejores momentos de eventos pasados</p>
+      </div>
+
+      <div class="events-grid">
+        <article *ngFor="let evento of eventosFinalizados" class="event-card event-finalizado"
+          [routerLink]="['/detalle-evento', evento.id]">
+          <div class="card-image">
+            <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
+            <div class="finalizado-badge">
+              <span class="material-icons">check_circle</span>
+              <span>Finalizado</span>
+            </div>
+          </div>
+          <div class="card-content">
+            <div class="location-date">
+              <p class="location"><span class="material-icons" style="font-size: 1rem">place</span> {{ evento.lugar?.nombre || 'Ubicación' }}</p>
+              <p class="date"><span class="material-icons" style="font-size: 1rem">calendar_today</span> {{
+                evento.fecha_fin | dateFormat:'shortDate' }}</p>
+            </div>
+            <h3>{{ evento.titulo }}</h3>
+            <div class="price-action">
+              <span class="price">{{ formatCurrency(evento.precio_minimo) }}</span>
+              <button class="btn-icon">
+                <span class="material-icons">visibility</span>
+              </button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
   </div>
 
   <!-- Sección de Seguridad Wompi -->
