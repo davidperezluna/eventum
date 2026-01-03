@@ -60,6 +60,48 @@
 
   <!-- Layout para Clientes (Header Top) -->
   <ng-container *ngIf="isCliente() && currentUser && usuario">
+    <!-- Botón hamburguesa para móviles -->
+    <button class="client-menu-toggle" (click)="toggleClientMenu()" aria-label="Toggle menu">
+      <span class="material-icons">menu</span>
+    </button>
+
+    <!-- Overlay para móviles -->
+    <div 
+      class="client-menu-overlay" 
+      *ngIf="clientMenuOpen"
+      (click)="closeClientMenu()"
+    ></div>
+
+    <!-- Menú móvil para clientes -->
+    <nav class="client-mobile-menu" [class.open]="clientMenuOpen">
+      <div class="client-mobile-menu-header">
+        <div class="client-mobile-menu-header-content">
+          <h2 class="client-mobile-menu-title">Menú</h2>
+          <button class="client-mobile-menu-close" (click)="closeClientMenu()" aria-label="Close menu">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+      </div>
+      <div class="client-mobile-menu-nav">
+        <a routerLink="/eventos-cliente" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="client-mobile-nav-item" (click)="closeClientMenu()">
+          <span class="material-icons">event</span>
+          <span>Eventos</span>
+        </a>
+        <a routerLink="/mis-compras" routerLinkActive="active" class="client-mobile-nav-item" (click)="closeClientMenu()">
+          <span class="material-icons">confirmation_number</span>
+          <span>Mis Boletas</span>
+        </a>
+        <a routerLink="/perfil" routerLinkActive="active" class="client-mobile-nav-item" (click)="closeClientMenu()">
+          <span class="material-icons">person</span>
+          <span>Mi Perfil</span>
+        </a>
+        <button class="client-mobile-nav-item logout-item" (click)="logout()">
+          <span class="material-icons">logout</span>
+          <span>Cerrar Sesión</span>
+        </button>
+      </div>
+    </nav>
+
     <header class="client-header">
       <div class="header-container">
         <a routerLink="/eventos-cliente" class="brand-logo">
