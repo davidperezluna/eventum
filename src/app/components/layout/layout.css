@@ -306,6 +306,164 @@
    CLIENT HEADER STYLES (NEW)
    ============================================ */
 
+/* Client Mobile Menu Toggle Button - Hidden by default, shown on mobile */
+.client-menu-toggle {
+  display: none;
+  position: fixed;
+  top: var(--spacing-md);
+  left: var(--spacing-md);
+  z-index: 1001;
+  background: var(--gradient-button);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-sm);
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--transition-fast);
+}
+
+.client-menu-toggle:hover {
+  transform: scale(1.05);
+}
+
+.client-menu-toggle .material-icons {
+  font-size: 1.5rem;
+}
+
+/* Client Mobile Menu Overlay */
+.client-menu-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  animation: fadeIn 0.3s ease;
+}
+
+/* Client Mobile Menu */
+.client-mobile-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 280px;
+  max-width: 85vw;
+  height: 100vh;
+  background: white;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  transform: translateX(-100%);
+  transition: transform var(--transition-normal);
+  display: none;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.client-mobile-menu.open {
+  transform: translateX(0);
+}
+
+.client-mobile-menu-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #1e1e2f 0%, #2d2d44 100%);
+  color: white;
+}
+
+.client-mobile-menu-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.client-mobile-menu-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+}
+
+.client-mobile-menu-close {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-xs);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.client-mobile-menu-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.client-mobile-menu-close .material-icons {
+  font-size: 1.5rem;
+}
+
+.client-mobile-menu-nav {
+  flex: 1;
+  padding: var(--spacing-md) 0;
+}
+
+.client-mobile-nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  color: var(--color-text-primary);
+  text-decoration: none;
+  transition: all var(--transition-normal);
+  border-left: 3px solid transparent;
+  width: 100%;
+  background: none;
+  border-right: none;
+  border-top: none;
+  border-bottom: none;
+  cursor: pointer;
+  font-size: 1rem;
+  font-family: inherit;
+  text-align: left;
+}
+
+.client-mobile-nav-item:hover {
+  background: #f8fafc;
+  border-left-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.client-mobile-nav-item.active {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--color-primary);
+  border-left-color: var(--color-primary);
+  font-weight: 600;
+}
+
+.client-mobile-nav-item.logout-item {
+  color: var(--color-error);
+  border-top: 1px solid #e2e8f0;
+  margin-top: var(--spacing-md);
+}
+
+.client-mobile-nav-item.logout-item:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-left-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.client-mobile-nav-item .material-icons {
+  font-size: 1.5rem;
+  width: 24px;
+  text-align: center;
+}
+
 .client-header {
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
@@ -511,6 +669,10 @@
     display: block;
   }
 
+  .client-menu-toggle {
+    display: block;
+  }
+
   .sidebar-overlay {
     display: block;
   }
@@ -568,8 +730,6 @@
   /* Client Mobile Header */
   .client-nav {
     display: none;
-    /* Hide nav links on mobile for now, maybe add mobile menu later if time fits */
-    /* Alternatively, make a bottom nav bar for mobile clients */
   }
 
   .client-header .brand-logo span {
@@ -579,6 +739,19 @@
   .header-container {
     padding: 0.75rem 1rem;
   }
+
+  /* Show mobile menu toggle and menu on mobile */
+  .client-menu-toggle {
+    display: block;
+  }
+
+  .client-menu-overlay {
+    display: block;
+  }
+
+  .client-mobile-menu {
+    display: flex;
+  }
 }
 
 /* Móviles pequeños */
@@ -587,6 +760,21 @@
     top: var(--spacing-sm);
     left: var(--spacing-sm);
     padding: var(--spacing-xs);
+  }
+
+  .client-menu-toggle {
+    top: var(--spacing-sm);
+    left: var(--spacing-sm);
+    padding: var(--spacing-xs);
+  }
+
+  .client-menu-toggle .material-icons {
+    font-size: 1.25rem;
+  }
+
+  .client-mobile-menu {
+    width: 100%;
+    max-width: 100%;
   }
 
   .menu-toggle .material-icons {

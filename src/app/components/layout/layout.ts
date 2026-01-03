@@ -19,6 +19,7 @@ export class Layout implements OnInit, OnDestroy {
   userEmail: string = '';
   userRole: string = '';
   sidebarOpen: boolean = false;
+  clientMenuOpen: boolean = false;
   private routerSubscription?: any;
   private unsubscribeAuthState?: () => void;
 
@@ -57,12 +58,13 @@ export class Layout implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     });
 
-    // Cerrar sidebar cuando cambia la ruta (solo en móviles)
+    // Cerrar sidebar y menú móvil cuando cambia la ruta (solo en móviles)
     this.routerSubscription = this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe(() => {
         if (window.innerWidth <= 768) {
           this.closeSidebar();
+          this.closeClientMenu();
         }
         
         // Scroll top on route change
@@ -123,6 +125,14 @@ export class Layout implements OnInit, OnDestroy {
 
   closeSidebar() {
     this.sidebarOpen = false;
+  }
+
+  toggleClientMenu() {
+    this.clientMenuOpen = !this.clientMenuOpen;
+  }
+
+  closeClientMenu() {
+    this.clientMenuOpen = false;
   }
 
   async logout() {
