@@ -77,11 +77,12 @@ export class DashboardService {
       return 0;
     }, 0);
 
-    // Clientes únicos
+    // Clientes únicos (solo con pago completado)
     const clientes = safeExecute(async () => {
       const response = await this.supabase
         .from('compras')
-        .select('cliente_id');
+        .select('cliente_id')
+        .eq('estado_pago', 'completado');
       
       if (response.error) {
         console.error('Error en clientes:', response.error);
@@ -94,11 +95,12 @@ export class DashboardService {
       return 0;
     }, 0);
 
-    // Ventas recientes (últimas 5)
+    // Ventas recientes (últimas 5, solo con pago completado)
     const ventasRecientes = safeExecute(async () => {
       const response = await this.supabase
         .from('compras')
         .select('*')
+        .eq('estado_pago', 'completado')
         .order('fecha_compra', { ascending: false })
         .limit(5);
       
@@ -199,11 +201,12 @@ export class DashboardService {
       return 0;
     }, 0);
 
-    // Boletas por estado
+    // Boletas por estado (solo con pago completado)
     const boletasPorEstado = safeExecute(async () => {
       const response = await this.supabase
         .from('boletas_compradas')
-        .select('estado');
+        .select('estado, compras!inner(estado_pago)')
+        .eq('compras.estado_pago', 'completado');
       
       if (response.error) return [];
       if (response.data) {

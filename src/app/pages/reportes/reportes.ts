@@ -40,52 +40,79 @@ export class Reportes implements OnInit {
   async generarReporte() {
     this.loading = true;
     
-    // Reporte de ventas
-    await this.loadVentasReporte();
+    try {
+      // Reporte de ventas
+      await this.loadVentasReporte();
 
-    // Reporte de eventos
-    this.loadEventosReporte();
+      // Reporte de eventos
+      await this.loadEventosReporte();
+    } catch (err) {
+      console.error('Error generando reportes:', err);
+      this.alertService.error('Error', 'No se pudieron generar los reportes');
+    } finally {
+      this.loading = false;
+    }
   }
 
   private async loadVentasReporte() {
     try {
+      // Obtener todas las compras (para estadísticas generales)
+      // Usar un límite alto para obtener todos los registros
       const response = await this.comprasService.getCompras({
         fecha_desde: this.fechaInicio,
         fecha_hasta: this.fechaFin,
-        limit: 1000
+        limit: 10000
       });
-      const compras = response.data;
-      const totalVentas = compras.reduce((sum: number, c: any) => sum + Number(c.total || 0), 0);
-      const comprasCompletadas = compras.filter((c: any) => c.estado_pago === 'completado');
+      const compras = response.data || [];
+      
+      // Obtener solo compras completadas para ingresos y estadísticas principales
+      const responseCompletadas = await this.comprasService.getCompras({
+        fecha_desde: this.fechaInicio,
+        fecha_hasta: this.fechaFin,
+        estado_pago: 'completado',
+        limit: 10000
+      });
+      const comprasCompletadas = responseCompletadas.data || [];
+      
+      // Calcular ingresos solo de compras completadas
+      const totalIngresos = comprasCompletadas.reduce((sum: number, c: any) => sum + Number(c.total || 0), 0);
       
       this.reporteVentas = {
-        totalCompras: compras.length,
-        comprasCompletadas: comprasCompletadas.length,
-        totalIngresos: totalVentas,
+        totalCompras: response.total || compras.length,
+        comprasCompletadas: responseCompletadas.total || comprasCompletadas.length,
+        totalIngresos: totalIngresos,
         comprasPorEstado: this.agruparPorEstado(compras, 'estado_pago'),
-        comprasPorMetodo: this.agruparPorMetodo(compras)
+        comprasPorMetodo: this.agruparPorMetodo(comprasCompletadas) // Solo métodos de pago de compras completadas
       };
-      this.loading = false;
+      
+      console.log('Reporte de ventas generado:', this.reporteVentas);
     } catch (err) {
       console.error('Error generando reporte de ventas:', err);
-      this.loading = false;
+      this.alertService.error('Error', 'No se pudo generar el reporte de ventas');
+      this.reporteVentas = null;
+      throw err;
     }
   }
 
   private async loadEventosReporte() {
     try {
       const response = await this.eventosService.getEventos({
-        limit: 1000
+        limit: 10000
       });
-      const eventos = response.data;
+      const eventos = response.data || [];
       this.reporteEventos = {
-        totalEventos: eventos.length,
+        totalEventos: response.total || eventos.length,
         eventosActivos: eventos.filter(e => e.activo).length,
         eventosPorEstado: this.agruparPorEstado(eventos, 'estado'),
         eventosDestacados: eventos.filter(e => e.destacado).length
       };
+      
+      console.log('Reporte de eventos generado:', this.reporteEventos);
     } catch (err) {
       console.error('Error generando reporte de eventos:', err);
+      this.alertService.error('Error', 'No se pudo generar el reporte de eventos');
+      this.reporteEventos = null;
+      throw err;
     }
   }
 

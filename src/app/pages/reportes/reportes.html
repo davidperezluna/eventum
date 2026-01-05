@@ -31,6 +31,10 @@
 
   <div *ngIf="loading" class="loading-state">Generando reportes...</div>
 
+  <div *ngIf="!loading && !reporteVentas && !reporteEventos" class="content-card">
+    <p>No se encontraron datos para el rango de fechas seleccionado.</p>
+  </div>
+
   <!-- Reporte de Ventas -->
   <div *ngIf="!loading && reporteVentas" class="content-card">
     <h2>

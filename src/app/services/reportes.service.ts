@@ -274,11 +274,12 @@ export class ReportesService {
       const ingresos = compras?.reduce((sum, c) => sum + Number(c.total || 0), 0) || 0;
       const clientes_unicos = new Set(compras?.map(c => c.cliente_id) || []).size;
 
-      // Obtener boletas
+      // Obtener boletas (solo con pago completado)
       const { data: boletas } = await this.supabase
         .from('boletas_compradas')
-        .select('estado')
-        .in('tipo_boleta_id', tiposIds);
+        .select('estado, compras!inner(estado_pago)')
+        .in('tipo_boleta_id', tiposIds)
+        .eq('compras.estado_pago', 'completado');
 
       const boletas_vendidas = boletas?.length || 0;
       const boletas_usadas = boletas?.filter(b => b.estado === 'usada').length || 0;

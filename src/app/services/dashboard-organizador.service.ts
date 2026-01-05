@@ -98,12 +98,13 @@ export class DashboardOrganizadorService {
       return 0;
     }, 0);
 
-    // Clientes únicos que compraron eventos del organizador
+    // Clientes únicos que compraron eventos del organizador (solo con pago completado)
     const clientes = safeExecute(async () => {
       const response = await this.supabase
         .from('compras')
         .select('cliente_id, evento_id, eventos!inner(organizador_id)')
-        .eq('eventos.organizador_id', organizadorId);
+        .eq('eventos.organizador_id', organizadorId)
+        .eq('estado_pago', 'completado');
       
       if (response.error) {
         console.error('Error en clientes:', response.error);
@@ -116,12 +117,13 @@ export class DashboardOrganizadorService {
       return 0;
     }, 0);
 
-    // Ventas recientes del organizador (últimas 5)
+    // Ventas recientes del organizador (últimas 5, solo con pago completado)
     const ventasRecientes = safeExecute(async () => {
       const response = await this.supabase
         .from('compras')
         .select('*, eventos!inner(organizador_id)')
         .eq('eventos.organizador_id', organizadorId)
+        .eq('estado_pago', 'completado')
         .order('fecha_compra', { ascending: false })
         .limit(5);
       
@@ -206,7 +208,7 @@ export class DashboardOrganizadorService {
       return 0;
     }, 0);
 
-    // Boletas por estado del organizador
+    // Boletas por estado del organizador (solo con pago completado)
     const boletasPorEstado = safeExecute(async () => {
       try {
         // Obtener tipos de boleta de eventos del organizador
@@ -221,11 +223,12 @@ export class DashboardOrganizadorService {
 
         const tiposIds = tiposData.map((t: any) => t.id);
         
-        // Obtener boletas compradas
+        // Obtener boletas compradas (solo con pago completado)
         const { data, error } = await this.supabase
           .from('boletas_compradas')
-          .select('estado')
-          .in('tipo_boleta_id', tiposIds);
+          .select('estado, compras!inner(estado_pago)')
+          .in('tipo_boleta_id', tiposIds)
+          .eq('compras.estado_pago', 'completado');
 
         if (error) return [];
         if (data) {
