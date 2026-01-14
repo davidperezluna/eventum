@@ -130,9 +130,29 @@
   </div>
 
   <div class="content-card">
-    <button class="btn-primary" (click)="exportarReporte()">
-      <span class="material-icons">download</span>
-      Exportar Reporte
-    </button>
+    <div class="export-section">
+      <h3>
+        <span class="material-icons">download</span>
+        Exportar Reportes
+      </h3>
+      <p class="export-description">
+        Descarga un reporte completo en formato Excel con todas las estadísticas y datos detallados.
+      </p>
+      <button 
+        class="btn-primary" 
+        (click)="exportarReporte()"
+        [disabled]="loading || exportando || (!reporteVentas && !reporteEventos)">
+        <span class="material-icons">{{ exportando ? 'hourglass_empty' : 'download' }}</span>
+        {{ exportando ? 'Exportando...' : 'Exportar a Excel' }}
+      </button>
+      <p *ngIf="esAdministrador" class="export-info">
+        <span class="material-icons">info</span>
+        El reporte incluirá: Resumen de ventas, eventos, ventas por día, ingresos por evento, distribución de métodos de pago y detalle de compras.
+      </p>
+      <p *ngIf="esOrganizador" class="export-info">
+        <span class="material-icons">info</span>
+        El reporte incluirá: Ventas por día, ingresos por evento, asistencia por evento, distribución de métodos de pago, ventas por mes y resumen general.
+      </p>
+    </div>
   </div>
 </div>
