@@ -34,9 +34,13 @@
 
 .form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 2fr auto;
+  grid-template-columns: 2fr 2fr auto;
   gap: var(--spacing-md);
   align-items: end;
+}
+
+.form-row:has(.form-group:nth-child(3)) {
+  grid-template-columns: 2fr 2fr 2fr auto;
 }
 
 .form-group select {
