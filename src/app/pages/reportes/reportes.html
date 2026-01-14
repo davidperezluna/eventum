@@ -15,26 +15,37 @@
       <div class="form-group" *ngIf="esAdministrador">
         <label>Organizador (Opcional)</label>
         <select [(ngModel)]="organizadorFiltro" (change)="onOrganizadorChange()" [disabled]="loadingOrganizadores">
-          <option [value]="null">Todos los organizadores</option>
-          <option *ngFor="let org of organizadores" [value]="org.id">
+          <option [ngValue]="null">Todos los organizadores</option>
+          <option *ngFor="let org of organizadores" [ngValue]="org.id">
             {{ org.nombre }} {{ org.apellido }}
           </option>
         </select>
+        <div *ngIf="loadingOrganizadores" class="loader-inline">
+          <span class="material-icons spin">hourglass_empty</span>
+          Cargando organizadores...
+        </div>
       </div>
       <div class="form-group">
         <label>Evento (Opcional)</label>
-        <select [(ngModel)]="eventoSeleccionado" (change)="onEventoChange()" [disabled]="loadingEventos">
-          <option [value]="null">Todos los eventos</option>
-          <option *ngFor="let evento of eventos" [value]="evento.id">
+        <select [(ngModel)]="eventoSeleccionado" (change)="onEventoChange()" [disabled]="loadingEventos || (!organizadorFiltro && esAdministrador)">
+          <option [ngValue]="null">Todos los eventos</option>
+          <option *ngFor="let evento of eventos" [ngValue]="evento.id">
             {{ evento.titulo }} 
             <span *ngIf="evento.estado === 'finalizado'">(Finalizado)</span>
             <span *ngIf="evento.estado === 'cancelado'">(Cancelado)</span>
           </option>
         </select>
+        <div *ngIf="loadingEventos" class="loader-inline">
+          <span class="material-icons spin">hourglass_empty</span>
+          Cargando eventos...
+        </div>
+        <div *ngIf="!loadingEventos && esAdministrador && !organizadorFiltro && eventos.length === 0" class="helper-text">
+          Selecciona un organizador para ver sus eventos
+        </div>
       </div>
       <div class="form-group">
-        <button class="btn-primary" (click)="generarReporte()" [disabled]="loading">
-          <span class="material-icons">refresh</span>
+        <button class="btn-primary" (click)="generarReporte()" [disabled]="loading || loadingEventos || (esAdministrador && !organizadorFiltro)">
+          <span class="material-icons">{{ loading ? 'hourglass_empty' : 'refresh' }}</span>
           {{ loading ? 'Generando...' : 'Generar Reporte' }}
         </button>
       </div>
@@ -95,6 +106,73 @@
           <span class="chart-label">{{ item.key }}</span>
           <span class="chart-value">{{ item.value }}</span>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reporte de Comisiones y Neto -->
+  <div *ngIf="!loading && reporteComisiones" class="content-card">
+    <h2>
+      <span class="material-icons">calculate</span>
+      Comisiones y Neto (Wompi 2.65% + $700 + IVA)
+    </h2>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="material-icons stat-icon">payments</span>
+        <div class="stat-content">
+          <h3>Total Bruto</h3>
+          <p class="stat-value">${{ reporteComisiones.totalBruto | number:'1.0-0' }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="material-icons stat-icon">request_quote</span>
+        <div class="stat-content">
+          <h3>Comisión</h3>
+          <p class="stat-value">${{ reporteComisiones.totalComision | number:'1.0-0' }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="material-icons stat-icon">receipt</span>
+        <div class="stat-content">
+          <h3>IVA Comisión</h3>
+          <p class="stat-value">${{ reporteComisiones.totalIVA | number:'1.0-0' }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="material-icons stat-icon">account_balance_wallet</span>
+        <div class="stat-content">
+          <h3>Neto</h3>
+          <p class="stat-value">${{ reporteComisiones.totalNeto | number:'1.0-0' }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-section">
+      <h3>Detalle por Evento</h3>
+      <div class="table-wrapper">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Evento</th>
+              <th>Transacciones</th>
+              <th>Bruto</th>
+              <th>Comisión</th>
+              <th>IVA</th>
+              <th>Neto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ev of reporteComisiones.porEvento">
+              <td>{{ ev.eventoTitulo }}</td>
+              <td>{{ ev.transacciones }}</td>
+              <td>${{ ev.bruto | number:'1.0-0' }}</td>
+              <td>${{ ev.comision | number:'1.0-0' }}</td>
+              <td>${{ ev.iva | number:'1.0-0' }}</td>
+              <td>${{ ev.neto | number:'1.0-0' }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>

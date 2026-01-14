@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ComprasService } from '../../services/compras.service';
@@ -14,7 +14,7 @@ import { Compra, Evento, Usuario } from '../../types';
   templateUrl: './reportes.html',
   styleUrl: './reportes.css',
 })
-export class Reportes implements OnInit {
+export class Reportes implements OnInit, OnDestroy {
   eventoSeleccionado: number | null = null;
   organizadorFiltro: number | null = null;
   loading = false;
@@ -23,40 +23,73 @@ export class Reportes implements OnInit {
   
   reporteVentas: any = null;
   reporteEventos: any = null;
+  reporteComisiones: any = null;
   eventos: Evento[] = [];
   organizadores: Usuario[] = [];
   
   esAdministrador = false;
   esOrganizador = false;
   organizadorId: number | null = null;
+  
+  private unsubscribeAuth: (() => void) | null = null;
+  private generandoReporte = false;
 
   constructor(
     private comprasService: ComprasService,
     private eventosService: EventosService,
     private usuariosService: UsuariosService,
     private alertService: AlertService,
-    private authService: AuthService
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) {}
+  
+  ngOnDestroy() {
+    if (this.unsubscribeAuth) {
+      this.unsubscribeAuth();
+    }
+  }
 
   ngOnInit() {
     this.verificarRol();
   }
 
   verificarRol() {
-    const unsubscribe = this.authService.onAuthStateChange((user, usuario, session) => {
-      if (usuario) {
-        this.esAdministrador = usuario.tipo_usuario_id === 3;
-        this.esOrganizador = usuario.tipo_usuario_id === 2;
-        if (this.esOrganizador) {
-          this.organizadorId = usuario.id;
-          this.organizadorFiltro = usuario.id;
-        }
-        // Cargar datos después de verificar el rol
-        this.cargarOrganizadores();
-        this.cargarEventos();
-        unsubscribe();
+    let procesado = false;
+    
+    const callback = (user: any, usuario: any, session: any) => {
+      // Evitar procesamiento múltiple
+      if (procesado || !usuario) {
+        return;
       }
-    });
+      
+      procesado = true;
+      this.esAdministrador = usuario.tipo_usuario_id === 3;
+      this.esOrganizador = usuario.tipo_usuario_id === 2;
+      
+      if (this.esOrganizador) {
+        this.organizadorId = usuario.id;
+        this.organizadorFiltro = usuario.id;
+        // Si es organizador, cargar sus eventos automáticamente
+        this.cargarEventos();
+      }
+      
+      // Solo cargar organizadores si es administrador
+      if (this.esAdministrador) {
+        this.cargarOrganizadores();
+      }
+      
+      this.cdr.detectChanges();
+    };
+    
+    this.unsubscribeAuth = this.authService.onAuthStateChange(callback);
+    
+    // Desuscribirse después de procesar
+    setTimeout(() => {
+      if (this.unsubscribeAuth) {
+        this.unsubscribeAuth();
+        this.unsubscribeAuth = null;
+      }
+    }, 500);
   }
 
   async cargarOrganizadores() {
@@ -97,48 +130,89 @@ export class Reportes implements OnInit {
       const response = await this.eventosService.getEventos(filters);
       this.eventos = response.data || [];
       
-      // Generar reporte después de cargar eventos
-      this.generarReporte();
+      // NO generar reporte automáticamente, solo cargar eventos en el select
     } catch (error) {
       console.error('Error cargando eventos:', error);
       this.eventos = [];
+      this.alertService.error('Error', 'No se pudieron cargar los eventos');
     } finally {
       this.loadingEventos = false;
     }
   }
 
   onOrganizadorChange() {
-    // Cuando cambia el organizador, recargar eventos y limpiar evento seleccionado
+    // Cuando cambia el organizador, limpiar evento seleccionado y recargar eventos
     this.eventoSeleccionado = null;
+    // Limpiar reportes anteriores
+    this.reporteVentas = null;
+    this.reporteEventos = null;
+    this.reporteComisiones = null;
+    
+    // Si no hay organizador seleccionado, vaciar eventos
+    if (!this.organizadorFiltro) {
+      this.eventos = [];
+      return;
+    }
+    // Solo cargar eventos en el select, NO generar reporte
     this.cargarEventos();
-    this.generarReporte();
   }
 
   onEventoChange() {
-    // Cuando cambia el evento, regenerar reporte
-    this.generarReporte();
+    // Solo actualizar la selección; el reporte se genera al dar clic en "Generar Reporte"
+    // Limpiar reportes anteriores cuando cambia el evento
+    this.reporteVentas = null;
+    this.reporteEventos = null;
+    this.reporteComisiones = null;
   }
 
   async generarReporte() {
+    // Prevenir llamadas concurrentes
+    if (this.generandoReporte || this.loading) {
+      return;
+    }
+    
+    this.generandoReporte = true;
     this.loading = true;
     
+    // Limpiar reportes anteriores
+    this.reporteVentas = null;
+    this.reporteEventos = null;
+    this.reporteComisiones = null;
+    this.cdr.detectChanges();
+    
     try {
-      // Reporte de ventas
-      await this.loadVentasReporte();
-
-      // Reporte de eventos
-      await this.loadEventosReporte();
+      // Ejecutar reportes en paralelo cuando sea posible
+      const [ventas, eventos, comisiones] = await Promise.allSettled([
+        this.loadVentasReporte(),
+        this.loadEventosReporte(),
+        this.loadComisionesReporte()
+      ]);
+      
+      // Verificar si hubo errores
+      if (ventas.status === 'rejected') {
+        console.error('Error en reporte de ventas:', ventas.reason);
+      }
+      if (eventos.status === 'rejected') {
+        console.error('Error en reporte de eventos:', eventos.reason);
+      }
+      if (comisiones.status === 'rejected') {
+        console.error('Error en reporte de comisiones:', comisiones.reason);
+      }
+      
+      this.cdr.detectChanges();
     } catch (err) {
       console.error('Error generando reportes:', err);
       this.alertService.error('Error', 'No se pudieron generar los reportes');
     } finally {
       this.loading = false;
+      this.generandoReporte = false;
+      this.cdr.detectChanges();
     }
   }
 
   private async loadVentasReporte() {
     try {
-      // Preparar filtros base
+      // Preparar filtros base - optimizar para obtener solo lo necesario
       const filtersBase: any = {
         limit: 10000
       };
@@ -148,29 +222,35 @@ export class Reportes implements OnInit {
         filtersBase.evento_id = this.eventoSeleccionado;
       }
 
-      // Obtener todas las compras (para estadísticas generales)
+      // Si hay filtro de organizador y no evento específico, obtener IDs de eventos primero
+      let eventosIds: number[] = [];
+      if (this.organizadorFiltro && !this.eventoSeleccionado && this.eventos.length > 0) {
+        eventosIds = this.eventos.map(e => e.id);
+        if (eventosIds.length === 0) {
+          // Si no hay eventos del organizador, retornar reporte vacío
+          this.reporteVentas = {
+            totalCompras: 0,
+            comprasCompletadas: 0,
+            totalIngresos: 0,
+            comprasPorEstado: {},
+            comprasPorMetodo: {}
+          };
+          return;
+        }
+      }
+
+      // Obtener todas las compras y completadas en una sola consulta optimizada
+      // Primero obtener todas para estadísticas generales
       const response = await this.comprasService.getCompras(filtersBase);
       let compras = response.data || [];
       
-      // Filtrar por organizador si está seleccionado (a través de eventos)
-      if (this.organizadorFiltro && !this.eventoSeleccionado) {
-        // Si hay filtro de organizador pero no evento específico, filtrar por eventos del organizador
-        const eventosIds = this.eventos.map(e => e.id);
+      // Filtrar por eventos del organizador si aplica
+      if (eventosIds.length > 0) {
         compras = compras.filter((c: any) => eventosIds.includes(c.evento_id));
       }
       
-      // Obtener solo compras completadas para ingresos y estadísticas principales
-      const responseCompletadas = await this.comprasService.getCompras({
-        ...filtersBase,
-        estado_pago: 'completado'
-      });
-      let comprasCompletadas = responseCompletadas.data || [];
-      
-      // Filtrar por organizador si está seleccionado
-      if (this.organizadorFiltro && !this.eventoSeleccionado) {
-        const eventosIds = this.eventos.map(e => e.id);
-        comprasCompletadas = comprasCompletadas.filter((c: any) => eventosIds.includes(c.evento_id));
-      }
+      // Filtrar completadas del mismo conjunto (más eficiente que hacer otra consulta)
+      const comprasCompletadas = compras.filter((c: any) => c.estado_pago === 'completado');
       
       // Calcular ingresos solo de compras completadas
       const totalIngresos = comprasCompletadas.reduce((sum: number, c: any) => sum + Number(c.total || 0), 0);
@@ -180,13 +260,12 @@ export class Reportes implements OnInit {
         comprasCompletadas: comprasCompletadas.length,
         totalIngresos: totalIngresos,
         comprasPorEstado: this.agruparPorEstado(compras, 'estado_pago'),
-        comprasPorMetodo: this.agruparPorMetodo(comprasCompletadas) // Solo métodos de pago de compras completadas
+        comprasPorMetodo: this.agruparPorMetodo(comprasCompletadas)
       };
       
-      console.log('Reporte de ventas generado:', this.reporteVentas);
+      this.cdr.detectChanges();
     } catch (err) {
       console.error('Error generando reporte de ventas:', err);
-      this.alertService.error('Error', 'No se pudo generar el reporte de ventas');
       this.reporteVentas = null;
       throw err;
     }
@@ -231,12 +310,103 @@ export class Reportes implements OnInit {
         eventosDestacados: eventos.filter(e => e.destacado).length
       };
       
-      console.log('Reporte de eventos generado:', this.reporteEventos);
+      this.cdr.detectChanges();
     } catch (err) {
       console.error('Error generando reporte de eventos:', err);
-      this.alertService.error('Error', 'No se pudo generar el reporte de eventos');
       this.reporteEventos = null;
       throw err;
+    }
+  }
+
+  private async loadComisionesReporte() {
+    try {
+      const filtersBase: any = {
+        limit: 10000,
+        estado_pago: 'completado'
+      };
+
+      if (this.eventoSeleccionado) {
+        filtersBase.evento_id = this.eventoSeleccionado;
+      }
+
+      // Si hay filtro de organizador y no evento específico, usar eventos ya cargados
+      let eventosIds: number[] = [];
+      if (this.organizadorFiltro && !this.eventoSeleccionado && this.eventos.length > 0) {
+        eventosIds = this.eventos.map(e => e.id);
+        if (eventosIds.length === 0) {
+          // Si no hay eventos del organizador, retornar reporte vacío
+          this.reporteComisiones = {
+            totalBruto: 0,
+            totalComision: 0,
+            totalIVA: 0,
+            totalNeto: 0,
+            porEvento: []
+          };
+          return;
+        }
+      }
+
+      const response = await this.comprasService.getCompras(filtersBase);
+      let compras = response.data || [];
+
+      // Filtrar por eventos del organizador si aplica
+      if (eventosIds.length > 0) {
+        compras = compras.filter((c: any) => eventosIds.includes(c.evento_id));
+      }
+
+      // Acumuladores
+      let totalBruto = 0;
+      let totalComision = 0;
+      let totalIVA = 0;
+      let totalNeto = 0;
+
+      const porEventoMap: Record<number, any> = {};
+
+      compras.forEach((c: any) => {
+        const bruto = Number(c.total || 0);
+        const comisionBase = bruto * 0.0265 + 700;
+        const iva = comisionBase * 0.19;
+        const comisionTotal = comisionBase + iva;
+        const neto = bruto - comisionTotal;
+
+        totalBruto += bruto;
+        totalComision += comisionBase;
+        totalIVA += iva;
+        totalNeto += neto;
+
+        const eventoId = c.evento_id;
+        if (!porEventoMap[eventoId]) {
+          const eventoInfo = this.eventos.find(e => e.id === eventoId);
+          porEventoMap[eventoId] = {
+            eventoId,
+            eventoTitulo: eventoInfo?.titulo || 'Evento',
+            transacciones: 0,
+            bruto: 0,
+            comision: 0,
+            iva: 0,
+            neto: 0
+          };
+        }
+
+        porEventoMap[eventoId].transacciones += 1;
+        porEventoMap[eventoId].bruto += bruto;
+        porEventoMap[eventoId].comision += comisionBase;
+        porEventoMap[eventoId].iva += iva;
+        porEventoMap[eventoId].neto += neto;
+      });
+
+      this.reporteComisiones = {
+        totalBruto,
+        totalComision,
+        totalIVA,
+        totalNeto,
+        porEvento: Object.values(porEventoMap).sort((a: any, b: any) => b.bruto - a.bruto)
+      };
+      
+      this.cdr.detectChanges();
+    } catch (error) {
+      console.error('Error generando reporte de comisiones:', error);
+      this.reporteComisiones = null;
     }
   }
 
