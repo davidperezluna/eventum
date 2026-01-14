@@ -18,11 +18,14 @@ import { Compra, Evento } from '../../types';
 export class Reportes implements OnInit {
   fechaInicio: string = '';
   fechaFin: string = '';
+  eventoSeleccionado: number | null = null;
   loading = false;
   exportando = false;
+  loadingEventos = false;
   
   reporteVentas: any = null;
   reporteEventos: any = null;
+  eventos: Evento[] = [];
   
   esAdministrador = false;
   esOrganizador = false;
@@ -46,7 +49,40 @@ export class Reportes implements OnInit {
 
   ngOnInit() {
     this.verificarRol();
+    // Los eventos se cargarán después de verificar el rol
     this.generarReporte();
+  }
+
+  async cargarEventos() {
+    this.loadingEventos = true;
+    try {
+      // Cargar todos los eventos, incluyendo finalizados
+      // Para administrador: todos los eventos
+      // Para organizador: solo sus eventos
+      const filters: any = {
+        limit: 1000,
+        page: 1,
+        sortBy: 'fecha_inicio',
+        sortOrder: 'desc'
+      };
+
+      if (this.esOrganizador && this.organizadorId) {
+        filters.organizador_id = this.organizadorId;
+      }
+
+      const response = await this.eventosService.getEventos(filters);
+      this.eventos = response.data || [];
+      
+      // Si es organizador, filtrar solo sus eventos
+      if (this.esOrganizador && this.organizadorId) {
+        this.eventos = this.eventos.filter(e => e.organizador_id === this.organizadorId);
+      }
+    } catch (error) {
+      console.error('Error cargando eventos:', error);
+      this.eventos = [];
+    } finally {
+      this.loadingEventos = false;
+    }
   }
 
   verificarRol() {
@@ -57,6 +93,8 @@ export class Reportes implements OnInit {
         if (this.esOrganizador) {
           this.organizadorId = usuario.id;
         }
+        // Cargar eventos después de verificar el rol
+        this.cargarEventos();
         unsubscribe();
       }
     });
@@ -81,21 +119,27 @@ export class Reportes implements OnInit {
 
   private async loadVentasReporte() {
     try {
-      // Obtener todas las compras (para estadísticas generales)
-      // Usar un límite alto para obtener todos los registros
-      const response = await this.comprasService.getCompras({
+      // Preparar filtros base
+      const filtersBase: any = {
         fecha_desde: this.fechaInicio,
         fecha_hasta: this.fechaFin,
         limit: 10000
-      });
+      };
+
+      // Agregar filtro de evento si está seleccionado
+      if (this.eventoSeleccionado) {
+        filtersBase.evento_id = this.eventoSeleccionado;
+      }
+
+      // Obtener todas las compras (para estadísticas generales)
+      // Usar un límite alto para obtener todos los registros
+      const response = await this.comprasService.getCompras(filtersBase);
       const compras = response.data || [];
       
       // Obtener solo compras completadas para ingresos y estadísticas principales
       const responseCompletadas = await this.comprasService.getCompras({
-        fecha_desde: this.fechaInicio,
-        fecha_hasta: this.fechaFin,
-        estado_pago: 'completado',
-        limit: 10000
+        ...filtersBase,
+        estado_pago: 'completado'
       });
       const comprasCompletadas = responseCompletadas.data || [];
       
@@ -121,9 +165,35 @@ export class Reportes implements OnInit {
 
   private async loadEventosReporte() {
     try {
-      const response = await this.eventosService.getEventos({
+      const filters: any = {
         limit: 10000
-      });
+      };
+
+      // Si hay evento seleccionado, solo mostrar ese evento
+      if (this.eventoSeleccionado) {
+        filters.search = this.eventoSeleccionado.toString();
+        // O mejor, obtener directamente el evento
+        try {
+          const evento = await this.eventosService.getEventoById(this.eventoSeleccionado);
+          const eventos = evento ? [evento] : [];
+          this.reporteEventos = {
+            totalEventos: eventos.length,
+            eventosActivos: eventos.filter(e => e.activo).length,
+            eventosPorEstado: this.agruparPorEstado(eventos, 'estado'),
+            eventosDestacados: eventos.filter(e => e.destacado).length
+          };
+          return;
+        } catch (error) {
+          console.error('Error obteniendo evento:', error);
+        }
+      }
+
+      // Si es organizador, filtrar solo sus eventos
+      if (this.esOrganizador && this.organizadorId) {
+        filters.organizador_id = this.organizadorId;
+      }
+
+      const response = await this.eventosService.getEventos(filters);
       const eventos = response.data || [];
       this.reporteEventos = {
         totalEventos: response.total || eventos.length,
@@ -183,7 +253,16 @@ export class Reportes implements OnInit {
 
   async exportarReporteAdministrador() {
     const fechaHoy = new Date().toISOString().split('T')[0];
-    const nombreArchivo = `Reporte_Administrador_${fechaHoy}`;
+    let nombreArchivo = `Reporte_Administrador_${fechaHoy}`;
+    
+    // Si hay evento seleccionado, agregar su nombre al archivo
+    if (this.eventoSeleccionado) {
+      const evento = this.eventos.find(e => e.id === this.eventoSeleccionado);
+      if (evento) {
+        const nombreEvento = evento.titulo.replace(/[^a-z0-9]/gi, '_').substring(0, 30);
+        nombreArchivo = `Reporte_Administrador_${nombreEvento}_${fechaHoy}`;
+      }
+    }
     
     const sheets: { name: string; data: any[] }[] = [];
 
@@ -236,7 +315,12 @@ export class Reportes implements OnInit {
 
     // 3. Ventas por Día
     try {
-      const ventasPorDia = await this.reportesService.getVentasPorDia(this.fechaInicio, this.fechaFin);
+      const ventasPorDia = await this.reportesService.getVentasPorDia(
+        this.fechaInicio, 
+        this.fechaFin, 
+        undefined,
+        this.eventoSeleccionado || undefined
+      );
       if (ventasPorDia.length > 0) {
         const ventasDiaData = ventasPorDia.map(v => ({
           'Fecha': this.excelExportService.formatDate(v.fecha),
@@ -252,7 +336,7 @@ export class Reportes implements OnInit {
 
     // 4. Ingresos por Evento
     try {
-      const ingresosPorEvento = await this.reportesService.getIngresosPorEvento();
+      const ingresosPorEvento = await this.reportesService.getIngresosPorEvento(undefined, this.eventoSeleccionado || undefined);
       if (ingresosPorEvento.length > 0) {
         const ingresosEventoData = ingresosPorEvento.map(i => ({
           'Evento': i.evento_titulo,
@@ -282,11 +366,17 @@ export class Reportes implements OnInit {
 
     // 6. Detalle de Compras
     try {
-      const comprasResponse = await this.comprasService.getCompras({
+      const comprasFilters: any = {
         fecha_desde: this.fechaInicio,
         fecha_hasta: this.fechaFin,
         limit: 10000
-      });
+      };
+      
+      if (this.eventoSeleccionado) {
+        comprasFilters.evento_id = this.eventoSeleccionado;
+      }
+      
+      const comprasResponse = await this.comprasService.getCompras(comprasFilters);
       const compras = comprasResponse.data || [];
       if (compras.length > 0) {
         const comprasData = compras.map((c: any) => ({
@@ -322,13 +412,27 @@ export class Reportes implements OnInit {
     }
 
     const fechaHoy = new Date().toISOString().split('T')[0];
-    const nombreArchivo = `Reporte_Organizador_${fechaHoy}`;
+    let nombreArchivo = `Reporte_Organizador_${fechaHoy}`;
+    
+    // Si hay evento seleccionado, agregar su nombre al archivo
+    if (this.eventoSeleccionado) {
+      const evento = this.eventos.find(e => e.id === this.eventoSeleccionado);
+      if (evento) {
+        const nombreEvento = evento.titulo.replace(/[^a-z0-9]/gi, '_').substring(0, 30);
+        nombreArchivo = `Reporte_Organizador_${nombreEvento}_${fechaHoy}`;
+      }
+    }
     
     const sheets: { name: string; data: any[] }[] = [];
 
     // 1. Ventas por Día del Organizador
     try {
-      const ventasPorDia = await this.reportesService.getVentasPorDia(this.fechaInicio, this.fechaFin, this.organizadorId);
+      const ventasPorDia = await this.reportesService.getVentasPorDia(
+        this.fechaInicio, 
+        this.fechaFin, 
+        this.organizadorId,
+        this.eventoSeleccionado || undefined
+      );
       if (ventasPorDia.length > 0) {
         const ventasDiaData = ventasPorDia.map(v => ({
           'Fecha': this.excelExportService.formatDate(v.fecha),
@@ -344,7 +448,10 @@ export class Reportes implements OnInit {
 
     // 2. Ingresos por Evento del Organizador
     try {
-      const ingresosPorEvento = await this.reportesService.getIngresosPorEvento(this.organizadorId);
+      const ingresosPorEvento = await this.reportesService.getIngresosPorEvento(
+        this.organizadorId, 
+        this.eventoSeleccionado || undefined
+      );
       if (ingresosPorEvento.length > 0) {
         const ingresosEventoData = ingresosPorEvento.map(i => ({
           'Evento': i.evento_titulo,
@@ -359,7 +466,10 @@ export class Reportes implements OnInit {
 
     // 3. Asistencia por Evento
     try {
-      const asistenciaPorEvento = await this.reportesService.getAsistenciaPorEvento(this.organizadorId);
+      const asistenciaPorEvento = await this.reportesService.getAsistenciaPorEvento(
+        this.organizadorId,
+        this.eventoSeleccionado || undefined
+      );
       if (asistenciaPorEvento.length > 0) {
         const asistenciaData = asistenciaPorEvento.map(a => ({
           'Evento': a.evento_titulo,
@@ -406,7 +516,10 @@ export class Reportes implements OnInit {
 
     // 6. Resumen General
     try {
-      const ingresosPorEvento = await this.reportesService.getIngresosPorEvento(this.organizadorId);
+      const ingresosPorEvento = await this.reportesService.getIngresosPorEvento(
+        this.organizadorId,
+        this.eventoSeleccionado || undefined
+      );
       const totalIngresos = ingresosPorEvento.reduce((sum, e) => sum + e.ingresos, 0);
       const totalBoletas = ingresosPorEvento.reduce((sum, e) => sum + e.boletas_vendidas, 0);
       

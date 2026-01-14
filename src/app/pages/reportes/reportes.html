@@ -21,9 +21,20 @@
         <input type="date" [(ngModel)]="fechaFin" />
       </div>
       <div class="form-group">
-        <button class="btn-primary" (click)="generarReporte()">
+        <label>Evento (Opcional)</label>
+        <select [(ngModel)]="eventoSeleccionado" [disabled]="loadingEventos">
+          <option [value]="null">Todos los eventos</option>
+          <option *ngFor="let evento of eventos" [value]="evento.id">
+            {{ evento.titulo }} 
+            <span *ngIf="evento.estado === 'finalizado'">(Finalizado)</span>
+            <span *ngIf="evento.estado === 'cancelado'">(Cancelado)</span>
+          </option>
+        </select>
+      </div>
+      <div class="form-group">
+        <button class="btn-primary" (click)="generarReporte()" [disabled]="loading">
           <span class="material-icons">refresh</span>
-          Generar Reporte
+          {{ loading ? 'Generando...' : 'Generar Reporte' }}
         </button>
       </div>
     </div>

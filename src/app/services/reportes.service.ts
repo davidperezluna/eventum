@@ -43,7 +43,7 @@ export class ReportesService {
   /**
    * Obtiene reporte de ventas por día en un rango de fechas
    */
-  async getVentasPorDia(fechaDesde?: string, fechaHasta?: string, organizadorId?: number): Promise<ReporteVentas[]> {
+  async getVentasPorDia(fechaDesde?: string, fechaHasta?: string, organizadorId?: number, eventoId?: number): Promise<ReporteVentas[]> {
     try {
       let query = this.supabase
         .from('compras')
@@ -52,6 +52,10 @@ export class ReportesService {
 
       if (organizadorId) {
         query = query.eq('eventos.organizador_id', organizadorId);
+      }
+
+      if (eventoId) {
+        query = query.eq('evento_id', eventoId);
       }
 
       if (fechaDesde) {
@@ -344,7 +348,7 @@ export class ReportesService {
   /**
    * Obtiene ingresos por evento
    */
-  async getIngresosPorEvento(organizadorId?: number): Promise<{ evento_id: number; evento_titulo: string; ingresos: number; boletas_vendidas: number }[]> {
+  async getIngresosPorEvento(organizadorId?: number, eventoId?: number): Promise<{ evento_id: number; evento_titulo: string; ingresos: number; boletas_vendidas: number }[]> {
     try {
       let eventosQuery = this.supabase
         .from('eventos')
@@ -352,6 +356,10 @@ export class ReportesService {
 
       if (organizadorId) {
         eventosQuery = eventosQuery.eq('organizador_id', organizadorId);
+      }
+
+      if (eventoId) {
+        eventosQuery = eventosQuery.eq('id', eventoId);
       }
 
       const { data: eventos, error: eventosError } = await eventosQuery;

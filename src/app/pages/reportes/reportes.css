@@ -34,9 +34,24 @@
 
 .form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: 1fr 1fr 2fr auto;
   gap: var(--spacing-md);
   align-items: end;
+}
+
+.form-group select {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 2px solid var(--color-border-light);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-md);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.form-group select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .form-group {
