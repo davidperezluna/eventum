@@ -305,9 +305,40 @@
           </div>
         </div>
       </div>
+      
+      <!-- Cupón de Descuento -->
+      <div class="cupon-section">
+        <h5>¿Tienes un cupón de descuento?</h5>
+        <div class="cupon-input-group" *ngIf="!cuponAplicado">
+          <input type="text" [(ngModel)]="codigoCupon" placeholder="Ingresa el código" (keyup.enter)="aplicarCupon()" />
+          <button class="btn-aplicar-cupon" (click)="aplicarCupon()" [disabled]="validandoCupon || !codigoCupon">
+            {{ validandoCupon ? 'Validando...' : 'Aplicar' }}
+          </button>
+        </div>
+        <div class="cupon-aplicado" *ngIf="cuponAplicado">
+          <div class="cupon-info">
+            <span class="material-icons">confirmation_number</span>
+            <span>Cupón <strong>{{ cuponAplicado.codigo }}</strong> aplicado ({{ cuponAplicado.porcentaje_descuento }}% de descuento)</span>
+          </div>
+          <button class="btn-quitar-cupon" (click)="quitarCupon()" title="Quitar cupón">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+      </div>
+
       <div class="carrito-total">
         <div class="total-info">
-          <h3>Total: {{ formatCurrency(getTotal()) }}</h3>
+          <div class="total-row" *ngIf="cuponAplicado">
+            <span>Subtotal:</span>
+            <span>{{ formatCurrency(getSubtotal()) }}</span>
+          </div>
+          <div class="total-row descuento" *ngIf="cuponAplicado">
+            <span>Descuento ({{ cuponAplicado.porcentaje_descuento }}%):</span>
+            <span>-{{ formatCurrency(getDescuento()) }}</span>
+          </div>
+          <div class="total-row main">
+            <h3>Total: {{ formatCurrency(getTotal()) }}</h3>
+          </div>
         </div>
         <button class="btn-comprar" (click)="procesarCompra()" [disabled]="comprando">
           <span class="material-icons">{{ comprando ? 'hourglass_empty' : 'shopping_cart' }}</span>

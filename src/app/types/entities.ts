@@ -170,6 +170,9 @@ export interface Compra {
   wompi_status?: string;
   wompi_response?: Record<string, any>;
   wompi_webhook_data?: Record<string, any>;
+  cupon_id?: number;
+  descuento_total?: number;
+  subtotal?: number;
   // Datos enriquecidos (vienen del join)
   cliente?: {
     id: number;
@@ -282,3 +285,17 @@ export interface Sesion {
   activa?: boolean;
 }
 
+/**
+ * Cupón de descuento
+ */
+export interface CuponDescuento {
+  id: number;
+  evento_id: number;
+  codigo: string;
+  porcentaje_descuento: number;
+  max_usos: number;
+  usos_actuales: number;
+  activo: boolean;
+  fecha_expiracion?: Date | string;
+  fecha_creacion?: Date | string;
+}

@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { EventosService } from '../../services/eventos.service';
 import { BoletasService } from '../../services/boletas.service';
 import { ComprasClienteService, ItemCompra } from '../../services/compras-cliente.service';
+import { CuponesService } from '../../services/cupones.service';
 import { AuthService } from '../../services/auth.service';
 import { UsuariosService } from '../../services/usuarios.service';
 import { LugaresService } from '../../services/lugares.service';
@@ -12,7 +13,7 @@ import { CategoriasService } from '../../services/categorias.service';
 import { WompiService } from '../../services/wompi.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { AlertService } from '../../services/alert.service';
-import { Evento, TipoBoleta, Usuario, Lugar, CategoriaEvento, TipoEstadoEvento } from '../../types';
+import { Evento, TipoBoleta, Usuario, Lugar, CategoriaEvento, TipoEstadoEvento, CuponDescuento } from '../../types';
 import { supabaseConfig } from '../../config/supabase.config';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
@@ -35,6 +36,11 @@ export class DetalleEvento implements OnInit {
   comprando = false;
   usuario: Usuario | null = null;
 
+  // Cupones
+  codigoCupon: string = '';
+  cuponAplicado: CuponDescuento | null = null;
+  validandoCupon = false;
+
   // Datos de compra
   itemsCompra: {
     tipo: TipoBoleta; cantidad: number; datosAsistente: {
@@ -53,6 +59,7 @@ export class DetalleEvento implements OnInit {
     public router: Router,
     private eventosService: EventosService,
     private boletasService: BoletasService,
+    private cuponesService: CuponesService,
     private comprasClienteService: ComprasClienteService,
     private authService: AuthService,
     private usuariosService: UsuariosService,
@@ -274,7 +281,50 @@ export class DetalleEvento implements OnInit {
   }
 
   getTotal(): number {
+    const subtotal = this.itemsCompra.reduce((sum, item) => sum + (item.tipo.precio * item.cantidad), 0);
+    if (this.cuponAplicado) {
+      const descuento = (subtotal * this.cuponAplicado.porcentaje_descuento) / 100;
+      return subtotal - descuento;
+    }
+    return subtotal;
+  }
+
+  getSubtotal(): number {
     return this.itemsCompra.reduce((sum, item) => sum + (item.tipo.precio * item.cantidad), 0);
+  }
+
+  getDescuento(): number {
+    if (!this.cuponAplicado) return 0;
+    const subtotal = this.getSubtotal();
+    return (subtotal * this.cuponAplicado.porcentaje_descuento) / 100;
+  }
+
+  async aplicarCupon() {
+    if (!this.codigoCupon || !this.evento) return;
+
+    this.validandoCupon = true;
+    try {
+      const cupon = await this.cuponesService.validarCupon(this.codigoCupon, this.evento.id);
+      if (cupon) {
+        this.cuponAplicado = cupon;
+        this.alertService.success('¡Cupón aplicado!', `Se ha aplicado un descuento del ${cupon.porcentaje_descuento}%`);
+      } else {
+        this.alertService.error('Cupón inválido', 'El código ingresado no existe, ya expiró o alcanzó su límite de usos');
+        this.cuponAplicado = null;
+      }
+    } catch (err) {
+      console.error('Error aplicando cupón:', err);
+      this.alertService.error('Error', 'Hubo un error al validar el cupón');
+    } finally {
+      this.validandoCupon = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  quitarCupon() {
+    this.cuponAplicado = null;
+    this.codigoCupon = '';
+    this.cdr.detectChanges();
   }
 
   formatCurrency(value: number): string {
@@ -378,12 +428,42 @@ export class DetalleEvento implements OnInit {
       const resultado = await this.comprasClienteService.procesarCompra({
         evento_id: this.evento.id,
         cliente_id: clienteId,
-        items
+        items,
+        cupon_id: this.cuponAplicado?.id,
+        descuento_total: this.getDescuento(),
+        subtotal: this.getSubtotal(),
+        total: this.getTotal()
       });
 
       console.log('Compra creada:', resultado.compra.id);
 
-      // Crear transacción en Wompi usando fetch directo
+      // CASO ESPECIAL: 100% DESCUENTO (Total $0)
+      if (resultado.compra.total === 0) {
+        console.log('Compra gratuita detectada, confirmando directamente...');
+        try {
+          // Confirmar el pago directamente en la base de datos (omitiendo pasarela)
+          await this.comprasClienteService.confirmarPago(resultado.compra.id);
+          
+          // También debemos actualizar los estados de las boletas a 'activo'
+          // El trigger de la base de datos se encarga de esto al detectar el cambio en la compra
+          
+          this.alertService.success('¡Compra Exitosa!', 'Tu reserva se ha completado correctamente de forma gratuita.');
+          this.router.navigate(['/pago-resultado'], { 
+            queryParams: { 
+              compra_id: resultado.compra.id,
+              status: 'APPROVED'
+            } 
+          });
+          return;
+        } catch (confirmError) {
+          console.error('Error confirmando compra gratuita:', confirmError);
+          this.alertService.error('Error', 'Hubo un problema al procesar tu cupón del 100%');
+          this.comprando = false;
+          return;
+        }
+      }
+
+      // Crear transacción en Wompi usando fetch directo (SOLO SI EL TOTAL > 0)
       const redirectUrl = `${window.location.origin}/pago-resultado?compra_id=${resultado.compra.id}`;
 
       try {

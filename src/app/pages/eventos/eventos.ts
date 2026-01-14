@@ -12,7 +12,8 @@ import { StorageService } from '../../services/storage.service';
 import { ImageOptimizationService } from '../../services/image-optimization.service';
 import { TimezoneService } from '../../services/timezone.service';
 import { AlertService } from '../../services/alert.service';
-import { Evento, CategoriaEvento, Lugar, Usuario, PaginatedResponse, TipoEstadoEvento } from '../../types';
+import { CuponesService } from '../../services/cupones.service';
+import { Evento, CategoriaEvento, Lugar, Usuario, PaginatedResponse, TipoEstadoEvento, CuponDescuento } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 @Component({
@@ -39,6 +40,18 @@ export class Eventos implements OnInit, OnDestroy {
   editingEvento: Evento | null = null;
   formData: Partial<Evento> = { activo: true, estado: TipoEstadoEvento.BORRADOR };
   
+  // Manejo de Cupones
+  showCuponesModal = false;
+  selectedEventoForCupones: Evento | null = null;
+  cupones: CuponDescuento[] = [];
+  loadingCupones = false;
+  nuevoCupon: Partial<CuponDescuento> = {
+    codigo: '',
+    porcentaje_descuento: 0,
+    max_usos: 1,
+    activo: true
+  };
+  
   // Propiedades para manejo de imágenes
   previewUrl: string | null = null;
   selectedFile: File | null = null;
@@ -61,6 +74,7 @@ export class Eventos implements OnInit, OnDestroy {
     private timezoneService: TimezoneService,
     private storageService: StorageService,
     private imageOptimizationService: ImageOptimizationService,
+    private cuponesService: CuponesService,
     private alertService: AlertService,
     private cdr: ChangeDetectorRef
   ) {}
@@ -211,6 +225,93 @@ export class Eventos implements OnInit, OnDestroy {
     this.selectedFile = null;
   }
   
+  // ========== MÉTODOS PARA MANEJO DE CUPONES ==========
+
+  async openCuponesModal(evento: Evento) {
+    this.selectedEventoForCupones = evento;
+    this.showCuponesModal = true;
+    this.loadCupones(evento.id);
+    this.nuevoCupon = {
+      evento_id: evento.id,
+      codigo: '',
+      porcentaje_descuento: 10,
+      max_usos: 1,
+      activo: true
+    };
+  }
+
+  async loadCupones(eventoId: number) {
+    this.loadingCupones = true;
+    try {
+      this.cupones = await this.cuponesService.getCuponesByEvento(eventoId);
+    } catch (err) {
+      console.error('Error cargando cupones:', err);
+      this.alertService.error('Error', 'No se pudieron cargar los cupones');
+    } finally {
+      this.loadingCupones = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  async crearCupon() {
+    if (!this.nuevoCupon.codigo || !this.nuevoCupon.porcentaje_descuento) {
+      this.alertService.warning('Campos incompletos', 'El código y el porcentaje son obligatorios');
+      return;
+    }
+
+    try {
+      this.nuevoCupon.codigo = this.nuevoCupon.codigo.toUpperCase().trim();
+      await this.cuponesService.crearCupon(this.nuevoCupon);
+      this.alertService.success('Éxito', 'Cupón creado correctamente');
+      if (this.selectedEventoForCupones) {
+        this.loadCupones(this.selectedEventoForCupones.id);
+      }
+      this.nuevoCupon = {
+        evento_id: this.selectedEventoForCupones?.id,
+        codigo: '',
+        porcentaje_descuento: 10,
+        max_usos: 1,
+        activo: true
+      };
+    } catch (err: any) {
+      console.error('Error creando cupón:', err);
+      this.alertService.error('Error', 'No se pudo crear el cupón: ' + (err.message || 'Error desconocido'));
+    }
+  }
+
+  async toggleCuponActivo(cupon: CuponDescuento) {
+    try {
+      await this.cuponesService.actualizarCupon(cupon.id, { activo: !cupon.activo });
+      if (this.selectedEventoForCupones) {
+        this.loadCupones(this.selectedEventoForCupones.id);
+      }
+    } catch (err) {
+      console.error('Error actualizando cupón:', err);
+      this.alertService.error('Error', 'No se pudo actualizar el cupón');
+    }
+  }
+
+  async eliminarCupon(cupon: CuponDescuento) {
+    if (!confirm(`¿Estás seguro de eliminar el cupón ${cupon.codigo}?`)) return;
+
+    try {
+      await this.cuponesService.eliminarCupon(cupon.id);
+      this.alertService.success('Éxito', 'Cupón eliminado');
+      if (this.selectedEventoForCupones) {
+        this.loadCupones(this.selectedEventoForCupones.id);
+      }
+    } catch (err) {
+      console.error('Error eliminando cupón:', err);
+      this.alertService.error('Error', 'No se pudo eliminar el cupón');
+    }
+  }
+
+  closeCuponesModal() {
+    this.showCuponesModal = false;
+    this.selectedEventoForCupones = null;
+    this.cupones = [];
+  }
+
   // ========== MÉTODOS PARA MANEJO DE IMÁGENES ==========
   
   selectImage() {

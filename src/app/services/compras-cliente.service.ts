@@ -26,6 +26,10 @@ export interface DatosCompra {
   items: ItemCompra[];
   metodo_pago?: MetodoPago; // Opcional, Wompi lo determinará
   datos_facturacion?: Record<string, any>;
+  cupon_id?: number;
+  descuento_total?: number;
+  subtotal?: number;
+  total?: number;
 }
 
 @Injectable({
@@ -135,7 +139,8 @@ export class ComprasClienteService {
   async procesarCompra(datosCompra: DatosCompra): Promise<{ compra: Compra; boletas: BoletaComprada[] }> {
     try {
       // Calcular total
-      const total = datosCompra.items.reduce((sum, item) => sum + (item.precio_unitario * item.cantidad), 0);
+      const subtotal = datosCompra.items.reduce((sum, item) => sum + (item.precio_unitario * item.cantidad), 0);
+      const total = datosCompra.total ?? (subtotal - (datosCompra.descuento_total || 0));
 
       // Crear la compra (sin método de pago, Wompi lo determinará)
       const compraData: Partial<Compra> = {
@@ -143,6 +148,9 @@ export class ComprasClienteService {
         evento_id: datosCompra.evento_id,
         numero_transaccion: this.generarNumeroTransaccion(),
         total: total,
+        subtotal: subtotal,
+        descuento_total: datosCompra.descuento_total || 0,
+        cupon_id: datosCompra.cupon_id,
         metodo_pago: datosCompra.metodo_pago, // Opcional
         estado_pago: TipoEstadoPago.PENDIENTE,
         estado_compra: TipoEstadoCompra.PENDIENTE,
@@ -304,14 +312,21 @@ export class ComprasClienteService {
           fecha_confirmacion: this.timezoneService.getCurrentDateISO()
         })
         .eq('id', compraId)
-        .select()
-        .single();
+        .select();
 
       if (error) {
         throw error;
       }
 
-      return data as Compra;
+      // IMPORTANTE: Al ser un cupón de 100% o una confirmación manual, 
+      // el trigger 'activar_boletas_al_confirmar' en la DB se encargará 
+      // de pasar las boletas de 'pendiente' a 'activa'.
+
+      if (!data || data.length === 0) {
+        return await this.getCompraById(compraId);
+      }
+
+      return data[0] as Compra;
     } catch (error) {
       console.error('Error confirmando pago:', error);
       throw error;

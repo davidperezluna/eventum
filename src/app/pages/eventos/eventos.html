@@ -47,7 +47,10 @@
             <span class="badge-info">{{ getEstadoLabel(evento.estado) }}</span>
           </div>
           <div class="evento-actions">
-            <button class="btn-icon" (click)="openModal(evento)">
+            <button class="btn-icon" (click)="openCuponesModal(evento)" title="Gestionar Cupones">
+              <span class="material-icons">confirmation_number</span>
+            </button>
+            <button class="btn-icon" (click)="openModal(evento)" title="Editar Evento">
               <span class="material-icons">edit</span>
             </button>
             <button class="btn-icon" (click)="toggleDestacado(evento)" [title]="evento.destacado ? 'Quitar destacado' : 'Marcar destacado'">
@@ -256,6 +259,91 @@
       <div class="modal-footer">
         <button class="btn-secondary" (click)="closeModal()">Cancelar</button>
         <button class="btn-primary" (click)="saveEvento()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Cupones -->
+  <div *ngIf="showCuponesModal" class="modal-overlay">
+    <div class="modal-content modal-large" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2>Cupones de Descuento</h2>
+          <p class="modal-subtitle">Evento: {{ selectedEventoForCupones?.titulo }}</p>
+        </div>
+        <button class="btn-close" (click)="closeCuponesModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- Formulario nuevo cupón -->
+        <div class="nuevo-cupon-card">
+          <h3>Crear Nuevo Cupón</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Código *</label>
+              <input type="text" [(ngModel)]="nuevoCupon.codigo" placeholder="Ej: FIESTA20" style="text-transform: uppercase;" />
+              <small>Mínimo 4 caracteres</small>
+            </div>
+            <div class="form-group">
+              <label>Descuento (%) *</label>
+              <input type="number" [(ngModel)]="nuevoCupon.porcentaje_descuento" min="1" max="100" />
+            </div>
+            <div class="form-group">
+              <label>Límite de Usos *</label>
+              <input type="number" [(ngModel)]="nuevoCupon.max_usos" min="1" />
+              <small>Por defecto 1 (solo un uso)</small>
+            </div>
+            <div class="form-group action-group">
+              <button class="btn-primary btn-full" (click)="crearCupon()">Crear Cupón</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de cupones -->
+        <div class="cupones-list-container">
+          <h3>Cupones Existentes</h3>
+          <div *ngIf="loadingCupones" class="loading-state">Cargando cupones...</div>
+          <div *ngIf="!loadingCupones && cupones.length === 0" class="empty-state-small">
+            No hay cupones creados para este evento.
+          </div>
+          <table *ngIf="!loadingCupones && cupones.length > 0" class="data-table">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Descuento</th>
+                <th>Usos</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let cupon of cupones">
+                <td><strong>{{ cupon.codigo }}</strong></td>
+                <td>{{ cupon.porcentaje_descuento }}%</td>
+                <td>{{ cupon.usos_actuales }} / {{ cupon.max_usos }}</td>
+                <td>
+                  <span [class]="cupon.activo ? 'badge-success' : 'badge-danger'">
+                    {{ cupon.activo ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="table-actions">
+                    <button class="btn-icon" (click)="toggleCuponActivo(cupon)" [title]="cupon.activo ? 'Desactivar' : 'Activar'">
+                      <span class="material-icons">{{ cupon.activo ? 'block' : 'check_circle' }}</span>
+                    </button>
+                    <button class="btn-icon btn-danger" (click)="eliminarCupon(cupon)" title="Eliminar">
+                      <span class="material-icons">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeCuponesModal()">Cerrar</button>
       </div>
     </div>
   </div>

@@ -597,6 +597,134 @@
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
+/* =========================================
+   CUPÓN DE DESCUENTO
+   ========================================= */
+.cupon-section {
+  background: #f8fafc;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  margin-bottom: 1.5rem;
+  border: 2px dashed #e2e8f0;
+}
+
+.cupon-section h5 {
+  color: #1e293b;
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.cupon-input-group {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.cupon-input-group input {
+  flex: 1;
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: #1e293b;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.cupon-input-group input::placeholder {
+  color: #94a3b8;
+}
+
+.cupon-input-group input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.btn-aplicar-cupon {
+  background: #6366f1;
+  color: white;
+  border: none;
+  padding: 0 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-aplicar-cupon:hover:not(:disabled) {
+  background: #4f46e5;
+  transform: translateY(-1px);
+}
+
+.btn-aplicar-cupon:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.cupon-aplicado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 0.85rem 1.25rem;
+  border-radius: 0.75rem;
+  color: #166534;
+}
+
+.cupon-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.cupon-info strong {
+  color: #15803d;
+  background: #dcfce7;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.btn-quitar-cupon {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.25rem;
+  transition: all 0.2s;
+}
+
+.btn-quitar-cupon:hover {
+  color: #ef4444;
+  transform: scale(1.1);
+}
+
+/* =========================================
+   CART TOTAL UPDATES
+   ========================================= */
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.total-row.descuento {
+  color: #4ade80;
+  font-weight: 600;
+}
+
+.total-row.main {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .carrito-total {
   background: #1e293b;
   color: white;
