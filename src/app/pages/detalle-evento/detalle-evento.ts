@@ -16,10 +16,11 @@ import { AlertService } from '../../services/alert.service';
 import { Evento, TipoBoleta, Usuario, Lugar, CategoriaEvento, TipoEstadoEvento, CuponDescuento } from '../../types';
 import { supabaseConfig } from '../../config/supabase.config';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
+import { SafePipe } from '../../pipes/safe.pipe';
 
 @Component({
   selector: 'app-detalle-evento',
-  imports: [CommonModule, FormsModule, RouterModule, DateFormatPipe],
+  imports: [CommonModule, FormsModule, RouterModule, DateFormatPipe, SafePipe],
   templateUrl: './detalle-evento.html',
   styleUrl: './detalle-evento.css',
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
@@ -548,6 +549,26 @@ export class DetalleEvento implements OnInit {
       return cat.icono;
     }
     return 'pricetag';
+  }
+
+  getYoutubeEmbedUrl(url?: string): string | null {
+    if (!url) return null;
+    
+    // Patrones comunes de URLs de YouTube
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+      /youtube\.com\/watch\?.*v=([^&\n?#]+)/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        return `https://www.youtube.com/embed/${match[1]}`;
+      }
+    }
+    
+    // Si no coincide con ningún patrón, retornar null
+    return null;
   }
 }
 

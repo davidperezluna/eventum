@@ -182,6 +182,23 @@
       <p class="evento-descripcion">{{ evento.descripcion }}</p>
     </div>
 
+    <!-- Video de YouTube -->
+    <div class="evento-section" *ngIf="evento.url_video && getYoutubeEmbedUrl(evento.url_video)">
+      <h2>
+        <span class="material-icons">play_circle</span>
+        Video del Evento
+      </h2>
+      <div class="video-container">
+        <iframe 
+          [src]="getYoutubeEmbedUrl(evento.url_video) | safe" 
+          frameborder="0" 
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+          allowfullscreen
+          class="youtube-embed">
+        </iframe>
+      </div>
+    </div>
+
     <!-- Tags -->
     <div class="evento-section" *ngIf="evento.tags">
       <h2>

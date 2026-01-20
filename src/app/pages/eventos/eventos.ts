@@ -467,6 +467,7 @@ export class Eventos implements OnInit, OnDestroy {
     if (!eventoData.tags) delete eventoData.tags;
     if (!eventoData.terminos_condiciones) delete eventoData.terminos_condiciones;
     if (!eventoData.politica_reembolso) delete eventoData.politica_reembolso;
+    if (!eventoData.url_video) delete eventoData.url_video;
     
     // Eliminar objetos de relación que vienen del join y confunden a la base de datos
     delete (eventoData as any).lugar;

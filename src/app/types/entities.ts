@@ -107,6 +107,7 @@ export interface Evento {
   tags?: string;
   terminos_condiciones?: string;
   politica_reembolso?: string;
+  url_video?: string;
   activo?: boolean;
   fecha_creacion?: Date | string;
   fecha_actualizacion?: Date | string;

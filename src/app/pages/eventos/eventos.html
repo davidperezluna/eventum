@@ -255,6 +255,11 @@
           <label>Política de Reembolso</label>
           <textarea [(ngModel)]="formData.politica_reembolso" rows="4" placeholder="Política de reembolso y cancelación"></textarea>
         </div>
+        <div class="form-group">
+          <label>URL del Video (YouTube)</label>
+          <input type="url" [(ngModel)]="formData.url_video" placeholder="https://www.youtube.com/watch?v=..." />
+          <small class="form-help">Pega la URL completa del video de YouTube del evento</small>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" (click)="closeModal()">Cancelar</button>
