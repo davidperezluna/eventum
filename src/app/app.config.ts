@@ -10,5 +10,6 @@ export const appConfig: ApplicationConfig = {
       routes,
       withEnabledBlockingInitialNavigation() // Mejora la navegación inicial en producción
     )
+    // GoogleAnalyticsService se inicializa automáticamente cuando se inyecta por primera vez
   ]
 };
