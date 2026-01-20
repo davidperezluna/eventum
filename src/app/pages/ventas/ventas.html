@@ -32,6 +32,8 @@
           <th>Transacción</th>
           <th>Cliente</th>
           <th>Evento</th>
+          <th>Subtotal</th>
+          <th>Descuento</th>
           <th>Total</th>
           <th>Método Pago</th>
           <th>Estado Pago</th>
@@ -54,7 +56,15 @@
               {{ getEventoTitulo(compra) }}
             </button>
           </td>
-          <td>${{ compra.total | number:'1.2-2' }}</td>
+          <td>${{ (compra.subtotal || compra.total) | number:'1.2-2' }}</td>
+          <td>
+            <div *ngIf="compra.descuento_total && compra.descuento_total > 0" class="discount-cell">
+              <span class="discount-amount">-${{ compra.descuento_total | number:'1.2-2' }}</span>
+              <small class="coupon-code" *ngIf="compra.cupon">({{ compra.cupon.codigo }})</small>
+            </div>
+            <span *ngIf="!compra.descuento_total || compra.descuento_total === 0">-</span>
+          </td>
+          <td><strong>${{ compra.total | number:'1.2-2' }}</strong></td>
           <td>{{ compra.metodo_pago }}</td>
           <td>
             <span [class]="compra.estado_pago === 'completado' ? 'badge-success' : 'badge-warning'">
@@ -147,6 +157,21 @@
         </button>
       </div>
       <div class="modal-body">
+        <div class="financial-summary" *ngIf="formData.id">
+          <div class="summary-item">
+            <label>Subtotal:</label>
+            <span>${{ (formData.subtotal || formData.total) | number:'1.2-2' }}</span>
+          </div>
+          <div class="summary-item" *ngIf="formData.descuento_total && formData.descuento_total > 0">
+            <label>Descuento:</label>
+            <span class="discount-text">-${{ formData.descuento_total | number:'1.2-2' }} <small *ngIf="formData.cupon">({{ formData.cupon.codigo }})</small></span>
+          </div>
+          <div class="summary-item total">
+            <label>Total:</label>
+            <span>${{ formData.total | number:'1.2-2' }}</span>
+          </div>
+        </div>
+        
         <div class="form-group">
           <label>Estado de Pago</label>
           <select [(ngModel)]="formData.estado_pago">

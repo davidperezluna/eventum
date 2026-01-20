@@ -174,6 +174,32 @@ export class UsuariosService {
   }
 
   /**
+   * Cambia la contraseña de un usuario (solo para administradores)
+   */
+  async changePassword(authUserId: string, newPassword: string): Promise<void> {
+    try {
+      console.log('Solicitando cambio de contraseña para:', authUserId);
+      const { data, error } = await this.supabase.functions.invoke('admin-change-password', {
+        body: { authUserId, newPassword }
+      });
+
+      if (error) {
+        console.error('Error invocando función admin-change-password:', error);
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      console.log('Contraseña actualizada exitosamente');
+    } catch (error: any) {
+      console.error('Error en changePassword:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Elimina un usuario (soft delete)
    */
   async deleteUsuario(id: number): Promise<void> {

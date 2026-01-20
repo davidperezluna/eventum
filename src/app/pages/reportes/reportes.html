@@ -81,9 +81,23 @@
         </div>
       </div>
       <div class="stat-card">
+        <span class="material-icons stat-icon">payments</span>
+        <div class="stat-content">
+          <h3>Subtotal</h3>
+          <p class="stat-value">${{ reporteVentas.totalSubtotal | number:'1.0-0' }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="material-icons stat-icon">loyalty</span>
+        <div class="stat-content">
+          <h3>Total Descuentos</h3>
+          <p class="stat-value" style="color: var(--color-danger, #f44336)">${{ reporteVentas.totalDescuentos | number:'1.0-0' }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
         <span class="material-icons stat-icon">attach_money</span>
         <div class="stat-content">
-          <h3>Total Ingresos</h3>
+          <h3>Total Ingresos (Neto)</h3>
           <p class="stat-value">${{ reporteVentas.totalIngresos | number:'1.0-0' }}</p>
         </div>
       </div>

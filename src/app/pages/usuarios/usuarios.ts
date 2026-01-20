@@ -6,6 +6,7 @@ import { takeUntil, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { UsuariosService } from '../../services/usuarios.service';
 import { AlertService } from '../../services/alert.service';
+import { AuthService } from '../../services/auth.service';
 import { Usuario, TipoUsuario, PaginatedResponse } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
@@ -14,6 +15,7 @@ import { DateFormatPipe } from '../../pipes/date-format.pipe';
   imports: [CommonModule, FormsModule, DateFormatPipe],
   templateUrl: './usuarios.html',
   styleUrl: './usuarios.css',
+  standalone: true,
 })
 export class Usuarios implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
@@ -34,15 +36,26 @@ export class Usuarios implements OnInit, OnDestroy {
   formData: Partial<Usuario> = {};
   password = ''; // Campo para password al crear nuevo usuario
 
+  // Modal Cambio Contraseña
+  showPasswordModal = false;
+  selectedUsuario: Usuario | null = null;
+  newPassword = '';
+  isChangingPassword = false;
+
   constructor(
     private usuariosService: UsuariosService,
     private alertService: AlertService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
     this.loadTiposUsuario();
     this.loadUsuarios();
+  }
+
+  get isAdministrador(): boolean {
+    return this.authService.isAdministrador();
   }
 
   ngOnDestroy() {
@@ -239,4 +252,43 @@ export class Usuarios implements OnInit, OnDestroy {
   }
 
   Math = Math;
+
+  // Métodos Cambio Contraseña
+  openPasswordModal(usuario: Usuario) {
+    this.selectedUsuario = usuario;
+    this.newPassword = '';
+    this.showPasswordModal = true;
+  }
+
+  closePasswordModal() {
+    this.showPasswordModal = false;
+    this.selectedUsuario = null;
+    this.newPassword = '';
+    this.isChangingPassword = false;
+  }
+
+  async confirmChangePassword() {
+    if (!this.selectedUsuario?.auth_user_id) {
+      this.alertService.error('Error', 'El usuario no tiene un ID de autenticación válido');
+      return;
+    }
+
+    if (!this.newPassword || this.newPassword.length < 6) {
+      this.alertService.warning('Contraseña inválida', 'La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    this.isChangingPassword = true;
+    try {
+      await this.usuariosService.changePassword(this.selectedUsuario.auth_user_id, this.newPassword);
+      this.alertService.success('¡Éxito!', 'La contraseña ha sido actualizada correctamente');
+      this.closePasswordModal();
+    } catch (error: any) {
+      console.error('Error al cambiar contraseña:', error);
+      const errorMessage = error?.message || 'Error al actualizar la contraseña';
+      this.alertService.error('Error', errorMessage);
+    } finally {
+      this.isChangingPassword = false;
+    }
+  }
 }

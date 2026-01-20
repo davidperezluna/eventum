@@ -77,6 +77,9 @@
             <button class="btn-icon" (click)="openModal(usuario)" title="Editar">
               <span class="material-icons">edit</span>
             </button>
+            <button class="btn-icon" (click)="openPasswordModal(usuario)" title="Cambiar Contraseña" *ngIf="isAdministrador">
+              <span class="material-icons">vpn_key</span>
+            </button>
             <button class="btn-icon" (click)="toggleActivo(usuario)" [title]="usuario.activo ? 'Desactivar' : 'Activar'">
               <span class="material-icons">{{ usuario.activo ? 'block' : 'check_circle' }}</span>
             </button>
@@ -198,6 +201,38 @@
       <div class="modal-footer">
         <button class="btn-secondary" (click)="closeModal()">Cancelar</button>
         <button class="btn-primary" (click)="saveUsuario()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Cambio Contraseña -->
+  <div *ngIf="showPasswordModal" class="modal-overlay">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Nueva Clave para {{ selectedUsuario?.nombre || 'el usuario' }}</h2>
+        <button class="btn-close" (click)="closePasswordModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>¿Vas a cambiarle la llave de entrada a <strong>{{ selectedUsuario?.email }}</strong>? ¡Asegúrate de que sea una clave segura para que siga la rumba!</p>
+        <div class="form-group">
+          <label>Nueva Contraseña <span style="color: red;">*</span></label>
+          <input 
+            type="password" 
+            [(ngModel)]="newPassword" 
+            placeholder="Mínimo 6 caracteres" 
+            required 
+            [disabled]="isChangingPassword"
+          />
+          <small style="color: #666; font-size: 0.85em;">Ponle algo difícil de adivinar, ¡mínimo 6 toques!</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closePasswordModal()" [disabled]="isChangingPassword">Mejor no</button>
+        <button class="btn-primary" (click)="confirmChangePassword()" [disabled]="isChangingPassword">
+          {{ isChangingPassword ? 'Cambiando...' : '¡Cambiar Clave!' }}
+        </button>
       </div>
     </div>
   </div>

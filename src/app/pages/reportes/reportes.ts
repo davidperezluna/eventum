@@ -252,13 +252,23 @@ export class Reportes implements OnInit, OnDestroy {
       // Filtrar completadas del mismo conjunto (más eficiente que hacer otra consulta)
       const comprasCompletadas = compras.filter((c: any) => c.estado_pago === 'completado');
       
-      // Calcular ingresos solo de compras completadas
-      const totalIngresos = comprasCompletadas.reduce((sum: number, c: any) => sum + Number(c.total || 0), 0);
+      // Calcular ingresos, subtotales y descuentos solo de compras completadas
+      let totalIngresos = 0;
+      let totalSubtotal = 0;
+      let totalDescuentos = 0;
+
+      comprasCompletadas.forEach((c: any) => {
+        totalIngresos += Number(c.total || 0);
+        totalSubtotal += Number(c.subtotal || c.total || 0);
+        totalDescuentos += Number(c.descuento_total || 0);
+      });
       
       this.reporteVentas = {
         totalCompras: compras.length,
         comprasCompletadas: comprasCompletadas.length,
         totalIngresos: totalIngresos,
+        totalSubtotal: totalSubtotal,
+        totalDescuentos: totalDescuentos,
         comprasPorEstado: this.agruparPorEstado(compras, 'estado_pago'),
         comprasPorMetodo: this.agruparPorMetodo(comprasCompletadas)
       };

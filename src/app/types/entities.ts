@@ -174,6 +174,11 @@ export interface Compra {
   descuento_total?: number;
   subtotal?: number;
   // Datos enriquecidos (vienen del join)
+  cupon?: {
+    id: number;
+    codigo: string;
+    porcentaje_descuento: number;
+  };
   cliente?: {
     id: number;
     nombre?: string;

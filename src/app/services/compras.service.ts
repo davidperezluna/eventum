@@ -33,7 +33,8 @@ export class ComprasService {
             fecha_inicio, 
             lugar_id,
             lugar:lugares(id, nombre, direccion, ciudad, pais, telefono, email)
-          )
+          ),
+          cupon:cupones_descuento(id, codigo, porcentaje_descuento)
         `, { count: 'exact' });
 
       // Aplicar filtros
