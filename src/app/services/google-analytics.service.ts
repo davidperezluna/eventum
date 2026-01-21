@@ -1,5 +1,5 @@
 /* ============================================
-   GOOGLE TAG MANAGER SERVICE
+   GOOGLE ANALYTICS SERVICE
    ============================================ */
 
 import { Injectable } from '@angular/core';
@@ -7,19 +7,19 @@ import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
-declare let dataLayer: any[];
+declare let gtag: Function;
 
 @Injectable({
   providedIn: 'root'
 })
 export class GoogleAnalyticsService {
-  private gtmId: string | undefined;
+  private googleTagId: string | undefined;
 
   constructor(private router: Router) {
-    this.gtmId = environment.googleTagManagerId;
+    this.googleTagId = environment.googleTagId;
     
     // Solo inicializar si estamos en producción y tenemos un ID
-    if (this.gtmId && environment.production) {
+    if (this.googleTagId && environment.production) {
       this.init();
     }
   }
@@ -28,11 +28,6 @@ export class GoogleAnalyticsService {
    * Inicializa el tracking de navegación
    */
   private init() {
-    // Inicializar dataLayer si no existe
-    if (typeof window !== 'undefined') {
-      (window as any).dataLayer = (window as any).dataLayer || [];
-    }
-    
     // Trackear navegación de páginas
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
@@ -45,12 +40,11 @@ export class GoogleAnalyticsService {
    * Trackea una vista de página
    */
   trackPageView(url: string) {
-    if (!this.gtmId || !environment.production) return;
+    if (!this.googleTagId || !environment.production) return;
     
     try {
-      if (typeof window !== 'undefined' && (window as any).dataLayer) {
-        (window as any).dataLayer.push({
-          event: 'page_view',
+      if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
+        gtag('config', this.googleTagId, {
           page_path: url
         });
       }
@@ -65,14 +59,11 @@ export class GoogleAnalyticsService {
    * @param eventParams Parámetros adicionales del evento
    */
   trackEvent(eventName: string, eventParams?: Record<string, any>) {
-    if (!this.gtmId || !environment.production) return;
+    if (!this.googleTagId || !environment.production) return;
     
     try {
-      if (typeof window !== 'undefined' && (window as any).dataLayer) {
-        (window as any).dataLayer.push({
-          event: eventName,
-          ...eventParams
-        });
+      if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
+        gtag('event', eventName, eventParams || {});
       }
     } catch (error) {
       console.error('Error tracking event:', error);
@@ -97,12 +88,11 @@ export class GoogleAnalyticsService {
       quantity?: number;
     }>
   ) {
-    if (!this.gtmId || !environment.production) return;
+    if (!this.googleTagId || !environment.production) return;
     
     try {
-      if (typeof window !== 'undefined' && (window as any).dataLayer) {
-        (window as any).dataLayer.push({
-          event: 'purchase',
+      if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
+        gtag('event', 'purchase', {
           transaction_id: transactionId,
           value: value,
           currency: currency,
@@ -119,12 +109,11 @@ export class GoogleAnalyticsService {
    * @param method Método de inicio de sesión (email, google, etc.)
    */
   trackLogin(method?: string) {
-    if (!this.gtmId || !environment.production) return;
+    if (!this.googleTagId || !environment.production) return;
     
     try {
-      if (typeof window !== 'undefined' && (window as any).dataLayer) {
-        (window as any).dataLayer.push({
-          event: 'login',
+      if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
+        gtag('event', 'login', {
           method: method || 'email'
         });
       }
@@ -138,12 +127,11 @@ export class GoogleAnalyticsService {
    * @param method Método de registro (email, google, etc.)
    */
   trackRegistration(method?: string) {
-    if (!this.gtmId || !environment.production) return;
+    if (!this.googleTagId || !environment.production) return;
     
     try {
-      if (typeof window !== 'undefined' && (window as any).dataLayer) {
-        (window as any).dataLayer.push({
-          event: 'sign_up',
+      if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
+        gtag('event', 'sign_up', {
           method: method || 'email'
         });
       }
@@ -157,12 +145,11 @@ export class GoogleAnalyticsService {
    * @param searchTerm Término de búsqueda
    */
   trackSearch(searchTerm: string) {
-    if (!this.gtmId || !environment.production) return;
+    if (!this.googleTagId || !environment.production) return;
     
     try {
-      if (typeof window !== 'undefined' && (window as any).dataLayer) {
-        (window as any).dataLayer.push({
-          event: 'search',
+      if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
+        gtag('event', 'search', {
           search_term: searchTerm
         });
       }
@@ -177,12 +164,11 @@ export class GoogleAnalyticsService {
    * @param eventoTitulo Título del evento
    */
   trackEventoView(eventoId: number, eventoTitulo: string) {
-    if (!this.gtmId || !environment.production) return;
+    if (!this.googleTagId || !environment.production) return;
     
     try {
-      if (typeof window !== 'undefined' && (window as any).dataLayer) {
-        (window as any).dataLayer.push({
-          event: 'view_item',
+      if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
+        gtag('event', 'view_item', {
           item_id: eventoId.toString(),
           item_name: eventoTitulo,
           item_category: 'evento'
@@ -199,12 +185,11 @@ export class GoogleAnalyticsService {
    * @param value Valor total
    */
   trackBeginCheckout(eventoId: number, value: number) {
-    if (!this.gtmId || !environment.production) return;
+    if (!this.googleTagId || !environment.production) return;
     
     try {
-      if (typeof window !== 'undefined' && (window as any).dataLayer) {
-        (window as any).dataLayer.push({
-          event: 'begin_checkout',
+      if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
+        gtag('event', 'begin_checkout', {
           value: value,
           currency: 'COP',
           items: [{
@@ -225,12 +210,11 @@ export class GoogleAnalyticsService {
    * @param precio Precio del item
    */
   trackAddToCart(eventoId: number, eventoTitulo: string, precio: number) {
-    if (!this.gtmId || !environment.production) return;
+    if (!this.googleTagId || !environment.production) return;
     
     try {
-      if (typeof window !== 'undefined' && (window as any).dataLayer) {
-        (window as any).dataLayer.push({
-          event: 'add_to_cart',
+      if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
+        gtag('event', 'add_to_cart', {
           currency: 'COP',
           value: precio,
           items: [{
