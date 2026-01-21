@@ -115,6 +115,7 @@ export class Ventas implements OnInit, OnDestroy {
         const updateData = { ...this.formData };
         delete (updateData as any).cliente;
         delete (updateData as any).evento;
+        delete (updateData as any).cupon; // Eliminar el objeto cupon del join
         delete (updateData as any).id;
         delete (updateData as any).fecha_creacion;
         delete (updateData as any).fecha_actualizacion;

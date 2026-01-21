@@ -34,7 +34,7 @@ export class ComprasService {
             lugar_id,
             lugar:lugares(id, nombre, direccion, ciudad, pais, telefono, email)
           ),
-          cupon:cupones_descuento(id, codigo, porcentaje_descuento)
+          cupon:cupones_descuento!compras_cupon_id_fkey(id, codigo, porcentaje_descuento)
         `, { count: 'exact' });
 
       // Aplicar filtros
@@ -137,14 +137,40 @@ export class ComprasService {
    */
   async updateCompra(id: number, compra: Partial<Compra>): Promise<Compra> {
     try {
+      // Primero verificar que el registro existe
+      const { data: existingData, error: checkError } = await this.supabase
+        .from(this.tableName)
+        .select('id')
+        .eq('id', id)
+        .single();
+      
+      if (checkError || !existingData) {
+        throw new Error(`No se encontró la compra con ID ${id}`);
+      }
+
+      // Actualizar sin JOINs para evitar problemas con relaciones
       const { data, error } = await this.supabase
         .from(this.tableName)
         .update(compra)
         .eq('id', id)
-        .select()
+        .select('*') // Seleccionar solo campos básicos, sin JOINs
         .single();
       
-      if (error) throw error;
+      if (error) {
+        // Si falla el SELECT después del UPDATE, intentar obtener el registro de nuevo
+        if (error.code === 'PGRST116') {
+          const { data: retryData, error: retryError } = await this.supabase
+            .from(this.tableName)
+            .select('*')
+            .eq('id', id)
+            .single();
+          
+          if (retryError) throw retryError;
+          return retryData as Compra;
+        }
+        throw error;
+      }
+      
       return data as Compra;
     } catch (error) {
       throw error;
