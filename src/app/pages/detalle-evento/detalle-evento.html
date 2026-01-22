@@ -118,9 +118,6 @@
         <div *ngIf="!loadingLugar && lugar" class="lugar-info">
           <div class="lugar-header">
             <h3>{{ lugar.nombre }}</h3>
-            <div *ngIf="lugar.imagen_principal" class="lugar-image">
-              <img [src]="lugar.imagen_principal" [alt]="lugar.nombre" />
-            </div>
           </div>
           <div class="lugar-details">
             <div class="lugar-item">
