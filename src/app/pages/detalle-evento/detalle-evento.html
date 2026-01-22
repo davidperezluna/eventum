@@ -14,7 +14,20 @@
     <!-- Header del evento -->
     <div class="evento-header">
       <div class="evento-image-large">
-        <img [src]="getImageUrl(evento)" [alt]="evento.titulo" />
+        <div class="evento-image-background" *ngIf="evento">
+          <img [src]="getImageUrl(evento)" [alt]="evento.titulo" />
+        </div>
+        <div class="image-collage">
+          <div class="collage-item collage-item-1" (click)="abrirImagenModal()">
+            <img [src]="getImageUrl(evento)" [alt]="evento.titulo" />
+          </div>
+          <div class="collage-item collage-item-2" (click)="abrirImagenModal()">
+            <img [src]="getImageUrl(evento)" [alt]="evento.titulo" />
+          </div>
+          <div class="collage-item collage-item-3" (click)="abrirImagenModal()">
+            <img [src]="getImageUrl(evento)" [alt]="evento.titulo" />
+          </div>
+        </div>
         <div class="evento-badge" *ngIf="evento.destacado">
           <span class="material-icons">star</span>
           Destacado
@@ -90,96 +103,101 @@
     </div>
 
     <!-- Información del Lugar -->
-    <div class="evento-section" *ngIf="lugar || loadingLugar">
-      <h2>
-        <span class="material-icons">place</span>
-        Ubicación del Evento
-      </h2>
-      <div *ngIf="loadingLugar" class="loading-small">
-        <p>Cargando información del lugar...</p>
-      </div>
-      <div *ngIf="!loadingLugar && lugar" class="lugar-info">
-        <div class="lugar-header">
-          <h3>{{ lugar.nombre }}</h3>
-          <div *ngIf="lugar.imagen_principal" class="lugar-image">
-            <img [src]="lugar.imagen_principal" [alt]="lugar.nombre" />
+    <div class="evento-section evento-accordion" *ngIf="lugar || loadingLugar">
+      <button class="accordion-header" (click)="toggleAcordeon('ubicacion')" type="button">
+        <h2>
+          <span class="material-icons">place</span>
+          Ubicación del Evento
+        </h2>
+        <span class="material-icons accordion-icon" [class.open]="acordeones.ubicacion">expand_more</span>
+      </button>
+      <div class="accordion-content" [class.open]="acordeones.ubicacion">
+        <div *ngIf="loadingLugar" class="loading-small">
+          <p>Cargando información del lugar...</p>
+        </div>
+        <div *ngIf="!loadingLugar && lugar" class="lugar-info">
+          <div class="lugar-header">
+            <h3>{{ lugar.nombre }}</h3>
+            <div *ngIf="lugar.imagen_principal" class="lugar-image">
+              <img [src]="lugar.imagen_principal" [alt]="lugar.nombre" />
+            </div>
+          </div>
+          <div class="lugar-details">
+            <div class="lugar-item">
+              <span class="material-icons">location_on</span>
+              <div class="lugar-item-content">
+                <strong>Dirección</strong>
+                <p>{{ lugar.direccion }}</p>
+              </div>
+            </div>
+            <div class="lugar-item" *ngIf="lugar.ciudad">
+              <span class="material-icons">location_city</span>
+              <div class="lugar-item-content">
+                <strong>Ciudad</strong>
+                <p>{{ lugar.ciudad }}<span *ngIf="lugar.pais">, {{ lugar.pais }}</span></p>
+              </div>
+            </div>
+            <div class="lugar-item" *ngIf="lugar.telefono">
+              <span class="material-icons">phone</span>
+              <div class="lugar-item-content">
+                <strong>Teléfono</strong>
+                <p>{{ lugar.telefono }}</p>
+              </div>
+            </div>
+            <div class="lugar-item" *ngIf="lugar.email">
+              <span class="material-icons">email</span>
+              <div class="lugar-item-content">
+                <strong>Email</strong>
+                <p>{{ lugar.email }}</p>
+              </div>
+            </div>
+            <div class="lugar-item" *ngIf="lugar.capacidad_maxima">
+              <span class="material-icons">people</span>
+              <div class="lugar-item-content">
+                <strong>Capacidad</strong>
+                <p>{{ lugar.capacidad_maxima }} personas</p>
+              </div>
+            </div>
+            <div class="lugar-item" *ngIf="lugar.descripcion">
+              <span class="material-icons">description</span>
+              <div class="lugar-item-content">
+                <strong>Descripción</strong>
+                <p>{{ lugar.descripcion }}</p>
+              </div>
+            </div>
+            <div class="lugar-buttons" *ngIf="lugar.latitud && lugar.longitud || lugar.sitio_web">
+              <button type="button" class="btn-google-maps" *ngIf="lugar.latitud && lugar.longitud"
+                (click)="abrirGoogleMaps(lugar.latitud, lugar.longitud)">
+                <span class="material-icons">map</span>
+                <span>Ver en Google Maps</span>
+              </button>
+              <button type="button" class="btn-sitio-web" *ngIf="lugar.sitio_web"
+                (click)="abrirSitioWeb(lugar.sitio_web)">
+                <span class="material-icons">language</span>
+                <span>Visitar Sitio Web</span>
+              </button>
+            </div>
           </div>
         </div>
-        <div class="lugar-details">
-          <div class="lugar-item">
-            <span class="material-icons">location_on</span>
-            <div>
-              <strong>Dirección:</strong>
-              <p>{{ lugar.direccion }}</p>
-            </div>
-          </div>
-          <div class="lugar-item" *ngIf="lugar.ciudad">
-            <span class="material-icons">city</span>
-            <div>
-              <strong>Ciudad:</strong>
-              <p>{{ lugar.ciudad }}<span *ngIf="lugar.pais">, {{ lugar.pais }}</span></p>
-            </div>
-          </div>
-          <div class="lugar-item" *ngIf="lugar.telefono">
-            <span class="material-icons">phone</span>
-            <div>
-              <strong>Teléfono:</strong>
-              <p>{{ lugar.telefono }}</p>
-            </div>
-          </div>
-          <div class="lugar-item" *ngIf="lugar.email">
-            <span class="material-icons">email</span>
-            <div>
-              <strong>Email:</strong>
-              <p>{{ lugar.email }}</p>
-            </div>
-          </div>
-          <div class="lugar-item" *ngIf="lugar.capacidad_maxima">
-            <span class="material-icons">people</span>
-            <div>
-              <strong>Capacidad:</strong>
-              <p>{{ lugar.capacidad_maxima }} personas</p>
-            </div>
-          </div>
-          <div class="lugar-item" *ngIf="lugar.sitio_web">
-            <span class="material-icons">language</span>
-            <div>
-              <strong>Sitio web:</strong>
-              <p><a [href]="lugar.sitio_web" target="_blank" rel="noopener noreferrer">{{ lugar.sitio_web }}</a></p>
-            </div>
-          </div>
-          <div class="lugar-item" *ngIf="lugar.descripcion">
-            <span class="material-icons">description</span>
-            <div>
-              <strong>Descripción:</strong>
-              <p>{{ lugar.descripcion }}</p>
-            </div>
-          </div>
-          <div class="lugar-map" *ngIf="lugar.latitud && lugar.longitud">
-            <a [href]="'https://www.google.com/maps?q=' + lugar.latitud + ',' + lugar.longitud" target="_blank"
-              rel="noopener noreferrer" class="map-link">
-              <span class="material-icons">map</span>
-              <span>Ver en Google Maps</span>
-            </a>
-            <p class="map-coordinates">
-              Coordenadas: {{ lugar.latitud }}, {{ lugar.longitud }}
-            </p>
-          </div>
+        <div *ngIf="!loadingLugar && !lugar && evento.lugar_id" class="error-message">
+          <span class="material-icons">error</span>
+          <p>No se pudo cargar la información del lugar</p>
         </div>
-      </div>
-      <div *ngIf="!loadingLugar && !lugar && evento.lugar_id" class="error-message">
-        <span class="material-icons">error</span>
-        <p>No se pudo cargar la información del lugar</p>
       </div>
     </div>
 
     <!-- Descripción -->
-    <div class="evento-section" *ngIf="evento.descripcion">
-      <h2>
-        <span class="material-icons">description</span>
-        Descripción
-      </h2>
-      <p class="evento-descripcion">{{ evento.descripcion }}</p>
+    <div class="evento-section evento-accordion" *ngIf="evento.descripcion">
+      <button class="accordion-header" (click)="toggleAcordeon('descripcion')" type="button">
+        <h2>
+          <span class="material-icons">description</span>
+          Descripción
+        </h2>
+        <span class="material-icons accordion-icon" [class.open]="acordeones.descripcion">expand_more</span>
+      </button>
+      <div class="accordion-content" [class.open]="acordeones.descripcion">
+        <p class="evento-descripcion">{{ evento.descripcion }}</p>
+      </div>
     </div>
 
     <!-- Video de YouTube -->
@@ -200,32 +218,47 @@
     </div>
 
     <!-- Tags -->
-    <div class="evento-section" *ngIf="evento.tags">
-      <h2>
-        <span class="material-icons">label</span>
-        Etiquetas
-      </h2>
-      <div class="tags-container">
-        <span *ngFor="let tag of getTags()" class="tag">{{ tag }}</span>
+    <div class="evento-section evento-accordion" *ngIf="evento.tags">
+      <button class="accordion-header" (click)="toggleAcordeon('tags')" type="button">
+        <h2>
+          <span class="material-icons">label</span>
+          Etiquetas
+        </h2>
+        <span class="material-icons accordion-icon" [class.open]="acordeones.tags">expand_more</span>
+      </button>
+      <div class="accordion-content" [class.open]="acordeones.tags">
+        <div class="tags-container">
+          <span *ngFor="let tag of getTags()" class="tag">{{ tag }}</span>
+        </div>
       </div>
     </div>
 
     <!-- Términos y Condiciones -->
-    <div class="evento-section" *ngIf="evento.terminos_condiciones">
-      <h2>
-        <span class="material-icons">gavel</span>
-        Términos y Condiciones
-      </h2>
-      <div class="evento-descripcion">{{ evento.terminos_condiciones }}</div>
+    <div class="evento-section evento-accordion" *ngIf="evento.terminos_condiciones">
+      <button class="accordion-header" (click)="toggleAcordeon('terminos')" type="button">
+        <h2>
+          <span class="material-icons">gavel</span>
+          Términos y Condiciones
+        </h2>
+        <span class="material-icons accordion-icon" [class.open]="acordeones.terminos">expand_more</span>
+      </button>
+      <div class="accordion-content" [class.open]="acordeones.terminos">
+        <div class="evento-descripcion">{{ evento.terminos_condiciones }}</div>
+      </div>
     </div>
 
     <!-- Política de Reembolso -->
-    <div class="evento-section" *ngIf="evento.politica_reembolso">
-      <h2>
-        <span class="material-icons">undo</span>
-        Política de Reembolso
-      </h2>
-      <div class="evento-descripcion">{{ evento.politica_reembolso }}</div>
+    <div class="evento-section evento-accordion" *ngIf="evento.politica_reembolso">
+      <button class="accordion-header" (click)="toggleAcordeon('politica')" type="button">
+        <h2>
+          <span class="material-icons">undo</span>
+          Política de Reembolso
+        </h2>
+        <span class="material-icons accordion-icon" [class.open]="acordeones.politica">expand_more</span>
+      </button>
+      <div class="accordion-content" [class.open]="acordeones.politica">
+        <div class="evento-descripcion">{{ evento.politica_reembolso }}</div>
+      </div>
     </div>
 
     <!-- Tipos de boleta disponibles -->
@@ -269,11 +302,18 @@
     </div>
 
     <!-- Mensaje si el evento está finalizado -->
-    <div class="evento-section" *ngIf="isEventoFinalizado()">
-      <div class="evento-finalizado-message">
-        <span class="material-icons">event_busy</span>
-        <h2>Evento Finalizado</h2>
-        <p>Este evento ya finalizó. Las boletas ya no están disponibles para compra.</p>
+    <div class="evento-section evento-accordion" *ngIf="isEventoFinalizado()">
+      <button class="accordion-header" (click)="toggleAcordeon('eventoFinalizado')" type="button">
+        <h2>
+          <span class="material-icons">event_busy</span>
+          Evento Finalizado
+        </h2>
+        <span class="material-icons accordion-icon" [class.open]="acordeones.eventoFinalizado">expand_more</span>
+      </button>
+      <div class="accordion-content" [class.open]="acordeones.eventoFinalizado">
+        <div class="evento-finalizado-message">
+          <p>Este evento ya finalizó. Las boletas ya no están disponibles para compra.</p>
+        </div>
       </div>
     </div>
 
@@ -363,6 +403,16 @@
         </button>
         <p class="wompi-info">Serás redirigido a Wompi para completar el pago de forma segura</p>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal de imagen -->
+  <div class="image-modal" *ngIf="imagenModalAbierta && evento" (click)="cerrarImagenModal()">
+    <div class="image-modal-content" (click)="$event.stopPropagation()">
+      <button class="image-modal-close" (click)="cerrarImagenModal()" type="button">
+        <span class="material-icons">close</span>
+      </button>
+      <img [src]="getImageUrl(evento)" [alt]="evento.titulo" />
     </div>
   </div>
 </div>

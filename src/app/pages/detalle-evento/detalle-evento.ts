@@ -55,6 +55,30 @@ export class DetalleEvento implements OnInit {
   // Método de pago será determinado por Wompi
   metodoPagoSeleccionado: 'CARD' | 'PSE' | 'NEQUI' | 'BANCOLOMBIA_TRANSFER' | 'BANCOLOMBIA_COLLECT' | 'DAVIPLATA' = 'CARD';
 
+  // Modal de imagen
+  imagenModalAbierta = false;
+
+  // Control de acordeones (todos cerrados por defecto)
+  acordeones: {
+    ubicacion: boolean;
+    descripcion: boolean;
+    tags: boolean;
+    terminos: boolean;
+    politica: boolean;
+    eventoFinalizado: boolean;
+  } = {
+    ubicacion: false,
+    descripcion: false,
+    tags: false,
+    terminos: false,
+    politica: false,
+    eventoFinalizado: false
+  };
+
+  toggleAcordeon(seccion: keyof typeof this.acordeones) {
+    this.acordeones[seccion] = !this.acordeones[seccion];
+  }
+
   constructor(
     private route: ActivatedRoute,
     public router: Router,
@@ -569,6 +593,32 @@ export class DetalleEvento implements OnInit {
     
     // Si no coincide con ningún patrón, retornar null
     return null;
+  }
+
+  abrirGoogleMaps(latitud: number, longitud: number) {
+    const url = `https://www.google.com/maps?q=${latitud},${longitud}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  abrirSitioWeb(url: string) {
+    // Asegurar que la URL tenga protocolo
+    let sitioWeb = url;
+    if (!sitioWeb.startsWith('http://') && !sitioWeb.startsWith('https://')) {
+      sitioWeb = 'https://' + sitioWeb;
+    }
+    window.open(sitioWeb, '_blank', 'noopener,noreferrer');
+  }
+
+  abrirImagenModal() {
+    this.imagenModalAbierta = true;
+    // Prevenir scroll del body cuando el modal está abierto
+    document.body.style.overflow = 'hidden';
+  }
+
+  cerrarImagenModal() {
+    this.imagenModalAbierta = false;
+    // Restaurar scroll del body
+    document.body.style.overflow = '';
   }
 }
 
