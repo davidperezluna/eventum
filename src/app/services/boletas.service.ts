@@ -312,10 +312,47 @@ export class BoletasService {
         throw response.error;
       }
       
-      return (response.data as TipoBoleta[]) || [];
+      const tipos = (response.data as TipoBoleta[]) || [];
+      
+      // Enriquecer con información de boletas vendidas
+      const tiposConVendidas = await Promise.all(
+        tipos.map(async (tipo) => {
+          const cantidadVendidas = await this.getCantidadBoletasVendidas(tipo.id);
+          return {
+            ...tipo,
+            cantidad_vendidas: cantidadVendidas
+          };
+        })
+      );
+      
+      return tiposConVendidas;
     } catch (error) {
       console.error('Error en getAllTiposBoleta:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Obtiene la cantidad de boletas vendidas para un tipo de boleta
+   * (solo cuenta boletas con pago completado)
+   */
+  async getCantidadBoletasVendidas(tipoBoletaId: number): Promise<number> {
+    try {
+      const { count, error } = await this.supabase
+        .from('boletas_compradas')
+        .select('*, compras!inner(estado_pago)', { count: 'exact', head: true })
+        .eq('tipo_boleta_id', tipoBoletaId)
+        .eq('compras.estado_pago', 'completado');
+      
+      if (error) {
+        console.error('Error obteniendo cantidad de boletas vendidas:', error);
+        return 0;
+      }
+      
+      return count || 0;
+    } catch (error) {
+      console.error('Error en getCantidadBoletasVendidas:', error);
+      return 0;
     }
   }
 

@@ -752,9 +752,16 @@
 .tipo-info {
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   font-size: 0.85rem;
   color: #94a3b8;
   margin-bottom: 1.5rem;
+}
+
+.tipo-info .vendidas {
+  color: #10b981;
+  font-weight: 600;
 }
 
 .cantidad-controls {

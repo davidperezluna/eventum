@@ -242,6 +242,7 @@ export class DetalleEvento implements OnInit {
     this.loadingBoletas = true;
     try {
       const tipos = await this.boletasService.getTiposBoleta(eventoId);
+      // Usar cantidad_vendidas directamente de la tabla (para marketing)
       this.tiposBoleta = tipos.filter(t => t.activo && (t.cantidad_disponibles ?? 0) > 0);
       this.loadingBoletas = false;
       this.cdr.detectChanges();

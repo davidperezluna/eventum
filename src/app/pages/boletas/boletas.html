@@ -180,6 +180,10 @@
             <span class="material-icons">confirmation_number</span>
             <span>{{ tipo.cantidad_disponibles }} / {{ tipo.cantidad_total }} disponibles</span>
           </div>
+          <div class="info-item" *ngIf="tipo.cantidad_vendidas !== undefined">
+            <span class="material-icons">shopping_cart</span>
+            <span>{{ tipo.cantidad_vendidas }} vendidas</span>
+          </div>
           <div class="info-item" *ngIf="tipo.limite_por_persona">
             <span class="material-icons">person</span>
             <span>Máx. {{ tipo.limite_por_persona }} por persona</span>

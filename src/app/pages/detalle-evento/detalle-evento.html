@@ -273,6 +273,7 @@
           <p *ngIf="tipo.descripcion" class="tipo-descripcion">{{ tipo.descripcion }}</p>
           <div class="tipo-info">
             <span class="disponibles">{{ tipo.cantidad_disponibles }} disponibles</span>
+            <span *ngIf="tipo.cantidad_vendidas !== undefined && tipo.cantidad_vendidas > 0" class="vendidas">{{ tipo.cantidad_vendidas }} vendidas de {{ tipo.cantidad_total }} totales</span>
             <span *ngIf="tipo.limite_por_persona" class="limite">Máx. {{ tipo.limite_por_persona }} por persona</span>
           </div>
           <div class="tipo-actions">
