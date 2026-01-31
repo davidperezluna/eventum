@@ -48,6 +48,7 @@ export class ExcelExportService {
       xlsx.utils.book_append_sheet(workbook, worksheet, sheet.name);
     });
     
+    // Generar el archivo Excel
     xlsx.writeFile(workbook, `${filename}.xlsx`);
   }
 

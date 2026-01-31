@@ -6,6 +6,7 @@ import { EventosService } from '../../services/eventos.service';
 import { UsuariosService } from '../../services/usuarios.service';
 import { AlertService } from '../../services/alert.service';
 import { AuthService } from '../../services/auth.service';
+import { ExcelExportService } from '../../services/excel-export.service';
 import { Compra, Evento, Usuario } from '../../types';
 
 @Component({
@@ -40,6 +41,7 @@ export class Reportes implements OnInit, OnDestroy {
     private usuariosService: UsuariosService,
     private alertService: AlertService,
     private authService: AuthService,
+    private excelExportService: ExcelExportService,
     private cdr: ChangeDetectorRef
   ) {}
   
@@ -438,7 +440,84 @@ export class Reportes implements OnInit, OnDestroy {
     return grupos;
   }
 
-  exportarReporte() {
-    this.alertService.info('Próximamente', 'Funcionalidad de exportación próximamente');
+  async exportarReporte() {
+    if (!this.reporteVentas && !this.reporteEventos && !this.reporteComisiones) {
+      this.alertService.warning('Sin datos', 'No hay reportes para exportar. Genera un reporte primero.');
+      return;
+    }
+
+    try {
+      const sheets: { name: string; data: any[] }[] = [];
+      const fecha = new Date().toISOString().split('T')[0];
+
+      // Hoja de Ventas
+      if (this.reporteVentas) {
+        const ventasData = [
+          { Métrica: 'Total Compras', Valor: this.reporteVentas.totalCompras },
+          { Métrica: 'Compras Completadas', Valor: this.reporteVentas.comprasCompletadas },
+          { Métrica: 'Subtotal', Valor: this.excelExportService.formatCurrency(this.reporteVentas.totalSubtotal) },
+          { Métrica: 'Total Descuentos', Valor: this.excelExportService.formatCurrency(this.reporteVentas.totalDescuentos) },
+          { Métrica: 'Total Ingresos (Neto)', Valor: this.excelExportService.formatCurrency(this.reporteVentas.totalIngresos) },
+          { Métrica: '', Valor: '' },
+          { Métrica: 'Compras por Estado', Valor: '' },
+          ...Object.entries(this.reporteVentas.comprasPorEstado).map(([estado, cantidad]) => ({
+            Métrica: this.excelExportService.getEstadoPagoLabel(estado),
+            Valor: cantidad
+          })),
+          { Métrica: '', Valor: '' },
+          { Métrica: 'Compras por Método de Pago', Valor: '' },
+          ...Object.entries(this.reporteVentas.comprasPorMetodo).map(([metodo, cantidad]) => ({
+            Métrica: this.excelExportService.getMetodoPagoLabel(metodo),
+            Valor: cantidad
+          }))
+        ];
+        sheets.push({ name: 'Ventas', data: ventasData });
+      }
+
+      // Hoja de Eventos
+      if (this.reporteEventos) {
+        const eventosData = [
+          { Métrica: 'Total Eventos', Valor: this.reporteEventos.totalEventos },
+          { Métrica: 'Eventos Activos', Valor: this.reporteEventos.eventosActivos },
+          { Métrica: 'Eventos Destacados', Valor: this.reporteEventos.eventosDestacados },
+          { Métrica: '', Valor: '' },
+          { Métrica: 'Eventos por Estado', Valor: '' },
+          ...Object.entries(this.reporteEventos.eventosPorEstado).map(([estado, cantidad]) => ({
+            Métrica: this.excelExportService.getEstadoEventoLabel(estado),
+            Valor: cantidad
+          }))
+        ];
+        sheets.push({ name: 'Eventos', data: eventosData });
+      }
+
+      // Hoja de Comisiones
+      if (this.reporteComisiones) {
+        const comisionesData = [
+          { Métrica: 'Total Bruto', Valor: this.excelExportService.formatCurrency(this.reporteComisiones.totalBruto) },
+          { Métrica: 'Comisión', Valor: this.excelExportService.formatCurrency(this.reporteComisiones.totalComision) },
+          { Métrica: 'IVA Comisión', Valor: this.excelExportService.formatCurrency(this.reporteComisiones.totalIVA) },
+          { Métrica: 'Neto', Valor: this.excelExportService.formatCurrency(this.reporteComisiones.totalNeto) },
+          { Métrica: '', Valor: '' },
+          { Métrica: 'Detalle por Evento', Valor: '' },
+          { Evento: 'Evento', Transacciones: 'Transacciones', Bruto: 'Bruto', Comisión: 'Comisión', IVA: 'IVA', Neto: 'Neto' },
+          ...this.reporteComisiones.porEvento.map((ev: any) => ({
+            Evento: ev.eventoTitulo,
+            Transacciones: ev.transacciones,
+            Bruto: this.excelExportService.formatCurrency(ev.bruto),
+            Comisión: this.excelExportService.formatCurrency(ev.comision),
+            IVA: this.excelExportService.formatCurrency(ev.iva),
+            Neto: this.excelExportService.formatCurrency(ev.neto)
+          }))
+        ];
+        sheets.push({ name: 'Comisiones', data: comisionesData });
+      }
+
+      const filename = `reporte_eventum_${fecha}`;
+      await this.excelExportService.exportMultipleSheets(sheets, filename);
+      this.alertService.success('Éxito', 'Reporte exportado correctamente');
+    } catch (error) {
+      console.error('Error exportando reporte:', error);
+      this.alertService.error('Error', 'No se pudo exportar el reporte');
+    }
   }
 }
