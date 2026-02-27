@@ -32,6 +32,24 @@ export interface ReporteEvento {
   fecha_fin: string;
 }
 
+export interface VentaCompletadaDetalle {
+  compra_id: number;
+  fecha_compra: string;
+  numero_transaccion: string;
+  evento_id: number;
+  evento_titulo: string;
+  cliente_id: number;
+  cliente_nombre: string;
+  cliente_email: string;
+  metodo_pago?: string;
+  cupon_codigo?: string;
+  cupon_porcentaje?: number;
+  subtotal: number;
+  descuento_total: number;
+  total: number;
+  boletas: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -530,6 +548,83 @@ export class ReportesService {
       'otro': 'Otro'
     };
     return labels[metodo] || metodo;
+  }
+
+  /**
+   * Reporte DETALLADO de ventas completadas por evento (para Admin).
+   * Retorna una fila por compra (estado_pago = 'completado'), incluyendo cantidad de boletas por compra.
+   */
+  async getVentasCompletadasDetallePorEvento(eventoId: number): Promise<VentaCompletadaDetalle[]> {
+    try {
+      const { data: compras, error } = await this.supabase
+        .from('compras')
+        .select(`
+          id,
+          fecha_compra,
+          numero_transaccion,
+          metodo_pago,
+          subtotal,
+          descuento_total,
+          total,
+          cliente_id,
+          evento_id,
+          cliente:usuarios(id, nombre, apellido, email),
+          evento:eventos(id, titulo),
+          cupon:cupones_descuento!compras_cupon_id_fkey(id, codigo, porcentaje_descuento)
+        `)
+        .eq('estado_pago', 'completado')
+        .eq('evento_id', eventoId)
+        .order('fecha_compra', { ascending: false });
+
+      if (error || !compras || compras.length === 0) {
+        return [];
+      }
+
+      const compraIds = compras.map((c: any) => c.id).filter(Boolean);
+      const boletasPorCompra: Record<number, number> = {};
+
+      if (compraIds.length > 0) {
+        const { data: boletas, error: boletasError } = await this.supabase
+          .from('boletas_compradas')
+          .select('compra_id')
+          .in('compra_id', compraIds);
+
+        if (boletasError) {
+          console.error('Error obteniendo boletas por compra:', boletasError);
+        }
+
+        (boletas || []).forEach((b: any) => {
+          const id = Number(b.compra_id);
+          if (!Number.isNaN(id)) {
+            boletasPorCompra[id] = (boletasPorCompra[id] || 0) + 1;
+          }
+        });
+      }
+
+      return compras.map((c: any) => {
+        const clienteNombre = `${c?.cliente?.nombre || ''} ${c?.cliente?.apellido || ''}`.trim() || 'Cliente';
+        return {
+          compra_id: Number(c.id),
+          fecha_compra: c.fecha_compra,
+          numero_transaccion: c.numero_transaccion || '',
+          evento_id: Number(c.evento_id),
+          evento_titulo: c?.evento?.titulo || 'Evento',
+          cliente_id: Number(c.cliente_id),
+          cliente_nombre: clienteNombre,
+          cliente_email: c?.cliente?.email || '',
+          metodo_pago: c.metodo_pago || '',
+          cupon_codigo: c?.cupon?.codigo || '',
+          cupon_porcentaje: c?.cupon?.porcentaje_descuento ? Number(c.cupon.porcentaje_descuento) : 0,
+          subtotal: Number(c.subtotal || 0),
+          descuento_total: Number(c.descuento_total || 0),
+          total: Number(c.total || 0),
+          boletas: boletasPorCompra[Number(c.id)] || 0
+        } as VentaCompletadaDetalle;
+      });
+    } catch (err) {
+      console.error('Error en getVentasCompletadasDetallePorEvento:', err);
+      return [];
+    }
   }
 }
 

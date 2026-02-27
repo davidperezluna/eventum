@@ -1,0 +1,147 @@
+<div class="reportes-page">
+  <header class="page-header">
+    <div>
+      <h1>
+        <span class="material-icons">receipt_long</span>
+        Ventas completadas (por evento)
+      </h1>
+      <p>Reporte detallado de compras con estado de pago <strong>completado</strong>.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary" [routerLink]="['/reportes']">
+        <span class="material-icons">arrow_back</span>
+        Volver a Reportes
+      </button>
+    </div>
+  </header>
+
+  <!-- Filtros -->
+  <div class="filters-card">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Evento *</label>
+        <select [(ngModel)]="eventoSeleccionado" (change)="onEventoChange()" [disabled]="loadingEventos || loading">
+          <option [ngValue]="null">Selecciona un evento</option>
+          <option *ngFor="let evento of eventos" [ngValue]="evento.id">
+            {{ evento.titulo }}
+          </option>
+        </select>
+        <div *ngIf="loadingEventos" class="loader-inline">
+          <span class="material-icons spin">hourglass_empty</span>
+          Cargando eventos...
+        </div>
+      </div>
+      <div class="form-group">
+        <button class="btn-primary" (click)="generarReporte()" [disabled]="loading || loadingEventos || !eventoSeleccionado">
+          <span class="material-icons">{{ loading ? 'hourglass_empty' : 'refresh' }}</span>
+          {{ loading ? 'Generando...' : 'Generar reporte' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading-state">Generando reporte...</div>
+
+  <!-- Resumen -->
+  <div *ngIf="!loading && ventas.length > 0" class="content-card">
+    <h2>
+      <span class="material-icons">insights</span>
+      Resumen
+    </h2>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="material-icons stat-icon">shopping_cart</span>
+        <div class="stat-content">
+          <h3>Transacciones</h3>
+          <p class="stat-value">{{ resumen.transacciones }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="material-icons stat-icon">confirmation_number</span>
+        <div class="stat-content">
+          <h3>Boletas</h3>
+          <p class="stat-value">{{ resumen.boletas }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="material-icons stat-icon">attach_money</span>
+        <div class="stat-content">
+          <h3>Ingresos</h3>
+          <p class="stat-value">{{ excelExportService.formatCurrency(resumen.ingresos) }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="material-icons stat-icon">payments</span>
+        <div class="stat-content">
+          <h3>Descuento Wompi</h3>
+          <p class="stat-value">{{ excelExportService.formatCurrency(resumen.wompi) }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="material-icons stat-icon">account_balance_wallet</span>
+        <div class="stat-content">
+          <h3>Neto cliente</h3>
+          <p class="stat-value">{{ excelExportService.formatCurrency(resumen.neto_cliente) }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detalle -->
+  <div *ngIf="!loading && ventas.length > 0" class="content-card">
+    <div class="card-header-row">
+      <h2>
+        <span class="material-icons">table_view</span>
+        Detalle ({{ ventas.length }})
+      </h2>
+      <button class="btn-primary" (click)="exportarExcel()">
+        <span class="material-icons">download</span>
+        Exportar a Excel
+      </button>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Transacción</th>
+            <th>Cliente</th>
+            <th>Email</th>
+            <th>Método</th>
+            <th>Cupón</th>
+            <th>Boletas</th>
+            <th>Valor boleta</th>
+            <th>Desc. cupón</th>
+            <th>% desc.</th>
+            <th>Desc. Wompi</th>
+            <th>Neto cliente</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let v of ventas">
+            <td>{{ excelExportService.formatDate(v.fecha_compra) }}</td>
+            <td>{{ v.numero_transaccion }}</td>
+            <td>{{ v.cliente_nombre }}</td>
+            <td>{{ v.cliente_email }}</td>
+            <td>{{ excelExportService.getMetodoPagoLabel(v.metodo_pago || '') }}</td>
+            <td>{{ v.cupon_codigo || '-' }}</td>
+            <td>{{ v.boletas }}</td>
+            <td>{{ excelExportService.formatCurrency(v.valor_boleta || 0) }}</td>
+            <td>{{ excelExportService.formatCurrency(v.descuento_total || 0) }}</td>
+            <td>{{ (v.descuento_real_porcentaje || 0) | number:'1.0-2' }}%</td>
+            <td>{{ excelExportService.formatCurrency(v.wompi_descuento || 0) }}</td>
+            <td>{{ excelExportService.formatCurrency(v.neto_cliente || 0) }}</td>
+            <td>{{ excelExportService.formatCurrency(v.total) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div *ngIf="!loading && eventoSeleccionado && ventas.length === 0" class="content-card">
+    <p>No se encontraron ventas completadas para el evento seleccionado.</p>
+  </div>
+</div>
+

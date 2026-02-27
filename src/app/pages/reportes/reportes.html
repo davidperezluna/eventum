@@ -9,6 +9,19 @@
     </div>
   </header>
 
+  <!-- Reportes adicionales (solo Admin) -->
+  <div class="content-card" *ngIf="esAdministrador">
+    <h2>
+      <span class="material-icons">insights</span>
+      Reportes adicionales
+    </h2>
+    <p>Reportes de detalle para auditoría y exportación.</p>
+    <button class="btn-primary" [routerLink]="['/reportes/ventas-completadas']">
+      <span class="material-icons">receipt_long</span>
+      Ventas completadas (por evento)
+    </button>
+  </div>
+
   <!-- Filtros -->
   <div class="filters-card">
     <div class="form-row">

@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ComprasService } from '../../services/compras.service';
 import { EventosService } from '../../services/eventos.service';
 import { UsuariosService } from '../../services/usuarios.service';
@@ -11,7 +12,7 @@ import { Compra, Evento, Usuario } from '../../types';
 
 @Component({
   selector: 'app-reportes',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './reportes.html',
   styleUrl: './reportes.css',
 })

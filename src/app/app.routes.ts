@@ -16,6 +16,7 @@ import { Lugares } from './pages/lugares/lugares';
 import { Calificaciones } from './pages/calificaciones/calificaciones';
 import { Notificaciones } from './pages/notificaciones/notificaciones';
 import { Reportes } from './pages/reportes/reportes';
+import { ReporteVentasCompletadas } from './pages/reporte-ventas-completadas/reporte-ventas-completadas';
 import { DashboardEventos } from './pages/dashboard-eventos/dashboard-eventos';
 import { Login } from './pages/login/login';
 import { Register } from './pages/register/register';
@@ -65,6 +66,7 @@ export const routes: Routes = [
       { path: 'calificaciones', component: Calificaciones },
       { path: 'notificaciones', component: Notificaciones },
       { path: 'reportes', component: Reportes },
+      { path: 'reportes/ventas-completadas', component: ReporteVentasCompletadas },
       { path: 'perfil', component: Perfil },
     ]
   },
