@@ -258,9 +258,9 @@
       </div>
     </div>
 
-    <!-- Tipos de boleta disponibles -->
+    <!-- Tipos de boleta (solo visualización, sin compra) -->
     <div class="evento-section" *ngIf="!isEventoFinalizado()">
-      <h2>Boletas Disponibles</h2>
+      <h2>Tipos de Boleta</h2>
       <div *ngIf="loadingBoletas" class="loading-small">
         <p>Cargando tipos de boleta...</p>
       </div>
@@ -275,19 +275,20 @@
             <span class="disponibles">{{ tipo.cantidad_disponibles }} disponibles</span>
             <span *ngIf="tipo.cantidad_vendidas !== undefined && tipo.cantidad_vendidas > 0" class="vendidas">{{ tipo.cantidad_vendidas }} vendidas de {{ tipo.cantidad_total }} totales</span>
             <span *ngIf="tipo.limite_por_persona" class="limite">Máx. {{ tipo.limite_por_persona }} por persona</span>
+            <span *ngIf="tipo.cantidad_disponibles === 0" class="soldout-badge">SOLD OUT</span>
           </div>
           <div class="tipo-actions">
             <div class="cantidad-controls" *ngIf="getCantidadEnCarrito(tipo) > 0">
-              <button class="btn-cantidad" (click)="quitarDelCarrito(tipo)">-</button>
+              <button class="btn-cantidad" (click)="quitarDelCarrito(tipo)" [disabled]="!comprasHabilitadas">-</button>
               <span class="cantidad">{{ getCantidadEnCarrito(tipo) }}</span>
               <button class="btn-cantidad" (click)="agregarAlCarrito(tipo)"
-                [disabled]="getCantidadEnCarrito(tipo) >= tipo.cantidad_disponibles">+</button>
-              <button class="btn-remove" (click)="eliminarDelCarrito(tipo)">
+                [disabled]="!comprasHabilitadas || getCantidadEnCarrito(tipo) >= tipo.cantidad_disponibles">+</button>
+              <button class="btn-remove" (click)="eliminarDelCarrito(tipo)" [disabled]="!comprasHabilitadas">
                 <span class="material-icons">delete</span>
               </button>
             </div>
             <button *ngIf="getCantidadEnCarrito(tipo) === 0" class="btn-add" (click)="agregarAlCarrito(tipo)"
-              [disabled]="tipo.cantidad_disponibles === 0">
+              [disabled]="!comprasHabilitadas || tipo.cantidad_disponibles === 0">
               <span class="material-icons">add_shopping_cart</span>
               Agregar
             </button>
@@ -315,7 +316,7 @@
       </div>
     </div>
 
-    <!-- Carrito de compra -->
+    <!-- Carrito de compra (deshabilitado en modo solo visualización) -->
     <div class="evento-section" *ngIf="itemsCompra.length > 0 && !isEventoFinalizado()">
       <h2>Mi Carrito</h2>
       <div class="carrito-items">
@@ -395,7 +396,7 @@
             <h3>Total: {{ formatCurrency(getTotal()) }}</h3>
           </div>
         </div>
-        <button class="btn-comprar" (click)="procesarCompra()" [disabled]="comprando">
+        <button class="btn-comprar" (click)="procesarCompra()" [disabled]="comprando || !comprasHabilitadas">
           <span class="material-icons">{{ comprando ? 'hourglass_empty' : 'shopping_cart' }}</span>
           {{ comprando ? 'Procesando...' : 'Comprar Boletas' }}
         </button>

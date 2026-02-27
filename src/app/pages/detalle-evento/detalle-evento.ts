@@ -37,6 +37,9 @@ export class DetalleEvento implements OnInit {
   comprando = false;
   usuario: Usuario | null = null;
 
+  // Modo solo visualización (no permite compras en el dashboard público del cliente)
+  comprasHabilitadas = false;
+
   // Cupones
   codigoCupon: string = '';
   cuponAplicado: CuponDescuento | null = null;
@@ -243,7 +246,9 @@ export class DetalleEvento implements OnInit {
     try {
       const tipos = await this.boletasService.getTiposBoleta(eventoId);
       // Usar cantidad_vendidas directamente de la tabla (para marketing)
-      this.tiposBoleta = tipos.filter(t => t.activo && (t.cantidad_disponibles ?? 0) > 0);
+      // Mostrar todos los tipos activos aunque no tengan disponibilidad,
+      // para que se vean las cifras de venta incluso cuando estén agotados.
+      this.tiposBoleta = tipos.filter(t => t.activo);
       this.loadingBoletas = false;
       this.cdr.detectChanges();
     } catch (err) {
