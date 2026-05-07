@@ -69,6 +69,11 @@ export class MisCompras implements OnInit, OnDestroy {
   qrCodeUrl: string = '';
   loadingQR = false;
 
+  /** Formularios de registro tardío de asistentes (entradas de palco). */
+  formRegistroAsistente: Record<number, { nombre: string; documento: string; email: string; telefono: string }> =
+    {};
+  guardandoAsistenteBoletaId: number | null = null;
+
   constructor(
     private comprasService: ComprasService,
     private boletasService: BoletasService,
@@ -258,17 +263,31 @@ export class MisCompras implements OnInit, OnDestroy {
 
   async loadBoletasPorCompra() {
     this.comprasConBoletas = [];
-    
+    this.formRegistroAsistente = {};
+
     for (const compra of this.compras) {
       try {
         const response = await this.boletasService.getBoletasCompradas({
           compra_id: compra.id,
           limit: 1000
         });
+        const boletas = response.data || [];
         this.comprasConBoletas.push({
           compra,
-          boletas: response.data || []
+          boletas
         });
+        if (compra.estado_pago === 'completado') {
+          for (const b of boletas) {
+            if (this.requiereRegistroAsistentePalcoPosterior(b) && !this.tieneAsistenteRegistrado(b)) {
+              this.formRegistroAsistente[b.id] = {
+                nombre: '',
+                documento: '',
+                email: '',
+                telefono: ''
+              };
+            }
+          }
+        }
         this.cdr.detectChanges();
       } catch (err) {
         console.error('Error cargando boletas para compra:', compra.id, err);
@@ -336,12 +355,75 @@ export class MisCompras implements OnInit, OnDestroy {
   Math = Math;
 
   /**
+   * Palco numerado o tipo palco multipersonal: el asistente se define después del pago.
+   */
+  requiereRegistroAsistentePalcoPosterior(b: BoletaComprada): boolean {
+    if (b.palco_id != null) return true;
+    const cupos = Math.max(1, Number(b.tipo_boleta_meta?.personas_por_unidad ?? 1));
+    return !!(b.tipo_boleta_meta?.es_palco && cupos > 1);
+  }
+
+  tieneAsistenteRegistrado(b: BoletaComprada): boolean {
+    return !!(b.nombre_asistente?.trim() && b.documento_asistente?.trim());
+  }
+
+  puedeMostrarQrBoleta(boleta: BoletaComprada, compra: Compra): boolean {
+    if (compra.estado_pago !== 'completado') return false;
+    if (this.requiereRegistroAsistentePalcoPosterior(boleta) && !this.tieneAsistenteRegistrado(boleta)) {
+      return false;
+    }
+    return true;
+  }
+
+  async guardarAsistentePalco(boleta: BoletaComprada, compra: Compra): Promise<void> {
+    if (compra.estado_pago !== 'completado') {
+      this.alertService.warning('Pago pendiente', 'Confirma el pago antes de registrar asistentes.');
+      return;
+    }
+    const f = this.formRegistroAsistente[boleta.id];
+    if (!f?.nombre?.trim() || !f?.documento?.trim()) {
+      this.alertService.warning('Datos incompletos', 'Indica nombre y documento del asistente.');
+      return;
+    }
+    this.guardandoAsistenteBoletaId = boleta.id;
+    this.cdr.detectChanges();
+    try {
+      await this.boletasService.actualizarDatosAsistenteBoleta(boleta.id, {
+        nombre_asistente: f.nombre.trim(),
+        documento_asistente: f.documento.trim(),
+        email_asistente: f.email?.trim() || null,
+        telefono_asistente: f.telefono?.trim() || null
+      });
+      boleta.nombre_asistente = f.nombre.trim();
+      boleta.documento_asistente = f.documento.trim();
+      boleta.email_asistente = f.email?.trim() || undefined;
+      boleta.telefono_asistente = f.telefono?.trim() || undefined;
+      delete this.formRegistroAsistente[boleta.id];
+      this.alertService.success('Listo', 'Asistente registrado. Ya puedes ver el código QR de esta entrada.');
+    } catch (e) {
+      console.error(e);
+      this.alertService.error('Error', 'No se pudo guardar los datos. Intenta de nuevo.');
+    } finally {
+      this.guardandoAsistenteBoletaId = null;
+      this.cdr.detectChanges();
+    }
+  }
+
+  /**
    * Muestra la vista previa de la boleta con QR
    */
   async verBoleta(boleta: BoletaComprada, compra: Compra) {
     // Solo permitir ver boleta si el pago está completado
     if (compra.estado_pago !== 'completado') {
       this.alertService.warning('Pago pendiente', 'El código QR estará disponible una vez que el pago sea completado');
+      return;
+    }
+
+    if (!this.puedeMostrarQrBoleta(boleta, compra)) {
+      this.alertService.warning(
+        'Registra al asistente',
+        'Para entradas de palco, completa nombre y documento de cada persona en el formulario de la boleta; después podrás ver el QR.'
+      );
       return;
     }
 
@@ -414,6 +496,13 @@ export class MisCompras implements OnInit, OnDestroy {
    */
   async imprimirBoletaPDF(boleta: BoletaComprada, compra: Compra) {
     try {
+      if (!this.puedeMostrarQrBoleta(boleta, compra)) {
+        this.alertService.warning(
+          'Registra al asistente',
+          'Para entradas de palco, primero completa los datos del asistente para poder generar el PDF con QR.'
+        );
+        return;
+      }
       // Obtener información del tipo de boleta y evento
       const tipoBoleta = await this.boletasService.getTipoBoletaById(boleta.tipo_boleta_id);
       

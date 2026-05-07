@@ -8,6 +8,8 @@ import { BoletasService } from '../../services/boletas.service';
 import { EventosService } from '../../services/eventos.service';
 import { TimezoneService } from '../../services/timezone.service';
 import { AlertService } from '../../services/alert.service';
+import { StorageService } from '../../services/storage.service';
+import { AuthService } from '../../services/auth.service';
 import { BoletaComprada, TipoBoleta, PaginatedResponse, TipoEstadoBoleta, Evento } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
@@ -58,6 +60,10 @@ export class Boletas implements OnInit, OnDestroy {
   modoBusqueda: 'qr' | 'documento' = 'qr';
   validandoBoleta = false;
 
+  selectedMapaPalcoFile: File | null = null;
+  previewMapaPalco: string | null = null;
+  uploadingMapaPalco = false;
+
   estados: { value: TipoEstadoBoleta; label: string }[] = [
     { value: TipoEstadoBoleta.PENDIENTE, label: 'Pendiente' },
     { value: TipoEstadoBoleta.USADA, label: 'Usada' },
@@ -70,6 +76,8 @@ export class Boletas implements OnInit, OnDestroy {
     private eventosService: EventosService,
     private timezoneService: TimezoneService,
     private alertService: AlertService,
+    private storageService: StorageService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -408,11 +416,14 @@ export class Boletas implements OnInit, OnDestroy {
   openModalTipo(eventoId?: number) {
     this.eventoSeleccionado = eventoId || null;
     this.editingTipo = null;
+    this.selectedMapaPalcoFile = null;
+    this.previewMapaPalco = null;
     this.formData = { 
       activo: true, 
       evento_id: eventoId || 0,
-      cantidad_vendidas: 0
-      // cantidad_disponibles se calculará automáticamente cuando se ingrese cantidad_total
+      cantidad_vendidas: 0,
+      personas_por_unidad: 1,
+      es_palco: false
     };
     this.showModal = true;
   }
@@ -420,8 +431,12 @@ export class Boletas implements OnInit, OnDestroy {
   openModalEditTipo(tipo: TipoBoleta) {
     this.editingTipo = tipo;
     this.eventoSeleccionado = tipo.evento_id;
+    this.selectedMapaPalcoFile = null;
+    this.previewMapaPalco = tipo.imagen_mapa_palcos || null;
     this.formData = {
       ...tipo,
+      personas_por_unidad: tipo.personas_por_unidad ?? 1,
+      es_palco: tipo.es_palco ?? false,
       fecha_venta_inicio: tipo.fecha_venta_inicio ? this.formatDateForInput(tipo.fecha_venta_inicio) : undefined,
       fecha_venta_fin: tipo.fecha_venta_fin ? this.formatDateForInput(tipo.fecha_venta_fin) : undefined
     };
@@ -439,6 +454,8 @@ export class Boletas implements OnInit, OnDestroy {
     this.editingTipo = null;
     this.formData = {};
     this.eventoSeleccionado = null;
+    this.selectedMapaPalcoFile = null;
+    this.previewMapaPalco = null;
   }
 
   closeTiposModal() {
@@ -455,6 +472,65 @@ export class Boletas implements OnInit, OnDestroy {
       
       this.formData.cantidad_disponibles = this.formData.cantidad_total - cantidadVendidas;
       this.formData.cantidad_vendidas = cantidadVendidas;
+    }
+  }
+
+  mostrarCampoMapaPalcos(): boolean {
+    const pp = Number(this.formData.personas_por_unidad ?? 1);
+    return pp > 1 || !!this.formData.es_palco;
+  }
+
+  clickMapaPalcoInput() {
+    const input = document.getElementById('mapaPalcoInput') as HTMLInputElement | null;
+    input?.click();
+  }
+
+  onMapaPalcoFileChange(ev: Event) {
+    const input = ev.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      this.alertService.warning('Archivo grande', 'Máximo 10 MB.');
+      return;
+    }
+    this.selectedMapaPalcoFile = file;
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.previewMapaPalco = reader.result as string;
+      this.cdr.detectChanges();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  quitarImagenMapaPalco() {
+    this.selectedMapaPalcoFile = null;
+    this.previewMapaPalco = null;
+    this.formData.imagen_mapa_palcos = undefined;
+    const input = document.getElementById('mapaPalcoInput') as HTMLInputElement | null;
+    if (input) input.value = '';
+    this.cdr.detectChanges();
+  }
+
+  async subirImagenMapaPalcos(): Promise<string | null> {
+    if (!this.selectedMapaPalcoFile) return null;
+    const usuario = this.authService.getUsuario();
+    if (!usuario) {
+      this.alertService.warning('Sesión', 'Debes iniciar sesión para subir el mapa.');
+      return null;
+    }
+    this.uploadingMapaPalco = true;
+    try {
+      const fileName = `palcos/${usuario.id}/mapa_${Date.now()}.jpg`;
+      const { error } = await this.storageService.uploadOptimizedImage('imagenes', fileName, this.selectedMapaPalcoFile);
+      if (error) throw error;
+      return this.storageService.getPublicUrl('imagenes', fileName);
+    } catch (e: any) {
+      console.error(e);
+      this.alertService.error('Error', e?.message || 'No se pudo subir la imagen');
+      return null;
+    } finally {
+      this.uploadingMapaPalco = false;
+      this.cdr.detectChanges();
     }
   }
 
@@ -482,6 +558,11 @@ export class Boletas implements OnInit, OnDestroy {
       this.alertService.warning('Valor inválido', 'La cantidad total debe ser mayor a 0');
       return;
     }
+    const pp = Number(this.formData.personas_por_unidad ?? 1);
+    if (!Number.isFinite(pp) || pp < 1) {
+      this.alertService.warning('Valor inválido', 'Personas por palco/unidad debe ser al menos 1');
+      return;
+    }
 
     // Calcular cantidad_disponibles basado en cantidad_total y cantidad_vendidas
     if (this.formData.cantidad_total) {
@@ -505,6 +586,8 @@ export class Boletas implements OnInit, OnDestroy {
     // Preparar datos para envío
     const tipoData: Partial<TipoBoleta> = {
       ...this.formData,
+      personas_por_unidad: Math.max(1, Math.floor(pp)),
+      es_palco: !!this.formData.es_palco,
       // Convertir fechas de datetime-local a ISO usando el servicio de timezone
       fecha_venta_inicio: this.formData.fecha_venta_inicio 
         ? this.timezoneService.datetimeLocalToISO(this.formData.fecha_venta_inicio as string)
@@ -513,6 +596,18 @@ export class Boletas implements OnInit, OnDestroy {
         ? this.timezoneService.datetimeLocalToISO(this.formData.fecha_venta_fin as string)
         : undefined
     };
+
+    if (this.mostrarCampoMapaPalcos()) {
+      if (this.selectedMapaPalcoFile) {
+        const urlMapa = await this.subirImagenMapaPalcos();
+        if (!urlMapa) {
+          return;
+        }
+        tipoData.imagen_mapa_palcos = urlMapa;
+      }
+    } else {
+      delete tipoData.imagen_mapa_palcos;
+    }
 
     // Limpiar campos vacíos opcionales
     if (!tipoData.descripcion) delete tipoData.descripcion;

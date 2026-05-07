@@ -18,6 +18,20 @@ export interface ItemCompra {
   documento_asistente?: string;
   email_asistente?: string;
   telefono_asistente?: string;
+  /**
+   * Palco: una entrada por persona. Longitud = cantidad × personas_por_unidad del tipo.
+   * Entradas normales: omitir; se usa nombre_* / documento_* repetidos por cantidad.
+   */
+  asistentes?: Array<{
+    nombre?: string;
+    documento?: string;
+    email?: string;
+    telefono?: string;
+  }>;
+  /**
+   * Palco numerado: un id de tabla `palcos` por cada unidad del carrito. Longitud = cantidad.
+   */
+  palco_ids?: number[];
 }
 
 export interface DatosCompra {
@@ -72,7 +86,7 @@ export class ComprasClienteService {
       for (const item of items) {
         const { data: tipoBoleta, error } = await this.supabase
           .from('tipos_boleta')
-          .select('cantidad_total, cantidad_vendidas, cantidad_disponibles, activo, nombre, evento_id')
+          .select('cantidad_total, cantidad_vendidas, cantidad_disponibles, activo, nombre, evento_id, personas_por_unidad')
           .eq('id', item.tipo_boleta_id)
           .single();
 
@@ -118,8 +132,63 @@ export class ComprasClienteService {
           continue;
         }
 
-        if (tipoBoleta.cantidad_disponibles < item.cantidad) {
+        const cupos = Math.max(1, Number((tipoBoleta as { personas_por_unidad?: number }).personas_por_unidad ?? 1));
+
+        if (cupos > 1) {
+          const { count: dispPalcos, error: cntErr } = await this.supabase
+            .from('palcos')
+            .select('*', { count: 'exact', head: true })
+            .eq('tipo_boleta_id', item.tipo_boleta_id)
+            .eq('estado', 'disponible');
+          if (cntErr) {
+            errores.push(`No se pudo validar disponibilidad de palcos para "${tipoBoleta.nombre}"`);
+            continue;
+          }
+          if ((dispPalcos ?? 0) < item.cantidad) {
+            errores.push(
+              `Solo hay ${dispPalcos ?? 0} palco(s) disponible(s) de "${tipoBoleta.nombre}" (reservas pendientes no ocupan cupo del catálogo hasta pagar).`
+            );
+            continue;
+          }
+        } else if (tipoBoleta.cantidad_disponibles < item.cantidad) {
           errores.push(`Solo hay ${tipoBoleta.cantidad_disponibles} boletas disponibles de "${tipoBoleta.nombre}"`);
+          continue;
+        }
+
+        if (cupos > 1) {
+          if (!item.palco_ids || item.palco_ids.length !== item.cantidad) {
+            errores.push(`Debes elegir exactamente ${item.cantidad} palco(s) numerado(s) para "${tipoBoleta.nombre}"`);
+            continue;
+          }
+          const uniq = new Set(item.palco_ids);
+          if (uniq.size !== item.palco_ids.length) {
+            errores.push(`No puedes repetir el mismo palco en "${tipoBoleta.nombre}"`);
+            continue;
+          }
+          const { data: palcosRows, error: palcosErr } = await this.supabase
+            .from('palcos')
+            .select('id, tipo_boleta_id, estado')
+            .in('id', item.palco_ids);
+          if (palcosErr || !palcosRows || palcosRows.length !== item.cantidad) {
+            errores.push(`Palcos no válidos o ya no disponibles para "${tipoBoleta.nombre}"`);
+            continue;
+          }
+          let palcosValidados = true;
+          for (const row of palcosRows as { id: number; tipo_boleta_id: number; estado: string }[]) {
+            if (row.tipo_boleta_id !== item.tipo_boleta_id) {
+              errores.push(`El palco #${row.id} no pertenece al tipo "${tipoBoleta.nombre}"`);
+              palcosValidados = false;
+              break;
+            }
+            if (row.estado !== 'disponible') {
+              errores.push(`El palco #${row.id} ya no está disponible`);
+              palcosValidados = false;
+              break;
+            }
+          }
+          if (!palcosValidados) {
+            continue;
+          }
         }
       }
 
@@ -169,43 +238,109 @@ export class ComprasClienteService {
         throw compraError || new Error('Error al crear la compra');
       }
 
-      // Crear las boletas compradas
-      const now = this.timezoneService.getCurrentDateISO();
-      const boletasPromises = datosCompra.items.flatMap(item => {
-        const boletas: Partial<BoletaComprada>[] = [];
-        for (let i = 0; i < item.cantidad; i++) {
-          boletas.push({
-            compra_id: compra.id,
-            tipo_boleta_id: item.tipo_boleta_id,
-            codigo_qr: this.generarCodigoQR(),
-            precio_unitario: item.precio_unitario,
-            nombre_asistente: item.nombre_asistente,
-            documento_asistente: item.documento_asistente,
-            email_asistente: item.email_asistente,
-            telefono_asistente: item.telefono_asistente,
-            estado: TipoEstadoBoleta.PENDIENTE,
-            fecha_creacion: now
-          });
-        }
-        return boletas;
-      });
+      const compraId = compra.id;
 
-      // Insertar todas las boletas
-      // NOTA: La actualización de cantidad_vendidas y cantidad_disponibles
-      // se maneja automáticamente por triggers en la base de datos
+      try {
+      const tipoIds = [...new Set(datosCompra.items.map((i) => i.tipo_boleta_id))];
+      const { data: tiposMeta, error: tiposMetaError } = await this.supabase
+        .from('tipos_boleta')
+        .select('id, personas_por_unidad')
+        .in('id', tipoIds);
+
+      if (tiposMetaError || !tiposMeta || tiposMeta.length !== tipoIds.length) {
+        throw tiposMetaError || new Error('No se pudo validar los tipos de boleta');
+      }
+
+      const cuposPorTipo = new Map<number, number>(
+        tiposMeta.map((t: { id: number; personas_por_unidad: number | null }) => [
+          t.id,
+          Math.max(1, Number(t.personas_por_unidad ?? 1))
+        ])
+      );
+
+      for (const item of datosCompra.items) {
+        const cupos = cuposPorTipo.get(item.tipo_boleta_id) ?? 1;
+        if (cupos > 1) {
+          if (!item.palco_ids || item.palco_ids.length !== item.cantidad) {
+            throw new Error(
+              `Palco (tipo ${item.tipo_boleta_id}): indica ${item.cantidad} palco(s) seleccionado(s).`
+            );
+          }
+          const { error: rErr } = await this.supabase.getClient().rpc('reservar_palcos', {
+            p_compra_id: compraId,
+            p_palco_ids: item.palco_ids
+          });
+          if (rErr) {
+            throw rErr;
+          }
+        }
+      }
+
+      const now = this.timezoneService.getCurrentDateISO();
+      const boletasRows: Partial<BoletaComprada>[] = [];
+
+      for (const item of datosCompra.items) {
+        const cupos = cuposPorTipo.get(item.tipo_boleta_id) ?? 1;
+
+        if (cupos > 1) {
+          for (let u = 0; u < item.cantidad; u++) {
+            const grupoId = crypto.randomUUID();
+            const palcoId = item.palco_ids![u];
+            for (let p = 0; p < cupos; p++) {
+              const a = item.asistentes?.[u * cupos + p];
+              boletasRows.push({
+                compra_id: compraId,
+                tipo_boleta_id: item.tipo_boleta_id,
+                codigo_qr: this.generarCodigoQR(),
+                precio_unitario: p === 0 ? item.precio_unitario : 0,
+                nombre_asistente: a?.nombre?.trim() || undefined,
+                documento_asistente: a?.documento?.trim() || undefined,
+                email_asistente: a?.email?.trim() || undefined,
+                telefono_asistente: a?.telefono?.trim() || undefined,
+                estado: TipoEstadoBoleta.PENDIENTE,
+                fecha_creacion: now,
+                grupo_palco_id: grupoId,
+                palco_id: palcoId,
+                consume_inventario: p === 0
+              });
+            }
+          }
+        } else {
+          for (let i = 0; i < item.cantidad; i++) {
+            boletasRows.push({
+              compra_id: compraId,
+              tipo_boleta_id: item.tipo_boleta_id,
+              codigo_qr: this.generarCodigoQR(),
+              precio_unitario: item.precio_unitario,
+              nombre_asistente: item.nombre_asistente,
+              documento_asistente: item.documento_asistente,
+              email_asistente: item.email_asistente,
+              telefono_asistente: item.telefono_asistente,
+              estado: TipoEstadoBoleta.PENDIENTE,
+              fecha_creacion: now,
+              consume_inventario: true
+            });
+          }
+        }
+      }
+
       const { data: boletas, error: boletasError } = await this.supabase
         .from('boletas_compradas')
-        .insert(boletasPromises)
+        .insert(boletasRows)
         .select();
 
       if (boletasError) {
         throw boletasError;
       }
 
-      // No actualizamos manualmente las cantidades, el trigger lo hace
-      console.log(`Boletas insertadas: ${boletas?.length || 0}. El trigger actualizará las cantidades.`);
+      console.log(`Boletas insertadas: ${boletas?.length || 0}. Palcos reservados; al confirmar pago pasan a vendido.`);
 
       return { compra: compra as Compra, boletas: (boletas as BoletaComprada[]) || [] };
+      } catch (innerErr) {
+        await this.supabase.getClient().rpc('cancelar_reserva_palcos_compra', { p_compra_id: compraId });
+        await this.supabase.from('compras').delete().eq('id', compraId);
+        throw innerErr;
+      }
     } catch (error) {
       console.error('Error procesando compra:', error);
       throw error;

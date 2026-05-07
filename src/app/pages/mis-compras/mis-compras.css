@@ -822,6 +822,65 @@
   color: white;
 }
 
+.boleta-palco-num {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4f46e5;
+  margin-top: 0.25rem;
+}
+
+.boleta-palco-pendiente-pago .help-text,
+.registro-asistente-palco .help-text {
+  font-size: 0.875rem;
+  color: #64748b;
+  line-height: 1.4;
+  margin: 0 0 0.75rem;
+}
+
+.registro-asistente-palco {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.registro-asistente-palco .registro-titulo {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: #1e293b;
+}
+
+.registro-asistente-palco .form-group-small {
+  margin-bottom: 0.75rem;
+}
+
+.registro-asistente-palco .form-group-small label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 0.25rem;
+}
+
+.registro-asistente-palco input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+.btn-guardar-asistente {
+  margin-top: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  justify-content: center;
+}
+
 @media (max-width: 768px) {
   .mis-compras-page {
     padding: 20px 10px;

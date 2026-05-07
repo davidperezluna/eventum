@@ -13,10 +13,36 @@ import { CategoriasService } from '../../services/categorias.service';
 import { WompiService } from '../../services/wompi.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { AlertService } from '../../services/alert.service';
-import { Evento, TipoBoleta, Usuario, Lugar, CategoriaEvento, TipoEstadoEvento, CuponDescuento } from '../../types';
+import {
+  Evento,
+  TipoBoleta,
+  Usuario,
+  Lugar,
+  CategoriaEvento,
+  TipoEstadoEvento,
+  CuponDescuento,
+  Palco,
+  EstadoPalco
+} from '../../types';
 import { supabaseConfig } from '../../config/supabase.config';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { SafePipe } from '../../pipes/safe.pipe';
+
+interface DatosAsistenteLinea {
+  nombre?: string;
+  documento?: string;
+  email?: string;
+  telefono?: string;
+}
+
+/** Ítem del carrito en la página de evento */
+interface ItemCarritoEvento {
+  tipo: TipoBoleta;
+  cantidad: number;
+  datosAsistente: DatosAsistenteLinea;
+  /** Un id de tabla `palcos` por cada unidad (misma longitud que cantidad). */
+  palco_ids?: (number | null)[];
+}
 
 @Component({
   selector: 'app-detalle-evento',
@@ -43,14 +69,18 @@ export class DetalleEvento implements OnInit {
   validandoCupon = false;
 
   // Datos de compra
-  itemsCompra: {
-    tipo: TipoBoleta; cantidad: number; datosAsistente: {
-      nombre?: string;
-      documento?: string;
-      email?: string;
-      telefono?: string;
-    }
-  }[] = [];
+  itemsCompra: ItemCarritoEvento[] = [];
+  /** Palcos en estado disponible por tipo (para selects en checkout). */
+  palcosDisponiblesPorTipo = new Map<number, Palco[]>();
+
+  /** Todos los palcos del tipo (disponible / reservado / vendido) para la cuadrícula visual. */
+  palcosCatalogoPorTipo = new Map<number, Palco[]>();
+
+  /** Unidad (slot) del carrito en edición por tipo de boleta. */
+  private palcoFocoSlotPorTipo = new Map<number, number>();
+
+  /** Visor a pantalla completa del plano de palcos. */
+  mapaAmpliado: { url: string; titulo: string } | null = null;
 
   // Método de pago será determinado por Wompi
   metodoPagoSeleccionado: 'CARD' | 'PSE' | 'NEQUI' | 'BANCOLOMBIA_TRANSFER' | 'BANCOLOMBIA_COLLECT' | 'DAVIPLATA' = 'CARD';
@@ -136,13 +166,174 @@ export class DetalleEvento implements OnInit {
     };
   }
 
-  usarMisDatos(item: any) {
+  usarMisDatos(item: ItemCarritoEvento) {
     const datosUsuario = this.getDatosUsuario();
-    if (datosUsuario) {
-      item.datosAsistente = { ...datosUsuario };
-      this.cdr.detectChanges();
-    } else {
+    if (!datosUsuario) {
       this.alertService.warning('Perfil incompleto', 'No tienes información guardada en tu perfil. Completa tu perfil primero.');
+      return;
+    }
+    if (!this.esLineaPalcoMultipersona(item.tipo)) {
+      item.datosAsistente = { ...datosUsuario };
+    }
+    this.cdr.detectChanges();
+  }
+
+  cuposPorPalco(tipo: TipoBoleta): number {
+    return Math.max(1, Number(tipo.personas_por_unidad ?? 1));
+  }
+
+  esLineaPalcoMultipersona(tipo: TipoBoleta): boolean {
+    return this.cuposPorPalco(tipo) > 1;
+  }
+
+  getIndicesUnidadesPalco(item: ItemCarritoEvento): number[] {
+    if (this.esLineaPalcoMultipersona(item.tipo)) {
+      if (!item.palco_ids || item.palco_ids.length !== item.cantidad) {
+        item.palco_ids = Array.from({ length: item.cantidad }, () => null);
+      }
+    }
+    return Array.from({ length: item.cantidad }, (_, i) => i);
+  }
+
+  opcionesPalcoEnSlot(item: ItemCarritoEvento, slotIndex: number): Palco[] {
+    const lista = this.palcosDisponiblesPorTipo.get(item.tipo.id) || [];
+    const tomados = new Set<number>();
+    (item.palco_ids || []).forEach((id, idx) => {
+      if (idx !== slotIndex && id != null) {
+        tomados.add(id);
+      }
+    });
+    const actual = item.palco_ids?.[slotIndex];
+    return lista.filter((p) => !tomados.has(p.id) || p.id === actual);
+  }
+
+  /** Palcos ordenados para la cuadrícula de selección. */
+  palcosGridCatalogo(item: ItemCarritoEvento): Palco[] {
+    const raw = this.palcosCatalogoPorTipo.get(item.tipo.id) || [];
+    return [...raw].sort((a, b) => a.numero - b.numero);
+  }
+
+  getFocoSlotPalco(item: ItemCarritoEvento): number {
+    const tid = item.tipo.id;
+    let f = this.palcoFocoSlotPorTipo.get(tid);
+    if (f == null || f < 0 || f >= item.cantidad) {
+      f = 0;
+    }
+    return f;
+  }
+
+  setFocoSlotPalco(item: ItemCarritoEvento, slot: number): void {
+    if (slot < 0 || slot >= item.cantidad) {
+      return;
+    }
+    this.palcoFocoSlotPorTipo.set(item.tipo.id, slot);
+    this.cdr.detectChanges();
+  }
+
+  esPalcoClicableEnFoco(item: ItemCarritoEvento, palco: Palco): boolean {
+    const slot = this.getFocoSlotPalco(item);
+    return this.opcionesPalcoEnSlot(item, slot).some((p) => p.id === palco.id);
+  }
+
+  claseCeldaPalco(palco: Palco, item: ItemCarritoEvento): Record<string, boolean> {
+    const slot = this.getFocoSlotPalco(item);
+    const ids = item.palco_ids || [];
+    const esDisponible =
+      palco.estado === EstadoPalco.DISPONIBLE || String(palco.estado) === 'disponible';
+    const clickeable = this.esPalcoClicableEnFoco(item, palco);
+    const selIdx = ids.findIndex((id) => id === palco.id);
+    return {
+      'palco-cell': true,
+      'palco-cell--nodisp': !esDisponible,
+      'palco-cell--elegido': selIdx !== -1,
+      'palco-cell--activo': ids[slot] === palco.id,
+      'palco-cell--clic': clickeable
+    };
+  }
+
+  seleccionarPalcoCelda(item: ItemCarritoEvento, palco: Palco): void {
+    const slot = this.getFocoSlotPalco(item);
+    if (!this.esPalcoClicableEnFoco(item, palco)) {
+      return;
+    }
+    if (!item.palco_ids || item.palco_ids.length !== item.cantidad) {
+      item.palco_ids = Array.from({ length: item.cantidad }, () => null);
+    }
+    item.palco_ids[slot] = palco.id;
+
+    const nextVacío = item.palco_ids.findIndex((id, i) => i > slot && id == null);
+    const cualVacío = item.palco_ids.findIndex((id) => id == null);
+    if (nextVacío !== -1) {
+      this.palcoFocoSlotPorTipo.set(item.tipo.id, nextVacío);
+    } else if (cualVacío !== -1) {
+      this.palcoFocoSlotPorTipo.set(item.tipo.id, cualVacío);
+    }
+
+    this.cdr.detectChanges();
+  }
+
+  limpiarPalcoSlot(item: ItemCarritoEvento, slotIndex: number): void {
+    if (!item.palco_ids || slotIndex < 0 || slotIndex >= item.palco_ids.length) {
+      return;
+    }
+    item.palco_ids[slotIndex] = null;
+    this.palcoFocoSlotPorTipo.set(item.tipo.id, slotIndex);
+    this.cdr.detectChanges();
+  }
+
+  numeroPalcoPorId(item: ItemCarritoEvento, palcoId: number | null | undefined): number | null {
+    if (palcoId == null) {
+      return null;
+    }
+    const list = this.palcosCatalogoPorTipo.get(item.tipo.id) || [];
+    const found = list.find((p) => p.id === palcoId);
+    return found ? found.numero : null;
+  }
+
+  abrirMapaAmpliado(url: string, titulo: string): void {
+    this.mapaAmpliado = { url, titulo };
+    this.cdr.detectChanges();
+  }
+
+  cerrarMapaAmpliado(): void {
+    this.mapaAmpliado = null;
+    this.cdr.detectChanges();
+  }
+
+  trackBySlotIndex(_: number, ui: number): number {
+    return ui;
+  }
+
+  trackByPalcoId(_: number, p: Palco): number {
+    return p.id;
+  }
+
+  palcosSeleccionCompletos(item: ItemCarritoEvento): boolean {
+    const ids = item.palco_ids || [];
+    if (ids.length !== item.cantidad) {
+      return false;
+    }
+    return ids.every((id) => id != null);
+  }
+
+  private async refrescarPalcosDisponibles(): Promise<void> {
+    this.palcosDisponiblesPorTipo.clear();
+    this.palcosCatalogoPorTipo.clear();
+    for (const t of this.tiposBoleta) {
+      if (this.esLineaPalcoMultipersona(t)) {
+        try {
+          const [list, catalogo] = await Promise.all([
+            this.boletasService.getPalcosDisponiblesParaVenta(t.id),
+            this.boletasService.getPalcosPorTipo(t.id)
+          ]);
+          this.palcosDisponiblesPorTipo.set(t.id, list);
+          this.palcosCatalogoPorTipo.set(t.id, catalogo || []);
+        } catch (e) {
+          console.error('Error cargando palcos disponibles:', e);
+          this.palcosDisponiblesPorTipo.set(t.id, []);
+          this.palcosCatalogoPorTipo.set(t.id, []);
+        }
+      }
     }
   }
 
@@ -266,6 +457,7 @@ export class DetalleEvento implements OnInit {
             cantidad_disponibles: disponibles
           };
         });
+      await this.refrescarPalcosDisponibles();
       this.loadingBoletas = false;
       this.cdr.detectChanges();
     } catch (err) {
@@ -287,17 +479,27 @@ export class DetalleEvento implements OnInit {
   }
 
   agregarAlCarrito(tipo: TipoBoleta) {
+    const datosUsuario = this.getDatosUsuario();
     const existente = this.itemsCompra.find(item => item.tipo.id === tipo.id);
     if (existente) {
       if (existente.cantidad < tipo.cantidad_disponibles) {
         existente.cantidad++;
+        if (this.esLineaPalcoMultipersona(tipo)) {
+          existente.palco_ids = existente.palco_ids || [];
+          existente.palco_ids.push(null);
+        }
       } else {
         this.alertService.warning('Stock limitado', `Solo hay ${tipo.cantidad_disponibles} boletas disponibles`);
       }
-    } else {
-      if (tipo.cantidad_disponibles > 0) {
-        // Pre-llenar con datos del usuario si existen
-        const datosUsuario = this.getDatosUsuario();
+    } else if (tipo.cantidad_disponibles > 0) {
+      if (this.esLineaPalcoMultipersona(tipo)) {
+        this.itemsCompra.push({
+          tipo,
+          cantidad: 1,
+          datosAsistente: {},
+          palco_ids: [null]
+        });
+      } else {
         this.itemsCompra.push({
           tipo,
           cantidad: 1,
@@ -310,12 +512,15 @@ export class DetalleEvento implements OnInit {
 
   quitarDelCarrito(tipo: TipoBoleta) {
     const index = this.itemsCompra.findIndex(item => item.tipo.id === tipo.id);
-    if (index !== -1) {
-      if (this.itemsCompra[index].cantidad > 1) {
-        this.itemsCompra[index].cantidad--;
-      } else {
-        this.itemsCompra.splice(index, 1);
+    if (index === -1) return;
+    const item = this.itemsCompra[index];
+    if (item.cantidad > 1) {
+      item.cantidad--;
+      if (this.esLineaPalcoMultipersona(tipo) && item.palco_ids) {
+        item.palco_ids = item.palco_ids.slice(0, item.cantidad);
       }
+    } else {
+      this.itemsCompra.splice(index, 1);
     }
   }
 
@@ -435,28 +640,49 @@ export class DetalleEvento implements OnInit {
       return;
     }
 
-    // Validar datos de asistente para cada boleta
     for (const item of this.itemsCompra) {
-      if (!item.datosAsistente.nombre || !item.datosAsistente.documento) {
-        this.alertService.warning('Datos incompletos', 'Debes completar el nombre y documento del asistente para todas las boletas');
-        return;
+      if (this.esLineaPalcoMultipersona(item.tipo)) {
+        const pids = item.palco_ids || [];
+        if (pids.length !== item.cantidad || pids.some((x) => x == null)) {
+          this.alertService.warning(
+            'Palcos sin elegir',
+            `Selecciona el número de palco para cada unidad de "${item.tipo.nombre}".`
+          );
+          return;
+        }
+      } else {
+        if (!item.datosAsistente.nombre?.trim() || !item.datosAsistente.documento?.trim()) {
+          this.alertService.warning('Datos incompletos', 'Debes completar el nombre y documento del asistente para todas las boletas');
+          return;
+        }
       }
     }
 
-    // Preparar items para compra
-    const items: ItemCompra[] = this.itemsCompra.map(item => ({
-      tipo_boleta_id: item.tipo.id,
-      cantidad: item.cantidad,
-      precio_unitario: item.tipo.precio,
-      nombre_asistente: item.datosAsistente.nombre,
-      documento_asistente: item.datosAsistente.documento,
-      email_asistente: item.datosAsistente.email,
-      telefono_asistente: item.datosAsistente.telefono
-    }));
+    const items: ItemCompra[] = this.itemsCompra.map((item) => {
+      const base = {
+        tipo_boleta_id: item.tipo.id,
+        cantidad: item.cantidad,
+        precio_unitario: item.tipo.precio
+      };
+      if (this.esLineaPalcoMultipersona(item.tipo)) {
+        return {
+          ...base,
+          palco_ids: item.palco_ids!.map((id) => id as number)
+        };
+      }
+      return {
+        ...base,
+        nombre_asistente: item.datosAsistente.nombre,
+        documento_asistente: item.datosAsistente.documento,
+        email_asistente: item.datosAsistente.email,
+        telefono_asistente: item.datosAsistente.telefono
+      };
+    });
 
     // Validar disponibilidad
     this.comprando = true;
     try {
+      await this.refrescarPalcosDisponibles();
       const validacion = await this.comprasClienteService.validarDisponibilidad(items);
 
       if (!validacion.valido) {

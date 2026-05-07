@@ -97,26 +97,61 @@
           <div *ngFor="let boleta of item.boletas" class="boleta-card">
             <div class="boleta-header">
               <div class="boleta-info">
-                <span class="boleta-codigo" *ngIf="item.compra.estado_pago === 'completado'">Código: {{ boleta.codigo_qr }}</span>
-                <span class="boleta-codigo" *ngIf="item.compra.estado_pago !== 'completado'">Código: ******</span>
+                <span class="boleta-codigo" *ngIf="puedeMostrarQrBoleta(boleta, item.compra)">Código: {{ boleta.codigo_qr }}</span>
+                <span class="boleta-codigo" *ngIf="!puedeMostrarQrBoleta(boleta, item.compra)">Código: ******</span>
                 <span class="boleta-precio">{{ formatCurrency(boleta.precio_unitario) }}</span>
+                <span class="boleta-palco-num" *ngIf="boleta.numero_palco != null">Palco {{ boleta.numero_palco }}</span>
               </div>
               <span class="badge" [class]="getEstadoClass(boleta.estado)">
                 {{ getEstadoBoletaLabel(boleta.estado) }}
               </span>
             </div>
-            <div class="boleta-datos" *ngIf="boleta.nombre_asistente">
+            <div class="boleta-palco-pendiente-pago" *ngIf="requiereRegistroAsistentePalcoPosterior(boleta) && item.compra.estado_pago !== 'completado'">
+              <p class="help-text">
+                Cuando el pago se confirme, registra aquí el nombre y documento de cada persona del palco para ver el código QR.
+              </p>
+            </div>
+            <div class="registro-asistente-palco" *ngIf="formRegistroAsistente[boleta.id]">
+              <h5 class="registro-titulo">Registrar asistente</h5>
+              <p class="help-text" *ngIf="boleta.numero_palco != null">Entrada correspondiente al <strong>palco {{ boleta.numero_palco }}</strong>.</p>
+              <div class="form-group-small">
+                <label>Nombre completo *</label>
+                <input type="text" [(ngModel)]="formRegistroAsistente[boleta.id].nombre" placeholder="Nombre completo" />
+              </div>
+              <div class="form-group-small">
+                <label>Documento *</label>
+                <input type="text" [(ngModel)]="formRegistroAsistente[boleta.id].documento" placeholder="Número de documento" />
+              </div>
+              <div class="form-group-small">
+                <label>Email</label>
+                <input type="email" [(ngModel)]="formRegistroAsistente[boleta.id].email" placeholder="email@ejemplo.com" />
+              </div>
+              <div class="form-group-small">
+                <label>Teléfono</label>
+                <input type="tel" [(ngModel)]="formRegistroAsistente[boleta.id].telefono" placeholder="300 123 4567" />
+              </div>
+              <button
+                type="button"
+                class="btn-primary btn-guardar-asistente"
+                (click)="guardarAsistentePalco(boleta, item.compra)"
+                [disabled]="guardandoAsistenteBoletaId === boleta.id"
+              >
+                <span class="material-icons" *ngIf="guardandoAsistenteBoletaId !== boleta.id">save</span>
+                {{ guardandoAsistenteBoletaId === boleta.id ? 'Guardando…' : 'Guardar y habilitar QR' }}
+              </button>
+            </div>
+            <div class="boleta-datos" *ngIf="tieneAsistenteRegistrado(boleta)">
               <p><strong>Asistente:</strong> {{ boleta.nombre_asistente }}</p>
               <p *ngIf="boleta.documento_asistente"><strong>Documento:</strong> {{ boleta.documento_asistente }}</p>
               <p *ngIf="boleta.email_asistente"><strong>Email:</strong> {{ boleta.email_asistente }}</p>
             </div>
-            <div class="boleta-qr" *ngIf="boleta.codigo_qr && item.compra.estado_pago === 'completado'">
+            <div class="boleta-qr" *ngIf="boleta.codigo_qr && puedeMostrarQrBoleta(boleta, item.compra)">
               <div class="qr-code">
                 <span class="material-icons">qr_code</span>
                 <span>{{ boleta.codigo_qr }}</span>
               </div>
             </div>
-            <div class="boleta-actions" *ngIf="item.compra.estado_pago === 'completado'">
+            <div class="boleta-actions" *ngIf="puedeMostrarQrBoleta(boleta, item.compra)">
               <button class="btn-view" (click)="verBoleta(boleta, item.compra)" title="Ver boleta">
                 <span class="material-icons">visibility</span>
                 Ver Boleta

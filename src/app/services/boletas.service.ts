@@ -5,16 +5,47 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { TimezoneService } from './timezone.service';
-import { BoletaComprada, TipoBoleta, BoletaFilters, PaginatedResponse } from '../types';
+import { BoletaComprada, TipoBoleta, BoletaFilters, PaginatedResponse, Palco, EstadoPalco } from '../types';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BoletasService {
+  /** Join estándar para listados y búsqueda de boletas (incluye meta del tipo para palcos). */
+  private readonly selectBoletaConRelaciones =
+    '*, palcos(numero), compras(estado_pago, estado_compra, evento_id, eventos(titulo, fecha_inicio, lugar_id)), tipos_boleta(evento_id, nombre, personas_por_unidad, es_palco, eventos(id, titulo, fecha_inicio, lugar_id))';
+
   constructor(
     private supabase: SupabaseService,
     private timezoneService: TimezoneService
   ) {}
+
+  /**
+   * Actualiza datos del asistente (p. ej. registro posterior en palcos).
+   */
+  async actualizarDatosAsistenteBoleta(
+    boletaId: number,
+    datos: {
+      nombre_asistente: string;
+      documento_asistente: string;
+      email_asistente?: string | null;
+      telefono_asistente?: string | null;
+    }
+  ): Promise<void> {
+    const { error } = await this.supabase
+      .from('boletas_compradas')
+      .update({
+        nombre_asistente: datos.nombre_asistente,
+        documento_asistente: datos.documento_asistente,
+        email_asistente: datos.email_asistente ?? null,
+        telefono_asistente: datos.telefono_asistente ?? null
+      })
+      .eq('id', boletaId);
+
+    if (error) {
+      throw error;
+    }
+  }
 
   /**
    * Obtiene todas las boletas compradas con filtros opcionales
@@ -22,7 +53,7 @@ export class BoletasService {
    */
   async getBoletasCompradas(filters?: BoletaFilters): Promise<PaginatedResponse<BoletaComprada>> {
     let query = this.supabase.from('boletas_compradas')
-      .select('*, compras(estado_pago, estado_compra, evento_id, eventos(titulo, fecha_inicio, lugar_id)), tipos_boleta(evento_id, eventos(id, titulo, fecha_inicio, lugar_id))', { count: 'exact' });
+      .select(this.selectBoletaConRelaciones, { count: 'exact' });
 
     // Aplicar filtros
     if (filters?.compra_id) {
@@ -60,7 +91,7 @@ export class BoletasService {
         // Ahora filtrar boletas por esos tipos
         let boletasQuery = this.supabase
           .from('boletas_compradas')
-          .select('*, compras(estado_pago, estado_compra, evento_id, eventos(titulo, fecha_inicio, lugar_id)), tipos_boleta(evento_id, eventos(id, titulo, fecha_inicio, lugar_id))', { count: 'exact' })
+          .select(this.selectBoletaConRelaciones, { count: 'exact' })
           .in('tipo_boleta_id', tipoIds);
         
         // Aplicar otros filtros
@@ -216,6 +247,47 @@ export class BoletasService {
       return (response.data as TipoBoleta[]) || [];
     } catch (error) {
       console.error('Error en getTiposBoleta:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Lista todos los palcos de un tipo (admin / diagnóstico).
+   */
+  async getPalcosPorTipo(tipoBoletaId: number): Promise<Palco[]> {
+    try {
+      const response = await this.supabase
+        .from('palcos')
+        .select('*')
+        .eq('tipo_boleta_id', tipoBoletaId)
+        .order('numero', { ascending: true });
+      if (response.error) {
+        throw response.error;
+      }
+      return (response.data as Palco[]) || [];
+    } catch (error) {
+      console.error('Error en getPalcosPorTipo:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Palcos disponibles para compra (no reservados ni vendidos).
+   */
+  async getPalcosDisponiblesParaVenta(tipoBoletaId: number): Promise<Palco[]> {
+    try {
+      const response = await this.supabase
+        .from('palcos')
+        .select('*')
+        .eq('tipo_boleta_id', tipoBoletaId)
+        .eq('estado', EstadoPalco.DISPONIBLE)
+        .order('numero', { ascending: true });
+      if (response.error) {
+        throw response.error;
+      }
+      return (response.data as Palco[]) || [];
+    } catch (error) {
+      console.error('Error en getPalcosDisponiblesParaVenta:', error);
       throw error;
     }
   }
@@ -390,7 +462,7 @@ export class BoletasService {
     try {
       const response = await this.supabase
         .from('boletas_compradas')
-        .select('*, compras(estado_pago, estado_compra, evento_id, eventos(titulo, fecha_inicio, lugar_id)), tipos_boleta(evento_id, eventos(id, titulo, fecha_inicio, lugar_id))')
+        .select(this.selectBoletaConRelaciones)
         .eq('codigo_qr', codigoQR)
         .single();
       
@@ -418,7 +490,7 @@ export class BoletasService {
     try {
       const response = await this.supabase
         .from('boletas_compradas')
-        .select('*, compras(estado_pago, estado_compra, evento_id, eventos(titulo, fecha_inicio, lugar_id)), tipos_boleta(evento_id, eventos(id, titulo, fecha_inicio, lugar_id))')
+        .select(this.selectBoletaConRelaciones)
         .ilike('documento_asistente', `%${documento}%`)
         .order('fecha_creacion', { ascending: false });
       
@@ -480,10 +552,29 @@ export class BoletasService {
         (boletaNormalizada as any).evento = tipoBoleta.eventos;
       }
     }
+
+    if (boleta.tipos_boleta) {
+      const tb = Array.isArray(boleta.tipos_boleta) ? boleta.tipos_boleta[0] : boleta.tipos_boleta;
+      if (tb) {
+        boletaNormalizada.tipo_boleta_meta = {
+          nombre: tb.nombre,
+          personas_por_unidad: tb.personas_por_unidad,
+          es_palco: tb.es_palco
+        };
+      }
+    }
+    
+    if (boleta.palcos) {
+      const pRow = Array.isArray(boleta.palcos) ? boleta.palcos[0] : boleta.palcos;
+      if (pRow && typeof pRow.numero === 'number') {
+        boletaNormalizada.numero_palco = pRow.numero;
+      }
+    }
     
     // Limpiar los objetos del join (ya los tenemos normalizados)
     delete (boletaNormalizada as any).compras;
     delete (boletaNormalizada as any).tipos_boleta;
+    delete (boletaNormalizada as any).palcos;
     
     return boletaNormalizada;
   }

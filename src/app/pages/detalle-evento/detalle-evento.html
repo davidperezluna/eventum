@@ -273,6 +273,9 @@
           <p *ngIf="tipo.descripcion" class="tipo-descripcion">{{ tipo.descripcion }}</p>
           <div class="tipo-info">
             <span class="disponibles" [class.sin-stock]="tipo.cantidad_disponibles === 0">{{ tipo.cantidad_disponibles }} disponibles</span>
+            <span *ngIf="esLineaPalcoMultipersona(tipo)" class="palco-badge">
+              Palco: {{ cuposPorPalco(tipo) }} pers. por unidad · inventario en palcos
+            </span>
             <span *ngIf="tipo.cantidad_vendidas !== undefined && tipo.cantidad_vendidas > 0" class="vendidas">{{ tipo.cantidad_vendidas }} vendidas de {{ tipo.cantidad_total }} totales</span>
             <span *ngIf="tipo.limite_por_persona" class="limite">Máx. {{ tipo.limite_por_persona }} por persona</span>
             <span *ngIf="tipo.cantidad_disponibles === 0" class="soldout-badge">SOLD OUT</span>
@@ -333,7 +336,131 @@
               </button>
             </div>
           </div>
-          <div class="carrito-item-datos">
+          <div class="palco-experiencia" *ngIf="esLineaPalcoMultipersona(item.tipo)">
+            <header class="palco-exp-header">
+              <div class="palco-exp-header-text">
+                <p class="palco-exp-kicker">
+                  <span class="material-icons palco-exp-kicker-icon">weekend</span>
+                  Experiencia palco
+                </p>
+                <h5 class="palco-exp-title">Elige tu palco en el mapa</h5>
+                <p class="palco-exp-desc">
+                  Consulta el plano, elige cada unidad y toca un número libre. Cada palco incluye
+                  <strong>{{ cuposPorPalco(item.tipo) }} accesos</strong>.
+                </p>
+              </div>
+              <div class="palco-exp-badges">
+                <span class="palco-exp-chip" [class.palco-exp-chip--ok]="palcosSeleccionCompletos(item)">
+                  <span class="material-icons">
+                    {{ palcosSeleccionCompletos(item) ? 'check_circle' : 'touch_app' }}
+                  </span>
+                  {{ palcosSeleccionCompletos(item) ? 'Listo para pagar' : 'Selección pendiente' }}
+                </span>
+                <span class="palco-exp-chip palco-exp-chip--muted">
+                  {{ item.cantidad }} {{ item.cantidad === 1 ? 'palco' : 'palcos' }} en el carrito
+                </span>
+              </div>
+            </header>
+
+            <div class="palco-exp-body">
+              <div class="palco-exp-mapa" *ngIf="item.tipo.imagen_mapa_palcos as mapUrl">
+                <button
+                  type="button"
+                  class="palco-mapa-card"
+                  (click)="abrirMapaAmpliado(mapUrl, item.tipo.nombre)"
+                  [attr.aria-label]="'Ampliar mapa de palcos ' + item.tipo.nombre"
+                >
+                  <div class="palco-mapa-glow"></div>
+                  <img [src]="mapUrl" alt="Plano numerado de palcos" class="palco-mapa-img" />
+                  <div class="palco-mapa-caption">
+                    <span class="material-icons">zoom_in_map</span>
+                    <span>Toca para ampliar el plano</span>
+                  </div>
+                </button>
+              </div>
+
+              <div class="palco-exp-mapa palco-exp-mapa--placeholder" *ngIf="!item.tipo.imagen_mapa_palcos">
+                <div class="palco-mapa-placeholder-inner">
+                  <span class="material-icons">map</span>
+                  <p>Plano del recinto</p>
+                  <small>Usa la cuadrícula para elegir; el organizador puede añadir el mapa más adelante.</small>
+                </div>
+              </div>
+
+              <div class="palco-exp-picker">
+                <div class="palco-slot-rail" role="tablist" [attr.aria-label]="'Unidades de ' + item.tipo.nombre">
+                  <div
+                    class="palco-slot-pill"
+                    *ngFor="let ui of getIndicesUnidadesPalco(item); trackBy: trackBySlotIndex"
+                    [class.palco-slot-pill--active]="getFocoSlotPalco(item) === ui"
+                    [class.palco-slot-pill--done]="item.palco_ids?.[ui] != null"
+                    (click)="setFocoSlotPalco(item, ui)"
+                    role="tab"
+                    tabindex="0"
+                    [attr.aria-selected]="getFocoSlotPalco(item) === ui"
+                  >
+                    <span class="palco-slot-pill-label">Palco {{ ui + 1 }} de {{ item.cantidad }}</span>
+                    <span class="palco-slot-pill-value" *ngIf="item.palco_ids?.[ui] as pid">
+                      N.º {{ numeroPalcoPorId(item, pid) }}
+                    </span>
+                    <span class="palco-slot-pill-value palco-slot-pill-value--pending" *ngIf="item.palco_ids?.[ui] == null">
+                      Sin elegir
+                    </span>
+                    <button
+                      type="button"
+                      class="palco-slot-clear"
+                      *ngIf="item.palco_ids?.[ui] != null"
+                      (click)="limpiarPalcoSlot(item, ui); $event.stopPropagation()"
+                      title="Quitar palco de esta unidad"
+                    >
+                      <span class="material-icons">close</span>
+                    </button>
+                  </div>
+                </div>
+
+                <p class="palco-picker-hint">
+                  <span class="material-icons">info</span>
+                  Estás eligiendo el <strong>palco {{ getFocoSlotPalco(item) + 1 }}</strong> de {{ item.cantidad }}. Los números grises ya están reservados o vendidos.
+                </p>
+
+                <div class="palco-grid-wrap" *ngIf="palcosGridCatalogo(item).length > 0; else sinPalcosGrid">
+                  <div class="palco-grid" role="listbox" [attr.aria-label]="'Palcos disponibles para unidad ' + (getFocoSlotPalco(item) + 1)">
+                    <button
+                      type="button"
+                      *ngFor="let p of palcosGridCatalogo(item); trackBy: trackByPalcoId"
+                      [ngClass]="claseCeldaPalco(p, item)"
+                      [disabled]="!esPalcoClicableEnFoco(item, p)"
+                      (click)="seleccionarPalcoCelda(item, p)"
+                      [attr.aria-label]="'Palco número ' + p.numero"
+                      [attr.title]="
+                        p.estado === 'disponible' && esPalcoClicableEnFoco(item, p)
+                          ? 'Elegir palco ' + p.numero
+                          : (p.estado !== 'disponible' ? 'No disponible' : 'Elección no válida para esta unidad')
+                      "
+                    >
+                      <span class="palco-cell-num">{{ p.numero }}</span>
+                    </button>
+                  </div>
+                  <ul class="palco-leyenda">
+                    <li><span class="leyenda-dot leyenda-dot--clic"></span> Libre para esta unidad</li>
+                    <li><span class="leyenda-dot leyenda-dot--ok"></span> En tu carrito</li>
+                    <li><span class="leyenda-dot leyenda-dot--off"></span> No disponible</li>
+                  </ul>
+                </div>
+                <ng-template #sinPalcosGrid>
+                  <p class="palco-sin-grid">Cargando palcos o sin inventario configurado.</p>
+                </ng-template>
+              </div>
+            </div>
+
+            <footer class="palco-exp-footer">
+              <span class="material-icons palco-exp-footer-icon">qr_code_2</span>
+              <div>
+                <strong>Después del pago</strong> registra a cada persona en <strong>Mis Boletas</strong> y allí verás el código QR de cada acceso.
+              </div>
+            </footer>
+          </div>
+          <div class="carrito-item-datos" *ngIf="!esLineaPalcoMultipersona(item.tipo)">
             <div class="datos-header">
               <h5>Datos del Asistente</h5>
               <button type="button" class="btn-usar-datos" (click)="usarMisDatos(item)" *ngIf="usuario"
@@ -402,6 +529,17 @@
         </button>
         <p class="wompi-info">Serás redirigido a Wompi para completar el pago de forma segura</p>
       </div>
+    </div>
+  </div>
+
+  <!-- Mapa de palcos a pantalla completa -->
+  <div class="palco-mapa-overlay" *ngIf="mapaAmpliado as mapa" (click)="cerrarMapaAmpliado()">
+    <div class="palco-mapa-dialog" (click)="$event.stopPropagation()">
+      <button type="button" class="palco-mapa-close" (click)="cerrarMapaAmpliado()" aria-label="Cerrar plano">
+        <span class="material-icons">close</span>
+      </button>
+      <p class="palco-mapa-dialog-title" *ngIf="mapa.titulo">{{ mapa.titulo }}</p>
+      <img [src]="mapa.url" alt="Plano de palcos ampliado" class="palco-mapa-dialog-img" />
     </div>
   </div>
 

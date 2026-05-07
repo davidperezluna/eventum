@@ -9,7 +9,8 @@ import {
   TipoEstadoEvento,
   TipoTipoNotificacion,
   TipoGenero,
-  MetodoPago
+  MetodoPago,
+  EstadoPalco
 } from './enums';
 
 /**
@@ -141,8 +142,27 @@ export interface TipoBoleta {
   fecha_venta_inicio?: Date | string;
   fecha_venta_fin?: Date | string;
   limite_por_persona?: number;
+  /** Personas incluidas por cada palco/unidad vendida (1 = entrada individual). */
+  personas_por_unidad?: number;
+  /** Tipo palco / paquete grupal (configuración administrativa). */
+  es_palco?: boolean;
+  /** Imagen del plano con numeración de palcos (URL pública). */
+  imagen_mapa_palcos?: string;
   activo?: boolean;
   fecha_creacion?: Date | string;
+}
+
+/**
+ * Unidad de palco numerada (inventario seleccionable) asociada a un tipo de boleta.
+ */
+export interface Palco {
+  id: number;
+  tipo_boleta_id: number;
+  numero: number;
+  estado: EstadoPalco | string;
+  compra_id?: number | null;
+  fecha_creacion?: Date | string;
+  fecha_actualizacion?: Date | string;
 }
 
 /**
@@ -218,6 +238,14 @@ export interface BoletaComprada {
   documento_asistente?: string;
   email_asistente?: string;
   telefono_asistente?: string;
+  /** Agrupa las boletas de un mismo palco vendido. */
+  grupo_palco_id?: string | null;
+  /** Solo filas en true descuentan inventario del tipo (palco: una por unidad). */
+  consume_inventario?: boolean;
+  /** Palco físico asignado (tabla palcos). */
+  palco_id?: number | null;
+  /** Número legible del palco (si viene del join). */
+  numero_palco?: number;
   estado?: TipoEstadoBoleta;
   fecha_uso?: Date | string;
   fecha_creacion?: Date | string;
@@ -235,6 +263,12 @@ export interface BoletaComprada {
     titulo: string;
     fecha_inicio?: Date | string;
     lugar_id?: number;
+  };
+  /** Metadatos del tipo de boleta (join); se conservan al normalizar la fila. */
+  tipo_boleta_meta?: {
+    nombre?: string;
+    personas_por_unidad?: number;
+    es_palco?: boolean;
   };
 }
 

@@ -84,3 +84,12 @@ export enum MetodoPago {
   OTRO = 'otro'
 }
 
+/**
+ * Estado de una unidad de palco numerada (tabla palcos)
+ */
+export enum EstadoPalco {
+  DISPONIBLE = 'disponible',
+  RESERVADO = 'reservado',
+  VENDIDO = 'vendido'
+}
+

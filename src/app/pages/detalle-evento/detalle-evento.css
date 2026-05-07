@@ -769,6 +769,560 @@
   font-weight: 600;
 }
 
+.tipo-info .palco-badge {
+  flex-basis: 100%;
+  background: #eef2ff;
+  color: #4338ca;
+  border-radius: 8px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.palco-help {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+/* ========== Experiencia de venta de palcos (mapa + cuadrícula) ========== */
+.palco-experiencia {
+  margin: 0;
+  background: linear-gradient(145deg, #1e1b4b 0%, #312e81 45%, #3730a3 100%);
+  color: #e0e7ff;
+  border-radius: 0 0 1.5rem 1.5rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.palco-experiencia::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.35), transparent 45%),
+    radial-gradient(circle at 90% 80%, rgba(14, 165, 233, 0.2), transparent 40%);
+  pointer-events: none;
+}
+
+.palco-exp-header,
+.palco-exp-body,
+.palco-exp-footer {
+  position: relative;
+  z-index: 1;
+}
+
+.palco-exp-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1.35rem 1.5rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.palco-exp-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a5b4fc;
+}
+
+.palco-exp-kicker-icon {
+  font-size: 1rem !important;
+  width: 1rem;
+  height: 1rem;
+  opacity: 0.9;
+}
+
+.palco-exp-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.palco-exp-desc {
+  margin: 0;
+  max-width: 36rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: rgba(224, 231, 255, 0.88);
+}
+
+.palco-exp-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.palco-exp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.palco-exp-chip .material-icons {
+  font-size: 1.1rem !important;
+}
+
+.palco-exp-chip--ok {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: rgba(52, 211, 153, 0.6);
+  color: #a7f3d0;
+}
+
+.palco-exp-chip--muted {
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.palco-exp-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem 1.5rem;
+  align-items: start;
+}
+
+.palco-exp-mapa {
+  min-width: 0;
+}
+
+.palco-mapa-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 1.25rem;
+  cursor: zoom-in;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.25);
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.45);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.palco-mapa-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 24px 56px -12px rgba(99, 102, 241, 0.45);
+}
+
+.palco-mapa-glow {
+  position: absolute;
+  inset: -30%;
+  background: conic-gradient(from 180deg at 50% 50%, #6366f1, #0ea5e9, #a855f7, #6366f1);
+  opacity: 0.15;
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+.palco-mapa-img {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  background: #0f172a;
+  z-index: 1;
+}
+
+.palco-mapa-caption {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: rgba(15, 23, 42, 0.92);
+  color: #c7d2fe;
+}
+
+.palco-mapa-caption .material-icons {
+  font-size: 1rem !important;
+}
+
+.palco-exp-mapa--placeholder {
+  border-radius: 1.25rem;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.palco-mapa-placeholder-inner {
+  text-align: center;
+  padding: 1.25rem;
+  color: rgba(224, 231, 255, 0.75);
+}
+
+.palco-mapa-placeholder-inner .material-icons {
+  font-size: 2.25rem !important;
+  opacity: 0.7;
+  margin-bottom: 0.35rem;
+}
+
+.palco-mapa-placeholder-inner p {
+  margin: 0 0 0.35rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.palco-mapa-placeholder-inner small {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
+.palco-exp-picker {
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.25rem;
+  padding: 1rem 1.1rem 1.15rem;
+  backdrop-filter: blur(8px);
+}
+
+.palco-slot-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.palco-slot-pill {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  min-width: 7.5rem;
+  padding: 0.55rem 2rem 0.55rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.palco-slot-pill:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.palco-slot-pill--active {
+  border-color: rgba(129, 140, 248, 0.85);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35);
+  background: rgba(99, 102, 241, 0.2);
+}
+
+.palco-slot-pill--done:not(.palco-slot-pill--active) {
+  border-color: rgba(52, 211, 153, 0.4);
+}
+
+.palco-slot-pill-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #a5b4fc;
+}
+
+.palco-slot-pill-value {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.palco-slot-pill-value--pending {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #fcd34d;
+}
+
+.palco-slot-clear {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.25);
+  color: #fecaca;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s;
+}
+
+.palco-slot-clear:hover {
+  background: rgba(239, 68, 68, 0.45);
+}
+
+.palco-slot-clear .material-icons {
+  font-size: 16px !important;
+}
+
+.palco-picker-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin: 0 0 0.85rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: rgba(224, 231, 255, 0.85);
+}
+
+.palco-picker-hint .material-icons {
+  font-size: 1.1rem !important;
+  flex-shrink: 0;
+  margin-top: 1px;
+  opacity: 0.85;
+}
+
+.palco-grid-wrap {
+  margin-top: 0.25rem;
+}
+
+.palco-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 0.45rem;
+}
+
+.palco-cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.palco-cell-num {
+  position: relative;
+  z-index: 1;
+}
+
+.palco-cell--clic:hover:not(:disabled) {
+  transform: scale(1.06);
+  border-color: rgba(167, 139, 250, 0.95);
+  box-shadow: 0 8px 24px -4px rgba(99, 102, 241, 0.55);
+  background: rgba(99, 102, 241, 0.35);
+}
+
+.palco-cell--elegido {
+  border-color: rgba(52, 211, 153, 0.75);
+  background: rgba(16, 185, 129, 0.22);
+  color: #d1fae5;
+}
+
+.palco-cell--activo {
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.55);
+  border-color: #fbbf24;
+}
+
+.palco-cell--nodisp {
+  opacity: 0.38;
+  cursor: not-allowed;
+  text-decoration: line-through;
+  text-decoration-color: rgba(255, 255, 255, 0.35);
+}
+
+.palco-cell:disabled:not(.palco-cell--elegido) {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.palco-cell:disabled.palco-cell--elegido {
+  opacity: 0.85;
+  cursor: default;
+}
+
+.palco-leyenda {
+  list-style: none;
+  padding: 0.75rem 0 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.1rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(224, 231, 255, 0.75);
+}
+
+.palco-leyenda li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.leyenda-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+}
+
+.leyenda-dot--clic {
+  background: #a78bfa;
+  box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.35);
+}
+
+.leyenda-dot--ok {
+  background: #34d399;
+}
+
+.leyenda-dot--off {
+  background: rgba(148, 163, 184, 0.45);
+}
+
+.palco-sin-grid {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #fcd34d;
+}
+
+.palco-exp-footer {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.9rem 1.5rem 1.15rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: rgba(224, 231, 255, 0.88);
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.palco-exp-footer-icon {
+  flex-shrink: 0;
+  font-size: 1.35rem !important;
+  margin-top: 1px;
+  opacity: 0.9;
+}
+
+/* Overlay mapa ampliado */
+.palco-mapa-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(15, 23, 42, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: palcoFadeIn 0.2s ease;
+}
+
+@keyframes palcoFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.palco-mapa-dialog {
+  position: relative;
+  max-width: min(96vw, 900px);
+  max-height: 92vh;
+  overflow: auto;
+  border-radius: 1rem;
+  background: #0f172a;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+}
+
+.palco-mapa-close {
+  align-self: flex-end;
+  flex-shrink: 0;
+  margin: 0.65rem 0.65rem 0;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.palco-mapa-close:hover {
+  background: rgba(239, 68, 68, 0.5);
+}
+
+.palco-mapa-dialog-title {
+  margin: 0 1rem 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #e0e7ff;
+}
+
+.palco-mapa-dialog-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  vertical-align: middle;
+}
+
+@media (max-width: 768px) {
+  .palco-exp-body {
+    grid-template-columns: 1fr;
+  }
+
+  .palco-exp-header {
+    flex-direction: column;
+  }
+
+  .palco-exp-badges {
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .palco-slot-rail {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 0.25rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .palco-slot-pill {
+    flex-shrink: 0;
+  }
+}
+
 .soldout-badge {
   background: #fee2e2;
   color: #b91c1c;

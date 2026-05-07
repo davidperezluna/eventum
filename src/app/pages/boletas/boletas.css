@@ -1329,3 +1329,26 @@
     font-size: var(--font-size-xs);
   }
 }
+
+.mapa-palco-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+  margin-top: var(--spacing-sm);
+}
+
+.mapa-palco-preview {
+  margin-top: var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--color-border, #e2e8f0);
+  max-width: 480px;
+}
+
+.mapa-palco-preview img {
+  display: block;
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+}
