@@ -12,10 +12,18 @@ import { environment } from '../../environments/environment';
  * - src/environments/environment.prod.ts (producción)
  */
 
+type SupabaseEnv = 'prod' | 'local';
+
+const selectedEnv: SupabaseEnv = environment.supabaseEnv === 'local' ? 'local' : 'prod';
+const activeConfig = selectedEnv === 'local' ? environment.supabaseLocal : environment.supabase;
+
 export const supabaseConfig = {
-  url: environment.supabase.url,
-  anonKey: environment.supabase.anonKey,
+  env: selectedEnv,
+  url: activeConfig.url,
+  anonKey: activeConfig.anonKey,
 };
+
+console.info(`[Supabase][Web] Ambiente activo: ${supabaseConfig.env}`);
 
 // Validación de configuración
 if (!supabaseConfig.url || !supabaseConfig.anonKey) {
