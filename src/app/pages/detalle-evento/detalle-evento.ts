@@ -534,12 +534,8 @@ export class DetalleEvento implements OnInit {
   }
 
   getTotal(): number {
-    const subtotal = this.itemsCompra.reduce((sum, item) => sum + (item.tipo.precio * item.cantidad), 0);
-    if (this.cuponAplicado) {
-      const descuento = (subtotal * this.cuponAplicado.porcentaje_descuento) / 100;
-      return subtotal - descuento;
-    }
-    return subtotal;
+    const baseNeta = Math.max(0, this.getSubtotal() - this.getDescuento());
+    return baseNeta + this.getValorServicio();
   }
 
   getSubtotal(): number {
@@ -550,6 +546,22 @@ export class DetalleEvento implements OnInit {
     if (!this.cuponAplicado) return 0;
     const subtotal = this.getSubtotal();
     return (subtotal * this.cuponAplicado.porcentaje_descuento) / 100;
+  }
+
+  getPorcentajeServicio(): number {
+    const raw = Number(this.evento?.porcentaje_servicio ?? 0);
+    if (!Number.isFinite(raw)) return 0;
+    return Math.min(100, Math.max(0, raw));
+  }
+
+  getBaseNetaBoletas(): number {
+    return Math.max(0, this.getSubtotal() - this.getDescuento());
+  }
+
+  getValorServicio(): number {
+    const base = this.getBaseNetaBoletas();
+    const porcentaje = this.getPorcentajeServicio();
+    return (base * porcentaje) / 100;
   }
 
   async aplicarCupon() {
@@ -650,11 +662,6 @@ export class DetalleEvento implements OnInit {
           );
           return;
         }
-      } else {
-        if (!item.datosAsistente.nombre?.trim() || !item.datosAsistente.documento?.trim()) {
-          this.alertService.warning('Datos incompletos', 'Debes completar el nombre y documento del asistente para todas las boletas');
-          return;
-        }
       }
     }
 
@@ -672,10 +679,12 @@ export class DetalleEvento implements OnInit {
       }
       return {
         ...base,
-        nombre_asistente: item.datosAsistente.nombre,
-        documento_asistente: item.datosAsistente.documento,
-        email_asistente: item.datosAsistente.email,
-        telefono_asistente: item.datosAsistente.telefono
+        // Boleta normal: ya no se asigna en checkout.
+        // La asignación se hace después en Mis Boletas (correo o "Yo asisto").
+        nombre_asistente: undefined,
+        documento_asistente: undefined,
+        email_asistente: undefined,
+        telefono_asistente: undefined
       };
     });
 
@@ -706,6 +715,8 @@ export class DetalleEvento implements OnInit {
         cupon_id: this.cuponAplicado?.id,
         descuento_total: this.getDescuento(),
         subtotal: this.getSubtotal(),
+        porcentaje_servicio: this.getPorcentajeServicio(),
+        valor_servicio: this.getValorServicio(),
         total: this.getTotal()
       });
 

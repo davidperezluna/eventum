@@ -57,6 +57,7 @@ export const routes: Routes = [
       { path: 'dashboard-eventos', component: DashboardEventos }, // Dashboard completo de eventos
       { path: 'usuarios', component: Usuarios },
       { path: 'eventos', component: Eventos },
+      { path: 'mis-compras/actividad', component: MisCompras }, // Cliente: traslados / actividad
       { path: 'mis-compras', component: MisCompras }, // Cliente: ver compras
       { path: 'pago-resultado', component: PagoResultado }, // Resultado de pago Wompi
       { path: 'categorias', component: Categorias },

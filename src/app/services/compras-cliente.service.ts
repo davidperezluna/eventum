@@ -43,6 +43,8 @@ export interface DatosCompra {
   cupon_id?: number;
   descuento_total?: number;
   subtotal?: number;
+  porcentaje_servicio?: number;
+  valor_servicio?: number;
   total?: number;
 }
 
@@ -207,9 +209,13 @@ export class ComprasClienteService {
    */
   async procesarCompra(datosCompra: DatosCompra): Promise<{ compra: Compra; boletas: BoletaComprada[] }> {
     try {
-      // Calcular total
+      // Calcular totales (incluye porcentaje de servicio definido por evento)
       const subtotal = datosCompra.items.reduce((sum, item) => sum + (item.precio_unitario * item.cantidad), 0);
-      const total = datosCompra.total ?? (subtotal - (datosCompra.descuento_total || 0));
+      const descuentoTotal = Math.max(0, Number(datosCompra.descuento_total || 0));
+      const baseNeta = Math.max(0, subtotal - descuentoTotal);
+      const porcentajeServicio = await this.obtenerPorcentajeServicioEvento(datosCompra.evento_id);
+      const valorServicio = (baseNeta * porcentajeServicio) / 100;
+      const total = baseNeta + valorServicio;
 
       // Crear la compra (sin método de pago, Wompi lo determinará)
       const compraData: Partial<Compra> = {
@@ -218,7 +224,9 @@ export class ComprasClienteService {
         numero_transaccion: this.generarNumeroTransaccion(),
         total: total,
         subtotal: subtotal,
-        descuento_total: datosCompra.descuento_total || 0,
+        descuento_total: descuentoTotal,
+        porcentaje_servicio: porcentajeServicio,
+        valor_servicio: valorServicio,
         cupon_id: datosCompra.cupon_id,
         metodo_pago: datosCompra.metodo_pago, // Opcional
         estado_pago: TipoEstadoPago.PENDIENTE,
@@ -312,10 +320,12 @@ export class ComprasClienteService {
               tipo_boleta_id: item.tipo_boleta_id,
               codigo_qr: this.generarCodigoQR(),
               precio_unitario: item.precio_unitario,
-              nombre_asistente: item.nombre_asistente,
-              documento_asistente: item.documento_asistente,
-              email_asistente: item.email_asistente,
-              telefono_asistente: item.telefono_asistente,
+              // Boleta normal: se compra sin asistente asignado.
+              // La asignación queda para Mis Boletas.
+              nombre_asistente: undefined,
+              documento_asistente: undefined,
+              email_asistente: undefined,
+              telefono_asistente: undefined,
               estado: TipoEstadoBoleta.PENDIENTE,
               fecha_creacion: now,
               consume_inventario: true
@@ -345,6 +355,20 @@ export class ComprasClienteService {
       console.error('Error procesando compra:', error);
       throw error;
     }
+  }
+
+  private async obtenerPorcentajeServicioEvento(eventoId: number): Promise<number> {
+    const { data, error } = await this.supabase
+      .from('eventos')
+      .select('porcentaje_servicio')
+      .eq('id', eventoId)
+      .single();
+    if (error) {
+      throw error;
+    }
+    const raw = Number((data as { porcentaje_servicio?: number } | null)?.porcentaje_servicio ?? 0);
+    if (!Number.isFinite(raw)) return 0;
+    return Math.min(100, Math.max(0, raw));
   }
 
   /**

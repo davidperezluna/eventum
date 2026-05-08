@@ -93,3 +93,12 @@ export enum EstadoPalco {
   VENDIDO = 'vendido'
 }
 
+/** Ciclo de traslado de boleta de palco entre usuarios */
+export enum EstadoTrasladoBoleta {
+  ENVIADO = 'enviado',
+  RECIBIDO = 'recibido',
+  ACEPTADO = 'aceptado',
+  RECHAZADO = 'rechazado',
+  CANCELADO = 'cancelado'
+}
+

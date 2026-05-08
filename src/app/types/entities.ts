@@ -10,7 +10,8 @@ import {
   TipoTipoNotificacion,
   TipoGenero,
   MetodoPago,
-  EstadoPalco
+  EstadoPalco,
+  EstadoTrasladoBoleta
 } from './enums';
 
 /**
@@ -103,6 +104,8 @@ export interface Evento {
   es_gratis?: boolean;
   precio_minimo?: number;
   precio_maximo?: number;
+  /** Porcentaje adicional de servicio cobrado sobre el valor de boletas/palcos. */
+  porcentaje_servicio?: number;
   estado?: TipoEstadoEvento;
   destacado?: boolean;
   tags?: string;
@@ -194,6 +197,8 @@ export interface Compra {
   cupon_id?: number;
   descuento_total?: number;
   subtotal?: number;
+  porcentaje_servicio?: number;
+  valor_servicio?: number;
   // Datos enriquecidos (vienen del join)
   cupon?: {
     id: number;
@@ -244,6 +249,8 @@ export interface BoletaComprada {
   consume_inventario?: boolean;
   /** Palco físico asignado (tabla palcos). */
   palco_id?: number | null;
+  /** Titular actual de la entrada (tras traslado = nuevo usuario). */
+  titular_cliente_id?: number | null;
   /** Número legible del palco (si viene del join). */
   numero_palco?: number;
   estado?: TipoEstadoBoleta;
@@ -252,6 +259,7 @@ export interface BoletaComprada {
   // Información de la compra (viene del join)
   compra?: {
     id: number;
+    cliente_id?: number;
     estado_pago?: TipoEstadoPago;
     estado_compra?: TipoEstadoCompra;
   };
@@ -270,6 +278,41 @@ export interface BoletaComprada {
     personas_por_unidad?: number;
     es_palco?: boolean;
   };
+}
+
+/** Registro de traslado de una boleta de palco (trazabilidad). */
+export interface TrasladoBoleta {
+  id: number;
+  boleta_id: number;
+  usuario_origen_id: number;
+  usuario_destino_id: number;
+  email_destino: string;
+  estado: EstadoTrasladoBoleta | string;
+  fecha_creacion?: string;
+  fecha_recibido?: string | null;
+  fecha_aceptacion?: string | null;
+  fecha_rechazo?: string | null;
+  fecha_cancelacion?: string | null;
+  /** Join opcional desde API */
+  usuario_origen?: Pick<Usuario, 'id' | 'nombre' | 'apellido' | 'email'>;
+  usuario_destino?: Pick<Usuario, 'id' | 'nombre' | 'apellido' | 'email'>;
+  boleta?: (Pick<BoletaComprada, 'id' | 'codigo_qr' | 'tipo_boleta_id' | 'numero_palco'> & {
+    tipos_boleta?: {
+      nombre?: string;
+      eventos?: {
+        titulo?: string;
+      } | Array<{
+        titulo?: string;
+      }>;
+    } | Array<{
+      nombre?: string;
+      eventos?: {
+        titulo?: string;
+      } | Array<{
+        titulo?: string;
+      }>;
+    }>;
+  });
 }
 
 /**

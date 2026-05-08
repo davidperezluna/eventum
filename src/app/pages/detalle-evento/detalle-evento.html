@@ -456,36 +456,17 @@
             <footer class="palco-exp-footer">
               <span class="material-icons palco-exp-footer-icon">qr_code_2</span>
               <div>
-                <strong>Después del pago</strong> registra a cada persona en <strong>Mis Boletas</strong> y allí verás el código QR de cada acceso.
+                <strong>Después del pago</strong> en <strong>Mis Boletas</strong> asigna cada acceso por correo (la persona acepta como un traslado) o con «Yo asisto» si tú usas ese acceso; allí verás el código QR.
               </div>
             </footer>
           </div>
-          <div class="carrito-item-datos" *ngIf="!esLineaPalcoMultipersona(item.tipo)">
-            <div class="datos-header">
-              <h5>Datos del Asistente</h5>
-              <button type="button" class="btn-usar-datos" (click)="usarMisDatos(item)" *ngIf="usuario"
-                title="Usar mis datos del perfil">
-                <span class="material-icons">person</span>
-                Usar mis datos
-              </button>
+          <footer class="palco-exp-footer" *ngIf="!esLineaPalcoMultipersona(item.tipo)">
+            <span class="material-icons palco-exp-footer-icon">person_add</span>
+            <div>
+              <strong>Después del pago</strong> en <strong>Mis Boletas</strong> podrás asignar esta boleta por correo (traslado)
+              o con «Yo asisto» usando tus datos de perfil.
             </div>
-            <div class="form-group-small">
-              <label>Nombre del asistente *</label>
-              <input type="text" [(ngModel)]="item.datosAsistente.nombre" placeholder="Nombre completo" />
-            </div>
-            <div class="form-group-small">
-              <label>Documento *</label>
-              <input type="text" [(ngModel)]="item.datosAsistente.documento" placeholder="Número de documento" />
-            </div>
-            <div class="form-group-small">
-              <label>Email</label>
-              <input type="email" [(ngModel)]="item.datosAsistente.email" placeholder="email@ejemplo.com" />
-            </div>
-            <div class="form-group-small">
-              <label>Teléfono</label>
-              <input type="tel" [(ngModel)]="item.datosAsistente.telefono" placeholder="300 123 4567" />
-            </div>
-          </div>
+          </footer>
         </div>
       </div>
       
@@ -511,13 +492,25 @@
 
       <div class="carrito-total">
         <div class="total-info">
-          <div class="total-row" *ngIf="cuponAplicado">
-            <span>Subtotal:</span>
+          <div class="total-row">
+            <span>Valor boletas/palcos (100%):</span>
             <span>{{ formatCurrency(getSubtotal()) }}</span>
           </div>
           <div class="total-row descuento" *ngIf="cuponAplicado">
             <span>Descuento ({{ cuponAplicado.porcentaje_descuento }}%):</span>
             <span>-{{ formatCurrency(getDescuento()) }}</span>
+          </div>
+          <div class="total-row">
+            <span>Subtotal (boletas/palcos - descuento):</span>
+            <span>{{ formatCurrency(getBaseNetaBoletas()) }}</span>
+          </div>
+          <div class="total-row" *ngIf="getPorcentajeServicio() > 0">
+            <span>Servicio ({{ getPorcentajeServicio() }}%):</span>
+            <span>{{ formatCurrency(getValorServicio()) }}</span>
+          </div>
+          <div class="total-row" *ngIf="getPorcentajeServicio() === 0">
+            <span>Servicio (0%):</span>
+            <span>{{ formatCurrency(0) }}</span>
           </div>
           <div class="total-row main">
             <h3>Total: {{ formatCurrency(getTotal()) }}</h3>

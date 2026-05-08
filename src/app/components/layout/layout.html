@@ -87,9 +87,13 @@
           <span class="material-icons">event</span>
           <span>Eventos</span>
         </a>
-        <a routerLink="/mis-compras" routerLinkActive="active" class="client-mobile-nav-item" (click)="closeClientMenu()">
+        <a routerLink="/mis-compras" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="client-mobile-nav-item" (click)="closeClientMenu()">
           <span class="material-icons">confirmation_number</span>
           <span>Mis Boletas</span>
+        </a>
+        <a routerLink="/mis-compras/actividad" routerLinkActive="active" class="client-mobile-nav-item" (click)="closeClientMenu()">
+          <span class="material-icons">timeline</span>
+          <span>Actividad</span>
         </a>
         <a routerLink="/perfil" routerLinkActive="active" class="client-mobile-nav-item" (click)="closeClientMenu()">
           <span class="material-icons">person</span>
@@ -112,8 +116,11 @@
           <a routerLink="/eventos-cliente" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="client-nav-item">
             Eventos
           </a>
-          <a routerLink="/mis-compras" routerLinkActive="active" class="client-nav-item">
+          <a routerLink="/mis-compras" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="client-nav-item">
             Mis Boletas
+          </a>
+          <a routerLink="/mis-compras/actividad" routerLinkActive="active" class="client-nav-item">
+            Actividad
           </a>
         </nav>
 

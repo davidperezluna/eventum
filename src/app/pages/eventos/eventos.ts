@@ -205,7 +205,8 @@ export class Eventos implements OnInit, OnDestroy {
         organizador_id: usuario?.id || (this.organizadores.length > 0 ? this.organizadores[0].id : 0),
         es_gratis: false,
         edad_minima: 0,
-        destacado: false
+        destacado: false,
+        porcentaje_servicio: 0
       };
     }
     this.showModal = true;
@@ -435,6 +436,11 @@ export class Eventos implements OnInit, OnDestroy {
       this.alertService.warning('Campo requerido', 'Las fechas de venta son requeridas');
       return;
     }
+    const porcentajeServicio = Number(this.formData.porcentaje_servicio ?? 0);
+    if (!Number.isFinite(porcentajeServicio) || porcentajeServicio < 0 || porcentajeServicio > 100) {
+      this.alertService.warning('Porcentaje inválido', 'El porcentaje de servicio debe estar entre 0 y 100');
+      return;
+    }
 
     // Subir imagen primero si hay una seleccionada
     let imagenUrl = this.formData.imagen_principal; // Mantener imagen actual por defecto
@@ -457,7 +463,8 @@ export class Eventos implements OnInit, OnDestroy {
       // Asegurar que organizador_id esté presente
       organizador_id: this.formData.organizador_id || 0,
       // Agregar URL de imagen
-      imagen_principal: imagenUrl || undefined
+      imagen_principal: imagenUrl || undefined,
+      porcentaje_servicio: porcentajeServicio
     };
 
     // Limpiar campos vacíos opcionales y propiedades de relación que no existen en la BD

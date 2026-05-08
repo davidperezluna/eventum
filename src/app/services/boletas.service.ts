@@ -13,7 +13,7 @@ import { BoletaComprada, TipoBoleta, BoletaFilters, PaginatedResponse, Palco, Es
 export class BoletasService {
   /** Join estándar para listados y búsqueda de boletas (incluye meta del tipo para palcos). */
   private readonly selectBoletaConRelaciones =
-    '*, palcos(numero), compras(estado_pago, estado_compra, evento_id, eventos(titulo, fecha_inicio, lugar_id)), tipos_boleta(evento_id, nombre, personas_por_unidad, es_palco, eventos(id, titulo, fecha_inicio, lugar_id))';
+    '*, palcos(numero), compras(estado_pago, estado_compra, evento_id, cliente_id, eventos(titulo, fecha_inicio, lugar_id)), tipos_boleta(evento_id, nombre, personas_por_unidad, es_palco, eventos(id, titulo, fecha_inicio, lugar_id))';
 
   constructor(
     private supabase: SupabaseService,
@@ -226,6 +226,41 @@ export class BoletasService {
       console.error('Error en getBoletasCompradas:', error);
       throw error;
     }
+  }
+
+  /**
+   * Boletas por ids (p. ej. enriquecer traslados pendientes).
+   */
+  async getBoletasByIds(ids: number[]): Promise<BoletaComprada[]> {
+    const uniq = [...new Set(ids.filter((id) => id > 0))];
+    if (uniq.length === 0) {
+      return [];
+    }
+    const { data, error } = await this.supabase
+      .from('boletas_compradas')
+      .select(this.selectBoletaConRelaciones)
+      .in('id', uniq);
+    if (error) {
+      console.error('getBoletasByIds:', error);
+      throw error;
+    }
+    return ((data as any[]) || []).map((b) => this.normalizarBoletaConCompra(b));
+  }
+
+  /**
+   * Entradas cuya titularidad te fue cedida (no eres el comprador original).
+   */
+  async getBoletasCedidasTitular(clienteId: number): Promise<BoletaComprada[]> {
+    const { data, error } = await this.supabase
+      .from('boletas_compradas')
+      .select(this.selectBoletaConRelaciones)
+      .eq('titular_cliente_id', clienteId);
+    if (error) {
+      console.error('getBoletasCedidasTitular:', error);
+      throw error;
+    }
+    const rows = ((data as any[]) || []).map((b) => this.normalizarBoletaConCompra(b));
+    return rows.filter((b) => (b.compra?.cliente_id ?? 0) !== clienteId);
   }
 
   /**
@@ -521,6 +556,7 @@ export class BoletasService {
       boletaNormalizada.estado_pago = compra.estado_pago;
       boletaNormalizada.compra = {
         id: boleta.compra_id,
+        cliente_id: compra.cliente_id,
         estado_pago: compra.estado_pago,
         estado_compra: compra.estado_compra
       };
@@ -535,6 +571,7 @@ export class BoletasService {
       boletaNormalizada.estado_pago = compra.estado_pago;
       boletaNormalizada.compra = {
         id: boleta.compra_id,
+        cliente_id: compra.cliente_id,
         estado_pago: compra.estado_pago,
         estado_compra: compra.estado_compra
       };

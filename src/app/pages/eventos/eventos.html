@@ -242,6 +242,22 @@
             <input type="number" step="0.01" [(ngModel)]="formData.precio_maximo" min="0" placeholder="0.00" />
           </div>
         </div>
+        <div class="form-row" *ngIf="!formData.es_gratis">
+          <div class="form-group">
+            <label>Servicio (%)</label>
+            <input
+              type="number"
+              step="0.01"
+              [(ngModel)]="formData.porcentaje_servicio"
+              min="0"
+              max="100"
+              placeholder="0"
+            />
+            <small class="form-help">
+              Se aplica sobre el valor de las boletas/palcos al momento de la compra.
+            </small>
+          </div>
+        </div>
         <div class="form-group">
           <label>Tags</label>
           <input type="text" [(ngModel)]="formData.tags" placeholder="música, festival, rock (separados por comas)" />

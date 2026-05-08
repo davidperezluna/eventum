@@ -1,4 +1,52 @@
 <div class="mis-compras-page">
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>{{ vistaActividad ? 'Cargando…' : 'Cargando compras...' }}</p>
+  </div>
+
+  <ng-container *ngIf="!loading && vistaActividad">
+    <section class="hero-section mini-hero">
+      <div class="hero-content">
+        <h1 class="hero-title"><span class="gradient-text">Actividad</span></h1>
+        <p class="hero-subtitle">Trazabilidad de traslados de entradas de boletas (envíos y recepciones).</p>
+      </div>
+    </section>
+    <section class="actividad-page-section">
+      <div class="traslados-table-wrap" *ngIf="trasladosHistorial.length > 0">
+        <table class="traslados-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Rol</th>
+              <th>Evento</th>
+              <th>Tipo boleta</th>
+              <th>Boleta</th>
+              <th>Email origen</th>
+              <th>Email destino</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of trasladosHistorial">
+              <td>{{ t.fecha_creacion | dateFormat:'short' }}</td>
+              <td>{{ rolUsuarioEnTraslado(t) === 'origen' ? 'Envié' : 'Recibí' }}</td>
+              <td>{{ tituloEventoTraslado(t) }}</td>
+              <td>{{ nombreTipoBoletaTraslado(t) }}</td>
+              <td>#{{ t.boleta_id }}</td>
+              <td>{{ t.usuario_origen?.email || '—' }}</td>
+              <td>{{ t.email_destino }}</td>
+              <td><span class="badge" [class]="getEstadoTrasladoClass(t.estado)">{{ getEstadoTrasladoLabel(t.estado) }}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="actividad-page-vacio" *ngIf="trasladosHistorial.length === 0">
+        Aún no hay traslados de palco en tu cuenta. Cuando envíes o recibas una asignación por correo, aparecerá aquí.
+      </p>
+    </section>
+  </ng-container>
+
+  <ng-container *ngIf="!loading && !vistaActividad">
   <!-- Hero Section (Mini) -->
   <section class="hero-section mini-hero">
     <div class="hero-content">
@@ -7,12 +55,26 @@
     </div>
   </section>
 
+  <div class="filters-toolbar">
+    <button
+      type="button"
+      class="btn-toggle-filters"
+      (click)="toggleFiltros()"
+      [attr.aria-expanded]="mostrarFiltros"
+      aria-controls="filtros-panel"
+      aria-label="Mostrar u ocultar filtros"
+      title="Filtros"
+    >
+      <span class="material-icons">filter_alt</span>
+    </button>
+  </div>
+
   <!-- Filtros -->
-  <div class="filters-card">
+  <div id="filtros-panel" class="filters-card" *ngIf="mostrarFiltros">
     <div class="filters-row">
       <div class="filter-group">
         <label>Estado de Pago</label>
-        <select [(ngModel)]="estadoPagoFiltro" (ngModelChange)="loadCompras()" class="select-input">
+        <select [(ngModel)]="estadoPagoFiltro" class="select-input">
           <option [value]="null">Todos</option>
           <option *ngFor="let estado of estadosPago" [value]="estado.value">{{ estado.label }}</option>
         </select>
@@ -20,7 +82,7 @@
 
       <div class="filter-group">
         <label>Estado de Compra</label>
-        <select [(ngModel)]="estadoCompraFiltro" (ngModelChange)="loadCompras()" class="select-input">
+        <select [(ngModel)]="estadoCompraFiltro" class="select-input">
           <option [value]="null">Todos</option>
           <option *ngFor="let estado of estadosCompra" [value]="estado.value">{{ estado.label }}</option>
         </select>
@@ -28,7 +90,7 @@
 
       <div class="filter-group">
         <label>Evento</label>
-        <select [(ngModel)]="eventoFiltro" (ngModelChange)="loadCompras()" class="select-input"
+        <select [(ngModel)]="eventoFiltro" class="select-input"
           [disabled]="loadingEventos">
           <option [value]="null">Todos los eventos</option>
           <option *ngFor="let evento of eventosDisponibles" [value]="evento.id">
@@ -39,21 +101,25 @@
 
       <div class="filter-group">
         <label>Fecha Desde</label>
-        <input type="date" [(ngModel)]="fechaDesde" (ngModelChange)="loadCompras()" class="input-field" />
+        <input type="date" [(ngModel)]="fechaDesde" class="input-field" />
       </div>
 
       <div class="filter-group">
         <label>Fecha Hasta</label>
-        <input type="date" [(ngModel)]="fechaHasta" (ngModelChange)="loadCompras()" class="input-field" />
+        <input type="date" [(ngModel)]="fechaHasta" class="input-field" />
       </div>
 
       <div class="filter-group filter-search">
         <label>Buscar Transacción</label>
-        <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="loadCompras()"
+        <input type="text" [(ngModel)]="searchTerm"
           placeholder="Número de transacción..." class="input-field" />
       </div>
 
       <div class="filter-actions">
+        <button class="btn-apply" (click)="aplicarFiltros()" type="button">
+          <span class="material-icons">check</span>
+          Aplicar filtros
+        </button>
         <button class="btn-clear" (click)="limpiarFiltros()" type="button">
           <span class="material-icons">clear</span>
           Limpiar
@@ -62,10 +128,149 @@
     </div>
   </div>
 
-  <!-- Loading -->
-  <div *ngIf="loading" class="loading-state">
-    <div class="spinner"></div>
-    <p>Cargando compras...</p>
+  <!-- Traslados pendientes de aceptar (recibidos) -->
+  <div *ngIf="!loading && trasladosPendientesRecibir.length > 0" class="traslados-pendientes-section">
+    <h3 class="section-traslados-title">
+      <span class="material-icons">mark_email_unread</span>
+      Entradas de palco por aceptar
+    </h3>
+    <p class="section-traslados-desc">Te las envió otro usuario con tu email registrado. Acepta o rechaza para continuar. Debes tener <strong>documento de identidad</strong> en Mi perfil antes de aceptar.</p>
+    <div class="traslados-pendientes-grid">
+      <div *ngFor="let t of trasladosPendientesRecibir" class="traslado-pendiente-card">
+        <div class="traslado-pendiente-head">
+          <span class="badge" [class]="getEstadoTrasladoClass(t.estado)">Estado: {{ getEstadoTrasladoLabel(t.estado) }}</span>
+          <span class="traslado-email">→ {{ t.email_destino }}</span>
+        </div>
+        <p class="traslado-meta" *ngIf="t.boletaDetail">
+          <strong>{{ t.boletaDetail.evento?.titulo || 'Evento' }}</strong>
+          <span *ngIf="t.boletaDetail.numero_palco != null"> · Palco {{ t.boletaDetail.numero_palco }}</span>
+        </p>
+        <p class="traslado-aviso-qr">El código QR solo estará disponible después de <strong>aceptar</strong>.</p>
+        <div class="traslado-pendiente-actions">
+          <button type="button" class="btn-primary" (click)="aceptarTraslado(t)">
+            <span class="material-icons">check_circle</span>
+            Aceptar entrada
+          </button>
+          <button type="button" class="btn-danger-outline" (click)="rechazarTraslado(t)">
+            <span class="material-icons">cancel</span>
+            Rechazar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Boletas recibidas (cedidas): misma card que las compras -->
+  <div *ngIf="!loading && entradasCedidas.length > 0" class="cedidas-section">
+    <div class="compra-card">
+      <div class="compra-header">
+        <div class="compra-info">
+          <h3>Boletas recibidas</h3>
+          <p class="compra-fecha" *ngIf="fechaMasRecienteEntradasCedidas() as fc">
+            {{ fc | dateFormat:'full' }}
+          </p>
+          <p class="compra-fecha" *ngIf="!fechaMasRecienteEntradasCedidas()">
+            Entradas en tu nombre por traslado u otra asignación.
+          </p>
+          <div class="compra-estados">
+            <span class="badge badge-info-soft">Cedida</span>
+            <span class="badge badge-success">En tu titularidad</span>
+          </div>
+        </div>
+        <div class="compra-total">
+          <span class="total-label">Entradas</span>
+          <span class="total-value cedidas-total-count">{{ conteoBoletasDisponiblesEnFeed(entradasCedidas) }}</span>
+        </div>
+      </div>
+      <div class="boletas-section">
+        <h4 *ngIf="conteoBoletasDisponiblesEnFeed(entradasCedidas) > 0">
+          Boletas ({{ conteoBoletasDisponiblesEnFeed(entradasCedidas) }})
+        </h4>
+        <h4 *ngIf="conteoBoletasDisponiblesEnFeed(entradasCedidas) === 0">
+          Boletas (0 en tu poder — {{ entradasCedidas.length }} con envío pendiente)
+        </h4>
+        <p
+          class="boletas-section-hint"
+          *ngIf="conteoBoletasDisponiblesEnFeed(entradasCedidas) > 0 && conteoBoletasConTrasladoSaliente(entradasCedidas) > 0"
+        >
+          {{ conteoBoletasConTrasladoSaliente(entradasCedidas) }}
+          {{ conteoBoletasConTrasladoSaliente(entradasCedidas) === 1 ? 'entrada aparece' : 'entradas aparecen' }}
+          abajo con envío por correo pendiente.
+        </p>
+        <div class="boletas-grid">
+          <div *ngFor="let boleta of entradasCedidas" class="boleta-card">
+            <div class="boleta-header">
+              <div class="boleta-info">
+                <div class="boleta-info-row">
+                  <span class="boleta-palco-num" *ngIf="boleta.numero_palco != null">Palco {{ boleta.numero_palco }}</span>
+                  <span class="boleta-palco-num" *ngIf="boleta.numero_palco == null">{{ boleta.tipo_boleta_meta?.nombre || 'Boleta' }}</span>
+                </div>
+              </div>
+              <span class="badge badge-info-soft">Cedida</span>
+            </div>
+            <p class="cedida-evento" *ngIf="boleta.evento?.titulo"><strong>{{ boleta.evento?.titulo }}</strong></p>
+            <p class="cedida-fechas" *ngIf="boleta.evento?.fecha_inicio">
+              {{ boleta.evento?.fecha_inicio | dateFormat:'short' }}
+              <span *ngIf="fechaFinEvento(boleta.evento)"> - {{ fechaFinEvento(boleta.evento) | dateFormat:'short' }}</span>
+            </p>
+            <div class="boleta-palco-pendiente-pago" *ngIf="puedeAbrirVistaBoleta(boleta, compraVistaParaBoletaCedida(boleta)) && !esDiaEventoBoleta(boleta)">
+              <p class="help-text">
+                {{ mensajeHabilitacionQrBoleta(boleta) }}
+              </p>
+            </div>
+            <div class="boleta-actions" *ngIf="puedeAbrirVistaBoleta(boleta, compraVistaParaBoletaCedida(boleta))">
+              <button class="btn-view" (click)="verBoleta(boleta, compraVistaParaBoletaCedida(boleta))" type="button">
+                <span class="material-icons">visibility</span>
+                Ver Boleta
+              </button>
+            </div>
+            <div class="boleta-asignar-palco" *ngIf="puedeAsignarEntradaPorCorreoPalco(boleta, compraVistaParaBoletaCedida(boleta))">
+              <details class="asignar-palco-details">
+                <summary class="asignar-palco-summary">
+                  <span class="material-icons asignar-palco-summary-lead">playlist_add</span>
+                  <span>Asignar esta entrada</span>
+                  <span class="material-icons asignar-palco-chev">expand_more</span>
+                </summary>
+                <div class="asignar-palco-panel">
+                  <p class="help-text boleta-asignar-hint" *ngIf="!otraBoletaMismoEventoTitularYaConAsistente(boleta, compraVistaParaBoletaCedida(boleta))">
+                    Elige: «Por correo» (otra persona acepta en Mis Boletas) o «Yo asisto» para completar tus datos en nombre del comprador (para ti y tus acompañantes).
+                  </p>
+                  <p class="help-text boleta-asignar-hint" *ngIf="otraBoletaMismoEventoTitularYaConAsistente(boleta, compraVistaParaBoletaCedida(boleta))">
+                    Ya asignaste boletas con «Yo asisto» antes en este evento. Puedes seguir usando «Yo asisto» en más boletas para tus acompañantes.
+                  </p>
+                  <div class="asignar-palco-options" role="group" aria-label="Forma de asignar esta entrada">
+                    <button
+                      type="button"
+                      class="asignar-option asignar-option--correo"
+                      (click)="abrirModalTraslado(boleta, compraVistaParaBoletaCedida(boleta)); $event.stopPropagation()"
+                    >
+                      <span class="material-icons">forward_to_inbox</span>
+                      <span class="asignar-option-text">
+                        <strong>Por correo</strong>
+                        <small>Otro usuario acepta en Mis Boletas</small>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      class="asignar-option asignar-option--yo"
+                      *ngIf="puedeMostrarBotonYoAsistoPalco(boleta, compraVistaParaBoletaCedida(boleta))"
+                      (click)="usarMiPerfilComoAsistentePalco(boleta, compraVistaParaBoletaCedida(boleta)); $event.stopPropagation()"
+                      [disabled]="rellenarPerfilBoletaId === boleta.id"
+                    >
+                      <span class="material-icons">person</span>
+                      <span class="asignar-option-text">
+                        <strong>{{ rellenarPerfilBoletaId === boleta.id ? 'Aplicando…' : 'Yo asisto' }}</strong>
+                        <small>Usar los datos de mi perfil</small>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Lista de compras -->
@@ -92,54 +297,59 @@
 
       <!-- Boletas de la compra -->
       <div class="boletas-section" *ngIf="item.boletas.length > 0">
-        <h4>Boletas ({{ item.boletas.length }})</h4>
+        <h4 *ngIf="conteoBoletasDisponiblesEnFeed(item.boletas) > 0">
+          {{ tituloColeccionBoletas(item.boletas) }} ({{ conteoBoletasDisponiblesEnFeed(item.boletas) }})
+        </h4>
+        <h4 *ngIf="conteoBoletasDisponiblesEnFeed(item.boletas) === 0">
+          {{ tituloColeccionBoletas(item.boletas) }} (0 en tu poder — {{ item.boletas.length }} con envío pendiente)
+        </h4>
+        <p
+          class="boletas-section-hint"
+          *ngIf="conteoBoletasDisponiblesEnFeed(item.boletas) > 0 && conteoBoletasConTrasladoSaliente(item.boletas) > 0"
+        >
+          {{ conteoBoletasConTrasladoSaliente(item.boletas) }}
+          {{ conteoBoletasConTrasladoSaliente(item.boletas) === 1 ? 'entrada aparece' : 'entradas aparecen' }}
+          abajo con envío por correo pendiente.
+        </p>
         <div class="boletas-grid">
           <div *ngFor="let boleta of item.boletas" class="boleta-card">
             <div class="boleta-header">
               <div class="boleta-info">
-                <span class="boleta-codigo" *ngIf="puedeMostrarQrBoleta(boleta, item.compra)">Código: {{ boleta.codigo_qr }}</span>
-                <span class="boleta-codigo" *ngIf="!puedeMostrarQrBoleta(boleta, item.compra)">Código: ******</span>
-                <span class="boleta-precio">{{ formatCurrency(boleta.precio_unitario) }}</span>
-                <span class="boleta-palco-num" *ngIf="boleta.numero_palco != null">Palco {{ boleta.numero_palco }}</span>
+                <div class="boleta-info-row">
+                  <span class="boleta-palco-num" *ngIf="boleta.numero_palco != null">Palco {{ boleta.numero_palco }}</span>
+                  <span class="boleta-palco-num" *ngIf="boleta.numero_palco == null">{{ boleta.tipo_boleta_meta?.nombre || 'Boleta' }}</span>
+                </div>
               </div>
               <span class="badge" [class]="getEstadoClass(boleta.estado)">
                 {{ getEstadoBoletaLabel(boleta.estado) }}
               </span>
             </div>
-            <div class="boleta-palco-pendiente-pago" *ngIf="requiereRegistroAsistentePalcoPosterior(boleta) && item.compra.estado_pago !== 'completado'">
+            <div class="boleta-traslado-saliente" *ngIf="tieneTrasladoSalienteActivo(boleta.id)">
+              <span class="badge badge-traslado-enviado">Traslado enviado</span>
               <p class="help-text">
-                Cuando el pago se confirme, registra aquí el nombre y documento de cada persona del palco para ver el código QR.
+                Destino: <strong>{{ trasladoSalientePorBoletaId.get(boleta.id)?.email_destino }}</strong>.
+                No puedes usar el QR hasta que acepten, rechacen o canceles el envío.
               </p>
-            </div>
-            <div class="registro-asistente-palco" *ngIf="formRegistroAsistente[boleta.id]">
-              <h5 class="registro-titulo">Registrar asistente</h5>
-              <p class="help-text" *ngIf="boleta.numero_palco != null">Entrada correspondiente al <strong>palco {{ boleta.numero_palco }}</strong>.</p>
-              <div class="form-group-small">
-                <label>Nombre completo *</label>
-                <input type="text" [(ngModel)]="formRegistroAsistente[boleta.id].nombre" placeholder="Nombre completo" />
-              </div>
-              <div class="form-group-small">
-                <label>Documento *</label>
-                <input type="text" [(ngModel)]="formRegistroAsistente[boleta.id].documento" placeholder="Número de documento" />
-              </div>
-              <div class="form-group-small">
-                <label>Email</label>
-                <input type="email" [(ngModel)]="formRegistroAsistente[boleta.id].email" placeholder="email@ejemplo.com" />
-              </div>
-              <div class="form-group-small">
-                <label>Teléfono</label>
-                <input type="tel" [(ngModel)]="formRegistroAsistente[boleta.id].telefono" placeholder="300 123 4567" />
-              </div>
               <button
                 type="button"
-                class="btn-primary btn-guardar-asistente"
-                (click)="guardarAsistentePalco(boleta, item.compra)"
-                [disabled]="guardandoAsistenteBoletaId === boleta.id"
+                class="btn-cancelar-traslado"
+                *ngIf="trasladoSalientePorBoletaId.get(boleta.id)?.estado === 'enviado'"
+                (click)="cancelarTraslado(trasladoSalientePorBoletaId.get(boleta.id)!)"
               >
-                <span class="material-icons" *ngIf="guardandoAsistenteBoletaId !== boleta.id">save</span>
-                {{ guardandoAsistenteBoletaId === boleta.id ? 'Guardando…' : 'Guardar y habilitar QR' }}
+                <span class="material-icons">undo</span>
+                Cancelar envío
               </button>
             </div>
+            <div class="boleta-palco-pendiente-pago" *ngIf="requiereRegistroAsistentePalcoPosterior(boleta) && item.compra.estado_pago !== 'completado'">
+              <p class="help-text">
+                Cuando el pago se confirme, podrás asignar cada acceso por correo o con «Yo asisto» para ver el código QR.
+              </p>
+            </div>
+            <p class="boleta-evento" *ngIf="boleta.evento?.titulo"><strong>{{ boleta.evento?.titulo }}</strong></p>
+            <p class="boleta-fechas" *ngIf="boleta.evento?.fecha_inicio">
+              {{ boleta.evento?.fecha_inicio | dateFormat:'short' }}
+              <span *ngIf="fechaFinEvento(boleta.evento)"> - {{ fechaFinEvento(boleta.evento) | dateFormat:'short' }}</span>
+            </p>
             <div class="boleta-datos" *ngIf="tieneAsistenteRegistrado(boleta)">
               <p><strong>Asistente:</strong> {{ boleta.nombre_asistente }}</p>
               <p *ngIf="boleta.documento_asistente"><strong>Documento:</strong> {{ boleta.documento_asistente }}</p>
@@ -148,14 +358,68 @@
             <div class="boleta-qr" *ngIf="boleta.codigo_qr && puedeMostrarQrBoleta(boleta, item.compra)">
               <div class="qr-code">
                 <span class="material-icons">qr_code</span>
-                <span>{{ boleta.codigo_qr }}</span>
+                <span>QR disponible</span>
               </div>
             </div>
-            <div class="boleta-actions" *ngIf="puedeMostrarQrBoleta(boleta, item.compra)">
+            <div class="boleta-palco-pendiente-pago" *ngIf="puedeAbrirVistaBoleta(boleta, item.compra) && !esDiaEventoBoleta(boleta)">
+              <p class="help-text">
+                {{ mensajeHabilitacionQrBoleta(boleta) }}
+              </p>
+            </div>
+            <div class="boleta-actions" *ngIf="puedeAbrirVistaBoleta(boleta, item.compra)">
               <button class="btn-view" (click)="verBoleta(boleta, item.compra)" title="Ver boleta">
                 <span class="material-icons">visibility</span>
                 Ver Boleta
               </button>
+            </div>
+            <div class="boleta-asignar-palco" *ngIf="puedeAsignarEntradaPorCorreoPalco(boleta, item.compra)">
+              <details class="asignar-palco-details">
+                <summary class="asignar-palco-summary">
+                  <span class="material-icons asignar-palco-summary-lead">playlist_add</span>
+                  <span>Asignar esta entrada</span>
+                  <span class="material-icons asignar-palco-chev">expand_more</span>
+                </summary>
+                <div class="asignar-palco-panel">
+                  <p class="help-text boleta-asignar-hint" *ngIf="boleta.numero_palco != null && !otraBoletaMismoEventoTitularYaConAsistente(boleta, item.compra)">
+                    Palco <strong>{{ boleta.numero_palco }}</strong> · correo a otra persona o «Yo asisto» para asignar varias boletas a tu nombre (acompañantes).
+                  </p>
+                  <p class="help-text boleta-asignar-hint" *ngIf="boleta.numero_palco != null && otraBoletaMismoEventoTitularYaConAsistente(boleta, item.compra)">
+                    Palco <strong>{{ boleta.numero_palco }}</strong> · ya asignaste boletas con «Yo asisto». Puedes seguir usando «Yo asisto» en más boletas.
+                  </p>
+                  <p class="help-text boleta-asignar-hint" *ngIf="boleta.numero_palco == null && !otraBoletaMismoEventoTitularYaConAsistente(boleta, item.compra)">
+                    Correo a usuario registrado (acepta en Mis Boletas) o «Yo asisto» para asignar boletas a tu nombre (acompañantes).
+                  </p>
+                  <p class="help-text boleta-asignar-hint" *ngIf="boleta.numero_palco == null && otraBoletaMismoEventoTitularYaConAsistente(boleta, item.compra)">
+                    Ya asignaste boletas con «Yo asisto» antes en este evento. Puedes seguir usando «Yo asisto» en más boletas.
+                  </p>
+                  <div class="asignar-palco-options" role="group" aria-label="Forma de asignar esta entrada">
+                    <button
+                      type="button"
+                      class="asignar-option asignar-option--correo"
+                      (click)="abrirModalTraslado(boleta, item.compra); $event.stopPropagation()"
+                    >
+                      <span class="material-icons">forward_to_inbox</span>
+                      <span class="asignar-option-text">
+                        <strong>Por correo</strong>
+                        <small>Otro usuario acepta en Mis Boletas</small>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      class="asignar-option asignar-option--yo"
+                      *ngIf="puedeMostrarBotonYoAsistoPalco(boleta, item.compra)"
+                      (click)="usarMiPerfilComoAsistentePalco(boleta, item.compra); $event.stopPropagation()"
+                      [disabled]="rellenarPerfilBoletaId === boleta.id"
+                    >
+                      <span class="material-icons">person</span>
+                      <span class="asignar-option-text">
+                        <strong>{{ rellenarPerfilBoletaId === boleta.id ? 'Aplicando…' : 'Yo asisto' }}</strong>
+                        <small>Usar los datos de mi perfil</small>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </details>
             </div>
           </div>
         </div>
@@ -164,7 +428,7 @@
   </div>
 
   <!-- Empty state -->
-  <div *ngIf="!loading && comprasConBoletas.length === 0" class="empty-state">
+  <div *ngIf="!loading && !vistaActividad && !tieneContenidoMisBoletas()" class="empty-state">
     <span class="material-icons">shopping_bag</span>
     <p>No has realizado ninguna compra aún</p>
     <p class="empty-subtitle">Explora los eventos disponibles y compra tus boletas</p>
@@ -175,7 +439,7 @@
   </div>
 
   <!-- Paginación -->
-  <div *ngIf="!loading && total > limit" class="pagination">
+  <div *ngIf="!loading && !vistaActividad && total > limit" class="pagination">
     <div class="pagination-info">
       <span>Mostrando {{ (page - 1) * limit + 1 }} - {{ Math.min(page * limit, total) }} de {{ total }}
         resultados</span>
@@ -205,6 +469,43 @@
       </button>
     </div>
   </div>
+  </ng-container>
+</div>
+
+<!-- Modal enviar entrada (traslado palco) -->
+<div class="modal-overlay modal-overlay--traslado" *ngIf="showTrasladoModal" (click)="cerrarModalTraslado()">
+  <div class="modal-content boleta-modal traslado-modal" (click)="$event.stopPropagation()">
+    <button class="modal-close" type="button" (click)="cerrarModalTraslado()" aria-label="Cerrar">
+      <span class="material-icons">close</span>
+    </button>
+    <div class="traslado-modal-body">
+      <h3 class="traslado-modal-title">Asignar entrada de palco</h3>
+      <p class="traslado-modal-desc">
+        Indica el <strong>email con el que está registrado</strong> el usuario en Eventum (igual que enviar una boleta). Debe tener documento en su perfil; al aceptar en Mis Boletas se copian sus datos a la entrada. Tú dejarás de ver el QR mientras el traslado esté pendiente.
+      </p>
+      <div class="traslado-modal-field">
+        <label for="email-traslado-destino">Email del destinatario *</label>
+        <input
+          id="email-traslado-destino"
+          type="email"
+          [(ngModel)]="emailTrasladoDestino"
+          placeholder="correo@ejemplo.com"
+          autocomplete="email"
+        />
+      </div>
+      <div class="traslado-modal-actions">
+        <button type="button" class="traslado-btn-secondary" (click)="cerrarModalTraslado()">Cerrar</button>
+        <button
+          type="button"
+          class="traslado-btn-primary"
+          (click)="confirmarEnvioTraslado()"
+          [disabled]="enviandoTraslado"
+        >
+          {{ enviandoTraslado ? 'Enviando…' : 'Enviar solicitud' }}
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Modal de vista previa de boleta -->
@@ -214,23 +515,28 @@
       <span class="material-icons">close</span>
     </button>
 
-    <div class="boleta-preview" *ngIf="boletaSeleccionada && eventoSeleccionado && tipoBoletaSeleccionado">
+    <div class="boleta-preview" *ngIf="boletaSeleccionada">
       <!-- Encabezado -->
       <div class="boleta-header-preview">
-        <h2>{{ eventoSeleccionado.titulo }}</h2>
-        <p class="boleta-tipo">{{ tipoBoletaSeleccionado.nombre }}</p>
+        <h2>{{ eventoSeleccionado?.titulo || 'Evento' }}</h2>
+        <p class="boleta-tipo">{{ tipoBoletaSeleccionado?.nombre || '' }}</p>
       </div>
 
-      <!-- QR Code (solo si el pago está completado) -->
-      <div class="boleta-qr-preview" *ngIf="compraSeleccionada?.estado_pago === 'completado'">
+      <!-- QR Code (solo el día del evento) -->
+        <div class="boleta-qr-preview" *ngIf="compraSeleccionada?.estado_pago === 'completado' && esDiaEventoBoleta(boletaSeleccionada)">
         <div *ngIf="loadingQR" class="qr-loading">
           <div class="spinner"></div>
           <p>Generando código QR...</p>
         </div>
         <img *ngIf="qrCodeUrl && !loadingQR" [src]="qrCodeUrl" alt="Código QR" class="qr-image">
-        <p class="qr-code-text" *ngIf="!loadingQR">{{ boletaSeleccionada.codigo_qr }}</p>
       </div>
-      <div class="boleta-qr-preview" *ngIf="compraSeleccionada?.estado_pago !== 'completado'">
+        <div class="boleta-qr-preview" *ngIf="compraSeleccionada?.estado_pago === 'completado' && !esDiaEventoBoleta(boletaSeleccionada)">
+        <div class="qr-pending">
+          <span class="material-icons">shield</span>
+          <p>{{ mensajeHabilitacionQrBoleta(boletaSeleccionada) }}</p>
+        </div>
+      </div>
+        <div class="boleta-qr-preview" *ngIf="compraSeleccionada?.estado_pago !== 'completado'">
         <div class="qr-pending">
           <span class="material-icons">lock</span>
           <p>El código QR estará disponible una vez que el pago sea completado</p>
@@ -239,24 +545,21 @@
 
       <!-- Información -->
       <div class="boleta-info-preview">
-        <div class="info-row">
-          <span class="info-label">Precio:</span>
-          <span class="info-value">{{ formatCurrency(boletaSeleccionada.precio_unitario) }}</span>
-        </div>
+        <!-- Se omite el precio en el modal -->
 
-        <div class="info-row" *ngIf="eventoSeleccionado.fecha_inicio">
+        <div class="info-row" *ngIf="eventoSeleccionado?.fecha_inicio">
           <span class="info-label">Fecha:</span>
-          <span class="info-value">{{ eventoSeleccionado.fecha_inicio | dateFormat:'full' }}</span>
+          <span class="info-value">{{ eventoSeleccionado?.fecha_inicio | dateFormat:'full' }}</span>
         </div>
 
-        <div class="info-row" *ngIf="eventoSeleccionado.lugar">
+        <div class="info-row" *ngIf="eventoSeleccionado?.lugar">
           <span class="info-label">Lugar:</span>
-          <span class="info-value">{{ eventoSeleccionado.lugar.nombre }}</span>
+          <span class="info-value">{{ eventoSeleccionado?.lugar?.nombre }}</span>
         </div>
 
-        <div class="info-row" *ngIf="eventoSeleccionado.lugar">
+        <div class="info-row" *ngIf="eventoSeleccionado?.lugar">
           <span class="info-label">Dirección:</span>
-          <span class="info-value">{{ eventoSeleccionado.lugar.direccion }}, {{ eventoSeleccionado.lugar.ciudad }}</span>
+          <span class="info-value">{{ eventoSeleccionado?.lugar?.direccion }}, {{ eventoSeleccionado?.lugar?.ciudad }}</span>
         </div>
 
         <div class="info-row" *ngIf="boletaSeleccionada.nombre_asistente">
@@ -269,10 +572,6 @@
           <span class="info-value">{{ boletaSeleccionada.documento_asistente }}</span>
         </div>
 
-        <div class="info-row" *ngIf="compraSeleccionada">
-          <span class="info-label">Transacción:</span>
-          <span class="info-value">{{ compraSeleccionada.numero_transaccion }}</span>
-        </div>
       </div>
 
       <!-- Botones de acción -->
@@ -312,10 +611,6 @@
             <span class="label">TIPO DE BOLETA</span>
             <span class="value">{{ tipoBoletaSeleccionado.nombre }}</span>
           </div>
-          <div class="info-item">
-            <span class="label">PRECIO</span>
-            <span class="value">{{ formatCurrency(boletaSeleccionada.precio_unitario) }}</span>
-          </div>
         </div>
         
         <div class="ticket-asistente">
@@ -339,7 +634,6 @@
     <div class="ticket-right">
       <div class="ticket-qr-container">
         <img [src]="qrCodeUrl" alt="QR" class="ticket-qr" />
-        <div class="ticket-qr-code">{{ boletaSeleccionada.codigo_qr }}</div>
       </div>
       <div class="ticket-stub-info">
         <span>EVENTUM</span>

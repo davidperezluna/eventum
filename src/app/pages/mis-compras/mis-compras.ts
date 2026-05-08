@@ -1,15 +1,26 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, of, forkJoin, firstValueFrom, from } from 'rxjs';
-import { takeUntil, catchError, debounceTime, switchMap } from 'rxjs/operators';
+import { Subject, from } from 'rxjs';
+import { takeUntil, debounceTime, switchMap, filter } from 'rxjs/operators';
 import { ComprasService } from '../../services/compras.service';
 import { BoletasService } from '../../services/boletas.service';
+import { TrasladosBoletaService } from '../../services/traslados-boleta.service';
 import { EventosService } from '../../services/eventos.service';
 import { AuthService } from '../../services/auth.service';
 import { AlertService } from '../../services/alert.service';
-import { Compra, BoletaComprada, PaginatedResponse, TipoBoleta, Evento, TipoEstadoPago, TipoEstadoCompra } from '../../types';
+import {
+  Compra,
+  BoletaComprada,
+  PaginatedResponse,
+  TipoBoleta,
+  Evento,
+  TipoEstadoPago,
+  TipoEstadoCompra,
+  TrasladoBoleta,
+  EstadoTrasladoBoleta
+} from '../../types';
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
 import html2canvas from 'html2canvas';
@@ -40,6 +51,7 @@ export class MisCompras implements OnInit, OnDestroy {
   fechaDesde: string = '';
   fechaHasta: string = '';
   searchTerm: string = '';
+  mostrarFiltros = false;
 
   // Lista de eventos disponibles (solo eventos donde el usuario tiene compras)
   eventosDisponibles: Evento[] = [];
@@ -69,21 +81,43 @@ export class MisCompras implements OnInit, OnDestroy {
   qrCodeUrl: string = '';
   loadingQR = false;
 
-  /** Formularios de registro tardío de asistentes (entradas de palco). */
-  formRegistroAsistente: Record<number, { nombre: string; documento: string; email: string; telefono: string }> =
-    {};
-  guardandoAsistenteBoletaId: number | null = null;
+  /** Traslados de palcos: historial y mapas para ocultar QR al remitente con envío pendiente. */
+  trasladosHistorial: TrasladoBoleta[] = [];
+  trasladosPendientesRecibir: Array<TrasladoBoleta & { boletaDetail?: BoletaComprada }> = [];
+  trasladoSalientePorBoletaId = new Map<number, TrasladoBoleta>();
+  entradasCedidas: BoletaComprada[] = [];
+  loadingTraslados = false;
+
+  showTrasladoModal = false;
+  trasladoBoleta: BoletaComprada | null = null;
+  trasladoCompra: Compra | null = null;
+  emailTrasladoDestino = '';
+  enviandoTraslado = false;
+  rellenarPerfilBoletaId: number | null = null;
+
+  /** Ruta `/mis-compras/actividad`: solo trazabilidad de traslados. */
+  vistaActividad = false;
 
   constructor(
     private comprasService: ComprasService,
     private boletasService: BoletasService,
+    private trasladosBoletaService: TrasladosBoletaService,
     private eventosService: EventosService,
     private authService: AuthService,
     private alertService: AlertService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private router: Router
   ) {}
 
   ngOnInit() {
+    this.syncVistaActividadDesdeUrl(this.router.url);
+    this.router.events
+      .pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        takeUntil(this.destroy$)
+      )
+      .subscribe((e) => this.syncVistaActividadDesdeUrl(e.urlAfterRedirects));
+
     // Configurar debounce para búsqueda
     this.loadComprasSubject.pipe(
       debounceTime(300),
@@ -96,7 +130,7 @@ export class MisCompras implements OnInit, OnDestroy {
         this.totalPages = response.totalPages || 0;
         
         await this.loadBoletasPorCompra();
-        
+
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -113,6 +147,12 @@ export class MisCompras implements OnInit, OnDestroy {
 
     this.loadEventosDisponibles(); // Cargar eventos disponibles
     this.loadCompras(); // Carga inicial
+  }
+
+  private syncVistaActividadDesdeUrl(url: string): void {
+    const path = (url || '').split('?')[0];
+    this.vistaActividad = path.endsWith('/mis-compras/actividad');
+    this.cdr.detectChanges();
   }
 
   loadCompras() {
@@ -172,6 +212,16 @@ export class MisCompras implements OnInit, OnDestroy {
     this.fechaHasta = '';
     this.searchTerm = '';
     this.loadCompras();
+  }
+
+  aplicarFiltros() {
+    this.loadCompras();
+    this.mostrarFiltros = false;
+  }
+
+  toggleFiltros() {
+    this.mostrarFiltros = !this.mostrarFiltros;
+    this.cdr.detectChanges();
   }
 
   /**
@@ -261,9 +311,63 @@ export class MisCompras implements OnInit, OnDestroy {
     return pages;
   }
 
+  private async refrescarTrasladosMaps(): Promise<void> {
+    const uid = this.authService.getUsuarioId();
+    if (!uid) {
+      this.trasladosHistorial = [];
+      this.trasladosPendientesRecibir = [];
+      this.trasladoSalientePorBoletaId.clear();
+      return;
+    }
+    this.loadingTraslados = true;
+    try {
+      this.trasladosHistorial = await this.trasladosBoletaService.listarMiTrazabilidad();
+      this.trasladoSalientePorBoletaId.clear();
+      for (const t of this.trasladosHistorial) {
+        const e = String(t.estado);
+        if (
+          t.usuario_origen_id === uid &&
+          (e === EstadoTrasladoBoleta.ENVIADO || e === EstadoTrasladoBoleta.RECIBIDO)
+        ) {
+          this.trasladoSalientePorBoletaId.set(t.boleta_id, t);
+        }
+      }
+      const pend = this.trasladosHistorial.filter((t) => {
+        const e = String(t.estado);
+        return (
+          t.usuario_destino_id === uid &&
+          (e === EstadoTrasladoBoleta.ENVIADO || e === EstadoTrasladoBoleta.RECIBIDO)
+        );
+      });
+      const ids = pend.map((p) => p.boleta_id);
+      const detMap = new Map<number, BoletaComprada>();
+      if (ids.length) {
+        const det = await this.boletasService.getBoletasByIds(ids);
+        det.forEach((b) => detMap.set(b.id, b));
+      }
+      this.trasladosPendientesRecibir = pend.map((t) => ({
+        ...t,
+        boletaDetail: detMap.get(t.boleta_id)
+      }));
+    } catch (e) {
+      console.error('Error cargando traslados:', e);
+      this.trasladosHistorial = [];
+      this.trasladosPendientesRecibir = [];
+      this.trasladoSalientePorBoletaId.clear();
+    } finally {
+      this.loadingTraslados = false;
+    }
+  }
+
   async loadBoletasPorCompra() {
     this.comprasConBoletas = [];
-    this.formRegistroAsistente = {};
+    const uid = this.authService.getUsuarioId();
+    if (!uid) {
+      this.entradasCedidas = [];
+      return;
+    }
+
+    await this.refrescarTrasladosMaps();
 
     for (const compra of this.compras) {
       try {
@@ -272,32 +376,304 @@ export class MisCompras implements OnInit, OnDestroy {
           limit: 1000
         });
         const boletas = response.data || [];
+        const visibles = boletas.filter((b) => this.esTitularBoleta(b, compra));
+        if (visibles.length === 0) {
+          continue;
+        }
         this.comprasConBoletas.push({
           compra,
-          boletas
+          boletas: visibles
         });
-        if (compra.estado_pago === 'completado') {
-          for (const b of boletas) {
-            if (this.requiereRegistroAsistentePalcoPosterior(b) && !this.tieneAsistenteRegistrado(b)) {
-              this.formRegistroAsistente[b.id] = {
-                nombre: '',
-                documento: '',
-                email: '',
-                telefono: ''
-              };
-            }
-          }
-        }
         this.cdr.detectChanges();
       } catch (err) {
         console.error('Error cargando boletas para compra:', compra.id, err);
-        this.comprasConBoletas.push({
-          compra,
-          boletas: []
-        });
         this.cdr.detectChanges();
       }
     }
+
+    try {
+      this.entradasCedidas = await this.boletasService.getBoletasCedidasTitular(uid);
+    } catch (e) {
+      console.error('Error cargando entradas cedidas:', e);
+      this.entradasCedidas = [];
+    }
+  }
+
+  esTitularBoleta(b: BoletaComprada, compra: Compra): boolean {
+    const uid = this.authService.getUsuarioId();
+    if (!uid) return false;
+    const titular = b.titular_cliente_id ?? compra.cliente_id;
+    return titular === uid;
+  }
+
+  tieneTrasladoSalienteActivo(boletaId: number): boolean {
+    return this.trasladoSalientePorBoletaId.has(boletaId);
+  }
+
+  /**
+   * Boletas que siguen contándose como “tuyas” en el listado: excluye las que enviaste
+   * por correo con traslado pendiente (aún eres titular pero no disponibles como el resto).
+   */
+  conteoBoletasDisponiblesEnFeed(boletas: BoletaComprada[]): number {
+    return boletas.filter((b) => !this.tieneTrasladoSalienteActivo(b.id)).length;
+  }
+
+  conteoBoletasConTrasladoSaliente(boletas: BoletaComprada[]): number {
+    return boletas.filter((b) => this.tieneTrasladoSalienteActivo(b.id)).length;
+  }
+
+  esBoletaTipoPalco(boleta: BoletaComprada): boolean {
+    if (boleta.numero_palco != null) return true;
+    return Boolean(boleta.tipo_boleta_meta?.es_palco);
+  }
+
+  tituloColeccionBoletas(boletas: BoletaComprada[]): string {
+    return boletas.some((b) => this.esBoletaTipoPalco(b)) ? 'Boletas y palcos' : 'Boletas';
+  }
+
+  // Algunos objetos evento enriquecidos pueden traer `fecha_fin` aunque el tipo no lo declare.
+  fechaFinEvento(evento: any): any {
+    return evento?.fecha_fin;
+  }
+
+  /** Fecha de creación más reciente entre boletas recibidas (subtítulo tipo “compra”). */
+  fechaMasRecienteEntradasCedidas(): string | Date | null {
+    let best = 0;
+    let value: string | Date | null = null;
+    for (const b of this.entradasCedidas) {
+      if (!b.fecha_creacion) continue;
+      const t = new Date(b.fecha_creacion).getTime();
+      if (!Number.isFinite(t)) continue;
+      if (t > best) {
+        best = t;
+        value = b.fecha_creacion;
+      }
+    }
+    return value;
+  }
+
+  /**
+   * Palco multipersonal: asignar cada acceso solo con el email de un usuario registrado (acepta en Mis Boletas).
+   */
+  puedeAsignarEntradaPorCorreoPalco(boleta: BoletaComprada, compra: Compra): boolean {
+    if (compra.estado_pago !== 'completado') return false;
+    if (!this.esTitularBoleta(boleta, compra)) return false;
+    if (!this.requiereRegistroAsistentePalcoPosterior(boleta)) return false;
+    if (this.tieneAsistenteRegistrado(boleta)) return false;
+    if (this.tieneTrasladoSalienteActivo(boleta.id)) return false;
+    return true;
+  }
+
+  private eventoIdDeBoleta(boleta: BoletaComprada, compra: Compra): number | null {
+    const cid = compra.evento_id;
+    if (cid != null && cid > 0) return cid;
+    const eid = boleta.evento?.id;
+    if (eid != null && eid > 0) return eid;
+    return null;
+  }
+
+  otraBoletaMismoEventoTitularYaConAsistente(boleta: BoletaComprada, compra: Compra): boolean {
+    const eid = this.eventoIdDeBoleta(boleta, compra);
+    if (eid == null) return false;
+
+    const esOtraConAsistente = (other: BoletaComprada, otherCompra: Compra): boolean => {
+      if (other.id === boleta.id) return false;
+      if (this.eventoIdDeBoleta(other, otherCompra) !== eid) return false;
+      if (!this.esTitularBoleta(other, otherCompra)) return false;
+      return this.tieneAsistenteRegistrado(other);
+    };
+
+    for (const row of this.comprasConBoletas) {
+      for (const o of row.boletas) {
+        if (esOtraConAsistente(o, row.compra)) return true;
+      }
+    }
+    for (const o of this.entradasCedidas) {
+      if (esOtraConAsistente(o, this.compraVistaParaBoletaCedida(o))) return true;
+    }
+    return false;
+  }
+
+  puedeMostrarBotonYoAsistoPalco(boleta: BoletaComprada, compra: Compra): boolean {
+    // «Yo asisto» se permite en múltiples boletas para el mismo comprador
+    // (por ejemplo, si va físicamente con más acompañantes).
+    return this.puedeAsignarEntradaPorCorreoPalco(boleta, compra);
+  }
+
+  async usarMiPerfilComoAsistentePalco(boleta: BoletaComprada, compra: Compra): Promise<void> {
+    if (!this.puedeMostrarBotonYoAsistoPalco(boleta, compra)) {
+      return;
+    }
+    this.rellenarPerfilBoletaId = boleta.id;
+    this.cdr.detectChanges();
+    let ok = false;
+    let errMsg: string | undefined;
+    try {
+      const res = await this.trasladosBoletaService.rellenarAsistentePalcoDesdePerfil(boleta.id);
+      if (!res.ok) {
+        errMsg = res.error || 'Error desconocido';
+        return;
+      }
+      ok = true;
+    } finally {
+      // Liberar el estado del botón inmediatamente para que no se quede “Aplicando…”
+      this.rellenarPerfilBoletaId = null;
+      this.cdr.detectChanges();
+    }
+
+    if (!ok) {
+      this.alertService.error('No se pudo completar', errMsg || 'Error desconocido');
+      return;
+    }
+
+    this.alertService.success('Listo', 'Se aplicaron los datos de tu perfil. Ya puedes ver el código QR.');
+    try {
+      await this.recargarBoletasYTraslados();
+    } catch (e) {
+      console.error(e);
+      // Aun si falla la recarga, el botón ya no queda bloqueado.
+      this.alertService.warning('Aviso', 'Se aplicaron los datos, pero no se pudo recargar la pantalla automáticamente.');
+    }
+  }
+
+  abrirModalTraslado(boleta: BoletaComprada, compra: Compra): void {
+    if (!this.puedeAsignarEntradaPorCorreoPalco(boleta, compra)) {
+      return;
+    }
+    this.trasladoBoleta = boleta;
+    this.trasladoCompra = compra;
+    this.emailTrasladoDestino = '';
+    this.showTrasladoModal = true;
+    this.cdr.detectChanges();
+  }
+
+  cerrarModalTraslado(): void {
+    this.showTrasladoModal = false;
+    this.trasladoBoleta = null;
+    this.trasladoCompra = null;
+    this.emailTrasladoDestino = '';
+    this.cdr.detectChanges();
+  }
+
+  async confirmarEnvioTraslado(): Promise<void> {
+    if (!this.trasladoBoleta) return;
+    const email = this.emailTrasladoDestino.trim();
+    if (!email) {
+      this.alertService.warning('Email', 'Indica el email del usuario registrado que recibirá la entrada.');
+      return;
+    }
+    this.enviandoTraslado = true;
+    this.cdr.detectChanges();
+    try {
+      const res = await this.trasladosBoletaService.iniciarTrasladoPalco(this.trasladoBoleta.id, email);
+      if (!res.ok) {
+        this.alertService.error('No se pudo enviar', res.error || 'Error desconocido');
+        return;
+      }
+      this.alertService.success('Enviado', 'El destinatario debe aceptar el traslado en Mis Boletas. Tú verás el estado como enviado y no podrás usar el QR hasta que canceles o él rechace.');
+      this.cerrarModalTraslado();
+      await this.recargarBoletasYTraslados();
+    } finally {
+      this.enviandoTraslado = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  getEstadoTrasladoLabel(estado: string | undefined): string {
+    const m: Record<string, string> = {
+      enviado: 'Enviado',
+      recibido: 'Recibido',
+      aceptado: 'Aceptado',
+      rechazado: 'Rechazado',
+      cancelado: 'Cancelado'
+    };
+    return m[estado || ''] || estado || '';
+  }
+
+  rolUsuarioEnTraslado(t: TrasladoBoleta): 'origen' | 'destino' {
+    const uid = this.authService.getUsuarioId()!;
+    return t.usuario_origen_id === uid ? 'origen' : 'destino';
+  }
+
+  nombreTipoBoletaTraslado(t: TrasladoBoleta): string {
+    const tb = Array.isArray(t.boleta?.tipos_boleta) ? t.boleta?.tipos_boleta[0] : t.boleta?.tipos_boleta;
+    return tb?.nombre || '—';
+  }
+
+  tituloEventoTraslado(t: TrasladoBoleta): string {
+    const tb = Array.isArray(t.boleta?.tipos_boleta) ? t.boleta?.tipos_boleta[0] : t.boleta?.tipos_boleta;
+    const ev = tb?.eventos;
+    if (Array.isArray(ev)) {
+      return ev[0]?.titulo || '—';
+    }
+    return ev?.titulo || '—';
+  }
+
+  async marcarRecibidoTraslado(t: TrasladoBoleta): Promise<void> {
+    const res = await this.trasladosBoletaService.marcarRecibido(t.id);
+    if (!res.ok) {
+      this.alertService.error('Error', res.error || '');
+      return;
+    }
+    this.alertService.success('Listo', 'Marcado como recibido. Puedes aceptar o rechazar.');
+    await this.recargarBoletasYTraslados();
+  }
+
+  async aceptarTraslado(t: TrasladoBoleta): Promise<void> {
+    const res = await this.trasladosBoletaService.aceptar(t.id);
+    if (!res.ok) {
+      this.alertService.error('Error', res.error || '');
+      return;
+    }
+    this.alertService.success('Aceptado', 'La entrada es tuya. Ya puedes ver el QR.');
+    await this.recargarBoletasYTraslados();
+  }
+
+  async rechazarTraslado(t: TrasladoBoleta): Promise<void> {
+    const res = await this.trasladosBoletaService.rechazar(t.id);
+    if (!res.ok) {
+      this.alertService.error('Error', res.error || '');
+      return;
+    }
+    this.alertService.success('Rechazado', 'El remitente recupera el uso de la entrada.');
+    await this.recargarBoletasYTraslados();
+  }
+
+  async cancelarTraslado(t: TrasladoBoleta): Promise<void> {
+    const res = await this.trasladosBoletaService.cancelar(t.id);
+    if (!res.ok) {
+      this.alertService.error('Error', res.error || '');
+      return;
+    }
+    this.alertService.success('Cancelado', 'Se anuló el envío pendiente.');
+    await this.recargarBoletasYTraslados();
+  }
+
+  private async recargarBoletasYTraslados(): Promise<void> {
+    await this.loadBoletasPorCompra();
+    this.cdr.detectChanges();
+  }
+
+  /** Compra mínima para lógica de QR en entradas recibidas por traslado. */
+  compraVistaParaBoletaCedida(b: BoletaComprada): Compra {
+    const c = b.compra;
+    return {
+      id: b.compra_id,
+      cliente_id: c?.cliente_id ?? 0,
+      evento_id: (c as { evento_id?: number })?.evento_id ?? b.evento?.id ?? 0,
+      numero_transaccion: c?.id ? `#${c.id}` : '-',
+      total: 0,
+      estado_pago: (c?.estado_pago as TipoEstadoPago | undefined) ?? TipoEstadoPago.COMPLETADO,
+      estado_compra: c?.estado_compra
+    } as Compra;
+  }
+
+  tieneContenidoMisBoletas(): boolean {
+    return (
+      this.comprasConBoletas.length > 0 ||
+      this.entradasCedidas.length > 0 ||
+      this.trasladosPendientesRecibir.length > 0
+    );
   }
 
   ngOnDestroy() {
@@ -337,7 +713,7 @@ export class MisCompras implements OnInit, OnDestroy {
 
   getEstadoBoletaLabel(estado?: string): string {
     const estados: { [key: string]: string } = {
-      'pendiente': 'Pendiente',
+      'pendiente': 'Sin usar',
       'usada': 'Usada',
       'cancelada': 'Cancelada',
       'reembolsada': 'Reembolsada'
@@ -352,61 +728,72 @@ export class MisCompras implements OnInit, OnDestroy {
     return 'badge-info';
   }
 
+  getEstadoTrasladoClass(estado?: string): string {
+    const e = estado || '';
+    if (e === 'aceptado') return 'badge-success';
+    if (e === 'rechazado' || e === 'cancelado') return 'badge-danger';
+    if (e === 'recibido' || e === 'enviado') return 'badge-warning';
+    return 'badge-info';
+  }
+
   Math = Math;
 
   /**
-   * Palco numerado o tipo palco multipersonal: el asistente se define después del pago.
+   * En esta versión, toda boleta se asigna después del pago en Mis Boletas.
    */
   requiereRegistroAsistentePalcoPosterior(b: BoletaComprada): boolean {
-    if (b.palco_id != null) return true;
-    const cupos = Math.max(1, Number(b.tipo_boleta_meta?.personas_por_unidad ?? 1));
-    return !!(b.tipo_boleta_meta?.es_palco && cupos > 1);
+    return true;
   }
 
   tieneAsistenteRegistrado(b: BoletaComprada): boolean {
     return !!(b.nombre_asistente?.trim() && b.documento_asistente?.trim());
   }
 
-  puedeMostrarQrBoleta(boleta: BoletaComprada, compra: Compra): boolean {
+  private fechaInicioEventoBoleta(boleta: BoletaComprada | null | undefined): Date | null {
+    const raw = boleta?.evento?.fecha_inicio;
+    if (!raw) return null;
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return null;
+    return d;
+  }
+
+  esDiaEventoBoleta(boleta: BoletaComprada | null | undefined): boolean {
+    const fechaEvento = this.fechaInicioEventoBoleta(boleta);
+    if (!fechaEvento) return true;
+    const hoy = new Date();
+    return (
+      hoy.getFullYear() === fechaEvento.getFullYear() &&
+      hoy.getMonth() === fechaEvento.getMonth() &&
+      hoy.getDate() === fechaEvento.getDate()
+    );
+  }
+
+  fechaEventoLabelBoleta(boleta: BoletaComprada | null | undefined): string {
+    const fechaEvento = this.fechaInicioEventoBoleta(boleta);
+    if (!fechaEvento) return 'del evento';
+    return new Intl.DateTimeFormat('es-CO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).format(fechaEvento);
+  }
+
+  mensajeHabilitacionQrBoleta(boleta: BoletaComprada | null | undefined): string {
+    return `Tranqui, esta boleta ya está a tu nombre. El QR se activa el ${this.fechaEventoLabelBoleta(boleta)} para que todo sea más seguro, sin vueltas raras. Gracias por parchar con Eventum.`;
+  }
+
+  puedeAbrirVistaBoleta(boleta: BoletaComprada, compra: Compra): boolean {
     if (compra.estado_pago !== 'completado') return false;
+    if (!this.esTitularBoleta(boleta, compra)) return false;
+    if (this.tieneTrasladoSalienteActivo(boleta.id)) return false;
     if (this.requiereRegistroAsistentePalcoPosterior(boleta) && !this.tieneAsistenteRegistrado(boleta)) {
       return false;
     }
     return true;
   }
 
-  async guardarAsistentePalco(boleta: BoletaComprada, compra: Compra): Promise<void> {
-    if (compra.estado_pago !== 'completado') {
-      this.alertService.warning('Pago pendiente', 'Confirma el pago antes de registrar asistentes.');
-      return;
-    }
-    const f = this.formRegistroAsistente[boleta.id];
-    if (!f?.nombre?.trim() || !f?.documento?.trim()) {
-      this.alertService.warning('Datos incompletos', 'Indica nombre y documento del asistente.');
-      return;
-    }
-    this.guardandoAsistenteBoletaId = boleta.id;
-    this.cdr.detectChanges();
-    try {
-      await this.boletasService.actualizarDatosAsistenteBoleta(boleta.id, {
-        nombre_asistente: f.nombre.trim(),
-        documento_asistente: f.documento.trim(),
-        email_asistente: f.email?.trim() || null,
-        telefono_asistente: f.telefono?.trim() || null
-      });
-      boleta.nombre_asistente = f.nombre.trim();
-      boleta.documento_asistente = f.documento.trim();
-      boleta.email_asistente = f.email?.trim() || undefined;
-      boleta.telefono_asistente = f.telefono?.trim() || undefined;
-      delete this.formRegistroAsistente[boleta.id];
-      this.alertService.success('Listo', 'Asistente registrado. Ya puedes ver el código QR de esta entrada.');
-    } catch (e) {
-      console.error(e);
-      this.alertService.error('Error', 'No se pudo guardar los datos. Intenta de nuevo.');
-    } finally {
-      this.guardandoAsistenteBoletaId = null;
-      this.cdr.detectChanges();
-    }
+  puedeMostrarQrBoleta(boleta: BoletaComprada, compra: Compra): boolean {
+    return this.puedeAbrirVistaBoleta(boleta, compra) && this.esDiaEventoBoleta(boleta);
   }
 
   /**
@@ -419,10 +806,23 @@ export class MisCompras implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.puedeMostrarQrBoleta(boleta, compra)) {
+    if (!this.esTitularBoleta(boleta, compra)) {
+      this.alertService.warning('No disponible', 'Esta entrada no está asignada a tu usuario.');
+      return;
+    }
+
+    if (this.tieneTrasladoSalienteActivo(boleta.id)) {
       this.alertService.warning(
-        'Registra al asistente',
-        'Para entradas de palco, completa nombre y documento de cada persona en el formulario de la boleta; después podrás ver el QR.'
+        'Traslado enviado',
+        'No puedes ver el QR mientras el destinatario no acepte o rechace. Puedes cancelar el envío si sigue en estado enviado.'
+      );
+      return;
+    }
+
+    if (!this.puedeAbrirVistaBoleta(boleta, compra)) {
+      this.alertService.warning(
+        'Asigna la entrada',
+        'Asigna por correo a quien usará el acceso (debe aceptar en Mis Boletas) o usa «Yo asisto» si tú la usarás con los datos de tu perfil.'
       );
       return;
     }
@@ -432,8 +832,8 @@ export class MisCompras implements OnInit, OnDestroy {
     this.loadingQR = true;
     this.showBoletaModal = true;
 
-    // Generar QR solo si el pago está completado
-    if (compra.estado_pago === 'completado') {
+    // Generar QR solo el día del evento.
+    if (compra.estado_pago === 'completado' && this.esDiaEventoBoleta(boleta)) {
       try {
         this.qrCodeUrl = await QRCode.toDataURL(boleta.codigo_qr, {
           width: 200,
@@ -496,11 +896,23 @@ export class MisCompras implements OnInit, OnDestroy {
    */
   async imprimirBoletaPDF(boleta: BoletaComprada, compra: Compra) {
     try {
-      if (!this.puedeMostrarQrBoleta(boleta, compra)) {
+      if (!this.esTitularBoleta(boleta, compra)) {
+        this.alertService.warning('No disponible', 'No tienes acceso a esta entrada.');
+        return;
+      }
+      if (this.tieneTrasladoSalienteActivo(boleta.id)) {
+        this.alertService.warning('Traslado en curso', 'No puedes imprimir el QR mientras el envío esté pendiente.');
+        return;
+      }
+      if (!this.puedeAbrirVistaBoleta(boleta, compra)) {
         this.alertService.warning(
           'Registra al asistente',
-          'Para entradas de palco, primero completa los datos del asistente para poder generar el PDF con QR.'
+          'Primero completa la asignación del asistente para poder generar el PDF con QR.'
         );
+        return;
+      }
+      if (!this.esDiaEventoBoleta(boleta)) {
+        this.alertService.warning('QR bloqueado por seguridad', this.mensajeHabilitacionQrBoleta(boleta));
         return;
       }
       // Obtener información del tipo de boleta y evento
