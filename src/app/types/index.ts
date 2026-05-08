@@ -103,6 +103,8 @@ export interface DashboardStats {
   lugares_activos?: number;
   ingresos_mes_actual?: number;
   ingresos_mes_anterior?: number;
+  porcentaje_servicio_promedio?: number;
+  valor_servicio_total?: number;
   boletas_por_estado?: { estado: string; cantidad: number }[];
   eventos_por_categoria?: { categoria: string; cantidad: number }[];
   top_eventos?: any[];

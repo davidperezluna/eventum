@@ -60,22 +60,31 @@ export class DashboardService {
       return response.count || 0;
     }, 0);
 
-    // Ingresos totales
-    const ingresosTotales = safeExecute(async () => {
+    // Ingresos y servicio totales
+    const ingresosYServicioTotalesPromise = safeExecute(async () => {
       const response = await this.supabase
         .from('compras')
-        .select('total')
+        .select('total, porcentaje_servicio, valor_servicio')
         .eq('estado_pago', 'completado');
       
       if (response.error) {
         console.error('Error en ingresos totales:', response.error);
-        return 0;
+        return { ingresos: 0, valorServicioTotal: 0, porcentajeServicioPromedio: 0 };
       }
       if (response.data && Array.isArray(response.data)) {
-        return (response.data as any[]).reduce((sum: number, compra: any) => sum + Number(compra.total || 0), 0);
+        const filas = response.data as any[];
+        const ingresos = filas.reduce((sum: number, compra: any) => sum + Number(compra.total || 0), 0);
+        const valorServicioTotal = filas.reduce(
+          (sum: number, compra: any) => sum + Number(compra.valor_servicio || 0),
+          0
+        );
+        const porcentajeServicioPromedio = filas.length > 0
+          ? filas.reduce((sum: number, compra: any) => sum + Number(compra.porcentaje_servicio || 0), 0) / filas.length
+          : 0;
+        return { ingresos, valorServicioTotal, porcentajeServicioPromedio };
       }
-      return 0;
-    }, 0);
+      return { ingresos: 0, valorServicioTotal: 0, porcentajeServicioPromedio: 0 };
+    }, { ingresos: 0, valorServicioTotal: 0, porcentajeServicioPromedio: 0 });
 
     // Clientes únicos (solo con pago completado)
     const clientes = safeExecute(async () => {
@@ -276,7 +285,7 @@ export class DashboardService {
     const [
       eventos_activos,
       boletas_vendidas,
-      ingresos_totales,
+      ingresosYServicioTotales,
       clientes_count,
       ventas_recientes,
       eventos_proximos,
@@ -290,7 +299,7 @@ export class DashboardService {
     ] = await Promise.all([
       eventosActivos,
       boletasVendidas,
-      ingresosTotales,
+      ingresosYServicioTotalesPromise,
       clientes,
       ventasRecientes,
       eventosProximos,
@@ -306,7 +315,7 @@ export class DashboardService {
     return {
       eventos_activos,
       boletas_vendidas,
-      ingresos_totales,
+      ingresos_totales: ingresosYServicioTotales.ingresos,
       clientes: clientes_count,
       ventas_recientes: ventas_recientes as any[],
       eventos_proximos: eventos_proximos as any[],
@@ -315,6 +324,8 @@ export class DashboardService {
       lugares_activos,
       ingresos_mes_actual,
       ingresos_mes_anterior,
+      porcentaje_servicio_promedio: ingresosYServicioTotales.porcentajeServicioPromedio,
+      valor_servicio_total: ingresosYServicioTotales.valorServicioTotal,
       boletas_por_estado: boletas_por_estado as any[],
       top_eventos: top_eventos as any[]
     };

@@ -36,6 +36,8 @@ export class ReporteVentasCompletadas implements OnInit, OnDestroy {
     transacciones: 0,
     boletas: 0,
     ingresos: 0,
+    porcentaje_servicio_promedio: 0,
+    valor_servicio: 0,
     wompi: 0,
     neto_cliente: 0,
   };
@@ -114,7 +116,15 @@ export class ReporteVentasCompletadas implements OnInit, OnDestroy {
 
   onEventoChange() {
     this.ventas = [];
-    this.resumen = { transacciones: 0, boletas: 0, ingresos: 0, wompi: 0, neto_cliente: 0 };
+    this.resumen = {
+      transacciones: 0,
+      boletas: 0,
+      ingresos: 0,
+      porcentaje_servicio_promedio: 0,
+      valor_servicio: 0,
+      wompi: 0,
+      neto_cliente: 0
+    };
   }
 
   private calcularWompiDescuento(total: number): number {
@@ -134,7 +144,15 @@ export class ReporteVentasCompletadas implements OnInit, OnDestroy {
     this.generando = true;
     this.loading = true;
     this.ventas = [];
-    this.resumen = { transacciones: 0, boletas: 0, ingresos: 0, wompi: 0, neto_cliente: 0 };
+    this.resumen = {
+      transacciones: 0,
+      boletas: 0,
+      ingresos: 0,
+      porcentaje_servicio_promedio: 0,
+      valor_servicio: 0,
+      wompi: 0,
+      neto_cliente: 0
+    };
     this.cdr.detectChanges();
 
     try {
@@ -160,6 +178,10 @@ export class ReporteVentasCompletadas implements OnInit, OnDestroy {
       this.resumen.transacciones = this.ventas.length;
       this.resumen.boletas = this.ventas.reduce((sum, v) => sum + Number(v.boletas || 0), 0);
       this.resumen.ingresos = this.ventas.reduce((sum, v) => sum + Number(v.total || 0), 0);
+      this.resumen.valor_servicio = this.ventas.reduce((sum, v) => sum + Number(v.valor_servicio || 0), 0);
+      this.resumen.porcentaje_servicio_promedio = this.ventas.length > 0
+        ? this.ventas.reduce((sum, v) => sum + Number(v.porcentaje_servicio || 0), 0) / this.ventas.length
+        : 0;
       this.resumen.wompi = this.ventas.reduce((sum, v) => sum + Number(v.wompi_descuento || 0), 0);
       this.resumen.neto_cliente = this.ventas.reduce((sum, v) => sum + Number(v.neto_cliente || 0), 0);
     } catch (err) {
@@ -186,6 +208,8 @@ export class ReporteVentasCompletadas implements OnInit, OnDestroy {
       { Métrica: 'Transacciones', Valor: this.resumen.transacciones },
       { Métrica: 'Boletas', Valor: this.resumen.boletas },
       { Métrica: 'Ingresos', Valor: this.excelExportService.formatCurrency(this.resumen.ingresos) },
+      { Métrica: '% servicio promedio', Valor: `${Number(this.resumen.porcentaje_servicio_promedio || 0).toFixed(2)}%` },
+      { Métrica: 'Valor servicio', Valor: this.excelExportService.formatCurrency(this.resumen.valor_servicio) },
       { Métrica: 'Descuento Wompi', Valor: this.excelExportService.formatCurrency(this.resumen.wompi) },
       { Métrica: 'Neto cliente', Valor: this.excelExportService.formatCurrency(this.resumen.neto_cliente) },
     ];
@@ -200,10 +224,12 @@ export class ReporteVentasCompletadas implements OnInit, OnDestroy {
       'Método pago': this.excelExportService.getMetodoPagoLabel(v.metodo_pago || ''),
       'Cupón': v.cupon_codigo || '',
       '% Descuento real': Number((v.descuento_real_porcentaje || 0).toFixed(2)),
+      '% Servicio': Number((v.porcentaje_servicio || 0).toFixed(2)),
       'Boletas': v.boletas,
       'Valor boleta (promedio)': this.excelExportService.formatCurrency(v.valor_boleta || 0),
       'Subtotal': this.excelExportService.formatCurrency(v.subtotal),
       'Descuento cupón': this.excelExportService.formatCurrency(v.descuento_total),
+      'Valor servicio': this.excelExportService.formatCurrency(v.valor_servicio || 0),
       'Descuento Wompi (con IVA)': this.excelExportService.formatCurrency(v.wompi_descuento || 0),
       'Neto cliente': this.excelExportService.formatCurrency(v.neto_cliente || 0),
       'Total': this.excelExportService.formatCurrency(v.total),

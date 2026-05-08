@@ -46,6 +46,8 @@ export interface VentaCompletadaDetalle {
   cupon_porcentaje?: number;
   subtotal: number;
   descuento_total: number;
+  porcentaje_servicio: number;
+  valor_servicio: number;
   total: number;
   boletas: number;
 }
@@ -565,6 +567,8 @@ export class ReportesService {
           metodo_pago,
           subtotal,
           descuento_total,
+          porcentaje_servicio,
+          valor_servicio,
           total,
           cliente_id,
           evento_id,
@@ -617,6 +621,8 @@ export class ReportesService {
           cupon_porcentaje: c?.cupon?.porcentaje_descuento ? Number(c.cupon.porcentaje_descuento) : 0,
           subtotal: Number(c.subtotal || 0),
           descuento_total: Number(c.descuento_total || 0),
+          porcentaje_servicio: Number(c.porcentaje_servicio || 0),
+          valor_servicio: Number(c.valor_servicio || 0),
           total: Number(c.total || 0),
           boletas: boletasPorCompra[Number(c.id)] || 0
         } as VentaCompletadaDetalle;

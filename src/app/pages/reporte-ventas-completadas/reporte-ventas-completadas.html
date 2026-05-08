@@ -71,6 +71,20 @@
         </div>
       </div>
       <div class="stat-card">
+        <span class="material-icons stat-icon">percent</span>
+        <div class="stat-content">
+          <h3>% servicio prom.</h3>
+          <p class="stat-value">{{ (resumen.porcentaje_servicio_promedio || 0) | number:'1.0-2' }}%</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="material-icons stat-icon">request_quote</span>
+        <div class="stat-content">
+          <h3>Valor servicio</h3>
+          <p class="stat-value">{{ excelExportService.formatCurrency(resumen.valor_servicio) }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
         <span class="material-icons stat-icon">payments</span>
         <div class="stat-content">
           <h3>Descuento Wompi</h3>
@@ -114,6 +128,8 @@
             <th>Valor boleta</th>
             <th>Desc. cupón</th>
             <th>% desc.</th>
+            <th>% serv.</th>
+            <th>Valor servicio</th>
             <th>Desc. Wompi</th>
             <th>Neto cliente</th>
             <th>Total</th>
@@ -131,6 +147,8 @@
             <td>{{ excelExportService.formatCurrency(v.valor_boleta || 0) }}</td>
             <td>{{ excelExportService.formatCurrency(v.descuento_total || 0) }}</td>
             <td>{{ (v.descuento_real_porcentaje || 0) | number:'1.0-2' }}%</td>
+            <td>{{ (v.porcentaje_servicio || 0) | number:'1.0-2' }}%</td>
+            <td>{{ excelExportService.formatCurrency(v.valor_servicio || 0) }}</td>
             <td>{{ excelExportService.formatCurrency(v.wompi_descuento || 0) }}</td>
             <td>{{ excelExportService.formatCurrency(v.neto_cliente || 0) }}</td>
             <td>{{ excelExportService.formatCurrency(v.total) }}</td>

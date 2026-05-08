@@ -32,6 +32,8 @@ export class Dashboard implements OnInit {
     lugares_activos: 0,
     ingresos_mes_actual: 0,
     ingresos_mes_anterior: 0,
+    porcentaje_servicio_promedio: 0,
+    valor_servicio_total: 0,
     boletas_por_estado: [],
     top_eventos: []
   };

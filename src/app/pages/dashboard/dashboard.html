@@ -107,6 +107,20 @@
         <p class="stat-mini-label">Este Mes</p>
       </div>
     </div>
+    <div class="stat-card-mini">
+      <span class="material-icons">percent</span>
+      <div>
+        <p class="stat-mini-value">{{ (stats.porcentaje_servicio_promedio || 0) | number:'1.0-2' }}%</p>
+        <p class="stat-mini-label">% Servicio prom.</p>
+      </div>
+    </div>
+    <div class="stat-card-mini">
+      <span class="material-icons">request_quote</span>
+      <div>
+        <p class="stat-mini-value">{{ formatCurrency(stats.valor_servicio_total || 0) }}</p>
+        <p class="stat-mini-label">Valor Servicio</p>
+      </div>
+    </div>
   </div>
 
   <!-- Dashboard Content -->
