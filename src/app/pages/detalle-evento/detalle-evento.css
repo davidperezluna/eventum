@@ -779,6 +779,13 @@
   font-weight: 600;
 }
 
+.tipo-info .fin-venta-tipo {
+  flex-basis: 100%;
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
 .palco-help {
   margin: 0 0 0.75rem 0;
   font-size: 0.85rem;

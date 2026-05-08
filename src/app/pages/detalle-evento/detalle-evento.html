@@ -278,6 +278,7 @@
             </span>
             <span *ngIf="tipo.cantidad_vendidas !== undefined && tipo.cantidad_vendidas > 0" class="vendidas">{{ tipo.cantidad_vendidas }} vendidas de {{ tipo.cantidad_total }} totales</span>
             <span *ngIf="tipo.limite_por_persona" class="limite">Máx. {{ tipo.limite_por_persona }} por persona</span>
+            <span *ngIf="tipo.fecha_venta_fin" class="fin-venta-tipo">Fin de venta: {{ tipo.fecha_venta_fin | dateFormat:'medium' }}</span>
             <span *ngIf="tipo.cantidad_disponibles === 0" class="soldout-badge">SOLD OUT</span>
           </div>
           <div class="tipo-actions">
