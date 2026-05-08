@@ -467,9 +467,15 @@
             <input type="number" step="0.01" min="0" [(ngModel)]="formData.precio" required />
           </div>
           <div class="form-group">
-            <label>Cantidad Total *</label>
+            <label *ngIf="!(formData.es_palco || (formData.personas_por_unidad ?? 1) > 1)">Cantidad Total *</label>
+            <label *ngIf="formData.es_palco || (formData.personas_por_unidad ?? 1) > 1">Cantidad de palcos *</label>
             <input type="number" min="1" [(ngModel)]="formData.cantidad_total" (ngModelChange)="calcularCantidades()" required />
-            <small class="form-help">Unidades vendibles de este tipo (entradas o <strong>palcos</strong>, según configures abajo)</small>
+            <small class="form-help" *ngIf="!(formData.es_palco || (formData.personas_por_unidad ?? 1) > 1)">
+              Unidades vendibles de este tipo (boletas individuales).
+            </small>
+            <small class="form-help" *ngIf="formData.es_palco || (formData.personas_por_unidad ?? 1) > 1">
+              Aquí defines cuántos <strong>palcos</strong> hay (no personas). Ejemplo: 1 palco de 10 personas = cantidad de palcos 1, personas por unidad 10.
+            </small>
             <small class="form-help" *ngIf="formData.cantidad_total && !editingTipo">
               Disponibles: {{ formData.cantidad_total - (formData.cantidad_vendidas || 0) }}
             </small>
