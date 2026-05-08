@@ -48,7 +48,14 @@ export class PagoResultado implements OnInit {
         this.cdr.detectChanges();
       } catch (err: any) {
         console.error('Error cargando compra:', err);
-        this.error = 'Error al cargar la información de la compra';
+        const code = err?.code ?? err?.error?.code;
+        // Tras pago fallido el webhook puede purgar la compra (sin filas → PGRST116).
+        if (code === 'PGRST116') {
+          this.error =
+            'El pago no se completó o fue rechazado. Esta solicitud ya no está registrada y los cupos quedaron liberados.';
+        } else {
+          this.error = 'Error al cargar la información de la compra';
+        }
         this.loading = false;
         this.cdr.detectChanges();
       }

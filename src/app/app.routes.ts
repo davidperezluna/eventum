@@ -22,8 +22,10 @@ import { Login } from './pages/login/login';
 import { Register } from './pages/register/register';
 import { AuthCallback } from './pages/auth-callback/auth-callback';
 import { authGuard } from './guards/auth.guard';
+import { Mantenimiento } from './pages/mantenimiento/mantenimiento';
+import { environment } from '../environments/environment';
 
-export const routes: Routes = [
+const appRoutes: Routes = [
   {
     path: 'login',
     component: Login
@@ -76,3 +78,16 @@ export const routes: Routes = [
     redirectTo: '/eventos-cliente'
   }
 ];
+
+const maintenanceRoutes: Routes = [
+  {
+    path: '',
+    component: Mantenimiento
+  },
+  {
+    path: '**',
+    redirectTo: ''
+  }
+];
+
+export const routes: Routes = environment.maintenanceMode ? maintenanceRoutes : appRoutes;

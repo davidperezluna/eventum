@@ -227,6 +227,15 @@ export interface Compra {
       email?: string;
     };
   };
+  /** Resumen embebido desde ventas (lista admin). */
+  boletas_compradas?: Array<{
+    id: number;
+    grupo_palco_id?: string | null;
+    palco_id?: number | null;
+    tipo_boleta_id?: number;
+    palcos?: { numero?: number } | { numero?: number }[] | null;
+    tipos_boleta?: { nombre?: string } | { nombre?: string }[] | null;
+  }>;
 }
 
 /**

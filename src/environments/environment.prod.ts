@@ -4,6 +4,8 @@
 
 export const environment = {
   production: true,
+  maintenanceMode: true,
+  maintenanceMessage: 'Estamos en mantenimiento. Volvemos pronto.',
   googleTagId: 'GT-5TJZWP3P', // Google Tag ID
   supabaseEnv: 'prod' as 'prod' | 'local',
   supabase: {

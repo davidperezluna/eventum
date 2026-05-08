@@ -34,7 +34,15 @@ export class ComprasService {
             lugar_id,
             lugar:lugares(id, nombre, direccion, ciudad, pais, telefono, email)
           ),
-          cupon:cupones_descuento!compras_cupon_id_fkey(id, codigo, porcentaje_descuento)
+          cupon:cupones_descuento!compras_cupon_id_fkey(id, codigo, porcentaje_descuento),
+          boletas_compradas(
+            id,
+            grupo_palco_id,
+            palco_id,
+            tipo_boleta_id,
+            palcos(numero),
+            tipos_boleta(nombre)
+          )
         `, { count: 'exact' });
 
       // Aplicar filtros
@@ -173,6 +181,20 @@ export class ComprasService {
       
       return data as Compra;
     } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Elimina boletas de una venta vía RPC (solo administrador en BD).
+   * Sin grupo: borra la compra completa. Con grupo: solo ese palco; borra la compra si no quedan boletas.
+   */
+  async adminEliminarVentaBoletas(compraId: number, grupoPalcoId?: string | null): Promise<void> {
+    const { error } = await this.supabase.getClient().rpc('admin_eliminar_venta_boletas', {
+      p_compra_id: compraId,
+      p_grupo_palco_id: grupoPalcoId ?? null,
+    });
+    if (error) {
       throw error;
     }
   }
