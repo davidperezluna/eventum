@@ -751,12 +751,19 @@
 
 .tipo-info {
   display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 0.5rem;
   font-size: 0.85rem;
   color: #94a3b8;
   margin-bottom: 1.5rem;
+}
+
+.tipo-info-metricas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.65rem;
+  row-gap: 0.35rem;
 }
 
 .tipo-info .disponibles.sin-stock {
@@ -767,6 +774,17 @@
 .tipo-info .vendidas {
   color: #10b981;
   font-weight: 600;
+}
+
+.tipo-info .reservados {
+  color: #d97706;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tipo-info .reservados.reservados--cero {
+  color: #94a3b8;
+  font-weight: 500;
 }
 
 .tipo-info .palco-badge {

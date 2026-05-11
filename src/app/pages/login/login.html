@@ -7,72 +7,16 @@
       <div class="header-text">
         <span class="badge-admin">ADMIN PANEL</span>
         <h1>¡Bienvenido de nuevo!</h1>
-        <p class="subtitle">Ingresa tus credenciales para continuar</p>
+        <p class="subtitle">Inicia sesión con tu cuenta de Google</p>
       </div>
     </div>
 
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
-      <!-- Email -->
-      <div class="form-group">
-        <label for="email">
-          <span class="material-icons">email</span>
-          Email
-        </label>
-        <input
-          type="email"
-          id="email"
-          formControlName="email"
-          placeholder="tu@email.com"
-          [class.error]="email?.invalid && email?.touched"
-        />
-        <div *ngIf="email?.invalid && email?.touched" class="error-message">
-          <span *ngIf="email?.errors?.['required']">El email es requerido</span>
-          <span *ngIf="email?.errors?.['email']">Email inválido</span>
-        </div>
-      </div>
-
-      <!-- Password -->
-      <div class="form-group">
-        <label for="password">
-          <span class="material-icons">lock</span>
-          Contraseña
-        </label>
-        <input
-          type="password"
-          id="password"
-          formControlName="password"
-          placeholder="••••••••"
-          [class.error]="password?.invalid && password?.touched"
-        />
-        <div *ngIf="password?.invalid && password?.touched" class="error-message">
-          <span *ngIf="password?.errors?.['required']">La contraseña es requerida</span>
-          <span *ngIf="password?.errors?.['minlength']">Mínimo 6 caracteres</span>
-        </div>
-      </div>
-
-      <!-- Error general -->
+    <div class="login-form">
       <div *ngIf="error" class="alert-error">
         <span class="material-icons">error</span>
         <span>{{ error }}</span>
       </div>
 
-      <!-- Submit Button -->
-      <button
-        type="submit"
-        class="btn-login"
-        [disabled]="loginForm.invalid || loading"
-      >
-        <span *ngIf="!loading" class="material-icons">login</span>
-        <span *ngIf="loading" class="spinner"></span>
-        {{ loading ? 'Iniciando sesión...' : 'Iniciar Sesión' }}
-      </button>
-
-      <!-- Divider -->
-      <div class="divider">
-        <span>o</span>
-      </div>
-
-      <!-- Google Login Button -->
       <button
         type="button"
         class="btn-google"
@@ -85,13 +29,17 @@
           <path fill="#FBBC05" d="M3.953 10.701c-.18-.54-.282-1.117-.282-1.701s.102-1.161.282-1.701V4.968H.957C.348 6.175 0 7.55 0 9s.348 2.825.957 4.032l3.006-2.331z"/>
           <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.968L3.953 7.299C4.662 5.168 6.651 3.58 9 3.58z"/>
         </svg>
-        Continuar con Google
+        <span *ngIf="!loading">Continuar con Google</span>
+        <span *ngIf="loading" class="login-google-loading">Redirigiendo…</span>
       </button>
-    </form>
+
+      <p class="login-hint">
+        Si es tu primera vez en Eventum, el mismo acceso con Google creará tu cuenta automáticamente.
+      </p>
+    </div>
 
     <div class="login-footer">
-      <p>¿No tienes una cuenta? <a routerLink="/register">Regístrate aquí</a></p>
-      <p>© 2025 Eventum - Todos los derechos reservados</p>
+      <p>© 2026 Eventum - Todos los derechos reservados</p>
     </div>
   </div>
 </div>

@@ -186,6 +186,21 @@ export class DetalleEvento implements OnInit {
     return this.cuposPorPalco(tipo) > 1;
   }
 
+  /**
+   * Unidades en reserva (checkout pendiente / admin): en palcos numerados cuenta `estado === reservado`;
+   * en tipos sin grid, `total − vendidas − disponibles`.
+   */
+  cantidadPalcosReservados(tipo: TipoBoleta): number {
+    if (this.esLineaPalcoMultipersona(tipo)) {
+      const catalogo = this.palcosCatalogoPorTipo.get(tipo.id) ?? [];
+      return catalogo.filter((p) => String(p.estado).toLowerCase() === EstadoPalco.RESERVADO).length;
+    }
+    const total = Number(tipo.cantidad_total ?? 0);
+    const vendidas = Number(tipo.cantidad_vendidas ?? 0);
+    const disponibles = Number(tipo.cantidad_disponibles ?? 0);
+    return Math.max(0, total - vendidas - disponibles);
+  }
+
   getIndicesUnidadesPalco(item: ItemCarritoEvento): number[] {
     if (this.esLineaPalcoMultipersona(item.tipo)) {
       if (!item.palco_ids || item.palco_ids.length !== item.cantidad) {
