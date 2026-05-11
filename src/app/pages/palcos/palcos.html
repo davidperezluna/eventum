@@ -5,7 +5,7 @@
         <span class="material-icons">event_seat</span>
         Palcos
       </h1>
-      <p>Listado de palcos numerados</p>
+      <p>Inventario numerado en <code>palcos</code> y ventas de palco de 1 persona (sin cupo elegido en la compra).</p>
     </div>
     <button class="btn-primary" (click)="onFiltersChange()">
       <span class="material-icons">refresh</span>
@@ -53,6 +53,11 @@
       <h3 class="empty-title">Ocurrió un error</h3>
       <p class="empty-subtitle">{{ error }}</p>
     </div>
+
+    <h2 *ngIf="!loading" class="palcos-section-title">Cupos numerados (tabla palcos)</h2>
+    <p *ngIf="!loading" class="palcos-section-hint">
+      Aplica a tipos con <strong>más de 1 persona por unidad</strong>: cada fila es un cupo físico (disponible / reservado / vendido).
+    </p>
 
     <table *ngIf="!loading && !error && palcos.length > 0" class="data-table">
       <thead>
@@ -154,6 +159,84 @@
       <div class="pagination-page-info">
         Página {{ page }} de {{ getTotalPages() }}
       </div>
+    </div>
+
+    <hr *ngIf="!loading" class="palcos-section-divider" />
+
+    <h2 *ngIf="!loading" class="palcos-section-title">Ventas de palco individual (1 persona)</h2>
+    <p *ngIf="!loading" class="palcos-section-hint">
+      Estas ventas descuentan stock del tipo palco pero <strong>no asignan número de cupo</strong> en la tabla
+      <code>palcos</code> (comportamiento del checkout cuando hay 1 persona por unidad).
+    </p>
+    <p *ngIf="!loading && ocultarVentasIndividuales" class="palcos-section-note">
+      Con el filtro de estado <strong>Disponible</strong> no hay filas aquí: estas ventas no tienen estado de cupo físico.
+    </p>
+
+    <div *ngIf="!loading && ventasIndividualError" class="empty-state empty-state--compact">
+      <p class="empty-subtitle">{{ ventasIndividualError }}</p>
+    </div>
+
+    <table *ngIf="!loading && !ocultarVentasIndividuales && ventasIndividual.length > 0" class="data-table data-table-ventas-ind">
+      <thead>
+        <tr>
+          <th>Boleta ID</th>
+          <th>Compra ID</th>
+          <th>Tipo palco</th>
+          <th>Estado pago</th>
+          <th>Fecha</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let v of ventasIndividual">
+          <td>{{ v.id }}</td>
+          <td>{{ v.compra_id }}</td>
+          <td>{{ getTipoNombreVenta(v) }}</td>
+          <td>
+            <span [class]="badgeEstadoPagoVenta(v)">{{ getEstadoPagoVenta(v) }}</span>
+          </td>
+          <td>{{ v.fecha_creacion | date: 'short' }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="!loading && !ocultarVentasIndividuales && !ventasIndividualError && ventasIndividual.length === 0" class="empty-state empty-state--compact">
+      <p class="empty-subtitle">No hay ventas de palco de 1 persona con los filtros actuales.</p>
+    </div>
+
+    <div *ngIf="!loading && !ocultarVentasIndividuales && totalVentasIndividual > limit" class="pagination">
+      <div class="pagination-info">
+        Mostrando {{ (pageVentasInd - 1) * limit + 1 }} - {{ Math.min(pageVentasInd * limit, totalVentasIndividual) }} de
+        {{ totalVentasIndividual }} ventas
+      </div>
+      <div class="pagination-controls">
+        <button
+          class="pagination-btn"
+          (click)="goToPageVentasInd(pageVentasInd - 1)"
+          [disabled]="pageVentasInd === 1"
+          title="Página anterior"
+        >
+          <span class="material-icons">chevron_left</span>
+        </button>
+        <div class="pagination-numbers">
+          <button
+            *ngFor="let pageNum of getPageNumbersVentasInd()"
+            class="pagination-number"
+            [class.active]="pageNum === pageVentasInd"
+            (click)="goToPageVentasInd(pageNum)"
+          >
+            {{ pageNum }}
+          </button>
+        </div>
+        <button
+          class="pagination-btn"
+          (click)="goToPageVentasInd(pageVentasInd + 1)"
+          [disabled]="pageVentasInd >= getTotalPagesVentasInd()"
+          title="Página siguiente"
+        >
+          <span class="material-icons">chevron_right</span>
+        </button>
+      </div>
+      <div class="pagination-page-info">Página {{ pageVentasInd }} de {{ getTotalPagesVentasInd() }}</div>
     </div>
   </div>
 </div>

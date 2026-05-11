@@ -12,6 +12,26 @@ export interface PalcosFilters extends BaseFilters {
   estado?: EstadoPalco | string;
 }
 
+/** Boleta que representa venta de “palco” de 1 persona (sin fila numerada en `palcos`). */
+export interface VentaPalcoIndividualListado {
+  id: number;
+  compra_id: number;
+  tipo_boleta_id: number;
+  fecha_creacion?: string;
+  palco_id?: number | null;
+  compras?: { estado_pago?: string; estado_compra?: string } | Array<{ estado_pago?: string; estado_compra?: string }> | null;
+  tipos_boleta?:
+    | { nombre?: string; es_palco?: boolean; personas_por_unidad?: number }
+    | Array<{ nombre?: string; es_palco?: boolean; personas_por_unidad?: number }>
+    | null;
+}
+
+export interface VentasPalcoIndividualFilters extends BaseFilters {
+  tipo_boleta_id?: number;
+  /** Si viene, filtra por `compras.estado_pago` (p. ej. pendiente / completado). */
+  estado_pago?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -135,6 +155,70 @@ export class PalcosService {
         'No se pudo liberar: solo aplica a reservas administrativas (sin compra asociada).'
       );
     }
+  }
+
+  /**
+   * Ventas registradas como boleta de tipo palco con 1 persona por unidad:
+   * no eligen cupo en `palcos`, por eso no aparecen en el listado de inventario numerado.
+   */
+  async getVentasPalcoIndividual(
+    filters?: VentasPalcoIndividualFilters
+  ): Promise<PaginatedResponse<VentaPalcoIndividualListado>> {
+    const page = filters?.page ?? 1;
+    const limit = filters?.limit ?? 10;
+
+    let query = this.supabase
+      .from('boletas_compradas')
+      .select(
+        `id, compra_id, tipo_boleta_id, fecha_creacion, palco_id,
+         compras!inner(estado_pago, estado_compra),
+         tipos_boleta!inner(id, nombre, es_palco, personas_por_unidad)`,
+        { count: 'exact' }
+      )
+      .eq('consume_inventario', true)
+      .eq('tipos_boleta.es_palco', true)
+      .lte('tipos_boleta.personas_por_unidad', 1)
+      .is('palco_id', null);
+
+    if (filters?.tipo_boleta_id != null) {
+      query = query.eq('tipo_boleta_id', filters.tipo_boleta_id);
+    }
+    if (filters?.estado_pago) {
+      query = query.eq('compras.estado_pago', filters.estado_pago);
+    }
+
+    query = query.order('id', { ascending: false });
+
+    const fromIndex = (page - 1) * limit;
+    const toIndex = fromIndex + limit - 1;
+    query = query.range(fromIndex, toIndex);
+
+    const { data, error, count } = await query;
+    if (error) {
+      throw error;
+    }
+
+    const rows = ((data as VentaPalcoIndividualListado[]) || []).map((row) => this.normalizarVentaIndividualJoin(row));
+
+    return {
+      data: rows,
+      total: count ?? 0,
+      page,
+      limit,
+      totalPages: Math.ceil((count ?? 0) / limit)
+    };
+  }
+
+  private normalizarVentaIndividualJoin(row: VentaPalcoIndividualListado): VentaPalcoIndividualListado {
+    let compras = row.compras;
+    if (Array.isArray(compras)) {
+      compras = compras[0] ?? null;
+    }
+    let tipos_boleta = row.tipos_boleta;
+    if (Array.isArray(tipos_boleta)) {
+      tipos_boleta = tipos_boleta[0] ?? null;
+    }
+    return { ...row, compras: compras ?? undefined, tipos_boleta: tipos_boleta ?? null };
   }
 }
 
