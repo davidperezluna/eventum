@@ -35,7 +35,10 @@ export class ReporteVentasCompletadas implements OnInit, OnDestroy {
   resumen = {
     transacciones: 0,
     boletas: 0,
+    /** Suma de `total` cobrado (ventas + servicio). */
     ingresos: 0,
+    /** Parte de boletas/subtotal neto: `total − valor_servicio` por compra. */
+    ingresos_ventas: 0,
     porcentaje_servicio_promedio: 0,
     valor_servicio: 0,
     wompi: 0,
@@ -120,6 +123,7 @@ export class ReporteVentasCompletadas implements OnInit, OnDestroy {
       transacciones: 0,
       boletas: 0,
       ingresos: 0,
+      ingresos_ventas: 0,
       porcentaje_servicio_promedio: 0,
       valor_servicio: 0,
       wompi: 0,
@@ -148,6 +152,7 @@ export class ReporteVentasCompletadas implements OnInit, OnDestroy {
       transacciones: 0,
       boletas: 0,
       ingresos: 0,
+      ingresos_ventas: 0,
       porcentaje_servicio_promedio: 0,
       valor_servicio: 0,
       wompi: 0,
@@ -178,6 +183,11 @@ export class ReporteVentasCompletadas implements OnInit, OnDestroy {
       this.resumen.transacciones = this.ventas.length;
       this.resumen.boletas = this.ventas.reduce((sum, v) => sum + Number(v.boletas || 0), 0);
       this.resumen.ingresos = this.ventas.reduce((sum, v) => sum + Number(v.total || 0), 0);
+      this.resumen.ingresos_ventas = this.ventas.reduce((sum, v) => {
+        const total = Number(v.total || 0);
+        const vs = Number(v.valor_servicio || 0);
+        return sum + Math.max(0, total - vs);
+      }, 0);
       this.resumen.valor_servicio = this.ventas.reduce((sum, v) => sum + Number(v.valor_servicio || 0), 0);
       this.resumen.porcentaje_servicio_promedio = this.ventas.length > 0
         ? this.ventas.reduce((sum, v) => sum + Number(v.porcentaje_servicio || 0), 0) / this.ventas.length
@@ -207,9 +217,10 @@ export class ReporteVentasCompletadas implements OnInit, OnDestroy {
     const resumenSheet = [
       { Métrica: 'Transacciones', Valor: this.resumen.transacciones },
       { Métrica: 'Boletas', Valor: this.resumen.boletas },
-      { Métrica: 'Ingresos', Valor: this.excelExportService.formatCurrency(this.resumen.ingresos) },
+      { Métrica: 'Ingresos de ventas', Valor: this.excelExportService.formatCurrency(this.resumen.ingresos_ventas) },
+      { Métrica: 'Ingreso valor servicio', Valor: this.excelExportService.formatCurrency(this.resumen.valor_servicio) },
+      { Métrica: 'Total ingresos (cobrado)', Valor: this.excelExportService.formatCurrency(this.resumen.ingresos) },
       { Métrica: '% servicio promedio', Valor: `${Number(this.resumen.porcentaje_servicio_promedio || 0).toFixed(2)}%` },
-      { Métrica: 'Valor servicio', Valor: this.excelExportService.formatCurrency(this.resumen.valor_servicio) },
       { Métrica: 'Descuento Wompi', Valor: this.excelExportService.formatCurrency(this.resumen.wompi) },
       { Métrica: 'Neto cliente', Valor: this.excelExportService.formatCurrency(this.resumen.neto_cliente) },
     ];

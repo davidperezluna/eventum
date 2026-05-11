@@ -63,11 +63,24 @@
           <p class="stat-value">{{ resumen.boletas }}</p>
         </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card stat-card--ingresos">
         <span class="material-icons stat-icon">attach_money</span>
-        <div class="stat-content">
+        <div class="stat-content stat-content--ingresos">
           <h3>Ingresos</h3>
-          <p class="stat-value">{{ excelExportService.formatCurrency(resumen.ingresos) }}</p>
+          <div class="ingresos-breakdown">
+            <div class="ingresos-row">
+              <span class="ingresos-label">Ingresos de ventas</span>
+              <span class="ingresos-amount">{{ excelExportService.formatCurrency(resumen.ingresos_ventas) }}</span>
+            </div>
+            <div class="ingresos-row">
+              <span class="ingresos-label">Ingreso valor servicio</span>
+              <span class="ingresos-amount">{{ excelExportService.formatCurrency(resumen.valor_servicio) }}</span>
+            </div>
+            <div class="ingresos-row ingresos-row--total">
+              <span class="ingresos-label">Total cobrado</span>
+              <span class="ingresos-amount">{{ excelExportService.formatCurrency(resumen.ingresos) }}</span>
+            </div>
+          </div>
         </div>
       </div>
       <div class="stat-card">
@@ -75,13 +88,6 @@
         <div class="stat-content">
           <h3>% servicio prom.</h3>
           <p class="stat-value">{{ (resumen.porcentaje_servicio_promedio || 0) | number:'1.0-2' }}%</p>
-        </div>
-      </div>
-      <div class="stat-card">
-        <span class="material-icons stat-icon">request_quote</span>
-        <div class="stat-content">
-          <h3>Valor servicio</h3>
-          <p class="stat-value">{{ excelExportService.formatCurrency(resumen.valor_servicio) }}</p>
         </div>
       </div>
       <div class="stat-card">

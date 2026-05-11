@@ -154,6 +154,12 @@
   padding: var(--spacing-md);
   border: 2px solid var(--color-border-light);
   border-radius: var(--border-radius-md);
+  min-width: 0;
+}
+
+.stat-card .stat-content {
+  min-width: 0;
+  flex: 1;
 }
 
 .stat-icon {
@@ -173,6 +179,74 @@
   font-size: var(--font-size-xl);
   color: var(--color-text-primary);
   font-weight: var(--font-weight-bold);
+}
+
+/* Ocupa dos columnas del grid para caber desglose + montos sin solaparse. */
+.stat-card--ingresos {
+  grid-column: span 2;
+}
+
+.stat-content--ingresos .ingresos-breakdown {
+  margin-top: var(--spacing-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  max-width: 100%;
+}
+
+.stat-content--ingresos .ingresos-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--spacing-sm);
+  row-gap: 2px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.stat-content--ingresos .ingresos-label {
+  font-weight: var(--font-weight-medium);
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  line-height: 1.25;
+}
+
+.stat-content--ingresos .ingresos-amount {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  text-align: right;
+  justify-self: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-content--ingresos .ingresos-row--total {
+  margin-top: var(--spacing-xs);
+  padding-top: var(--spacing-xs);
+  border-top: 1px solid var(--color-border-light);
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+}
+
+.stat-content--ingresos .ingresos-row--total .ingresos-amount {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+@media (max-width: 520px) {
+  .stat-card--ingresos {
+    grid-column: 1 / -1;
+  }
+
+  .stat-content--ingresos .ingresos-row {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-content--ingresos .ingresos-amount {
+    justify-self: start;
+    padding-top: 2px;
+  }
 }
 
 .card-header-row {
