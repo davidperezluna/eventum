@@ -504,6 +504,19 @@ export class MisCompras implements OnInit, OnDestroy {
     if (!this.puedeMostrarBotonYoAsistoPalco(boleta, compra)) {
       return;
     }
+    const tipoNombre = boleta.tipo_boleta_meta?.nombre || 'esta entrada';
+    const palcoTxt =
+      boleta.numero_palco != null ? ` (palco ${boleta.numero_palco})` : '';
+    const confirmado = await this.alertService.confirm(
+      '¿Confirmas «Yo asisto»?',
+      `Se guardarán en la entrada${palcoTxt} el nombre y documento de tu perfil para «${tipoNombre}». Podrás ver y usar el código QR con esos datos. ¿Deseas continuar?`,
+      'Sí, usar mis datos',
+      'Cancelar'
+    );
+    if (!confirmado) {
+      return;
+    }
+
     this.rellenarPerfilBoletaId = boleta.id;
     this.cdr.detectChanges();
     let ok = false;
@@ -562,6 +575,19 @@ export class MisCompras implements OnInit, OnDestroy {
       this.alertService.warning('Email', 'Indica el email del usuario registrado que recibirá la entrada.');
       return;
     }
+    const b = this.trasladoBoleta;
+    const tipoNombre = b.tipo_boleta_meta?.nombre || 'esta entrada';
+    const palcoTxt = b.numero_palco != null ? ` · palco ${b.numero_palco}` : '';
+    const confirmadoEnvio = await this.alertService.confirm(
+      '¿Enviar solicitud por correo?',
+      `Se enviará a ${email} una solicitud para aceptar la entrada «${tipoNombre}»${palcoTxt}. Mientras esté pendiente no podrás usar el QR. ¿Enviar ahora?`,
+      'Sí, enviar',
+      'Cancelar'
+    );
+    if (!confirmadoEnvio) {
+      return;
+    }
+
     this.enviandoTraslado = true;
     this.cdr.detectChanges();
     try {
