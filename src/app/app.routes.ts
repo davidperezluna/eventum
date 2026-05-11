@@ -20,6 +20,7 @@ import { ReporteVentasCompletadas } from './pages/reporte-ventas-completadas/rep
 import { DashboardEventos } from './pages/dashboard-eventos/dashboard-eventos';
 import { Palcos } from './pages/palcos/palcos';
 import { Login } from './pages/login/login';
+import { LoginAdmin } from './pages/login-admin/login-admin';
 import { Register } from './pages/register/register';
 import { AuthCallback } from './pages/auth-callback/auth-callback';
 import { authGuard } from './guards/auth.guard';
@@ -30,6 +31,11 @@ const appRoutes: Routes = [
   {
     path: 'login',
     component: Login
+  },
+  /** Solo pruebas: email + contraseña. El acceso público es `/login` (Google). */
+  {
+    path: 'login-admin',
+    component: LoginAdmin
   },
   {
     path: 'register',

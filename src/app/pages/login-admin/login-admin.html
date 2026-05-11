@@ -1,0 +1,71 @@
+<div class="login-container">
+  <div class="login-card login-card--admin">
+    <div class="login-header">
+      <div class="logo-container">
+        <img src="/logo-eventum.svg" alt="Eventum" class="logo-icon" />
+      </div>
+      <div class="header-text">
+        <span class="badge-admin">ADMIN PANEL</span>
+        <span class="badge-pruebas">Acceso pruebas · correo y contraseña</span>
+        <h1>Inicio de sesión admin</h1>
+        <p class="subtitle">Ruta interna para pruebas (no uses en producción con usuarios finales).</p>
+      </div>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <div class="form-group">
+        <label for="email-admin">
+          <span class="material-icons">email</span>
+          Email
+        </label>
+        <input
+          type="email"
+          id="email-admin"
+          formControlName="email"
+          placeholder="tu@email.com"
+          autocomplete="username"
+          [class.error]="email?.invalid && email?.touched"
+        />
+        <div *ngIf="email?.invalid && email?.touched" class="error-message">
+          <span *ngIf="email?.errors?.['required']">El email es requerido</span>
+          <span *ngIf="email?.errors?.['email']">Email inválido</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password-admin">
+          <span class="material-icons">lock</span>
+          Contraseña
+        </label>
+        <input
+          type="password"
+          id="password-admin"
+          formControlName="password"
+          placeholder="••••••••"
+          autocomplete="current-password"
+          [class.error]="password?.invalid && password?.touched"
+        />
+        <div *ngIf="password?.invalid && password?.touched" class="error-message">
+          <span *ngIf="password?.errors?.['required']">La contraseña es requerida</span>
+          <span *ngIf="password?.errors?.['minlength']">Mínimo 6 caracteres</span>
+        </div>
+      </div>
+
+      <div *ngIf="error" class="alert-error">
+        <span class="material-icons">error</span>
+        <span>{{ error }}</span>
+      </div>
+
+      <button type="submit" class="btn-login" [disabled]="loginForm.invalid || loading">
+        <span *ngIf="!loading" class="material-icons">login</span>
+        <span *ngIf="loading" class="spinner"></span>
+        {{ loading ? 'Iniciando sesión…' : 'Iniciar sesión' }}
+      </button>
+    </form>
+
+    <div class="login-footer">
+      <p><a routerLink="/login">Volver al acceso con Google</a></p>
+      <p>© 2026 Eventum - Todos los derechos reservados</p>
+    </div>
+  </div>
+</div>

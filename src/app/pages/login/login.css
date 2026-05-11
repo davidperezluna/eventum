@@ -6,7 +6,9 @@
   background: radial-gradient(circle at top left, #1e1b4b 0%, #0f172a 100%);
   padding: var(--spacing-lg);
   position: relative;
-  overflow: hidden;
+  /* Evita scroll horizontal por el fondo animado; el logo se escala dentro del card */
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .login-container::before {
@@ -37,6 +39,8 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 1;
+  overflow: visible;
+  box-sizing: border-box;
 }
 
 @keyframes slideUp {
@@ -47,26 +51,34 @@
 .login-header {
   text-align: center;
   margin-bottom: 2.5rem;
+  overflow: visible;
 }
 
 .logo-container {
-  display: inline-block;
-  padding: 1rem;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  padding: 0.5rem 0.25rem 1rem;
+  margin: 0 auto 1.25rem;
   border-radius: 1.5rem;
   background: transparent;
-  margin-bottom: 1.5rem;
+  box-sizing: border-box;
+  overflow: visible;
   transition: transform 0.3s ease;
 }
 
 .logo-container:hover {
-  transform: scale(1.05);
+  transform: scale(1.02);
 }
 
 .logo-icon {
-  width: 320px;
+  width: 100%;
+  max-width: min(300px, calc(100vw - 3.5rem));
   height: auto;
   display: block;
-  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1));
+  margin: 0 auto;
+  /* Sombra más suave para que no se recorte en móvil con overflow del viewport */
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.08));
 }
 
 .header-text h1 {
@@ -101,6 +113,10 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 0;
 }
 
 .form-group label {
@@ -254,11 +270,15 @@
 
 @media (max-width: 480px) {
   .login-card {
-    padding: var(--spacing-lg);
+    padding: 1.5rem 1.15rem;
   }
 
   .logo-icon {
-    font-size: 3rem;
+    max-width: min(260px, calc(100vw - 2.75rem));
+  }
+
+  .logo-container {
+    padding-inline: 0;
   }
 }
 
