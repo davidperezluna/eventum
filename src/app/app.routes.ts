@@ -18,6 +18,7 @@ import { Notificaciones } from './pages/notificaciones/notificaciones';
 import { Reportes } from './pages/reportes/reportes';
 import { ReporteVentasCompletadas } from './pages/reporte-ventas-completadas/reporte-ventas-completadas';
 import { DashboardEventos } from './pages/dashboard-eventos/dashboard-eventos';
+import { Palcos } from './pages/palcos/palcos';
 import { Login } from './pages/login/login';
 import { Register } from './pages/register/register';
 import { AuthCallback } from './pages/auth-callback/auth-callback';
@@ -65,6 +66,7 @@ const appRoutes: Routes = [
       { path: 'categorias', component: Categorias },
       { path: 'lugares', component: Lugares },
       { path: 'boletas', component: Boletas },
+      { path: 'palcos', component: Palcos },
       { path: 'ventas', component: Ventas },
       { path: 'calificaciones', component: Calificaciones },
       { path: 'notificaciones', component: Notificaciones },

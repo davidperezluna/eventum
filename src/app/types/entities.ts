@@ -166,6 +166,11 @@ export interface Palco {
   compra_id?: number | null;
   fecha_creacion?: Date | string;
   fecha_actualizacion?: Date | string;
+  /** Metadatos del tipo (join Supabase); puede existir aunque el tipo esté inactivo. */
+  tipos_boleta?:
+    | { nombre?: string; activo?: boolean; es_palco?: boolean }
+    | Array<{ nombre?: string; activo?: boolean; es_palco?: boolean }>
+    | null;
 }
 
 /**

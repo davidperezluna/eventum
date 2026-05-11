@@ -93,6 +93,7 @@ export class Layout implements OnInit, OnDestroy {
       { path: '/categorias', label: 'Categorías', icon: 'category' },
       { path: '/lugares', label: 'Lugares', icon: 'place' },
       { path: '/boletas', label: 'Boletas', icon: 'confirmation_number' },
+      { path: '/palcos', label: 'Palcos', icon: 'event_seat' },
       { path: '/ventas', label: 'Ventas', icon: 'attach_money' },
       { path: '/calificaciones', label: 'Calificaciones', icon: 'star' },
       { path: '/notificaciones', label: 'Notificaciones', icon: 'notifications' },
