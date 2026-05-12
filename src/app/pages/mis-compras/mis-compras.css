@@ -1133,6 +1133,27 @@
   color: #64748b;
 }
 
+.boleta-lugar {
+  margin: 0.35rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.84rem;
+  color: #475569;
+}
+
+.boleta-lugar .material-icons {
+  font-size: 1rem;
+  color: var(--color-secondary);
+}
+
+.boleta-direccion {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
 .badge-info-soft {
   background: #e0f2fe !important;
   color: #0369a1 !important;

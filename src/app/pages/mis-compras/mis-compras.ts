@@ -436,6 +436,29 @@ export class MisCompras implements OnInit, OnDestroy {
     return evento?.fecha_fin;
   }
 
+  eventoVistaBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): any {
+    return (boleta as any)?.evento || compra?.evento || null;
+  }
+
+  lugarVistaBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): any {
+    return this.eventoVistaBoleta(boleta, compra)?.lugar || null;
+  }
+
+  private tipoBoletaVistaBoleta(boleta: BoletaComprada): TipoBoleta | null {
+    const meta = boleta.tipo_boleta_meta;
+    if (!meta?.nombre) return null;
+    return {
+      id: boleta.tipo_boleta_id,
+      evento_id: this.eventoVistaBoleta(boleta)?.id || 0,
+      nombre: meta.nombre,
+      precio: boleta.precio_unitario || 0,
+      cantidad_total: 0,
+      cantidad_disponibles: 0,
+      personas_por_unidad: meta.personas_por_unidad,
+      es_palco: meta.es_palco,
+    };
+  }
+
   /** Fecha de creación más reciente entre boletas recibidas (subtítulo tipo “compra”). */
   fechaMasRecienteEntradasCedidas(): string | Date | null {
     let best = 0;
@@ -775,16 +798,16 @@ export class MisCompras implements OnInit, OnDestroy {
     return !!(b.nombre_asistente?.trim() && b.documento_asistente?.trim());
   }
 
-  private fechaInicioEventoBoleta(boleta: BoletaComprada | null | undefined): Date | null {
-    const raw = boleta?.evento?.fecha_inicio;
+  private fechaInicioEventoBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): Date | null {
+    const raw = this.eventoVistaBoleta(boleta, compra)?.fecha_inicio;
     if (!raw) return null;
     const d = new Date(raw);
     if (Number.isNaN(d.getTime())) return null;
     return d;
   }
 
-  esDiaEventoBoleta(boleta: BoletaComprada | null | undefined): boolean {
-    const fechaEvento = this.fechaInicioEventoBoleta(boleta);
+  esDiaEventoBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): boolean {
+    const fechaEvento = this.fechaInicioEventoBoleta(boleta, compra);
     if (!fechaEvento) return true;
     const hoy = new Date();
     return (
@@ -794,8 +817,8 @@ export class MisCompras implements OnInit, OnDestroy {
     );
   }
 
-  fechaEventoLabelBoleta(boleta: BoletaComprada | null | undefined): string {
-    const fechaEvento = this.fechaInicioEventoBoleta(boleta);
+  fechaEventoLabelBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): string {
+    const fechaEvento = this.fechaInicioEventoBoleta(boleta, compra);
     if (!fechaEvento) return 'del evento';
     return new Intl.DateTimeFormat('es-CO', {
       day: '2-digit',
@@ -804,8 +827,32 @@ export class MisCompras implements OnInit, OnDestroy {
     }).format(fechaEvento);
   }
 
-  mensajeHabilitacionQrBoleta(boleta: BoletaComprada | null | undefined): string {
-    return `Tranqui, esta boleta ya está a tu nombre. El QR se activa el ${this.fechaEventoLabelBoleta(boleta)} para que todo sea más seguro, sin vueltas raras. Gracias por parchar con Eventum.`;
+  fechaModalBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): string {
+    const fechaEvento = this.fechaInicioEventoBoleta(boleta, compra);
+    if (!fechaEvento) return '';
+    return new Intl.DateTimeFormat('es-CO', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    }).format(fechaEvento);
+  }
+
+  horaModalBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): string {
+    const fechaEvento = this.fechaInicioEventoBoleta(boleta, compra);
+    if (!fechaEvento) return '';
+    return new Intl.DateTimeFormat('es-CO', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }).format(fechaEvento);
+  }
+
+  mensajeHabilitacionQrBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): string {
+    return `Tranqui, esta boleta ya está a tu nombre. El QR se activa el ${this.fechaEventoLabelBoleta(boleta, compra)} para que todo sea más seguro, sin vueltas raras. Gracias por parchar con Eventum.`;
+  }
+
+  esBoletaUsada(boleta: BoletaComprada | null | undefined): boolean {
+    return (boleta?.estado || '').toLowerCase() === 'usada';
   }
 
   puedeAbrirVistaBoleta(boleta: BoletaComprada, compra: Compra): boolean {
@@ -819,7 +866,7 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   puedeMostrarQrBoleta(boleta: BoletaComprada, compra: Compra): boolean {
-    return this.puedeAbrirVistaBoleta(boleta, compra) && this.esDiaEventoBoleta(boleta);
+    return this.puedeAbrirVistaBoleta(boleta, compra) && !this.esBoletaUsada(boleta) && this.esDiaEventoBoleta(boleta, compra);
   }
 
   /**
@@ -855,11 +902,15 @@ export class MisCompras implements OnInit, OnDestroy {
 
     this.boletaSeleccionada = boleta;
     this.compraSeleccionada = compra;
-    this.loadingQR = true;
+    this.eventoSeleccionado = this.eventoVistaBoleta(boleta, compra);
+    this.tipoBoletaSeleccionado = this.tipoBoletaVistaBoleta(boleta);
+    const debeGenerarQr = compra.estado_pago === 'completado' && !this.esBoletaUsada(boleta) && this.esDiaEventoBoleta(boleta, compra);
+    this.loadingQR = debeGenerarQr;
     this.showBoletaModal = true;
+    this.cdr.detectChanges();
 
-    // Generar QR solo el día del evento.
-    if (compra.estado_pago === 'completado' && this.esDiaEventoBoleta(boleta)) {
+    // Generar QR solo el día del evento y mientras la boleta no haya sido usada.
+    if (debeGenerarQr) {
       try {
         this.qrCodeUrl = await QRCode.toDataURL(boleta.codigo_qr, {
           width: 200,
@@ -872,16 +923,19 @@ export class MisCompras implements OnInit, OnDestroy {
       } catch (err) {
         console.error('Error generando QR:', err);
         this.qrCodeUrl = '';
+      } finally {
+        this.loadingQR = false;
+        this.cdr.detectChanges();
       }
     } else {
       this.qrCodeUrl = '';
+      this.loadingQR = false;
     }
 
-    // Obtener información del evento y tipo de boleta
+    // Completar información del evento y tipo de boleta si la consulta inicial no trajo todo.
     try {
       const tipoBoleta = await this.boletasService.getTipoBoletaById(boleta.tipo_boleta_id);
       if (!tipoBoleta) {
-        this.loadingQR = false;
         this.cdr.detectChanges();
         return;
       }
@@ -889,18 +943,17 @@ export class MisCompras implements OnInit, OnDestroy {
       this.tipoBoletaSeleccionado = tipoBoleta;
 
       try {
-        const evento = await this.eventosService.getEventoById(tipoBoleta.evento_id);
-        this.eventoSeleccionado = evento;
-        this.loadingQR = false;
+        if (!this.eventoSeleccionado?.lugar && tipoBoleta.evento_id) {
+          const evento = await this.eventosService.getEventoById(tipoBoleta.evento_id);
+          this.eventoSeleccionado = evento || this.eventoSeleccionado;
+        }
         this.cdr.detectChanges();
       } catch (err) {
         console.error('Error obteniendo evento:', err);
-        this.loadingQR = false;
         this.cdr.detectChanges();
       }
     } catch (err) {
       console.error('Error obteniendo tipo de boleta:', err);
-      this.loadingQR = false;
       this.cdr.detectChanges();
     }
   }
@@ -937,8 +990,12 @@ export class MisCompras implements OnInit, OnDestroy {
         );
         return;
       }
-      if (!this.esDiaEventoBoleta(boleta)) {
-        this.alertService.warning('QR bloqueado por seguridad', this.mensajeHabilitacionQrBoleta(boleta));
+      if (this.esBoletaUsada(boleta)) {
+        this.alertService.warning('Boleta usada', 'Esta boleta ya fue usada y no permite generar QR ni PDF.');
+        return;
+      }
+      if (!this.esDiaEventoBoleta(boleta, compra)) {
+        this.alertService.warning('QR bloqueado por seguridad', this.mensajeHabilitacionQrBoleta(boleta, compra));
         return;
       }
       // Obtener información del tipo de boleta y evento

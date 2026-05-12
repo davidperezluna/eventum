@@ -213,9 +213,9 @@
               {{ boleta.evento?.fecha_inicio | dateFormat:'short' }}
               <span *ngIf="fechaFinEvento(boleta.evento)"> - {{ fechaFinEvento(boleta.evento) | dateFormat:'short' }}</span>
             </p>
-            <div class="boleta-palco-pendiente-pago" *ngIf="puedeAbrirVistaBoleta(boleta, compraVistaParaBoletaCedida(boleta)) && !esDiaEventoBoleta(boleta)">
+            <div class="boleta-palco-pendiente-pago" *ngIf="puedeAbrirVistaBoleta(boleta, compraVistaParaBoletaCedida(boleta)) && !esDiaEventoBoleta(boleta, compraVistaParaBoletaCedida(boleta))">
               <p class="help-text">
-                {{ mensajeHabilitacionQrBoleta(boleta) }}
+                {{ mensajeHabilitacionQrBoleta(boleta, compraVistaParaBoletaCedida(boleta)) }}
               </p>
             </div>
             <div class="boleta-actions" *ngIf="puedeAbrirVistaBoleta(boleta, compraVistaParaBoletaCedida(boleta))">
@@ -345,10 +345,17 @@
                 Cuando el pago se confirme, podrás asignar cada acceso por correo o con «Yo asisto» para ver el código QR.
               </p>
             </div>
-            <p class="boleta-evento" *ngIf="boleta.evento?.titulo"><strong>{{ boleta.evento?.titulo }}</strong></p>
-            <p class="boleta-fechas" *ngIf="boleta.evento?.fecha_inicio">
-              {{ boleta.evento?.fecha_inicio | dateFormat:'short' }}
-              <span *ngIf="fechaFinEvento(boleta.evento)"> - {{ fechaFinEvento(boleta.evento) | dateFormat:'short' }}</span>
+            <p class="boleta-evento" *ngIf="eventoVistaBoleta(boleta, item.compra)?.titulo"><strong>{{ eventoVistaBoleta(boleta, item.compra)?.titulo }}</strong></p>
+            <p class="boleta-fechas" *ngIf="eventoVistaBoleta(boleta, item.compra)?.fecha_inicio">
+              {{ eventoVistaBoleta(boleta, item.compra)?.fecha_inicio | dateFormat:'short' }}
+              <span *ngIf="fechaFinEvento(eventoVistaBoleta(boleta, item.compra))"> - {{ fechaFinEvento(eventoVistaBoleta(boleta, item.compra)) | dateFormat:'short' }}</span>
+            </p>
+            <p class="boleta-lugar" *ngIf="lugarVistaBoleta(boleta, item.compra)?.nombre">
+              <span class="material-icons">place</span>
+              <strong>{{ lugarVistaBoleta(boleta, item.compra)?.nombre }}</strong>
+            </p>
+            <p class="boleta-direccion" *ngIf="lugarVistaBoleta(boleta, item.compra)?.direccion">
+              {{ lugarVistaBoleta(boleta, item.compra)?.direccion }}<span *ngIf="lugarVistaBoleta(boleta, item.compra)?.ciudad">, {{ lugarVistaBoleta(boleta, item.compra)?.ciudad }}</span>
             </p>
             <div class="boleta-datos" *ngIf="tieneAsistenteRegistrado(boleta)">
               <p><strong>Asistente:</strong> {{ boleta.nombre_asistente }}</p>
@@ -361,9 +368,9 @@
                 <span>QR disponible</span>
               </div>
             </div>
-            <div class="boleta-palco-pendiente-pago" *ngIf="puedeAbrirVistaBoleta(boleta, item.compra) && !esDiaEventoBoleta(boleta)">
+            <div class="boleta-palco-pendiente-pago" *ngIf="puedeAbrirVistaBoleta(boleta, item.compra) && !esDiaEventoBoleta(boleta, item.compra)">
               <p class="help-text">
-                {{ mensajeHabilitacionQrBoleta(boleta) }}
+                {{ mensajeHabilitacionQrBoleta(boleta, item.compra) }}
               </p>
             </div>
             <div class="boleta-actions" *ngIf="puedeAbrirVistaBoleta(boleta, item.compra)">
@@ -518,22 +525,28 @@
     <div class="boleta-preview" *ngIf="boletaSeleccionada">
       <!-- Encabezado -->
       <div class="boleta-header-preview">
-        <h2>{{ eventoSeleccionado?.titulo || 'Evento' }}</h2>
-        <p class="boleta-tipo">{{ tipoBoletaSeleccionado?.nombre || '' }}</p>
+        <h2>{{ eventoSeleccionado?.titulo || eventoVistaBoleta(boletaSeleccionada, compraSeleccionada)?.titulo || 'Evento' }}</h2>
+        <p class="boleta-tipo">{{ tipoBoletaSeleccionado?.nombre || boletaSeleccionada.tipo_boleta_meta?.nombre || '' }}</p>
       </div>
 
-      <!-- QR Code (solo el día del evento) -->
-        <div class="boleta-qr-preview" *ngIf="compraSeleccionada?.estado_pago === 'completado' && esDiaEventoBoleta(boletaSeleccionada)">
+      <!-- QR Code (solo el día del evento y si la boleta no fue usada) -->
+        <div class="boleta-qr-preview" *ngIf="compraSeleccionada?.estado_pago === 'completado' && !esBoletaUsada(boletaSeleccionada) && esDiaEventoBoleta(boletaSeleccionada, compraSeleccionada)">
         <div *ngIf="loadingQR" class="qr-loading">
           <div class="spinner"></div>
           <p>Generando código QR...</p>
         </div>
         <img *ngIf="qrCodeUrl && !loadingQR" [src]="qrCodeUrl" alt="Código QR" class="qr-image">
       </div>
-        <div class="boleta-qr-preview" *ngIf="compraSeleccionada?.estado_pago === 'completado' && !esDiaEventoBoleta(boletaSeleccionada)">
+        <div class="boleta-qr-preview" *ngIf="compraSeleccionada?.estado_pago === 'completado' && !esBoletaUsada(boletaSeleccionada) && !esDiaEventoBoleta(boletaSeleccionada, compraSeleccionada)">
         <div class="qr-pending">
           <span class="material-icons">shield</span>
-          <p>{{ mensajeHabilitacionQrBoleta(boletaSeleccionada) }}</p>
+          <p>{{ mensajeHabilitacionQrBoleta(boletaSeleccionada, compraSeleccionada) }}</p>
+        </div>
+      </div>
+        <div class="boleta-qr-preview" *ngIf="compraSeleccionada?.estado_pago === 'completado' && esBoletaUsada(boletaSeleccionada)">
+        <div class="qr-pending">
+          <span class="material-icons">check_circle</span>
+          <p>Esta boleta ya fue usada. El código QR y la impresión PDF ya no están disponibles.</p>
         </div>
       </div>
         <div class="boleta-qr-preview" *ngIf="compraSeleccionada?.estado_pago !== 'completado'">
@@ -547,19 +560,19 @@
       <div class="boleta-info-preview">
         <!-- Se omite el precio en el modal -->
 
-        <div class="info-row" *ngIf="eventoSeleccionado?.fecha_inicio">
+        <div class="info-row" *ngIf="(eventoSeleccionado || eventoVistaBoleta(boletaSeleccionada, compraSeleccionada))?.fecha_inicio">
           <span class="info-label">Fecha:</span>
-          <span class="info-value">{{ eventoSeleccionado?.fecha_inicio | dateFormat:'full' }}</span>
+          <span class="info-value">{{ fechaModalBoleta(boletaSeleccionada, compraSeleccionada) }}</span>
         </div>
 
-        <div class="info-row" *ngIf="eventoSeleccionado?.lugar">
+        <div class="info-row" *ngIf="(eventoSeleccionado || eventoVistaBoleta(boletaSeleccionada, compraSeleccionada))?.fecha_inicio">
+          <span class="info-label">Hora:</span>
+          <span class="info-value">{{ horaModalBoleta(boletaSeleccionada, compraSeleccionada) }}</span>
+        </div>
+
+        <div class="info-row" *ngIf="lugarVistaBoleta(boletaSeleccionada, compraSeleccionada) || eventoSeleccionado?.lugar">
           <span class="info-label">Lugar:</span>
-          <span class="info-value">{{ eventoSeleccionado?.lugar?.nombre }}</span>
-        </div>
-
-        <div class="info-row" *ngIf="eventoSeleccionado?.lugar">
-          <span class="info-label">Dirección:</span>
-          <span class="info-value">{{ eventoSeleccionado?.lugar?.direccion }}, {{ eventoSeleccionado?.lugar?.ciudad }}</span>
+          <span class="info-value">{{ (eventoSeleccionado?.lugar || lugarVistaBoleta(boletaSeleccionada, compraSeleccionada))?.nombre }}</span>
         </div>
 
         <div class="info-row" *ngIf="boletaSeleccionada.nombre_asistente">
@@ -576,7 +589,7 @@
 
       <!-- Botones de acción -->
       <div class="boleta-actions-preview">
-        <button class="btn-primary" (click)="imprimirBoletaPDF(boletaSeleccionada, compraSeleccionada!)">
+        <button class="btn-primary" *ngIf="!esBoletaUsada(boletaSeleccionada)" (click)="imprimirBoletaPDF(boletaSeleccionada, compraSeleccionada!)">
           <span class="material-icons">print</span>
           Imprimir PDF
         </button>
@@ -586,7 +599,7 @@
 </div>
 
 <!-- Template oculto para impresión/PDF -->
-<div id="ticket-template" class="ticket-print-container" *ngIf="boletaSeleccionada && eventoSeleccionado && tipoBoletaSeleccionado">
+<div id="ticket-template" class="ticket-print-container" *ngIf="boletaSeleccionada && !esBoletaUsada(boletaSeleccionada) && eventoSeleccionado && tipoBoletaSeleccionado">
   <div class="ticket-card">
     <div class="ticket-left">
       <div class="ticket-header">

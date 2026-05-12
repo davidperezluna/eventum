@@ -13,7 +13,7 @@ import { BoletaComprada, TipoBoleta, BoletaFilters, PaginatedResponse, Palco, Es
 export class BoletasService {
   /** Join estándar para listados y búsqueda de boletas (incluye meta del tipo para palcos). */
   private readonly selectBoletaConRelaciones =
-    '*, palcos(numero), compras(estado_pago, estado_compra, evento_id, cliente_id, eventos(titulo, fecha_inicio, lugar_id)), tipos_boleta(evento_id, nombre, personas_por_unidad, es_palco, eventos(id, titulo, fecha_inicio, lugar_id))';
+    '*, palcos(numero), compras(estado_pago, estado_compra, evento_id, cliente_id, eventos(id, titulo, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais))), tipos_boleta(evento_id, nombre, personas_por_unidad, es_palco, eventos(id, titulo, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais)))';
 
   constructor(
     private supabase: SupabaseService,
