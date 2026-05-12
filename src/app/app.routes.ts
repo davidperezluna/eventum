@@ -4,6 +4,7 @@ import { Dashboard } from './pages/dashboard/dashboard';
 import { DashboardOrganizador } from './pages/dashboard-organizador/dashboard-organizador';
 import { Eventos } from './pages/eventos/eventos';
 import { EventosCliente } from './pages/eventos-cliente/eventos-cliente';
+import { ConocenosContacto } from './pages/conocenos-contacto/conocenos-contacto';
 import { DetalleEvento } from './pages/detalle-evento/detalle-evento';
 import { MisCompras } from './pages/mis-compras/mis-compras';
 import { Boletas } from './pages/boletas/boletas';
@@ -52,6 +53,7 @@ const appRoutes: Routes = [
     children: [
       { path: '', redirectTo: 'eventos-cliente', pathMatch: 'full' },
       { path: 'eventos-cliente', component: EventosCliente }, // Página principal pública
+      { path: 'conocenos', component: ConocenosContacto }, // Conócenos y contacto (público)
       { path: 'detalle-evento/:id', component: DetalleEvento }, // Público: detalle de evento
     ]
   },

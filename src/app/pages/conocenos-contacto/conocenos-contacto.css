@@ -1,0 +1,733 @@
+.conocenos-page {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--color-text-primary);
+  background: #f1f5f9;
+  min-height: calc(100vh - 73px);
+  padding-bottom: 3rem;
+}
+
+/* —— Hero —— */
+.conocenos-hero {
+  position: relative;
+  color: white;
+  padding: 2rem var(--spacing-lg) 3.25rem;
+  padding-top: max(2rem, calc(env(safe-area-inset-top, 0px) + 1.25rem));
+  overflow: hidden;
+}
+
+.conocenos-hero-mesh {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 55% at 20% 40%, rgba(129, 140, 248, 0.35) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 50% at 85% 20%, rgba(236, 72, 153, 0.22) 0%, transparent 45%),
+    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(34, 211, 238, 0.12) 0%, transparent 40%),
+    linear-gradient(155deg, #0f0f18 0%, #1a1a2e 38%, #252542 100%);
+}
+
+.conocenos-hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 36rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.conocenos-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: rgba(255, 255, 255, 0.88);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 1.25rem;
+  transition: color 0.2s, transform 0.15s;
+}
+
+.conocenos-back:hover {
+  color: #c4b5fd;
+  transform: translateX(-2px);
+}
+
+.conocenos-back .material-icons {
+  font-size: 1.25rem;
+}
+
+.conocenos-eyebrow {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.65);
+}
+
+.conocenos-hero h1 {
+  margin: 0 0 1rem 0;
+  font-size: clamp(1.85rem, 5vw, 2.35rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+}
+
+.conocenos-gradient {
+  background: linear-gradient(105deg, #a5b4fc 0%, #c084fc 45%, #f472b6 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.conocenos-lead {
+  margin: 0 0 1.25rem 0;
+  line-height: 1.65;
+  color: rgba(248, 250, 252, 0.9);
+  font-size: 1.02rem;
+}
+
+.conocenos-lead strong {
+  color: #fff;
+  font-weight: 700;
+}
+
+.conocenos-hero-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.hero-chip {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(226, 232, 240, 0.9);
+}
+
+/* —— Layout interior —— */
+.conocenos-inner {
+  max-width: 800px;
+  margin: -2.25rem auto 0;
+  padding: 0 1rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* —— Trabaja con nosotros (estilo alineado al resto de la app) —— */
+.conocenos-alianza {
+  position: relative;
+  margin-bottom: 1.25rem;
+  border-radius: var(--border-radius-lg);
+  background: var(--color-surface);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.conocenos-alianza-inner {
+  position: relative;
+  padding: 1.5rem 1.4rem 1.6rem;
+  padding-top: 1.35rem;
+}
+
+.conocenos-alianza-inner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--gradient-button);
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+}
+
+.alianza-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 0.85rem;
+}
+
+.alianza-badge-icon {
+  font-size: 1rem !important;
+  color: var(--color-secondary);
+}
+
+.conocenos-alianza h2 {
+  margin: 0 0 0.65rem 0;
+  font-size: clamp(1.2rem, 3.8vw, 1.45rem);
+  font-weight: 800;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.alianza-lead {
+  margin: 0 0 1.15rem 0;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: #64748b;
+}
+
+.alianza-lead strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.alianza-puntos {
+  list-style: none;
+  margin: 0 0 1.35rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.alianza-puntos li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.alianza-puntos .material-icons {
+  font-size: 1.25rem !important;
+  color: var(--color-secondary);
+  flex-shrink: 0;
+  margin-top: 0.08rem;
+}
+
+.alianza-puntos strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.alianza-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.alianza-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1.1rem;
+  border-radius: var(--border-radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.alianza-cta .material-icons {
+  font-size: 1.1rem !important;
+}
+
+.alianza-cta ion-icon {
+  font-size: 1.15rem;
+}
+
+.alianza-cta--primary {
+  color: var(--color-text-inverse);
+  background: var(--gradient-button);
+  border: none;
+  box-shadow: 0 2px 10px rgba(102, 126, 234, 0.35);
+}
+
+.alianza-cta--primary:hover {
+  filter: brightness(1.05);
+  box-shadow: var(--shadow-button);
+}
+
+.alianza-cta--primary .material-icons {
+  color: var(--color-text-inverse);
+}
+
+.alianza-cta--ghost {
+  color: #475569;
+  background: var(--color-surface);
+  border: 1px solid #e2e8f0;
+}
+
+.alianza-cta--ghost:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.alianza-cta--ghost ion-icon {
+  color: #25d366;
+}
+
+.alianza-cta:active {
+  transform: scale(0.98);
+}
+
+/* —— Split cards —— */
+.conocenos-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.conocenos-card {
+  position: relative;
+  background: white;
+  border-radius: 1rem;
+  padding: 1.35rem 1.35rem 1.45rem;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  overflow: hidden;
+}
+
+.conocenos-card--tilt {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.conocenos-card--tilt:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(99, 102, 241, 0.12);
+}
+
+.card-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 1rem 1rem 0 0;
+}
+
+.card-accent--violet {
+  background: linear-gradient(90deg, #8b5cf6, #c084fc);
+}
+
+.card-accent--indigo {
+  background: linear-gradient(90deg, #6366f1, #38bdf8);
+}
+
+.conocenos-card h2 {
+  margin: 0.35rem 0 0.75rem 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.section-icon {
+  font-size: 1.3rem !important;
+  color: var(--color-primary);
+}
+
+.conocenos-card p {
+  margin: 0;
+  line-height: 1.65;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+/* —— Pills —— */
+.conocenos-card--pills-wrap {
+  margin-bottom: 1rem;
+}
+
+.pills-intro {
+  margin: -0.25rem 0 1rem 0 !important;
+  font-size: 0.875rem !important;
+  color: #64748b !important;
+}
+
+.conocenos-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.conocenos-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #4338ca;
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+}
+
+.conocenos-pill .material-icons {
+  font-size: 1rem !important;
+  color: #6366f1;
+}
+
+/* —— Nexus contacto —— */
+.conocenos-nexus {
+  background: white;
+  border-radius: 1.25rem;
+  padding: 1.75rem 1.35rem 1.5rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
+  margin-bottom: 0.5rem;
+}
+
+.nexus-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.nexus-kicker {
+  margin: 0 0 0.35rem 0;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.nexus-title {
+  margin: 0 0 0.5rem 0;
+  font-size: clamp(1.2rem, 3.5vw, 1.45rem);
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.nexus-sub {
+  margin: 0 auto;
+  max-width: 26rem;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: #64748b;
+}
+
+.nexus-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.nexus-node {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 1rem;
+  row-gap: 0.15rem;
+  align-items: center;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  text-decoration: none;
+  color: #0f172a;
+  border: 2px solid transparent;
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(135deg, var(--n1), var(--n2)) border-box;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+}
+
+.nexus-node--ig {
+  --n1: #f09433;
+  --n2: #bc1888;
+}
+
+.nexus-node--wa {
+  --n1: #25d366;
+  --n2: #128c7e;
+}
+
+.nexus-node--mail {
+  --n1: #6366f1;
+  --n2: #8b5cf6;
+}
+
+.nexus-node-glow {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(circle at 30% 30%, rgba(129, 140, 248, 0.14), transparent 58%);
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.nexus-node:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.12);
+}
+
+.nexus-node:hover .nexus-node-glow {
+  opacity: 1;
+}
+
+.nexus-node ion-icon {
+  grid-row: 1 / span 2;
+  font-size: 2rem;
+  align-self: center;
+}
+
+.nexus-node--ig ion-icon {
+  color: #c026d3;
+}
+
+.nexus-node--wa ion-icon {
+  color: #16a34a;
+}
+
+.nexus-node--mail ion-icon {
+  color: #4f46e5;
+}
+
+.nexus-node-label {
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+}
+
+.nexus-node-hint {
+  grid-column: 2;
+  font-size: 0.8rem;
+  color: #64748b;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.conocenos-credit {
+  margin: 1.35rem 0 0 0 !important;
+  padding-top: 1.15rem;
+  border-top: 1px dashed #e2e8f0;
+  text-align: center;
+  font-size: 0.8rem !important;
+  color: #94a3b8 !important;
+  line-height: 1.5;
+}
+
+.conocenos-credit strong {
+  color: #64748b;
+}
+
+.conocenos-copy {
+  text-align: center;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin: 1.35rem 0 0;
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .conocenos-inner {
+    max-width: min(920px, 92vw);
+    padding: 0 1.25rem;
+  }
+
+  .conocenos-hero-content {
+    max-width: min(920px, 92vw);
+  }
+}
+
+@media (min-width: 1024px) {
+  .conocenos-hero-content {
+    max-width: min(1180px, 94vw);
+    padding-left: clamp(0.5rem, 2vw, 1.5rem);
+    padding-right: clamp(0.5rem, 2vw, 1.5rem);
+    box-sizing: border-box;
+  }
+
+  .conocenos-inner {
+    max-width: min(1180px, 94vw);
+    padding: 0 clamp(1rem, 2.5vw, 2rem);
+    display: grid;
+    grid-template-columns: minmax(0, 1.22fr) minmax(280px, 0.78fr);
+    grid-template-areas:
+      'alianza lateral'
+      'pills pills'
+      'nexus nexus'
+      'copy copy';
+    column-gap: 1.5rem;
+    row-gap: 1.1rem;
+    align-items: start;
+  }
+
+  .conocenos-inner > .conocenos-alianza {
+    grid-area: alianza;
+    margin-bottom: 0;
+  }
+
+  .conocenos-inner > .conocenos-split {
+    grid-area: lateral;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 0;
+  }
+
+  .conocenos-inner > .conocenos-card--pills-wrap {
+    grid-area: pills;
+  }
+
+  .conocenos-inner > .conocenos-nexus {
+    grid-area: nexus;
+  }
+
+  .conocenos-nexus {
+    padding: 1rem 1.15rem 0.95rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+  }
+
+  .nexus-header {
+    margin-bottom: 0.75rem;
+  }
+
+  .nexus-kicker {
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+  }
+
+  .nexus-title {
+    font-size: 1.1rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .nexus-sub {
+    font-size: 0.8rem;
+    line-height: 1.45;
+    max-width: 36rem;
+  }
+
+  .conocenos-inner > .conocenos-copy {
+    grid-area: copy;
+  }
+
+  .conocenos-split .conocenos-card {
+    flex: 0 0 auto;
+  }
+
+  .nexus-rail {
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    gap: 0.65rem;
+  }
+
+  .nexus-node {
+    flex: 1 1 0;
+    max-width: none;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+    gap: 0.2rem;
+    padding: 0.75rem 0.55rem 0.85rem;
+    border-radius: 0.75rem;
+    border-width: 1px;
+  }
+
+  .nexus-node ion-icon {
+    grid-row: auto;
+    margin-bottom: 0;
+    font-size: 1.4rem;
+  }
+
+  .nexus-node-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    grid-column: auto;
+  }
+
+  .nexus-node-hint {
+    grid-column: auto;
+    font-size: 0.65rem;
+    line-height: 1.35;
+  }
+}
+
+@media (min-width: 1280px) {
+  .conocenos-inner {
+    max-width: min(1240px, 92vw);
+    column-gap: 1.75rem;
+  }
+
+  .conocenos-hero-content {
+    max-width: min(1240px, 92vw);
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .nexus-rail {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .nexus-node {
+    flex: 1 1 200px;
+    max-width: 240px;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 1.25rem 0.9rem;
+  }
+
+  .nexus-node ion-icon {
+    grid-row: auto;
+    margin-bottom: 0.15rem;
+  }
+
+  .nexus-node-label,
+  .nexus-node-hint {
+    grid-column: auto;
+  }
+
+  .nexus-node-hint {
+    font-size: 0.72rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .conocenos-split {
+    grid-template-columns: 1fr;
+  }
+
+  .conocenos-inner {
+    margin-top: -1.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .alianza-cta-row {
+    flex-direction: column;
+  }
+
+  .alianza-cta {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}

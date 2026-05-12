@@ -1,0 +1,144 @@
+<div class="conocenos-page">
+  <header class="conocenos-hero">
+    <div class="conocenos-hero-mesh" aria-hidden="true"></div>
+    <div class="conocenos-hero-content">
+      <a routerLink="/eventos-cliente" class="conocenos-back">
+        <span class="material-icons">arrow_back</span>
+        <span>Volver a eventos</span>
+      </a>
+      <p class="conocenos-eyebrow">Experiencias · tecnología · comunidad</p>
+      <h1>
+        Somos <span class="conocenos-gradient">Eventum</span>
+      </h1>
+      <p class="conocenos-lead">
+        Unimos a quienes crean eventos con quienes viven la música, el arte y la cultura.
+        Si quieres <strong>trabajar con nosotros</strong> o solo saludar, aquí empieza la conversación.
+      </p>
+      <div class="conocenos-hero-chips" aria-hidden="true">
+        <span class="hero-chip">Boletas digitales</span>
+        <span class="hero-chip">Pagos Wompi</span>
+        <span class="hero-chip">Equipo humano</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="conocenos-inner">
+    <!-- Bloque destacado: colaborar -->
+    <section class="conocenos-alianza" aria-labelledby="alianza-titulo">
+      <div class="conocenos-alianza-inner">
+        <span class="alianza-badge">
+          <span class="material-icons alianza-badge-icon">rocket_launch</span>
+          Trabaja con nosotros
+        </span>
+        <h2 id="alianza-titulo">Llevamos tu evento al escenario digital</h2>
+        <p class="alianza-lead">
+          Buscamos <strong>organizadores</strong> con visión, <strong>marcas y venues</strong> que quieran co-crear experiencias,
+          y <strong>talento</strong> que quiera construir producto junto a Baria Dev. Si eso eres tú, queremos conocerte.
+        </p>
+        <ul class="alianza-puntos">
+          <li>
+            <span class="material-icons">event_available</span>
+            <span><strong>Publica con nosotros</strong> — inventario, reportes y cobros en un solo flujo.</span>
+          </li>
+          <li>
+            <span class="material-icons">handshake</span>
+            <span><strong>Alianzas</strong> — patrocinios, activaciones y contenido con nuestra comunidad.</span>
+          </li>
+          <li>
+            <span class="material-icons">groups</span>
+            <span><strong>Equipo y partners tech</strong> — integraciones, white-label y roadmap compartido.</span>
+          </li>
+        </ul>
+        <div class="alianza-cta-row">
+          <a [href]="correoTrabajaConNosotrosUrl" class="alianza-cta alianza-cta--primary" target="_blank" rel="noopener noreferrer">
+            <span class="material-icons">mail</span>
+            Proponer una colaboración
+          </a>
+          <a [href]="whatsappUrl" class="alianza-cta alianza-cta--ghost" target="_blank" rel="noopener noreferrer">
+            <ion-icon name="logo-whatsapp" aria-hidden="true"></ion-icon>
+            WhatsApp directo
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <div class="conocenos-split">
+      <section class="conocenos-card conocenos-card--tilt">
+        <div class="card-accent card-accent--violet" aria-hidden="true"></div>
+        <h2><span class="material-icons section-icon">celebration</span> Para asistentes</h2>
+        <p>
+          Descubre conciertos y cultura, compra con tranquilidad y lleva tu boleta en el móvil.
+          Cada evento es una historia; nosotros cuidamos la parte aburrida (pagos, QR, soporte).
+        </p>
+      </section>
+      <section class="conocenos-card conocenos-card--tilt">
+        <div class="card-accent card-accent--indigo" aria-hidden="true"></div>
+        <h2><span class="material-icons section-icon">business_center</span> Para organizadores</h2>
+        <p>
+          De la idea al sold out: tipos de boleta, métricas en vivo y reportes que sí lees a las 2 a.m.
+          Menos hojas de cálculo, más escenario lleno.
+        </p>
+      </section>
+    </div>
+
+    <section class="conocenos-card conocenos-card--pills-wrap">
+      <h2><span class="material-icons section-icon">auto_awesome</span> Lo que nos define</h2>
+      <p class="pills-intro">Pequeños superpoderes, todos en la misma plataforma.</p>
+      <div class="conocenos-pills">
+        <span class="conocenos-pill"><span class="material-icons">verified</span> Compra segura</span>
+        <span class="conocenos-pill"><span class="material-icons">qr_code</span> QR dinámico</span>
+        <span class="conocenos-pill"><span class="material-icons">support_agent</span> Soporte humano</span>
+        <span class="conocenos-pill"><span class="material-icons">insights</span> Métricas claras</span>
+        <span class="conocenos-pill"><span class="material-icons">event_note</span> Gestión completa</span>
+        <span class="conocenos-pill"><span class="material-icons">payments</span> Wompi integrado</span>
+      </div>
+    </section>
+
+    <section class="conocenos-nexus" aria-labelledby="nexus-titulo">
+      <div class="nexus-header">
+        <p class="nexus-kicker">¿Hablamos?</p>
+        <h2 class="nexus-title" id="nexus-titulo">Tres formas de llegar al mismo equipo</h2>
+        <p class="nexus-sub">
+          Elige el canal que te resulte más natural; respondemos con la misma energía.
+        </p>
+      </div>
+
+      <div class="nexus-rail" aria-label="Canales de contacto">
+        <a
+          class="nexus-node nexus-node--ig"
+          [href]="instagramUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span class="nexus-node-glow" aria-hidden="true"></span>
+          <ion-icon name="logo-instagram" aria-hidden="true"></ion-icon>
+          <span class="nexus-node-label">Instagram</span>
+          <span class="nexus-node-hint">Novedades y detrás de cámaras</span>
+        </a>
+        <a
+          class="nexus-node nexus-node--wa"
+          [href]="whatsappUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span class="nexus-node-glow" aria-hidden="true"></span>
+          <ion-icon name="logo-whatsapp" aria-hidden="true"></ion-icon>
+          <span class="nexus-node-label">WhatsApp</span>
+          <span class="nexus-node-hint">Respuesta ágil, ideal para dudas rápidas</span>
+        </a>
+        <a class="nexus-node nexus-node--mail" [href]="correoContactoUrl" target="_blank" rel="noopener noreferrer">
+          <span class="nexus-node-glow" aria-hidden="true"></span>
+          <ion-icon name="mail" aria-hidden="true"></ion-icon>
+          <span class="nexus-node-label">Correo</span>
+          <span class="nexus-node-hint">{{ email }}</span>
+        </a>
+      </div>
+
+      <p class="conocenos-credit">
+        Plataforma desarrollada por <strong>Baria Dev</strong> — soluciones tecnológicas con alma de evento.
+      </p>
+    </section>
+
+    <p class="conocenos-copy">&copy; {{ currentYear }} Eventum. Todos los derechos reservados.</p>
+  </div>
+</div>

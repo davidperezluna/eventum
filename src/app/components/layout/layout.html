@@ -18,7 +18,7 @@
       <div class="sidebar-header">
         <div class="sidebar-header-content">
           <h1 class="sidebar-logo">
-            <img src="/logo-eventum-horizontal.svg" alt="Eventum" class="logo-img" />
+            <img src="/logo-eventum.svg" alt="Eventum" class="logo-img" />
           </h1>
           <button class="sidebar-close" (click)="closeSidebar()" aria-label="Close menu">
             <span class="material-icons">close</span>
@@ -87,6 +87,10 @@
           <span class="material-icons">event</span>
           <span>Eventos</span>
         </a>
+        <a routerLink="/conocenos" routerLinkActive="active" class="client-mobile-nav-item" (click)="closeClientMenu()">
+          <span class="material-icons">groups</span>
+          <span>Conócenos</span>
+        </a>
         <a routerLink="/mis-compras" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="client-mobile-nav-item" (click)="closeClientMenu()">
           <span class="material-icons">confirmation_number</span>
           <span>Mis Boletas</span>
@@ -109,12 +113,15 @@
     <header class="client-header">
       <div class="header-container">
         <a routerLink="/eventos-cliente" class="brand-logo">
-          <img src="/logo-eventum-horizontal.svg" alt="Eventum" class="brand-logo-img" />
+          <img src="/logo-eventum.svg" alt="Eventum" class="brand-logo-img" />
         </a>
 
         <nav class="client-nav">
           <a routerLink="/eventos-cliente" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="client-nav-item">
             Eventos
+          </a>
+          <a routerLink="/conocenos" routerLinkActive="active" class="client-nav-item">
+            Conócenos
           </a>
           <a routerLink="/mis-compras" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="client-nav-item">
             Mis Boletas
@@ -143,11 +150,14 @@
     <header class="client-header public-header">
       <div class="header-container">
         <a routerLink="/eventos-cliente" class="brand-logo">
-          <img src="/logo-eventum-horizontal.svg" alt="Eventum" class="brand-logo-img" />
+          <img src="/logo-eventum.svg" alt="Eventum" class="brand-logo-img" />
         </a>
         <nav class="client-nav">
           <a routerLink="/eventos-cliente" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="client-nav-item">
             Eventos
+          </a>
+          <a routerLink="/conocenos" routerLinkActive="active" class="client-nav-item">
+            Conócenos
           </a>
         </nav>
         <div class="client-user-menu">

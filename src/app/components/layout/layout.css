@@ -9,6 +9,7 @@
   background: var(--color-background);
   position: relative;
   width: 100%;
+  overflow-x: clip;
 }
 
 /* Layout en columna para clientes y usuarios públicos */
@@ -310,8 +311,8 @@
 .client-menu-toggle {
   display: none;
   position: fixed;
-  top: var(--spacing-md);
-  left: var(--spacing-md);
+  top: calc(var(--spacing-md) + env(safe-area-inset-top, 0px));
+  left: calc(var(--spacing-md) + env(safe-area-inset-left, 0px));
   z-index: 1001;
   background: var(--gradient-button);
   color: var(--color-text-inverse);
@@ -356,7 +357,9 @@
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   transform: translateX(-100%);
-  transition: transform var(--transition-normal);
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform var(--transition-normal), visibility 0s linear 0.3s;
   display: none;
   flex-direction: column;
   overflow-y: auto;
@@ -365,6 +368,9 @@
 
 .client-mobile-menu.open {
   transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
+  transition: transform var(--transition-normal), visibility 0s linear 0s;
 }
 
 .client-mobile-menu-header {
@@ -473,6 +479,7 @@
   width: 100%;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .header-container {
@@ -604,6 +611,7 @@
   min-height: calc(100vh - 73px);
   position: relative;
   z-index: 1;
+  overflow-x: clip;
 }
 
 /* ============================================
@@ -650,6 +658,7 @@
   min-height: calc(100vh - 73px);
   position: relative;
   z-index: 1;
+  overflow-x: clip;
 }
 
 /* ============================================
@@ -681,10 +690,16 @@
     width: var(--sidebar-width);
     transform: translateX(-100%);
     box-shadow: var(--shadow-lg);
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform var(--transition-normal), visibility 0s linear 0.3s;
   }
 
   .sidebar.open {
     transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+    transition: transform var(--transition-normal), visibility 0s linear 0s;
   }
 
   .sidebar-close {
@@ -763,8 +778,8 @@
   }
 
   .client-menu-toggle {
-    top: var(--spacing-sm);
-    left: var(--spacing-sm);
+    top: calc(var(--spacing-sm) + env(safe-area-inset-top, 0px));
+    left: calc(var(--spacing-sm) + env(safe-area-inset-left, 0px));
     padding: var(--spacing-xs);
   }
 
