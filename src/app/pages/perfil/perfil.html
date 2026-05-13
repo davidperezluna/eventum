@@ -49,17 +49,18 @@
               <div *ngIf="!tieneFotoVisible()" class="foto-perfil-placeholder" aria-hidden="true">
                 <span class="material-icons">person</span>
               </div>
-              <div class="foto-overlay">
-                <button type="button" class="btn-icon" (click)="selectImage(); $event.stopPropagation()" [disabled]="uploadingImage">
-                  <span class="material-icons">{{ uploadingImage ? 'hourglass_empty' : 'camera_alt' }}</span>
-                </button>
+              <div
+                *ngIf="tieneFotoVisible() && selectedFile"
+                class="foto-overlay foto-overlay--pending"
+              >
                 <button
-                  *ngIf="tieneFotoVisible() && selectedFile"
                   type="button"
                   class="btn-icon btn-danger"
+                  title="Descartar la nueva foto"
+                  aria-label="Descartar la nueva foto y volver a la anterior"
                   (click)="removeImage(); $event.stopPropagation()"
                 >
-                  <span class="material-icons">delete</span>
+                  <span class="material-icons" aria-hidden="true">delete</span>
                 </button>
               </div>
             </div>
@@ -73,7 +74,7 @@
               <span class="material-icons" aria-hidden="true">{{ uploadingImage ? 'hourglass_empty' : 'photo_camera' }}</span>
             </button>
           </div>
-          <p class="foto-help">Usa el botón de la cámara para cambiar tu foto</p>
+          <p class="foto-help">Toca el botón en la esquina para cambiar tu foto.</p>
         </div>
         <div class="usuario-info">
           <h3>{{ getNombreCompleto() }}</h3>

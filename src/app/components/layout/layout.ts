@@ -20,6 +20,8 @@ export class Layout implements OnInit, OnDestroy {
   userRole: string = '';
   sidebarOpen: boolean = false;
   clientMenuOpen: boolean = false;
+
+  readonly currentYear = new Date().getFullYear();
   private routerSubscription?: any;
   private unsubscribeAuthState?: () => void;
 

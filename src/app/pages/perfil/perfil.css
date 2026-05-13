@@ -182,25 +182,24 @@
   opacity: 0.85;
 }
 
+/* Sólo cuando hay imagen nueva sin guardar: barra inferior + borrar (sin blur en la foto) */
 .foto-overlay {
   position: absolute;
   inset: 0;
   border-radius: 50%;
   overflow: hidden;
-  background: rgba(15, 23, 42, 0.45);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   gap: 0.5rem;
-  opacity: 0;
-  transition: opacity 0.2s;
-  backdrop-filter: blur(2px);
+  padding-bottom: 0.4rem;
   pointer-events: none;
 }
 
-.foto-perfil-wrapper:hover .foto-overlay {
-  opacity: 1;
+.foto-overlay--pending {
   pointer-events: auto;
+  z-index: 3;
+  background: linear-gradient(180deg, transparent 52%, rgba(15, 23, 42, 0.6) 100%);
 }
 
 /* Cámara siempre usable en táctil */
@@ -655,17 +654,6 @@
   .foto-camera-fab {
     width: 2.35rem;
     height: 2.35rem;
-  }
-
-  /* En táctil, overlay opcional sobre la foto sin depender del hover */
-  @media (hover: none), (pointer: coarse) {
-    .foto-overlay {
-      opacity: 1;
-      pointer-events: auto;
-      background: linear-gradient(180deg, transparent 35%, rgba(15, 23, 42, 0.45) 100%);
-      align-items: flex-end;
-      padding-bottom: 0.4rem;
-    }
   }
 
   .perfil-form {

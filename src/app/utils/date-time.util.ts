@@ -55,7 +55,7 @@ export class DateTimeUtil {
     const localDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
     
     // Convertir la fecha local a UTC
-    // Si es 2025-10-30 00:00:00 en Colombia (UTC-5), debe ser 2025-10-30 05:00:00 UTC
+    // Si es 2026-10-30 00:00:00 en Colombia (UTC-5), debe ser 2026-10-30 05:00:00 UTC
     const offsetMs = localDate.getTimezoneOffset() * 60000;
     const utcDate = new Date(localDate.getTime() - offsetMs);
     
@@ -71,7 +71,7 @@ export class DateTimeUtil {
     const localDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
     
     // Convertir la fecha local a UTC
-    // Si es 2025-10-30 23:59:59 en Colombia (UTC-5), debe ser 2025-10-31 04:59:59 UTC
+    // Si es 2026-10-30 23:59:59 en Colombia (UTC-5), debe ser 2026-10-31 04:59:59 UTC
     const offsetMs = localDate.getTimezoneOffset() * 60000;
     const utcDate = new Date(localDate.getTime() - offsetMs);
     
@@ -127,7 +127,7 @@ export class DateTimeUtil {
     if (!dateString) return 'No especificado';
     
     // Extraer fecha y hora directamente del string ISO
-    // Formato: 2025-10-24T17:21:00.000Z
+    // Formato: 2026-10-24T17:21:00.000Z
     const isoMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
     
     if (!isoMatch) {
