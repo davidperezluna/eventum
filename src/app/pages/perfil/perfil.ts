@@ -20,6 +20,7 @@ export class Perfil implements OnInit {
   formData: Partial<Usuario> = {};
   loading = false;
   saving = false;
+  cerrandoSesion = false;
   error: string | null = null;
   success: string | null = null;
 
@@ -356,6 +357,19 @@ export class Perfil implements OnInit {
   tieneFotoVisible(): boolean {
     const u = this.previewUrl;
     return typeof u === 'string' && u.trim().length > 0;
+  }
+
+  async cerrarSesion(): Promise<void> {
+    if (this.cerrandoSesion) return;
+    this.cerrandoSesion = true;
+    this.cdr.detectChanges();
+    try {
+      await this.authService.logout();
+    } catch (err) {
+      console.error('Error al cerrar sesión:', err);
+      this.cerrandoSesion = false;
+      this.cdr.detectChanges();
+    }
   }
 }
 

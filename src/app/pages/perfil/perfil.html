@@ -167,6 +167,17 @@
             <span class="spinner-small" *ngIf="saving"></span>
             {{ saving ? 'Guardando...' : 'Guardar Cambios' }}
           </button>
+          <button
+            type="button"
+            class="btn-cerrar-sesion"
+            (click)="cerrarSesion()"
+            [disabled]="cerrandoSesion"
+            aria-label="Cerrar sesión"
+          >
+            <span class="material-icons" *ngIf="!cerrandoSesion">logout</span>
+            <span class="spinner-small" *ngIf="cerrandoSesion"></span>
+            {{ cerrandoSesion ? 'Cerrando sesión...' : 'Cerrar sesión' }}
+          </button>
         </div>
       </form>
     </div>
