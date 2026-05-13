@@ -1690,6 +1690,8 @@
   margin-top: 2rem;
   margin-bottom: 1.5rem;
   border: 2px dashed #e2e8f0;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .cupon-section h5 {
@@ -1702,10 +1704,14 @@
 .cupon-input-group {
   display: flex;
   gap: 0.75rem;
+  align-items: stretch;
+  min-width: 0;
 }
 
 .cupon-input-group input {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
   background: white;
   border: 1px solid #cbd5e1;
   border-radius: 0.75rem;
@@ -1713,6 +1719,7 @@
   color: #1e293b;
   font-size: 0.95rem;
   transition: all 0.2s;
+  box-sizing: border-box;
 }
 
 .cupon-input-group input::placeholder {
@@ -1729,11 +1736,13 @@
   background: #6366f1;
   color: white;
   border: none;
-  padding: 0 1.5rem;
+  padding: 0 1.25rem;
   border-radius: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .btn-aplicar-cupon:hover:not(:disabled) {
@@ -1971,6 +1980,40 @@
     padding: 0;
     margin-bottom: 1.5rem;
     border-radius: 1rem;
+  }
+
+  .cupon-section {
+    padding: 1.25rem 1rem;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .cupon-input-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.625rem;
+  }
+
+  .cupon-input-group input {
+    width: 100%;
+    flex: none;
+    max-width: 100%;
+  }
+
+  .btn-aplicar-cupon {
+    width: 100%;
+    flex-shrink: 0;
+    padding: 0.75rem 1rem;
+  }
+
+  .cupon-aplicado {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .cupon-aplicado .btn-quitar-cupon {
+    align-self: flex-end;
   }
 
   .accordion-header {
