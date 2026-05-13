@@ -2,16 +2,22 @@
   <header class="page-header">
     <div>
       <h1>
-        <span class="material-icons">confirmation_number</span>
-        Boletas
+        <span class="material-icons">{{ esVistaUsadas() ? 'how_to_reg' : 'confirmation_number' }}</span>
+        <ng-container *ngIf="esVistaPendientes()">Boletas sin usar</ng-container>
+        <ng-container *ngIf="esVistaUsadas()">Boletas usadas</ng-container>
       </h1>
-      <p>Administra las boletas compradas y tipos de boletas de tus eventos</p>
+      <p *ngIf="esVistaPendientes()">
+        Entradas pendientes de uso en puerta. Tipos de boleta y validación manual desde acá.
+      </p>
+      <p *ngIf="esVistaUsadas()">
+        Historial de entradas ya escaneadas: evento, tipo de boleta, email, fecha de validación y usuario que validó (lector o admin).
+      </p>
     </div>
-    <div style="display: flex; gap: var(--spacing-md);">
+    <div *ngIf="esVistaPendientes()" style="display: flex; gap: var(--spacing-md);">
       <button class="btn-secondary" (click)="openModalTipo()" style="display: flex; align-items: center; gap: var(--spacing-xs);">
-      <span class="material-icons">add</span>
-      Nuevo Tipo de Boletas
-    </button>
+        <span class="material-icons">add</span>
+        Nuevo Tipo de Boletas
+      </button>
       <button class="btn-primary" (click)="showTiposSection = !showTiposSection">
         <span class="material-icons">confirmation_number</span>
         {{ showTiposSection ? 'Ocultar' : 'Ver' }} Tipos de Boletas
@@ -32,7 +38,7 @@
           <span class="material-icons">clear</span>
           Limpiar filtros
         </button>
-        <button class="btn-primary" (click)="abrirValidarModal()">
+        <button *ngIf="esVistaPendientes()" class="btn-primary" (click)="abrirValidarModal()">
           <span class="material-icons">qr_code_scanner</span>
           Validar boleta
         </button>
@@ -41,22 +47,23 @@
 
     <!-- Filtros básicos -->
     <div class="filters-row">
+      <div class="filter-group filter-group--badge" *ngIf="esVistaPendientes()">
+        <label>Listado</label>
+        <span class="badge-vista">Solo pendientes de uso</span>
+      </div>
+      <div class="filter-group filter-group--badge" *ngIf="esVistaUsadas()">
+        <label>Listado</label>
+        <span class="badge-vista badge-vista--usada">Solo entradas ya usadas</span>
+      </div>
       <div class="filter-group">
         <label>Búsqueda rápida</label>
-        <input 
-          type="text" 
-          [(ngModel)]="searchFiltro" 
+        <input
+          type="text"
+          [(ngModel)]="searchFiltro"
           (ngModelChange)="loadBoletas()"
           placeholder="Buscar por código QR, nombre o email..."
           class="select-input"
         />
-      </div>
-      <div class="filter-group">
-        <label>Estado</label>
-        <select [(ngModel)]="estadoFiltro" (ngModelChange)="loadBoletas()" class="select-input">
-          <option [value]="null">Todos los estados</option>
-          <option *ngFor="let estado of estados" [value]="estado.value">{{ estado.label }}</option>
-        </select>
       </div>
       <div class="filter-group">
         <label>Evento</label>
@@ -141,8 +148,8 @@
     </div>
   </div>
 
-  <!-- Sección de Tipos de Boletas -->
-  <div *ngIf="showTiposSection" class="content-card" style="margin-bottom: var(--spacing-lg);">
+  <!-- Sección de Tipos de Boletas (solo vista pendientes) -->
+  <div *ngIf="esVistaPendientes() && showTiposSection" class="content-card" style="margin-bottom: var(--spacing-lg);">
     <div class="section-header">
       <h2>Tipos de Boletas</h2>
       <button class="btn-primary" (click)="openModalTipo()">
@@ -208,175 +215,272 @@
     </div>
   </div>
 
-  <!-- Tabla de boletas -->
+  <!-- Tabla de boletas: vista pendientes vs usadas -->
   <div class="content-card">
     <div *ngIf="loading" class="loading-state">Cargando boletas...</div>
-    
+
     <div *ngIf="!loading && boletas.length > 0">
-      <!-- Vista de tabla para desktop -->
-      <div class="boletas-container table-view">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Código QR</th>
-              <th>Evento</th>
-              <th>Asistente</th>
-              <th>Email</th>
-              <th>Teléfono</th>
-              <th>Precio</th>
-              <th>Palco</th>
-              <th>Estado</th>
-              <th>Estado de Pago</th>
-              <th>Fecha Creación</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let boleta of boletas">
-              <td>{{ boleta.id }}</td>
-              <td class="code-cell">{{ boleta.codigo_qr }}</td>
-              <td>
-                <div class="evento-info-cell" *ngIf="boleta.evento">
+      <!-- ——— Pendientes (sin usar) ——— -->
+      <ng-container *ngIf="esVistaPendientes()">
+        <div class="boletas-container table-view">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Código QR</th>
+                <th>Evento</th>
+                <th>Tipo de boleta</th>
+                <th>Asistente</th>
+                <th>Email</th>
+                <th>Teléfono</th>
+                <th>Precio</th>
+                <th>Palco</th>
+                <th>Estado</th>
+                <th>Estado de Pago</th>
+                <th>Fecha creación</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let boleta of boletas">
+                <td>{{ boleta.id }}</td>
+                <td class="code-cell">{{ boleta.codigo_qr }}</td>
+                <td>
+                  <div class="evento-info-cell" *ngIf="boleta.evento">
+                    <strong>{{ boleta.evento.titulo }}</strong>
+                    <span class="evento-fecha" *ngIf="boleta.evento.fecha_inicio">
+                      {{ boleta.evento.fecha_inicio | dateFormat:'shortDate' }}
+                    </span>
+                  </div>
+                  <span *ngIf="!boleta.evento" class="text-muted">-</span>
+                </td>
+                <td>{{ nombreTipoBoletaLabel(boleta) }}</td>
+                <td>{{ boleta.nombre_asistente || 'Sin nombre' }}</td>
+                <td>{{ boleta.email_asistente || '-' }}</td>
+                <td>{{ boleta.telefono_asistente || '-' }}</td>
+                <td>${{ boleta.precio_unitario | number:'1.2-2' }}</td>
+                <td>
+                  <ng-container *ngIf="boleta.grupo_palco_id || boleta.palco_id">
+                    <span class="badge-info" style="display:inline-block;margin-bottom:2px;">Palco</span>
+                    <div *ngIf="boleta.numero_palco != null" style="font-size:0.85rem;font-weight:600;">N.º {{ boleta.numero_palco }}</div>
+                    <div class="text-muted" style="font-size:0.75rem;">{{ boleta.consume_inventario !== false ? 'Unidad' : 'Invitado' }}</div>
+                  </ng-container>
+                  <span *ngIf="!boleta.grupo_palco_id && !boleta.palco_id" class="text-muted">—</span>
+                </td>
+                <td>
+                  <span [class]="boleta.estado === 'usada' ? 'badge-success' : boleta.estado === 'cancelada' ? 'badge-danger' : boleta.estado === 'reembolsada' ? 'badge-danger' : 'badge-warning'">
+                    {{ getEstadoLabel(boleta.estado) }}
+                  </span>
+                </td>
+                <td>
+                  <span [class]="getEstadoPagoClass(boleta.estado_pago || boleta.compra?.estado_pago)">
+                    {{ getEstadoPagoLabel(boleta.estado_pago || boleta.compra?.estado_pago) }}
+                  </span>
+                </td>
+                <td>{{ boleta.fecha_creacion | dateFormat:'short' }}</td>
+                <td>
+                  <div class="table-actions">
+                    <button
+                      *ngIf="puedeValidar(boleta)"
+                      class="btn-icon btn-validate"
+                      (click)="validarBoleta(boleta)"
+                      title="Validar boleta"
+                      [disabled]="validandoBoleta"
+                    >
+                      <span class="material-icons">check_circle</span>
+                    </button>
+                    <button class="btn-icon" (click)="openTiposModalFromTipo(boleta.tipo_boleta_id)" title="Ver tipos de boleta del evento">
+                      <span class="material-icons">info</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="boletas-cards card-view">
+          <div *ngFor="let boleta of boletas" class="boleta-card">
+            <div class="boleta-card-header">
+              <div class="boleta-card-id">#{{ boleta.id }}</div>
+              <div class="boleta-card-actions">
+                <button
+                  *ngIf="puedeValidar(boleta)"
+                  class="btn-icon btn-validate"
+                  (click)="validarBoleta(boleta)"
+                  title="Validar boleta"
+                  [disabled]="validandoBoleta"
+                >
+                  <span class="material-icons">check_circle</span>
+                </button>
+                <button class="btn-icon" (click)="openTiposModalFromTipo(boleta.tipo_boleta_id)" title="Ver tipos de boleta">
+                  <span class="material-icons">info</span>
+                </button>
+              </div>
+            </div>
+            <div class="boleta-card-body">
+              <div class="boleta-card-row evento-row" *ngIf="boleta.evento">
+                <span class="boleta-card-label">Evento:</span>
+                <div class="boleta-card-value evento-info">
                   <strong>{{ boleta.evento.titulo }}</strong>
                   <span class="evento-fecha" *ngIf="boleta.evento.fecha_inicio">
                     {{ boleta.evento.fecha_inicio | dateFormat:'shortDate' }}
                   </span>
                 </div>
-                <span *ngIf="!boleta.evento" class="text-muted">-</span>
-              </td>
-              <td>{{ boleta.nombre_asistente || 'Sin nombre' }}</td>
-              <td>{{ boleta.email_asistente || '-' }}</td>
-              <td>{{ boleta.telefono_asistente || '-' }}</td>
-              <td>${{ boleta.precio_unitario | number:'1.2-2' }}</td>
-              <td>
-                <ng-container *ngIf="boleta.grupo_palco_id || boleta.palco_id">
-                  <span class="badge-info" style="display:inline-block;margin-bottom:2px;">Palco</span>
-                  <div *ngIf="boleta.numero_palco != null" style="font-size:0.85rem;font-weight:600;">N.º {{ boleta.numero_palco }}</div>
-                  <div class="text-muted" style="font-size:0.75rem;">{{ boleta.consume_inventario !== false ? 'Unidad' : 'Invitado' }}</div>
-                </ng-container>
-                <span *ngIf="!boleta.grupo_palco_id && !boleta.palco_id" class="text-muted">—</span>
-              </td>
-              <td>
-                <span [class]="boleta.estado === 'usada' ? 'badge-success' : boleta.estado === 'cancelada' ? 'badge-danger' : boleta.estado === 'reembolsada' ? 'badge-danger' : 'badge-warning'">
-                  {{ getEstadoLabel(boleta.estado) }}
-                </span>
-              </td>
-              <td>
-                <span [class]="getEstadoPagoClass(boleta.estado_pago || boleta.compra?.estado_pago)">
-                  {{ getEstadoPagoLabel(boleta.estado_pago || boleta.compra?.estado_pago) }}
-                </span>
-              </td>
-              <td>{{ boleta.fecha_creacion | dateFormat:'short' }}</td>
-              <td>
-                <div class="table-actions">
-                  <button 
-                    *ngIf="puedeValidar(boleta)"
-                    class="btn-icon btn-validate" 
-                    (click)="validarBoleta(boleta)" 
-                    title="Validar boleta"
-                    [disabled]="validandoBoleta"
-                  >
-                    <span class="material-icons">check_circle</span>
-                  </button>
-                  <button class="btn-icon" (click)="openTiposModalFromTipo(boleta.tipo_boleta_id)" title="Ver tipos de boleta del evento">
-                    <span class="material-icons">info</span>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Vista de cards para móviles -->
-      <div class="boletas-cards card-view">
-        <div *ngFor="let boleta of boletas" class="boleta-card">
-          <div class="boleta-card-header">
-            <div class="boleta-card-id">#{{ boleta.id }}</div>
-            <div class="boleta-card-actions">
-              <button 
-                *ngIf="puedeValidar(boleta)"
-                class="btn-icon btn-validate" 
-                (click)="validarBoleta(boleta)" 
-                title="Validar boleta"
-                [disabled]="validandoBoleta"
-              >
-                <span class="material-icons">check_circle</span>
-              </button>
-              <button class="btn-icon" (click)="openTiposModalFromTipo(boleta.tipo_boleta_id)" title="Ver tipos de boleta">
-                <span class="material-icons">info</span>
-              </button>
-            </div>
-          </div>
-          <div class="boleta-card-body">
-            <div class="boleta-card-row evento-row" *ngIf="boleta.evento">
-              <span class="boleta-card-label">Evento:</span>
-              <div class="boleta-card-value evento-info">
-                <strong>{{ boleta.evento.titulo }}</strong>
-                <span class="evento-fecha" *ngIf="boleta.evento.fecha_inicio">
-                  {{ boleta.evento.fecha_inicio | dateFormat:'shortDate' }}
+              </div>
+              <div class="boleta-card-row">
+                <span class="boleta-card-label">Tipo de boleta:</span>
+                <span class="boleta-card-value">{{ nombreTipoBoletaLabel(boleta) }}</span>
+              </div>
+              <div class="boleta-card-row">
+                <span class="boleta-card-label">Código QR:</span>
+                <span class="boleta-card-value code-value">{{ boleta.codigo_qr }}</span>
+              </div>
+              <div class="boleta-card-row">
+                <span class="boleta-card-label">Asistente:</span>
+                <span class="boleta-card-value">{{ boleta.nombre_asistente || 'Sin nombre' }}</span>
+              </div>
+              <div class="boleta-card-row">
+                <span class="boleta-card-label">Email:</span>
+                <span class="boleta-card-value">{{ boleta.email_asistente || '-' }}</span>
+              </div>
+              <div class="boleta-card-row">
+                <span class="boleta-card-label">Teléfono:</span>
+                <span class="boleta-card-value">{{ boleta.telefono_asistente || '-' }}</span>
+              </div>
+              <div class="boleta-card-row">
+                <span class="boleta-card-label">Precio:</span>
+                <span class="boleta-card-value">${{ boleta.precio_unitario | number:'1.2-2' }}</span>
+              </div>
+              <div class="boleta-card-row" *ngIf="boleta.grupo_palco_id">
+                <span class="boleta-card-label">Palco:</span>
+                <span class="boleta-card-value">{{ boleta.consume_inventario !== false ? 'Unidad (inventario)' : 'Invitado' }}</span>
+              </div>
+              <div class="boleta-card-row">
+                <span class="boleta-card-label">Estado:</span>
+                <span class="boleta-card-value">
+                  <span [class]="boleta.estado === 'usada' ? 'badge-success' : boleta.estado === 'cancelada' ? 'badge-danger' : boleta.estado === 'reembolsada' ? 'badge-danger' : 'badge-warning'">
+                    {{ getEstadoLabel(boleta.estado) }}
+                  </span>
                 </span>
               </div>
-            </div>
-            <div class="boleta-card-row">
-              <span class="boleta-card-label">Código QR:</span>
-              <span class="boleta-card-value code-value">{{ boleta.codigo_qr }}</span>
-            </div>
-            <div class="boleta-card-row">
-              <span class="boleta-card-label">Asistente:</span>
-              <span class="boleta-card-value">{{ boleta.nombre_asistente || 'Sin nombre' }}</span>
-            </div>
-            <div class="boleta-card-row">
-              <span class="boleta-card-label">Email:</span>
-              <span class="boleta-card-value">{{ boleta.email_asistente || '-' }}</span>
-            </div>
-            <div class="boleta-card-row">
-              <span class="boleta-card-label">Teléfono:</span>
-              <span class="boleta-card-value">{{ boleta.telefono_asistente || '-' }}</span>
-            </div>
-            <div class="boleta-card-row">
-              <span class="boleta-card-label">Precio:</span>
-              <span class="boleta-card-value">${{ boleta.precio_unitario | number:'1.2-2' }}</span>
-            </div>
-            <div class="boleta-card-row" *ngIf="boleta.grupo_palco_id">
-              <span class="boleta-card-label">Palco:</span>
-              <span class="boleta-card-value">{{ boleta.consume_inventario !== false ? 'Unidad (inventario)' : 'Invitado' }}</span>
-            </div>
-            <div class="boleta-card-row">
-              <span class="boleta-card-label">Estado:</span>
-              <span class="boleta-card-value">
-                <span [class]="boleta.estado === 'usada' ? 'badge-success' : boleta.estado === 'cancelada' ? 'badge-danger' : boleta.estado === 'reembolsada' ? 'badge-danger' : 'badge-warning'">
-                  {{ getEstadoLabel(boleta.estado) }}
+              <div class="boleta-card-row">
+                <span class="boleta-card-label">Estado de Pago:</span>
+                <span class="boleta-card-value">
+                  <span [class]="getEstadoPagoClass(boleta.estado_pago || boleta.compra?.estado_pago)">
+                    {{ getEstadoPagoLabel(boleta.estado_pago || boleta.compra?.estado_pago) }}
+                  </span>
                 </span>
-              </span>
-            </div>
-            <div class="boleta-card-row">
-              <span class="boleta-card-label">Estado de Pago:</span>
-              <span class="boleta-card-value">
-                <span [class]="getEstadoPagoClass(boleta.estado_pago || boleta.compra?.estado_pago)">
-                  {{ getEstadoPagoLabel(boleta.estado_pago || boleta.compra?.estado_pago) }}
-                </span>
-              </span>
-            </div>
-            <div class="boleta-card-row">
-              <span class="boleta-card-label">Fecha:</span>
-              <span class="boleta-card-value">{{ boleta.fecha_creacion | dateFormat:'short' }}</span>
+              </div>
+              <div class="boleta-card-row">
+                <span class="boleta-card-label">Creada:</span>
+                <span class="boleta-card-value">{{ boleta.fecha_creacion | dateFormat:'short' }}</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </ng-container>
+
+      <!-- ——— Usadas (historial en puerta) ——— -->
+      <ng-container *ngIf="esVistaUsadas()">
+        <div class="boletas-container table-view">
+          <table class="data-table data-table--usadas">
+            <thead>
+              <tr>
+                <th>Evento</th>
+                <th>Tipo de boleta</th>
+                <th>Email</th>
+                <th>Fecha validación</th>
+                <th>Validó (usuario)</th>
+                <th>Palco</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let boleta of boletas">
+                <td>
+                  <div class="evento-info-cell" *ngIf="boleta.evento">
+                    <strong>{{ boleta.evento.titulo }}</strong>
+                    <span class="evento-fecha" *ngIf="boleta.evento.fecha_inicio">
+                      {{ boleta.evento.fecha_inicio | dateFormat:'shortDate' }}
+                    </span>
+                  </div>
+                  <span *ngIf="!boleta.evento" class="text-muted">-</span>
+                </td>
+                <td>{{ nombreTipoBoletaLabel(boleta) }}</td>
+                <td>{{ boleta.email_asistente || '-' }}</td>
+                <td>
+                  <span *ngIf="boleta.fecha_uso">{{ boleta.fecha_uso | dateFormat:'short' }}</span>
+                  <span *ngIf="!boleta.fecha_uso" class="text-muted">—</span>
+                </td>
+                <td class="validador-cell">{{ nombreValidador(boleta) }}</td>
+                <td>
+                  <ng-container *ngIf="boleta.grupo_palco_id || boleta.palco_id">
+                    <span class="badge-info" style="display:inline-block;margin-bottom:2px;">Palco</span>
+                    <div *ngIf="boleta.numero_palco != null" style="font-size:0.85rem;font-weight:600;">N.º {{ boleta.numero_palco }}</div>
+                  </ng-container>
+                  <span *ngIf="!boleta.grupo_palco_id && !boleta.palco_id" class="text-muted">—</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="boletas-cards card-view">
+          <div *ngFor="let boleta of boletas" class="boleta-card boleta-card--usada">
+            <div class="boleta-card-body">
+              <div class="boleta-card-row evento-row" *ngIf="boleta.evento">
+                <span class="boleta-card-label">Evento:</span>
+                <div class="boleta-card-value evento-info">
+                  <strong>{{ boleta.evento.titulo }}</strong>
+                  <span class="evento-fecha" *ngIf="boleta.evento.fecha_inicio">
+                    {{ boleta.evento.fecha_inicio | dateFormat:'shortDate' }}
+                  </span>
+                </div>
+              </div>
+              <div class="boleta-card-row">
+                <span class="boleta-card-label">Tipo de boleta:</span>
+                <span class="boleta-card-value">{{ nombreTipoBoletaLabel(boleta) }}</span>
+              </div>
+              <div class="boleta-card-row">
+                <span class="boleta-card-label">Email:</span>
+                <span class="boleta-card-value">{{ boleta.email_asistente || '-' }}</span>
+              </div>
+              <div class="boleta-card-row">
+                <span class="boleta-card-label">Fecha validación:</span>
+                <span class="boleta-card-value">{{ boleta.fecha_uso ? (boleta.fecha_uso | dateFormat:'short') : '—' }}</span>
+              </div>
+              <div class="boleta-card-row">
+                <span class="boleta-card-label">Validó:</span>
+                <span class="boleta-card-value">{{ nombreValidador(boleta) }}</span>
+              </div>
+              <div class="boleta-card-row" *ngIf="boleta.grupo_palco_id || boleta.palco_id">
+                <span class="boleta-card-label">Palco:</span>
+                <span class="boleta-card-value">
+                  <ng-container *ngIf="boleta.numero_palco != null">N.º {{ boleta.numero_palco }} — </ng-container>
+                  {{ boleta.consume_inventario !== false ? 'Unidad (inventario)' : 'Invitado' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
     </div>
 
     <div *ngIf="!loading && boletas.length === 0" class="empty-state">
-      <p>No hay boletas compradas aún.</p>
-      <p style="margin-top: var(--spacing-md);">Crea tipos de boletas para tus eventos y comienza a vender!</p>
-      <div style="margin-top: var(--spacing-lg);">
-        <button class="btn-primary" (click)="openModalTipo()">
-          <span class="material-icons">add</span>
-          Crear Tipo de Boletas
-        </button>
-      </div>
+      <ng-container *ngIf="esVistaPendientes()">
+        <p>No hay boletas pendientes de uso con los filtros actuales.</p>
+        <p style="margin-top: var(--spacing-md);">Creá tipos de boleta y vendé entradas, o ajustá búsqueda y evento.</p>
+        <div style="margin-top: var(--spacing-lg);">
+          <button class="btn-primary" (click)="openModalTipo()">
+            <span class="material-icons">add</span>
+            Crear tipo de boletas
+          </button>
+        </div>
+      </ng-container>
+      <ng-container *ngIf="esVistaUsadas()">
+        <p>No hay boletas usadas con los filtros actuales.</p>
+        <p style="margin-top: var(--spacing-md);">Cuando un lector o admin valide un QR en puerta, aparecerá acá con evento, tipo de boleta, email, fecha de validación y quién validó.</p>
+      </ng-container>
     </div>
 
     <!-- Paginación -->
@@ -735,6 +839,10 @@
               <span class="info-label">Fecha de uso:</span>
               <span class="info-value">{{ boletaEncontrada.fecha_uso | dateFormat:'short' }}</span>
             </div>
+            <div class="info-item" *ngIf="boletaEncontrada.estado === 'usada'">
+              <span class="info-label">Validó:</span>
+              <span class="info-value">{{ nombreValidador(boletaEncontrada) }}</span>
+            </div>
           </div>
 
           <div *ngIf="puedeValidar(boletaEncontrada)" class="validation-actions">
@@ -804,6 +912,10 @@
                 <div class="detail-item" *ngIf="boleta.fecha_uso">
                   <span class="material-icons">check_circle</span>
                   <span>Usada: {{ boleta.fecha_uso | dateFormat:'short' }}</span>
+                </div>
+                <div class="detail-item" *ngIf="boleta.estado === 'usada'">
+                  <span class="material-icons">person</span>
+                  <span>Validó: {{ nombreValidador(boleta) }}</span>
                 </div>
               </div>
               <div *ngIf="boletaSeleccionada?.id === boleta.id" class="boleta-item-selected">

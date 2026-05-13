@@ -324,6 +324,8 @@ export class Perfil implements OnInit {
         return 'Organizador';
       case 1:
         return 'Cliente';
+      case 4:
+        return 'Lector';
       default:
         return 'Usuario';
     }

@@ -92,7 +92,9 @@ export class Layout implements OnInit, OnDestroy {
       { path: '/eventos', label: 'Eventos', icon: 'event' },
       { path: '/categorias', label: 'Categorías', icon: 'category' },
       { path: '/lugares', label: 'Lugares', icon: 'place' },
-      { path: '/boletas', label: 'Boletas', icon: 'confirmation_number' },
+      { path: '/boletas', label: 'Boletas sin usar', icon: 'confirmation_number' },
+      { path: '/boletas-usadas', label: 'Boletas usadas', icon: 'how_to_reg' },
+      { path: '/lectores-parametrizacion', label: 'Lectores', icon: 'qr_code_scanner' },
       { path: '/palcos', label: 'Palcos', icon: 'event_seat' },
       { path: '/ventas', label: 'Ventas', icon: 'attach_money' },
       { path: '/calificaciones', label: 'Calificaciones', icon: 'star' },
@@ -106,7 +108,9 @@ export class Layout implements OnInit, OnDestroy {
     this.menuItems = [
       { path: '/dashboard-organizador', label: 'Dashboard', icon: 'dashboard' },
       { path: '/eventos', label: 'Mis Eventos', icon: 'event' },
-      { path: '/boletas', label: 'Boletas', icon: 'confirmation_number' },
+      { path: '/boletas', label: 'Boletas sin usar', icon: 'confirmation_number' },
+      { path: '/boletas-usadas', label: 'Boletas usadas', icon: 'how_to_reg' },
+      { path: '/lectores-parametrizacion', label: 'Lectores', icon: 'qr_code_scanner' },
       { path: '/ventas', label: 'Mis Ventas', icon: 'attach_money' },
       { path: '/perfil', label: 'Mi Perfil', icon: 'person' },
     ];

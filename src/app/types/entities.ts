@@ -267,6 +267,9 @@ export interface BoletaComprada {
   titular_cliente_id?: number | null;
   /** Número legible del palco (si viene del join). */
   numero_palco?: number;
+  /** Quién validó la entrada (join desde usuarios). */
+  validado_por_usuario_id?: number | null;
+  validado_por?: { id: number; nombre?: string; apellido?: string; email?: string } | null;
   estado?: TipoEstadoBoleta;
   fecha_uso?: Date | string;
   fecha_creacion?: Date | string;
@@ -395,4 +398,18 @@ export interface CuponDescuento {
   activo: boolean;
   fecha_expiracion?: Date | string;
   fecha_creacion?: Date | string;
+}
+
+/**
+ * Permiso de escaneo: usuario con rol Lector + evento + tipo de boleta (el tipo debe ser del evento).
+ */
+export interface LectorEventoTipoBoleta {
+  id: number;
+  usuario_id: number;
+  evento_id: number;
+  tipo_boleta_id: number;
+  fecha_creacion?: Date | string;
+  usuarios?: Pick<Usuario, 'id' | 'nombre' | 'apellido' | 'email'>;
+  eventos?: Pick<Evento, 'id' | 'titulo'>;
+  tipos_boleta?: Pick<TipoBoleta, 'id' | 'nombre' | 'evento_id'>;
 }

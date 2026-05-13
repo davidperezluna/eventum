@@ -253,6 +253,146 @@
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
+.evento-card-toggle {
+  width: 100%;
+  padding: 1.5rem 2rem;
+  border: 0;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fdfdfd;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.evento-card-toggle:hover {
+  background: #f8fafc;
+}
+
+.evento-card-toggle--static,
+.evento-card-toggle--static:hover {
+  cursor: default;
+  background: #fff;
+}
+
+.evento-card.expanded .evento-card-toggle {
+  background: #fff;
+}
+
+.evento-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.evento-lugar {
+  margin: 0.65rem 0 0;
+}
+
+.evento-card-summary {
+  min-width: 130px;
+  text-align: right;
+}
+
+.evento-total-caption {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.evento-card-chevron {
+  margin-top: 0.5rem;
+  color: #94a3b8;
+  transition: transform 0.2s, color 0.2s;
+}
+
+.evento-card.expanded .evento-card-chevron {
+  color: var(--color-primary, #6366f1);
+  transform: rotate(180deg);
+}
+
+.evento-detalle-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.evento-detalle-card {
+  margin-bottom: 1rem;
+}
+
+.btn-back-eventos {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
+  color: #475569;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-back-eventos:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+.boletas-tabs {
+  display: inline-flex;
+  gap: 0.5rem;
+  padding: 0.35rem;
+  margin: 0 0 1rem;
+  max-width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.boletas-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #64748b;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.boletas-tab span {
+  min-width: 1.5rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 0.78rem;
+}
+
+.boletas-tab.active {
+  background: var(--color-primary, #6366f1);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(99, 102, 241, 0.22);
+}
+
+.boletas-tab.active span {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
 .compra-header {
   padding: 1.5rem 2rem;
   border-bottom: 1px solid #f1f5f9;
@@ -270,6 +410,7 @@
   color: #1e293b;
   margin: 0;
   margin-bottom: 0.25rem;
+  overflow-wrap: anywhere;
 }
 
 .compra-fecha {
@@ -280,17 +421,24 @@
 
 .compra-estados {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.75rem;
   margin-top: 0.75rem;
 }
 
 .badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.35rem 0.85rem;
   border-radius: 100px;
   font-size: 0.8rem;
   font-weight: 600;
   text-transform: capitalize;
   letter-spacing: 0.3px;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
 .badge-success {
@@ -336,6 +484,17 @@
 /* Boletas Grid within Card */
 .boletas-section {
   padding: 2rem;
+}
+
+.evento-boletas-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.tipo-boletas-section + .tipo-boletas-section {
+  padding-top: 2rem;
+  border-top: 1px solid #f1f5f9;
 }
 
 .boletas-section h4 {
@@ -408,6 +567,16 @@
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   color: #475569;
+}
+
+.boleta-compra-ref {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.boleta-compra-ref--cedida {
+  color: #15803d;
 }
 
 .boleta-precio {
@@ -1502,7 +1671,17 @@
 
 @media (max-width: 768px) {
   .mis-compras-page {
-    padding: 20px 10px;
+    padding: 0 0 2rem;
+  }
+
+  .compras-list,
+  .evento-detalle-page,
+  .filters-toolbar,
+  .filters-card {
+    width: 100%;
+    box-sizing: border-box;
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 
   .filters-row {
@@ -1514,7 +1693,100 @@
     gap: 1rem;
   }
 
+  .evento-card-toggle {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.35rem 1.5rem;
+    position: relative;
+  }
+
+  .evento-card-toggle:not(.evento-card-toggle--static) {
+    padding-right: 3.25rem;
+  }
+
+  .evento-info {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .evento-lugar {
+    font-size: 0.86rem;
+  }
+
+  .compra-estados {
+    gap: 0.45rem;
+  }
+
+  .badge {
+    padding: 0.34rem 0.65rem;
+    font-size: 0.72rem;
+    letter-spacing: 0;
+  }
+
   .compra-total {
     text-align: left;
+  }
+
+  .evento-card-summary {
+    width: 100%;
+    min-width: 0;
+    padding-top: 0.85rem;
+    border-top: 1px solid #f1f5f9;
+    text-align: left;
+  }
+
+  .evento-card-chevron {
+    position: absolute;
+    right: 1.35rem;
+    top: 1.35rem;
+    margin: 0;
+  }
+
+  .boletas-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    box-sizing: border-box;
+    gap: 0.25rem;
+    padding: 0.3rem;
+    border-radius: 1.35rem;
+  }
+
+  .boletas-tab {
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.7rem 0.45rem;
+    font-size: 0.78rem;
+    line-height: 1.1;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .boletas-tab span {
+    min-width: 1.25rem;
+    padding: 0.08rem 0.35rem;
+    font-size: 0.7rem;
+  }
+
+  .boletas-section {
+    padding: 1.25rem;
+  }
+
+  .boletas-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .boleta-card {
+    padding: 1.15rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .evento-detalle-page .evento-card-toggle--static {
+    align-items: center;
+  }
+
+  .eventos-list .evento-card-toggle {
+    align-items: center;
   }
 }

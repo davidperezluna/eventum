@@ -26,6 +26,41 @@ import QRCode from 'qrcode';
 import html2canvas from 'html2canvas';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
+interface BoletaConCompra {
+  compra: Compra;
+  boleta: BoletaComprada;
+  esCedida?: boolean;
+}
+
+interface TipoBoletasGrupo {
+  key: string;
+  nombre: string;
+  boletas: BoletaConCompra[];
+  totalBoletas: number;
+  totalDisponibles: number;
+  totalTrasladoSaliente: number;
+  totalUsadas: number;
+  totalSinUsar: number;
+  totalSinAsignar: number;
+}
+
+interface EventoBoletasGrupo {
+  key: string;
+  titulo: string;
+  fechaInicio?: Date | string;
+  fechaFin?: Date | string;
+  lugar?: any;
+  tipos: TipoBoletasGrupo[];
+  compras: Compra[];
+  totalCedidas: number;
+  totalBoletas: number;
+  totalDisponibles: number;
+  totalTrasladoSaliente: number;
+  totalUsadas: number;
+  totalSinUsar: number;
+  totalSinAsignar: number;
+}
+
 @Component({
   selector: 'app-mis-compras',
   imports: [CommonModule, RouterModule, FormsModule, DateFormatPipe],
@@ -38,10 +73,14 @@ export class MisCompras implements OnInit, OnDestroy {
   
   compras: Compra[] = [];
   comprasConBoletas: { compra: Compra; boletas: BoletaComprada[] }[] = [];
+  eventosConBoletas: EventoBoletasGrupo[] = [];
+  eventoExpandidoKey: string | null = null;
+  eventoDetalleKey: string | null = null;
+  tabBoletasDetalle: 'sin-usar' | 'usadas' | 'sin-asignar' = 'sin-usar';
   loading = false;
   total = 0;
   page = 1;
-  limit = 10;
+  limit = 1000;
   totalPages = 0;
 
   // Filtros
@@ -138,6 +177,8 @@ export class MisCompras implements OnInit, OnDestroy {
         console.error('Error cargando compras:', err);
         this.compras = [];
         this.comprasConBoletas = [];
+        this.eventosConBoletas = [];
+        this.eventoExpandidoKey = null;
         this.total = 0;
         this.totalPages = 0;
         this.loading = false;
@@ -152,6 +193,8 @@ export class MisCompras implements OnInit, OnDestroy {
   private syncVistaActividadDesdeUrl(url: string): void {
     const path = (url || '').split('?')[0];
     this.vistaActividad = path.endsWith('/mis-compras/actividad');
+    const detalleMatch = path.match(/\/mis-compras\/evento\/([^/]+)$/);
+    this.eventoDetalleKey = detalleMatch ? decodeURIComponent(detalleMatch[1]) : null;
     this.cdr.detectChanges();
   }
 
@@ -361,6 +404,8 @@ export class MisCompras implements OnInit, OnDestroy {
 
   async loadBoletasPorCompra() {
     this.comprasConBoletas = [];
+    this.eventosConBoletas = [];
+    this.eventoExpandidoKey = null;
     const uid = this.authService.getUsuarioId();
     if (!uid) {
       this.entradasCedidas = [];
@@ -397,6 +442,113 @@ export class MisCompras implements OnInit, OnDestroy {
       console.error('Error cargando entradas cedidas:', e);
       this.entradasCedidas = [];
     }
+
+    this.reconstruirEventosConBoletas();
+  }
+
+  private reconstruirEventosConBoletas(): void {
+    const eventosMap = new Map<string, EventoBoletasGrupo>();
+
+    const agregarBoleta = (compra: Compra, boleta: BoletaComprada, esCedida = false): void => {
+      const evento = this.eventoVistaBoleta(boleta, compra);
+      const eventoId = evento?.id ?? compra.evento_id ?? `compra-${compra.id}`;
+      const eventoKey = String(eventoId);
+      let grupoEvento = eventosMap.get(eventoKey);
+
+      if (!grupoEvento) {
+        grupoEvento = {
+          key: eventoKey,
+          titulo: evento?.titulo || compra.evento?.titulo || 'Evento',
+          fechaInicio: evento?.fecha_inicio || compra.evento?.fecha_inicio,
+          fechaFin: this.fechaFinEvento(evento),
+          lugar: evento?.lugar || compra.evento?.lugar,
+          tipos: [],
+          compras: [],
+          totalCedidas: 0,
+          totalBoletas: 0,
+          totalDisponibles: 0,
+          totalTrasladoSaliente: 0,
+          totalUsadas: 0,
+          totalSinUsar: 0,
+          totalSinAsignar: 0
+        };
+        eventosMap.set(eventoKey, grupoEvento);
+      }
+
+      if (!esCedida && !grupoEvento.compras.some((c) => c.id === compra.id)) {
+        grupoEvento.compras.push(compra);
+      }
+
+      if (esCedida) {
+        grupoEvento.totalCedidas += 1;
+      }
+
+      const tipoNombre = boleta.tipo_boleta_meta?.nombre || 'Boleta';
+      const tipoKey = `${boleta.tipo_boleta_id || 'sin-tipo'}-${tipoNombre}`;
+      let grupoTipo = grupoEvento.tipos.find((tipo) => tipo.key === tipoKey);
+
+      if (!grupoTipo) {
+        grupoTipo = {
+          key: tipoKey,
+          nombre: tipoNombre,
+          boletas: [],
+          totalBoletas: 0,
+          totalDisponibles: 0,
+          totalTrasladoSaliente: 0,
+          totalUsadas: 0,
+          totalSinUsar: 0,
+          totalSinAsignar: 0
+        };
+        grupoEvento.tipos.push(grupoTipo);
+      }
+
+      const estaEnTraslado = this.tieneTrasladoSalienteActivo(boleta.id);
+      const estaUsada = this.esBoletaUsada(boleta);
+      const estaAsignada = this.tieneAsistenteRegistrado(boleta);
+      grupoTipo.boletas.push({ compra, boleta, esCedida });
+      grupoTipo.totalBoletas += 1;
+      grupoEvento.totalBoletas += 1;
+      if (estaUsada) {
+        grupoTipo.totalUsadas += 1;
+        grupoEvento.totalUsadas += 1;
+      } else if (!estaAsignada) {
+        grupoTipo.totalSinAsignar += 1;
+        grupoEvento.totalSinAsignar += 1;
+      } else {
+        grupoTipo.totalSinUsar += 1;
+        grupoEvento.totalSinUsar += 1;
+      }
+
+      if (estaEnTraslado) {
+        grupoTipo.totalTrasladoSaliente += 1;
+        grupoEvento.totalTrasladoSaliente += 1;
+      } else {
+        grupoTipo.totalDisponibles += 1;
+        grupoEvento.totalDisponibles += 1;
+      }
+    };
+
+    for (const item of this.comprasConBoletas) {
+      for (const boleta of item.boletas) {
+        agregarBoleta(item.compra, boleta);
+      }
+    }
+
+    for (const boleta of this.entradasCedidas) {
+      agregarBoleta(this.compraVistaParaBoletaCedida(boleta), boleta, true);
+    }
+
+    this.eventosConBoletas = Array.from(eventosMap.values())
+      .map((grupo) => ({
+        ...grupo,
+        tipos: grupo.tipos.sort((a, b) => a.nombre.localeCompare(b.nombre))
+      }))
+      .sort((a, b) => {
+        const fechaA = a.fechaInicio ? new Date(a.fechaInicio).getTime() : 0;
+        const fechaB = b.fechaInicio ? new Date(b.fechaInicio).getTime() : 0;
+        if (fechaA !== fechaB) return fechaB - fechaA;
+        return a.titulo.localeCompare(b.titulo);
+      });
   }
 
   esTitularBoleta(b: BoletaComprada, compra: Compra): boolean {
@@ -429,6 +581,44 @@ export class MisCompras implements OnInit, OnDestroy {
 
   tituloColeccionBoletas(boletas: BoletaComprada[]): string {
     return boletas.some((b) => this.esBoletaTipoPalco(b)) ? 'Boletas y palcos' : 'Boletas';
+  }
+
+  toggleEventoBoletas(eventoKey: string): void {
+    this.eventoExpandidoKey = this.eventoExpandidoKey === eventoKey ? null : eventoKey;
+    this.cdr.detectChanges();
+  }
+
+  isEventoBoletasExpandido(eventoKey: string): boolean {
+    return this.eventoExpandidoKey === eventoKey;
+  }
+
+  abrirDetalleEventoBoletas(eventoKey: string): void {
+    this.router.navigate(['/mis-compras/evento', eventoKey]);
+  }
+
+  volverAMisCompras(): void {
+    this.router.navigate(['/mis-compras']);
+  }
+
+  eventoDetalleBoletas(): EventoBoletasGrupo | null {
+    if (!this.eventoDetalleKey) return null;
+    return this.eventosConBoletas.find((grupo) => grupo.key === this.eventoDetalleKey) || null;
+  }
+
+  tiposDetallePorTab(grupo: EventoBoletasGrupo | null): TipoBoletasGrupo[] {
+    if (!grupo) return [];
+    return grupo.tipos
+      .map((tipo) => ({
+        ...tipo,
+        boletas: tipo.boletas.filter((item) => {
+          const usada = this.esBoletaUsada(item.boleta);
+          const asignada = this.tieneAsistenteRegistrado(item.boleta);
+          if (this.tabBoletasDetalle === 'usadas') return usada;
+          if (this.tabBoletasDetalle === 'sin-asignar') return !usada && !asignada;
+          return !usada && asignada;
+        })
+      }))
+      .filter((tipo) => tipo.boletas.length > 0);
   }
 
   // Algunos objetos evento enriquecidos pueden traer `fecha_fin` aunque el tipo no lo declare.
@@ -719,7 +909,7 @@ export class MisCompras implements OnInit, OnDestroy {
 
   tieneContenidoMisBoletas(): boolean {
     return (
-      this.comprasConBoletas.length > 0 ||
+      this.eventosConBoletas.length > 0 ||
       this.entradasCedidas.length > 0 ||
       this.trasladosPendientesRecibir.length > 0
     );

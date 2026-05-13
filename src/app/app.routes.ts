@@ -20,6 +20,7 @@ import { Reportes } from './pages/reportes/reportes';
 import { ReporteVentasCompletadas } from './pages/reporte-ventas-completadas/reporte-ventas-completadas';
 import { DashboardEventos } from './pages/dashboard-eventos/dashboard-eventos';
 import { Palcos } from './pages/palcos/palcos';
+import { LectoresParametrizacion } from './pages/lectores-parametrizacion/lectores-parametrizacion';
 import { Login } from './pages/login/login';
 import { LoginAdmin } from './pages/login-admin/login-admin';
 import { Register } from './pages/register/register';
@@ -69,11 +70,14 @@ const appRoutes: Routes = [
       { path: 'usuarios', component: Usuarios },
       { path: 'eventos', component: Eventos },
       { path: 'mis-compras/actividad', component: MisCompras }, // Cliente: traslados / actividad
+      { path: 'mis-compras/evento/:id', component: MisCompras }, // Cliente: detalle de boletas por evento
       { path: 'mis-compras', component: MisCompras }, // Cliente: ver compras
       { path: 'pago-resultado', component: PagoResultado }, // Resultado de pago Wompi
       { path: 'categorias', component: Categorias },
       { path: 'lugares', component: Lugares },
-      { path: 'boletas', component: Boletas },
+      { path: 'boletas', component: Boletas, data: { vistaBoletas: 'pendientes' } },
+      { path: 'boletas-usadas', component: Boletas, data: { vistaBoletas: 'usadas' } },
+      { path: 'lectores-parametrizacion', component: LectoresParametrizacion },
       { path: 'palcos', component: Palcos },
       { path: 'ventas', component: Ventas },
       { path: 'calificaciones', component: Calificaciones },

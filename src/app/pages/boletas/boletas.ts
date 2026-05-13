@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil, debounceTime, switchMap, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
 import { BoletasService } from '../../services/boletas.service';
 import { EventosService } from '../../services/eventos.service';
 import { TimezoneService } from '../../services/timezone.service';
@@ -22,6 +23,9 @@ import { DateFormatPipe } from '../../pipes/date-format.pipe';
 export class Boletas implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private loadBoletasSubject = new Subject<void>();
+
+  /** Ruta: pendientes = sin usar; usadas = historial de validaciones */
+  vistaBoletas: 'pendientes' | 'usadas' = 'pendientes';
 
   boletas: BoletaComprada[] = [];
   tiposBoleta: TipoBoleta[] = [];
@@ -78,10 +82,26 @@ export class Boletas implements OnInit, OnDestroy {
     private alertService: AlertService,
     private storageService: StorageService,
     private authService: AuthService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit() {
+    const inicial = this.route.snapshot.data['vistaBoletas'];
+    this.vistaBoletas = inicial === 'usadas' ? 'usadas' : 'pendientes';
+    this.applyVistaFiltroEstado();
+
+    this.route.data.pipe(takeUntil(this.destroy$)).subscribe((data) => {
+      const next = data['vistaBoletas'] === 'usadas' ? 'usadas' : 'pendientes';
+      if (this.vistaBoletas !== next) {
+        this.vistaBoletas = next;
+        this.applyVistaFiltroEstado();
+        this.page = 1;
+        this.showTiposSection = false;
+        this.loadBoletas();
+      }
+    });
+
     this.loadEventos();
     this.loadAllTiposBoleta();
     
@@ -115,6 +135,23 @@ export class Boletas implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private applyVistaFiltroEstado(): void {
+    this.estadoFiltro =
+      this.vistaBoletas === 'usadas' ? TipoEstadoBoleta.USADA : TipoEstadoBoleta.PENDIENTE;
+  }
+
+  esVistaPendientes(): boolean {
+    return this.vistaBoletas === 'pendientes';
+  }
+
+  esVistaUsadas(): boolean {
+    return this.vistaBoletas === 'usadas';
+  }
+
+  nombreTipoBoletaLabel(boleta: BoletaComprada): string {
+    return boleta.tipo_boleta_meta?.nombre || '—';
   }
 
   onEventoFiltroChange() {
@@ -183,9 +220,9 @@ export class Boletas implements OnInit, OnDestroy {
       limit: this.limit,
     };
 
-    if (this.estadoFiltro) {
-      filters.estado = this.estadoFiltro;
-    }
+    filters.estado =
+      this.vistaBoletas === 'usadas' ? TipoEstadoBoleta.USADA : TipoEstadoBoleta.PENDIENTE;
+
     if (this.eventoFiltro) {
       filters.evento_id = this.eventoFiltro;
     }
@@ -225,7 +262,6 @@ export class Boletas implements OnInit, OnDestroy {
   }
 
   limpiarFiltros() {
-    this.estadoFiltro = null;
     this.eventoFiltro = null;
     this.tipoBoletaFiltro = null;
     this.searchFiltro = '';
@@ -235,6 +271,7 @@ export class Boletas implements OnInit, OnDestroy {
     this.telefonoFiltro = '';
     this.fechaDesdeFiltro = '';
     this.fechaHastaFiltro = '';
+    this.applyVistaFiltroEstado();
     this.loadBoletas();
   }
 
@@ -698,8 +735,19 @@ export class Boletas implements OnInit, OnDestroy {
     }
   }
 
+  nombreValidador(boleta: BoletaComprada | null | undefined): string {
+    if (!boleta) return '—';
+    const v = boleta.validado_por;
+    if (!v) {
+      return boleta.validado_por_usuario_id != null ? `Usuario #${boleta.validado_por_usuario_id}` : '—';
+    }
+    const nombre = [v.nombre, v.apellido].filter(Boolean).join(' ').trim();
+    if (nombre) return nombre;
+    if (v.email) return v.email;
+    return `Usuario #${v.id}`;
+  }
+
   puedeValidar(boleta: BoletaComprada): boolean {
-    // La boleta debe estar pendiente Y el pago debe estar completado
     const estadoPago = boleta.estado_pago || boleta.compra?.estado_pago;
     return boleta.estado === 'pendiente' && estadoPago === 'completado';
   }

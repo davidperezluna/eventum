@@ -24,7 +24,9 @@ export interface RegisterData {
 export enum RolesPermitidos {
   ADMINISTRADOR = 3,
   ORGANIZADOR = 2,
-  CLIENTE = 1 // Asumiendo que cliente es id 1
+  CLIENTE = 1, // Asumiendo que cliente es id 1
+  /** Rol para escaneo QR; no accede al panel web (login-admin / Google panel). */
+  LECTOR = 4,
 }
 
 // Tipos para callbacks

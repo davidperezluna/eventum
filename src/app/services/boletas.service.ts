@@ -5,6 +5,7 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { TimezoneService } from './timezone.service';
+import { AuthService } from './auth.service';
 import { BoletaComprada, TipoBoleta, BoletaFilters, PaginatedResponse, Palco, EstadoPalco } from '../types';
 
 @Injectable({
@@ -13,11 +14,12 @@ import { BoletaComprada, TipoBoleta, BoletaFilters, PaginatedResponse, Palco, Es
 export class BoletasService {
   /** Join estándar para listados y búsqueda de boletas (incluye meta del tipo para palcos). */
   private readonly selectBoletaConRelaciones =
-    '*, palcos(numero), compras(estado_pago, estado_compra, evento_id, cliente_id, eventos(id, titulo, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais))), tipos_boleta(evento_id, nombre, personas_por_unidad, es_palco, eventos(id, titulo, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais)))';
+    '*, validado_por:usuarios!boletas_compradas_validado_por_usuario_id_fkey(id, nombre, apellido, email), palcos(numero), compras(estado_pago, estado_compra, evento_id, cliente_id, eventos(id, titulo, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais))), tipos_boleta(evento_id, nombre, personas_por_unidad, es_palco, eventos(id, titulo, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais)))';
 
   constructor(
     private supabase: SupabaseService,
-    private timezoneService: TimezoneService
+    private timezoneService: TimezoneService,
+    private authService: AuthService
   ) {}
 
   /**
@@ -468,12 +470,18 @@ export class BoletasService {
    */
   async validarBoleta(boletaId: number): Promise<BoletaComprada> {
     try {
+      const validadorId = this.authService.getUsuarioId();
+      const update: Record<string, unknown> = {
+        estado: 'usada',
+        fecha_uso: this.timezoneService.getCurrentDateISO(),
+      };
+      if (validadorId != null) {
+        update['validado_por_usuario_id'] = validadorId;
+      }
+
       const response = await this.supabase
         .from('boletas_compradas')
-        .update({ 
-          estado: 'usada',
-          fecha_uso: this.timezoneService.getCurrentDateISO()
-        })
+        .update(update)
         .eq('id', boletaId)
         .select()
         .single();
@@ -606,6 +614,11 @@ export class BoletasService {
       if (pRow && typeof pRow.numero === 'number') {
         boletaNormalizada.numero_palco = pRow.numero;
       }
+    }
+
+    if (boleta.validado_por != null) {
+      const vp = Array.isArray(boleta.validado_por) ? boleta.validado_por[0] : boleta.validado_por;
+      boletaNormalizada.validado_por = vp ?? null;
     }
     
     // Limpiar los objetos del join (ya los tenemos normalizados)
