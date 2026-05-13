@@ -4,21 +4,24 @@
 
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
+import { TimezoneService } from './timezone.service';
 import { DashboardStats } from '../types';
+import { agregarFinanzasDesdeComprasCompletadas } from '../utils/wompi-finanzas';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DashboardOrganizadorService {
   constructor(
-    private supabase: SupabaseService
+    private supabase: SupabaseService,
+    private timezoneService: TimezoneService
   ) {}
 
   /**
    * Obtiene las estadísticas del dashboard para un organizador específico
    */
   async getStats(organizadorId: number): Promise<DashboardStats> {
-    const now = new Date().toISOString();
+    const now = this.timezoneService.getCurrentDateISO();
 
     // Función helper para manejar errores
     const safeExecute = async <T>(fn: () => Promise<T>, defaultValue: T): Promise<T> => {
@@ -30,21 +33,30 @@ export class DashboardOrganizadorService {
       }
     };
 
-    // Eventos activos del organizador
+    // Eventos activos del organizador (misma regla que dashboard admin)
     const eventosActivos = safeExecute(async () => {
-      const response = await this.supabase
-        .from('eventos')
-        .select('*', { count: 'exact' })
-        .eq('organizador_id', organizadorId)
-        .eq('activo', true)
-        .eq('estado', 'publicado')
-        .gte('fecha_fin', now);
-      
-      if (response.error) {
-        console.error('Error en eventos activos:', response.error);
+      const base = () =>
+        this.supabase
+          .from('eventos')
+          .select('id', { count: 'exact', head: true })
+          .eq('organizador_id', organizadorId)
+          .eq('activo', true)
+          .eq('estado', 'publicado');
+
+      const [sinFechaFin, conFechaFinVigente] = await Promise.all([
+        base().is('fecha_fin', null),
+        base().gte('fecha_fin', now)
+      ]);
+
+      if (sinFechaFin.error) {
+        console.error('Error en eventos activos (sin fecha_fin):', sinFechaFin.error);
         return 0;
       }
-      return response.count || 0;
+      if (conFechaFinVigente.error) {
+        console.error('Error en eventos activos (fecha_fin vigente):', conFechaFinVigente.error);
+        return 0;
+      }
+      return (sinFechaFin.count ?? 0) + (conFechaFinVigente.count ?? 0);
     }, 0);
 
     // Boletas vendidas de eventos del organizador (solo con pago completado)
@@ -80,23 +92,65 @@ export class DashboardOrganizadorService {
       }
     }, 0);
 
-    // Ingresos totales del organizador
-    const ingresosTotales = safeExecute(async () => {
+    // Ingresos, servicio y estimación Wompi (misma lógica que dashboard admin)
+    const ingresosYServicioTotales = safeExecute(async () => {
       const response = await this.supabase
         .from('compras')
-        .select('total, evento_id, eventos!inner(organizador_id)')
+        .select('total, valor_servicio, porcentaje_servicio, evento_id, eventos!inner(organizador_id)')
         .eq('estado_pago', 'completado')
         .eq('eventos.organizador_id', organizadorId);
-      
+
       if (response.error) {
-        console.error('Error en ingresos totales:', response.error);
-        return 0;
+        console.error('Error en ingresos/agregados financieros:', response.error);
+        return {
+          ingresos: 0,
+          valorServicioTotal: 0,
+          porcentajeServicioPromedio: 0,
+          wompiTotalEstimado: 0,
+          wompiVentasTotal: 0,
+          wompiServicioTotal: 0,
+          netoVentasPostWompiTotal: 0,
+          netoServicioPostWompiTotal: 0,
+          ingresosVentasBrutoTotal: 0,
+        };
       }
       if (response.data && Array.isArray(response.data)) {
-        return (response.data as any[]).reduce((sum: number, compra: any) => sum + Number(compra.total || 0), 0);
+        const filas = response.data as any[];
+        const a = agregarFinanzasDesdeComprasCompletadas(filas);
+        return {
+          ingresos: a.ingresos,
+          valorServicioTotal: a.valorServicioTotal,
+          porcentajeServicioPromedio: a.porcentajeServicioPromedio,
+          wompiTotalEstimado: a.wompi_total_estimado,
+          wompiVentasTotal: a.wompi_ventas_total,
+          wompiServicioTotal: a.wompi_servicio_total,
+          netoVentasPostWompiTotal: a.neto_ventas_post_wompi_total,
+          netoServicioPostWompiTotal: a.neto_servicio_post_wompi_total,
+          ingresosVentasBrutoTotal: a.ingresos_ventas_bruto_total,
+        };
       }
-      return 0;
-    }, 0);
+      return {
+        ingresos: 0,
+        valorServicioTotal: 0,
+        porcentajeServicioPromedio: 0,
+        wompiTotalEstimado: 0,
+        wompiVentasTotal: 0,
+        wompiServicioTotal: 0,
+        netoVentasPostWompiTotal: 0,
+        netoServicioPostWompiTotal: 0,
+        ingresosVentasBrutoTotal: 0,
+      };
+    }, {
+      ingresos: 0,
+      valorServicioTotal: 0,
+      porcentajeServicioPromedio: 0,
+      wompiTotalEstimado: 0,
+      wompiVentasTotal: 0,
+      wompiServicioTotal: 0,
+      netoVentasPostWompiTotal: 0,
+      netoServicioPostWompiTotal: 0,
+      ingresosVentasBrutoTotal: 0,
+    });
 
     // Clientes únicos que compraron eventos del organizador (solo con pago completado)
     const clientes = safeExecute(async () => {
@@ -301,7 +355,7 @@ export class DashboardOrganizadorService {
     const [
       eventos_activos,
       boletas_vendidas,
-      ingresos_totales,
+      ingresos_agg,
       clientes_count,
       ventas_recientes,
       eventos_proximos,
@@ -313,7 +367,7 @@ export class DashboardOrganizadorService {
     ] = await Promise.all([
       eventosActivos,
       boletasVendidas,
-      ingresosTotales,
+      ingresosYServicioTotales,
       clientes,
       ventasRecientes,
       eventosProximos,
@@ -327,15 +381,24 @@ export class DashboardOrganizadorService {
     return {
       eventos_activos,
       boletas_vendidas,
-      ingresos_totales,
+      ingresos_totales: ingresos_agg.ingresos,
       clientes: clientes_count,
       ventas_recientes: ventas_recientes as any[],
       eventos_proximos: eventos_proximos as any[],
       eventos_totales,
-      categorias_activas: 0, // No aplica para organizador
-      lugares_activos: 0, // No aplica para organizador
+      categorias_activas: 0,
+      lugares_activos: 0,
       ingresos_mes_actual,
       ingresos_mes_anterior,
+      porcentaje_servicio_promedio: ingresos_agg.porcentajeServicioPromedio,
+      valor_servicio_total: ingresos_agg.valorServicioTotal,
+      ingresos_ventas_bruto_total: ingresos_agg.ingresosVentasBrutoTotal,
+      wompi_total_estimado: ingresos_agg.wompiTotalEstimado,
+      wompi_ventas_total: ingresos_agg.wompiVentasTotal,
+      wompi_servicio_total: ingresos_agg.wompiServicioTotal,
+      neto_ventas_post_wompi_total: ingresos_agg.netoVentasPostWompiTotal,
+      neto_servicio_post_wompi_total: ingresos_agg.netoServicioPostWompiTotal,
+      neto_total_post_wompi_total: ingresos_agg.ingresos - ingresos_agg.wompiTotalEstimado,
       boletas_por_estado: boletas_por_estado as any[],
       top_eventos: top_eventos as any[]
     };

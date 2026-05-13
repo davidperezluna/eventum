@@ -10,7 +10,7 @@ import { DateFormatPipe } from '../../pipes/date-format.pipe';
   selector: 'app-dashboard-organizador',
   imports: [CommonModule, RouterModule, DateFormatPipe],
   templateUrl: './dashboard-organizador.html',
-  styleUrl: './dashboard-organizador.css',
+  styleUrls: ['./dashboard-organizador.css', '../finanzas-desglose-panel.css'],
 })
 export class DashboardOrganizador implements OnInit {
   constructor(
@@ -31,6 +31,15 @@ export class DashboardOrganizador implements OnInit {
     lugares_activos: 0,
     ingresos_mes_actual: 0,
     ingresos_mes_anterior: 0,
+    porcentaje_servicio_promedio: 0,
+    valor_servicio_total: 0,
+    ingresos_ventas_bruto_total: 0,
+    wompi_total_estimado: 0,
+    wompi_ventas_total: 0,
+    wompi_servicio_total: 0,
+    neto_ventas_post_wompi_total: 0,
+    neto_servicio_post_wompi_total: 0,
+    neto_total_post_wompi_total: 0,
     boletas_por_estado: [],
     top_eventos: []
   };

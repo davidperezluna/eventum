@@ -1,0 +1,192 @@
+/* Panel de desglose: valor cliente (empresario) vs valor servicio (Eventum) */
+
+.finanzas-desglose {
+  margin-bottom: var(--spacing-lg);
+}
+
+.finanzas-desglose__nota {
+  margin: 0 0 var(--spacing-md) 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.finanzas-desglose__grupos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-lg);
+  align-items: stretch;
+}
+
+@media (max-width: 900px) {
+  .finanzas-desglose__grupos {
+    grid-template-columns: 1fr;
+  }
+}
+
+.finanzas-grupo {
+  background: var(--color-surface);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  border-top: 4px solid var(--finanzas-accent, var(--color-border-light));
+  min-width: 0;
+}
+
+.finanzas-grupo--cliente {
+  --finanzas-accent: #1565c0;
+}
+
+.finanzas-grupo--platform {
+  --finanzas-accent: #6a1b9a;
+}
+
+.finanzas-grupo__head {
+  margin-bottom: var(--spacing-md);
+}
+
+.finanzas-grupo__head h3 {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.finanzas-grupo__sub {
+  margin: var(--spacing-xs) 0 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.35;
+}
+
+.finanzas-grupo__cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-sm);
+  margin: 0;
+}
+
+/* Tres métricas en fila dentro del grupo (sin “tarjetas dentro de tarjeta”) */
+.finanzas-grupo__cards.stats-grid-secondary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 0;
+  gap: var(--spacing-md);
+}
+
+/* Métrica plana: icono → valor → etiqueta (sin fondo ni sombra propios) */
+.finanzas-grupo__metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding: var(--spacing-sm) var(--spacing-xs);
+  min-width: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.finanzas-grupo__metric .material-icons {
+  font-size: 1.75rem;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.finanzas-grupo__metric > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.finanzas-grupo__metric .stat-mini-value {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: 1.2;
+}
+
+.finanzas-grupo__metric .stat-mini-label {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.25;
+}
+
+/* Totales globales debajo de los grupos */
+.finanzas-desglose__totales {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.finanzas-desglose__totales .stat-card-mini {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  background: var(--color-surface);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-light);
+  min-width: 0;
+}
+
+.finanzas-desglose__totales .stat-card-mini .material-icons {
+  font-size: 2rem;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.finanzas-desglose__totales .stat-mini-value {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: 1.2;
+}
+
+.finanzas-desglose__totales .stat-mini-label {
+  margin: 2px 0 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.25;
+}
+
+@media (max-width: 768px) {
+  .finanzas-desglose {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .finanzas-grupo {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .finanzas-grupo__cards.stats-grid-secondary {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+  }
+}
+
+@media (max-width: 480px) {
+  .finanzas-desglose__grupos {
+    gap: var(--spacing-md);
+  }
+
+  .finanzas-grupo__sub {
+    font-size: var(--font-size-xs);
+  }
+
+  .finanzas-grupo__head h3 {
+    font-size: var(--font-size-sm);
+    line-height: 1.3;
+  }
+}

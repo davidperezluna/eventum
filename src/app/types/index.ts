@@ -105,6 +105,16 @@ export interface DashboardStats {
   ingresos_mes_anterior?: number;
   porcentaje_servicio_promedio?: number;
   valor_servicio_total?: number;
+  /** Suma de max(0, total − valor_servicio) por compra completada (parte boletas/ventas). */
+  ingresos_ventas_bruto_total?: number;
+  /** Estimación comisión Wompi (no extracto oficial). */
+  wompi_total_estimado?: number;
+  wompi_ventas_total?: number;
+  wompi_servicio_total?: number;
+  neto_ventas_post_wompi_total?: number;
+  neto_servicio_post_wompi_total?: number;
+  /** Después de Wompi: ∑(T − W) = ingresos_totales − wompi_total_estimado (salvo redondeos). */
+  neto_total_post_wompi_total?: number;
   boletas_por_estado?: { estado: string; cantidad: number }[];
   eventos_por_categoria?: { categoria: string; cantidad: number }[];
   top_eventos?: any[];

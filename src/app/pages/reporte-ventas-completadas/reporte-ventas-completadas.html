@@ -5,7 +5,7 @@
         <span class="material-icons">receipt_long</span>
         Ventas completadas (por evento)
       </h1>
-      <p>Reporte detallado de compras con estado de pago <strong>completado</strong>.</p>
+      <p>Reporte detallado de compras con estado de pago <strong>completado</strong>. La comisión <strong>Wompi</strong> es una <strong>estimación</strong> (misma fórmula que en dashboard); no sustituye el extracto oficial de Wompi.</p>
     </div>
     <div class="header-actions">
       <button class="btn-secondary" [routerLink]="['/reportes']">
@@ -43,12 +43,13 @@
   <div *ngIf="loading" class="loading-state">Generando reporte...</div>
 
   <!-- Resumen -->
-  <div *ngIf="!loading && ventas.length > 0" class="content-card">
+  <div *ngIf="!loading && ventas.length > 0" class="content-card content-card--resumen-ventas">
     <h2>
       <span class="material-icons">insights</span>
       Resumen
     </h2>
-    <div class="stats-grid">
+
+    <div class="stats-grid stats-grid--resumen-kpis">
       <div class="stat-card">
         <span class="material-icons stat-icon">shopping_cart</span>
         <div class="stat-content">
@@ -90,18 +91,88 @@
           <p class="stat-value">{{ (resumen.porcentaje_servicio_promedio || 0) | number:'1.0-2' }}%</p>
         </div>
       </div>
-      <div class="stat-card">
-        <span class="material-icons stat-icon">payments</span>
-        <div class="stat-content">
-          <h3>Descuento Wompi</h3>
-          <p class="stat-value">{{ excelExportService.formatCurrency(resumen.wompi) }}</p>
-        </div>
+    </div>
+
+    <div class="finanzas-desglose">
+      <p class="finanzas-desglose__nota">
+        Desglose de la comisión Wompi <strong>estimada</strong> y netos por rubro. Misma lógica que el dashboard.
+      </p>
+      <div class="finanzas-desglose__grupos">
+        <section class="finanzas-grupo finanzas-grupo--cliente" aria-labelledby="rv-fin-cliente">
+          <div class="finanzas-grupo__head">
+            <h3 id="rv-fin-cliente">Valor cliente (empresario)</h3>
+            <p class="finanzas-grupo__sub">Ventas de boletas y neto del organizador tras Wompi sobre ese rubro.</p>
+          </div>
+          <div class="finanzas-grupo__cards stats-grid-secondary">
+            <div class="finanzas-grupo__metric" title="∑ max(0, total − valor servicio)">
+              <span class="material-icons">shopping_bag</span>
+              <div>
+                <p class="stat-mini-value">{{ excelExportService.formatCurrency(resumen.ingresos_ventas) }}</p>
+                <p class="stat-mini-label">Ingresos ventas (bruto)</p>
+              </div>
+            </div>
+            <div class="finanzas-grupo__metric">
+              <span class="material-icons">sell</span>
+              <div>
+                <p class="stat-mini-value">{{ excelExportService.formatCurrency(resumen.wompi_ventas) }}</p>
+                <p class="stat-mini-label">Wompi ventas</p>
+              </div>
+            </div>
+            <div class="finanzas-grupo__metric">
+              <span class="material-icons">inventory_2</span>
+              <div>
+                <p class="stat-mini-value">{{ excelExportService.formatCurrency(resumen.neto_ventas_post_wompi) }}</p>
+                <p class="stat-mini-label">Neto ventas post-Wompi</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="finanzas-grupo finanzas-grupo--platform" aria-labelledby="rv-fin-eventum">
+          <div class="finanzas-grupo__head">
+            <h3 id="rv-fin-eventum">Valor servicio (Eventum)</h3>
+            <p class="finanzas-grupo__sub">Comisión de plataforma: cargo por servicio, Wompi asociado y neto del servicio.</p>
+          </div>
+          <div class="finanzas-grupo__cards stats-grid-secondary">
+            <div class="finanzas-grupo__metric">
+              <span class="material-icons">request_quote</span>
+              <div>
+                <p class="stat-mini-value">{{ excelExportService.formatCurrency(resumen.valor_servicio) }}</p>
+                <p class="stat-mini-label">Valor servicio (bruto)</p>
+              </div>
+            </div>
+            <div class="finanzas-grupo__metric">
+              <span class="material-icons">handyman</span>
+              <div>
+                <p class="stat-mini-value">{{ excelExportService.formatCurrency(resumen.wompi_servicio) }}</p>
+                <p class="stat-mini-label">Wompi servicio</p>
+              </div>
+            </div>
+            <div class="finanzas-grupo__metric">
+              <span class="material-icons">build_circle</span>
+              <div>
+                <p class="stat-mini-value">{{ excelExportService.formatCurrency(resumen.neto_servicio_post_wompi) }}</p>
+                <p class="stat-mini-label">Neto servicio post-Wompi</p>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
-      <div class="stat-card">
-        <span class="material-icons stat-icon">account_balance_wallet</span>
-        <div class="stat-content">
-          <h3>Neto cliente</h3>
-          <p class="stat-value">{{ excelExportService.formatCurrency(resumen.neto_cliente) }}</p>
+
+      <div class="finanzas-desglose__totales">
+        <div class="stat-card-mini" title="Comisión total estimada (base + IVA)">
+          <span class="material-icons">payments</span>
+          <div>
+            <p class="stat-mini-value">{{ excelExportService.formatCurrency(resumen.wompi) }}</p>
+            <p class="stat-mini-label">Desc. Wompi (total, estim.)</p>
+          </div>
+        </div>
+        <div class="stat-card-mini" title="Total cobrado − Wompi total estimado">
+          <span class="material-icons">account_balance</span>
+          <div>
+            <p class="stat-mini-value">{{ excelExportService.formatCurrency(resumen.neto_total_post_wompi) }}</p>
+            <p class="stat-mini-label">Neto total post-Wompi</p>
+          </div>
         </div>
       </div>
     </div>
@@ -136,8 +207,12 @@
             <th>% desc.</th>
             <th>% serv.</th>
             <th>Valor servicio</th>
-            <th>Desc. Wompi</th>
-            <th>Neto cliente</th>
+            <th title="Comisión total estimada">Desc. Wompi</th>
+            <th title="Estimación proporcional ventas">Wompi ventas</th>
+            <th title="Estimación proporcional servicio">Wompi servicio</th>
+            <th>Neto ventas post-Wompi</th>
+            <th>Neto serv. post-Wompi</th>
+            <th title="Total − Wompi total">Neto total post-Wompi</th>
             <th>Total</th>
           </tr>
         </thead>
@@ -156,7 +231,11 @@
             <td>{{ (v.porcentaje_servicio || 0) | number:'1.0-2' }}%</td>
             <td>{{ excelExportService.formatCurrency(v.valor_servicio || 0) }}</td>
             <td>{{ excelExportService.formatCurrency(v.wompi_descuento || 0) }}</td>
-            <td>{{ excelExportService.formatCurrency(v.neto_cliente || 0) }}</td>
+            <td>{{ excelExportService.formatCurrency(v.wompi_ventas || 0) }}</td>
+            <td>{{ excelExportService.formatCurrency(v.wompi_servicio || 0) }}</td>
+            <td>{{ excelExportService.formatCurrency(v.neto_ventas_post_wompi || 0) }}</td>
+            <td>{{ excelExportService.formatCurrency(v.neto_servicio_post_wompi || 0) }}</td>
+            <td>{{ excelExportService.formatCurrency(v.neto_total_post_wompi || 0) }}</td>
             <td>{{ excelExportService.formatCurrency(v.total) }}</td>
           </tr>
         </tbody>

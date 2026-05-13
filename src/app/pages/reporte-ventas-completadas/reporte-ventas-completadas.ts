@@ -8,19 +8,24 @@ import { EventosService } from '../../services/eventos.service';
 import { ReportesService, VentaCompletadaDetalle } from '../../services/reportes.service';
 import { ExcelExportService } from '../../services/excel-export.service';
 import { Evento } from '../../types';
+import { repartoWompiPorCompra } from '../../utils/wompi-finanzas';
 
 type VentaRow = VentaCompletadaDetalle & {
   valor_boleta: number;
   descuento_real_porcentaje: number;
-  wompi_descuento: number; // comisión total (incluye IVA)
-  neto_cliente: number; // total - wompi_descuento
+  wompi_descuento: number;
+  wompi_ventas: number;
+  wompi_servicio: number;
+  neto_ventas_post_wompi: number;
+  neto_servicio_post_wompi: number;
+  neto_total_post_wompi: number;
 };
 
 @Component({
   selector: 'app-reporte-ventas-completadas',
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './reporte-ventas-completadas.html',
-  styleUrl: './reporte-ventas-completadas.css',
+  styleUrls: ['./reporte-ventas-completadas.css', '../finanzas-desglose-panel.css'],
 })
 export class ReporteVentasCompletadas implements OnInit, OnDestroy {
   esAdministrador = false;
@@ -42,7 +47,11 @@ export class ReporteVentasCompletadas implements OnInit, OnDestroy {
     porcentaje_servicio_promedio: 0,
     valor_servicio: 0,
     wompi: 0,
-    neto_cliente: 0,
+    wompi_ventas: 0,
+    wompi_servicio: 0,
+    neto_ventas_post_wompi: 0,
+    neto_servicio_post_wompi: 0,
+    neto_total_post_wompi: 0,
   };
 
   private unsubscribeAuth: (() => void) | null = null;
@@ -127,15 +136,12 @@ export class ReporteVentasCompletadas implements OnInit, OnDestroy {
       porcentaje_servicio_promedio: 0,
       valor_servicio: 0,
       wompi: 0,
-      neto_cliente: 0
+      wompi_ventas: 0,
+      wompi_servicio: 0,
+      neto_ventas_post_wompi: 0,
+      neto_servicio_post_wompi: 0,
+      neto_total_post_wompi: 0,
     };
-  }
-
-  private calcularWompiDescuento(total: number): number {
-    const bruto = Number(total || 0);
-    const comisionBase = bruto * 0.0265 + 700;
-    const iva = comisionBase * 0.19;
-    return comisionBase + iva;
   }
 
   async generarReporte() {
@@ -156,7 +162,11 @@ export class ReporteVentasCompletadas implements OnInit, OnDestroy {
       porcentaje_servicio_promedio: 0,
       valor_servicio: 0,
       wompi: 0,
-      neto_cliente: 0
+      wompi_ventas: 0,
+      wompi_servicio: 0,
+      neto_ventas_post_wompi: 0,
+      neto_servicio_post_wompi: 0,
+      neto_total_post_wompi: 0,
     };
     this.cdr.detectChanges();
 
@@ -167,16 +177,20 @@ export class ReporteVentasCompletadas implements OnInit, OnDestroy {
         const subtotal = Number(v.subtotal || 0);
         const descuentoCupon = Number(v.descuento_total || 0);
         const total = Number(v.total || 0);
+        const vs = Number(v.valor_servicio || 0);
         const valor_boleta = boletas > 0 ? subtotal / boletas : 0;
         const descuento_real_porcentaje = subtotal > 0 ? (descuentoCupon / subtotal) * 100 : 0;
-        const wompi_descuento = this.calcularWompiDescuento(total);
-        const neto_cliente = total - wompi_descuento;
+        const r = repartoWompiPorCompra(total, vs);
         return {
           ...v,
           valor_boleta,
           descuento_real_porcentaje,
-          wompi_descuento,
-          neto_cliente
+          wompi_descuento: r.wompi_total,
+          wompi_ventas: r.wompi_ventas,
+          wompi_servicio: r.wompi_servicio,
+          neto_ventas_post_wompi: r.neto_ventas_post_wompi,
+          neto_servicio_post_wompi: r.neto_servicio_post_wompi,
+          neto_total_post_wompi: r.neto_total_post_wompi,
         } as VentaRow;
       });
 
@@ -193,7 +207,11 @@ export class ReporteVentasCompletadas implements OnInit, OnDestroy {
         ? this.ventas.reduce((sum, v) => sum + Number(v.porcentaje_servicio || 0), 0) / this.ventas.length
         : 0;
       this.resumen.wompi = this.ventas.reduce((sum, v) => sum + Number(v.wompi_descuento || 0), 0);
-      this.resumen.neto_cliente = this.ventas.reduce((sum, v) => sum + Number(v.neto_cliente || 0), 0);
+      this.resumen.wompi_ventas = this.ventas.reduce((sum, v) => sum + Number(v.wompi_ventas || 0), 0);
+      this.resumen.wompi_servicio = this.ventas.reduce((sum, v) => sum + Number(v.wompi_servicio || 0), 0);
+      this.resumen.neto_ventas_post_wompi = this.ventas.reduce((sum, v) => sum + Number(v.neto_ventas_post_wompi || 0), 0);
+      this.resumen.neto_servicio_post_wompi = this.ventas.reduce((sum, v) => sum + Number(v.neto_servicio_post_wompi || 0), 0);
+      this.resumen.neto_total_post_wompi = this.ventas.reduce((sum, v) => sum + Number(v.neto_total_post_wompi || 0), 0);
     } catch (err) {
       console.error('Error generando reporte:', err);
       this.alertService.error('Error', 'No se pudo generar el reporte');
@@ -217,12 +235,16 @@ export class ReporteVentasCompletadas implements OnInit, OnDestroy {
     const resumenSheet = [
       { Métrica: 'Transacciones', Valor: this.resumen.transacciones },
       { Métrica: 'Boletas', Valor: this.resumen.boletas },
-      { Métrica: 'Ingresos de ventas', Valor: this.excelExportService.formatCurrency(this.resumen.ingresos_ventas) },
+      { Métrica: 'Ingresos de ventas (bruto)', Valor: this.excelExportService.formatCurrency(this.resumen.ingresos_ventas) },
       { Métrica: 'Ingreso valor servicio', Valor: this.excelExportService.formatCurrency(this.resumen.valor_servicio) },
       { Métrica: 'Total ingresos (cobrado)', Valor: this.excelExportService.formatCurrency(this.resumen.ingresos) },
       { Métrica: '% servicio promedio', Valor: `${Number(this.resumen.porcentaje_servicio_promedio || 0).toFixed(2)}%` },
-      { Métrica: 'Descuento Wompi', Valor: this.excelExportService.formatCurrency(this.resumen.wompi) },
-      { Métrica: 'Neto cliente', Valor: this.excelExportService.formatCurrency(this.resumen.neto_cliente) },
+      { Métrica: 'Wompi total estimado', Valor: this.excelExportService.formatCurrency(this.resumen.wompi) },
+      { Métrica: 'Wompi ventas (estim.)', Valor: this.excelExportService.formatCurrency(this.resumen.wompi_ventas) },
+      { Métrica: 'Wompi servicio (estim.)', Valor: this.excelExportService.formatCurrency(this.resumen.wompi_servicio) },
+      { Métrica: 'Neto ventas post-Wompi', Valor: this.excelExportService.formatCurrency(this.resumen.neto_ventas_post_wompi) },
+      { Métrica: 'Neto servicio post-Wompi', Valor: this.excelExportService.formatCurrency(this.resumen.neto_servicio_post_wompi) },
+      { Métrica: 'Neto total post-Wompi', Valor: this.excelExportService.formatCurrency(this.resumen.neto_total_post_wompi) },
     ];
 
     const detalleSheet = this.ventas.map(v => ({
@@ -241,15 +263,19 @@ export class ReporteVentasCompletadas implements OnInit, OnDestroy {
       'Subtotal': this.excelExportService.formatCurrency(v.subtotal),
       'Descuento cupón': this.excelExportService.formatCurrency(v.descuento_total),
       'Valor servicio': this.excelExportService.formatCurrency(v.valor_servicio || 0),
-      'Descuento Wompi (con IVA)': this.excelExportService.formatCurrency(v.wompi_descuento || 0),
-      'Neto cliente': this.excelExportService.formatCurrency(v.neto_cliente || 0),
+      'Desc. Wompi total (estim.)': this.excelExportService.formatCurrency(v.wompi_descuento || 0),
+      'Wompi ventas (estim.)': this.excelExportService.formatCurrency(v.wompi_ventas || 0),
+      'Wompi servicio (estim.)': this.excelExportService.formatCurrency(v.wompi_servicio || 0),
+      'Neto ventas post-Wompi': this.excelExportService.formatCurrency(v.neto_ventas_post_wompi || 0),
+      'Neto servicio post-Wompi': this.excelExportService.formatCurrency(v.neto_servicio_post_wompi || 0),
+      'Neto total post-Wompi': this.excelExportService.formatCurrency(v.neto_total_post_wompi || 0),
       'Total': this.excelExportService.formatCurrency(v.total),
     }));
 
     try {
       await this.excelExportService.exportMultipleSheets(
         [
-          { name: 'Resumen (Insights)', data: resumenSheet },
+          { name: 'Resumen', data: resumenSheet },
           { name: 'Detalle', data: detalleSheet }
         ],
         `ventas_completadas_${safeTitulo}_${fecha}`

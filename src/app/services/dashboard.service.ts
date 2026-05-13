@@ -4,21 +4,24 @@
 
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
+import { TimezoneService } from './timezone.service';
 import { DashboardStats } from '../types';
+import { agregarFinanzasDesdeComprasCompletadas } from '../utils/wompi-finanzas';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DashboardService {
   constructor(
-    private supabase: SupabaseService
+    private supabase: SupabaseService,
+    private timezoneService: TimezoneService
   ) {}
 
   /**
    * Obtiene las estadísticas del dashboard
    */
   async getStats(): Promise<DashboardStats> {
-    const now = new Date().toISOString();
+    const now = this.timezoneService.getCurrentDateISO();
 
     // Función helper para manejar errores
     const safeExecute = async <T>(fn: () => Promise<T>, defaultValue: T): Promise<T> => {
@@ -30,20 +33,30 @@ export class DashboardService {
       }
     };
 
-    // Eventos activos
+    // Eventos activos: publicados, flag activo, y aún vigentes (sin fecha_fin o fecha_fin >= ahora).
+    // Se divide en dos conteos para evitar NULL en comparaciones y alinearse con la zona horaria de la app.
     const eventosActivos = safeExecute(async () => {
-      const response = await this.supabase
-        .from('eventos')
-        .select('*', { count: 'exact' })
-        .eq('activo', true)
-        .eq('estado', 'publicado')
-        .gte('fecha_fin', now);
-      
-      if (response.error) {
-        console.error('Error en eventos activos:', response.error);
+      const base = () =>
+        this.supabase
+          .from('eventos')
+          .select('id', { count: 'exact', head: true })
+          .eq('activo', true)
+          .eq('estado', 'publicado');
+
+      const [sinFechaFin, conFechaFinVigente] = await Promise.all([
+        base().is('fecha_fin', null),
+        base().gte('fecha_fin', now)
+      ]);
+
+      if (sinFechaFin.error) {
+        console.error('Error en eventos activos (sin fecha_fin):', sinFechaFin.error);
         return 0;
       }
-      return response.count || 0;
+      if (conFechaFinVigente.error) {
+        console.error('Error en eventos activos (fecha_fin vigente):', conFechaFinVigente.error);
+        return 0;
+      }
+      return (sinFechaFin.count ?? 0) + (conFechaFinVigente.count ?? 0);
     }, 0);
 
     // Boletas vendidas (solo con pago completado)
@@ -69,22 +82,55 @@ export class DashboardService {
       
       if (response.error) {
         console.error('Error en ingresos totales:', response.error);
-        return { ingresos: 0, valorServicioTotal: 0, porcentajeServicioPromedio: 0 };
+        return {
+          ingresos: 0,
+          valorServicioTotal: 0,
+          porcentajeServicioPromedio: 0,
+          wompiTotalEstimado: 0,
+          wompiVentasTotal: 0,
+          wompiServicioTotal: 0,
+          netoVentasPostWompiTotal: 0,
+          netoServicioPostWompiTotal: 0,
+          ingresosVentasBrutoTotal: 0,
+        };
       }
       if (response.data && Array.isArray(response.data)) {
         const filas = response.data as any[];
-        const ingresos = filas.reduce((sum: number, compra: any) => sum + Number(compra.total || 0), 0);
-        const valorServicioTotal = filas.reduce(
-          (sum: number, compra: any) => sum + Number(compra.valor_servicio || 0),
-          0
-        );
-        const porcentajeServicioPromedio = filas.length > 0
-          ? filas.reduce((sum: number, compra: any) => sum + Number(compra.porcentaje_servicio || 0), 0) / filas.length
-          : 0;
-        return { ingresos, valorServicioTotal, porcentajeServicioPromedio };
+        const a = agregarFinanzasDesdeComprasCompletadas(filas);
+        return {
+          ingresos: a.ingresos,
+          valorServicioTotal: a.valorServicioTotal,
+          porcentajeServicioPromedio: a.porcentajeServicioPromedio,
+          wompiTotalEstimado: a.wompi_total_estimado,
+          wompiVentasTotal: a.wompi_ventas_total,
+          wompiServicioTotal: a.wompi_servicio_total,
+          netoVentasPostWompiTotal: a.neto_ventas_post_wompi_total,
+          netoServicioPostWompiTotal: a.neto_servicio_post_wompi_total,
+          ingresosVentasBrutoTotal: a.ingresos_ventas_bruto_total,
+        };
       }
-      return { ingresos: 0, valorServicioTotal: 0, porcentajeServicioPromedio: 0 };
-    }, { ingresos: 0, valorServicioTotal: 0, porcentajeServicioPromedio: 0 });
+      return {
+        ingresos: 0,
+        valorServicioTotal: 0,
+        porcentajeServicioPromedio: 0,
+        wompiTotalEstimado: 0,
+        wompiVentasTotal: 0,
+        wompiServicioTotal: 0,
+        netoVentasPostWompiTotal: 0,
+        netoServicioPostWompiTotal: 0,
+        ingresosVentasBrutoTotal: 0,
+      };
+    }, {
+      ingresos: 0,
+      valorServicioTotal: 0,
+      porcentajeServicioPromedio: 0,
+      wompiTotalEstimado: 0,
+      wompiVentasTotal: 0,
+      wompiServicioTotal: 0,
+      netoVentasPostWompiTotal: 0,
+      netoServicioPostWompiTotal: 0,
+      ingresosVentasBrutoTotal: 0,
+    });
 
     // Clientes únicos (solo con pago completado)
     const clientes = safeExecute(async () => {
@@ -326,6 +372,14 @@ export class DashboardService {
       ingresos_mes_anterior,
       porcentaje_servicio_promedio: ingresosYServicioTotales.porcentajeServicioPromedio,
       valor_servicio_total: ingresosYServicioTotales.valorServicioTotal,
+      ingresos_ventas_bruto_total: ingresosYServicioTotales.ingresosVentasBrutoTotal,
+      wompi_total_estimado: ingresosYServicioTotales.wompiTotalEstimado,
+      wompi_ventas_total: ingresosYServicioTotales.wompiVentasTotal,
+      wompi_servicio_total: ingresosYServicioTotales.wompiServicioTotal,
+      neto_ventas_post_wompi_total: ingresosYServicioTotales.netoVentasPostWompiTotal,
+      neto_servicio_post_wompi_total: ingresosYServicioTotales.netoServicioPostWompiTotal,
+      neto_total_post_wompi_total:
+        ingresosYServicioTotales.ingresos - ingresosYServicioTotales.wompiTotalEstimado,
       boletas_por_estado: boletas_por_estado as any[],
       top_eventos: top_eventos as any[]
     };

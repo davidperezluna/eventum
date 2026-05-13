@@ -115,12 +115,12 @@
           </div>
         </div>
 
-        <div class="stat-card stat-warning">
+        <div class="stat-card stat-warning" title="Suma de totales cobrados (bruto). Más abajo: desglose Wompi estimado y netos.">
           <div class="stat-icon-wrapper">
             <span class="material-icons stat-icon">attach_money</span>
           </div>
           <div class="stat-content">
-            <h3>Ingresos Totales</h3>
+            <h3>Ingresos totales (bruto)</h3>
             <p class="stat-value">{{ formatCurrency(stats.ingresos_totales) }}</p>
             <p class="stat-subtitle">Total acumulado</p>
           </div>
@@ -134,6 +134,98 @@
             <h3>Clientes</h3>
             <p class="stat-value">{{ stats.clientes | number }}</p>
             <p class="stat-subtitle">Clientes únicos</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desglose ingresos: empresario vs Eventum -->
+      <div *ngIf="!loading && !error" class="finanzas-desglose">
+        <p class="finanzas-desglose__nota">
+          Comisión Wompi <strong>estimada</strong> (misma regla que reportes); no reemplaza el extracto oficial de Wompi.
+        </p>
+        <div class="finanzas-desglose__grupos">
+          <section class="finanzas-grupo finanzas-grupo--cliente" aria-labelledby="dev-fin-cliente">
+            <div class="finanzas-grupo__head">
+              <h3 id="dev-fin-cliente">Valor cliente (empresario)</h3>
+              <p class="finanzas-grupo__sub">Ventas de boletas y neto del organizador tras Wompi sobre ese rubro.</p>
+            </div>
+            <div class="finanzas-grupo__cards stats-grid-secondary">
+              <div class="finanzas-grupo__metric" title="∑ max(0, total − valor servicio) por compra">
+                <span class="material-icons">shopping_bag</span>
+                <div>
+                  <p class="stat-mini-value">{{ formatCurrency(stats.ingresos_ventas_bruto_total || 0) }}</p>
+                  <p class="stat-mini-label">Ingresos ventas (bruto)</p>
+                </div>
+              </div>
+              <div class="finanzas-grupo__metric" title="Parte proporcional sobre ventas/boletas">
+                <span class="material-icons">sell</span>
+                <div>
+                  <p class="stat-mini-value">{{ formatCurrency(stats.wompi_ventas_total || 0) }}</p>
+                  <p class="stat-mini-label">Wompi ventas</p>
+                </div>
+              </div>
+              <div class="finanzas-grupo__metric">
+                <span class="material-icons">inventory_2</span>
+                <div>
+                  <p class="stat-mini-value">{{ formatCurrency(stats.neto_ventas_post_wompi_total || 0) }}</p>
+                  <p class="stat-mini-label">Neto ventas post-Wompi</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="finanzas-grupo finanzas-grupo--platform" aria-labelledby="dev-fin-eventum">
+            <div class="finanzas-grupo__head">
+              <h3 id="dev-fin-eventum">Valor servicio (Eventum)</h3>
+              <p class="finanzas-grupo__sub">Comisión de plataforma: cargo por servicio, Wompi asociado y neto del servicio.</p>
+            </div>
+            <div class="finanzas-grupo__cards stats-grid-secondary">
+              <div class="finanzas-grupo__metric">
+                <span class="material-icons">request_quote</span>
+                <div>
+                  <p class="stat-mini-value">{{ formatCurrency(stats.valor_servicio_total || 0) }}</p>
+                  <p class="stat-mini-label">Valor servicio (bruto)</p>
+                </div>
+              </div>
+              <div class="finanzas-grupo__metric">
+                <span class="material-icons">handyman</span>
+                <div>
+                  <p class="stat-mini-value">{{ formatCurrency(stats.wompi_servicio_total || 0) }}</p>
+                  <p class="stat-mini-label">Wompi servicio</p>
+                </div>
+              </div>
+              <div class="finanzas-grupo__metric">
+                <span class="material-icons">build_circle</span>
+                <div>
+                  <p class="stat-mini-value">{{ formatCurrency(stats.neto_servicio_post_wompi_total || 0) }}</p>
+                  <p class="stat-mini-label">Neto servicio post-Wompi</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="finanzas-desglose__totales">
+          <div class="stat-card-mini" title="Comisión total estimada">
+            <span class="material-icons">percent</span>
+            <div>
+              <p class="stat-mini-value">{{ formatCurrency(stats.wompi_total_estimado || 0) }}</p>
+              <p class="stat-mini-label">Wompi total (estim.)</p>
+            </div>
+          </div>
+          <div class="stat-card-mini" title="Bruto − Wompi total estimado">
+            <span class="material-icons">account_balance</span>
+            <div>
+              <p class="stat-mini-value">{{ formatCurrency(stats.neto_total_post_wompi_total || 0) }}</p>
+              <p class="stat-mini-label">Neto total post-Wompi</p>
+            </div>
+          </div>
+          <div class="stat-card-mini">
+            <span class="material-icons">analytics</span>
+            <div>
+              <p class="stat-mini-value">{{ (stats.porcentaje_servicio_promedio || 0) | number:'1.0-2' }}%</p>
+              <p class="stat-mini-label">% Servicio prom.</p>
+            </div>
           </div>
         </div>
       </div>
