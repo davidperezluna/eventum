@@ -122,15 +122,19 @@ export class Layout implements OnInit, OnDestroy {
   }
 
   loadMenuOrganizador() {
+    // Temporal: sólo entrada al panel organizador en el menú lateral.
     this.menuItems = [
       { path: '/dashboard-organizador', label: 'Dashboard', icon: 'dashboard' },
+    ];
+    /*
+    Ocultos de momento — restaurar al activar rutas desde el sidebar:
       { path: '/eventos', label: 'Mis Eventos', icon: 'event' },
       { path: '/boletas', label: 'Boletas sin usar', icon: 'confirmation_number' },
       { path: '/boletas-usadas', label: 'Boletas usadas', icon: 'how_to_reg' },
       { path: '/lectores-parametrizacion', label: 'Lectores', icon: 'qr_code_scanner' },
       { path: '/ventas', label: 'Mis Ventas', icon: 'attach_money' },
       { path: '/perfil', label: 'Mi Perfil', icon: 'person' },
-    ];
+    */
   }
 
   loadMenuCliente() {
