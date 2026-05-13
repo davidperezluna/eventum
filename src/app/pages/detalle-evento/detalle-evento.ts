@@ -92,14 +92,12 @@ export class DetalleEvento implements OnInit {
   acordeones: {
     ubicacion: boolean;
     descripcion: boolean;
-    tags: boolean;
     terminos: boolean;
     politica: boolean;
     eventoFinalizado: boolean;
   } = {
     ubicacion: false,
     descripcion: false,
-    tags: false,
     terminos: false,
     politica: false,
     eventoFinalizado: false

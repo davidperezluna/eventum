@@ -49,6 +49,9 @@
           </div>
         </div>
         <p *ngIf="evento.descripcion_corta" class="evento-subtitle">{{ evento.descripcion_corta }}</p>
+        <div class="evento-header-tags" *ngIf="getTags().length > 0" role="group" aria-label="Etiquetas del evento">
+          <span *ngFor="let tag of getTags()" class="tag">{{ tag }}</span>
+        </div>
         <div class="evento-meta">
           <div class="meta-group">
             <p class="meta-group-label">Cuándo</p>
@@ -388,7 +391,7 @@
 
     <section
       class="detalle-zone detalle-zone--info"
-      *ngIf="(lugar || loadingLugar) || !!evento.descripcion || !!(evento.url_video && getYoutubeEmbedUrl(evento.url_video)) || !!evento.tags"
+      *ngIf="(lugar || loadingLugar) || !!evento.descripcion || !!(evento.url_video && getYoutubeEmbedUrl(evento.url_video))"
       aria-labelledby="detalle-info-heading"
     >
       <h2 id="detalle-info-heading" class="detalle-zone-title">Información del evento</h2>
@@ -502,22 +505,6 @@
           allowfullscreen
           class="youtube-embed">
         </iframe>
-      </div>
-    </div>
-
-    <!-- Tags -->
-    <div class="evento-section evento-accordion" *ngIf="evento.tags">
-      <button class="accordion-header" (click)="toggleAcordeon('tags')" type="button">
-        <h2>
-          <span class="material-icons">label</span>
-          Etiquetas
-        </h2>
-        <span class="material-icons accordion-icon" [class.open]="acordeones.tags">expand_more</span>
-      </button>
-      <div class="accordion-content" [class.open]="acordeones.tags">
-        <div class="tags-container">
-          <span *ngFor="let tag of getTags()" class="tag">{{ tag }}</span>
-        </div>
       </div>
     </div>
 
