@@ -1,74 +1,98 @@
 <div class="pago-resultado-page">
   <div *ngIf="loading" class="loading-state">
     <div class="spinner"></div>
-    <p>Verificando estado del pago...</p>
+    <p class="loading-line-primary">Confirmando tu pago…</p>
+    <p class="loading-line-secondary">
+      Hablamos con el medio de pago para ver el resultado. Suele tardar solo unos segundos.
+    </p>
   </div>
 
-  <div *ngIf="!loading && error" class="error-message">
-    <span class="material-icons">error</span>
-    <p>{{ error }}</p>
-    <button class="btn-primary" (click)="router.navigate(['/mis-compras'])">
-      Ir a Mis Compras
-    </button>
-  </div>
+  <!-- Error previo a tener compra (HTTP, sin fila, enlace incompleto) -->
+  <article *ngIf="!loading && error" class="feedback-card feedback-card--error" aria-live="polite">
+    <div class="feedback-icon-wrap" aria-hidden="true">
+      <span class="material-icons feedback-icon">cancel</span>
+    </div>
+    <h1 class="feedback-title">{{ errorTitulo }}</h1>
+    <p class="feedback-body">{{ error }}</p>
+    <div class="feedback-actions">
+      <button type="button" class="btn btn-primary" (click)="router.navigate(['/mis-compras'])">
+        Ir a Mis compras
+      </button>
+      <button type="button" class="btn btn-secondary" (click)="router.navigate(['/eventos-cliente'])">
+        Volver a Eventos
+      </button>
+    </div>
+  </article>
 
-  <div *ngIf="!loading && !error && compra" class="resultado-container">
-    <div class="resultado-card" [class]="'resultado-' + getEstadoPagoClass()">
-      <div class="resultado-icon">
+  <div *ngIf="!loading && !error && compra" class="resultado-wrapper">
+    <article
+      class="resultado-card"
+      [class.resultado-card--success]="compra.estado_pago === 'completado'"
+      [class.resultado-card--warning]="compra.estado_pago === 'pendiente'"
+      [class.resultado-card--error]="compra.estado_pago === 'fallido'"
+    >
+      <div class="resultado-card__icon" aria-hidden="true">
         <span class="material-icons" *ngIf="compra.estado_pago === 'completado'">check_circle</span>
         <span class="material-icons" *ngIf="compra.estado_pago === 'pendiente'">schedule</span>
         <span class="material-icons" *ngIf="compra.estado_pago === 'fallido'">error</span>
       </div>
-      
-      <h1>{{ getEstadoPagoLabel() }}</h1>
-      
-      <div class="compra-info">
-        <div class="info-item">
-          <strong>Número de Transacción:</strong>
-          <span>{{ compra.numero_transaccion }}</span>
-        </div>
-        <div class="info-item" *ngIf="compra.wompi_reference">
-          <strong>Referencia Wompi:</strong>
-          <span>{{ compra.wompi_reference }}</span>
-        </div>
-        <div class="info-item">
-          <strong>Total:</strong>
-          <span>{{ formatCurrency(compra.total) }}</span>
-        </div>
-        <div class="info-item" *ngIf="compra.wompi_payment_method">
-          <strong>Método de Pago:</strong>
-          <span>{{ compra.wompi_payment_method }}</span>
-        </div>
-        <div class="info-item" *ngIf="compra.fecha_compra">
-          <strong>Fecha:</strong>
-          <span>{{ compra.fecha_compra | dateFormat:'medium' }}</span>
-        </div>
-      </div>
+
+      <p class="resultado-eyebrow">{{ getEstadoPagoEyebrow() }}</p>
+      <h1 class="resultado-title">{{ getEstadoPagoLabel() }}</h1>
+      <p class="resultado-lead">{{ getEstadoPagoLead() }}</p>
+
+      <section class="compra-summary" aria-labelledby="summary-heading">
+        <h2 id="summary-heading" class="compra-summary__heading">Resumen de la operación</h2>
+        <dl class="compra-summary__grid">
+          <div class="summary-row">
+            <dt>Transacción</dt>
+            <dd>{{ compra.numero_transaccion }}</dd>
+          </div>
+          <div class="summary-row" *ngIf="compra.wompi_reference">
+            <dt>Referencia Wompi</dt>
+            <dd>{{ compra.wompi_reference }}</dd>
+          </div>
+          <div class="summary-row summary-row--accent">
+            <dt>Total cobrado</dt>
+            <dd>{{ formatCurrency(compra.total) }}</dd>
+          </div>
+          <div class="summary-row" *ngIf="compra.wompi_payment_method">
+            <dt>Método de pago</dt>
+            <dd>{{ compra.wompi_payment_method }}</dd>
+          </div>
+          <div class="summary-row" *ngIf="compra.fecha_compra">
+            <dt>Fecha</dt>
+            <dd>{{ compra.fecha_compra | dateFormat:'medium' }}</dd>
+          </div>
+        </dl>
+      </section>
 
       <div class="resultado-actions">
-        <button 
-          *ngIf="compra.estado_pago === 'completado'" 
-          class="btn-primary" 
-          (click)="router.navigate(['/mis-compras'])"
-        >
-          Ver Mis Boletas
-        </button>
-        <button 
-          *ngIf="compra.estado_pago === 'pendiente'" 
-          class="btn-secondary" 
-          (click)="router.navigate(['/mis-compras'])"
-        >
-          Ver Estado en Mis Compras
-        </button>
-        <button 
-          *ngIf="compra.estado_pago === 'fallido'" 
-          class="btn-primary" 
-          (click)="router.navigate(['/eventos-cliente'])"
-        >
-          Intentar de Nuevo
-        </button>
+        <ng-container *ngIf="compra.estado_pago === 'completado'">
+          <button type="button" class="btn btn-primary" (click)="router.navigate(['/mis-compras'])">
+            Ver mis boletas
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="router.navigate(['/eventos-cliente'])">
+            Explorar más eventos
+          </button>
+        </ng-container>
+        <ng-container *ngIf="compra.estado_pago === 'pendiente'">
+          <button type="button" class="btn btn-primary" (click)="router.navigate(['/mis-compras'])">
+            Revisar estado en Mis compras
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="router.navigate(['/eventos-cliente'])">
+            Volver al inicio
+          </button>
+        </ng-container>
+        <ng-container *ngIf="compra.estado_pago === 'fallido'">
+          <button type="button" class="btn btn-primary" (click)="router.navigate(['/eventos-cliente'])">
+            Intentar de nuevo desde eventos
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="router.navigate(['/mis-compras'])">
+            Ir a Mis compras
+          </button>
+        </ng-container>
       </div>
-    </div>
+    </article>
   </div>
 </div>
-

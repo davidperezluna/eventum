@@ -16,6 +16,8 @@ export class PagoResultado implements OnInit {
   compra: Compra | null = null;
   loading = true;
   error: string | null = null;
+  /** Titular corto cuando hay error técnico o de negocio */
+  errorTitulo = 'No pudimos mostrar tu compra';
 
   constructor(
     private route: ActivatedRoute,
@@ -30,7 +32,9 @@ export class PagoResultado implements OnInit {
       if (this.compraId) {
         this.verificarEstadoCompra();
       } else {
-        this.error = 'No se proporcionó un ID de compra';
+        this.errorTitulo = 'Falta información del pago';
+        this.error =
+          'Este enlace no incluye la referencia de la compra. Vuelve desde el evento o revisa Mis compras; si pagaste por Wompi, el comprobante puede tardar unos minutos en reflejarse.';
         this.loading = false;
       }
     });
@@ -51,10 +55,13 @@ export class PagoResultado implements OnInit {
         const code = err?.code ?? err?.error?.code;
         // Tras pago fallido el webhook puede purgar la compra (sin filas → PGRST116).
         if (code === 'PGRST116') {
+          this.errorTitulo = 'El pago no se completó';
           this.error =
-            'El pago no se completó o fue rechazado. Esta solicitud ya no está registrada y los cupos quedaron liberados.';
+            'Tu transacción no quedó confirmada en el sistema (o fue rechazada). No hay compra registrada con este enlace y los cupos reservados se liberaron. Si ves un cobro en tu cuenta, revisa Mis compras o contacta a tu banco; el reembolso depende del medio de pago.';
         } else {
-          this.error = 'Error al cargar la información de la compra';
+          this.errorTitulo = 'No pudimos verificar tu compra';
+          this.error =
+            'Hubo un fallo temporal al obtener los datos. Revisa Mis compras en unos minutos o intenta refrescar esta página.';
         }
         this.loading = false;
         this.cdr.detectChanges();
@@ -65,20 +72,44 @@ export class PagoResultado implements OnInit {
   getEstadoPagoLabel(): string {
     if (!this.compra) return '';
     switch (this.compra.estado_pago) {
-      case 'completado': return 'Pago Completado';
-      case 'pendiente': return 'Pago Pendiente';
-      case 'fallido': return 'Pago Fallido';
-      default: return 'Estado Desconocido';
+      case 'completado':
+        return 'Pago confirmado';
+      case 'pendiente':
+        return 'Esperando confirmación';
+      case 'fallido':
+        return 'Pago no realizado';
+      default:
+        return 'Estado en revisión';
     }
   }
 
-  getEstadoPagoClass(): string {
+  /** Etiqueta pequeña encima del título (jerarquía visual) */
+  getEstadoPagoEyebrow(): string {
     if (!this.compra) return '';
     switch (this.compra.estado_pago) {
-      case 'completado': return 'success';
-      case 'pendiente': return 'warning';
-      case 'fallido': return 'error';
-      default: return '';
+      case 'completado':
+        return 'Estado · Compra registrada';
+      case 'pendiente':
+        return 'Estado · En validación';
+      case 'fallido':
+        return 'Estado · Sin cobro aplicado';
+      default:
+        return 'Estado';
+    }
+  }
+
+  /** Una línea visible bajo el título principal */
+  getEstadoPagoLead(): string {
+    if (!this.compra) return '';
+    switch (this.compra.estado_pago) {
+      case 'completado':
+        return 'Tu compra quedó registrada. Tus boletas están en Mis compras; el QR puede habilitarse más cerca del evento.';
+      case 'pendiente':
+        return 'Tu banco o Wompi aún pueden estar procesando el cobro. En unos minutos debería actualizarse aquí y en Mis compras. Si cerraste antes de terminar, vuelve a intentar desde el evento.';
+      case 'fallido':
+        return 'No se aplicó ningún cobro válido desde esta solicitud. Puedes volver al evento e intentarlo con otro medio de pago.';
+      default:
+        return 'Revisa Mis compras o contacta soporte si el problema continúa.';
     }
   }
 

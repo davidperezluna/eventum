@@ -1,161 +1,308 @@
+/* Página resultado de pago (Wompi / cliente): jerarquía clara y mensajes tranquilizadores */
+
 .pago-resultado-page {
-  max-width: 600px;
-  margin: 2rem auto;
-  padding: 2rem;
-}
-
-/* Loader: globales en styles.css */
-
-.error-message {
-  background: #fee;
-  color: #c33;
-  padding: 2rem;
-  border-radius: 12px;
-  border: 1px solid #fcc;
-  text-align: center;
+  width: 100%;
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  box-sizing: border-box;
+  min-height: 50vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 1rem;
+  align-items: stretch;
 }
 
-.resultado-container {
+.pago-resultado-page > .loading-state {
+  align-self: center;
+  width: 100%;
+}
+
+.loading-line-primary {
+  font-weight: 600;
+  color: var(--color-text-primary, #1a1a2e) !important;
+}
+
+.loading-line-secondary {
+  margin-top: -0.35rem;
+  max-width: 22rem;
+  font-size: 0.85rem !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  color: var(--color-text-secondary, #64748b) !important;
+}
+
+/* Panel de error (sin objeto compra) */
+.feedback-card {
+  border-radius: 1rem;
+  padding: clamp(1.5rem, 4vw, 2.25rem);
+  text-align: center;
+  background: linear-gradient(180deg, #fff5f5 0%, #fff 38%);
+  border: 1px solid #fecaca;
+  box-shadow: 0 8px 24px rgba(185, 28, 28, 0.08);
+}
+
+.feedback-card--error .feedback-title {
+  color: #991b1b;
+}
+
+.feedback-icon-wrap {
+  margin-bottom: 1rem;
+}
+
+.feedback-icon {
+  font-size: 3rem !important;
+  line-height: 1;
+  color: #dc2626;
+}
+
+.feedback-title {
+  margin: 0 0 0.85rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary, #1a1a2e);
+}
+
+.feedback-body {
+  margin: 0 auto 1.75rem;
+  max-width: 26rem;
+  font-size: 0.935rem;
+  line-height: 1.55;
+  color: #4b5563;
+  text-wrap: balance;
+}
+
+.feedback-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  align-items: stretch;
+}
+
+/* Tarjeta resultado con compra */
+.resultado-wrapper {
   display: flex;
   justify-content: center;
+  flex: 1;
 }
 
 .resultado-card {
-  background: white;
-  border-radius: 12px;
-  padding: 3rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  text-align: center;
   width: 100%;
-  border: 3px solid;
+  border-radius: 1.15rem;
+  padding: clamp(1.65rem, 5vw, 2.75rem);
+  text-align: center;
+  border: 1px solid #e5e7eb;
+  border-top-width: 4px;
+  background: var(--color-surface, #fff);
+  box-shadow: 0 10px 40px rgba(26, 26, 46, 0.08);
 }
 
-.resultado-success {
-  border-color: #4caf50;
+.resultado-card--success {
+  border-top-color: #16a34a;
 }
 
-.resultado-warning {
-  border-color: #ff9800;
+.resultado-card--warning {
+  border-top-color: #ea580c;
 }
 
-.resultado-error {
-  border-color: #f44336;
+.resultado-card--error {
+  border-top-color: #dc2626;
 }
 
-.resultado-icon {
-  margin-bottom: 1.5rem;
+.resultado-card__icon {
+  margin-bottom: 0.75rem;
 }
 
-.resultado-icon .material-icons {
-  font-size: 64px;
+.resultado-card__icon .material-icons {
+  font-size: clamp(3rem, 10vw, 3.75rem);
+  line-height: 1;
 }
 
-.resultado-success .resultado-icon .material-icons {
-  color: #4caf50;
+.resultado-card--success .resultado-card__icon .material-icons {
+  color: #16a34a;
 }
 
-.resultado-warning .resultado-icon .material-icons {
-  color: #ff9800;
+.resultado-card--warning .resultado-card__icon .material-icons {
+  color: #ea580c;
 }
 
-.resultado-error .resultado-icon .material-icons {
-  color: #f44336;
+.resultado-card--error .resultado-card__icon .material-icons {
+  color: #dc2626;
 }
 
-.resultado-card h1 {
-  font-size: 1.75rem;
-  margin: 0 0 2rem 0;
-  color: #1a1a1a;
+.resultado-eyebrow {
+  margin: 0 0 0.4rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
 }
 
-.compra-info {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 2rem;
+.resultado-title {
+  margin: 0 0 0.85rem;
+  font-size: clamp(1.35rem, 4.5vw, 1.7rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: var(--color-text-primary, #1a1a2e);
+}
+
+.resultado-lead {
+  margin: 0 auto 1.65rem;
+  max-width: 26rem;
+  font-size: 0.94rem;
+  line-height: 1.55;
+  color: #475569;
+  text-wrap: balance;
+}
+
+/* Resumen técnico: más legible que filas aplastadas */
+.compra-summary {
   text-align: left;
-  background: #f5f5f5;
-  padding: 1.5rem;
-  border-radius: 8px;
+  margin-bottom: 1.75rem;
+  padding: 1.15rem 1.25rem;
+  border-radius: 0.85rem;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
 }
 
-.info-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #e0e0e0;
+.compra-summary__heading {
+  margin: 0 0 0.95rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
 }
 
-.info-item:last-child {
+.compra-summary__grid {
+  margin: 0;
+}
+
+.summary-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.2rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.summary-row:last-child {
   border-bottom: none;
+  padding-bottom: 0;
 }
 
-.info-item strong {
-  color: #666;
-  font-weight: 500;
+.summary-row:first-of-type {
+  padding-top: 0;
 }
 
-.info-item span {
-  color: #1a1a1a;
+.summary-row dt {
+  margin: 0;
+  font-size: 0.78rem;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.summary-row dd {
+  margin: 0;
+  font-size: 0.975rem;
+  font-weight: 600;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+.summary-row--accent dd {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--color-secondary, #667eea);
 }
 
 .resultado-actions {
   display: flex;
-  gap: 1rem;
-  justify-content: center;
+  flex-direction: column;
+  gap: 0.65rem;
 }
 
-.btn-primary,
-.btn-secondary {
-  padding: 0.75rem 2rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 500;
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.825rem 1.35rem;
+  border-radius: 0.65rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
-  transition: all 0.2s;
+  border: none;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.btn:active {
+  transform: scale(0.99);
 }
 
 .btn-primary {
-  background: #667eea;
-  color: white;
+  background: linear-gradient(135deg, var(--color-secondary, #667eea), var(--color-secondary-dark, #764ba2));
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(102, 126, 234, 0.35);
 }
 
 .btn-primary:hover {
-  background: #5568d3;
+  filter: brightness(1.05);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .btn-secondary {
-  background: #f0f0f0;
-  color: #333;
+  background: #fff;
+  color: #334155;
+  border: 1px solid #e2e8f0;
 }
 
 .btn-secondary:hover {
-  background: #e0e0e0;
+  background: #f8fafc;
+  border-color: #cbd5e1;
 }
 
-@media (max-width: 768px) {
-  .pago-resultado-page {
-    padding: 1rem;
+@media (min-width: 540px) {
+  .feedback-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
   }
-
-  .resultado-card {
-    padding: 2rem 1.5rem;
+  .feedback-actions .btn {
+    min-width: 11rem;
   }
 
   .resultado-actions {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
-  .btn-primary,
-  .btn-secondary {
-    width: 100%;
+  .resultado-actions .btn {
+    min-width: 12rem;
+  }
+
+  .summary-row {
+    grid-template-columns: minmax(7rem, 38%) 1fr;
+    align-items: baseline;
+    gap: 1rem;
+  }
+
+  .summary-row dt {
+    padding-top: 0.125rem;
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+}
