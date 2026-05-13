@@ -632,7 +632,7 @@
         <p class="boleta-tipo">{{ tipoBoletaSeleccionado?.nombre || boletaSeleccionada.tipo_boleta_meta?.nombre || '' }}</p>
       </div>
 
-      <!-- QR Code (solo el día del evento y si la boleta no fue usada) -->
+      <!-- QR Code (entre fecha_inicio y fecha_fin del evento; si la boleta no fue usada) -->
         <div class="boleta-qr-preview" *ngIf="compraSeleccionada?.estado_pago === 'completado' && !esBoletaUsada(boletaSeleccionada) && esDiaEventoBoleta(boletaSeleccionada, compraSeleccionada)">
         <div *ngIf="loadingQR" class="qr-loading">
           <div class="spinner"></div>

@@ -1011,25 +1011,34 @@ export class MisCompras implements OnInit, OnDestroy {
     return d;
   }
 
-  esDiaEventoBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): boolean {
-    const fechaEvento = this.fechaInicioEventoBoleta(boleta, compra);
-    if (!fechaEvento) return true;
-    const hoy = new Date();
-    return (
-      hoy.getFullYear() === fechaEvento.getFullYear() &&
-      hoy.getMonth() === fechaEvento.getMonth() &&
-      hoy.getDate() === fechaEvento.getDate()
-    );
+  private fechaFinEventoBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): Date | null {
+    const raw = this.fechaFinEvento(this.eventoVistaBoleta(boleta, compra));
+    if (!raw) return null;
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return null;
+    return d;
   }
 
-  fechaEventoLabelBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): string {
-    const fechaEvento = this.fechaInicioEventoBoleta(boleta, compra);
-    if (!fechaEvento) return 'del evento';
-    return new Intl.DateTimeFormat('es-CO', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    }).format(fechaEvento);
+  /** Día local YYYYMMDD para comparar rangos de calendario sin depender de la hora. */
+  private diaCalendarioLocal(d: Date): number {
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  }
+
+  /**
+   * True si hoy (fecha local) está entre fecha_inicio y fecha_fin del evento (inclusive).
+   * Sin fecha_fin se usa solo el día de fecha_inicio (evento de un día).
+   */
+  esDiaEventoBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): boolean {
+    const inicio = this.fechaInicioEventoBoleta(boleta, compra);
+    if (!inicio) return true;
+    const fin = this.fechaFinEventoBoleta(boleta, compra);
+    const hoy = new Date();
+    const h = this.diaCalendarioLocal(hoy);
+    const a = this.diaCalendarioLocal(inicio);
+    const b = fin ? this.diaCalendarioLocal(fin) : a;
+    const desde = Math.min(a, b);
+    const hasta = Math.max(a, b);
+    return h >= desde && h <= hasta;
   }
 
   fechaModalBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): string {
@@ -1053,7 +1062,20 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   mensajeHabilitacionQrBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): string {
-    return `Tranqui, esta boleta ya está a tu nombre. El QR se activa el ${this.fechaEventoLabelBoleta(boleta, compra)} para que todo sea más seguro, sin vueltas raras. Gracias por parchar con Eventum.`;
+    const inicio = this.fechaInicioEventoBoleta(boleta, compra);
+    if (!inicio) {
+      return 'Tranqui, esta boleta ya está a tu nombre. El código QR se habilitará durante las fechas del evento. Gracias por parchar con Eventum.';
+    }
+    const fin = this.fechaFinEventoBoleta(boleta, compra);
+    const fmt = new Intl.DateTimeFormat('es-CO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    if (fin && this.diaCalendarioLocal(inicio) !== this.diaCalendarioLocal(fin)) {
+      return `Tranqui, esta boleta ya está a tu nombre. El QR estará activo del ${fmt.format(inicio)} al ${fmt.format(fin)}. Gracias por parchar con Eventum.`;
+    }
+    return `Tranqui, esta boleta ya está a tu nombre. El QR se activa el ${fmt.format(inicio)} para que todo sea más seguro, sin vueltas raras. Gracias por parchar con Eventum.`;
   }
 
   esBoletaUsada(boleta: BoletaComprada | null | undefined): boolean {
@@ -1114,7 +1136,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.showBoletaModal = true;
     this.cdr.detectChanges();
 
-    // Generar QR solo el día del evento y mientras la boleta no haya sido usada.
+    // Generar QR solo entre fecha_inicio y fecha_fin del evento (días locales) y mientras la boleta no haya sido usada.
     if (debeGenerarQr) {
       try {
         this.qrCodeUrl = await QRCode.toDataURL(boleta.codigo_qr, {

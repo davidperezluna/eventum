@@ -368,8 +368,13 @@
 }
 
 .badge-categoria {
-  background: #eff6ff;
-  color: #1d4ed8;
+  /* Fondo real: inline desde categoria.color; texto blanco para leer sobre morados/azules oscuros */
+  background: #667eea;
+  color: #fff;
+}
+
+.badge-categoria ion-icon {
+  color: #fff;
 }
 
 .badge-destacado {
