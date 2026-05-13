@@ -2,11 +2,16 @@
   
   <!-- Layout para Administradores y Organizadores (Sidebar) -->
   <ng-container *ngIf="!isCliente() && currentUser && usuario">
-    <!-- Botón hamburguesa para móviles -->
-    <button class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle menu">
-      <span class="material-icons">menu</span>
-    </button>
-  
+    <header class="admin-mobile-topbar" aria-label="Barra superior móvil">
+      <div class="admin-mobile-topbar-inner">
+        <button type="button" class="menu-toggle" (click)="toggleSidebar()" aria-label="Abrir menú">
+          <span class="material-icons">menu</span>
+        </button>
+        <a [routerLink]="panelHomeRoute" class="brand-logo" aria-label="Eventum, ir al panel">
+          <img src="/logo-eventum.svg" alt="Eventum" class="brand-logo-img" />
+        </a>
+      </div>
+    </header>
     <!-- Overlay para móviles -->
     <div 
       class="sidebar-overlay" 
@@ -60,11 +65,7 @@
 
   <!-- Layout para Clientes (Header Top) -->
   <ng-container *ngIf="isCliente() && currentUser && usuario">
-    <!-- Botón hamburguesa para móviles -->
-    <button class="client-menu-toggle" (click)="toggleClientMenu()" aria-label="Toggle menu">
-      <span class="material-icons">menu</span>
-    </button>
-
+    <!-- Overlay: detrás del header; el toggle va dentro del header en móvil -->
     <!-- Overlay para móviles -->
     <div 
       class="client-menu-overlay" 
@@ -72,46 +73,81 @@
       (click)="closeClientMenu()"
     ></div>
 
-    <!-- Menú móvil para clientes -->
-    <nav class="client-mobile-menu" [class.open]="clientMenuOpen">
-      <div class="client-mobile-menu-header">
-        <div class="client-mobile-menu-header-content">
-          <h2 class="client-mobile-menu-title">Menú</h2>
-          <button class="client-mobile-menu-close" (click)="closeClientMenu()" aria-label="Close menu">
+    <!-- Menú móvil: misma estructura y clases que el sidebar admin -->
+    <aside class="client-mobile-menu" [class.open]="clientMenuOpen" aria-label="Menú de navegación">
+      <div class="sidebar-header">
+        <div class="sidebar-header-content">
+          <h1 class="sidebar-logo">
+            <img src="/logo-eventum.svg" alt="Eventum" class="logo-img" />
+          </h1>
+          <button type="button" class="sidebar-close" (click)="closeClientMenu()" aria-label="Cerrar menú">
             <span class="material-icons">close</span>
           </button>
         </div>
+        <p class="subtitle">Área de cliente</p>
       </div>
-      <div class="client-mobile-menu-nav">
-        <a routerLink="/eventos-cliente" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="client-mobile-nav-item" (click)="closeClientMenu()">
-          <span class="material-icons">event</span>
-          <span>Eventos</span>
+      <nav class="sidebar-nav">
+        <a
+          routerLink="/eventos-cliente"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="nav-item"
+          (click)="closeClientMenu()"
+        >
+          <span class="material-icons nav-icon">event</span>
+          <span class="nav-label">Eventos</span>
         </a>
-        <a routerLink="/conocenos" routerLinkActive="active" class="client-mobile-nav-item" (click)="closeClientMenu()">
-          <span class="material-icons">groups</span>
-          <span>Conócenos</span>
+        <a
+          routerLink="/mis-compras"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="nav-item"
+          (click)="closeClientMenu()"
+        >
+          <span class="material-icons nav-icon">confirmation_number</span>
+          <span class="nav-label">Mis Boletas</span>
         </a>
-        <a routerLink="/mis-compras" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="client-mobile-nav-item" (click)="closeClientMenu()">
-          <span class="material-icons">confirmation_number</span>
-          <span>Mis Boletas</span>
+        <a routerLink="/mis-compras/actividad" routerLinkActive="active" class="nav-item" (click)="closeClientMenu()">
+          <span class="material-icons nav-icon">timeline</span>
+          <span class="nav-label">Actividad</span>
         </a>
-        <a routerLink="/mis-compras/actividad" routerLinkActive="active" class="client-mobile-nav-item" (click)="closeClientMenu()">
-          <span class="material-icons">timeline</span>
-          <span>Actividad</span>
+        <a routerLink="/conocenos" routerLinkActive="active" class="nav-item" (click)="closeClientMenu()">
+          <span class="material-icons nav-icon">groups</span>
+          <span class="nav-label">Conócenos</span>
         </a>
-        <a routerLink="/perfil" routerLinkActive="active" class="client-mobile-nav-item" (click)="closeClientMenu()">
-          <span class="material-icons">person</span>
-          <span>Mi Perfil</span>
-        </a>
-        <button class="client-mobile-nav-item logout-item" (click)="logout()">
-          <span class="material-icons">logout</span>
-          <span>Cerrar Sesión</span>
-        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <div *ngIf="currentUser && usuario" class="user-info">
+          <a
+            routerLink="/perfil"
+            class="user-email user-email--link-profile"
+            (click)="closeClientMenu()"
+            aria-label="Ir a Mi perfil"
+          >
+            <span class="material-icons">person</span>
+            <span class="user-email-text">
+              <span *ngIf="nombreCliente() as nombre" class="user-display-name">{{ nombre }}</span>
+              <span class="email-text">{{ userEmail }}</span>
+            </span>
+          </a>
+          <div class="user-role" *ngIf="userRole">
+            <span class="material-icons">badge</span>
+            <span>{{ userRole }}</span>
+          </div>
+          <button type="button" class="btn-logout" (click)="logout()">
+            <span class="material-icons">logout</span>
+            <span>Cerrar Sesión</span>
+          </button>
+        </div>
+        <p>© 2025 Eventum</p>
       </div>
-    </nav>
+    </aside>
 
     <header class="client-header">
       <div class="header-container">
+        <button type="button" class="client-menu-toggle" (click)="toggleClientMenu()" aria-label="Abrir menú">
+          <span class="material-icons">menu</span>
+        </button>
         <a routerLink="/eventos-cliente" class="brand-logo">
           <img src="/logo-eventum.svg" alt="Eventum" class="brand-logo-img" />
         </a>
@@ -120,27 +156,20 @@
           <a routerLink="/eventos-cliente" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="client-nav-item">
             Eventos
           </a>
-          <a routerLink="/conocenos" routerLinkActive="active" class="client-nav-item">
-            Conócenos
-          </a>
+          
           <a routerLink="/mis-compras" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="client-nav-item">
             Mis Boletas
           </a>
           <a routerLink="/mis-compras/actividad" routerLinkActive="active" class="client-nav-item">
             Actividad
           </a>
-        </nav>
-
-        <div class="client-user-menu">
-          <a routerLink="/perfil" class="user-profile-link" routerLinkActive="active">
-            <div class="avatar-placeholder">
-              {{ userEmail.charAt(0).toUpperCase() }}
-            </div>
+          <a routerLink="/perfil" routerLinkActive="active" class="client-nav-item">
+            Mi perfil
           </a>
-          <button class="btn-logout-client" (click)="logout()" title="Cerrar Sesión">
-            <span class="material-icons">logout</span>
-          </button>
-        </div>
+          <a routerLink="/conocenos" routerLinkActive="active" class="client-nav-item">
+            Conócenos
+          </a>
+        </nav>
       </div>
     </header>
   </ng-container>

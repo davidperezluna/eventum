@@ -76,6 +76,21 @@ export class Layout implements OnInit, OnDestroy {
     return this.usuario?.tipo_usuario_id === 1;
   }
 
+  /** Nombre/apellidos para menú cliente; si no hay, el pie solo muestra el correo */
+  nombreCliente(): string | null {
+    const u = this.usuario as { nombre?: string; apellido?: string } | null;
+    if (!u) return null;
+    const nom = typeof u.nombre === 'string' ? u.nombre.trim() : '';
+    const ape = typeof u.apellido === 'string' ? u.apellido.trim() : '';
+    const joined = [nom, ape].filter(Boolean).join(' ').trim();
+    return joined.length > 0 ? joined : null;
+  }
+
+  /** Inicio del panel admin u organizador (barra superior móvil). */
+  get panelHomeRoute(): string {
+    return this.usuario?.tipo_usuario_id === 2 ? '/dashboard-organizador' : '/dashboard';
+  }
+
   ngOnDestroy() {
     if (this.routerSubscription) {
       this.routerSubscription.unsubscribe();
