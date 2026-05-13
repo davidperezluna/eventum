@@ -50,217 +50,73 @@
         </div>
         <p *ngIf="evento.descripcion_corta" class="evento-subtitle">{{ evento.descripcion_corta }}</p>
         <div class="evento-meta">
-          <div class="meta-item">
-            <span class="material-icons">calendar_today</span>
-            <div>
-              <strong>Fecha de inicio:</strong>
-              <span>{{ evento.fecha_inicio | dateFormat:'full' }}</span>
+          <div class="meta-group">
+            <p class="meta-group-label">Cuándo</p>
+            <div class="meta-group-grid">
+              <div class="meta-item">
+                <span class="material-icons">calendar_today</span>
+                <div>
+                  <strong>Inicio</strong>
+                  <span>{{ evento.fecha_inicio | dateFormat:'full' }}</span>
+                </div>
+              </div>
+              <div class="meta-item">
+                <span class="material-icons">event</span>
+                <div>
+                  <strong>Fin</strong>
+                  <span>{{ evento.fecha_fin | dateFormat:'full' }}</span>
+                </div>
+              </div>
+              <div class="meta-item" *ngIf="evento.edad_minima && evento.edad_minima > 0">
+                <span class="material-icons">person</span>
+                <div>
+                  <strong>Edad mínima</strong>
+                  <span>+{{ evento.edad_minima }} años</span>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="meta-item">
-            <span class="material-icons">event</span>
-            <div>
-              <strong>Fecha de fin:</strong>
-              <span>{{ evento.fecha_fin | dateFormat:'full' }}</span>
+          <div class="meta-group" *ngIf="evento.fecha_venta_inicio || evento.fecha_venta_fin">
+            <p class="meta-group-label">Ventas en línea</p>
+            <div class="meta-group-grid">
+              <div class="meta-item" *ngIf="evento.fecha_venta_inicio">
+                <span class="material-icons">shopping_cart</span>
+                <div>
+                  <strong>Venta inicia</strong>
+                  <span>{{ evento.fecha_venta_inicio | dateFormat:'medium' }}</span>
+                </div>
+              </div>
+              <div class="meta-item" *ngIf="evento.fecha_venta_fin">
+                <span class="material-icons">schedule</span>
+                <div>
+                  <strong>Venta termina</strong>
+                  <span>{{ evento.fecha_venta_fin | dateFormat:'medium' }}</span>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="meta-item" *ngIf="evento.fecha_venta_inicio">
-            <span class="material-icons">shopping_cart</span>
-            <div>
-              <strong>Venta inicia:</strong>
-              <span>{{ evento.fecha_venta_inicio | dateFormat:'medium' }}</span>
-            </div>
-          </div>
-          <div class="meta-item" *ngIf="evento.fecha_venta_fin">
-            <span class="material-icons">schedule</span>
-            <div>
-              <strong>Venta termina:</strong>
-              <span>{{ evento.fecha_venta_fin | dateFormat:'medium' }}</span>
-            </div>
-          </div>
-          <div class="meta-item" *ngIf="evento.edad_minima && evento.edad_minima > 0">
-            <span class="material-icons">person</span>
-            <div>
-              <strong>Edad mínima:</strong>
-              <span>+{{ evento.edad_minima }} años</span>
-            </div>
-          </div>
-          <div class="meta-item">
-            <span class="material-icons">attach_money</span>
-            <div>
-              <strong>Precio:</strong>
-              <span *ngIf="evento.es_gratis" class="precio-gratis">Gratis</span>
-              <span *ngIf="!evento.es_gratis && evento.precio_minimo && evento.precio_maximo">
-                {{ formatCurrency(evento.precio_minimo) }} - {{ formatCurrency(evento.precio_maximo) }}
-              </span>
-              <span *ngIf="!evento.es_gratis && evento.precio_minimo && !evento.precio_maximo">
-                Desde {{ formatCurrency(evento.precio_minimo) }}
-              </span>
-            </div>
+          <div class="meta-group meta-group--precio">
+            <p class="meta-group-label">Precio</p>
+            <p *ngIf="evento.es_gratis" class="meta-precio-texto precio-gratis">Gratis</p>
+            <p *ngIf="!evento.es_gratis && evento.precio_minimo && evento.precio_maximo" class="meta-precio-texto">
+              {{ formatCurrency(evento.precio_minimo) }} – {{ formatCurrency(evento.precio_maximo) }}
+            </p>
+            <p *ngIf="!evento.es_gratis && evento.precio_minimo && !evento.precio_maximo" class="meta-precio-texto meta-precio-texto--desde">
+              Desde {{ formatCurrency(evento.precio_minimo) }}
+            </p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Información del Lugar -->
-    <div class="evento-section evento-accordion" *ngIf="lugar || loadingLugar">
-      <button class="accordion-header" (click)="toggleAcordeon('ubicacion')" type="button">
-        <h2>
-          <span class="material-icons">place</span>
-          Ubicación del Evento
-        </h2>
-        <span class="material-icons accordion-icon" [class.open]="acordeones.ubicacion">expand_more</span>
-      </button>
-      <div class="accordion-content" [class.open]="acordeones.ubicacion">
-        <div *ngIf="loadingLugar" class="loading-small">
-          <p>Cargando información del lugar...</p>
-        </div>
-        <div *ngIf="!loadingLugar && lugar" class="lugar-info">
-          <div class="lugar-header">
-            <h3>{{ lugar.nombre }}</h3>
-          </div>
-          <div class="lugar-details">
-            <div class="lugar-item">
-              <span class="material-icons">location_on</span>
-              <div class="lugar-item-content">
-                <strong>Dirección</strong>
-                <p>{{ lugar.direccion }}</p>
-              </div>
-            </div>
-            <div class="lugar-item" *ngIf="lugar.ciudad">
-              <span class="material-icons">location_city</span>
-              <div class="lugar-item-content">
-                <strong>Ciudad</strong>
-                <p>{{ lugar.ciudad }}<span *ngIf="lugar.pais">, {{ lugar.pais }}</span></p>
-              </div>
-            </div>
-            <div class="lugar-item" *ngIf="lugar.telefono">
-              <span class="material-icons">phone</span>
-              <div class="lugar-item-content">
-                <strong>Teléfono</strong>
-                <p>{{ lugar.telefono }}</p>
-              </div>
-            </div>
-            <div class="lugar-item" *ngIf="lugar.email">
-              <span class="material-icons">email</span>
-              <div class="lugar-item-content">
-                <strong>Email</strong>
-                <p>{{ lugar.email }}</p>
-              </div>
-            </div>
-            <div class="lugar-item" *ngIf="lugar.capacidad_maxima">
-              <span class="material-icons">people</span>
-              <div class="lugar-item-content">
-                <strong>Capacidad</strong>
-                <p>{{ lugar.capacidad_maxima }} personas</p>
-              </div>
-            </div>
-            <div class="lugar-item" *ngIf="lugar.descripcion">
-              <span class="material-icons">description</span>
-              <div class="lugar-item-content">
-                <strong>Descripción</strong>
-                <p>{{ lugar.descripcion }}</p>
-              </div>
-            </div>
-            <div class="lugar-buttons" *ngIf="lugar.latitud && lugar.longitud || lugar.sitio_web">
-              <button type="button" class="btn-google-maps" *ngIf="lugar.latitud && lugar.longitud"
-                (click)="abrirGoogleMaps(lugar.latitud, lugar.longitud)">
-                <span class="material-icons">map</span>
-                <span>Ver en Google Maps</span>
-              </button>
-              <button type="button" class="btn-sitio-web" *ngIf="lugar.sitio_web"
-                (click)="abrirSitioWeb(lugar.sitio_web)">
-                <span class="material-icons">language</span>
-                <span>Visitar Sitio Web</span>
-              </button>
-            </div>
-          </div>
-        </div>
-        <div *ngIf="!loadingLugar && !lugar && evento.lugar_id" class="error-message">
-          <span class="material-icons">error</span>
-          <p>No se pudo cargar la información del lugar</p>
-        </div>
+    <!-- Compra primero (entradas y carrito) -->
+    <div class="detalle-zone detalle-zone--compra">
+      <!-- Tipos de boleta -->
+      <div class="evento-section" *ngIf="!isEventoFinalizado()">
+      <div class="section-heading-row">
+        <h2>Entradas</h2>
+        <p class="section-kicker">Elige tus boletas y completa la compra abajo cuando esté listo</p>
       </div>
-    </div>
-
-    <!-- Descripción -->
-    <div class="evento-section evento-accordion" *ngIf="evento.descripcion">
-      <button class="accordion-header" (click)="toggleAcordeon('descripcion')" type="button">
-        <h2>
-          <span class="material-icons">description</span>
-          Descripción
-        </h2>
-        <span class="material-icons accordion-icon" [class.open]="acordeones.descripcion">expand_more</span>
-      </button>
-      <div class="accordion-content" [class.open]="acordeones.descripcion">
-        <p class="evento-descripcion">{{ evento.descripcion }}</p>
-      </div>
-    </div>
-
-    <!-- Video de YouTube -->
-    <div class="evento-section" *ngIf="evento.url_video && getYoutubeEmbedUrl(evento.url_video)">
-      <h2>
-        <span class="material-icons">play_circle</span>
-        Video del Evento
-      </h2>
-      <div class="video-container">
-        <iframe 
-          [src]="getYoutubeEmbedUrl(evento.url_video) | safe" 
-          frameborder="0" 
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-          allowfullscreen
-          class="youtube-embed">
-        </iframe>
-      </div>
-    </div>
-
-    <!-- Tags -->
-    <div class="evento-section evento-accordion" *ngIf="evento.tags">
-      <button class="accordion-header" (click)="toggleAcordeon('tags')" type="button">
-        <h2>
-          <span class="material-icons">label</span>
-          Etiquetas
-        </h2>
-        <span class="material-icons accordion-icon" [class.open]="acordeones.tags">expand_more</span>
-      </button>
-      <div class="accordion-content" [class.open]="acordeones.tags">
-        <div class="tags-container">
-          <span *ngFor="let tag of getTags()" class="tag">{{ tag }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Términos y Condiciones -->
-    <div class="evento-section evento-accordion" *ngIf="evento.terminos_condiciones">
-      <button class="accordion-header" (click)="toggleAcordeon('terminos')" type="button">
-        <h2>
-          <span class="material-icons">gavel</span>
-          Términos y Condiciones
-        </h2>
-        <span class="material-icons accordion-icon" [class.open]="acordeones.terminos">expand_more</span>
-      </button>
-      <div class="accordion-content" [class.open]="acordeones.terminos">
-        <div class="evento-descripcion">{{ evento.terminos_condiciones }}</div>
-      </div>
-    </div>
-
-    <!-- Política de Reembolso -->
-    <div class="evento-section evento-accordion" *ngIf="evento.politica_reembolso">
-      <button class="accordion-header" (click)="toggleAcordeon('politica')" type="button">
-        <h2>
-          <span class="material-icons">undo</span>
-          Política de Reembolso
-        </h2>
-        <span class="material-icons accordion-icon" [class.open]="acordeones.politica">expand_more</span>
-      </button>
-      <div class="accordion-content" [class.open]="acordeones.politica">
-        <div class="evento-descripcion">{{ evento.politica_reembolso }}</div>
-      </div>
-    </div>
-
-    <!-- Tipos de boleta (solo visualización, sin compra) -->
-    <div class="evento-section" *ngIf="!isEventoFinalizado()">
-      <h2>Tipos de Boleta</h2>
       <div *ngIf="loadingBoletas" class="loading-small">
         <p>Cargando tipos de boleta...</p>
       </div>
@@ -307,10 +163,10 @@
       <div *ngIf="!loadingBoletas && tiposBoleta.length === 0" class="empty-state">
         <p>No hay boletas disponibles para este evento</p>
       </div>
-    </div>
+      </div>
 
-    <!-- Mensaje si el evento está finalizado -->
-    <div class="evento-section evento-accordion" *ngIf="isEventoFinalizado()">
+      <!-- Mensaje si el evento está finalizado -->
+      <div class="evento-section evento-accordion" *ngIf="isEventoFinalizado()">
       <button class="accordion-header" (click)="toggleAcordeon('eventoFinalizado')" type="button">
         <h2>
           <span class="material-icons">event_busy</span>
@@ -323,11 +179,11 @@
           <p>Este evento ya finalizó. Las boletas ya no están disponibles para compra.</p>
         </div>
       </div>
-    </div>
+      </div>
 
-    <!-- Carrito de compra (deshabilitado en modo solo visualización) -->
-    <div class="evento-section" *ngIf="itemsCompra.length > 0 && !isEventoFinalizado()">
-      <h2>Mi Carrito</h2>
+      <!-- Carrito de compra -->
+      <div class="evento-section" *ngIf="itemsCompra.length > 0 && !isEventoFinalizado()">
+      <h2>Mi carrito</h2>
       <div class="carrito-items">
         <div *ngFor="let item of itemsCompra" class="carrito-item">
           <div class="carrito-item-info">
@@ -476,7 +332,6 @@
         </div>
       </div>
       
-      <!-- Cupón de Descuento -->
       <div class="cupon-section">
         <h5>¿Tienes un cupón de descuento?</h5>
         <div class="cupon-input-group" *ngIf="!cuponAplicado">
@@ -528,7 +383,182 @@
         </button>
         <p class="wompi-info">Serás redirigido a Wompi para completar el pago de forma segura</p>
       </div>
+      </div>
     </div>
+
+    <section
+      class="detalle-zone detalle-zone--info"
+      *ngIf="(lugar || loadingLugar) || !!evento.descripcion || !!(evento.url_video && getYoutubeEmbedUrl(evento.url_video)) || !!evento.tags"
+      aria-labelledby="detalle-info-heading"
+    >
+      <h2 id="detalle-info-heading" class="detalle-zone-title">Información del evento</h2>
+
+    <!-- Información del Lugar -->
+    <div class="evento-section evento-accordion" *ngIf="lugar || loadingLugar">
+      <button class="accordion-header" (click)="toggleAcordeon('ubicacion')" type="button">
+        <h2>
+          <span class="material-icons">place</span>
+          Ubicación del Evento
+        </h2>
+        <span class="material-icons accordion-icon" [class.open]="acordeones.ubicacion">expand_more</span>
+      </button>
+      <div class="accordion-content" [class.open]="acordeones.ubicacion">
+        <div *ngIf="loadingLugar" class="loading-small">
+          <p>Cargando información del lugar...</p>
+        </div>
+        <div *ngIf="!loadingLugar && lugar" class="lugar-info">
+          <div class="lugar-header">
+            <h3>{{ lugar.nombre }}</h3>
+          </div>
+          <div class="lugar-details">
+            <div class="lugar-item">
+              <span class="material-icons">location_on</span>
+              <div class="lugar-item-content">
+                <strong>Dirección</strong>
+                <p>{{ lugar.direccion }}</p>
+              </div>
+            </div>
+            <div class="lugar-item" *ngIf="lugar.ciudad">
+              <span class="material-icons">location_city</span>
+              <div class="lugar-item-content">
+                <strong>Ciudad</strong>
+                <p>{{ lugar.ciudad }}<span *ngIf="lugar.pais">, {{ lugar.pais }}</span></p>
+              </div>
+            </div>
+            <div class="lugar-item" *ngIf="lugar.telefono">
+              <span class="material-icons">phone</span>
+              <div class="lugar-item-content">
+                <strong>Teléfono</strong>
+                <p>{{ lugar.telefono }}</p>
+              </div>
+            </div>
+            <div class="lugar-item" *ngIf="lugar.email">
+              <span class="material-icons">email</span>
+              <div class="lugar-item-content">
+                <strong>Email</strong>
+                <p>{{ lugar.email }}</p>
+              </div>
+            </div>
+            <div class="lugar-item" *ngIf="lugar.capacidad_maxima">
+              <span class="material-icons">people</span>
+              <div class="lugar-item-content">
+                <strong>Capacidad</strong>
+                <p>{{ lugar.capacidad_maxima }} personas</p>
+              </div>
+            </div>
+            <div class="lugar-item" *ngIf="lugar.descripcion">
+              <span class="material-icons">description</span>
+              <div class="lugar-item-content">
+                <strong>Descripción</strong>
+                <p>{{ lugar.descripcion }}</p>
+              </div>
+            </div>
+            <div class="lugar-buttons" *ngIf="lugar.latitud && lugar.longitud || lugar.sitio_web">
+              <button type="button" class="btn-google-maps" *ngIf="lugar.latitud && lugar.longitud"
+                (click)="abrirGoogleMaps(lugar.latitud, lugar.longitud)">
+                <span class="material-icons">map</span>
+                <span>Ver en Google Maps</span>
+              </button>
+              <button type="button" class="btn-sitio-web" *ngIf="lugar.sitio_web"
+                (click)="abrirSitioWeb(lugar.sitio_web)">
+                <span class="material-icons">language</span>
+                <span>Visitar Sitio Web</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="!loadingLugar && !lugar && evento.lugar_id" class="error-message">
+          <span class="material-icons">error</span>
+          <p>No se pudo cargar la información del lugar</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Descripción -->
+    <div class="evento-section evento-accordion" *ngIf="evento.descripcion">
+      <button class="accordion-header" (click)="toggleAcordeon('descripcion')" type="button">
+        <h2>
+          <span class="material-icons">description</span>
+          Descripción
+        </h2>
+        <span class="material-icons accordion-icon" [class.open]="acordeones.descripcion">expand_more</span>
+      </button>
+      <div class="accordion-content" [class.open]="acordeones.descripcion">
+        <p class="evento-descripcion">{{ evento.descripcion }}</p>
+      </div>
+    </div>
+
+    <!-- Video de YouTube -->
+    <div class="evento-section" *ngIf="evento.url_video && getYoutubeEmbedUrl(evento.url_video)">
+      <h2>
+        <span class="material-icons">play_circle</span>
+        Video del Evento
+      </h2>
+      <div class="video-container">
+        <iframe 
+          [src]="getYoutubeEmbedUrl(evento.url_video) | safe" 
+          frameborder="0" 
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+          allowfullscreen
+          class="youtube-embed">
+        </iframe>
+      </div>
+    </div>
+
+    <!-- Tags -->
+    <div class="evento-section evento-accordion" *ngIf="evento.tags">
+      <button class="accordion-header" (click)="toggleAcordeon('tags')" type="button">
+        <h2>
+          <span class="material-icons">label</span>
+          Etiquetas
+        </h2>
+        <span class="material-icons accordion-icon" [class.open]="acordeones.tags">expand_more</span>
+      </button>
+      <div class="accordion-content" [class.open]="acordeones.tags">
+        <div class="tags-container">
+          <span *ngFor="let tag of getTags()" class="tag">{{ tag }}</span>
+        </div>
+      </div>
+    </div>
+
+    </section>
+
+    <section
+      class="detalle-zone detalle-zone--legal"
+      *ngIf="evento.terminos_condiciones || evento.politica_reembolso"
+      aria-labelledby="detalle-legal-heading"
+    >
+      <h2 id="detalle-legal-heading" class="detalle-zone-title">Legal y políticas</h2>
+
+    <!-- Términos y Condiciones -->
+    <div class="evento-section evento-accordion" *ngIf="evento.terminos_condiciones">
+      <button class="accordion-header" (click)="toggleAcordeon('terminos')" type="button">
+        <h2>
+          <span class="material-icons">gavel</span>
+          Términos y Condiciones
+        </h2>
+        <span class="material-icons accordion-icon" [class.open]="acordeones.terminos">expand_more</span>
+      </button>
+      <div class="accordion-content" [class.open]="acordeones.terminos">
+        <div class="evento-descripcion">{{ evento.terminos_condiciones }}</div>
+      </div>
+    </div>
+
+    <!-- Política de Reembolso -->
+    <div class="evento-section evento-accordion" *ngIf="evento.politica_reembolso">
+      <button class="accordion-header" (click)="toggleAcordeon('politica')" type="button">
+        <h2>
+          <span class="material-icons">undo</span>
+          Política de Reembolso
+        </h2>
+        <span class="material-icons accordion-icon" [class.open]="acordeones.politica">expand_more</span>
+      </button>
+      <div class="accordion-content" [class.open]="acordeones.politica">
+        <div class="evento-descripcion">{{ evento.politica_reembolso }}</div>
+      </div>
+    </div>
+
+    </section>
   </div>
 
   <!-- Mapa de palcos a pantalla completa -->

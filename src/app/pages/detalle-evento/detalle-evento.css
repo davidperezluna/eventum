@@ -51,14 +51,54 @@
 
 .evento-image-large {
   position: relative;
-  height: 375px;
-  min-height: 640px;
+  height: clamp(260px, 38vw, 420px);
+  min-height: 260px;
+  max-height: 480px;
   width: 100%;
   overflow: hidden;
   background: #1a1a1a;
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.detalle-zone {
+  margin-bottom: 0.25rem;
+}
+
+.detalle-zone--compra {
+  margin-bottom: 2.5rem;
+}
+
+.detalle-zone-title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 1rem;
+  padding-bottom: 0.625rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.section-heading-row {
+  margin-bottom: 1.25rem;
+}
+
+.section-heading-row h2 {
+  margin: 0 0 0.35rem;
+}
+
+.evento-section .section-heading-row h2 {
+  margin-bottom: 0.35rem;
+}
+
+.section-kicker {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: #64748b;
+  font-weight: 500;
+  line-height: 1.5;
 }
 
 .evento-image-background {
@@ -344,19 +384,71 @@
   line-height: 1.6;
 }
 
-/* Meta Grid */
+/* Meta agrupado: cuándo / ventas / precio */
 .evento-meta {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1.5rem;
+  align-items: stretch;
   padding-top: 2rem;
   border-top: 1px solid #f1f5f9;
+}
+
+.meta-group {
+  margin: 0;
+  min-width: 0;
+}
+
+.meta-group-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+}
+
+.meta-group-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 1rem;
+}
+
+.meta-group--precio {
+  align-self: start;
+}
+
+.meta-group--precio .meta-precio-texto {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.35;
+}
+
+.meta-group--precio .meta-precio-texto--desde {
+  font-weight: 600;
+}
+
+.meta-group--precio .precio-gratis {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #059669;
 }
 
 .meta-item {
   display: flex;
   align-items: center;
   gap: 1rem;
+}
+
+.meta-group-grid .meta-item {
+  align-items: flex-start;
+}
+
+.meta-group-grid .meta-item .material-icons {
+  flex-shrink: 0;
 }
 
 .meta-item .material-icons {
