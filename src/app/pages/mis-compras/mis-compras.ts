@@ -608,6 +608,18 @@ export class MisCompras implements OnInit, OnDestroy {
     return this.eventosConBoletas.find((grupo) => grupo.key === this.eventoDetalleKey) || null;
   }
 
+  /** Tipos con nombre y cantidad > 0 para badges de resumen (sin fila genérica «N tipos»). */
+  tiposResumenParaBadges(grupo: EventoBoletasGrupo | null | undefined): TipoBoletasGrupo[] {
+    if (!grupo?.tipos?.length) return [];
+    return grupo.tipos.filter((t) => {
+      if ((t.totalBoletas ?? 0) <= 0) return false;
+      if (!(t.nombre || '').trim()) return false;
+      // Sin tipo en backend: agrupamos bajo prefijo sin id de tipo.
+      if (t.key.startsWith('sin-tipo-')) return false;
+      return true;
+    });
+  }
+
   tiposDetallePorTab(grupo: EventoBoletasGrupo | null): TipoBoletasGrupo[] {
     if (!grupo) return [];
     return grupo.tipos
