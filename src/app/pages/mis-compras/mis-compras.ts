@@ -92,6 +92,9 @@ export class MisCompras implements OnInit, OnDestroy {
   searchTerm: string = '';
   mostrarFiltros = false;
 
+  /** Lista principal `/mis-compras`: filtros ocultos temporalmente. */
+  mostrarToolbarFiltrosMisCompras = false;
+
   // Lista de eventos disponibles (solo eventos donde el usuario tiene compras)
   eventosDisponibles: Evento[] = [];
   loadingEventos = false;

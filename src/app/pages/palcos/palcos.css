@@ -255,12 +255,6 @@
   font-size: var(--font-size-xs);
 }
 
-.loading-state {
-  text-align: center;
-  padding: var(--spacing-2xl);
-  color: var(--color-text-tertiary);
-}
-
 .empty-state {
   display: flex;
   flex-direction: column;

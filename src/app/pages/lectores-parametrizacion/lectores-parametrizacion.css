@@ -58,7 +58,6 @@
   box-shadow: var(--shadow-sm, 0 1px 3px rgb(0 0 0 / 8%));
 }
 
-.loading-state,
 .empty-state {
   text-align: center;
   padding: var(--spacing-2xl);

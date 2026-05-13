@@ -324,7 +324,7 @@
         <!-- Lista de cupones -->
         <div class="cupones-list-container">
           <h3>Cupones Existentes</h3>
-          <div *ngIf="loadingCupones" class="loading-state">Cargando cupones...</div>
+          <div *ngIf="loadingCupones" class="loading-state loading-state--embedded">Cargando cupones...</div>
           <div *ngIf="!loadingCupones && cupones.length === 0" class="empty-state-small">
             No hay cupones creados para este evento.
           </div>

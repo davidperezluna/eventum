@@ -244,12 +244,6 @@
   cursor: pointer;
 }
 
-.loading-state {
-  text-align: center;
-  padding: var(--spacing-2xl);
-  color: var(--color-text-tertiary);
-}
-
 /* =========================================
    EMPTY STATE - Diseño mejorado
    ========================================= */

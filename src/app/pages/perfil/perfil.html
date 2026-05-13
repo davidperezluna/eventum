@@ -39,18 +39,41 @@
       <div class="perfil-header">
         <div class="foto-perfil-container">
           <div class="foto-perfil-wrapper">
-            <img [src]="previewUrl || '/assets/default-avatar.png'" [alt]="getNombreCompleto()" class="foto-perfil" />
-            <div class="foto-overlay">
-              <button type="button" class="btn-icon" (click)="selectImage()" [disabled]="uploadingImage">
-                <span class="material-icons">{{ uploadingImage ? 'hourglass_empty' : 'camera_alt' }}</span>
-              </button>
-              <button *ngIf="previewUrl && selectedFile" type="button" class="btn-icon btn-danger"
-                (click)="removeImage()">
-                <span class="material-icons">delete</span>
-              </button>
+            <div class="foto-perfil-ring">
+              <img
+                *ngIf="tieneFotoVisible()"
+                [src]="previewUrl!"
+                [alt]="'Foto de ' + getNombreCompleto()"
+                class="foto-perfil"
+              />
+              <div *ngIf="!tieneFotoVisible()" class="foto-perfil-placeholder" aria-hidden="true">
+                <span class="material-icons">person</span>
+              </div>
+              <div class="foto-overlay">
+                <button type="button" class="btn-icon" (click)="selectImage(); $event.stopPropagation()" [disabled]="uploadingImage">
+                  <span class="material-icons">{{ uploadingImage ? 'hourglass_empty' : 'camera_alt' }}</span>
+                </button>
+                <button
+                  *ngIf="tieneFotoVisible() && selectedFile"
+                  type="button"
+                  class="btn-icon btn-danger"
+                  (click)="removeImage(); $event.stopPropagation()"
+                >
+                  <span class="material-icons">delete</span>
+                </button>
+              </div>
             </div>
+            <button
+              type="button"
+              class="foto-camera-fab"
+              (click)="selectImage()"
+              [disabled]="uploadingImage"
+              aria-label="Cambiar foto de perfil"
+            >
+              <span class="material-icons" aria-hidden="true">{{ uploadingImage ? 'hourglass_empty' : 'photo_camera' }}</span>
+            </button>
           </div>
-          <p class="foto-help">Haz clic en la cámara para cambiar tu foto</p>
+          <p class="foto-help">Usa el botón de la cámara para cambiar tu foto</p>
         </div>
         <div class="usuario-info">
           <h3>{{ getNombreCompleto() }}</h3>
@@ -83,42 +106,59 @@
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>Fecha de Nacimiento</label>
-            <input type="date" [(ngModel)]="formData.fecha_nacimiento" name="fecha_nacimiento" />
-          </div>
-          <div class="form-group">
-            <label>Género</label>
-            <select [(ngModel)]="formData.genero" name="genero">
-              <option *ngFor="let genero of generos" [value]="genero.value">
-                {{ genero.label }}
-              </option>
-            </select>
-          </div>
-        </div>
+        <details
+          class="perfil-mas-datos"
+          [open]="masDatosPerfilAbierto"
+          (toggle)="onMasDatosPerfilToggle($event)"
+        >
+          <summary class="perfil-mas-datos-summary">
+            <span class="perfil-mas-datos-summary-text">
+              <span class="material-icons perfil-mas-datos-summary-icon" aria-hidden="true">badge</span>
+              Más datos
+            </span>
+            <span class="material-icons perfil-mas-datos-chevron" aria-hidden="true">expand_more</span>
+          </summary>
+          <div class="perfil-mas-datos-body">
+            <p class="perfil-mas-datos-hint">Fecha de nacimiento, género, documento y dirección.</p>
 
-        <div class="form-group">
-          <label>Documento de Identidad</label>
-          <input type="text" [(ngModel)]="formData.documento_identidad" name="documento_identidad"
-            placeholder="Número de documento" />
-        </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Fecha de Nacimiento</label>
+                <input type="date" [(ngModel)]="formData.fecha_nacimiento" name="fecha_nacimiento" />
+              </div>
+              <div class="form-group">
+                <label>Género</label>
+                <select [(ngModel)]="formData.genero" name="genero">
+                  <option *ngFor="let genero of generos" [value]="genero.value">
+                    {{ genero.label }}
+                  </option>
+                </select>
+              </div>
+            </div>
 
-        <div class="form-group">
-          <label>Dirección</label>
-          <input type="text" [(ngModel)]="formData.direccion" name="direccion" placeholder="Dirección completa" />
-        </div>
+            <div class="form-group">
+              <label>Documento de Identidad</label>
+              <input type="text" [(ngModel)]="formData.documento_identidad" name="documento_identidad"
+                placeholder="Número de documento" />
+            </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>Ciudad</label>
-            <input type="text" [(ngModel)]="formData.ciudad" name="ciudad" placeholder="Ciudad" />
+            <div class="form-group">
+              <label>Dirección</label>
+              <input type="text" [(ngModel)]="formData.direccion" name="direccion" placeholder="Dirección completa" />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Ciudad</label>
+                <input type="text" [(ngModel)]="formData.ciudad" name="ciudad" placeholder="Ciudad" />
+              </div>
+              <div class="form-group">
+                <label>País</label>
+                <input type="text" [(ngModel)]="formData.pais" name="pais" placeholder="País" />
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label>País</label>
-            <input type="text" [(ngModel)]="formData.pais" name="pais" placeholder="País" />
-          </div>
-        </div>
+        </details>
 
         <div class="form-actions">
           <button type="submit" class="btn-primary" [disabled]="saving || uploadingImage">
@@ -130,8 +170,8 @@
       </form>
     </div>
 
-    <!-- Cambio de contraseña -->
-    <div class="content-card">
+    <!-- Cambio de contraseña (oculto temporalmente — ver mostrarCambiarContrasena en perfil.ts) -->
+    <div class="content-card" *ngIf="mostrarCambiarContrasena">
       <div class="card-header">
         <h2>
           <span class="material-icons">lock</span>

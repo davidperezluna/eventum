@@ -119,11 +119,6 @@
   color: var(--color-text-primary);
 }
 
-.loading-state {
-  padding: var(--spacing-lg);
-  color: var(--color-text-secondary);
-}
-
 .loader-inline {
   display: flex;
   align-items: center;

@@ -135,7 +135,6 @@
   border-top: 1px solid var(--color-border-light);
 }
 
-.loading-state,
 .empty-state {
   text-align: center;
   padding: var(--spacing-2xl);

@@ -23,6 +23,12 @@ export class Perfil implements OnInit {
   error: string | null = null;
   success: string | null = null;
 
+  /** Escritorio: “Más datos” abierto; móvil: colapsado (menos scroll). */
+  masDatosPerfilAbierto = false;
+
+  /** Pendiente rehabilitar desde la UI cuando se necesite. */
+  mostrarCambiarContrasena = false;
+
   // Propiedades para cambio de contraseña
   cambiarPassword = false;
   passwordActual = '';
@@ -52,10 +58,25 @@ export class Perfil implements OnInit {
   ) {}
 
   async ngOnInit() {
+    try {
+      if (typeof globalThis !== 'undefined' && 'matchMedia' in globalThis) {
+        this.masDatosPerfilAbierto = (globalThis as unknown as Window).matchMedia('(min-width: 769px)').matches;
+      }
+    } catch {
+      /* ignore */
+    }
+
     this.loading = true;
     // Esperar a que el servicio de auth esté inicializado
     await this.authService.waitForInitialization();
     this.loadUsuario();
+  }
+
+  onMasDatosPerfilToggle(event: Event): void {
+    const el = event.target as HTMLDetailsElement | null;
+    if (el?.tagName === 'DETAILS') {
+      this.masDatosPerfilAbierto = el.open;
+    }
   }
 
   loadUsuario() {
@@ -329,6 +350,12 @@ export class Perfil implements OnInit {
       default:
         return 'Usuario';
     }
+  }
+
+  /** Hay imagen real (URL remota o vista previa local); si no, se muestra icono de usuario. */
+  tieneFotoVisible(): boolean {
+    const u = this.previewUrl;
+    return typeof u === 'string' && u.trim().length > 0;
   }
 }
 

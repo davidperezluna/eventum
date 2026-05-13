@@ -659,7 +659,6 @@
   box-shadow: var(--shadow-sm);
 }
 
-.loading-state,
 .empty-state {
   text-align: center;
   padding: var(--spacing-2xl);

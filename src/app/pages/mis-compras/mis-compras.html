@@ -55,7 +55,7 @@
     </div>
   </section>
 
-  <div class="filters-toolbar" *ngIf="!eventoDetalleKey">
+  <div class="filters-toolbar" *ngIf="mostrarToolbarFiltrosMisCompras && !eventoDetalleKey">
     <button
       type="button"
       class="btn-toggle-filters"
@@ -70,7 +70,7 @@
   </div>
 
   <!-- Filtros -->
-  <div id="filtros-panel" class="filters-card" *ngIf="mostrarFiltros && !eventoDetalleKey">
+  <div id="filtros-panel" class="filters-card" *ngIf="mostrarToolbarFiltrosMisCompras && mostrarFiltros && !eventoDetalleKey">
     <div class="filters-row">
       <div class="filter-group">
         <label>Estado de Pago</label>
@@ -535,11 +535,11 @@
 
   <!-- Empty state -->
   <div *ngIf="!loading && !vistaActividad && !tieneContenidoMisBoletas()" class="empty-state">
-    <span class="material-icons">shopping_bag</span>
-    <p>No has realizado ninguna compra aún</p>
+    <span class="material-icons empty-state__lead-icon" aria-hidden="true">shopping_bag</span>
+    <p class="empty-state__title">No has realizado ninguna compra aún</p>
     <p class="empty-subtitle">Explora los eventos disponibles y compra tus boletas</p>
-    <a routerLink="/eventos-cliente" class="btn-primary">
-      <span class="material-icons">event</span>
+    <a routerLink="/eventos-cliente" class="btn-primary empty-state__cta">
+      <span class="material-icons" aria-hidden="true">event</span>
       Ver Eventos
     </a>
   </div>
