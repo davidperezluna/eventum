@@ -103,6 +103,10 @@ export interface DashboardStats {
   lugares_activos?: number;
   ingresos_mes_actual?: number;
   ingresos_mes_anterior?: number;
+  /** Sumatoria compras completadas desde medianoche local (hoy). */
+  ingresos_dia_actual?: number;
+  /** Sumatoria compras completadas en el día calendario anterior (local). */
+  ingresos_dia_anterior?: number;
   porcentaje_servicio_promedio?: number;
   valor_servicio_total?: number;
   /** Suma de max(0, total − valor_servicio) por compra completada (parte boletas/ventas). */

@@ -9,6 +9,12 @@ import { AlertService } from '../../services/alert.service';
 import { AuthService } from '../../services/auth.service';
 import { ExcelExportService } from '../../services/excel-export.service';
 import { Compra, Evento, Usuario } from '../../types';
+import {
+  calcularWompiDescuento,
+  WOMPI_COMISION_FIJO_COP,
+  WOMPI_COMISION_TARIFA,
+  WOMPI_IVA,
+} from '../../utils/wompi-finanzas';
 
 @Component({
   selector: 'app-reportes',
@@ -377,9 +383,9 @@ export class Reportes implements OnInit, OnDestroy {
 
       compras.forEach((c: any) => {
         const bruto = Number(c.total || 0);
-        const comisionBase = bruto * 0.0265 + 700;
-        const iva = comisionBase * 0.19;
-        const comisionTotal = comisionBase + iva;
+        const comisionBase = bruto * WOMPI_COMISION_TARIFA + WOMPI_COMISION_FIJO_COP;
+        const iva = comisionBase * WOMPI_IVA;
+        const comisionTotal = calcularWompiDescuento(bruto);
         const neto = bruto - comisionTotal;
 
         totalBruto += bruto;

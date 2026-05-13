@@ -3,7 +3,7 @@
  * (total × tarifa + fijo) × (1 + IVA), no reemplaza el extracto oficial de Wompi.
  */
 
-export const WOMPI_COMISION_TARIFA = 0.0265;
+export const WOMPI_COMISION_TARIFA = 0.0267;
 export const WOMPI_COMISION_FIJO_COP = 700;
 export const WOMPI_IVA = 0.19;
 

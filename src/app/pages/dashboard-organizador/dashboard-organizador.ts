@@ -31,6 +31,8 @@ export class DashboardOrganizador implements OnInit {
     lugares_activos: 0,
     ingresos_mes_actual: 0,
     ingresos_mes_anterior: 0,
+    ingresos_dia_actual: 0,
+    ingresos_dia_anterior: 0,
     porcentaje_servicio_promedio: 0,
     valor_servicio_total: 0,
     ingresos_ventas_bruto_total: 0,

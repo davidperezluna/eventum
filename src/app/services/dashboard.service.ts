@@ -256,6 +256,45 @@ export class DashboardService {
       return 0;
     }, 0);
 
+    const ingresosDiaActual = safeExecute(async () => {
+      const inicioHoy = new Date();
+      inicioHoy.setHours(0, 0, 0, 0);
+
+      const response = await this.supabase
+        .from('compras')
+        .select('total')
+        .eq('estado_pago', 'completado')
+        .gte('fecha_compra', inicioHoy.toISOString());
+
+      if (response.error) return 0;
+      if (response.data && Array.isArray(response.data)) {
+        return (response.data as any[]).reduce((sum: number, compra: any) => sum + Number(compra.total || 0), 0);
+      }
+      return 0;
+    }, 0);
+
+    const ingresosDiaAnterior = safeExecute(async () => {
+      const inicioAyer = new Date();
+      inicioAyer.setDate(inicioAyer.getDate() - 1);
+      inicioAyer.setHours(0, 0, 0, 0);
+
+      const finAyer = new Date(inicioAyer);
+      finAyer.setHours(23, 59, 59, 999);
+
+      const response = await this.supabase
+        .from('compras')
+        .select('total')
+        .eq('estado_pago', 'completado')
+        .gte('fecha_compra', inicioAyer.toISOString())
+        .lte('fecha_compra', finAyer.toISOString());
+
+      if (response.error) return 0;
+      if (response.data && Array.isArray(response.data)) {
+        return (response.data as any[]).reduce((sum: number, compra: any) => sum + Number(compra.total || 0), 0);
+      }
+      return 0;
+    }, 0);
+
     // Boletas por estado (solo con pago completado)
     const boletasPorEstado = safeExecute(async () => {
       const response = await this.supabase
@@ -340,6 +379,8 @@ export class DashboardService {
       lugares_activos,
       ingresos_mes_actual,
       ingresos_mes_anterior,
+      ingresos_dia_actual,
+      ingresos_dia_anterior,
       boletas_por_estado,
       top_eventos
     ] = await Promise.all([
@@ -354,6 +395,8 @@ export class DashboardService {
       lugaresActivos,
       ingresosMesActual,
       ingresosMesAnterior,
+      ingresosDiaActual,
+      ingresosDiaAnterior,
       boletasPorEstado,
       topEventos
     ]);
@@ -370,6 +413,8 @@ export class DashboardService {
       lugares_activos,
       ingresos_mes_actual,
       ingresos_mes_anterior,
+      ingresos_dia_actual,
+      ingresos_dia_anterior,
       porcentaje_servicio_promedio: ingresosYServicioTotales.porcentajeServicioPromedio,
       valor_servicio_total: ingresosYServicioTotales.valorServicioTotal,
       ingresos_ventas_bruto_total: ingresosYServicioTotales.ingresosVentasBrutoTotal,
