@@ -4,6 +4,12 @@
 
 export const environment = {
   production: true,
+  /** Mantener alineado con `index.html` (OneSignal se inicializa allí antes del bundle). */
+  oneSignal: {
+    appId: 'cb3f9dcf-6085-43d5-99ae-6c76db8abf57',
+    serviceWorkerPath: '/push/onesignal/OneSignalSDKWorker.js',
+    serviceWorkerScope: '/push/onesignal/',
+  },
   maintenanceMode: false,
   maintenanceMessage: 'Estamos en mantenimiento. Volvemos pronto.',
   googleTagId: 'GT-5TJZWP3P', // Google Tag ID

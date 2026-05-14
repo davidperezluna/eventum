@@ -23,6 +23,66 @@
   </script>
   <!-- End Google Tag -->
   <link rel="manifest" href="manifest.webmanifest">
+
+  <!-- OneSignal Web Push (v16). Worker en /push/onesignal/ para no chocar con ngsw-worker.js (PWA). Configurar la misma ruta en el panel: Settings → Web → Advanced → Customize service worker paths. -->
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(async function (OneSignal) {
+      try {
+        await OneSignal.init({
+        appId: 'cb3f9dcf-6085-43d5-99ae-6c76db8abf57',
+        // Ruta absoluta desde origen; si falta la "/" inicial, en rutas como /detalle-evento/17
+        // el SW se resolvía contra esa carpeta y daba 404 (sin service worker registrado).
+        serviceWorkerPath: '/push/onesignal/OneSignalSDKWorker.js',
+        serviceWorkerParam: { scope: '/push/onesignal/' },
+        allowLocalhostAsSecureOrigin:
+          window.location.hostname === 'localhost' ||
+          window.location.hostname === '127.0.0.1',
+        // Textos del Slidedown (límites OneSignal ~90 caracteres el mensaje, ~15 cada botón)
+        promptOptions: {
+          slidedown: {
+            prompts: [
+              {
+                type: 'push',
+                // autoPrompt en false para no duplicar: el prompt lo disparamos nosotros con promptPush(force).
+                autoPrompt: false,
+                text: {
+                  actionMessage:
+                    'Recibe avisos de eventos y novedades. Podés silenciarlas cuando quieras.',
+                  acceptButton: 'Activar alertas',
+                  cancelButton: 'Ahora no',
+                },
+              },
+            ],
+          },
+        },
+        });
+        window.__eventumOneSignal = OneSignal;
+
+        window.__eventumForcePushPrompt = function () {
+          if (typeof Notification === 'undefined' || Notification.permission !== 'default') {
+            console.info('[OneSignal] omitido: Notification no es default (actual:', Notification && Notification.permission, ')');
+            return Promise.resolve();
+          }
+          return OneSignal.Slidedown.promptPush({ force: true }).catch(function (e) {
+            console.warn('[OneSignal] promptPush:', e);
+          });
+        };
+
+        window.setTimeout(function () {
+          window.__eventumForcePushPrompt();
+        }, 1500);
+      } catch (err) {
+        console.error('[OneSignal] init:', err);
+        console.info(
+          '[OneSignal] En el dashboard: Push & Web → Site URL debe ser EXACTAMENTE el origen de esta pestaña:',
+          window.location.origin,
+          '(ej. Angular: http://localhost:4200). Marca también "Treat HTTP localhost as HTTPS" si aplica.'
+        );
+      }
+    });
+  </script>
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
 <body>
   
