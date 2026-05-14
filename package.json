@@ -10,7 +10,7 @@
     "postbuild": "node scripts/copy-404.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "icons:pwa": "node scripts/generate-pwa-icons.mjs"
+    "icons:pwa": "node scripts/generate-pwa-icons.mjs && node scripts/generate-push-notification-icons.mjs"
   },
   "prettier": {
     "printWidth": 100,

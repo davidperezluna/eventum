@@ -7,6 +7,7 @@
   "display": "standalone",
   "scope": "./",
   "start_url": "./",
+  "badge": "/icons/push/badge-monochrome-96.png",
   "icons": [
     {
       "src": "icons/icon-72x72.png",
@@ -51,10 +52,16 @@
       "purpose": "any"
     },
     {
+      "src": "icons/push/chrome-notification-256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
       "src": "icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }

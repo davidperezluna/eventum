@@ -22,6 +22,16 @@ export const environment = {
   supabaseLocal: {
     url: 'http://127.0.0.1:54321',
     anonKey: 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH'
-  }
+  },
+
+  /**
+   * Rutas de iconos Web Push (servidos desde `public/` → raíz del sitio).
+   * En OneSignal: Settings → Web → Default Notification Icon URL = `{origen}/icons/push/chrome-notification-256.png`
+   * Al enviar push: Chrome Web Push → icon = misma URL; badge = `{origen}/icons/push/badge-monochrome-96.png`
+   */
+  pushNotificationAssets: {
+    chromeWebIcon: '/icons/push/chrome-notification-256.png',
+    chromeWebBadge: '/icons/push/badge-monochrome-96.png',
+  },
 };
 
