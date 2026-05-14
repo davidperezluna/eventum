@@ -1,0 +1,16 @@
+@if (visible()) {
+  <div class="pwa-banner" role="region" aria-label="Instalar aplicación Eventum">
+    <div class="pwa-banner-inner">
+      <div class="pwa-banner-text">
+        <strong class="pwa-banner-title">Instalar Eventum</strong>
+        <span class="pwa-banner-desc">Accede más rápido desde tu escritorio o pantalla de inicio.</span>
+      </div>
+      <div class="pwa-banner-actions">
+        <button type="button" class="pwa-btn pwa-btn--primary" (click)="onInstall()">Instalar</button>
+        <button type="button" class="pwa-btn pwa-btn--ghost" (click)="onDismiss()" aria-label="Cerrar aviso">
+          Ahora no
+        </button>
+      </div>
+    </div>
+  </div>
+}
