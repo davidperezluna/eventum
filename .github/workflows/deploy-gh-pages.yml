@@ -62,6 +62,8 @@ jobs:
         run: npm ci
 
       - name: Build application
+        env:
+          BASE_HREF: ${{ vars.BASE_HREF }}
         run: npm run build:gh-pages
 
       - name: Verify build output and create 404.html

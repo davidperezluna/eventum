@@ -1,4 +1,4 @@
-@if (visible()) {
+@if (mode() === 'install') {
   <div class="pwa-banner" role="region" aria-label="Instalar aplicación Eventum">
     <div class="pwa-banner-inner">
       <div class="pwa-banner-text">
@@ -9,6 +9,26 @@
         <button type="button" class="pwa-btn pwa-btn--primary" (click)="onInstall()">Instalar</button>
         <button type="button" class="pwa-btn pwa-btn--ghost" (click)="onDismiss()" aria-label="Cerrar aviso">
           Ahora no
+        </button>
+      </div>
+    </div>
+  </div>
+}
+@if (mode() === 'info') {
+  <div class="pwa-banner pwa-banner--info" role="region" aria-label="Información sobre instalar Eventum">
+    <div class="pwa-banner-inner">
+      <div class="pwa-banner-text">
+        <strong class="pwa-banner-title">Instalación no disponible en esta dirección</strong>
+        <span class="pwa-banner-desc">
+          Con <strong>HTTP</strong> y una <strong>IP de red local</strong> (por ejemplo 192.168…), Chrome y Edge no
+          ofrecen instalar la app. Abre la misma página en
+          <strong>{{ localhostHint() }}</strong> en el equipo donde corre el servidor, o usa un sitio con
+          <strong>HTTPS</strong> (por ejemplo un túnel) para poder instalar.
+        </span>
+      </div>
+      <div class="pwa-banner-actions">
+        <button type="button" class="pwa-btn pwa-btn--ghost" (click)="onDismiss()" aria-label="Cerrar aviso">
+          Entendido
         </button>
       </div>
     </div>

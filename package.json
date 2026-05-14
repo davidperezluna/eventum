@@ -6,7 +6,7 @@
     "start": "ng serve",
     "build": "ng build",
     "build:prod": "ng build --configuration production && node scripts/copy-404.js",
-    "build:gh-pages": "ng build --configuration production --base-href / && node scripts/copy-404.js",
+    "build:gh-pages": "node scripts/build-github-pages.mjs",
     "postbuild": "node scripts/copy-404.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",

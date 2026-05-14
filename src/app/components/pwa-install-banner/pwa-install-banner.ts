@@ -16,6 +16,8 @@ export interface BeforeInstallPromptEvent extends Event {
 
 const DISMISS_KEY = 'eventum-pwa-install-banner-dismissed';
 
+type BannerMode = 'hidden' | 'install' | 'info';
+
 @Component({
   selector: 'app-pwa-install-banner',
   standalone: true,
@@ -27,7 +29,9 @@ export class PwaInstallBanner implements OnDestroy {
   private readonly doc = inject(DOCUMENT);
   private readonly zone = inject(NgZone);
 
-  protected readonly visible = signal(false);
+  protected readonly mode = signal<BannerMode>('hidden');
+  /** URL sugerida cuando la página se abre por IP HTTP (mismo puerto que el origen actual). */
+  protected readonly localhostHint = signal('http://localhost:8080');
 
   private deferredPrompt: BeforeInstallPromptEvent | null = null;
   private beforeInstallListener?: (e: Event) => void;
@@ -52,16 +56,24 @@ export class PwaInstallBanner implements OnDestroy {
       /* private mode u bloqueo de storage */
     }
 
+    const port = win.location.port;
+    this.localhostHint.set(port ? `http://localhost:${port}` : 'http://localhost');
+
+    // HTTP por IP (p. ej. 192.168.x.x): no hay contexto seguro → no llega beforeinstallprompt.
+    if (!win.isSecureContext) {
+      this.zone.run(() => this.mode.set('info'));
+    }
+
     this.beforeInstallListener = (e: Event) => {
       e.preventDefault();
       this.deferredPrompt = e as BeforeInstallPromptEvent;
-      this.zone.run(() => this.visible.set(true));
+      this.zone.run(() => this.mode.set('install'));
     };
     win.addEventListener('beforeinstallprompt', this.beforeInstallListener);
 
     this.appInstalledListener = () => {
       this.deferredPrompt = null;
-      this.zone.run(() => this.visible.set(false));
+      this.zone.run(() => this.mode.set('hidden'));
       try {
         win.localStorage.setItem(DISMISS_KEY, '1');
       } catch {
@@ -99,7 +111,7 @@ export class PwaInstallBanner implements OnDestroy {
       /* usuario canceló o el navegador rechazó */
     }
     this.deferredPrompt = null;
-    this.visible.set(false);
+    this.mode.set('hidden');
   }
 
   protected onDismiss(): void {
@@ -109,7 +121,7 @@ export class PwaInstallBanner implements OnDestroy {
     } catch {
       /* ignore */
     }
-    this.visible.set(false);
+    this.mode.set('hidden');
   }
 
   private isStandalone(win: Window): boolean {

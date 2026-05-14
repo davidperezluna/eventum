@@ -87,3 +87,13 @@
 .pwa-btn--ghost:hover {
   background: rgba(255, 255, 255, 0.28);
 }
+
+.pwa-banner--info .pwa-banner-inner {
+  background: linear-gradient(135deg, var(--color-primary, #1a1a2e) 0%, var(--color-primary-dark, #16213e) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.pwa-banner--info .pwa-banner-desc strong {
+  font-weight: 600;
+  color: #c4b5fd;
+}

@@ -62,6 +62,9 @@ jobs:
         run: npm ci
 
       - name: Build application
+        env:
+          # Opcional: en repo → Settings → Variables → BASE_HREF = / para sitio en raíz (p. ej. dominio propio).
+          BASE_HREF: ${{ vars.BASE_HREF }}
         run: npm run build:gh-pages
 
       - name: Verify build output and create 404.html
