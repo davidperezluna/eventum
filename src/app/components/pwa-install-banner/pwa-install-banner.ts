@@ -14,10 +14,7 @@ export interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-const DISMISS_INSTALL_KEY = 'eventum-pwa-install-banner-dismissed';
-const DISMISS_INSECURE_KEY = 'eventum-pwa-insecure-hint-dismissed';
-
-type PwaBannerMode = 'none' | 'install' | 'insecure';
+const DISMISS_KEY = 'eventum-pwa-install-banner-dismissed';
 
 @Component({
   selector: 'app-pwa-install-banner',
@@ -30,8 +27,7 @@ export class PwaInstallBanner implements OnDestroy {
   private readonly doc = inject(DOCUMENT);
   private readonly zone = inject(NgZone);
 
-  /** `install`: botón nativo. `insecure`: http + IP (no permite instalar PWA en Chromium). */
-  protected readonly bannerMode = signal<PwaBannerMode>('none');
+  protected readonly visible = signal(false);
 
   private deferredPrompt: BeforeInstallPromptEvent | null = null;
   private beforeInstallListener?: (e: Event) => void;
@@ -48,22 +44,8 @@ export class PwaInstallBanner implements OnDestroy {
     if (this.isStandalone(win)) {
       return;
     }
-
-    // Red local por HTTP: no hay contexto seguro → no existe `beforeinstallprompt`.
-    if (!win.isSecureContext) {
-      try {
-        if (win.localStorage.getItem(DISMISS_INSECURE_KEY) === '1') {
-          return;
-        }
-      } catch {
-        /* ignore */
-      }
-      this.zone.run(() => this.bannerMode.set('insecure'));
-      return;
-    }
-
     try {
-      if (win.localStorage.getItem(DISMISS_INSTALL_KEY) === '1') {
+      if (win.localStorage.getItem(DISMISS_KEY) === '1') {
         return;
       }
     } catch {
@@ -73,15 +55,15 @@ export class PwaInstallBanner implements OnDestroy {
     this.beforeInstallListener = (e: Event) => {
       e.preventDefault();
       this.deferredPrompt = e as BeforeInstallPromptEvent;
-      this.zone.run(() => this.bannerMode.set('install'));
+      this.zone.run(() => this.visible.set(true));
     };
     win.addEventListener('beforeinstallprompt', this.beforeInstallListener);
 
     this.appInstalledListener = () => {
       this.deferredPrompt = null;
-      this.zone.run(() => this.bannerMode.set('none'));
+      this.zone.run(() => this.visible.set(false));
       try {
-        win.localStorage.setItem(DISMISS_INSTALL_KEY, '1');
+        win.localStorage.setItem(DISMISS_KEY, '1');
       } catch {
         /* ignore */
       }
@@ -117,27 +99,17 @@ export class PwaInstallBanner implements OnDestroy {
       /* usuario canceló o el navegador rechazó */
     }
     this.deferredPrompt = null;
-    this.bannerMode.set('none');
+    this.visible.set(false);
   }
 
-  protected onDismissInstall(): void {
+  protected onDismiss(): void {
     const win = this.doc.defaultView;
     try {
-      win?.localStorage.setItem(DISMISS_INSTALL_KEY, '1');
+      win?.localStorage.setItem(DISMISS_KEY, '1');
     } catch {
       /* ignore */
     }
-    this.bannerMode.set('none');
-  }
-
-  protected onDismissInsecure(): void {
-    const win = this.doc.defaultView;
-    try {
-      win?.localStorage.setItem(DISMISS_INSECURE_KEY, '1');
-    } catch {
-      /* ignore */
-    }
-    this.bannerMode.set('none');
+    this.visible.set(false);
   }
 
   private isStandalone(win: Window): boolean {
