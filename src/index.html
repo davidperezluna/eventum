@@ -31,8 +31,7 @@
       try {
         await OneSignal.init({
         appId: 'cb3f9dcf-6085-43d5-99ae-6c76db8abf57',
-        // Ruta absoluta desde origen; si falta la "/" inicial, en rutas como /detalle-evento/17
-        // el SW se resolvía contra esa carpeta y daba 404 (sin service worker registrado).
+        // Ruta absoluta desde raíz (/…). En IIS el rewrite SPA no debe servir HTML en /push/… (public/web.config).
         serviceWorkerPath: '/push/onesignal/OneSignalSDKWorker.js',
         serviceWorkerParam: { scope: '/push/onesignal/' },
         allowLocalhostAsSecureOrigin:
@@ -58,6 +57,21 @@
         },
         });
         window.__eventumOneSignal = OneSignal;
+
+        try {
+          OneSignal.User.PushSubscription.addEventListener('change', function (event) {
+            var cur = event && event.current;
+            console.info(
+              '[OneSignal] PushSubscription change — optedIn:',
+              cur && cur.optedIn,
+              'subscription id:',
+              cur && cur.id,
+              '(el panel puede tardar unos segundos en verse actualizado)'
+            );
+          });
+        } catch (e2) {
+          console.warn('[OneSignal] PushSubscription listener:', e2);
+        }
 
         window.__eventumForcePushPrompt = function () {
           if (typeof Notification === 'undefined' || Notification.permission !== 'default') {
