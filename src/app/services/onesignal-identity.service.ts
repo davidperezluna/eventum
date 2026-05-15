@@ -68,14 +68,23 @@ export class OneSignalIdentityService {
       }
 
       if (email) {
-        await OneSignal.User.addEmail(email);
+        // addEmail en web suele encolar la operación: el await no garantiza respuesta HTTP.
+        // Reintento tras 2s ayuda con carreras; los tags sirven como respaldo visible en el panel.
+        await this.tryAddEmailAndTags(OneSignal, email);
+        await new Promise((r) => setTimeout(r, 2000));
+        await this.tryAddEmailAndTags(OneSignal, email);
+        console.info(
+          '[OneSignal] email y tags encolados para OneSignal (revisá pestaña Red: api.onesignal.com). ',
+          'Si el listado sigue vacío: Settings → Keys & IDs → Identity verification (JWT) o email duplicado en otra fila.'
+        );
       }
       const e164 = this.normalizePhoneE164(phoneRaw);
       if (e164) {
-        await OneSignal.User.addSms(e164);
-      }
-      if (email) {
-        console.info('[OneSignal] identidad sincronizada (email enviado al SDK):', email);
+        try {
+          await OneSignal.User.addSms(e164);
+        } catch (e) {
+          console.warn('[OneSignal] addSms:', e);
+        }
       }
     };
 
@@ -105,6 +114,21 @@ export class OneSignalIdentityService {
       await new Promise((r) => setTimeout(r, OneSignalIdentityService.POLL_MS));
     }
     return null;
+  }
+
+  private async tryAddEmailAndTags(oneSignal: any, email: string): Promise<void> {
+    try {
+      await oneSignal.User.addEmail(email);
+    } catch (e) {
+      console.warn('[OneSignal] addEmail:', e);
+    }
+    try {
+      oneSignal.User.addTags?.({
+        supabase_email: email,
+      });
+    } catch (e) {
+      console.warn('[OneSignal] addTags:', e);
+    }
   }
 
   /** Tras `login()`, el External ID en cliente puede aplicarse un tick después. */
