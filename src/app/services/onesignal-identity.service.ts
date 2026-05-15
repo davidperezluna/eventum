@@ -1,22 +1,14 @@
 import { Injectable } from '@angular/core';
-import { SupabaseService } from './supabase.service';
 import { Usuario } from '../types/entities';
 
 /**
- * Sincroniza identidad con OneSignal v16: External ID = Supabase Auth `user.id`,
- * más email y SMS (E.164) desde el perfil.
- * Con sesión ya restaurada (F5), Supabase suele terminar antes que OneSignal;
- * se espera a que index.html complete `init` y asigne `window.__eventumOneSignal`.
+ * Sincroniza identidad con OneSignal v16 tras login: External ID = Supabase Auth `user.id`,
+ * más email y SMS (E.164) desde el perfil en `usuarios`.
  */
 @Injectable({
   providedIn: 'root'
 })
 export class OneSignalIdentityService {
-  private static readonly POLL_MS = 80;
-  private static readonly WAIT_SDK_MS = 45000;
-
-  constructor(private supabase: SupabaseService) {}
-
   /**
    * Normaliza teléfono a E.164 cuando el formato es reconocible; si no, no se envía SMS a OneSignal.
    */
@@ -43,174 +35,40 @@ export class OneSignalIdentityService {
   }
 
   syncLoggedInUser(authUserId: string, usuario: Usuario, authEmail?: string | null): void {
-    void this.syncLoggedInUserWhenReady(authUserId, usuario, authEmail);
-  }
-
-  private async syncLoggedInUserWhenReady(
-    authUserId: string,
-    usuario: Usuario,
-    authEmail?: string | null
-  ): Promise<void> {
     const email = (usuario.email || authEmail || '').trim();
     const phoneRaw = usuario.telefono;
-
-    let oneSignal = this.getOneSignalGlobal();
-    if (!oneSignal) {
-      oneSignal = await this.waitUntilOneSignalReady(OneSignalIdentityService.WAIT_SDK_MS);
-    }
-
-    const run = async (OneSignal: any) => {
+    this.runWithOneSignal(async (OneSignal) => {
       await OneSignal.login(authUserId);
-      await this.waitForExternalId(OneSignal, authUserId, 8000);
-
-      // Si el panel o la config activan "requiere consentimiento", addEmail/addSms se ignoran
-      // hasta tener consentimiento (el SDK bloquea con "Consent required but not given").
-      // Usuario ya autenticado en Supabase = consentimiento para vincular datos de perfil.
-      if (typeof OneSignal.setConsentGiven === 'function') {
-        await OneSignal.setConsentGiven(true);
-      }
-
       if (email) {
-        // addEmail en web suele encolar la operación: el await no garantiza respuesta HTTP.
-        // Reintento tras 2s ayuda con carreras; los tags sirven como respaldo visible en el panel.
-        await this.tryAddEmailAndTags(OneSignal, email);
-        await new Promise((r) => setTimeout(r, 2000));
-        await this.tryAddEmailAndTags(OneSignal, email);
-        console.info(
-          '[OneSignal] email y tags encolados para OneSignal (revisá pestaña Red: api.onesignal.com). ',
-          'Si el listado sigue vacío: Settings → Keys & IDs → Identity verification (JWT) o email duplicado en otra fila.'
-        );
+        await OneSignal.User.addEmail(email);
       }
       const e164 = this.normalizePhoneE164(phoneRaw);
       if (e164) {
-        try {
-          await OneSignal.User.addSms(e164);
-        } catch (e) {
-          console.warn('[OneSignal] addSms:', e);
-        }
-      }
-    };
-
-    if (oneSignal) {
-      try {
-        await run(oneSignal);
-        if (email) {
-          await this.ensureEmailSubscriptionRestApi(email);
-        }
-      } catch (e) {
-        console.warn('[OneSignal] sync:', e);
-      }
-      return;
-    }
-
-    this.runWithOneSignalDeferred(async (OneSignal: any) => {
-      try {
-        await run(OneSignal);
-        if (email) {
-          await this.ensureEmailSubscriptionRestApi(email);
-        }
-      } catch (e) {
-        console.warn('[OneSignal] identity (deferred):', e);
+        await OneSignal.User.addSms(e164);
       }
     });
   }
 
-  private getOneSignalGlobal(): any {
-    return (window as Window & { __eventumOneSignal?: any }).__eventumOneSignal;
-  }
-
-  private async waitUntilOneSignalReady(maxMs: number): Promise<any | null> {
-    const deadline = Date.now() + maxMs;
-    while (Date.now() < deadline) {
-      const os = this.getOneSignalGlobal();
-      if (os) {
-        return os;
-      }
-      await new Promise((r) => setTimeout(r, OneSignalIdentityService.POLL_MS));
-    }
-    return null;
-  }
-
-  /**
-   * Columna "Email" del panel = suscripción de canal Email (no es lo mismo que tags).
-   * Se crea con la API REST usando la REST API Key solo en el servidor (Edge Function).
-   */
-  private async ensureEmailSubscriptionRestApi(email: string): Promise<void> {
-    try {
-      const { data, error } = await this.supabase.functions.invoke('onesignal-sync-email', {
-        body: { email },
-      });
-      if (error) {
-        console.warn(
-          '[OneSignal] REST email: desplegá `supabase functions deploy onesignal-sync-email` y secrets ONESIGNAL_* —',
-          error.message
-        );
-        return;
-      }
-      console.info('[OneSignal] suscripción Email (REST) OK:', data);
-    } catch (e) {
-      console.warn('[OneSignal] REST email:', e);
-    }
-  }
-
-  private async tryAddEmailAndTags(oneSignal: any, email: string): Promise<void> {
-    try {
-      await oneSignal.User.addEmail(email);
-    } catch (e) {
-      console.warn('[OneSignal] addEmail:', e);
-    }
-    try {
-      oneSignal.User.addTags?.({
-        supabase_email: email,
-      });
-    } catch (e) {
-      console.warn('[OneSignal] addTags:', e);
-    }
-  }
-
-  /** Tras `login()`, el External ID en cliente puede aplicarse un tick después. */
-  private async waitForExternalId(oneSignal: any, expected: string, timeoutMs: number): Promise<void> {
-    const deadline = Date.now() + timeoutMs;
-    while (Date.now() < deadline) {
-      try {
-        if (oneSignal.User?.externalId === expected) {
-          return;
-        }
-      } catch {
-        /* ignore */
-      }
-      await new Promise((r) => setTimeout(r, 50));
-    }
-  }
-
   logoutFromOneSignal(): void {
-    void this.logoutWhenReady();
-  }
-
-  private async logoutWhenReady(): Promise<void> {
-    let oneSignal = this.getOneSignalGlobal();
-    if (!oneSignal) {
-      oneSignal = await this.waitUntilOneSignalReady(15000);
-    }
-    if (oneSignal) {
-      try {
-        await oneSignal.logout();
-      } catch (e) {
-        console.warn('[OneSignal] logout:', e);
-      }
-      return;
-    }
-    this.runWithOneSignalDeferred(async (OneSignal) => {
+    this.runWithOneSignal(async (OneSignal) => {
       await OneSignal.logout();
     });
   }
 
-  /** Úsalo solo como respaldo si el SDK no llegó a exponer la instancia global. */
-  private runWithOneSignalDeferred(fn: (oneSignal: any) => Promise<void>): void {
+  private runWithOneSignal(fn: (oneSignal: any) => Promise<void>): void {
     const w = window as Window & {
       OneSignalDeferred?: Array<(o: any) => void | Promise<void>>;
+      __eventumOneSignal?: any;
     };
 
+    const run = (OneSignal: any) => {
+      void fn(OneSignal).catch((e) => console.warn('[OneSignal] identity:', e));
+    };
+
+    if (w.__eventumOneSignal) {
+      run(w.__eventumOneSignal);
+      return;
+    }
     w.OneSignalDeferred = w.OneSignalDeferred || [];
     w.OneSignalDeferred.push(async (OneSignal: any) => {
       try {

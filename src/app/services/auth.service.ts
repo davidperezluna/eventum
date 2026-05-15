@@ -94,10 +94,6 @@ export class AuthService {
           this.setInitialized(true);
         });
 
-        // Sesión ya abierta: loadUsuarioData suele correr antes de que OneSignal termine init;
-        // al iniciar sesión de nuevo el SDK ya está listo y por eso ahí sí guarda el correo.
-        this.attachOneSignalReadySync();
-
         // Escuchar cambios de autenticación
         this.supabase.auth.onAuthStateChange(async (event, session) => {
           console.log('Auth state changed:', event, session?.user?.id);
@@ -121,37 +117,6 @@ export class AuthService {
         });
       }
     });
-  }
-
-  /**
-   * Si el usuario ya tenía sesión, el primer sync puede ejecutarse antes de que OneSignal
-   * esté listo. Repetimos el sync cuando `index.html` marca el SDK como listo (o al instante si ya lo está).
-   */
-  private attachOneSignalReadySync(): void {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    const w = window as Window & { __eventumOneSignalReady?: boolean };
-    const sync = () => {
-      const user = this.currentUser;
-      const usuario = this.usuario;
-      if (!user || !usuario || !this.hasRolePermitido(usuario.tipo_usuario_id)) {
-        return;
-      }
-      this.oneSignalIdentity.syncLoggedInUser(user.id, usuario, user.email ?? null);
-    };
-
-    if (w.__eventumOneSignalReady) {
-      this.ngZone.run(sync);
-      return;
-    }
-    window.addEventListener(
-      'eventum-onesignal-ready',
-      () => {
-        this.ngZone.run(sync);
-      },
-      { once: true }
-    );
   }
 
   /**

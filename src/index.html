@@ -68,12 +68,6 @@
 
         await OneSignal.init(initOptions);
         window.__eventumOneSignal = OneSignal;
-        window.__eventumOneSignalReady = true;
-        try {
-          window.dispatchEvent(new CustomEvent('eventum-onesignal-ready'));
-        } catch (e3) {
-          console.warn('[OneSignal] eventum-onesignal-ready:', e3);
-        }
 
         try {
           OneSignal.User.PushSubscription.addEventListener('change', function (event) {
