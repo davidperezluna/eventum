@@ -20,18 +20,6 @@
 
     <!-- Categories Carousel (Recreated with Ionic Icons) -->
     <section class="categories-section">
-      <div class="section-header">
-        <h2>Categorías</h2>
-        <div class="carousel-nav">
-          <button class="nav-btn prev" (click)="scrollLeft()">
-            <span class="material-icons">chevron_left</span>
-          </button>
-          <button class="nav-btn next" (click)="scrollRight()">
-            <span class="material-icons">chevron_right</span>
-          </button>
-        </div>
-      </div>
-
       <div class="cat-carousel-container">
         <div class="cat-track" #carouselTrack>
           <!-- 'All' Card -->
@@ -39,7 +27,10 @@
             <div class="icon-contain">
               <ion-icon name="apps"></ion-icon>
             </div>
-            <span>Todo</span>
+            <div class="cat-card-copy">
+              <span class="cat-card-title">Todo</span>
+              <span class="cat-card-sub">Todas las experiencias</span>
+            </div>
           </div>
 
           <!-- Dynamic Categories -->
@@ -49,7 +40,10 @@
             <div class="icon-contain">
               <ion-icon [name]="getCategoryIcon(cat)"></ion-icon>
             </div>
-            <span>{{ cat.nombre.trim() }}</span>
+            <div class="cat-card-copy">
+              <span class="cat-card-title">{{ cat.nombre.trim() }}</span>
+              <span class="cat-card-sub">Explorar eventos</span>
+            </div>
           </div>
         </div>
       </div>
@@ -70,18 +64,27 @@
       <div class="events-grid featured">
         <article *ngFor="let evento of eventosDestacados" class="event-card featured-card"
           [routerLink]="['/detalle-evento', evento.id]">
-          <div class="card-image">
+          <div class="event-thumb">
             <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
           </div>
-          <div class="card-content">
-            <p class="location"><span class="material-icons" style="font-size: 1rem">place</span> {{ evento.lugar?.nombre ||
-              'Ubicación' }}</p>
-            <h3>{{ evento.titulo }}</h3>
-            <div class="price-action">
+          <div class="event-body">
+            <h3 class="event-title">{{ evento.titulo }}</h3>
+            <div class="event-meta">
+              <span class="event-meta-line">
+                <span class="material-icons">place</span>
+                {{ evento.lugar?.nombre || 'Ubicación' }}
+              </span>
+              <span class="event-meta-line" *ngIf="evento.fecha_inicio">
+                <span class="material-icons">calendar_today</span>
+                {{ evento.fecha_inicio | dateFormat:'shortDate' }}
+              </span>
+            </div>
+            <div class="event-footer">
               <span class="price">{{ formatCurrency(evento.precio_minimo) }}</span>
-              <button class="btn-icon">
-                <span class="material-icons">arrow_forward</span>
-              </button>
+              <span class="event-cta" aria-hidden="true">
+                <span class="event-cta-text">Ver</span>
+                <ion-icon name="arrow-forward-outline"></ion-icon>
+              </span>
             </div>
           </div>
         </article>
@@ -97,33 +100,42 @@
       <div class="events-grid">
         <article *ngFor="let evento of eventosRegulares" class="event-card"
           [routerLink]="['/detalle-evento', evento.id]">
-          <div class="card-image">
+          <div class="event-thumb">
             <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
           </div>
-          <div class="card-content">
-            <div class="location-date">
-              <p class="location"><span class="material-icons" style="font-size: 1rem">place</span> {{ evento.lugar?.nombre || 'Ubicación' }}</p>
-              <p class="date"><span class="material-icons" style="font-size: 1rem">calendar_today</span> {{
-                evento.fecha_inicio | dateFormat:'shortDate' }}</p>
+          <div class="event-body">
+            <h3 class="event-title">{{ evento.titulo }}</h3>
+            <div class="event-meta">
+              <span class="event-meta-line">
+                <span class="material-icons">place</span>
+                {{ evento.lugar?.nombre || 'Ubicación' }}
+              </span>
+              <span class="event-meta-line">
+                <span class="material-icons">calendar_today</span>
+                {{ evento.fecha_inicio | dateFormat:'shortDate' }}
+              </span>
             </div>
-            <h3>{{ evento.titulo }}</h3>
-            <div class="price-action">
+            <div class="event-footer">
               <span class="price">{{ formatCurrency(evento.precio_minimo) }}</span>
-              <button class="btn-icon">
-                <span class="material-icons">add</span>
-              </button>
+              <span class="event-cta" aria-hidden="true">
+                <span class="event-cta-text">Ver</span>
+                <ion-icon name="arrow-forward-outline"></ion-icon>
+              </span>
             </div>
           </div>
         </article>
 
         <!-- Empty State -->
-        <div *ngIf="eventosRegulares.length === 0" class="empty-state" style="grid-column: 1/-1;">
-          <div class="empty-icon-wrapper">
-            <span class="material-icons empty-icon">event_busy</span>
+        <div *ngIf="eventosRegulares.length === 0" class="events-empty">
+          <div class="events-empty-icon-box" aria-hidden="true">
+            <ion-icon name="ticket-outline"></ion-icon>
           </div>
-          <h3 class="empty-title">No se encontraron eventos</h3>
-          <p class="empty-subtitle">Prueba ajustando tus filtros de búsqueda.</p>
-          <button class="btn-view-all" (click)="setCategoria(null); searchTerm = '';">Ver todos</button>
+          <h3 class="events-empty-title">No se encontraron eventos</h3>
+          <p class="events-empty-sub">Prueba ajustando tu búsqueda o la categoría.</p>
+          <button type="button" class="events-empty-cta" (click)="setCategoria(null); searchTerm = '';">
+            <span>Ver todos los eventos</span>
+            <ion-icon name="arrow-forward-outline" aria-hidden="true"></ion-icon>
+          </button>
         </div>
       </div>
     </section>
@@ -137,25 +149,31 @@
       <div class="events-grid">
         <article *ngFor="let evento of eventosFinalizados" class="event-card event-finalizado"
           [routerLink]="['/detalle-evento', evento.id]">
-          <div class="card-image">
+          <div class="event-thumb">
             <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
             <div class="finalizado-badge">
               <span class="material-icons">check_circle</span>
               <span>Finalizado</span>
             </div>
           </div>
-          <div class="card-content">
-            <div class="location-date">
-              <p class="location"><span class="material-icons" style="font-size: 1rem">place</span> {{ evento.lugar?.nombre || 'Ubicación' }}</p>
-              <p class="date"><span class="material-icons" style="font-size: 1rem">calendar_today</span> {{
-                evento.fecha_fin | dateFormat:'shortDate' }}</p>
+          <div class="event-body">
+            <h3 class="event-title">{{ evento.titulo }}</h3>
+            <div class="event-meta">
+              <span class="event-meta-line">
+                <span class="material-icons">place</span>
+                {{ evento.lugar?.nombre || 'Ubicación' }}
+              </span>
+              <span class="event-meta-line">
+                <span class="material-icons">calendar_today</span>
+                {{ evento.fecha_fin | dateFormat:'shortDate' }}
+              </span>
             </div>
-            <h3>{{ evento.titulo }}</h3>
-            <div class="price-action">
+            <div class="event-footer">
               <span class="price">{{ formatCurrency(evento.precio_minimo) }}</span>
-              <button class="btn-icon">
-                <span class="material-icons">visibility</span>
-              </button>
+              <span class="event-cta" aria-hidden="true">
+                <span class="event-cta-text">Ver</span>
+                <ion-icon name="arrow-forward-outline"></ion-icon>
+              </span>
             </div>
           </div>
         </article>
