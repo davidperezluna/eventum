@@ -374,11 +374,64 @@
     0 0 0 4px color-mix(in srgb, var(--color-primary-light) 40%, transparent);
 }
 
+.categories-section .cat-carousel-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.categories-section .cat-nav {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: #fff;
+  color: #64748b;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  transition:
+    color 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    transform 0.15s ease;
+}
+
+.categories-section .cat-nav .material-icons {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.categories-section .cat-nav:hover {
+  color: var(--cat-icon-bg);
+  border-color: color-mix(in srgb, var(--color-primary-light) 30%, transparent);
+  background: #fafafa;
+}
+
+.categories-section .cat-nav:active {
+  transform: scale(0.96);
+}
+
+.categories-section .cat-nav:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--cat-page),
+    0 0 0 4px color-mix(in srgb, var(--color-primary-light) 40%, transparent);
+}
+
 .categories-section .cat-carousel-container {
   position: relative;
   overflow: hidden;
   margin: 0 -0.25rem;
   padding: 0 0.25rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .categories-section .cat-carousel-container::before,
@@ -402,24 +455,6 @@
   background: linear-gradient(-90deg, var(--cat-page) 0%, rgba(248, 250, 252, 0) 100%);
 }
 
-@media (min-width: 769px) {
-  .categories-section .cat-carousel-container {
-    margin: 0;
-    padding: 0;
-  }
-
-  /* Sin degradado izquierdo: en scroll 0 tapaba la primera tarjeta (borde/sombra). */
-  .categories-section .cat-carousel-container::before {
-    display: none;
-  }
-
-  .categories-section .cat-track {
-    padding-left: 0.25rem;
-    padding-right: 0.25rem;
-    scroll-padding-inline: 0.5rem;
-  }
-}
-
 .categories-section .cat-track {
   position: relative;
   z-index: 1;
@@ -431,6 +466,7 @@
   scroll-behavior: smooth;
   scroll-snap-type: x proximity;
   scroll-padding-inline: 0.35rem;
+  overscroll-behavior-x: contain;
   scrollbar-width: none;
   -ms-overflow-style: none;
   -webkit-overflow-scrolling: touch;
@@ -438,6 +474,30 @@
 
 .categories-section .cat-track::-webkit-scrollbar {
   display: none;
+}
+
+@media (min-width: 769px) {
+  .categories-section .cat-nav {
+    display: flex;
+  }
+
+  .categories-section .cat-carousel-container {
+    margin: 0;
+    padding: 0;
+  }
+
+  .categories-section .cat-carousel-container::before {
+    display: none;
+  }
+
+  .categories-section .cat-track {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+    scroll-padding-inline: 0.5rem;
+    min-width: 0;
+    width: 100%;
+    overscroll-behavior-x: contain;
+  }
 }
 
 .categories-section .cat-card {

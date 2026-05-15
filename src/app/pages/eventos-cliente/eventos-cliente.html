@@ -20,32 +20,41 @@
 
     <!-- Categories Carousel (tras primera carga: categorías + eventos + finalizados) -->
     <section class="categories-section" *ngIf="!initialBootstrapLoading">
-      <div class="cat-carousel-container">
-        <div class="cat-track" #carouselTrack>
-          <!-- 'All' Card -->
-          <div class="cat-card" [class.active]="categoriaFiltro === null" (click)="setCategoria(null)">
-            <div class="icon-contain">
-              <ion-icon name="apps"></ion-icon>
+      <div class="cat-carousel-wrap">
+        <button type="button" class="cat-nav cat-nav--prev" (click)="scrollCategories(-1)"
+          aria-label="Categorías anteriores">
+          <span class="material-icons" aria-hidden="true">chevron_left</span>
+        </button>
+        <div class="cat-carousel-container">
+          <div class="cat-track" #carouselTrack>
+            <!-- 'All' Card -->
+            <div class="cat-card" [class.active]="categoriaFiltro === null" (click)="setCategoria(null)">
+              <div class="icon-contain">
+                <ion-icon name="apps"></ion-icon>
+              </div>
+              <div class="cat-card-copy">
+                <span class="cat-card-title">Todo</span>
+                <span class="cat-card-sub">Todas las experiencias</span>
+              </div>
             </div>
-            <div class="cat-card-copy">
-              <span class="cat-card-title">Todo</span>
-              <span class="cat-card-sub">Todas las experiencias</span>
-            </div>
-          </div>
 
-          <!-- Dynamic Categories -->
-          <div *ngFor="let cat of categorias" class="cat-card" [class.active]="categoriaFiltro === cat.id"
-            (click)="setCategoria(cat.id)">
+            <!-- Dynamic Categories -->
+            <div *ngFor="let cat of categorias" class="cat-card" [class.active]="categoriaFiltro === cat.id"
+              (click)="setCategoria(cat.id)">
 
-            <div class="icon-contain">
-              <ion-icon [name]="getCategoryIcon(cat)"></ion-icon>
-            </div>
-            <div class="cat-card-copy">
-              <span class="cat-card-title">{{ cat.nombre.trim() }}</span>
-              <span class="cat-card-sub">Explorar eventos</span>
+              <div class="icon-contain">
+                <ion-icon [name]="getCategoryIcon(cat)"></ion-icon>
+              </div>
+              <div class="cat-card-copy">
+                <span class="cat-card-title">{{ cat.nombre.trim() }}</span>
+                <span class="cat-card-sub">Explorar eventos</span>
+              </div>
             </div>
           </div>
         </div>
+        <button type="button" class="cat-nav cat-nav--next" (click)="scrollCategories(1)" aria-label="Más categorías">
+          <span class="material-icons" aria-hidden="true">chevron_right</span>
+        </button>
       </div>
     </section>
 

@@ -222,16 +222,11 @@ export class EventosCliente implements OnInit, OnDestroy {
     return evento.imagen_principal || '/assets/placeholder-event.jpg';
   }
 
-  scrollLeft() {
-    if (this.carouselTrack) {
-      this.carouselTrack.nativeElement.scrollBy({ left: -250, behavior: 'smooth' });
-    }
-  }
-
-  scrollRight() {
-    if (this.carouselTrack) {
-      this.carouselTrack.nativeElement.scrollBy({ left: 250, behavior: 'smooth' });
-    }
+  scrollCategories(direction: -1 | 1) {
+    const el = this.carouselTrack?.nativeElement as HTMLElement | undefined;
+    if (!el) return;
+    const step = Math.min(320, Math.max(180, el.clientWidth * 0.45));
+    el.scrollBy({ left: direction * step, behavior: 'smooth' });
   }
 
   async loadEventosFinalizados() {
