@@ -1,7 +1,7 @@
 {
-  "name": "Eventum",
-  "short_name": "Eventum",
-  "description": "Panel de administración Eventum: eventos, asistentes y configuración.",
+  "name": "eventum - Experiencias Únicas",
+  "short_name": "eventum",
+  "description": "Tu plataforma integral para eventos. Eventum conecta a organizadores y asistentes en un ecosistema completo de gestión de eventos.",
   "theme_color": "#1a1a2e",
   "background_color": "#f5f5f5",
   "display": "standalone",
