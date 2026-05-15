@@ -5,8 +5,8 @@
 }
 
 .badge-pruebas {
-  display: block;
-  margin: 0.35rem auto 0.75rem;
+  display: inline-block;
+  margin: 0 0 0.85rem;
   max-width: 100%;
   padding: 0.35rem 0.65rem;
   border-radius: 8px;
@@ -32,20 +32,4 @@
 
 .form-group input.error {
   border-color: #f87171;
-}
-
-.alert-error {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border-radius: 0.75rem;
-  background: #fef2f2;
-  color: #991b1b;
-  font-size: 0.875rem;
-}
-
-.alert-error .material-icons {
-  font-size: 1.25rem;
-  flex-shrink: 0;
 }
