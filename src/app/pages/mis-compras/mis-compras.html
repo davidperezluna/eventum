@@ -169,9 +169,6 @@
 
     <div class="compra-card evento-card evento-detalle-card mc-event-card">
       <div class="evento-card-toggle evento-card-toggle--static mc-event-card-toggle">
-        <div class="event-thumb">
-          <img [src]="getGrupoEventoImageUrl(detalle)" [alt]="detalle.titulo" loading="lazy" />
-        </div>
         <div class="event-body">
           <h3 class="event-title">{{ detalle.titulo }}</h3>
           <div class="event-meta">
@@ -375,9 +372,6 @@
         (click)="abrirDetalleEventoBoletas(grupo.key)"
         [attr.aria-label]="'Ver boletas de ' + grupo.titulo"
       >
-        <div class="event-thumb">
-          <img [src]="getGrupoEventoImageUrl(grupo)" [alt]="grupo.titulo" loading="lazy" />
-        </div>
         <div class="event-body">
           <h3 class="event-title">{{ grupo.titulo }}</h3>
           <div class="event-meta">

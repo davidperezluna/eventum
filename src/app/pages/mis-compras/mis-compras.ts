@@ -50,8 +50,6 @@ interface EventoBoletasGrupo {
   fechaInicio?: Date | string;
   fechaFin?: Date | string;
   lugar?: any;
-  /** Portada del evento (misma lógica que listado eventos-cliente). */
-  imagenPrincipal?: string;
   tipos: TipoBoletasGrupo[];
   compras: Compra[];
   totalCedidas: number;
@@ -468,7 +466,6 @@ export class MisCompras implements OnInit, OnDestroy {
           fechaInicio: evento?.fecha_inicio || compra.evento?.fecha_inicio,
           fechaFin: this.fechaFinEvento(evento),
           lugar: evento?.lugar || compra.evento?.lugar,
-          imagenPrincipal: evento?.imagen_principal || compra.evento?.imagen_principal,
           tipos: [],
           compras: [],
           totalCedidas: 0,
@@ -480,11 +477,6 @@ export class MisCompras implements OnInit, OnDestroy {
           totalSinAsignar: 0
         };
         eventosMap.set(eventoKey, grupoEvento);
-      }
-
-      const cover = evento?.imagen_principal || compra.evento?.imagen_principal;
-      if (cover && !grupoEvento.imagenPrincipal) {
-        grupoEvento.imagenPrincipal = cover;
       }
 
       if (!esCedida && !grupoEvento.compras.some((c) => c.id === compra.id)) {
@@ -610,11 +602,6 @@ export class MisCompras implements OnInit, OnDestroy {
 
   volverAMisCompras(): void {
     this.router.navigate(['/mis-compras']);
-  }
-
-  /** Misma convención que `eventos-cliente` para la miniatura. */
-  getGrupoEventoImageUrl(grupo: EventoBoletasGrupo): string {
-    return grupo.imagenPrincipal || '/assets/placeholder-event.jpg';
   }
 
   eventoDetalleBoletas(): EventoBoletasGrupo | null {
