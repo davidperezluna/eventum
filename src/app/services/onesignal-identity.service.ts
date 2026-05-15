@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { SupabaseService } from './supabase.service';
 import { Usuario } from '../types/entities';
 
 /**
@@ -13,6 +14,8 @@ import { Usuario } from '../types/entities';
 export class OneSignalIdentityService {
   private static readonly POLL_MS = 80;
   private static readonly WAIT_SDK_MS = 45000;
+
+  constructor(private supabase: SupabaseService) {}
 
   /**
    * Normaliza teléfono a E.164 cuando el formato es reconocible; si no, no se envía SMS a OneSignal.
@@ -91,13 +94,25 @@ export class OneSignalIdentityService {
     if (oneSignal) {
       try {
         await run(oneSignal);
+        if (email) {
+          await this.ensureEmailSubscriptionRestApi(email);
+        }
       } catch (e) {
         console.warn('[OneSignal] sync:', e);
       }
       return;
     }
 
-    this.runWithOneSignalDeferred(run);
+    this.runWithOneSignalDeferred(async (OneSignal: any) => {
+      try {
+        await run(OneSignal);
+        if (email) {
+          await this.ensureEmailSubscriptionRestApi(email);
+        }
+      } catch (e) {
+        console.warn('[OneSignal] identity (deferred):', e);
+      }
+    });
   }
 
   private getOneSignalGlobal(): any {
@@ -114,6 +129,28 @@ export class OneSignalIdentityService {
       await new Promise((r) => setTimeout(r, OneSignalIdentityService.POLL_MS));
     }
     return null;
+  }
+
+  /**
+   * Columna "Email" del panel = suscripción de canal Email (no es lo mismo que tags).
+   * Se crea con la API REST usando la REST API Key solo en el servidor (Edge Function).
+   */
+  private async ensureEmailSubscriptionRestApi(email: string): Promise<void> {
+    try {
+      const { data, error } = await this.supabase.functions.invoke('onesignal-sync-email', {
+        body: { email },
+      });
+      if (error) {
+        console.warn(
+          '[OneSignal] REST email: desplegá `supabase functions deploy onesignal-sync-email` y secrets ONESIGNAL_* —',
+          error.message
+        );
+        return;
+      }
+      console.info('[OneSignal] suscripción Email (REST) OK:', data);
+    } catch (e) {
+      console.warn('[OneSignal] REST email:', e);
+    }
   }
 
   private async tryAddEmailAndTags(oneSignal: any, email: string): Promise<void> {
