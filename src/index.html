@@ -23,13 +23,19 @@
   </script>
   <!-- End Google Tag -->
   <link rel="manifest" href="manifest.webmanifest">
+  <!-- Tras configurar Safari Web Push en Apple + OneSignal, pega aquí el Safari Web ID (panel Web → Apple / Safari). Vacío hasta entonces. -->
+  <meta name="eventum-onesignal-safari-web-id" content="">
 
   <!-- OneSignal Web Push (v16). Worker en /push/onesignal/ para no chocar con ngsw-worker.js (PWA). Configurar la misma ruta en el panel: Settings → Web → Advanced → Customize service worker paths. -->
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     window.OneSignalDeferred.push(async function (OneSignal) {
       try {
-        await OneSignal.init({
+        var safariMeta = document.querySelector('meta[name="eventum-onesignal-safari-web-id"]');
+        var safariWebId = safariMeta && safariMeta.getAttribute('content');
+        safariWebId = safariWebId && safariWebId.trim();
+
+        var initOptions = {
         appId: 'cb3f9dcf-6085-43d5-99ae-6c76db8abf57',
         // Ruta absoluta desde raíz (/…). En IIS el rewrite SPA no debe servir HTML en /push/… (public/web.config).
         serviceWorkerPath: '/push/onesignal/OneSignalSDKWorker.js',
@@ -55,7 +61,12 @@
             ],
           },
         },
-        });
+        };
+        if (safariWebId) {
+          initOptions.safari_web_id = safariWebId;
+        }
+
+        await OneSignal.init(initOptions);
         window.__eventumOneSignal = OneSignal;
 
         try {
@@ -83,9 +94,16 @@
           });
         };
 
-        window.setTimeout(function () {
-          window.__eventumForcePushPrompt();
-        }, 1500);
+        var ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+        var isIOSDevice =
+          /iPad|iPhone|iPod/.test(ua) ||
+          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        // En iOS el permiso de notificaciones suele exigir un gesto explícito del usuario; el setTimeout no cuenta → el Slidedown no aparece si solo autodisparamos.
+        if (!isIOSDevice) {
+          window.setTimeout(function () {
+            window.__eventumForcePushPrompt();
+          }, 1500);
+        }
       } catch (err) {
         console.error('[OneSignal] init:', err);
         console.info(
