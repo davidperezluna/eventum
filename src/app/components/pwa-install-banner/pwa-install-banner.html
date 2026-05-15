@@ -2,18 +2,21 @@
   <div
     class="pwa-banner pwa-banner--ios"
     role="region"
-    aria-label="Para activar alertas en iPhone o iPad"
+    aria-label="Agregar Eventum al inicio para recibir alertas"
   >
     <div class="pwa-banner-inner">
       <div class="pwa-banner-text">
-        <strong class="pwa-banner-title">Alertas en iPhone o iPad</strong>
-        <span class="pwa-banner-desc">
-          Para recibir <strong>notificaciones push</strong> desde el navegador, Apple solo lo permite cuando
-          agregás Eventum a la <strong>pantalla de inicio</strong>. Toca
-          <strong>Compartir</strong>&nbsp;(cuadrado con flecha hacia arriba),
-          después <strong>Agregar a pantalla de inicio</strong> y abre Eventum desde el icono. Ahí podrás permitir las
-          alertas.
-        </span>
+        <strong class="pwa-banner-title">¿Alertas de eventos?</strong>
+        <div class="pwa-banner-desc">
+          <span class="pwa-banner-lead"
+            >Hay que tener Eventum en el inicio del teléfono o tablet:</span
+          >
+          <ol class="pwa-banner-steps">
+            <li>Toca <strong>Compartir</strong></li>
+            <li><strong>Agregar a pantalla de inicio</strong></li>
+            <li>Abre desde el icono nuevo y permite las notificaciones.</li>
+          </ol>
+        </div>
       </div>
       <div class="pwa-banner-actions">
         <button type="button" class="pwa-btn pwa-btn--ghost" (click)="onDismiss()" aria-label="Cerrar aviso">

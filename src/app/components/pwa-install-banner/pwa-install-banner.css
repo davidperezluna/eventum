@@ -46,6 +46,28 @@
   line-height: 1.35;
 }
 
+.pwa-banner-lead {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.pwa-banner-steps {
+  margin: 0;
+  padding-left: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  list-style-position: outside;
+}
+
+.pwa-banner-steps li {
+  padding-left: 0.15rem;
+}
+
+.pwa-banner-steps li::marker {
+  font-weight: 600;
+}
+
 .pwa-banner-actions {
   display: flex;
   flex-wrap: wrap;
@@ -108,5 +130,9 @@
 
 .pwa-banner--ios .pwa-banner-desc strong {
   font-weight: 600;
+  color: #c4b5fd;
+}
+
+.pwa-banner--ios .pwa-banner-steps li::marker {
   color: #c4b5fd;
 }
