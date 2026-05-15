@@ -4,7 +4,6 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { EventosService } from '../../services/eventos.service';
 import { CategoriasService } from '../../services/categorias.service';
-import { TimezoneService } from '../../services/timezone.service';
 import { Evento, CategoriaEvento, TipoEstadoEvento } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { Subject, Subscription } from 'rxjs';
@@ -26,6 +25,8 @@ export class EventosCliente implements OnInit, OnDestroy {
   categorias: CategoriaEvento[] = [];
   loading = false;
   loadingFinalizados = false;
+  /** Oculta el carrusel (incl. «Todo») hasta terminar la primera carga completa */
+  initialBootstrapLoading = true;
   searchTerm = '';
   categoriaFiltro: number | null = null;
 
@@ -36,21 +37,18 @@ export class EventosCliente implements OnInit, OnDestroy {
   constructor(
     private eventosService: EventosService,
     private categoriasService: CategoriasService,
-    private timezoneService: TimezoneService,
     private cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
-    this.loadCategorias();
-    this.loadEventos();
-    this.loadEventosFinalizados();
+    void this.loadEventos();
 
     // Configurar búsqueda con debounce
     this.searchSubscription = this.searchSubject.pipe(
       debounceTime(500), // Esperar 500ms después de que el usuario deje de escribir
       distinctUntilChanged() // Solo buscar si el término cambió
     ).subscribe(term => {
-      this.loadEventos(term);
+      void this.loadEventos(term);
     });
   }
 
@@ -76,6 +74,29 @@ export class EventosCliente implements OnInit, OnDestroy {
     this.loading = true;
     this.cdr.detectChanges();
 
+    try {
+      // Carga inicial: categorías y eventos en paralelo (solo la primera vez, searchTerm === undefined)
+      if (searchTerm === undefined) {
+        await Promise.all([this.loadCategorias(), this.executeLoadEventos(searchTerm)]);
+      } else {
+        await this.executeLoadEventos(searchTerm);
+      }
+      // Esperar finalizados antes de quitar el loader (misma vista inicial / sin búsqueda ni categoría)
+      if (!this.searchTerm?.trim() && !this.categoriaFiltro) {
+        await this.loadEventosFinalizados();
+      } else {
+        this.eventosFinalizados = [];
+      }
+    } finally {
+      this.loading = false;
+      if (searchTerm === undefined) {
+        this.initialBootstrapLoading = false;
+      }
+      this.cdr.detectChanges();
+    }
+  }
+
+  private async executeLoadEventos(searchTerm?: string) {
     console.log('Cargando eventos. Búsqueda:', searchTerm);
 
     const loadEventosWithFallback = async (filters: any) => {
@@ -92,13 +113,11 @@ export class EventosCliente implements OnInit, OnDestroy {
     };
 
     try {
-      // Filtros base
       const filters: any = {
         activo: true,
         estado: TipoEstadoEvento.PUBLICADO
       };
 
-      // Agregar término de búsqueda si existe
       if (searchTerm) {
         filters.search = searchTerm;
       }
@@ -106,8 +125,6 @@ export class EventosCliente implements OnInit, OnDestroy {
       let response = await loadEventosWithFallback(filters);
       let eventos = response.data || [];
 
-      // Fallback si no hay eventos PUBLICADOS (solo para carga inicial sin búsqueda, opcional)
-      // Si estamos buscando, queremos resultados exactos, no fallbacks extraños.
       if (eventos.length === 0 && !searchTerm) {
         const fallbackFilters: any = { activo: true };
         response = await loadEventosWithFallback(fallbackFilters);
@@ -126,19 +143,18 @@ export class EventosCliente implements OnInit, OnDestroy {
     // Filtrar eventos activos y que no hayan finalizado (fecha_fin aún no ha pasado)
     this.eventos = eventos.filter(e => {
       if (e.activo !== true) return false;
-      
+
       // Excluir eventos cuya fecha de finalización ya pasó
       if (e.fecha_fin) {
         const fechaFin = new Date(e.fecha_fin);
         if (fechaFin < ahora) return false;
       }
-      
+
       return true;
     });
-    
+
     // Ya no filtramos localmente por search, el servidor ya lo hizo
     this.aplicarFiltrosLocales();
-    this.loading = false;
     this.cdr.detectChanges();
   }
 
@@ -177,15 +193,12 @@ export class EventosCliente implements OnInit, OnDestroy {
   }
 
   onSearchChange() {
-    // Emitir al subject en lugar de filtrar inmediatamente
     this.searchSubject.next(this.searchTerm);
-    
-    // Si se limpia la búsqueda, recargar eventos finalizados
-    if (!this.searchTerm) {
-      this.loadEventosFinalizados();
-    } else {
+
+    if (this.searchTerm) {
       this.eventosFinalizados = [];
     }
+    // Si se limpia la búsqueda, loadEventos('') (tras debounce) recarga lista + finalizados
   }
 
   getCategoryIcon(cat: CategoriaEvento): string {
@@ -223,7 +236,7 @@ export class EventosCliente implements OnInit, OnDestroy {
 
   async loadEventosFinalizados() {
     // Solo cargar eventos finalizados si no hay búsqueda activa ni filtro de categoría
-    if (this.searchTerm || this.categoriaFiltro) {
+    if (this.searchTerm?.trim() || this.categoriaFiltro) {
       this.eventosFinalizados = [];
       return;
     }
@@ -232,8 +245,6 @@ export class EventosCliente implements OnInit, OnDestroy {
     this.cdr.detectChanges();
 
     try {
-      const ahora = this.timezoneService.getCurrentDateISO();
-      
       // Cargar eventos finalizados (estado finalizado)
       const response = await this.eventosService.getEventos({
         estado: TipoEstadoEvento.FINALIZADO,

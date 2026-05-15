@@ -18,8 +18,8 @@
   <!-- Main Content -->
   <div class="content-wrapper">
 
-    <!-- Categories Carousel (Recreated with Ionic Icons) -->
-    <section class="categories-section">
+    <!-- Categories Carousel (tras primera carga: categorías + eventos + finalizados) -->
+    <section class="categories-section" *ngIf="!initialBootstrapLoading">
       <div class="cat-carousel-container">
         <div class="cat-track" #carouselTrack>
           <!-- 'All' Card -->
