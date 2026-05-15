@@ -222,6 +222,7 @@ export interface Compra {
     titulo: string;
     fecha_inicio: Date | string;
     lugar_id?: number;
+    imagen_principal?: string;
     lugar?: {
       id: number;
       nombre: string;
@@ -288,6 +289,7 @@ export interface BoletaComprada {
     titulo: string;
     fecha_inicio?: Date | string;
     lugar_id?: number;
+    imagen_principal?: string;
   };
   /** Metadatos del tipo de boleta (join); se conservan al normalizar la fila. */
   tipo_boleta_meta?: {

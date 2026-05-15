@@ -167,19 +167,25 @@
       Volver a mis compras
     </button>
 
-    <div class="compra-card evento-card evento-detalle-card">
-      <div class="evento-card-toggle evento-card-toggle--static">
-        <div class="compra-info evento-info">
-          <h3>{{ detalle.titulo }}</h3>
-          <p class="compra-fecha" *ngIf="detalle.fechaInicio">
-            {{ detalle.fechaInicio | dateFormat:'short' }}
-            <span *ngIf="detalle.fechaFin"> - {{ detalle.fechaFin | dateFormat:'short' }}</span>
-          </p>
-          <p class="boleta-lugar evento-lugar" *ngIf="detalle.lugar?.nombre">
-            <span class="material-icons">place</span>
-            <strong>{{ detalle.lugar.nombre }}</strong>
-          </p>
-          <div class="compra-estados">
+    <div class="compra-card evento-card evento-detalle-card mc-event-card">
+      <div class="evento-card-toggle evento-card-toggle--static mc-event-card-toggle">
+        <div class="event-thumb">
+          <img [src]="getGrupoEventoImageUrl(detalle)" [alt]="detalle.titulo" loading="lazy" />
+        </div>
+        <div class="event-body">
+          <h3 class="event-title">{{ detalle.titulo }}</h3>
+          <div class="event-meta">
+            <span class="event-meta-line" *ngIf="detalle.lugar?.nombre">
+              <span class="material-icons">place</span>
+              {{ detalle.lugar.nombre }}
+            </span>
+            <span class="event-meta-line" *ngIf="detalle.fechaInicio">
+              <span class="material-icons">calendar_today</span>
+              {{ detalle.fechaInicio | dateFormat:'short' }}
+              <ng-container *ngIf="detalle.fechaFin"> — {{ detalle.fechaFin | dateFormat:'short' }}</ng-container>
+            </span>
+          </div>
+          <div class="compra-estados compra-estados--event-card">
             <span *ngFor="let tipo of tiposResumenParaBadges(detalle)" class="badge badge-info-soft">
               {{ tipo.totalBoletas }} {{ tipo.nombre }}
             </span>
@@ -188,10 +194,12 @@
             <span class="badge badge-warning">{{ detalle.totalUsadas }} usadas</span>
             <span class="badge badge-success" *ngIf="detalle.totalCedidas > 0">{{ detalle.totalCedidas }} {{ detalle.totalCedidas === 1 ? 'recibida' : 'recibidas' }}</span>
           </div>
-        </div>
-        <div class="evento-card-summary">
-          <span class="total-label">Boletas</span>
-          <span class="total-value">{{ detalle.totalBoletas }}</span>
+          <div class="event-footer mc-event-card-footer--static">
+            <div class="mc-event-boletas-stat">
+              <span class="total-label">Boletas</span>
+              <span class="total-value">{{ detalle.totalBoletas }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -355,25 +363,35 @@
     </div>
   </div>
 
-  <div *ngIf="!loading && !eventoDetalleKey && eventosConBoletas.length > 0" class="compras-list eventos-list">
-    <div *ngFor="let grupo of eventosConBoletas" class="compra-card evento-card" [class.expanded]="isEventoBoletasExpandido(grupo.key)">
+  <section class="mc-events-section" *ngIf="!loading && !eventoDetalleKey && eventosConBoletas.length > 0">
+    <div class="section-header">
+      <h2>Tus eventos</h2>
+    </div>
+    <div class="compras-list eventos-list">
+    <div *ngFor="let grupo of eventosConBoletas" class="compra-card evento-card mc-event-card" [class.expanded]="isEventoBoletasExpandido(grupo.key)">
       <button
         type="button"
-        class="evento-card-toggle"
+        class="evento-card-toggle mc-event-card-toggle"
         (click)="abrirDetalleEventoBoletas(grupo.key)"
         [attr.aria-label]="'Ver boletas de ' + grupo.titulo"
       >
-        <div class="compra-info evento-info">
-          <h3>{{ grupo.titulo }}</h3>
-          <p class="compra-fecha" *ngIf="grupo.fechaInicio">
-            {{ grupo.fechaInicio | dateFormat:'short' }}
-            <span *ngIf="grupo.fechaFin"> - {{ grupo.fechaFin | dateFormat:'short' }}</span>
-          </p>
-          <p class="boleta-lugar evento-lugar" *ngIf="grupo.lugar?.nombre">
-            <span class="material-icons">place</span>
-            <strong>{{ grupo.lugar.nombre }}</strong>
-          </p>
-          <div class="compra-estados">
+        <div class="event-thumb">
+          <img [src]="getGrupoEventoImageUrl(grupo)" [alt]="grupo.titulo" loading="lazy" />
+        </div>
+        <div class="event-body">
+          <h3 class="event-title">{{ grupo.titulo }}</h3>
+          <div class="event-meta">
+            <span class="event-meta-line" *ngIf="grupo.lugar?.nombre">
+              <span class="material-icons">place</span>
+              {{ grupo.lugar.nombre }}
+            </span>
+            <span class="event-meta-line" *ngIf="grupo.fechaInicio">
+              <span class="material-icons">calendar_today</span>
+              {{ grupo.fechaInicio | dateFormat:'short' }}
+              <ng-container *ngIf="grupo.fechaFin"> — {{ grupo.fechaFin | dateFormat:'short' }}</ng-container>
+            </span>
+          </div>
+          <div class="compra-estados compra-estados--event-card">
             <span *ngFor="let tipo of tiposResumenParaBadges(grupo)" class="badge badge-info-soft">
               {{ tipo.totalBoletas }} {{ tipo.nombre }}
             </span>
@@ -381,15 +399,20 @@
             <span class="badge badge-info" *ngIf="grupo.totalSinAsignar > 0">{{ grupo.totalSinAsignar }} sin asignar</span>
             <span class="badge badge-warning" *ngIf="grupo.totalUsadas > 0">{{ grupo.totalUsadas }} usadas</span>
           </div>
+          <div class="event-footer">
+            <div class="mc-event-boletas-stat">
+              <span class="total-label">Boletas</span>
+              <span class="total-value">{{ grupo.totalDisponibles }}</span>
+              <span class="evento-total-caption" *ngIf="grupo.totalTrasladoSaliente > 0">
+                {{ grupo.totalTrasladoSaliente }} con envío pendiente
+              </span>
+            </div>
+            <span class="event-cta" aria-hidden="true">
+              <span class="event-cta-text">Ver</span>
+              <ion-icon name="arrow-forward-outline"></ion-icon>
+            </span>
+          </div>
         </div>
-        <div class="evento-card-summary">
-          <span class="total-label">Boletas</span>
-          <span class="total-value">{{ grupo.totalDisponibles }}</span>
-          <span class="evento-total-caption" *ngIf="grupo.totalTrasladoSaliente > 0">
-            {{ grupo.totalTrasladoSaliente }} con envío pendiente
-          </span>
-        </div>
-        <span class="material-icons evento-card-chevron">chevron_right</span>
       </button>
 
       <div class="boletas-section evento-boletas-section" *ngIf="isEventoBoletasExpandido(grupo.key)">
@@ -535,7 +558,8 @@
         </div>
       </div>
     </div>
-  </div>
+    </div>
+  </section>
 
   <!-- Empty state -->
   <div *ngIf="!loading && !vistaActividad && !tieneContenidoMisBoletas()" class="empty-state">

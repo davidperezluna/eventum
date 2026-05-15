@@ -7,7 +7,6 @@ import {
   NgZone,
 } from '@angular/core';
 import { isPlatformBrowser, DOCUMENT } from '@angular/common';
-import { environment } from '../../../environments/environment';
 
 /** Evento no estándar soportado por Chromium para instalación PWA. */
 export interface BeforeInstallPromptEvent extends Event {
@@ -111,17 +110,9 @@ export class PwaInstallBanner implements OnDestroy {
     this.localhostHint.set(port ? `http://localhost:${port}` : 'http://localhost');
 
     const ios = this.isIosDevice(win);
-    const showIosStyleHintInChrome =
-      !!environment.showPwaInstallHintBannerInChromeForTests &&
-      !ios &&
-      win.isSecureContext &&
-      !iosSnoozed;
 
-    // iOS real, o pruebas en Chrome (environment): mismo panel de texto (“instalar en dispositivo / notificaciones”).
-    if (
-      (ios && win.isSecureContext && !iosSnoozed) ||
-      showIosStyleHintInChrome
-    ) {
+    // iOS (Safari, etc.): aviso pantalla de inicio / notificaciones push web.
+    if (ios && win.isSecureContext && !iosSnoozed) {
       this.zone.run(() => this.mode.set('ios'));
     } else if (!win.isSecureContext && !chromeBannerSuppressed) {
       // HTTP por IP (p. ej. 192.168.x.x): no hay contexto seguro → no llega beforeinstallprompt.
@@ -141,13 +132,7 @@ export class PwaInstallBanner implements OnDestroy {
       }
       e.preventDefault();
       this.deferredPrompt = e as BeforeInstallPromptEvent;
-      this.zone.run(() => {
-        // En modo prueba Chrome siempre mantenemos el banner «ios»; no pisar por beforeinstallprompt.
-        if (environment.showPwaInstallHintBannerInChromeForTests) {
-          return;
-        }
-        this.mode.set('install');
-      });
+      this.zone.run(() => this.mode.set('install'));
     };
     win.addEventListener('beforeinstallprompt', this.beforeInstallListener);
 

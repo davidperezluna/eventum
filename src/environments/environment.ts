@@ -4,11 +4,6 @@
 
 export const environment = {
   production: false,
-  /**
-   * Desarrollo: muestra el aviso tipo PWA/notificaciones (modo «ios») también en Chrome
-   * para revisar texto y estilo sin iPhone. En producción debe ser `false`.
-   */
-  showPwaInstallHintBannerInChromeForTests: false,
   /** Mantener alineado con `index.html` (OneSignal se inicializa allí antes del bundle). */
   oneSignal: {
     appId: 'cb3f9dcf-6085-43d5-99ae-6c76db8abf57',

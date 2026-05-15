@@ -83,7 +83,7 @@
   }
 }
 
-/* Mismo botón menú que el cliente (barra clara) */
+/* Icono menú (admin móvil): solo las tres líneas, sin contenedor ni borde */
 .menu-toggle {
   display: none;
   align-items: center;
@@ -92,27 +92,31 @@
   height: 2.5rem;
   padding: 0;
   flex-shrink: 0;
-  background: rgba(26, 26, 46, 0.06);
-  color: var(--color-primary);
-  border: 1px solid rgba(26, 26, 46, 0.1);
-  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: #475569;
+  border: 0;
+  border-radius: 0;
   cursor: pointer;
   box-shadow: none;
-  transition:
-    background var(--transition-fast),
-    border-color var(--transition-fast),
-    color var(--transition-fast);
+  transition: color 0.18s ease, opacity 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .menu-toggle:hover {
-  background: rgba(102, 126, 234, 0.14);
-  border-color: rgba(102, 126, 234, 0.35);
-  color: var(--color-secondary-dark);
-  transform: none;
+  color: var(--color-primary);
+}
+
+.menu-toggle:active {
+  opacity: 0.85;
+}
+
+.menu-toggle:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary-light) 55%, transparent);
+  outline-offset: 3px;
 }
 
 .menu-toggle .material-icons {
-  font-size: 1.35rem;
+  font-size: 1.4rem;
 }
 
 .sidebar-overlay {
@@ -408,7 +412,7 @@
    CLIENT HEADER STYLES (NEW)
    ============================================ */
 
-/* Botón menú en el header (móvil): no flota sobre la página */
+/* Botón menú header cliente (móvil): solo icono de tres líneas */
 .client-menu-toggle {
   display: none;
   align-items: center;
@@ -417,23 +421,31 @@
   height: 2.5rem;
   padding: 0;
   flex-shrink: 0;
-  background: rgba(26, 26, 46, 0.06);
-  color: var(--color-primary);
-  border: 1px solid rgba(26, 26, 46, 0.1);
-  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: #475569;
+  border: 0;
+  border-radius: 0;
   cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast),
-    color var(--transition-fast);
+  box-shadow: none;
+  transition: color 0.18s ease, opacity 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .client-menu-toggle:hover {
-  background: rgba(102, 126, 234, 0.14);
-  border-color: rgba(102, 126, 234, 0.35);
-  color: var(--color-secondary-dark);
+  color: var(--color-primary);
+}
+
+.client-menu-toggle:active {
+  opacity: 0.85;
+}
+
+.client-menu-toggle:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary-light) 55%, transparent);
+  outline-offset: 3px;
 }
 
 .client-menu-toggle .material-icons {
-  font-size: 1.35rem;
+  font-size: 1.4rem;
 }
 
 /* Client Mobile Menu Overlay */
@@ -840,8 +852,9 @@
     max-width: 85vw;
   }
 
-  .menu-toggle .material-icons {
-    font-size: 1.25rem;
+  .menu-toggle .material-icons,
+  .client-menu-toggle .material-icons {
+    font-size: 1.3rem;
   }
 
   .admin-mobile-topbar-inner {

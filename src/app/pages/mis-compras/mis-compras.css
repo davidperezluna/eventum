@@ -243,7 +243,245 @@
 .compras-list {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 0.875rem;
+}
+
+/* Tarjeta horizontal (misma lógica visual que eventos-cliente / Próximos eventos) */
+.mis-compras-page .mc-events-section .section-header {
+  margin-bottom: 0.65rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  align-items: baseline;
+}
+
+.mis-compras-page .mc-events-section .section-header h2 {
+  font-size: clamp(1.08rem, 0.5vw + 1rem, 1.35rem);
+  font-weight: 800;
+  color: var(--color-primary);
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.mis-compras-page .mc-event-card.compra-card {
+  box-sizing: border-box;
+  background: #ffffff;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.mis-compras-page .mc-event-card.compra-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(15, 23,42, 0.12);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.mis-compras-page .mc-event-card.mc-event-card:hover .event-thumb img {
+  transform: scale(1.04);
+}
+
+.mis-compras-page .mc-event-card-toggle.evento-card-toggle {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.95rem;
+  padding: 0.9rem 1rem 0.9rem 0.9rem;
+  margin: 0;
+  border: 0;
+  border-bottom: none;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  min-height: 0;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mis-compras-page .mc-event-card-toggle.evento-card-toggle:hover {
+  background: transparent;
+}
+
+.mis-compras-page .mc-event-card .evento-card-toggle--static,
+.mis-compras-page .mc-event-card .evento-card-toggle--static:hover {
+  cursor: default;
+}
+
+.mis-compras-page .mc-event-card .event-thumb {
+  position: relative;
+  flex-shrink: 0;
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #f1f5f9;
+}
+
+.mis-compras-page .mc-event-card .event-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.mis-compras-page .mc-event-card .event-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0;
+}
+
+.mis-compras-page .mc-event-card .event-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: #0f172a;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  width: 100%;
+}
+
+.mis-compras-page .mc-event-card .event-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  width: 100%;
+}
+
+.mis-compras-page .mc-event-card .event-meta-line {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: #64748b;
+  line-height: 1.2;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mis-compras-page .mc-event-card .event-meta-line .material-icons {
+  flex-shrink: 0;
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-primary);
+}
+
+.mis-compras-page .mc-event-card .compra-estados--event-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.45rem;
+  margin-top: 0.25rem;
+  width: 100%;
+}
+
+.mis-compras-page .mc-event-card .event-footer {
+  margin-top: 0.25rem;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.mis-compras-page .mc-event-card .mc-event-boletas-stat {
+  min-width: 0;
+  flex: 1;
+}
+
+.mis-compras-page .mc-event-card .mc-event-boletas-stat .total-label {
+  display: block;
+  margin-bottom: 0.1rem;
+}
+
+.mis-compras-page .mc-event-card .mc-event-boletas-stat .total-value {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.mis-compras-page .mc-event-card .mc-event-boletas-stat .evento-total-caption {
+  margin-top: 0.2rem;
+}
+
+.mis-compras-page .mc-event-card .event-cta {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  color: var(--color-primary);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  opacity: 0.72;
+  transition:
+    opacity 0.2s ease,
+    transform 0.22s ease,
+    color 0.2s ease,
+    gap 0.2s ease;
+  pointer-events: none;
+}
+
+.mis-compras-page .mc-event-card .event-cta ion-icon {
+  flex-shrink: 0;
+  font-size: 1.125rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  pointer-events: none;
+  opacity: 0.95;
+}
+
+.mis-compras-page .mc-event-card.compra-card:hover .event-cta {
+  opacity: 1;
+  transform: translateX(3px);
+  gap: 0.38rem;
+}
+
+.mis-compras-page .mc-event-card .event-footer.mc-event-card-footer--static {
+  justify-content: flex-start;
+}
+
+@media (min-width: 769px) {
+  .mis-compras-page .mc-event-card .event-thumb {
+    width: 6rem;
+    height: 6rem;
+  }
 }
 
 .compra-card {
@@ -1800,15 +2038,21 @@
     gap: 1rem;
   }
 
-  .evento-card-toggle {
+  .evento-card-toggle:not(.mc-event-card-toggle) {
     flex-direction: column;
     gap: 1rem;
     padding: 1.35rem 1.5rem;
+    padding-right: 3.25rem;
     position: relative;
   }
 
-  .evento-card-toggle:not(.evento-card-toggle--static) {
-    padding-right: 3.25rem;
+  .mis-compras-page .mc-event-card-toggle.evento-card-toggle {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 0.95rem 0.85rem 0.85rem;
+    position: relative;
   }
 
   .evento-info {
