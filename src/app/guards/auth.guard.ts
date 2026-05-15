@@ -3,8 +3,39 @@
    ============================================ */
 
 import { inject } from '@angular/core';
-import { Router, CanActivateFn } from '@angular/router';
-import { AuthService, RolesPermitidos } from '../services/auth.service';
+import { Router, CanActivateFn, PRIMARY_OUTLET } from '@angular/router';
+import { AuthService } from '../services/auth.service';
+
+/** Segmentos de ruta (sin query) para una URL de navegación. */
+function segmentosDesdeUrl(router: Router, url: string): string[] {
+  const tree = router.parseUrl(url);
+  const primary = tree.root.children[PRIMARY_OUTLET];
+  return primary ? primary.segments.map((s) => s.path) : [];
+}
+
+/**
+ * Rutas protegidas que el rol Cliente puede usar.
+ * El resto (dashboard, eventos admin, usuarios, etc.) queda bloqueado.
+ * Públicas (sin este guard): eventos-cliente, conocenos, detalle-evento/:id.
+ */
+function clienteTienePermisoParaRuta(router: Router, url: string): boolean {
+  const segments = segmentosDesdeUrl(router, url);
+  if (segments.length === 0) return false;
+
+  const [a, b, c] = segments;
+
+  if (a === 'mis-compras') {
+    if (segments.length === 1) return true;
+    if (segments.length === 2 && b === 'actividad') return true;
+    if (segments.length === 3 && b === 'evento' && Boolean(c)) return true;
+    return false;
+  }
+
+  if (a === 'pago-resultado' && segments.length === 1) return true;
+  if (a === 'perfil' && segments.length === 1) return true;
+
+  return false;
+}
 
 export const authGuard: CanActivateFn = async (route, state) => {
   const authService = inject(AuthService);
@@ -50,6 +81,14 @@ export const authGuard: CanActivateFn = async (route, state) => {
       // Cerrar sesión y redirigir al login
       await authService.logout();
       return false;
+    }
+
+    if (authService.isCliente()) {
+      if (!clienteTienePermisoParaRuta(router, state.url)) {
+        console.log('Auth Guard - Cliente sin acceso a ruta protegida:', state.url);
+        router.navigate(['/eventos-cliente']);
+        return false;
+      }
     }
 
     console.log('Auth Guard - Acceso permitido');
