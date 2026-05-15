@@ -1,3 +1,28 @@
+@if (mode() === 'ios') {
+  <div
+    class="pwa-banner pwa-banner--ios"
+    role="region"
+    aria-label="Para activar alertas en iPhone o iPad"
+  >
+    <div class="pwa-banner-inner">
+      <div class="pwa-banner-text">
+        <strong class="pwa-banner-title">Alertas en iPhone o iPad</strong>
+        <span class="pwa-banner-desc">
+          Para recibir <strong>notificaciones push</strong> desde el navegador, Apple solo lo permite cuando
+          agregás Eventum a la <strong>pantalla de inicio</strong>. Toca
+          <strong>Compartir</strong>&nbsp;(cuadrado con flecha hacia arriba),
+          después <strong>Agregar a pantalla de inicio</strong> y abre Eventum desde el icono. Ahí podrás permitir las
+          alertas.
+        </span>
+      </div>
+      <div class="pwa-banner-actions">
+        <button type="button" class="pwa-btn pwa-btn--ghost" (click)="onDismiss()" aria-label="Cerrar aviso">
+          Entendido
+        </button>
+      </div>
+    </div>
+  </div>
+}
 @if (mode() === 'install') {
   <div class="pwa-banner" role="region" aria-label="Instalar aplicación Eventum">
     <div class="pwa-banner-inner">

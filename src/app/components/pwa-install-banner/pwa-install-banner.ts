@@ -15,8 +15,10 @@ export interface BeforeInstallPromptEvent extends Event {
 }
 
 const DISMISS_KEY = 'eventum-pwa-install-banner-dismissed';
+/** Solo aviso push/PWA en iPhone iPad Safari; llave aparte para no ocultarlo al cerrar el banner de escritorio Chrome. */
+const IOS_PWA_HINT_DISMISS_KEY = 'eventum-ios-pwa-push-hint-dismissed';
 
-type BannerMode = 'hidden' | 'install' | 'info';
+type BannerMode = 'hidden' | 'install' | 'info' | 'ios';
 
 @Component({
   selector: 'app-pwa-install-banner',
@@ -48,10 +50,12 @@ export class PwaInstallBanner implements OnDestroy {
     if (this.isStandalone(win)) {
       return;
     }
+
+    let chromeBannerDismissed = false;
+    let iosHintDismissed = false;
     try {
-      if (win.localStorage.getItem(DISMISS_KEY) === '1') {
-        return;
-      }
+      chromeBannerDismissed = win.localStorage.getItem(DISMISS_KEY) === '1';
+      iosHintDismissed = win.localStorage.getItem(IOS_PWA_HINT_DISMISS_KEY) === '1';
     } catch {
       /* private mode u bloqueo de storage */
     }
@@ -59,12 +63,25 @@ export class PwaInstallBanner implements OnDestroy {
     const port = win.location.port;
     this.localhostHint.set(port ? `http://localhost:${port}` : 'http://localhost');
 
+    const ios = this.isIosDevice(win);
+
+    // iOS (Safari y otros): las notificaciones push web solo están disponibles tras agregar la app al inicio.
+    if (ios && win.isSecureContext && !iosHintDismissed) {
+      this.zone.run(() => this.mode.set('ios'));
+    }
     // HTTP por IP (p. ej. 192.168.x.x): no hay contexto seguro → no llega beforeinstallprompt.
-    if (!win.isSecureContext) {
+    else if (!win.isSecureContext && !chromeBannerDismissed) {
       this.zone.run(() => this.mode.set('info'));
     }
 
+    if (chromeBannerDismissed) {
+      return;
+    }
+
     this.beforeInstallListener = (e: Event) => {
+      if (this.isIosDevice(win)) {
+        return;
+      }
       e.preventDefault();
       this.deferredPrompt = e as BeforeInstallPromptEvent;
       this.zone.run(() => this.mode.set('install'));
@@ -116,8 +133,13 @@ export class PwaInstallBanner implements OnDestroy {
 
   protected onDismiss(): void {
     const win = this.doc.defaultView;
+    const current = this.mode();
     try {
-      win?.localStorage.setItem(DISMISS_KEY, '1');
+      if (current === 'ios') {
+        win?.localStorage.setItem(IOS_PWA_HINT_DISMISS_KEY, '1');
+      } else {
+        win?.localStorage.setItem(DISMISS_KEY, '1');
+      }
     } catch {
       /* ignore */
     }
@@ -128,6 +150,16 @@ export class PwaInstallBanner implements OnDestroy {
     return (
       win.matchMedia('(display-mode: standalone)').matches ||
       (win.navigator as Navigator & { standalone?: boolean }).standalone === true
+    );
+  }
+
+  /** iPhone, iPod, iPad o iPad OS con user agent “Mac” y touch. */
+  private isIosDevice(win: Window): boolean {
+    const ua = typeof win.navigator !== 'undefined' ? win.navigator.userAgent || '' : '';
+    const maxTouchPoints = win.navigator.maxTouchPoints ?? 0;
+    return (
+      /iPad|iPhone|iPod/.test(ua) ||
+      (win.navigator.platform === 'MacIntel' && maxTouchPoints > 1)
     );
   }
 }
