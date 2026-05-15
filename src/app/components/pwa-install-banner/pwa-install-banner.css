@@ -99,11 +99,14 @@
 }
 
 .pwa-banner--ios .pwa-banner-inner {
-  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(
+    --gradient-button,
+    linear-gradient(135deg, var(--color-secondary, #667eea) 0%, var(--color-secondary-dark, #764ba2) 100%)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .pwa-banner--ios .pwa-banner-desc strong {
   font-weight: 600;
-  color: #99f6e4;
+  color: #c4b5fd;
 }
