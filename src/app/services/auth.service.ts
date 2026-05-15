@@ -5,6 +5,7 @@
 import { Injectable, NgZone } from '@angular/core';
 import { Router } from '@angular/router';
 import { SupabaseService } from './supabase.service';
+import { OneSignalIdentityService } from './onesignal-identity.service';
 import { User, Session } from '@supabase/supabase-js';
 import { Usuario } from '../types/entities';
 
@@ -49,7 +50,8 @@ export class AuthService {
   constructor(
     private supabase: SupabaseService,
     private router: Router,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private oneSignalIdentity: OneSignalIdentityService
   ) {
     this.initAuth();
   }
@@ -104,6 +106,7 @@ export class AuthService {
               await this.loadUsuarioData(session.user.id);
             } else {
               this.setUsuario(null);
+              this.oneSignalIdentity.logoutFromOneSignal();
             }
           });
         });
@@ -285,6 +288,11 @@ export class AuthService {
 
         this.setUsuario(usuario);
         console.log('Datos del usuario cargados correctamente:', usuario);
+        this.oneSignalIdentity.syncLoggedInUser(
+          authUserId,
+          usuario,
+          this.currentUser?.email
+        );
       });
     } catch (error) {
       this.ngZone.run(() => {
@@ -403,7 +411,8 @@ export class AuthService {
         this.setSession(null);
         this.setCurrentUser(null);
         this.setUsuario(null);
-        
+        this.oneSignalIdentity.logoutFromOneSignal();
+
         if (error) {
           console.error('Error al cerrar sesión:', error);
         }
@@ -417,7 +426,8 @@ export class AuthService {
         this.setSession(null);
         this.setCurrentUser(null);
         this.setUsuario(null);
-        
+        this.oneSignalIdentity.logoutFromOneSignal();
+
         this.router.navigate(['/login']);
       });
       throw error;
