@@ -246,23 +246,7 @@
   gap: 0.875rem;
 }
 
-/* Tarjeta horizontal (misma lógica visual que eventos-cliente / Próximos eventos) */
-.mis-compras-page .mc-events-section .section-header {
-  margin-bottom: 0.65rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-  align-items: baseline;
-}
-
-.mis-compras-page .mc-events-section .section-header h2 {
-  font-size: clamp(1.125rem, 0.55vw + 1rem, 1.4rem);
-  font-weight: 800;
-  color: var(--color-primary);
-  letter-spacing: -0.03em;
-  line-height: 1.2;
-  margin: 0;
-}
-
+/* Tarjeta horizontal (lista por evento en Mis compras) */
 .mis-compras-page .mc-event-card.compra-card {
   box-sizing: border-box;
   background: #ffffff;

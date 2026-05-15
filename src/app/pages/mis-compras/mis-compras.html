@@ -360,10 +360,7 @@
     </div>
   </div>
 
-  <section class="mc-events-section" *ngIf="!loading && !eventoDetalleKey && eventosConBoletas.length > 0">
-    <div class="section-header">
-      <h2>Tus eventos</h2>
-    </div>
+  <section *ngIf="!loading && !eventoDetalleKey && eventosConBoletas.length > 0">
     <div class="compras-list eventos-list">
     <div *ngFor="let grupo of eventosConBoletas" class="compra-card evento-card mc-event-card" [class.expanded]="isEventoBoletasExpandido(grupo.key)">
       <button
