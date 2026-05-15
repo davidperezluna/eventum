@@ -58,12 +58,24 @@ export class OneSignalIdentityService {
 
     const run = async (OneSignal: any) => {
       await OneSignal.login(authUserId);
+      await this.waitForExternalId(OneSignal, authUserId, 8000);
+
+      // Si el panel o la config activan "requiere consentimiento", addEmail/addSms se ignoran
+      // hasta tener consentimiento (el SDK bloquea con "Consent required but not given").
+      // Usuario ya autenticado en Supabase = consentimiento para vincular datos de perfil.
+      if (typeof OneSignal.setConsentGiven === 'function') {
+        await OneSignal.setConsentGiven(true);
+      }
+
       if (email) {
         await OneSignal.User.addEmail(email);
       }
       const e164 = this.normalizePhoneE164(phoneRaw);
       if (e164) {
         await OneSignal.User.addSms(e164);
+      }
+      if (email) {
+        console.info('[OneSignal] identidad sincronizada (email enviado al SDK):', email);
       }
     };
 
@@ -93,6 +105,21 @@ export class OneSignalIdentityService {
       await new Promise((r) => setTimeout(r, OneSignalIdentityService.POLL_MS));
     }
     return null;
+  }
+
+  /** Tras `login()`, el External ID en cliente puede aplicarse un tick después. */
+  private async waitForExternalId(oneSignal: any, expected: string, timeoutMs: number): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      try {
+        if (oneSignal.User?.externalId === expected) {
+          return;
+        }
+      } catch {
+        /* ignore */
+      }
+      await new Promise((r) => setTimeout(r, 50));
+    }
   }
 
   logoutFromOneSignal(): void {
