@@ -791,7 +791,10 @@ export class MisCompras implements OnInit, OnDestroy {
       return;
     }
 
-    this.alertService.success('Listo', 'Se aplicaron los datos de tu perfil. Ya puedes ver el código QR.');
+    this.alertService.success(
+      'Listo',
+      'Se aplicaron los datos de tu perfil. El código QR solo aparecerá el día del evento.'
+    );
     try {
       await this.recargarBoletasYTraslados();
     } catch (e) {
@@ -903,7 +906,7 @@ export class MisCompras implements OnInit, OnDestroy {
       this.alertService.error('Error', res.error || '');
       return;
     }
-    this.alertService.success('Aceptado', 'La entrada es tuya. Ya puedes ver el QR.');
+    this.alertService.success('Aceptado', 'La entrada es tuya. El código QR solo aparecerá el día del evento.');
     await this.recargarBoletasYTraslados();
   }
 
@@ -1088,7 +1091,7 @@ export class MisCompras implements OnInit, OnDestroy {
   mensajeHabilitacionQrBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): string {
     const inicio = this.fechaInicioEventoBoleta(boleta, compra);
     if (!inicio) {
-      return 'Tranqui, esta boleta ya está a tu nombre. El código QR se habilitará durante las fechas del evento. Gracias por parchar con Eventum.';
+      return 'El código QR solo será visible el día del evento. Hoy aún no está disponible en la app.';
     }
     const fin = this.fechaFinEventoBoleta(boleta, compra);
     const fmt = new Intl.DateTimeFormat('es-CO', {
@@ -1097,9 +1100,9 @@ export class MisCompras implements OnInit, OnDestroy {
       year: 'numeric',
     });
     if (fin && this.diaCalendarioLocal(inicio) !== this.diaCalendarioLocal(fin)) {
-      return `Tranqui, esta boleta ya está a tu nombre. El QR estará activo del ${fmt.format(inicio)} al ${fmt.format(fin)}. Gracias por parchar con Eventum.`;
+      return `El código QR solo se mostrará entre el ${fmt.format(inicio)} y el ${fmt.format(fin)} (fechas del evento). Hoy aún no lo verás.`;
     }
-    return `Tranqui, esta boleta ya está a tu nombre. El QR se activa el ${fmt.format(inicio)} para que todo sea más seguro, sin vueltas raras. Gracias por parchar con Eventum.`;
+    return `El código QR solo se mostrará el día del evento: ${fmt.format(inicio)}. Hoy aún no lo verás en la app.`;
   }
 
   esBoletaUsada(boleta: BoletaComprada | null | undefined): boolean {

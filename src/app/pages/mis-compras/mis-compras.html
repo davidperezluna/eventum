@@ -77,6 +77,12 @@
             <li>Cuando la otra persona <strong>acepta</strong>, la entrada queda <strong>a su nombre</strong> y <strong>ya no puede enviarla</strong> a nadie más.</li>
             <li>Mientras el envío está pendiente, <strong>tú no puedes ver ni usar el código QR</strong> de esa boleta (puedes cancelar el envío si aún no aceptaron).</li>
             <li>Si la entrada es para ti, usa <strong>«Yo asisto»</strong>: no hace falta correo de otra persona.</li>
+            <li class="guia-regla-qr">
+              <strong>El código QR solo se muestra el día del evento.</strong>
+              Aunque ya hayas pagado y asignado la entrada, <strong>el código QR no aparece antes</strong>.
+              Solo podrás verlo e imprimirlo <strong>el día del evento</strong> (o entre las fechas del evento si dura más de un día).
+              Guárdalo en el celular ese día para ingresar.
+            </li>
           </ul>
         </div>
 
@@ -363,7 +369,7 @@
                     </div>
                     <div class="boleta-palco-pendiente-pago" *ngIf="requiereRegistroAsistentePalcoPosterior(boleta) && compra.estado_pago !== 'completado'">
                       <p class="help-text">
-                        Cuando el pago se confirme, podrás asignar cada acceso por correo o con «Yo asisto» para ver el código QR.
+                        Cuando el pago se confirme, podrás asignar cada acceso por correo o con «Yo asisto». El código QR solo se verá el día del evento.
                       </p>
                     </div>
                     <div class="boleta-datos" *ngIf="tieneAsistenteRegistrado(boleta)">
@@ -549,7 +555,7 @@
                   </div>
                   <div class="boleta-palco-pendiente-pago" *ngIf="requiereRegistroAsistentePalcoPosterior(boleta) && compra.estado_pago !== 'completado'">
                     <p class="help-text">
-                      Cuando el pago se confirme, podrás asignar cada acceso por correo o con «Yo asisto» para ver el código QR.
+                      Cuando el pago se confirme, podrás asignar cada acceso por correo o con «Yo asisto». El código QR solo se verá el día del evento.
                     </p>
                   </div>
                   <p class="boleta-fechas" *ngIf="eventoVistaBoleta(boleta, compra)?.fecha_inicio">
