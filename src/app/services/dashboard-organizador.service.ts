@@ -7,6 +7,7 @@ import { SupabaseService } from './supabase.service';
 import { TimezoneService } from './timezone.service';
 import { DashboardStats } from '../types';
 import { agregarFinanzasDesdeComprasCompletadas } from '../utils/wompi-finanzas';
+import { DateTimeUtil } from '../utils/date-time.util';
 
 @Injectable({
   providedIn: 'root'
@@ -263,15 +264,13 @@ export class DashboardOrganizadorService {
     }, 0);
 
     const ingresosDiaActual = safeExecute(async () => {
-      const inicioHoy = new Date();
-      inicioHoy.setHours(0, 0, 0, 0);
-
       const response = await this.supabase
         .from('compras')
         .select('total, evento_id, eventos!inner(organizador_id)')
         .eq('estado_pago', 'completado')
         .eq('eventos.organizador_id', organizadorId)
-        .gte('fecha_compra', inicioHoy.toISOString());
+        .gte('fecha_compra', DateTimeUtil.dayStartDaysAgo(0))
+        .lte('fecha_compra', DateTimeUtil.dayEndDaysAgo(0));
 
       if (response.error) return 0;
       if (response.data && Array.isArray(response.data)) {
@@ -281,20 +280,13 @@ export class DashboardOrganizadorService {
     }, 0);
 
     const ingresosDiaAnterior = safeExecute(async () => {
-      const inicioAyer = new Date();
-      inicioAyer.setDate(inicioAyer.getDate() - 1);
-      inicioAyer.setHours(0, 0, 0, 0);
-
-      const finAyer = new Date(inicioAyer);
-      finAyer.setHours(23, 59, 59, 999);
-
       const response = await this.supabase
         .from('compras')
         .select('total, evento_id, eventos!inner(organizador_id)')
         .eq('estado_pago', 'completado')
         .eq('eventos.organizador_id', organizadorId)
-        .gte('fecha_compra', inicioAyer.toISOString())
-        .lte('fecha_compra', finAyer.toISOString());
+        .gte('fecha_compra', DateTimeUtil.dayStartDaysAgo(1))
+        .lte('fecha_compra', DateTimeUtil.dayEndDaysAgo(1));
 
       if (response.error) return 0;
       if (response.data && Array.isArray(response.data)) {

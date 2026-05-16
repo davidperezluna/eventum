@@ -63,6 +63,7 @@ export class DashboardEventos implements OnInit, OnDestroy {
   asistenciaPorEvento: ReporteAsistencia[] = [];
   ingresosPorEvento: { evento_id: number; evento_titulo: string; ingresos: number; boletas_vendidas: number }[] = [];
   distribucionMetodoPago: { metodo: string; cantidad: number; porcentaje: number }[] = [];
+  distribucionTipoBoleta: { tipo: string; cantidad: number; porcentaje: number }[] = [];
   reporteEventoSeleccionado: ReporteEvento | null = null;
 
   // Paginación para tablas
@@ -116,6 +117,7 @@ export class DashboardEventos implements OnInit, OnDestroy {
         this.ingresosTotal = result.ingresosPorEvento.length;
         this.ingresosPage = 1;
         this.distribucionMetodoPago = result.distribucionMetodoPago;
+        this.distribucionTipoBoleta = result.distribucionTipoBoleta;
         this.reporteEventoSeleccionado = result.reporteEvento;
         this.cdr.detectChanges();
       },
@@ -215,6 +217,7 @@ export class DashboardEventos implements OnInit, OnDestroy {
         asistenciaPorEvento,
         ingresosPorEvento,
         distribucionMetodoPago,
+        distribucionTipoBoleta,
         reporteEvento
       ] = await Promise.all([
         this.reportesService.getVentasPorDia(fechaDesde, fechaHasta, organizadorId).catch((err) => {
@@ -237,6 +240,10 @@ export class DashboardEventos implements OnInit, OnDestroy {
           console.error('Error cargando distribución método pago:', err);
           return [];
         }),
+        this.reportesService.getDistribucionTipoBoleta(organizadorId).catch((err) => {
+          console.error('Error cargando distribución tipo boleta:', err);
+          return [];
+        }),
         eventoFiltro 
           ? this.reportesService.getReporteEvento(eventoFiltro).catch((err) => {
               console.error('Error cargando reporte evento:', err);
@@ -251,6 +258,7 @@ export class DashboardEventos implements OnInit, OnDestroy {
         asistenciaPorEvento,
         ingresosPorEvento,
         distribucionMetodoPago,
+        distribucionTipoBoleta,
         reporteEvento
       };
     } catch (error) {
@@ -261,6 +269,7 @@ export class DashboardEventos implements OnInit, OnDestroy {
         asistenciaPorEvento: [],
         ingresosPorEvento: [],
         distribucionMetodoPago: [],
+        distribucionTipoBoleta: [],
         reporteEvento: null
       };
     }

@@ -4,6 +4,7 @@
 
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
+import { DateTimeUtil } from '../utils/date-time.util';
 
 export interface ReporteVentas {
   fecha: string;
@@ -65,27 +66,51 @@ export class ReportesService {
    */
   async getVentasPorDia(fechaDesde?: string, fechaHasta?: string, organizadorId?: number, eventoId?: number): Promise<ReporteVentas[]> {
     try {
-      let query = this.supabase
-        .from('compras')
-        .select('id, total, fecha_compra, evento_id, eventos!inner(organizador_id)')
-        .eq('estado_pago', 'completado');
+      type CompraVentaDia = { id: number; total: number; fecha_compra: string; evento_id: number };
 
-      if (organizadorId) {
-        query = query.eq('eventos.organizador_id', organizadorId);
-      }
+      let data: CompraVentaDia[] | null = null;
+      let error: { message: string } | null = null;
 
-      if (eventoId) {
-        query = query.eq('evento_id', eventoId);
-      }
+      if (organizadorId != null) {
+        let query = this.supabase
+          .from('compras')
+          .select('id, total, fecha_compra, evento_id, eventos!inner(organizador_id)')
+          .eq('estado_pago', 'completado')
+          .eq('eventos.organizador_id', organizadorId);
 
-      if (fechaDesde) {
-        query = query.gte('fecha_compra', fechaDesde);
-      }
-      if (fechaHasta) {
-        query = query.lte('fecha_compra', fechaHasta);
-      }
+        if (eventoId) {
+          query = query.eq('evento_id', eventoId);
+        }
+        if (fechaDesde) {
+          query = query.gte('fecha_compra', fechaDesde);
+        }
+        if (fechaHasta) {
+          query = query.lte('fecha_compra', fechaHasta);
+        }
 
-      const { data, error } = await query;
+        const response = await query;
+        data = response.data as CompraVentaDia[] | null;
+        error = response.error;
+      } else {
+        let query = this.supabase
+          .from('compras')
+          .select('id, total, fecha_compra, evento_id')
+          .eq('estado_pago', 'completado');
+
+        if (eventoId) {
+          query = query.eq('evento_id', eventoId);
+        }
+        if (fechaDesde) {
+          query = query.gte('fecha_compra', fechaDesde);
+        }
+        if (fechaHasta) {
+          query = query.lte('fecha_compra', fechaHasta);
+        }
+
+        const response = await query;
+        data = response.data;
+        error = response.error;
+      }
 
       if (error || !data) {
         return [];
@@ -116,7 +141,10 @@ export class ReportesService {
       const ventasPorDia: { [key: string]: { ventas: number; ingresos: number; boletas: number } } = {};
 
       for (const compra of data) {
-        const fecha = new Date(compra.fecha_compra).toISOString().split('T')[0];
+        const fecha = DateTimeUtil.toCalendarDateKey(compra.fecha_compra);
+        if (!fecha) {
+          continue;
+        }
         
         if (!ventasPorDia[fecha]) {
           ventasPorDia[fecha] = { ventas: 0, ingresos: 0, boletas: 0 };
@@ -146,16 +174,27 @@ export class ReportesService {
    */
   async getVentasPorMes(organizadorId?: number): Promise<{ mes: string; ventas: number; ingresos: number }[]> {
     try {
-      let query = this.supabase
-        .from('compras')
-        .select('total, fecha_compra, evento_id, eventos!inner(organizador_id)')
-        .eq('estado_pago', 'completado');
+      type CompraVentaMes = { total: number; fecha_compra: string; evento_id: number };
 
-      if (organizadorId) {
-        query = query.eq('eventos.organizador_id', organizadorId);
+      let data: CompraVentaMes[] | null = null;
+      let error: { message: string } | null = null;
+
+      if (organizadorId != null) {
+        const response = await this.supabase
+          .from('compras')
+          .select('total, fecha_compra, evento_id, eventos!inner(organizador_id)')
+          .eq('estado_pago', 'completado')
+          .eq('eventos.organizador_id', organizadorId);
+        data = response.data as CompraVentaMes[] | null;
+        error = response.error;
+      } else {
+        const response = await this.supabase
+          .from('compras')
+          .select('total, fecha_compra, evento_id')
+          .eq('estado_pago', 'completado');
+        data = response.data;
+        error = response.error;
       }
-
-      const { data, error } = await query;
 
       if (error || !data) {
         return [];
@@ -164,8 +203,10 @@ export class ReportesService {
       const ventasPorMes: { [key: string]: { ventas: number; ingresos: number } } = {};
 
       data.forEach(compra => {
-        const fecha = new Date(compra.fecha_compra);
-        const mes = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+        const mes = DateTimeUtil.toCalendarMonthKey(compra.fecha_compra);
+        if (!mes) {
+          return;
+        }
 
         if (!ventasPorMes[mes]) {
           ventasPorMes[mes] = { ventas: 0, ingresos: 0 };
@@ -372,20 +413,31 @@ export class ReportesService {
   }
 
   /**
-   * Obtiene distribución de métodos de pago
+   * Obtiene distribución de métodos de pago (por cantidad de compras completadas).
    */
   async getDistribucionMetodoPago(organizadorId?: number): Promise<{ metodo: string; cantidad: number; porcentaje: number }[]> {
     try {
-      let query = this.supabase
-        .from('compras')
-        .select('metodo_pago, evento_id, eventos!inner(organizador_id)')
-        .eq('estado_pago', 'completado');
+      type CompraMetodo = { metodo_pago: string | null };
 
-      if (organizadorId) {
-        query = query.eq('eventos.organizador_id', organizadorId);
+      let data: CompraMetodo[] | null = null;
+      let error: { message: string } | null = null;
+
+      if (organizadorId != null) {
+        const response = await this.supabase
+          .from('compras')
+          .select('metodo_pago, evento_id, eventos!inner(organizador_id)')
+          .eq('estado_pago', 'completado')
+          .eq('eventos.organizador_id', organizadorId);
+        data = response.data as CompraMetodo[] | null;
+        error = response.error;
+      } else {
+        const response = await this.supabase
+          .from('compras')
+          .select('metodo_pago')
+          .eq('estado_pago', 'completado');
+        data = response.data;
+        error = response.error;
       }
-
-      const { data, error } = await query;
 
       if (error || !data) {
         return [];
@@ -408,6 +460,61 @@ export class ReportesService {
         .sort((a, b) => b.cantidad - a.cantidad);
     } catch (error) {
       console.error('Error en getDistribucionMetodoPago:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Obtiene distribución por tipo de boleta (por cantidad de boletas vendidas con pago completado).
+   */
+  async getDistribucionTipoBoleta(organizadorId?: number): Promise<{ tipo: string; cantidad: number; porcentaje: number }[]> {
+    try {
+      type BoletaTipo = {
+        tipo_boleta_id: number;
+        tipos_boleta: { nombre: string; eventos?: { titulo: string } | { titulo: string }[] } | { nombre: string; eventos?: { titulo: string } | { titulo: string }[] }[];
+      };
+
+      let data: BoletaTipo[] | null = null;
+      let error: { message: string } | null = null;
+
+      if (organizadorId != null) {
+        const response = await this.supabase
+          .from('boletas_compradas')
+          .select('tipo_boleta_id, tipos_boleta!inner(nombre, eventos!inner(titulo, organizador_id)), compras!inner(estado_pago)')
+          .eq('compras.estado_pago', 'completado')
+          .eq('eventos.organizador_id', organizadorId);
+        data = response.data as BoletaTipo[] | null;
+        error = response.error;
+      } else {
+        const response = await this.supabase
+          .from('boletas_compradas')
+          .select('tipo_boleta_id, tipos_boleta!inner(nombre, eventos(titulo)), compras!inner(estado_pago)')
+          .eq('compras.estado_pago', 'completado');
+        data = response.data as BoletaTipo[] | null;
+        error = response.error;
+      }
+
+      if (error || !data) {
+        return [];
+      }
+
+      const distribucion: { [key: string]: number } = {};
+      const total = data.length;
+
+      data.forEach(boleta => {
+        const label = this.getTipoBoletaLabel(boleta);
+        distribucion[label] = (distribucion[label] || 0) + 1;
+      });
+
+      return Object.entries(distribucion)
+        .map(([tipo, cantidad]) => ({
+          tipo,
+          cantidad,
+          porcentaje: total > 0 ? Math.round((cantidad / total) * 100) : 0
+        }))
+        .sort((a, b) => b.cantidad - a.cantidad);
+    } catch (error) {
+      console.error('Error en getDistribucionTipoBoleta:', error);
       return [];
     }
   }
@@ -533,6 +640,19 @@ export class ReportesService {
       console.error('Error en getIngresosPorEvento:', error);
       return [];
     }
+  }
+
+  private getTipoBoletaLabel(boleta: {
+    tipo_boleta_id: number;
+    tipos_boleta?: { nombre: string; eventos?: { titulo: string } | { titulo: string }[] } | { nombre: string; eventos?: { titulo: string } | { titulo: string }[] }[];
+  }): string {
+    const tipoRaw = boleta.tipos_boleta;
+    const tipo = Array.isArray(tipoRaw) ? tipoRaw[0] : tipoRaw;
+    const nombre = tipo?.nombre?.trim() || `Tipo #${boleta.tipo_boleta_id}`;
+    const eventoRaw = tipo?.eventos;
+    const evento = Array.isArray(eventoRaw) ? eventoRaw[0] : eventoRaw;
+    const titulo = evento?.titulo?.trim();
+    return titulo ? `${nombre} (${titulo})` : nombre;
   }
 
   private getMetodoPagoLabel(metodo: string): string {

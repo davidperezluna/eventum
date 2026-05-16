@@ -537,6 +537,10 @@
   transition: width 0.3s ease;
 }
 
+.metodo-pago-bar-fill--tipo {
+  background: linear-gradient(90deg, #7c3aed 0%, #a855f7 100%);
+}
+
 .tasa-asistencia {
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-sm);

@@ -463,6 +463,25 @@
           </div>
         </div>
       </div>
+
+      <!-- Distribución por Tipo de Boleta -->
+      <div class="report-card">
+        <h2>Distribución por Tipo de Boleta</h2>
+        <div class="metodo-pago-list">
+          <div *ngFor="let item of distribucionTipoBoleta" class="metodo-pago-item">
+            <div class="metodo-pago-header">
+              <span class="metodo-pago-label">{{ item.tipo }}</span>
+              <span class="metodo-pago-cantidad">{{ item.cantidad }} ({{ item.porcentaje }}%)</span>
+            </div>
+            <div class="metodo-pago-bar">
+              <div class="metodo-pago-bar-fill metodo-pago-bar-fill--tipo" [style.width.%]="item.porcentaje"></div>
+            </div>
+          </div>
+          <div *ngIf="distribucionTipoBoleta.length === 0" class="empty-state">
+            No hay datos de tipos de boleta
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Tab Asistencia -->

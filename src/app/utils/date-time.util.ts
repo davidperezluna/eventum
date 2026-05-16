@@ -4,11 +4,49 @@
  */
 
 export class DateTimeUtil {
+  /** Zona horaria de negocio (Colombia). */
+  static readonly APP_TIMEZONE = 'America/Bogota';
+
   /**
    * Obtiene la zona horaria del navegador
    */
   static getTimezone(): string {
     return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }
+
+  /**
+   * Interpreta fechas almacenadas en BD (ISO UTC) de forma consistente.
+   */
+  static parseStoredDate(isoString: string): Date {
+    const dateStr = isoString.trim();
+    if (
+      dateStr.includes('T') &&
+      !dateStr.endsWith('Z') &&
+      !dateStr.includes('+') &&
+      !dateStr.includes('-', 10)
+    ) {
+      return new Date(dateStr + 'Z');
+    }
+    return new Date(dateStr);
+  }
+
+  /**
+   * Clave de día calendario YYYY-MM-DD en la zona horaria indicada (p. ej. America/Bogota).
+   */
+  static toCalendarDateKey(isoString: string, timeZone: string = this.APP_TIMEZONE): string {
+    const date = this.parseStoredDate(isoString);
+    if (isNaN(date.getTime())) {
+      return '';
+    }
+    return date.toLocaleDateString('en-CA', { timeZone });
+  }
+
+  /**
+   * Clave de mes calendario YYYY-MM en la zona horaria indicada.
+   */
+  static toCalendarMonthKey(isoString: string, timeZone: string = this.APP_TIMEZONE): string {
+    const dateKey = this.toCalendarDateKey(isoString, timeZone);
+    return dateKey ? dateKey.slice(0, 7) : '';
   }
 
   /**
@@ -76,6 +114,43 @@ export class DateTimeUtil {
     const utcDate = new Date(localDate.getTime() - offsetMs);
     
     return utcDate.toISOString();
+  }
+
+  /**
+   * Inicio del día calendario local (00:00) hace N días, en ISO UTC para comparar con BD.
+   * daysAgo: 0 = hoy, 1 = ayer.
+   */
+  static dayStartDaysAgo(daysAgo: number): string {
+    const now = new Date();
+    const localDate = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - daysAgo,
+      0,
+      0,
+      0,
+      0
+    );
+    const offsetMs = localDate.getTimezoneOffset() * 60000;
+    return new Date(localDate.getTime() - offsetMs).toISOString();
+  }
+
+  /**
+   * Fin del día calendario local (23:59:59.999) hace N días, en ISO UTC para comparar con BD.
+   */
+  static dayEndDaysAgo(daysAgo: number): string {
+    const now = new Date();
+    const localDate = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - daysAgo,
+      23,
+      59,
+      59,
+      999
+    );
+    const offsetMs = localDate.getTimezoneOffset() * 60000;
+    return new Date(localDate.getTime() - offsetMs).toISOString();
   }
 
   /**
