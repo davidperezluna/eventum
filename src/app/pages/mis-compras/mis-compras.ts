@@ -96,6 +96,29 @@ export class MisCompras implements OnInit, OnDestroy {
   /** Lista principal `/mis-compras`: filtros ocultos temporalmente. */
   mostrarToolbarFiltrosMisCompras = false;
 
+  /** Guía visual: asignar entradas y enviar por correo. */
+  guiaEntradasAbierta = false;
+  guiaPasoActivo: 'yo-asisto' | 'por-correo' | 'recibir' = 'yo-asisto';
+
+  readonly pasosGuiaYoAsisto = [
+    'Entra a <strong>Mis Boletas</strong> (este mismo menú) y pulsa <strong>Ver</strong> en el evento de tu compra.',
+    'Busca la boleta que aún dice «sin asignar» y abre <strong>Asignar esta entrada</strong>.',
+    'Pulsa <strong>Yo asisto</strong> y confirma. La entrada quedará con tu nombre y documento (los de <strong>Mi perfil</strong>).'
+  ];
+
+  readonly pasosGuiaPorCorreo = [
+    'Entra a <strong>Mis Boletas</strong> y pulsa <strong>Ver</strong> en el evento.',
+    'Abre <strong>Asignar esta entrada</strong> en la boleta que quieres regalar o compartir.',
+    'Elige <strong>Por correo</strong>, escribe el email exacto con el que la otra persona se registró en Eventum y pulsa <strong>Enviar solicitud</strong>.',
+    'La otra persona debe entrar también a <strong>Mis Boletas</strong>, ver la tarjeta <strong>Entradas por aceptar</strong> y pulsar <strong>Aceptar entrada</strong> (con documento en su perfil).'
+  ];
+
+  readonly pasosGuiaRecibir = [
+    'Si alguien te envió una entrada, verás un aviso amarillo arriba en esta página: <strong>Entradas por aceptar</strong>.',
+    'Antes de aceptar, completa tu <strong>número de documento</strong> en <strong>Mi perfil</strong>.',
+    'Pulsa <strong>Aceptar entrada</strong>. La boleta queda a tu nombre; ya no la puedes enviar a otra persona.'
+  ];
+
   // Lista de eventos disponibles (solo eventos donde el usuario tiene compras)
   eventosDisponibles: Evento[] = [];
   loadingEventos = false;

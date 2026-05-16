@@ -70,6 +70,208 @@
   border-bottom-left-radius: 1.25rem;
 }
 
+/* Guía de asignación y traslado de entradas */
+.guia-entradas-section {
+  max-width: 960px;
+  margin: 0 auto 1.5rem;
+  padding: 0 1rem;
+}
+
+.guia-entradas-details {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.guia-entradas-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 1.15rem;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.guia-entradas-summary::-webkit-details-marker {
+  display: none;
+}
+
+.guia-entradas-summary-icon {
+  color: #6366f1;
+  font-size: 1.75rem;
+  flex-shrink: 0;
+}
+
+.guia-entradas-summary-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.guia-entradas-summary-text strong {
+  font-size: 1.05rem;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.guia-entradas-summary-text small {
+  font-size: 0.85rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.guia-entradas-chevron {
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.guia-entradas-details[open] .guia-entradas-chevron {
+  transform: rotate(180deg);
+}
+
+.guia-entradas-body {
+  padding: 0 1.15rem 1.25rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.guia-entradas-reglas {
+  margin: 1rem 0 1.15rem;
+  padding: 1rem 1.1rem;
+  background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%);
+  border-radius: 12px;
+  border: 1px solid #c7d2fe;
+}
+
+.guia-entradas-reglas h3 {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #312e81;
+}
+
+.guia-entradas-reglas ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: #334155;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.guia-entradas-reglas li + li {
+  margin-top: 0.45rem;
+}
+
+.guia-entradas-reglas a {
+  color: #4f46e5;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.guia-entradas-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.guia-tab {
+  flex: 1 1 auto;
+  min-width: min(100%, 10rem);
+  padding: 0.55rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.guia-tab:hover {
+  border-color: #c7d2fe;
+  color: #4338ca;
+}
+
+.guia-tab.active {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: #fff;
+}
+
+.guia-pasos-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.guia-paso-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.guia-paso-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: #6366f1;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.guia-paso-texto {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: #334155;
+}
+
+.guia-entradas-nota {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 1.15rem 0 0;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: #64748b;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px dashed #cbd5e1;
+}
+
+.guia-entradas-nota .material-icons {
+  font-size: 1.1rem;
+  color: #6366f1;
+  flex-shrink: 0;
+}
+
+.guia-entradas-nota a {
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+.section-traslados-desc a {
+  color: #4f46e5;
+  font-weight: 600;
+}
+
 /* Vista Actividad (ruta /mis-compras/actividad) */
 .actividad-page-section {
   max-width: 1100px;

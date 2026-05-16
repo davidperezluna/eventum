@@ -55,6 +55,94 @@
     </div>
   </section>
 
+  <!-- Guía: asignar y transferir entradas -->
+  <section class="guia-entradas-section" *ngIf="!eventoDetalleKey" aria-labelledby="guia-entradas-titulo">
+    <details class="guia-entradas-details" [open]="guiaEntradasAbierta" (toggle)="guiaEntradasAbierta = $any($event.target).open">
+      <summary class="guia-entradas-summary">
+        <span class="material-icons guia-entradas-summary-icon" aria-hidden="true">help_outline</span>
+        <span class="guia-entradas-summary-text">
+          <strong id="guia-entradas-titulo">¿Cómo uso, asigno o envío mis entradas?</strong>
+          <small>Guía paso a paso · Léela si es tu primera vez</small>
+        </span>
+        <span class="material-icons guia-entradas-chevron" aria-hidden="true">expand_more</span>
+      </summary>
+
+      <div class="guia-entradas-body">
+        <div class="guia-entradas-reglas">
+          <h3>Lo más importante (léelo primero)</h3>
+          <ul>
+            <li>Solo puedes asignar o enviar entradas cuando el <strong>pago ya está confirmado</strong>.</li>
+            <li>Si envías a otra persona, su <strong>correo debe estar registrado</strong> en Eventum (la misma cuenta con la que inicia sesión).</li>
+            <li>Esa persona debe tener <strong>documento de identidad</strong> guardado en <a routerLink="/perfil">Mi perfil</a> antes de aceptar.</li>
+            <li>Cuando la otra persona <strong>acepta</strong>, la entrada queda <strong>a su nombre</strong> y <strong>ya no puede enviarla</strong> a nadie más.</li>
+            <li>Mientras el envío está pendiente, <strong>tú no puedes ver ni usar el código QR</strong> de esa boleta (puedes cancelar el envío si aún no aceptaron).</li>
+            <li>Si la entrada es para ti, usa <strong>«Yo asisto»</strong>: no hace falta correo de otra persona.</li>
+          </ul>
+        </div>
+
+        <div class="guia-entradas-tabs" role="tablist" aria-label="Tipo de guía">
+          <button
+            type="button"
+            class="guia-tab"
+            [class.active]="guiaPasoActivo === 'yo-asisto'"
+            (click)="guiaPasoActivo = 'yo-asisto'"
+            role="tab"
+            [attr.aria-selected]="guiaPasoActivo === 'yo-asisto'"
+          >
+            Asignarme la entrada (yo voy)
+          </button>
+          <button
+            type="button"
+            class="guia-tab"
+            [class.active]="guiaPasoActivo === 'por-correo'"
+            (click)="guiaPasoActivo = 'por-correo'"
+            role="tab"
+            [attr.aria-selected]="guiaPasoActivo === 'por-correo'"
+          >
+            Enviar a otra persona
+          </button>
+          <button
+            type="button"
+            class="guia-tab"
+            [class.active]="guiaPasoActivo === 'recibir'"
+            (click)="guiaPasoActivo = 'recibir'"
+            role="tab"
+            [attr.aria-selected]="guiaPasoActivo === 'recibir'"
+          >
+            Me enviaron una entrada
+          </button>
+        </div>
+
+        <ol class="guia-pasos-lista" *ngIf="guiaPasoActivo === 'yo-asisto'">
+          <li *ngFor="let paso of pasosGuiaYoAsisto; let i = index" class="guia-paso-item">
+            <span class="guia-paso-num">{{ i + 1 }}</span>
+            <p class="guia-paso-texto" [innerHTML]="paso"></p>
+          </li>
+        </ol>
+
+        <ol class="guia-pasos-lista" *ngIf="guiaPasoActivo === 'por-correo'">
+          <li *ngFor="let paso of pasosGuiaPorCorreo; let i = index" class="guia-paso-item">
+            <span class="guia-paso-num">{{ i + 1 }}</span>
+            <p class="guia-paso-texto" [innerHTML]="paso"></p>
+          </li>
+        </ol>
+
+        <ol class="guia-pasos-lista" *ngIf="guiaPasoActivo === 'recibir'">
+          <li *ngFor="let paso of pasosGuiaRecibir; let i = index" class="guia-paso-item">
+            <span class="guia-paso-num">{{ i + 1 }}</span>
+            <p class="guia-paso-texto" [innerHTML]="paso"></p>
+          </li>
+        </ol>
+
+        <p class="guia-entradas-nota">
+          <span class="material-icons" aria-hidden="true">info</span>
+          Si no ves «Asignar esta entrada», revisa que el pago esté completo o que la boleta no esté ya asignada.
+          Puedes ver el historial de envíos en <a routerLink="/mis-compras/actividad">Actividad</a>.
+        </p>
+      </div>
+    </details>
+  </section>
+
   <div class="filters-toolbar" *ngIf="mostrarToolbarFiltrosMisCompras && !eventoDetalleKey">
     <button
       type="button"
@@ -134,7 +222,11 @@
       <span class="material-icons">mark_email_unread</span>
       Entradas por aceptar
     </h3>
-    <p class="section-traslados-desc">Te las envió otro usuario con tu email registrado. Acepta o rechaza para continuar. Debes tener <strong>documento de identidad</strong> en Mi perfil antes de aceptar.</p>
+    <p class="section-traslados-desc">
+      Te las envió otra persona a tu correo registrado en Eventum. Pulsa <strong>Aceptar entrada</strong> para que queden a tu nombre
+      (después ya no podrás enviarlas a otra persona). Antes de aceptar, guarda tu <strong>documento de identidad</strong> en
+      <a routerLink="/perfil">Mi perfil</a>.
+    </p>
     <div class="traslados-pendientes-grid">
       <div *ngFor="let t of trasladosPendientesRecibir" class="traslado-pendiente-card">
         <div class="traslado-pendiente-head">
@@ -606,7 +698,10 @@
     <div class="traslado-modal-body">
       <h3 class="traslado-modal-title">Asignar entrada de palco</h3>
       <p class="traslado-modal-desc">
-        Indica el <strong>email con el que está registrado</strong> el usuario en Eventum (igual que enviar una boleta). Debe tener documento en su perfil; al aceptar en Mis Boletas se copian sus datos a la entrada. Tú dejarás de ver el QR mientras el traslado esté pendiente.
+        Escribe el <strong>correo exacto</strong> con el que la otra persona creó su cuenta en Eventum.
+        Si no está registrada, no podrá recibir la entrada. Debe tener documento en <strong>Mi perfil</strong> y aceptar en esta misma página (Mis Boletas).
+        Cuando acepte, la entrada queda a su nombre y <strong>no podrá enviarla a nadie más</strong>.
+        Mientras esperas, tú <strong>no verás el código QR</strong> (puedes cancelar el envío si aún no aceptó).
       </p>
       <div class="traslado-modal-field">
         <label for="email-traslado-destino">Email del destinatario *</label>
