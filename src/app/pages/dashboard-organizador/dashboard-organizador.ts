@@ -5,12 +5,13 @@ import { DashboardOrganizadorService } from '../../services/dashboard-organizado
 import { AuthService } from '../../services/auth.service';
 import { DashboardStats } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
+import { IngresosResumenComponent } from '../../components/ingresos-resumen/ingresos-resumen';
 
 @Component({
   selector: 'app-dashboard-organizador',
-  imports: [CommonModule, RouterModule, DateFormatPipe],
+  imports: [CommonModule, RouterModule, DateFormatPipe, IngresosResumenComponent],
   templateUrl: './dashboard-organizador.html',
-  styleUrls: ['./dashboard-organizador.css', '../finanzas-desglose-panel.css'],
+  styleUrls: ['./dashboard-organizador.css', '../dashboard/dashboard.css', '../finanzas-desglose-panel.css'],
 })
 export class DashboardOrganizador implements OnInit {
   constructor(

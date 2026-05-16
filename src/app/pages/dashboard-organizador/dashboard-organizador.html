@@ -1,23 +1,10 @@
 <div class="dashboard">
-  <header class="dashboard-header">
-    <div>
-      <h1>
-        <span class="material-icons">dashboard</span>
-        Mi Dashboard
-      </h1>
-      <p>Panel de control de tus eventos y ventas</p>
-    </div>
-    <div style="display: flex; gap: var(--spacing-md); align-items: center;">
-      <a routerLink="/dashboard-eventos" class="btn-primary" style="text-decoration: none; display: flex; align-items: center; gap: var(--spacing-xs);">
-        <span class="material-icons">analytics</span>
-        Dashboard Completo
-      </a>
-      <button class="btn-refresh" (click)="loadStats()" [disabled]="loading">
-        <span class="material-icons">refresh</span>
-        Actualizar
-      </button>
-    </div>
-  </header>
+  <div class="dashboard-toolbar" role="navigation" aria-label="Acciones del dashboard organizador">
+    <button class="dashboard-toolbar__action dashboard-toolbar__action--refresh" (click)="loadStats()" [disabled]="loading" type="button">
+      <span class="material-icons">refresh</span>
+      Recargar
+    </button>
+  </div>
 
   <!-- Mensaje de error -->
   <div *ngIf="error" class="error-message">
@@ -32,62 +19,76 @@
   </div>
 
   <!-- Stats Grid Principal -->
-  <div *ngIf="!loading && !error" class="stats-grid">
-    <div class="stat-card stat-primary">
-      <div class="stat-icon-wrapper">
-        <span class="material-icons stat-icon">event</span>
-      </div>
-      <div class="stat-content">
-        <h3>Mis Eventos Activos</h3>
-        <p class="stat-value">{{ stats.eventos_activos }}</p>
-        <p class="stat-subtitle">de {{ stats.eventos_totales || 0 }} totales</p>
-      </div>
+  <section *ngIf="!loading && !error" class="dashboard-section dashboard-section--kpis">
+    <div class="dashboard-section__head">
+      <h2>Resumen ejecutivo</h2>
+      <p>Indicadores clave de tu operación como organizador.</p>
     </div>
+    <div class="stats-grid">
+      <div class="stat-card stat-primary">
+        <div class="stat-icon-wrapper">
+          <span class="material-icons stat-icon">event</span>
+        </div>
+        <div class="stat-content">
+          <h3>Mis eventos activos</h3>
+          <p class="stat-value">{{ stats.eventos_activos }}</p>
+          <p class="stat-subtitle">de {{ stats.eventos_totales || 0 }} totales</p>
+        </div>
+      </div>
 
-    <div class="stat-card stat-success">
-      <div class="stat-icon-wrapper">
-        <span class="material-icons stat-icon">confirmation_number</span>
+      <div class="stat-card stat-success">
+        <div class="stat-icon-wrapper">
+          <span class="material-icons stat-icon">confirmation_number</span>
+        </div>
+        <div class="stat-content">
+          <h3>Boletas vendidas</h3>
+          <p class="stat-value">{{ stats.boletas_vendidas | number }}</p>
+          <p class="stat-subtitle">Total de boletas</p>
+        </div>
       </div>
-      <div class="stat-content">
-        <h3>Boletas Vendidas</h3>
-        <p class="stat-value">{{ stats.boletas_vendidas | number }}</p>
-        <p class="stat-subtitle">Total de boletas</p>
-      </div>
-    </div>
 
-    <div class="stat-card stat-warning" title="Suma de totales cobrados (bruto). Abajo: desglose Wompi y netos estimados.">
-      <div class="stat-icon-wrapper">
-        <span class="material-icons stat-icon">attach_money</span>
+      <div class="stat-card stat-warning" title="Suma de totales cobrados (bruto). Más abajo: desglose Wompi estimado y netos.">
+        <div class="stat-icon-wrapper">
+          <span class="material-icons stat-icon">attach_money</span>
+        </div>
+        <div class="stat-content">
+          <h3>Ingresos totales</h3>
+          <p class="stat-value">{{ formatCurrency(stats.ingresos_totales) }}</p>
+          <p class="stat-subtitle">(bruto)</p>
+          <p class="stat-subtitle" *ngIf="stats.ingresos_mes_anterior">
+            <span [class]="getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior) >= 0 ? 'positive' : 'negative'">
+              {{ getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior) >= 0 ? '↑' : '↓' }}
+              {{ Math.abs(getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior)) }}%
+            </span>
+            vs mes anterior
+          </p>
+        </div>
       </div>
-      <div class="stat-content">
-        <h3>Ingresos totales</h3>
-        <p class="stat-value">{{ formatCurrency(stats.ingresos_totales) }}</p>
-        <p class="stat-subtitle">(bruto)</p>
-        <p class="stat-subtitle" *ngIf="stats.ingresos_mes_anterior">
-          <span [class]="getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior) >= 0 ? 'positive' : 'negative'">
-            {{ getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior) >= 0 ? '↑' : '↓' }}
-            {{ Math.abs(getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior)) }}%
-          </span>
-          vs mes anterior
-        </p>
-      </div>
-    </div>
 
-    <div class="stat-card stat-info">
-      <div class="stat-icon-wrapper">
-        <span class="material-icons stat-icon">people</span>
-      </div>
-      <div class="stat-content">
-        <h3>Clientes</h3>
-        <p class="stat-value">{{ stats.clientes }}</p>
-        <p class="stat-subtitle">Clientes únicos</p>
+      <div class="stat-card stat-info">
+        <div class="stat-icon-wrapper">
+          <span class="material-icons stat-icon">people</span>
+        </div>
+        <div class="stat-content">
+          <h3>Clientes</h3>
+          <p class="stat-value">{{ stats.clientes }}</p>
+          <p class="stat-subtitle">Clientes únicos</p>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
+
+  <!-- Ingresos por mes / día -->
+  <app-ingresos-resumen *ngIf="!loading && !error" class="dashboard-section" [stats]="stats"></app-ingresos-resumen>
 
   <!-- Desglose ingresos: empresario vs Eventum -->
-  <div *ngIf="!loading && !error" class="finanzas-desglose">
-    <div class="finanzas-desglose__grupos">
+  <section *ngIf="!loading && !error" class="dashboard-section dashboard-section--finanzas">
+    <div class="dashboard-section__head">
+      <h2>Salud financiera</h2>
+      <p>Desglose de ingresos brutos, comisiones y netos operativos.</p>
+    </div>
+    <div class="finanzas-desglose">
+      <div class="finanzas-desglose__grupos">
       <section class="finanzas-grupo finanzas-grupo--cliente" aria-labelledby="org-fin-cliente">
         <div class="finanzas-grupo__head">
           <h3 id="org-fin-cliente">Valor cliente (empresario)</h3>
@@ -121,7 +122,10 @@
       <section class="finanzas-grupo finanzas-grupo--platform" aria-labelledby="org-fin-eventum">
         <div class="finanzas-grupo__head">
           <h3 id="org-fin-eventum">Valor servicio (Eventum)</h3>
-          <p class="finanzas-grupo__sub">Cargo por servicio de plataforma: bruto, parte de Wompi y neto del servicio.</p>
+          <p class="finanzas-grupo__sub">
+            Comisión de plataforma: cargo por servicio, Wompi asociado y neto del servicio.
+            Servicio promedio: <strong>{{ (stats.porcentaje_servicio_promedio || 0) | number:'1.0-2' }}%</strong>.
+          </p>
         </div>
         <div class="finanzas-grupo__cards stats-grid-secondary">
           <div class="finanzas-grupo__metric">
@@ -147,94 +151,36 @@
           </div>
         </div>
       </section>
-    </div>
+      </div>
 
-    <div class="finanzas-desglose__totales">
-      <div class="stat-card-mini">
+      <div class="finanzas-desglose__totales">
+      <div class="stat-card-mini" title="Comisión total estimada">
         <span class="material-icons">percent</span>
         <div>
           <p class="stat-mini-value">{{ formatCurrency(stats.wompi_total_estimado || 0) }}</p>
           <p class="stat-mini-label">Wompi total (estim.)</p>
         </div>
       </div>
-      <div class="stat-card-mini">
+      <div class="stat-card-mini" title="Bruto − Wompi total estimado">
         <span class="material-icons">account_balance</span>
         <div>
           <p class="stat-mini-value">{{ formatCurrency(stats.neto_total_post_wompi_total || 0) }}</p>
           <p class="stat-mini-label">Neto total post-Wompi</p>
         </div>
       </div>
-      <div class="stat-card-mini">
-        <span class="material-icons">analytics</span>
-        <div>
-          <p class="stat-mini-value">{{ (stats.porcentaje_servicio_promedio || 0) | number:'1.0-2' }}%</p>
-          <p class="stat-mini-label">% Servicio prom.</p>
-        </div>
-      </div>
     </div>
   </div>
-
-  <!-- Ingresos por mes / día (expandible) -->
-  <details *ngIf="!loading && !error" class="dashboard-ingresos-expand">
-    <summary class="dashboard-ingresos-expand__summary">
-      <span class="material-icons dashboard-ingresos-expand__chev" aria-hidden="true">expand_more</span>
-      Ingresos por mes y por día
-    </summary>
-    <div class="dashboard-ingresos-expand__body">
-      <div class="dashboard-ingresos-corto">
-        <section class="dashboard-ingresos-corto__bloque" aria-labelledby="org-dash-ing-mes-h">
-          <h3 id="org-dash-ing-mes-h" class="dashboard-ingresos-expand__section-heading">Ingresos por mes</h3>
-          <div class="stats-grid-secondary stats-grid-secondary--dashboard-ingresos">
-            <div class="stat-card-mini">
-              <span class="material-icons">trending_up</span>
-              <div>
-                <p class="stat-mini-value">{{ formatCurrency(stats.ingresos_mes_actual || 0) }}</p>
-                <p class="stat-mini-label">Mes actual</p>
-              </div>
-            </div>
-            <div class="stat-card-mini">
-              <span class="material-icons">history</span>
-              <div>
-                <p class="stat-mini-value">{{ formatCurrency(stats.ingresos_mes_anterior || 0) }}</p>
-                <p class="stat-mini-label">Mes anterior</p>
-              </div>
-            </div>
-          </div>
-        </section>
-        <section class="dashboard-ingresos-corto__bloque" aria-labelledby="org-dash-ing-dia-h">
-          <h3 id="org-dash-ing-dia-h" class="dashboard-ingresos-expand__section-heading">Ingresos por día</h3>
-          <div class="stats-grid-secondary stats-grid-secondary--dashboard-ingresos">
-            <div class="stat-card-mini">
-              <span class="material-icons">today</span>
-              <div>
-                <p class="stat-mini-value">{{ formatCurrency(stats.ingresos_dia_actual || 0) }}</p>
-                <p class="stat-mini-label">Hoy</p>
-                <p class="dashboard-ingreso-corto-sub" *ngIf="stats.ingresos_dia_anterior !== undefined && stats.ingresos_dia_anterior !== null">
-                  <span [class]="getVariacionPorcentual(stats.ingresos_dia_actual || 0, stats.ingresos_dia_anterior || 0) >= 0 ? 'positive' : 'negative'">
-                    {{ getVariacionPorcentual(stats.ingresos_dia_actual || 0, stats.ingresos_dia_anterior || 0) >= 0 ? '↑' : '↓' }}
-                    {{ Math.abs(getVariacionPorcentual(stats.ingresos_dia_actual || 0, stats.ingresos_dia_anterior || 0)) }}%
-                  </span>
-                  vs ayer
-                </p>
-              </div>
-            </div>
-            <div class="stat-card-mini">
-              <span class="material-icons">event_repeat</span>
-              <div>
-                <p class="stat-mini-value">{{ formatCurrency(stats.ingresos_dia_anterior || 0) }}</p>
-                <p class="stat-mini-label">Ayer</p>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-    </div>
-  </details>
+  </section>
 
   <!-- Dashboard Content -->
-  <div *ngIf="!loading && !error" class="dashboard-content">
+  <section *ngIf="!loading && !error" class="dashboard-section">
+    <div class="dashboard-section__head">
+      <h2>Operación en tiempo real</h2>
+      <p>Actividad reciente de ventas y próximos eventos publicados.</p>
+    </div>
+    <div class="dashboard-content dashboard-content--primary">
     <!-- Ventas Recientes -->
-    <div class="content-card">
+    <div class="content-card content-card--ventas">
       <div class="card-header">
         <h2>
           <span class="material-icons">receipt</span>
@@ -266,7 +212,7 @@
     </div>
 
     <!-- Eventos Próximos -->
-    <div class="content-card">
+    <div class="content-card content-card--eventos">
       <div class="card-header">
         <h2>
           <span class="material-icons">calendar_today</span>
@@ -291,16 +237,22 @@
       <ng-template #noEventos>
         <div class="empty-state">
           <span class="material-icons">event_busy</span>
-          <p>No tienes eventos próximos</p>
+          <p>No hay eventos próximos</p>
         </div>
       </ng-template>
     </div>
-  </div>
+    </div>
+  </section>
 
   <!-- Sección de Estadísticas Adicionales -->
-  <div *ngIf="!loading && !error" class="dashboard-content">
+  <section *ngIf="!loading && !error" class="dashboard-section">
+    <div class="dashboard-section__head">
+      <h2>Comportamiento de audiencia</h2>
+      <p>Distribución de boletas y eventos con mejor rendimiento.</p>
+    </div>
+    <div class="dashboard-content dashboard-content--secondary">
     <!-- Boletas por Estado -->
-    <div class="content-card">
+    <div class="content-card content-card--boletas">
       <div class="card-header">
         <h2>
           <span class="material-icons">pie_chart</span>
@@ -329,7 +281,7 @@
     </div>
 
     <!-- Top Eventos -->
-    <div class="content-card">
+    <div class="content-card content-card--top">
       <div class="card-header">
         <h2>
           <span class="material-icons">star</span>
@@ -358,25 +310,29 @@
         </div>
       </ng-template>
     </div>
-  </div>
+    </div>
+  </section>
 
   <!-- Accesos Rápidos -->
-  <div *ngIf="!loading && !error" class="quick-actions">
-    <h2>Accesos Rápidos</h2>
+  <section *ngIf="!loading && !error" class="quick-actions dashboard-section">
+    <div class="dashboard-section__head">
+      <h2>Accesos rápidos</h2>
+      <p>Atajos para tus acciones administrativas más frecuentes.</p>
+    </div>
     <div class="actions-grid">
       <a routerLink="/eventos" class="action-card">
         <span class="material-icons">event</span>
-        <span>Mis Eventos</span>
+        <span>Gestionar eventos</span>
       </a>
       <a routerLink="/boletas" class="action-card">
         <span class="material-icons">confirmation_number</span>
-        <span>Ver Boletas</span>
+        <span>Ver boletas</span>
       </a>
       <a routerLink="/ventas" class="action-card">
         <span class="material-icons">attach_money</span>
-        <span>Mis Ventas</span>
+        <span>Ver ventas</span>
       </a>
     </div>
-  </div>
+  </section>
 </div>
 

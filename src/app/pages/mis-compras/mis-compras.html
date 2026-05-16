@@ -55,98 +55,32 @@
     </div>
   </section>
 
-  <!-- Guía: asignar y transferir entradas -->
+  <!-- Guía resumida -->
   <section class="guia-entradas-section" *ngIf="!eventoDetalleKey" aria-labelledby="guia-entradas-titulo">
-    <details class="guia-entradas-details" [open]="guiaEntradasAbierta" (toggle)="guiaEntradasAbierta = $any($event.target).open">
-      <summary class="guia-entradas-summary">
+    <article class="guia-resumen-card">
+      <div class="guia-resumen-head">
         <span class="material-icons guia-entradas-summary-icon" aria-hidden="true">help_outline</span>
-        <span class="guia-entradas-summary-text">
-          <strong id="guia-entradas-titulo">¿Cómo uso, asigno o envío mis entradas?</strong>
-          <small>Guía paso a paso · Léela si es tu primera vez</small>
-        </span>
-        <span class="material-icons guia-entradas-chevron" aria-hidden="true">expand_more</span>
-      </summary>
-
-      <div class="guia-entradas-body">
-        <div class="guia-entradas-reglas">
-          <h3>Lo más importante (léelo primero)</h3>
-          <ul>
-            <li>Solo puedes asignar o enviar entradas cuando el <strong>pago ya está confirmado</strong>.</li>
-            <li>Si envías a otra persona, su <strong>correo debe estar registrado</strong> en Eventum (la misma cuenta con la que inicia sesión).</li>
-            <li>Esa persona debe tener <strong>documento de identidad</strong> guardado en <a routerLink="/perfil">Mi perfil</a> antes de aceptar.</li>
-            <li>Cuando la otra persona <strong>acepta</strong>, la entrada queda <strong>a su nombre</strong> y <strong>ya no puede enviarla</strong> a nadie más.</li>
-            <li>Mientras el envío está pendiente, <strong>tú no puedes ver ni usar el código QR</strong> de esa boleta (puedes cancelar el envío si aún no aceptaron).</li>
-            <li>Si la entrada es para ti, usa <strong>«Yo asisto»</strong>: no hace falta correo de otra persona.</li>
-            <li class="guia-regla-qr">
-              <strong>El código QR solo se muestra el día del evento.</strong>
-              Aunque ya hayas pagado y asignado la entrada, <strong>el código QR no aparece antes</strong>.
-              Solo podrás verlo e imprimirlo <strong>el día del evento</strong> (o entre las fechas del evento si dura más de un día).
-              Guárdalo en el celular ese día para ingresar.
-            </li>
-          </ul>
+        <div>
+          <h2 id="guia-entradas-titulo">¿Cómo uso, asigno o envío mis entradas?</h2>
+          <p>Resumen rápido para empezar sin errores.</p>
         </div>
-
-        <div class="guia-entradas-tabs" role="tablist" aria-label="Tipo de guía">
-          <button
-            type="button"
-            class="guia-tab"
-            [class.active]="guiaPasoActivo === 'yo-asisto'"
-            (click)="guiaPasoActivo = 'yo-asisto'"
-            role="tab"
-            [attr.aria-selected]="guiaPasoActivo === 'yo-asisto'"
-          >
-            Asignarme la entrada (yo voy)
-          </button>
-          <button
-            type="button"
-            class="guia-tab"
-            [class.active]="guiaPasoActivo === 'por-correo'"
-            (click)="guiaPasoActivo = 'por-correo'"
-            role="tab"
-            [attr.aria-selected]="guiaPasoActivo === 'por-correo'"
-          >
-            Enviar a otra persona
-          </button>
-          <button
-            type="button"
-            class="guia-tab"
-            [class.active]="guiaPasoActivo === 'recibir'"
-            (click)="guiaPasoActivo = 'recibir'"
-            role="tab"
-            [attr.aria-selected]="guiaPasoActivo === 'recibir'"
-          >
-            Me enviaron una entrada
-          </button>
-        </div>
-
-        <ol class="guia-pasos-lista" *ngIf="guiaPasoActivo === 'yo-asisto'">
-          <li *ngFor="let paso of pasosGuiaYoAsisto; let i = index" class="guia-paso-item">
-            <span class="guia-paso-num">{{ i + 1 }}</span>
-            <p class="guia-paso-texto" [innerHTML]="paso"></p>
-          </li>
-        </ol>
-
-        <ol class="guia-pasos-lista" *ngIf="guiaPasoActivo === 'por-correo'">
-          <li *ngFor="let paso of pasosGuiaPorCorreo; let i = index" class="guia-paso-item">
-            <span class="guia-paso-num">{{ i + 1 }}</span>
-            <p class="guia-paso-texto" [innerHTML]="paso"></p>
-          </li>
-        </ol>
-
-        <ol class="guia-pasos-lista" *ngIf="guiaPasoActivo === 'recibir'">
-          <li *ngFor="let paso of pasosGuiaRecibir; let i = index" class="guia-paso-item">
-            <span class="guia-paso-num">{{ i + 1 }}</span>
-            <p class="guia-paso-texto" [innerHTML]="paso"></p>
-          </li>
-        </ol>
-
-        <p class="guia-entradas-nota">
-          <span class="material-icons" aria-hidden="true">info</span>
-          Si no ves «Asignar esta entrada», revisa que el pago esté completo o que la boleta no esté ya asignada.
-          Puedes ver el historial de envíos en <a routerLink="/mis-compras/actividad">Actividad</a>.
-        </p>
       </div>
-    </details>
+      <ul class="guia-resumen-list">
+        <li>Solo puedes asignar o enviar entradas con pago confirmado.</li>
+        <li>Si envías por correo, el destinatario debe tener cuenta y documento registrado.</li>
+        <li>El QR solo se habilita el día del evento.</li>
+      </ul>
+      <div class="guia-resumen-actions">
+        <a routerLink="/mis-compras/guia" class="guia-resumen-link" aria-label="Ir a guía completa">
+          <span class="material-icons" aria-hidden="true">menu_book</span>
+          <span>Guía</span>
+        </a>
+        <a routerLink="/mis-compras/actividad" class="guia-resumen-link guia-resumen-link--ghost" aria-label="Ir a actividad">
+          <span class="material-icons" aria-hidden="true">history</span>
+          <span>Actividad</span>
+        </a>
+      </div>
+    </article>
   </section>
 
   <div class="filters-toolbar" *ngIf="mostrarToolbarFiltrosMisCompras && !eventoDetalleKey">

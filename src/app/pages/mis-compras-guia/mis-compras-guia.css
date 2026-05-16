@@ -1,0 +1,148 @@
+.mis-compras-guia-page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 1rem 1rem 2rem;
+}
+
+.guia-hero {
+  background: linear-gradient(135deg, #1f2340 0%, #30266c 100%);
+  color: #fff;
+  border-radius: 14px;
+  padding: 1.1rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.guia-hero h1 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.guia-hero p {
+  margin: 0.35rem 0 0;
+  opacity: 0.9;
+  font-size: 0.9rem;
+}
+
+.guia-block {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0.95rem;
+  margin-bottom: 0.9rem;
+}
+
+.guia-block h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: #1e293b;
+}
+
+.guia-block ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #334155;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.guia-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.guia-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0.9rem;
+}
+
+.guia-card h3 {
+  margin: 0 0 0.55rem;
+  color: #1e293b;
+  font-size: 0.95rem;
+}
+
+.guia-card ol {
+  margin: 0;
+  padding-left: 1.05rem;
+  color: #475569;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.guia-actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.guia-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  text-decoration: none;
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #dbe4ff;
+  border-radius: 999px;
+  padding: 0.38rem 0.64rem;
+  font-weight: 600;
+  font-size: 0.76rem;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.guia-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 0.38rem 0.64rem;
+  color: #4f46e5;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.76rem;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.guia-btn .material-icons,
+.guia-link .material-icons {
+  font-size: 0.95rem;
+  width: 0.95rem;
+  height: 0.95rem;
+  line-height: 1;
+}
+
+.guia-btn:hover {
+  background: #e0e7ff;
+  border-color: #c7d2fe;
+}
+
+.guia-link:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+@media (max-width: 768px) {
+  .guia-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .guia-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .guia-btn,
+  .guia-link {
+    text-align: center;
+    width: 100%;
+  }
+}

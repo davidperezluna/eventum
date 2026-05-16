@@ -7,6 +7,7 @@ import { EventosCliente } from './pages/eventos-cliente/eventos-cliente';
 import { ConocenosContacto } from './pages/conocenos-contacto/conocenos-contacto';
 import { DetalleEvento } from './pages/detalle-evento/detalle-evento';
 import { MisCompras } from './pages/mis-compras/mis-compras';
+import { MisComprasGuia } from './pages/mis-compras-guia/mis-compras-guia';
 import { Boletas } from './pages/boletas/boletas';
 import { Perfil } from './pages/perfil/perfil';
 import { PagoResultado } from './pages/pago-resultado/pago-resultado';
@@ -70,6 +71,7 @@ const appRoutes: Routes = [
       { path: 'usuarios', component: Usuarios },
       { path: 'eventos', component: Eventos },
       { path: 'mis-compras/actividad', component: MisCompras }, // Cliente: traslados / actividad
+      { path: 'mis-compras/guia', component: MisComprasGuia }, // Cliente: guía de uso de entradas
       { path: 'mis-compras/evento/:id', component: MisCompras }, // Cliente: detalle de boletas por evento
       { path: 'mis-compras', component: MisCompras }, // Cliente: ver compras
       { path: 'pago-resultado', component: PagoResultado }, // Resultado de pago Wompi
