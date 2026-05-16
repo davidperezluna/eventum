@@ -6,10 +6,12 @@ import { AuthService } from '../../services/auth.service';
 import { DashboardStats } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { IngresosResumenComponent } from '../../components/ingresos-resumen/ingresos-resumen';
+import { DashboardKpisComponent } from '../../components/dashboard-kpis/dashboard-kpis';
+import { FinanzasDesgloseComponent } from '../../components/finanzas-desglose/finanzas-desglose';
 
 @Component({
   selector: 'app-dashboard-organizador',
-  imports: [CommonModule, RouterModule, DateFormatPipe, IngresosResumenComponent],
+  imports: [CommonModule, RouterModule, DateFormatPipe, IngresosResumenComponent, DashboardKpisComponent, FinanzasDesgloseComponent],
   templateUrl: './dashboard-organizador.html',
   styleUrls: ['./dashboard-organizador.css', '../dashboard/dashboard.css', '../finanzas-desglose-panel.css'],
 })

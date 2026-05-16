@@ -5,10 +5,10 @@
   </div>
 
   <div *ngIf="!loading && evento" class="evento-detalle">
-    <!-- Botón volver -->
+    <!-- Boton volver -->
     <button class="btn-back" (click)="router.navigate(['/eventos-cliente'])">
       <span class="material-icons">arrow_back</span>
-      Volver a Eventos
+      Volver
     </button>
 
     <!-- Header del evento -->
@@ -54,7 +54,7 @@
         </div>
         <div class="evento-meta">
           <div class="meta-group">
-            <p class="meta-group-label">Cuándo</p>
+            <p class="meta-group-label">Fecha y hora</p>
             <div class="meta-group-grid">
               <div class="meta-item">
                 <span class="material-icons">calendar_today</span>
@@ -80,7 +80,7 @@
             </div>
           </div>
           <div class="meta-group" *ngIf="evento.fecha_venta_inicio || evento.fecha_venta_fin">
-            <p class="meta-group-label">Ventas en línea</p>
+            <p class="meta-group-label">Venta en linea</p>
             <div class="meta-group-grid">
               <div class="meta-item" *ngIf="evento.fecha_venta_inicio">
                 <span class="material-icons">shopping_cart</span>
@@ -99,7 +99,7 @@
             </div>
           </div>
           <div class="meta-group meta-group--precio">
-            <p class="meta-group-label">Precio</p>
+            <p class="meta-group-label">Rango de precio</p>
             <p *ngIf="evento.es_gratis" class="meta-precio-texto precio-gratis">Gratis</p>
             <p *ngIf="!evento.es_gratis && evento.precio_minimo && evento.precio_maximo" class="meta-precio-texto">
               {{ formatCurrency(evento.precio_minimo) }} – {{ formatCurrency(evento.precio_maximo) }}
@@ -118,7 +118,7 @@
       <div class="evento-section" *ngIf="!isEventoFinalizado()">
       <div class="section-heading-row">
         <h2>Entradas</h2>
-        <p class="section-kicker">Elige tus boletas y completa la compra abajo cuando esté listo</p>
+        <p class="section-kicker">Selecciona tus boletas y revisa el total antes de pagar.</p>
       </div>
       <div *ngIf="loadingBoletas" class="loading-small">
         <p>Cargando tipos de boleta...</p>
@@ -173,13 +173,13 @@
       <button class="accordion-header" (click)="toggleAcordeon('eventoFinalizado')" type="button">
         <h2>
           <span class="material-icons">event_busy</span>
-          Evento Finalizado
+          Evento finalizado
         </h2>
         <span class="material-icons accordion-icon" [class.open]="acordeones.eventoFinalizado">expand_more</span>
       </button>
       <div class="accordion-content" [class.open]="acordeones.eventoFinalizado">
         <div class="evento-finalizado-message">
-          <p>Este evento ya finalizó. Las boletas ya no están disponibles para compra.</p>
+          <p>Este evento ya termino. Las boletas no estan disponibles para compra.</p>
         </div>
       </div>
       </div>
@@ -307,7 +307,7 @@
                     </button>
                   </div>
                   <ul class="palco-leyenda">
-                    <li><span class="leyenda-dot leyenda-dot--clic"></span> Libre para esta unidad</li>
+                    <li><span class="leyenda-dot leyenda-dot--clic"></span> Disponible para elegir</li>
                     <li><span class="leyenda-dot leyenda-dot--ok"></span> En tu carrito</li>
                     <li><span class="leyenda-dot leyenda-dot--off"></span> No disponible</li>
                   </ul>
@@ -394,14 +394,14 @@
       *ngIf="(lugar || loadingLugar) || !!evento.descripcion || !!(evento.url_video && getYoutubeEmbedUrl(evento.url_video))"
       aria-labelledby="detalle-info-heading"
     >
-      <h2 id="detalle-info-heading" class="detalle-zone-title">Información del evento</h2>
+      <h2 id="detalle-info-heading" class="detalle-zone-title">Detalles del evento</h2>
 
     <!-- Información del Lugar -->
     <div class="evento-section evento-accordion" *ngIf="lugar || loadingLugar">
       <button class="accordion-header" (click)="toggleAcordeon('ubicacion')" type="button">
         <h2>
           <span class="material-icons">place</span>
-          Ubicación del Evento
+          Ubicacion
         </h2>
         <span class="material-icons accordion-icon" [class.open]="acordeones.ubicacion">expand_more</span>
       </button>
@@ -482,7 +482,7 @@
       <button class="accordion-header" (click)="toggleAcordeon('descripcion')" type="button">
         <h2>
           <span class="material-icons">description</span>
-          Descripción
+          Descripcion
         </h2>
         <span class="material-icons accordion-icon" [class.open]="acordeones.descripcion">expand_more</span>
       </button>
@@ -495,7 +495,7 @@
     <div class="evento-section" *ngIf="evento.url_video && getYoutubeEmbedUrl(evento.url_video)">
       <h2>
         <span class="material-icons">play_circle</span>
-        Video del Evento
+        Video
       </h2>
       <div class="video-container">
         <iframe 
@@ -515,14 +515,14 @@
       *ngIf="evento.terminos_condiciones || evento.politica_reembolso"
       aria-labelledby="detalle-legal-heading"
     >
-      <h2 id="detalle-legal-heading" class="detalle-zone-title">Legal y políticas</h2>
+      <h2 id="detalle-legal-heading" class="detalle-zone-title">Politicas y terminos</h2>
 
     <!-- Términos y Condiciones -->
     <div class="evento-section evento-accordion" *ngIf="evento.terminos_condiciones">
       <button class="accordion-header" (click)="toggleAcordeon('terminos')" type="button">
         <h2>
           <span class="material-icons">gavel</span>
-          Términos y Condiciones
+          Terminos y condiciones
         </h2>
         <span class="material-icons accordion-icon" [class.open]="acordeones.terminos">expand_more</span>
       </button>
@@ -536,7 +536,7 @@
       <button class="accordion-header" (click)="toggleAcordeon('politica')" type="button">
         <h2>
           <span class="material-icons">undo</span>
-          Política de Reembolso
+          Politica de reembolso
         </h2>
         <span class="material-icons accordion-icon" [class.open]="acordeones.politica">expand_more</span>
       </button>

@@ -217,6 +217,16 @@
   animation: fadeIn 0.22s ease-in;
 }
 
+.tab-content > app-dashboard-kpis {
+  display: block;
+  margin-top: 0.35rem;
+}
+
+.tab-content > app-ingresos-resumen {
+  display: block;
+  margin-top: 0.55rem;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

@@ -12,10 +12,12 @@ import { AuthService } from '../../services/auth.service';
 import { DashboardStats, Evento } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { IngresosResumenComponent } from '../../components/ingresos-resumen/ingresos-resumen';
+import { DashboardKpisComponent } from '../../components/dashboard-kpis/dashboard-kpis';
+import { FinanzasDesgloseComponent } from '../../components/finanzas-desglose/finanzas-desglose';
 
 @Component({
   selector: 'app-dashboard-eventos',
-  imports: [CommonModule, FormsModule, RouterModule, DateFormatPipe, IngresosResumenComponent],
+  imports: [CommonModule, FormsModule, RouterModule, DateFormatPipe, IngresosResumenComponent, DashboardKpisComponent, FinanzasDesgloseComponent],
   templateUrl: './dashboard-eventos.html',
   styleUrls: ['./dashboard-eventos.css', '../finanzas-desglose-panel.css'],
 })

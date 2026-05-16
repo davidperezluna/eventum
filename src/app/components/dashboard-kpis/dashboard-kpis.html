@@ -1,0 +1,52 @@
+<div class="stats-grid">
+  <article class="stat-card stat-primary">
+    <div class="stat-icon-wrapper">
+      <span class="material-icons stat-icon">event</span>
+    </div>
+    <div class="stat-content">
+      <h3>{{ eventosLabel }}</h3>
+      <p class="stat-value">{{ formatNumber(stats.eventos_activos) }}</p>
+      <p class="stat-subtitle">de {{ formatNumber(stats.eventos_totales) }} totales</p>
+    </div>
+  </article>
+
+  <article class="stat-card stat-success">
+    <div class="stat-icon-wrapper">
+      <span class="material-icons stat-icon">confirmation_number</span>
+    </div>
+    <div class="stat-content">
+      <h3>Boletas Vendidas</h3>
+      <p class="stat-value">{{ formatNumber(stats.boletas_vendidas) }}</p>
+      <p class="stat-subtitle">Total de boletas</p>
+    </div>
+  </article>
+
+  <article class="stat-card stat-warning" title="Suma de totales cobrados (bruto). Más abajo: desglose Wompi estimado y netos.">
+    <div class="stat-icon-wrapper">
+      <span class="material-icons stat-icon">attach_money</span>
+    </div>
+    <div class="stat-content">
+      <h3>Ingresos totales</h3>
+      <p class="stat-value">{{ formatAmountNoCurrency(stats.ingresos_totales) }}</p>
+      <p class="stat-subtitle">(bruto)</p>
+      <p class="stat-subtitle" *ngIf="showIngresosVariacion && stats.ingresos_mes_anterior">
+        <span [class]="getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior || 0) >= 0 ? 'positive' : 'negative'">
+          {{ getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior || 0) >= 0 ? '↑' : '↓' }}
+          {{ Math.abs(getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior || 0)) }}%
+        </span>
+        vs mes anterior
+      </p>
+    </div>
+  </article>
+
+  <article class="stat-card stat-info">
+    <div class="stat-icon-wrapper">
+      <span class="material-icons stat-icon">people</span>
+    </div>
+    <div class="stat-content">
+      <h3>Clientes</h3>
+      <p class="stat-value">{{ formatNumber(stats.clientes) }}</p>
+      <p class="stat-subtitle">Clientes únicos</p>
+    </div>
+  </article>
+</div>
