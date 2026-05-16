@@ -60,8 +60,9 @@
         <span class="material-icons stat-icon">attach_money</span>
       </div>
       <div class="stat-content">
-        <h3>Ingresos totales (bruto)</h3>
+        <h3>Ingresos totales</h3>
         <p class="stat-value">{{ formatCurrency(stats.ingresos_totales) }}</p>
+        <p class="stat-subtitle">(bruto)</p>
         <p class="stat-subtitle" *ngIf="stats.ingresos_mes_anterior">
           <span [class]="getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior) >= 0 ? 'positive' : 'negative'">
             {{ getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior) >= 0 ? '↑' : '↓' }}
@@ -86,9 +87,6 @@
 
   <!-- Desglose ingresos: empresario vs Eventum -->
   <div *ngIf="!loading && !error" class="finanzas-desglose">
-    <p class="finanzas-desglose__nota">
-      Comisión Wompi <strong>estimada</strong> (misma regla que reportes); no reemplaza el extracto oficial de Wompi.
-    </p>
     <div class="finanzas-desglose__grupos">
       <section class="finanzas-grupo finanzas-grupo--cliente" aria-labelledby="org-fin-cliente">
         <div class="finanzas-grupo__head">

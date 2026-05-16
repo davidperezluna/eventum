@@ -91,13 +91,7 @@ export class DateTimeUtil {
   static todayStart(): string {
     const now = new Date();
     const localDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    
-    // Convertir la fecha local a UTC
-    // Si es 2026-10-30 00:00:00 en Colombia (UTC-5), debe ser 2026-10-30 05:00:00 UTC
-    const offsetMs = localDate.getTimezoneOffset() * 60000;
-    const utcDate = new Date(localDate.getTime() - offsetMs);
-    
-    return utcDate.toISOString();
+    return localDate.toISOString();
   }
 
   /**
@@ -107,13 +101,7 @@ export class DateTimeUtil {
   static todayEnd(): string {
     const now = new Date();
     const localDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-    
-    // Convertir la fecha local a UTC
-    // Si es 2026-10-30 23:59:59 en Colombia (UTC-5), debe ser 2026-10-31 04:59:59 UTC
-    const offsetMs = localDate.getTimezoneOffset() * 60000;
-    const utcDate = new Date(localDate.getTime() - offsetMs);
-    
-    return utcDate.toISOString();
+    return localDate.toISOString();
   }
 
   /**
@@ -131,8 +119,7 @@ export class DateTimeUtil {
       0,
       0
     );
-    const offsetMs = localDate.getTimezoneOffset() * 60000;
-    return new Date(localDate.getTime() - offsetMs).toISOString();
+    return localDate.toISOString();
   }
 
   /**
@@ -149,8 +136,7 @@ export class DateTimeUtil {
       59,
       999
     );
-    const offsetMs = localDate.getTimezoneOffset() * 60000;
-    return new Date(localDate.getTime() - offsetMs).toISOString();
+    return localDate.toISOString();
   }
 
   /**

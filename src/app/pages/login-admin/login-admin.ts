@@ -18,7 +18,7 @@ export class LoginAdmin implements OnInit {
   loginForm: FormGroup;
   loading = false;
   error: string | null = null;
-  returnUrl = '/eventos-cliente';
+  returnUrl = '/dashboard';
 
   constructor(
     private formBuilder: FormBuilder,
@@ -49,7 +49,7 @@ export class LoginAdmin implements OnInit {
       return;
     }
 
-    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/eventos-cliente';
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
   }
 
   async onSubmit() {

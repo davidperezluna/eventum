@@ -1,0 +1,128 @@
+:host {
+  display: block;
+}
+
+.dashboard-ingresos-expand {
+  margin-bottom: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.dashboard-ingresos-expand__summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.8rem 0.95rem;
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 600;
+  user-select: none;
+  background: #f8fafc;
+}
+
+.dashboard-ingresos-expand__summary::-webkit-details-marker {
+  display: none;
+}
+
+.dashboard-ingresos-expand__chev {
+  transition: transform 0.2s ease;
+  color: #4f46e5;
+}
+
+.dashboard-ingresos-expand[open] .dashboard-ingresos-expand__chev {
+  transform: rotate(180deg);
+}
+
+.dashboard-ingresos-expand__body {
+  padding: 0.8rem 0.95rem 0.95rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.dashboard-ingresos-corto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+}
+
+.dashboard-ingresos-expand__section-heading {
+  margin: 0 0 0.45rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stats-grid-secondary--dashboard-ingresos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.dashboard-ingreso-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.stat-card-mini {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fbfcff;
+  padding: 0.55rem 0.6rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+
+.stat-card-mini .material-icons {
+  font-size: 1.1rem;
+  color: #6479ea;
+  margin-top: 0.08rem;
+}
+
+.stat-mini-value {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.dashboard-ingreso-card-label {
+  margin: 0;
+  padding: 0 0.1rem;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.dashboard-ingreso-card-sub {
+  margin: 0;
+  padding: 0 0.1rem;
+  color: #64748b;
+  font-size: 0.64rem;
+}
+
+.dashboard-ingreso-card-sub .positive {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.dashboard-ingreso-card-sub .negative {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+@media (max-width: 420px) {
+  .stats-grid-secondary--dashboard-ingresos {
+    gap: 0.55rem;
+  }
+
+  .stat-card-mini {
+    padding: 0.5rem 0.55rem;
+  }
+}

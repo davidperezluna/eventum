@@ -105,7 +105,7 @@
 
 .finanzas-grupo__metric .stat-mini-value {
   margin: 0;
-  font-size: var(--font-size-lg);
+  font-size: clamp(1rem, 1.6vw, 1.2rem);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
   line-height: 1.2;
@@ -148,7 +148,7 @@
 
 .finanzas-desglose__totales .stat-mini-value {
   margin: 0;
-  font-size: var(--font-size-lg);
+  font-size: clamp(1rem, 1.6vw, 1.2rem);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
   line-height: 1.2;
@@ -277,7 +277,7 @@
 
 .stats-grid-secondary--dashboard-ingresos .stat-mini-value {
   margin: 0;
-  font-size: var(--font-size-lg);
+  font-size: clamp(1rem, 1.6vw, 1.2rem);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
 }
@@ -304,29 +304,117 @@
   font-weight: var(--font-weight-medium);
 }
 
+.dashboard-ingreso-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.dashboard-ingreso-card-label {
+  margin: 0;
+  padding: 0 0.12rem;
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.dashboard-ingreso-card-sub {
+  margin: 0;
+  padding: 0 0.12rem;
+  color: var(--color-text-secondary);
+  font-size: 0.68rem;
+}
+
 @media (max-width: 768px) {
+  .stats-grid-secondary--dashboard-ingresos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-sm);
+  }
+
   .stats-grid-secondary--dashboard-ingresos .stat-card-mini {
     flex-wrap: wrap;
     padding: var(--spacing-sm) var(--spacing-md);
   }
+
+  .dashboard-ingreso-card-label {
+    font-size: 0.72rem;
+  }
+
+  .dashboard-ingreso-card-sub {
+    font-size: 0.64rem;
+  }
 }
 
 @media (max-width: 480px) {
+  .stats-grid-secondary--dashboard-ingresos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
   .stats-grid-secondary--dashboard-ingresos .stat-card-mini {
     flex-direction: row;
     text-align: left;
     align-items: flex-start;
+    padding: 0.55rem 0.6rem;
   }
 
   .stats-grid-secondary--dashboard-ingresos .stat-card-mini .material-icons {
-    font-size: 1.5rem;
+    font-size: 1.1rem;
   }
 
   .stats-grid-secondary--dashboard-ingresos .stat-mini-value {
-    font-size: var(--font-size-md);
+    font-size: 0.92rem;
   }
 
   .stats-grid-secondary--dashboard-ingresos .stat-mini-label {
-    font-size: 0.65rem;
+    font-size: 0.62rem;
+  }
+}
+
+/* ---- Dashboard typography normalization overrides ---- */
+.finanzas-desglose__nota {
+  font-size: 0.93rem;
+  line-height: 1.45;
+}
+
+.finanzas-grupo__head h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: #1f2937;
+}
+
+.finanzas-grupo__sub {
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: #6b7280;
+}
+
+.finanzas-grupo__metric .material-icons {
+  font-size: 1.5rem;
+}
+
+.finanzas-grupo__metric .stat-mini-value,
+.finanzas-desglose__totales .stat-mini-value,
+.stats-grid-secondary--dashboard-ingresos .stat-mini-value {
+  font-size: clamp(0.96rem, 1.2vw, 1.1rem);
+  font-weight: 600;
+}
+
+.finanzas-grupo__metric .stat-mini-label,
+.finanzas-desglose__totales .stat-mini-label,
+.stats-grid-secondary--dashboard-ingresos .stat-mini-label {
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 768px) {
+  .finanzas-desglose__nota,
+  .finanzas-grupo__sub {
+    font-size: 0.86rem;
+  }
+
+  .finanzas-grupo__head h3 {
+    font-size: 1rem;
   }
 }

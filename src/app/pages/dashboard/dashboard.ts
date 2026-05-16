@@ -5,10 +5,11 @@ import { AuthService } from '../../services/auth.service';
 import { DashboardService } from '../../services/dashboard.service';
 import { DashboardStats } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
+import { IngresosResumenComponent } from '../../components/ingresos-resumen/ingresos-resumen';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, RouterModule, DateFormatPipe],
+  imports: [CommonModule, RouterModule, DateFormatPipe, IngresosResumenComponent],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.css', '../finanzas-desglose-panel.css'],
 })

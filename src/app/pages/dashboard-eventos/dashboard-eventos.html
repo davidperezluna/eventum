@@ -1,17 +1,14 @@
 <div class="dashboard-eventos">
-  <header class="dashboard-header">
-    <div class="header-content">
-      <h1>
-        <span class="material-icons">analytics</span>
-        <span class="header-title">Dashboard de Eventos</span>
-      </h1>
-      <p class="header-subtitle">Reportes completos de ventas, asistencia y métricas de eventos</p>
-    </div>
-    <button class="btn-refresh" (click)="loadStats()" [disabled]="loading">
+  <div class="dashboard-toolbar" role="navigation" aria-label="Acciones dashboard de eventos">
+    <a routerLink="/dashboard" class="dashboard-toolbar__action">
+      <span class="material-icons">dashboard</span>
+      Dashboard principal
+    </a>
+    <button class="dashboard-toolbar__action dashboard-toolbar__action--refresh" (click)="loadStats()" [disabled]="loading" type="button">
       <span class="material-icons">refresh</span>
-      <span class="btn-text">Actualizar</span>
+      Recargar
     </button>
-  </header>
+  </div>
 
   <!-- Filtros -->
   <div class="filters-card">
@@ -120,9 +117,9 @@
             <span class="material-icons stat-icon">attach_money</span>
           </div>
           <div class="stat-content">
-            <h3>Ingresos totales (bruto)</h3>
+            <h3>Ingresos totales</h3>
             <p class="stat-value">{{ formatCurrency(stats.ingresos_totales) }}</p>
-            <p class="stat-subtitle">Total acumulado</p>
+            <p class="stat-subtitle">(bruto)</p>
           </div>
         </div>
 
@@ -138,11 +135,11 @@
         </div>
       </div>
 
+      <!-- Ingresos mensuales y diarios -->
+      <app-ingresos-resumen [stats]="stats"></app-ingresos-resumen>
+
       <!-- Desglose ingresos: empresario vs Eventum -->
       <div *ngIf="!loading && !error" class="finanzas-desglose">
-        <p class="finanzas-desglose__nota">
-          Comisión Wompi <strong>estimada</strong> (misma regla que reportes); no reemplaza el extracto oficial de Wompi.
-        </p>
         <div class="finanzas-desglose__grupos">
           <section class="finanzas-grupo finanzas-grupo--cliente" aria-labelledby="dev-fin-cliente">
             <div class="finanzas-grupo__head">
@@ -230,63 +227,6 @@
         </div>
       </div>
 
-      <!-- Ingresos mensuales y diarios (misma UI que /dashboard) -->
-      <details class="dashboard-ingresos-expand">
-        <summary class="dashboard-ingresos-expand__summary">
-          <span class="material-icons dashboard-ingresos-expand__chev" aria-hidden="true">expand_more</span>
-          Ingresos por mes y por día
-        </summary>
-        <div class="dashboard-ingresos-expand__body">
-          <div class="dashboard-ingresos-corto">
-            <section class="dashboard-ingresos-corto__bloque" aria-labelledby="dev-dash-ing-mes-h">
-              <h3 id="dev-dash-ing-mes-h" class="dashboard-ingresos-expand__section-heading">Ingresos por mes</h3>
-              <div class="stats-grid-secondary stats-grid-secondary--dashboard-ingresos">
-                <div class="stat-card-mini">
-                  <span class="material-icons">trending_up</span>
-                  <div>
-                    <p class="stat-mini-value">{{ formatCurrency(stats.ingresos_mes_actual || 0) }}</p>
-                    <p class="stat-mini-label">Mes actual</p>
-                  </div>
-                </div>
-                <div class="stat-card-mini">
-                  <span class="material-icons">history</span>
-                  <div>
-                    <p class="stat-mini-value">{{ formatCurrency(stats.ingresos_mes_anterior || 0) }}</p>
-                    <p class="stat-mini-label">Mes anterior</p>
-                  </div>
-                </div>
-              </div>
-            </section>
-            <section class="dashboard-ingresos-corto__bloque" aria-labelledby="dev-dash-ing-dia-h">
-              <h3 id="dev-dash-ing-dia-h" class="dashboard-ingresos-expand__section-heading">Ingresos por día</h3>
-              <div class="stats-grid-secondary stats-grid-secondary--dashboard-ingresos">
-                <div class="stat-card-mini">
-                  <span class="material-icons">today</span>
-                  <div>
-                    <p class="stat-mini-value">{{ formatCurrency(stats.ingresos_dia_actual || 0) }}</p>
-                    <p class="stat-mini-label">Hoy</p>
-                    <p class="dashboard-ingreso-corto-sub" *ngIf="stats.ingresos_dia_anterior !== undefined && stats.ingresos_dia_anterior !== null">
-                      <span [class]="getVariacionPorcentual(stats.ingresos_dia_actual || 0, stats.ingresos_dia_anterior || 0) >= 0 ? 'positive' : 'negative'">
-                        {{ getVariacionPorcentual(stats.ingresos_dia_actual || 0, stats.ingresos_dia_anterior || 0) >= 0 ? '↑' : '↓' }}
-                        {{ Math.abs(getVariacionPorcentual(stats.ingresos_dia_actual || 0, stats.ingresos_dia_anterior || 0)) }}%
-                      </span>
-                      vs ayer
-                    </p>
-                  </div>
-                </div>
-                <div class="stat-card-mini">
-                  <span class="material-icons">event_repeat</span>
-                  <div>
-                    <p class="stat-mini-value">{{ formatCurrency(stats.ingresos_dia_anterior || 0) }}</p>
-                    <p class="stat-mini-label">Ayer</p>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
-        </div>
-      </details>
-
       <!-- Boletas por Estado -->
       <div class="report-card">
         <h2>Boletas por Estado</h2>
@@ -326,15 +266,16 @@
       <!-- Ventas por Día -->
       <div class="report-card">
         <h2>Ventas por Día</h2>
-        <div class="chart-container">
-          <div *ngFor="let item of ventasPorDia" class="chart-bar-item">
-            <div class="chart-bar-label">{{ item.fecha | dateFormat:'shortDate' }}</div>
-            <div class="chart-bar-wrapper">
-              <div class="chart-bar" [style.width.%]="getBarWidth(item.ventas, getMaxValue(ventasPorDia, 'ventas'))">
-                <span class="chart-bar-value">{{ item.ventas }}</span>
-              </div>
-            </div>
-            <div class="chart-bar-amount">{{ formatCurrency(item.ingresos) }}</div>
+        <div class="ventas-simple-list">
+          <div *ngIf="ventasPorDia.length > 0" class="ventas-simple-head">
+            <span>Fecha</span>
+            <span>Ingresos</span>
+            <span>Ventas</span>
+          </div>
+          <div *ngFor="let item of ventasPorDia" class="ventas-simple-item">
+            <span class="ventas-simple-label">{{ item.fecha | dateFormat:'shortDate' }}</span>
+            <span class="ventas-simple-amount">{{ formatCurrency(item.ingresos) }}</span>
+            <span class="ventas-simple-count">{{ item.ventas }}</span>
           </div>
           <div *ngIf="ventasPorDia.length === 0" class="empty-state">
             No hay datos de ventas para el período seleccionado
@@ -345,15 +286,16 @@
       <!-- Ventas por Mes -->
       <div class="report-card">
         <h2>Ventas por Mes</h2>
-        <div class="chart-container">
-          <div *ngFor="let item of ventasPorMes" class="chart-bar-item">
-            <div class="chart-bar-label">{{ item.mes }}</div>
-            <div class="chart-bar-wrapper">
-              <div class="chart-bar" [style.width.%]="getBarWidth(item.ingresos, getMaxValue(ventasPorMes, 'ingresos'))">
-                <span class="chart-bar-value">{{ formatCurrency(item.ingresos) }}</span>
-              </div>
-            </div>
-            <div class="chart-bar-amount">{{ item.ventas }} ventas</div>
+        <div class="ventas-simple-list">
+          <div *ngIf="ventasPorMes.length > 0" class="ventas-simple-head">
+            <span>Mes</span>
+            <span>Ingresos</span>
+            <span>Ventas</span>
+          </div>
+          <div *ngFor="let item of ventasPorMes" class="ventas-simple-item">
+            <span class="ventas-simple-label">{{ item.mes }}</span>
+            <span class="ventas-simple-amount">{{ formatCurrency(item.ingresos) }}</span>
+            <span class="ventas-simple-count">{{ item.ventas }}</span>
           </div>
           <div *ngIf="ventasPorMes.length === 0" class="empty-state">
             No hay datos de ventas mensuales
@@ -448,11 +390,18 @@
       <!-- Distribución Método de Pago -->
       <div class="report-card">
         <h2>Distribución por Método de Pago</h2>
+        <div class="distribucion-head">
+          <span>Método</span>
+          <span>Cant. / %</span>
+        </div>
         <div class="metodo-pago-list">
           <div *ngFor="let item of distribucionMetodoPago" class="metodo-pago-item">
             <div class="metodo-pago-header">
               <span class="metodo-pago-label">{{ item.metodo }}</span>
-              <span class="metodo-pago-cantidad">{{ item.cantidad }} ({{ item.porcentaje }}%)</span>
+              <span class="metodo-pago-meta">
+                <span class="metodo-pago-cantidad">{{ item.cantidad }}</span>
+                <span class="metodo-pago-porcentaje">{{ item.porcentaje }}%</span>
+              </span>
             </div>
             <div class="metodo-pago-bar">
               <div class="metodo-pago-bar-fill" [style.width.%]="item.porcentaje"></div>
@@ -467,11 +416,18 @@
       <!-- Distribución por Tipo de Boleta -->
       <div class="report-card">
         <h2>Distribución por Tipo de Boleta</h2>
+        <div class="distribucion-head">
+          <span>Tipo</span>
+          <span>Cant. / %</span>
+        </div>
         <div class="metodo-pago-list">
           <div *ngFor="let item of distribucionTipoBoleta" class="metodo-pago-item">
             <div class="metodo-pago-header">
               <span class="metodo-pago-label">{{ item.tipo }}</span>
-              <span class="metodo-pago-cantidad">{{ item.cantidad }} ({{ item.porcentaje }}%)</span>
+              <span class="metodo-pago-meta">
+                <span class="metodo-pago-cantidad">{{ item.cantidad }}</span>
+                <span class="metodo-pago-porcentaje">{{ item.porcentaje }}%</span>
+              </span>
             </div>
             <div class="metodo-pago-bar">
               <div class="metodo-pago-bar-fill metodo-pago-bar-fill--tipo" [style.width.%]="item.porcentaje"></div>

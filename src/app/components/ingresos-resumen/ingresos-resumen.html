@@ -1,0 +1,67 @@
+<details class="dashboard-ingresos-expand">
+  <summary class="dashboard-ingresos-expand__summary">
+    <span class="material-icons dashboard-ingresos-expand__chev" aria-hidden="true">expand_more</span>
+    Ingresos por mes y por día
+  </summary>
+
+  <div class="dashboard-ingresos-expand__body">
+    <div class="dashboard-ingresos-corto">
+      <section class="dashboard-ingresos-corto__bloque">
+        <h3 class="dashboard-ingresos-expand__section-heading">Ingresos por mes</h3>
+        <div class="stats-grid-secondary--dashboard-ingresos">
+          <div class="dashboard-ingreso-card">
+            <div class="stat-card-mini">
+              <span class="material-icons">trending_up</span>
+              <div>
+                <p class="stat-mini-value">{{ formatCurrency(stats.ingresos_mes_actual) }}</p>
+              </div>
+            </div>
+            <p class="dashboard-ingreso-card-label">Mes actual</p>
+          </div>
+
+          <div class="dashboard-ingreso-card">
+            <div class="stat-card-mini">
+              <span class="material-icons">history</span>
+              <div>
+                <p class="stat-mini-value">{{ formatCurrency(stats.ingresos_mes_anterior) }}</p>
+              </div>
+            </div>
+            <p class="dashboard-ingreso-card-label">Mes anterior</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="dashboard-ingresos-corto__bloque">
+        <h3 class="dashboard-ingresos-expand__section-heading">Ingresos por día</h3>
+        <div class="stats-grid-secondary--dashboard-ingresos">
+          <div class="dashboard-ingreso-card">
+            <div class="stat-card-mini">
+              <span class="material-icons">today</span>
+              <div>
+                <p class="stat-mini-value">{{ formatCurrency(stats.ingresos_dia_actual) }}</p>
+              </div>
+            </div>
+            <p class="dashboard-ingreso-card-label">Hoy</p>
+            <p class="dashboard-ingreso-card-sub" *ngIf="stats.ingresos_dia_anterior !== undefined && stats.ingresos_dia_anterior !== null">
+              <span [class]="getVariacionPorcentual(stats.ingresos_dia_actual || 0, stats.ingresos_dia_anterior || 0) >= 0 ? 'positive' : 'negative'">
+                {{ getVariacionPorcentual(stats.ingresos_dia_actual || 0, stats.ingresos_dia_anterior || 0) >= 0 ? '↑' : '↓' }}
+                {{ Math.abs(getVariacionPorcentual(stats.ingresos_dia_actual || 0, stats.ingresos_dia_anterior || 0)) }}%
+              </span>
+              vs ayer
+            </p>
+          </div>
+
+          <div class="dashboard-ingreso-card">
+            <div class="stat-card-mini">
+              <span class="material-icons">event_repeat</span>
+              <div>
+                <p class="stat-mini-value">{{ formatCurrency(stats.ingresos_dia_anterior) }}</p>
+              </div>
+            </div>
+            <p class="dashboard-ingreso-card-label">Ayer</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</details>
