@@ -285,7 +285,9 @@
 
                 <p class="palco-picker-hint">
                   <span class="material-icons">info</span>
-                  Estás eligiendo el <strong>palco {{ getFocoSlotPalco(item) + 1 }}</strong> de {{ item.cantidad }}. Los números grises ya están reservados o vendidos.
+                  <span class="palco-picker-hint-text">
+                    Estás eligiendo el <strong>palco {{ getFocoSlotPalco(item) + 1 }}</strong> de {{ item.cantidad }}. Los números grises ya están reservados o vendidos.
+                  </span>
                 </p>
 
                 <div class="palco-grid-wrap" *ngIf="palcosGridCatalogo(item).length > 0; else sinPalcosGrid">
