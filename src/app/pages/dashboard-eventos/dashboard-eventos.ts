@@ -64,6 +64,7 @@ export class DashboardEventos implements OnInit, OnDestroy {
   fechaDesde: string = '';
   fechaHasta: string = '';
   eventos: Evento[] = [];
+  filtrosExpandidos = false;
 
   // Reportes
   ventasPorDia: ReporteVentas[] = [];
@@ -334,6 +335,53 @@ export class DashboardEventos implements OnInit, OnDestroy {
     }
   }
 
+  get tieneFiltrosActivos(): boolean {
+    return !!(this.eventoFiltro || this.fechaDesde || this.fechaHasta);
+  }
+
+  get cantidadFiltrosActivos(): number {
+    let count = 0;
+    if (this.eventoFiltro) count++;
+    if (this.fechaDesde) count++;
+    if (this.fechaHasta) count++;
+    return count;
+  }
+
+  get resumenFiltros(): string {
+    const partes: string[] = [];
+
+    if (this.eventoFiltro) {
+      const evento = this.eventos.find((e) => e.id === this.eventoFiltro);
+      const titulo = evento?.titulo?.trim() ?? 'Evento';
+      partes.push(titulo.length > 32 ? `${titulo.slice(0, 32)}…` : titulo);
+    } else {
+      partes.push('Todos los eventos');
+    }
+
+    if (this.fechaDesde && this.fechaHasta) {
+      partes.push(`${this.formatFiltroFecha(this.fechaDesde)} – ${this.formatFiltroFecha(this.fechaHasta)}`);
+    } else if (this.fechaDesde) {
+      partes.push(`Desde ${this.formatFiltroFecha(this.fechaDesde)}`);
+    } else if (this.fechaHasta) {
+      partes.push(`Hasta ${this.formatFiltroFecha(this.fechaHasta)}`);
+    } else if (!this.eventoFiltro) {
+      partes.push('cualquier fecha');
+    }
+
+    return partes.join(' · ');
+  }
+
+  toggleFiltros(): void {
+    this.filtrosExpandidos = !this.filtrosExpandidos;
+  }
+
+  private formatFiltroFecha(iso: string): string {
+    if (!iso) return '';
+    const fecha = new Date(`${iso}T12:00:00`);
+    if (Number.isNaN(fecha.getTime())) return iso;
+    return fecha.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+  }
+
   aplicarFiltros() {
     this.loadReportes();
   }
@@ -342,6 +390,7 @@ export class DashboardEventos implements OnInit, OnDestroy {
     this.eventoFiltro = null;
     this.fechaDesde = '';
     this.fechaHasta = '';
+    this.filtrosExpandidos = false;
     this.loadReportes();
   }
 

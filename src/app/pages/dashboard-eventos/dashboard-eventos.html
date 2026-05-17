@@ -11,31 +11,65 @@
   </div>
 
   <!-- Filtros -->
-  <div class="filters-card">
-    <div class="filters-row">
-      <div class="filter-group">
-        <label>Evento</label>
-        <select [(ngModel)]="eventoFiltro" (ngModelChange)="aplicarFiltros()" class="select-input">
-          <option [value]="null">Todos los eventos</option>
-          <option *ngFor="let evento of eventos" [value]="evento.id">{{ evento.titulo }}</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label>Fecha desde</label>
-        <input type="date" [(ngModel)]="fechaDesde" (ngModelChange)="aplicarFiltros()" class="select-input" />
-      </div>
-      <div class="filter-group">
-        <label>Fecha hasta</label>
-        <input type="date" [(ngModel)]="fechaHasta" (ngModelChange)="aplicarFiltros()" class="select-input" />
-      </div>
-      <div class="filter-group">
-        <button class="btn-secondary" (click)="limpiarFiltros()">
-          <span class="material-icons">clear</span>
-          Limpiar
-        </button>
+  <section
+    class="filters-panel"
+    [class.filters-panel--open]="filtrosExpandidos"
+    [class.filters-panel--has-filters]="tieneFiltrosActivos"
+    aria-label="Filtros del dashboard"
+  >
+    <button
+      type="button"
+      class="filters-panel__trigger"
+      (click)="toggleFiltros()"
+      [attr.aria-expanded]="filtrosExpandidos"
+      aria-controls="dashboard-eventos-filtros"
+    >
+      <span class="filters-panel__icon-wrap" aria-hidden="true">
+        <span class="material-icons filters-panel__icon">tune</span>
+      </span>
+      <span class="filters-panel__copy">
+        <span class="filters-panel__title">Filtros</span>
+        <span class="filters-panel__summary">{{ resumenFiltros }}</span>
+      </span>
+      <span class="filters-panel__actions">
+        <span *ngIf="cantidadFiltrosActivos > 0" class="filters-panel__count">{{ cantidadFiltrosActivos }}</span>
+        <span class="material-icons filters-panel__chev" aria-hidden="true">expand_more</span>
+      </span>
+    </button>
+
+    <div
+      id="dashboard-eventos-filtros"
+      class="filters-panel__body"
+    >
+      <div class="filters-panel__body-inner">
+        <div class="filters-card filters-card--embedded">
+          <div class="filters-row">
+            <div class="filter-group">
+              <label>Evento</label>
+              <select [(ngModel)]="eventoFiltro" (ngModelChange)="aplicarFiltros()" class="select-input">
+                <option [value]="null">Todos los eventos</option>
+                <option *ngFor="let evento of eventos" [value]="evento.id">{{ evento.titulo }}</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Fecha desde</label>
+              <input type="date" [(ngModel)]="fechaDesde" (ngModelChange)="aplicarFiltros()" class="select-input" />
+            </div>
+            <div class="filter-group">
+              <label>Fecha hasta</label>
+              <input type="date" [(ngModel)]="fechaHasta" (ngModelChange)="aplicarFiltros()" class="select-input" />
+            </div>
+            <div class="filter-group filter-group--actions">
+              <button type="button" class="btn-secondary" (click)="limpiarFiltros()" [disabled]="!tieneFiltrosActivos">
+                <span class="material-icons">clear</span>
+                Limpiar
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 
   <!-- Mensaje de error -->
   <div *ngIf="error" class="error-message">
