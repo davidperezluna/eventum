@@ -435,6 +435,11 @@
   background: #fff;
 }
 
+.loading-small--mas-datos {
+  min-height: 5.5rem;
+  padding: 0.75rem 0.5rem;
+}
+
 .perfil-mas-datos-hint {
   margin: 0;
   padding-top: 0.65rem;

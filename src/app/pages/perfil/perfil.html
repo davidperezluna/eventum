@@ -125,8 +125,11 @@
           </summary>
           <div class="perfil-mas-datos-body">
             <p class="perfil-mas-datos-hint">Fecha de nacimiento, género, documento y dirección.</p>
+            <div class="loading-small loading-small--mas-datos" *ngIf="loadingDatosCriticos && !loading">
+              <p>Cargando datos completos del perfil...</p>
+            </div>
 
-            <div class="form-row">
+            <div class="form-row" *ngIf="!loadingDatosCriticos">
               <div class="form-group">
                 <label>Fecha de Nacimiento</label>
                 <input type="date" [(ngModel)]="formData.fecha_nacimiento" name="fecha_nacimiento" />
@@ -141,18 +144,18 @@
               </div>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" *ngIf="!loadingDatosCriticos">
               <label>Documento de Identidad</label>
               <input type="text" [(ngModel)]="formData.documento_identidad" name="documento_identidad"
                 placeholder="Número de documento" />
             </div>
 
-            <div class="form-group">
+            <div class="form-group" *ngIf="!loadingDatosCriticos">
               <label>Dirección</label>
               <input type="text" [(ngModel)]="formData.direccion" name="direccion" placeholder="Dirección completa" />
             </div>
 
-            <div class="form-row">
+            <div class="form-row" *ngIf="!loadingDatosCriticos">
               <div class="form-group">
                 <label>Ciudad</label>
                 <input type="text" [(ngModel)]="formData.ciudad" name="ciudad" placeholder="Ciudad" />

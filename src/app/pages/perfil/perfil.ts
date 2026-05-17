@@ -21,6 +21,7 @@ export class Perfil implements OnInit, OnDestroy {
   formData: Partial<Usuario> = {};
   loading = false;
   isRefreshing = false;
+  loadingDatosCriticos = false;
   saving = false;
   cerrandoSesion = false;
   error: string | null = null;
@@ -77,12 +78,15 @@ export class Perfil implements OnInit, OnDestroy {
     // Esperar a que el servicio de auth esté inicializado
     await this.authService.waitForInitialization();
     this.currentUserId = this.authService.getUsuarioId();
-    const cachedState = this.currentUserId ? this.perfilStateService.getState(this.currentUserId) : null;
+    const cachedResult = this.currentUserId ? this.perfilStateService.getState(this.currentUserId) : { state: null, hasSensitiveData: false };
+    const cachedState = cachedResult.state;
     if (cachedState) {
       this.applyCachedState(cachedState);
+      this.loadingDatosCriticos = !cachedResult.hasSensitiveData;
       this.loading = false;
     } else {
       this.loading = true;
+      this.loadingDatosCriticos = true;
     }
     this.loadUsuario({ background: !!cachedState });
   }
@@ -142,6 +146,7 @@ export class Perfil implements OnInit, OnDestroy {
       };
       this.previewUrl = usuario.foto_perfil || null;
       this.loading = false;
+      this.loadingDatosCriticos = false;
       this.persistState(Date.now());
       this.endSilentRefreshCycle();
       this.cdr.detectChanges();
@@ -149,6 +154,7 @@ export class Perfil implements OnInit, OnDestroy {
       console.error('Error cargando usuario:', err);
       this.error = 'Error al cargar la información del usuario';
       this.loading = false;
+      this.loadingDatosCriticos = false;
       this.endSilentRefreshCycle();
       this.cdr.detectChanges();
     }
