@@ -30,6 +30,7 @@ export class DashboardEventos implements OnInit, OnDestroy {
   private readonly cacheTtlMs = 60 * 1000;
   private currentCacheUserId: number | null = null;
   private hasStatsData = false;
+  isManualRefreshing = false;
 
   stats: DashboardStats = {
     eventos_activos: 0,
@@ -214,6 +215,11 @@ export class DashboardEventos implements OnInit, OnDestroy {
     const hasVisibleData = this.hasStatsData;
     const background = options?.background ?? hasVisibleData;
     const manual = options?.manual ?? false;
+    if (manual && this.isManualRefreshing) return;
+    if (manual) {
+      this.isManualRefreshing = true;
+      this.cdr.detectChanges();
+    }
     const startedAt = Date.now();
 
     console.info('[DashboardEventos] Refresco iniciado', {
@@ -255,6 +261,11 @@ export class DashboardEventos implements OnInit, OnDestroy {
         durationMs: Date.now() - startedAt
       });
       this.cdr.detectChanges();
+    } finally {
+      if (manual) {
+        this.isManualRefreshing = false;
+        this.cdr.detectChanges();
+      }
     }
   }
 

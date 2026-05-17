@@ -20,6 +20,7 @@ import { FinanzasDesgloseComponent } from '../../components/finanzas-desglose/fi
 export class Dashboard implements OnInit {
   private readonly cacheTtlMs = 60 * 1000;
   private currentUserId: number | null = null;
+  isManualRefreshing = false;
 
   constructor(
     private dashboardService: DashboardService,
@@ -82,6 +83,11 @@ export class Dashboard implements OnInit {
     const hasVisibleData = !this.loading;
     const background = options?.background ?? hasVisibleData;
     const manual = options?.manual ?? false;
+    if (manual && this.isManualRefreshing) return;
+    if (manual) {
+      this.isManualRefreshing = true;
+      this.cdr.detectChanges();
+    }
     const startedAt = Date.now();
 
     console.log('[DashboardAdmin] Carga iniciada', { background });
@@ -114,6 +120,11 @@ export class Dashboard implements OnInit {
         durationMs: Date.now() - startedAt
       });
       this.cdr.detectChanges();
+    } finally {
+      if (manual) {
+        this.isManualRefreshing = false;
+        this.cdr.detectChanges();
+      }
     }
   }
 

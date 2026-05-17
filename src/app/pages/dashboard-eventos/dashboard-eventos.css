@@ -1296,6 +1296,21 @@
   cursor: not-allowed;
 }
 
+.dashboard-refresh-loader {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  border: 2px solid rgba(67, 56, 202, 0.2);
+  border-top-color: rgba(67, 56, 202, 0.9);
+  animation: dashboard-refresh-spin 0.8s linear infinite;
+}
+
+@keyframes dashboard-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .stat-content h3 {
   font-size: 0.7rem;
   font-weight: 600;

@@ -4,9 +4,10 @@
       <span class="material-icons">analytics</span>
       Dashboard completo
     </a>
-    <button class="dashboard-toolbar__action dashboard-toolbar__action--refresh" (click)="loadStats({ manual: true })" [disabled]="loading" type="button">
-      <span class="material-icons">refresh</span>
-      Recargar
+    <button class="dashboard-toolbar__action dashboard-toolbar__action--refresh" (click)="loadStats({ manual: true })" [disabled]="loading || isManualRefreshing" type="button">
+      <span class="dashboard-refresh-loader" *ngIf="isManualRefreshing" aria-hidden="true"></span>
+      <span class="material-icons" *ngIf="!isManualRefreshing">refresh</span>
+      {{ isManualRefreshing ? 'Recargando...' : 'Recargar' }}
     </button>
   </div>
 

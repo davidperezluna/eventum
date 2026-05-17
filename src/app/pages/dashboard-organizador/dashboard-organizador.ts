@@ -19,6 +19,7 @@ import { FinanzasDesgloseComponent } from '../../components/finanzas-desglose/fi
 })
 export class DashboardOrganizador implements OnInit {
   private readonly cacheTtlMs = 60 * 1000;
+  isManualRefreshing = false;
 
   constructor(
     private dashboardService: DashboardOrganizadorService,
@@ -93,6 +94,11 @@ export class DashboardOrganizador implements OnInit {
     const hasVisibleData = !this.loading;
     const background = options?.background ?? hasVisibleData;
     const manual = options?.manual ?? false;
+    if (manual && this.isManualRefreshing) return;
+    if (manual) {
+      this.isManualRefreshing = true;
+      this.cdr.detectChanges();
+    }
     const startedAt = Date.now();
     console.log('[DashboardOrganizador] Carga iniciada', {
       background,
@@ -129,6 +135,11 @@ export class DashboardOrganizador implements OnInit {
         organizadorId: this.organizadorId
       });
       this.cdr.detectChanges();
+    } finally {
+      if (manual) {
+        this.isManualRefreshing = false;
+        this.cdr.detectChanges();
+      }
     }
   }
 
