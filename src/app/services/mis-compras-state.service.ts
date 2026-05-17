@@ -25,6 +25,32 @@ export interface MisComprasState {
   lastUpdated: number;
 }
 
+interface MisComprasPublicState {
+  compras: Compra[];
+  eventosConBoletas: any[];
+  eventosDisponibles: Evento[];
+  estadoPagoFiltro: string | null;
+  estadoCompraFiltro: string | null;
+  eventoFiltro: number | null;
+  fechaDesde: string;
+  fechaHasta: string;
+  searchTerm: string;
+  page: number;
+  total: number;
+  totalPages: number;
+  tabBoletasDetalle: 'sin-usar' | 'usadas' | 'sin-asignar';
+  eventoExpandidoKey: string | null;
+  eventoDetalleKey: string | null;
+  lastUpdated: number;
+}
+
+interface MisComprasSensitiveState {
+  comprasConBoletas: Array<{ compra: Compra; boletas: BoletaComprada[] }>;
+  trasladosHistorial: TrasladoBoleta[];
+  trasladosPendientesRecibir: any[];
+  entradasCedidas: BoletaComprada[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -34,13 +60,51 @@ export class MisComprasStateService {
   constructor(private appCacheService: AppCacheService) {}
 
   getState(userId: number): MisComprasState | null {
-    const state = this.appCacheService.get<MisComprasState>(this.cacheKey(userId), 'session');
-    if (!state) return null;
+    const publicState = this.appCacheService.get<MisComprasPublicState>(this.publicCacheKey(userId), 'local');
+    if (!publicState) return null;
+    const sensitiveState = this.appCacheService.get<MisComprasSensitiveState>(this.sensitiveCacheKey(userId), 'session');
+
+    const state: MisComprasState = {
+      ...publicState,
+      comprasConBoletas: sensitiveState?.comprasConBoletas || [],
+      trasladosHistorial: sensitiveState?.trasladosHistorial || [],
+      trasladosPendientesRecibir: sensitiveState?.trasladosPendientesRecibir || [],
+      entradasCedidas: sensitiveState?.entradasCedidas || []
+    };
     return this.cloneState(state);
   }
 
   saveState(userId: number, state: MisComprasState): void {
-    this.appCacheService.set(this.cacheKey(userId), this.cloneState(state), 'session');
+    const safeState = this.cloneState(state);
+
+    const publicState: MisComprasPublicState = {
+      compras: safeState.compras,
+      eventosConBoletas: this.stripSensitiveBoletas(safeState.eventosConBoletas),
+      eventosDisponibles: safeState.eventosDisponibles,
+      estadoPagoFiltro: safeState.estadoPagoFiltro,
+      estadoCompraFiltro: safeState.estadoCompraFiltro,
+      eventoFiltro: safeState.eventoFiltro,
+      fechaDesde: safeState.fechaDesde,
+      fechaHasta: safeState.fechaHasta,
+      searchTerm: safeState.searchTerm,
+      page: safeState.page,
+      total: safeState.total,
+      totalPages: safeState.totalPages,
+      tabBoletasDetalle: safeState.tabBoletasDetalle,
+      eventoExpandidoKey: safeState.eventoExpandidoKey,
+      eventoDetalleKey: safeState.eventoDetalleKey,
+      lastUpdated: safeState.lastUpdated
+    };
+
+    const sensitiveState: MisComprasSensitiveState = {
+      comprasConBoletas: safeState.comprasConBoletas,
+      trasladosHistorial: safeState.trasladosHistorial,
+      trasladosPendientesRecibir: safeState.trasladosPendientesRecibir,
+      entradasCedidas: safeState.entradasCedidas
+    };
+
+    this.appCacheService.set(this.publicCacheKey(userId), publicState, 'local');
+    this.appCacheService.set(this.sensitiveCacheKey(userId), sensitiveState, 'session');
   }
 
   isCacheFresh(userId: number, now: number = Date.now()): boolean {
@@ -50,11 +114,16 @@ export class MisComprasStateService {
   }
 
   clear(userId: number): void {
-    this.appCacheService.remove(this.cacheKey(userId), 'session');
+    this.appCacheService.remove(this.publicCacheKey(userId), 'local');
+    this.appCacheService.remove(this.sensitiveCacheKey(userId), 'session');
   }
 
-  private cacheKey(userId: number): string {
-    return `eventum:cache:v1:mis-compras:user:${userId}`;
+  private publicCacheKey(userId: number): string {
+    return `eventum:cache:v1:mis-compras:public:user:${userId}`;
+  }
+
+  private sensitiveCacheKey(userId: number): string {
+    return `eventum:cache:v1:mis-compras:sensitive:user:${userId}`;
   }
 
   private cloneState(state: MisComprasState): MisComprasState {
@@ -68,5 +137,15 @@ export class MisComprasStateService {
       trasladosPendientesRecibir: [...state.trasladosPendientesRecibir],
       entradasCedidas: [...state.entradasCedidas]
     };
+  }
+
+  private stripSensitiveBoletas(eventosConBoletas: any[]): any[] {
+    return (eventosConBoletas || []).map((evento) => ({
+      ...evento,
+      tipos: (evento?.tipos || []).map((tipo: any) => ({
+        ...tipo,
+        boletas: []
+      }))
+    }));
   }
 }
