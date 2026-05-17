@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
@@ -7,6 +7,7 @@ import { StorageService } from '../../services/storage.service';
 import { ImageOptimizationService } from '../../services/image-optimization.service';
 import { TimezoneService } from '../../services/timezone.service';
 import { AlertService } from '../../services/alert.service';
+import { PerfilStateService } from '../../services/perfil-state.service';
 import { Usuario, TipoGenero } from '../../types';
 
 @Component({
@@ -15,10 +16,11 @@ import { Usuario, TipoGenero } from '../../types';
   templateUrl: './perfil.html',
   styleUrl: './perfil.css',
 })
-export class Perfil implements OnInit {
+export class Perfil implements OnInit, OnDestroy {
   usuario: Usuario | null = null;
   formData: Partial<Usuario> = {};
   loading = false;
+  isRefreshing = false;
   saving = false;
   cerrandoSesion = false;
   error: string | null = null;
@@ -40,6 +42,10 @@ export class Perfil implements OnInit {
   previewUrl: string | null = null;
   selectedFile: File | null = null;
   uploadingImage = false;
+  private currentUserId: number | null = null;
+  private refreshIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly refreshIndicatorDelayMs = 800;
+  private refreshStartedAt: number | null = null;
 
   generos = [
     { value: TipoGenero.MASCULINO, label: 'Masculino' },
@@ -55,6 +61,7 @@ export class Perfil implements OnInit {
     private imageOptimizationService: ImageOptimizationService,
     private timezoneService: TimezoneService,
     private alertService: AlertService,
+    private perfilStateService: PerfilStateService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -67,10 +74,22 @@ export class Perfil implements OnInit {
       /* ignore */
     }
 
-    this.loading = true;
     // Esperar a que el servicio de auth esté inicializado
     await this.authService.waitForInitialization();
-    this.loadUsuario();
+    this.currentUserId = this.authService.getUsuarioId();
+    const cachedState = this.currentUserId ? this.perfilStateService.getState(this.currentUserId) : null;
+    if (cachedState) {
+      this.applyCachedState(cachedState);
+      this.loading = false;
+    } else {
+      this.loading = true;
+    }
+    this.loadUsuario({ background: !!cachedState });
+  }
+
+  ngOnDestroy(): void {
+    this.persistState(Date.now());
+    this.endSilentRefreshCycle();
   }
 
   onMasDatosPerfilToggle(event: Event): void {
@@ -80,18 +99,27 @@ export class Perfil implements OnInit {
     }
   }
 
-  loadUsuario() {
-    this.loading = true;
+  loadUsuario(options?: { background?: boolean }) {
+    const background = options?.background ?? !!this.usuario;
+    const hasVisibleData = !!this.usuario;
+    this.loading = !background && !hasVisibleData;
     this.error = null;
+    if (background) {
+      this.startSilentRefreshCycle();
+    } else {
+      this.endSilentRefreshCycle();
+    }
     
     const usuarioId = this.authService.getUsuarioId();
     if (!usuarioId) {
       this.error = 'No se pudo obtener el ID del usuario';
       this.loading = false;
+      this.endSilentRefreshCycle();
       return;
     }
 
-    this.loadUsuarioData(usuarioId);
+    this.currentUserId = usuarioId;
+    void this.loadUsuarioData(usuarioId);
   }
 
   async loadUsuarioData(usuarioId: number) {
@@ -114,11 +142,14 @@ export class Perfil implements OnInit {
       };
       this.previewUrl = usuario.foto_perfil || null;
       this.loading = false;
+      this.persistState(Date.now());
+      this.endSilentRefreshCycle();
       this.cdr.detectChanges();
     } catch (err) {
       console.error('Error cargando usuario:', err);
       this.error = 'Error al cargar la información del usuario';
       this.loading = false;
+      this.endSilentRefreshCycle();
       this.cdr.detectChanges();
     }
   }
@@ -268,6 +299,7 @@ export class Perfil implements OnInit {
       this.selectedFile = null;
       this.success = 'Perfil actualizado correctamente';
       this.saving = false;
+      this.persistState(Date.now());
       this.cdr.detectChanges();
       
       // Limpiar mensaje de éxito después de 3 segundos
@@ -370,6 +402,63 @@ export class Perfil implements OnInit {
       this.cerrandoSesion = false;
       this.cdr.detectChanges();
     }
+  }
+
+  private applyCachedState(state: {
+    usuario: Usuario;
+    formData: Partial<Usuario>;
+    previewUrl: string | null;
+    masDatosPerfilAbierto: boolean;
+  }): void {
+    this.usuario = { ...state.usuario };
+    this.formData = { ...state.formData };
+    this.previewUrl = state.previewUrl;
+    this.masDatosPerfilAbierto = state.masDatosPerfilAbierto;
+  }
+
+  private persistState(lastUpdated: number): void {
+    if (!this.currentUserId || !this.usuario) return;
+    this.perfilStateService.saveState(this.currentUserId, {
+      usuario: this.usuario,
+      formData: this.formData,
+      previewUrl: this.previewUrl,
+      masDatosPerfilAbierto: this.masDatosPerfilAbierto,
+      lastUpdated
+    });
+  }
+
+  private startSilentRefreshCycle(): void {
+    this.refreshStartedAt = Date.now();
+    console.info('[Perfil] Refresco silencioso iniciado', {
+      usuarioId: this.currentUserId
+    });
+
+    if (this.refreshIndicatorTimer) {
+      clearTimeout(this.refreshIndicatorTimer);
+    }
+    this.isRefreshing = false;
+    this.refreshIndicatorTimer = setTimeout(() => {
+      this.isRefreshing = true;
+      this.cdr.detectChanges();
+    }, this.refreshIndicatorDelayMs);
+  }
+
+  private endSilentRefreshCycle(): void {
+    if (this.refreshIndicatorTimer) {
+      clearTimeout(this.refreshIndicatorTimer);
+      this.refreshIndicatorTimer = null;
+    }
+
+    if (this.refreshStartedAt) {
+      console.info('[Perfil] Refresco silencioso finalizado', {
+        usuarioId: this.currentUserId,
+        durationMs: Date.now() - this.refreshStartedAt,
+        tieneFoto: this.tieneFotoVisible()
+      });
+      this.refreshStartedAt = null;
+    }
+
+    this.isRefreshing = false;
   }
 }
 

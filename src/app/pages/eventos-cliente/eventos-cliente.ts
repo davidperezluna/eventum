@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { EventosService } from '../../services/eventos.service';
 import { CategoriasService } from '../../services/categorias.service';
+import { EventosClienteStateService } from '../../services/eventos-cliente-state.service';
 import { Evento, CategoriaEvento, TipoEstadoEvento } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { Subject, Subscription } from 'rxjs';
@@ -24,6 +25,7 @@ export class EventosCliente implements OnInit, OnDestroy {
   eventosFinalizados: Evento[] = [];
   categorias: CategoriaEvento[] = [];
   loading = false;
+  isRefreshing = false;
   loadingFinalizados = false;
   /** Oculta el carrusel (incl. «Todo») hasta terminar la primera carga completa */
   initialBootstrapLoading = true;
@@ -32,27 +34,44 @@ export class EventosCliente implements OnInit, OnDestroy {
 
   private searchSubject = new Subject<string>();
   private searchSubscription: Subscription | null = null;
+  private refreshIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly refreshIndicatorDelayMs = 800;
   currentYear = new Date().getFullYear();
 
   constructor(
     private eventosService: EventosService,
     private categoriasService: CategoriasService,
+    private eventosClienteStateService: EventosClienteStateService,
     private cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
-    void this.loadEventos();
+    const cachedState = this.eventosClienteStateService.getState();
+    if (cachedState) {
+      this.applyCachedState(cachedState);
+      this.initialBootstrapLoading = false;
+      this.loading = false;
+      setTimeout(() => window.scrollTo({ top: cachedState.scrollY, behavior: 'auto' }), 0);
+    } else {
+      this.loading = true;
+    }
+
+    const useBackgroundRefresh = !!cachedState;
+    void this.loadEventos(undefined, { background: useBackgroundRefresh });
 
     // Configurar búsqueda con debounce
     this.searchSubscription = this.searchSubject.pipe(
       debounceTime(500), // Esperar 500ms después de que el usuario deje de escribir
       distinctUntilChanged() // Solo buscar si el término cambió
     ).subscribe(term => {
-      void this.loadEventos(term);
+      void this.loadEventos(term, { background: this.eventosFiltrados.length > 0 });
     });
   }
 
   ngOnDestroy() {
+    this.persistState();
+    this.stopSilentRefreshIndicator();
+
     if (this.searchSubscription) {
       this.searchSubscription.unsubscribe();
     }
@@ -70,8 +89,22 @@ export class EventosCliente implements OnInit, OnDestroy {
     }
   }
 
-  async loadEventos(searchTerm?: string) {
-    this.loading = true;
+  async loadEventos(searchTerm?: string, options?: { background?: boolean }) {
+    const background = options?.background ?? false;
+    const hasVisibleData = this.eventosFiltrados.length > 0 || this.eventos.length > 0;
+    const silentRefreshMode = background || hasVisibleData;
+    const refreshStartedAt = Date.now();
+
+    this.loading = !silentRefreshMode && !hasVisibleData;
+    if (silentRefreshMode) {
+      console.info('[EventosCliente] Refresco silencioso iniciado', {
+        searchTerm: searchTerm ?? '',
+        categoriaFiltro: this.categoriaFiltro
+      });
+      this.startSilentRefreshIndicator();
+    } else {
+      this.stopSilentRefreshIndicator();
+    }
     this.cdr.detectChanges();
 
     try {
@@ -83,13 +116,23 @@ export class EventosCliente implements OnInit, OnDestroy {
       }
       // Esperar finalizados antes de quitar el loader (misma vista inicial / sin búsqueda ni categoría)
       if (!this.searchTerm?.trim() && !this.categoriaFiltro) {
-        await this.loadEventosFinalizados();
+        await this.loadEventosFinalizados({ background: true });
       } else {
         this.eventosFinalizados = [];
       }
+      this.persistState(Date.now());
     } finally {
       this.loading = false;
-      if (searchTerm === undefined) {
+      this.stopSilentRefreshIndicator();
+      if (silentRefreshMode) {
+        console.info('[EventosCliente] Refresco silencioso finalizado', {
+          durationMs: Date.now() - refreshStartedAt,
+          eventos: this.eventos.length,
+          filtrados: this.eventosFiltrados.length,
+          finalizados: this.eventosFinalizados.length
+        });
+      }
+      if (searchTerm === undefined && this.initialBootstrapLoading) {
         this.initialBootstrapLoading = false;
       }
       this.cdr.detectChanges();
@@ -155,6 +198,7 @@ export class EventosCliente implements OnInit, OnDestroy {
 
     // Ya no filtramos localmente por search, el servidor ya lo hizo
     this.aplicarFiltrosLocales();
+    this.persistState();
     this.cdr.detectChanges();
   }
 
@@ -168,6 +212,7 @@ export class EventosCliente implements OnInit, OnDestroy {
     }
 
     this.eventosFiltrados = filtrados;
+    this.persistState();
   }
 
   get eventosDestacados(): Evento[] {
@@ -187,16 +232,19 @@ export class EventosCliente implements OnInit, OnDestroy {
     // Si se cambia la categoría, ocultar eventos finalizados
     if (id !== null) {
       this.eventosFinalizados = [];
+      this.persistState();
     } else {
-      this.loadEventosFinalizados();
+      void this.loadEventosFinalizados({ background: true });
     }
   }
 
   onSearchChange() {
     this.searchSubject.next(this.searchTerm);
+    this.persistState();
 
     if (this.searchTerm) {
       this.eventosFinalizados = [];
+      this.persistState();
     }
     // Si se limpia la búsqueda, loadEventos('') (tras debounce) recarga lista + finalizados
   }
@@ -229,14 +277,15 @@ export class EventosCliente implements OnInit, OnDestroy {
     el.scrollBy({ left: direction * step, behavior: 'smooth' });
   }
 
-  async loadEventosFinalizados() {
+  async loadEventosFinalizados(options?: { background?: boolean }) {
     // Solo cargar eventos finalizados si no hay búsqueda activa ni filtro de categoría
     if (this.searchTerm?.trim() || this.categoriaFiltro) {
       this.eventosFinalizados = [];
       return;
     }
 
-    this.loadingFinalizados = true;
+    const background = options?.background ?? false;
+    this.loadingFinalizados = !background;
     this.cdr.detectChanges();
 
     try {
@@ -283,6 +332,7 @@ export class EventosCliente implements OnInit, OnDestroy {
       }).slice(0, 20); // Limitar a 20 eventos
 
       this.loadingFinalizados = false;
+      this.persistState();
       this.cdr.detectChanges();
     } catch (err) {
       console.error('Error cargando eventos finalizados:', err);
@@ -290,5 +340,62 @@ export class EventosCliente implements OnInit, OnDestroy {
       this.loadingFinalizados = false;
       this.cdr.detectChanges();
     }
+  }
+
+  private applyCachedState(state: {
+    eventos: Evento[];
+    eventosFiltrados: Evento[];
+    eventosFinalizados: Evento[];
+    categorias: CategoriaEvento[];
+    searchTerm: string;
+    categoriaFiltro: number | null;
+  }) {
+    this.eventos = [...state.eventos];
+    this.eventosFiltrados = [...state.eventosFiltrados];
+    this.eventosFinalizados = [...state.eventosFinalizados];
+    this.categorias = [...state.categorias];
+    this.searchTerm = state.searchTerm;
+    this.categoriaFiltro = state.categoriaFiltro;
+  }
+
+  private persistState(lastUpdated?: number) {
+    const existingState = this.eventosClienteStateService.getState();
+    this.eventosClienteStateService.saveState({
+      eventos: this.eventos,
+      eventosFiltrados: this.eventosFiltrados,
+      eventosFinalizados: this.eventosFinalizados,
+      categorias: this.categorias,
+      searchTerm: this.searchTerm,
+      categoriaFiltro: this.categoriaFiltro,
+      scrollY: window.scrollY,
+      lastUpdated: lastUpdated ?? existingState?.lastUpdated ?? 0
+    });
+  }
+
+  trackByEventoId(_: number, evento: Evento): number {
+    return evento.id;
+  }
+
+  trackByCategoriaId(_: number, categoria: CategoriaEvento): number {
+    return categoria.id;
+  }
+
+  private startSilentRefreshIndicator() {
+    if (this.refreshIndicatorTimer) {
+      clearTimeout(this.refreshIndicatorTimer);
+    }
+    this.isRefreshing = false;
+    this.refreshIndicatorTimer = setTimeout(() => {
+      this.isRefreshing = true;
+      this.cdr.detectChanges();
+    }, this.refreshIndicatorDelayMs);
+  }
+
+  private stopSilentRefreshIndicator() {
+    if (this.refreshIndicatorTimer) {
+      clearTimeout(this.refreshIndicatorTimer);
+      this.refreshIndicatorTimer = null;
+    }
+    this.isRefreshing = false;
   }
 }

@@ -17,6 +17,9 @@
 
   <!-- Main Content -->
   <div class="content-wrapper">
+    <div class="silent-refresh-indicator" *ngIf="isRefreshing && !loading" aria-live="polite" aria-label="Actualizando eventos">
+      <span class="silent-refresh-spinner" aria-hidden="true"></span>
+    </div>
 
     <!-- Categories Carousel (tras primera carga: categorías + eventos + finalizados) -->
     <section class="categories-section" *ngIf="!initialBootstrapLoading">
@@ -39,7 +42,7 @@
             </div>
 
             <!-- Dynamic Categories -->
-            <div *ngFor="let cat of categorias" class="cat-card" [class.active]="categoriaFiltro === cat.id"
+            <div *ngFor="let cat of categorias; trackBy: trackByCategoriaId" class="cat-card" [class.active]="categoriaFiltro === cat.id"
               (click)="setCategoria(cat.id)">
 
               <div class="icon-contain">
@@ -71,7 +74,7 @@
       </div>
 
       <div class="events-grid featured">
-        <article *ngFor="let evento of eventosDestacados" class="event-card featured-card"
+        <article *ngFor="let evento of eventosDestacados; trackBy: trackByEventoId" class="event-card featured-card"
           [routerLink]="['/detalle-evento', evento.id]">
           <div class="event-thumb">
             <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
@@ -107,7 +110,7 @@
       </div>
 
       <div class="events-grid">
-        <article *ngFor="let evento of eventosRegulares" class="event-card"
+        <article *ngFor="let evento of eventosRegulares; trackBy: trackByEventoId" class="event-card"
           [routerLink]="['/detalle-evento', evento.id]">
           <div class="event-thumb">
             <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
@@ -156,7 +159,7 @@
       </div>
 
       <div class="events-grid">
-        <article *ngFor="let evento of eventosFinalizados" class="event-card event-finalizado"
+        <article *ngFor="let evento of eventosFinalizados; trackBy: trackByEventoId" class="event-card event-finalizado"
           [routerLink]="['/detalle-evento', evento.id]">
           <div class="event-thumb">
             <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />

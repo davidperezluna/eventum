@@ -1,6 +1,6 @@
 <div class="dashboard">
   <div class="dashboard-toolbar" role="navigation" aria-label="Acciones del dashboard organizador">
-    <button class="dashboard-toolbar__action dashboard-toolbar__action--refresh" (click)="loadStats()" [disabled]="loading" type="button">
+    <button class="dashboard-toolbar__action dashboard-toolbar__action--refresh" (click)="loadStats({ manual: true })" [disabled]="loading" type="button">
       <span class="material-icons">refresh</span>
       Recargar
     </button>

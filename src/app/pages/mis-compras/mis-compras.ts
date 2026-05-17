@@ -10,6 +10,7 @@ import { TrasladosBoletaService } from '../../services/traslados-boleta.service'
 import { EventosService } from '../../services/eventos.service';
 import { AuthService } from '../../services/auth.service';
 import { AlertService } from '../../services/alert.service';
+import { MisComprasStateService } from '../../services/mis-compras-state.service';
 import {
   Compra,
   BoletaComprada,
@@ -71,6 +72,10 @@ interface EventoBoletasGrupo {
 export class MisCompras implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private loadComprasSubject = new Subject<void>();
+  private refreshIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly refreshIndicatorDelayMs = 800;
+  private refreshStartedAt: number | null = null;
+  private currentLoadBackground = false;
   
   compras: Compra[] = [];
   comprasConBoletas: { compra: Compra; boletas: BoletaComprada[] }[] = [];
@@ -79,6 +84,7 @@ export class MisCompras implements OnInit, OnDestroy {
   eventoDetalleKey: string | null = null;
   tabBoletasDetalle: 'sin-usar' | 'usadas' | 'sin-asignar' = 'sin-usar';
   loading = false;
+  isRefreshing = false;
   total = 0;
   page = 1;
   limit = 1000;
@@ -148,6 +154,7 @@ export class MisCompras implements OnInit, OnDestroy {
     private eventosService: EventosService,
     private authService: AuthService,
     private alertService: AlertService,
+    private misComprasStateService: MisComprasStateService,
     private cdr: ChangeDetectorRef,
     private router: Router
   ) {}
@@ -161,6 +168,13 @@ export class MisCompras implements OnInit, OnDestroy {
       )
       .subscribe((e) => this.syncVistaActividadDesdeUrl(e.urlAfterRedirects));
 
+    const userId = this.authService.getUsuarioId();
+    const cachedState = userId ? this.misComprasStateService.getState(userId) : null;
+    if (cachedState) {
+      this.applyCachedState(cachedState);
+      this.loading = false;
+    }
+
     // Configurar debounce para búsqueda
     this.loadComprasSubject.pipe(
       debounceTime(300),
@@ -172,9 +186,11 @@ export class MisCompras implements OnInit, OnDestroy {
         this.total = response.total || 0;
         this.totalPages = response.totalPages || 0;
         
-        await this.loadBoletasPorCompra();
+        await this.loadBoletasPorCompra({ background: this.currentLoadBackground });
 
         this.loading = false;
+        this.endSilentRefreshCycle();
+        this.persistState(Date.now());
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -186,12 +202,13 @@ export class MisCompras implements OnInit, OnDestroy {
         this.total = 0;
         this.totalPages = 0;
         this.loading = false;
+        this.endSilentRefreshCycle();
         this.cdr.detectChanges();
       }
     });
 
     this.loadEventosDisponibles(); // Cargar eventos disponibles
-    this.loadCompras(); // Carga inicial
+    this.loadCompras({ background: !!cachedState }); // Carga inicial
   }
 
   private syncVistaActividadDesdeUrl(url: string): void {
@@ -202,9 +219,20 @@ export class MisCompras implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  loadCompras() {
-    this.loading = true;
-    this.page = 1; // Resetear a primera página al filtrar
+  loadCompras(options?: { background?: boolean; resetPage?: boolean }) {
+    if (options?.resetPage !== false) {
+      this.page = 1; // Resetear a primera página al filtrar
+    }
+
+    const hasVisibleData = this.compras.length > 0 || this.eventosConBoletas.length > 0;
+    const background = options?.background ?? hasVisibleData;
+    this.currentLoadBackground = background;
+    this.loading = !background && !hasVisibleData;
+    if (background) {
+      this.startSilentRefreshCycle();
+    } else {
+      this.endSilentRefreshCycle();
+    }
     this.cdr.detectChanges();
     this.loadComprasSubject.next();
   }
@@ -336,9 +364,7 @@ export class MisCompras implements OnInit, OnDestroy {
   goToPage(pageNum: number) {
     if (pageNum >= 1 && pageNum <= this.totalPages) {
       this.page = pageNum;
-      this.loading = true;
-      this.cdr.detectChanges();
-      this.loadComprasSubject.next();
+      this.loadCompras({ resetPage: false, background: true });
     }
   }
 
@@ -406,10 +432,13 @@ export class MisCompras implements OnInit, OnDestroy {
     }
   }
 
-  async loadBoletasPorCompra() {
-    this.comprasConBoletas = [];
-    this.eventosConBoletas = [];
-    this.eventoExpandidoKey = null;
+  async loadBoletasPorCompra(options?: { background?: boolean }) {
+    const background = options?.background ?? false;
+    if (!background) {
+      this.comprasConBoletas = [];
+      this.eventosConBoletas = [];
+      this.eventoExpandidoKey = null;
+    }
     const uid = this.authService.getUsuarioId();
     if (!uid) {
       this.entradasCedidas = [];
@@ -417,6 +446,7 @@ export class MisCompras implements OnInit, OnDestroy {
     }
 
     await this.refrescarTrasladosMaps();
+    const nextComprasConBoletas: { compra: Compra; boletas: BoletaComprada[] }[] = [];
 
     for (const compra of this.compras) {
       try {
@@ -429,16 +459,15 @@ export class MisCompras implements OnInit, OnDestroy {
         if (visibles.length === 0) {
           continue;
         }
-        this.comprasConBoletas.push({
+        nextComprasConBoletas.push({
           compra,
           boletas: visibles
         });
-        this.cdr.detectChanges();
       } catch (err) {
         console.error('Error cargando boletas para compra:', compra.id, err);
-        this.cdr.detectChanges();
       }
     }
+    this.comprasConBoletas = nextComprasConBoletas;
 
     try {
       this.entradasCedidas = await this.boletasService.getBoletasCedidasTitular(uid);
@@ -935,8 +964,94 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.persistState(Date.now());
+    this.endSilentRefreshCycle();
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private startSilentRefreshCycle(): void {
+    this.refreshStartedAt = Date.now();
+    console.info('[MisCompras] Refresco silencioso iniciado', {
+      vistaActividad: this.vistaActividad,
+      page: this.page
+    });
+
+    if (this.refreshIndicatorTimer) {
+      clearTimeout(this.refreshIndicatorTimer);
+    }
+    this.isRefreshing = false;
+    this.refreshIndicatorTimer = setTimeout(() => {
+      this.isRefreshing = true;
+      this.cdr.detectChanges();
+    }, this.refreshIndicatorDelayMs);
+  }
+
+  private endSilentRefreshCycle(): void {
+    if (this.refreshIndicatorTimer) {
+      clearTimeout(this.refreshIndicatorTimer);
+      this.refreshIndicatorTimer = null;
+    }
+
+    if (this.refreshStartedAt) {
+      console.info('[MisCompras] Refresco silencioso finalizado', {
+        durationMs: Date.now() - this.refreshStartedAt,
+        compras: this.compras.length,
+        eventos: this.eventosConBoletas.length,
+        trasladosPendientes: this.trasladosPendientesRecibir.length
+      });
+      this.refreshStartedAt = null;
+    }
+
+    this.isRefreshing = false;
+  }
+
+  private applyCachedState(state: any): void {
+    this.compras = state.compras || [];
+    this.comprasConBoletas = state.comprasConBoletas || [];
+    this.eventosConBoletas = state.eventosConBoletas || [];
+    this.eventosDisponibles = state.eventosDisponibles || [];
+    this.trasladosHistorial = state.trasladosHistorial || [];
+    this.trasladosPendientesRecibir = state.trasladosPendientesRecibir || [];
+    this.entradasCedidas = state.entradasCedidas || [];
+    this.estadoPagoFiltro = state.estadoPagoFiltro ?? null;
+    this.estadoCompraFiltro = state.estadoCompraFiltro ?? null;
+    this.eventoFiltro = state.eventoFiltro ?? null;
+    this.fechaDesde = state.fechaDesde ?? '';
+    this.fechaHasta = state.fechaHasta ?? '';
+    this.searchTerm = state.searchTerm ?? '';
+    this.page = state.page || 1;
+    this.total = state.total || 0;
+    this.totalPages = state.totalPages || 0;
+    this.tabBoletasDetalle = state.tabBoletasDetalle || 'sin-usar';
+    this.eventoExpandidoKey = state.eventoExpandidoKey ?? null;
+  }
+
+  private persistState(lastUpdated: number): void {
+    const userId = this.authService.getUsuarioId();
+    if (!userId) return;
+    this.misComprasStateService.saveState(userId, {
+      compras: this.compras,
+      comprasConBoletas: this.comprasConBoletas,
+      eventosConBoletas: this.eventosConBoletas,
+      eventosDisponibles: this.eventosDisponibles,
+      trasladosHistorial: this.trasladosHistorial,
+      trasladosPendientesRecibir: this.trasladosPendientesRecibir,
+      entradasCedidas: this.entradasCedidas,
+      estadoPagoFiltro: this.estadoPagoFiltro,
+      estadoCompraFiltro: this.estadoCompraFiltro,
+      eventoFiltro: this.eventoFiltro,
+      fechaDesde: this.fechaDesde,
+      fechaHasta: this.fechaHasta,
+      searchTerm: this.searchTerm,
+      page: this.page,
+      total: this.total,
+      totalPages: this.totalPages,
+      tabBoletasDetalle: this.tabBoletasDetalle,
+      eventoExpandidoKey: this.eventoExpandidoKey,
+      eventoDetalleKey: this.eventoDetalleKey,
+      lastUpdated
+    });
   }
 
   formatCurrency(value: number): string {

@@ -7,6 +7,10 @@
     </div>
   </section>
 
+  <div class="silent-refresh-indicator" *ngIf="isRefreshing && !loading" aria-live="polite" aria-label="Actualizando perfil">
+    <span class="silent-refresh-spinner" aria-hidden="true"></span>
+  </div>
+
   <!-- Loading state -->
   <div *ngIf="loading" class="loading-state">
     <div class="spinner"></div>

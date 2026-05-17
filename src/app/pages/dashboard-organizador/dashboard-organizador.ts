@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { DashboardOrganizadorService } from '../../services/dashboard-organizador.service';
 import { AuthService } from '../../services/auth.service';
+import { AppCacheService } from '../../services/app-cache.service';
+import { AlertService } from '../../services/alert.service';
 import { DashboardStats } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { IngresosResumenComponent } from '../../components/ingresos-resumen/ingresos-resumen';
@@ -16,9 +18,13 @@ import { FinanzasDesgloseComponent } from '../../components/finanzas-desglose/fi
   styleUrls: ['./dashboard-organizador.css', '../dashboard/dashboard.css', '../finanzas-desglose-panel.css'],
 })
 export class DashboardOrganizador implements OnInit {
+  private readonly cacheTtlMs = 60 * 1000;
+
   constructor(
     private dashboardService: DashboardOrganizadorService,
     private authService: AuthService,
+    private appCacheService: AppCacheService,
+    private alertService: AlertService,
     private cdr: ChangeDetectorRef
   ) {}
   
@@ -58,7 +64,15 @@ export class DashboardOrganizador implements OnInit {
     const unsubscribe = this.authService.onAuthStateChange((user, usuario, session) => {
       if (usuario && usuario.tipo_usuario_id === 2) {
         this.organizadorId = usuario.id;
-        this.loadStats();
+        const cached = this.getCachedState();
+        if (cached) {
+          this.stats = cached.stats;
+          this.loading = false;
+          this.cdr.detectChanges();
+        } else {
+          this.loading = true;
+        }
+        void this.loadStats({ background: !!cached });
         unsubscribe();
       } else if (usuario !== null) {
         // Si el usuario está cargado pero no es organizador
@@ -69,30 +83,76 @@ export class DashboardOrganizador implements OnInit {
     });
   }
 
-  async loadStats() {
+  async loadStats(options?: { background?: boolean; manual?: boolean }) {
     if (!this.organizadorId) {
       this.error = 'ID de organizador no disponible';
       this.loading = false;
       return;
     }
 
-    console.log('loadStats llamado para organizador:', this.organizadorId);
-    this.loading = true;
+    const hasVisibleData = !this.loading;
+    const background = options?.background ?? hasVisibleData;
+    const manual = options?.manual ?? false;
+    const startedAt = Date.now();
+    console.log('[DashboardOrganizador] Carga iniciada', {
+      background,
+      organizadorId: this.organizadorId
+    });
+    this.loading = !background && !hasVisibleData;
     this.error = null;
     this.cdr.detectChanges();
 
     try {
       const stats = await this.dashboardService.getStats(this.organizadorId);
-      console.log('Stats recibidas en componente organizador:', stats);
       this.stats = stats;
       this.loading = false;
+      this.persistState();
+      if (manual) {
+        void this.alertService.snackbarSuccess('Dashboard actualizado', 'Los datos del organizador se recargaron.');
+      }
+      console.log('[DashboardOrganizador] Carga finalizada', {
+        background,
+        durationMs: Date.now() - startedAt,
+        organizadorId: this.organizadorId
+      });
       this.cdr.detectChanges();
     } catch (err) {
       console.error('Error cargando estadísticas:', err);
       this.error = 'Error al cargar las estadísticas. Verifica tu conexión con Supabase.';
       this.loading = false;
+      if (manual) {
+        void this.alertService.snackbarError('No se pudo recargar', 'Ocurrió un error al actualizar el dashboard.');
+      }
+      console.log('[DashboardOrganizador] Carga fallida', {
+        background,
+        durationMs: Date.now() - startedAt,
+        organizadorId: this.organizadorId
+      });
       this.cdr.detectChanges();
     }
+  }
+
+  private get cacheKey(): string | null {
+    if (!this.organizadorId) return null;
+    return `eventum:cache:v1:dashboard-organizador:user:${this.organizadorId}`;
+  }
+
+  private getCachedState(): { stats: DashboardStats; lastUpdated: number } | null {
+    const key = this.cacheKey;
+    if (!key) return null;
+    const cached = this.appCacheService.get<{ stats: DashboardStats; lastUpdated: number }>(key, 'session');
+    if (!cached) return null;
+    if (Date.now() - cached.lastUpdated > this.cacheTtlMs) return null;
+    return cached;
+  }
+
+  private persistState(): void {
+    const key = this.cacheKey;
+    if (!key) return;
+    this.appCacheService.set(key, {
+      stats: this.stats,
+      lastUpdated: Date.now()
+    }, 'session');
   }
 
   formatCurrency(value: number): string {

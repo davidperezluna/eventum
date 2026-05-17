@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -13,6 +13,7 @@ import { CategoriasService } from '../../services/categorias.service';
 import { WompiService } from '../../services/wompi.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { AlertService } from '../../services/alert.service';
+import { DetalleEventoStateService } from '../../services/detalle-evento-state.service';
 import {
   Evento,
   TipoBoleta,
@@ -51,12 +52,13 @@ interface ItemCarritoEvento {
   styleUrl: './detalle-evento.css',
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
-export class DetalleEvento implements OnInit {
+export class DetalleEvento implements OnInit, OnDestroy {
   evento: Evento | null = null;
   tiposBoleta: TipoBoleta[] = [];
   lugar: Lugar | null = null;
   categoria: CategoriaEvento | null = null;
   loading = false;
+  isRefreshing = false;
   loadingBoletas = false;
   loadingLugar = false;
   loadingCategoria = false;
@@ -87,6 +89,9 @@ export class DetalleEvento implements OnInit {
 
   // Modal de imagen
   imagenModalAbierta = false;
+  private currentEventoId: number | null = null;
+  private refreshIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly refreshIndicatorDelayMs = 800;
 
   // Control de acordeones (todos cerrados por defecto)
   acordeones: {
@@ -117,6 +122,7 @@ export class DetalleEvento implements OnInit {
     private authService: AuthService,
     private usuariosService: UsuariosService,
     private alertService: AlertService,
+    private detalleEventoStateService: DetalleEventoStateService,
     private lugaresService: LugaresService,
     private categoriasService: CategoriasService,
     private wompiService: WompiService,
@@ -127,9 +133,25 @@ export class DetalleEvento implements OnInit {
   ngOnInit() {
     const eventoId = this.route.snapshot.paramMap.get('id');
     if (eventoId) {
-      this.loadEvento(Number(eventoId));
+      const parsedId = Number(eventoId);
+      this.currentEventoId = parsedId;
+      const cachedState = this.detalleEventoStateService.getState(parsedId);
+      if (cachedState) {
+        this.applyCachedState(cachedState);
+        this.loading = false;
+      } else {
+        this.loading = true;
+      }
+
+      const useBackgroundRefresh = !!cachedState;
+      void this.loadEvento(parsedId, { background: useBackgroundRefresh });
     }
     this.loadUsuario();
+  }
+
+  ngOnDestroy(): void {
+    this.persistState(Date.now());
+    this.stopSilentRefreshIndicator();
   }
 
   loadUsuario() {
@@ -350,8 +372,20 @@ export class DetalleEvento implements OnInit {
     }
   }
 
-  async loadEvento(id: number) {
-    this.loading = true;
+  async loadEvento(id: number, options?: { background?: boolean }) {
+    const background = options?.background ?? false;
+    const hasVisibleData = !!this.evento && this.evento.id === id;
+    const silentRefreshMode = background || hasVisibleData;
+    const refreshStartedAt = Date.now();
+
+    this.loading = !silentRefreshMode && !hasVisibleData;
+    if (silentRefreshMode) {
+      console.info('[DetalleEvento] Refresco silencioso iniciado', { eventoId: id });
+      this.startSilentRefreshIndicator();
+    } else {
+      this.stopSilentRefreshIndicator();
+    }
+
     try {
       // Cargar evento primero
       const evento = await this.eventosService.getEventoById(id);
@@ -374,12 +408,12 @@ export class DetalleEvento implements OnInit {
 
       // Agregar carga de lugar si existe
       if (evento.lugar_id) {
-        promesas.push(this.loadLugar(evento.lugar_id));
+        promesas.push(this.loadLugar(evento.lugar_id, { background: silentRefreshMode }));
       }
 
       // Agregar carga de categoría si existe
       if (evento.categoria_id) {
-        promesas.push(this.loadCategoria(evento.categoria_id));
+        promesas.push(this.loadCategoria(evento.categoria_id, { background: silentRefreshMode }));
       }
 
       // Agregar carga de tipos de boleta solo si el evento no está finalizado
@@ -390,7 +424,7 @@ export class DetalleEvento implements OnInit {
                             fechaFin < ahora;
       
       if (!estaFinalizado) {
-        promesas.push(this.loadTiposBoleta(id));
+        promesas.push(this.loadTiposBoleta(id, { background: silentRefreshMode }));
       } else {
         // Si está finalizado, asegurar que no hay boletas
         this.tiposBoleta = [];
@@ -402,16 +436,32 @@ export class DetalleEvento implements OnInit {
 
       // Actualizar estado y vista después de que todo esté cargado
       this.loading = false;
+      this.persistState(Date.now());
       this.cdr.detectChanges();
     } catch (err) {
       console.error('Error cargando evento:', err);
       this.loading = false;
-      this.router.navigate(['/eventos-cliente']);
+      if (!silentRefreshMode) {
+        this.router.navigate(['/eventos-cliente']);
+      }
+    } finally {
+      this.stopSilentRefreshIndicator();
+      if (silentRefreshMode) {
+        console.info('[DetalleEvento] Refresco silencioso finalizado', {
+          eventoId: id,
+          durationMs: Date.now() - refreshStartedAt,
+          tiposBoleta: this.tiposBoleta.length,
+          tieneLugar: !!this.lugar,
+          tieneCategoria: !!this.categoria
+        });
+      }
+      this.cdr.detectChanges();
     }
   }
 
-  async loadCategoria(categoriaId: number) {
-    this.loadingCategoria = true;
+  async loadCategoria(categoriaId: number, options?: { background?: boolean }) {
+    const background = options?.background ?? false;
+    this.loadingCategoria = !background;
     try {
       const categoria = await this.categoriasService.getCategoriaById(categoriaId);
       this.categoria = categoria;
@@ -426,8 +476,9 @@ export class DetalleEvento implements OnInit {
     }
   }
 
-  async loadLugar(lugarId: number) {
-    this.loadingLugar = true;
+  async loadLugar(lugarId: number, options?: { background?: boolean }) {
+    const background = options?.background ?? false;
+    this.loadingLugar = !background;
     try {
       const lugar = await this.lugaresService.getLugarById(lugarId);
       this.lugar = lugar;
@@ -442,8 +493,9 @@ export class DetalleEvento implements OnInit {
     }
   }
 
-  async loadTiposBoleta(eventoId: number) {
-    this.loadingBoletas = true;
+  async loadTiposBoleta(eventoId: number, options?: { background?: boolean }) {
+    const background = options?.background ?? false;
+    this.loadingBoletas = !background;
     try {
       const tipos = await this.boletasService.getTiposBoleta(eventoId);
       // Usar cantidad_vendidas directamente de la tabla (para marketing)
@@ -892,6 +944,58 @@ export class DetalleEvento implements OnInit {
     this.imagenModalAbierta = false;
     // Restaurar scroll del body
     document.body.style.overflow = '';
+  }
+
+  private applyCachedState(state: {
+    evento: Evento;
+    tiposBoleta: TipoBoleta[];
+    lugar: Lugar | null;
+    categoria: CategoriaEvento | null;
+    palcosDisponiblesPorTipo: Map<number, Palco[]>;
+    palcosCatalogoPorTipo: Map<number, Palco[]>;
+  }): void {
+    this.evento = { ...state.evento };
+    this.tiposBoleta = [...state.tiposBoleta];
+    this.lugar = state.lugar ? { ...state.lugar } : null;
+    this.categoria = state.categoria ? { ...state.categoria } : null;
+    this.palcosDisponiblesPorTipo = new Map(
+      Array.from(state.palcosDisponiblesPorTipo.entries()).map(([k, v]) => [k, [...v]])
+    );
+    this.palcosCatalogoPorTipo = new Map(
+      Array.from(state.palcosCatalogoPorTipo.entries()).map(([k, v]) => [k, [...v]])
+    );
+  }
+
+  private persistState(lastUpdated: number): void {
+    if (!this.currentEventoId || !this.evento) return;
+    this.detalleEventoStateService.saveState(this.currentEventoId, {
+      evento: this.evento,
+      tiposBoleta: this.tiposBoleta,
+      lugar: this.lugar,
+      categoria: this.categoria,
+      palcosDisponiblesPorTipo: this.palcosDisponiblesPorTipo,
+      palcosCatalogoPorTipo: this.palcosCatalogoPorTipo,
+      lastUpdated
+    });
+  }
+
+  private startSilentRefreshIndicator(): void {
+    if (this.refreshIndicatorTimer) {
+      clearTimeout(this.refreshIndicatorTimer);
+    }
+    this.isRefreshing = false;
+    this.refreshIndicatorTimer = setTimeout(() => {
+      this.isRefreshing = true;
+      this.cdr.detectChanges();
+    }, this.refreshIndicatorDelayMs);
+  }
+
+  private stopSilentRefreshIndicator(): void {
+    if (this.refreshIndicatorTimer) {
+      clearTimeout(this.refreshIndicatorTimer);
+      this.refreshIndicatorTimer = null;
+    }
+    this.isRefreshing = false;
   }
 }
 

@@ -9,6 +9,8 @@ import { DashboardOrganizadorService } from '../../services/dashboard-organizado
 import { ReportesService, ReporteVentas, ReporteAsistencia, ReporteEvento } from '../../services/reportes.service';
 import { EventosService } from '../../services/eventos.service';
 import { AuthService } from '../../services/auth.service';
+import { AppCacheService } from '../../services/app-cache.service';
+import { AlertService } from '../../services/alert.service';
 import { DashboardStats, Evento } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { IngresosResumenComponent } from '../../components/ingresos-resumen/ingresos-resumen';
@@ -25,6 +27,9 @@ export class DashboardEventos implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private loadReportesSubject = new Subject<void>();
   private unsubscribeAuthState?: () => void;
+  private readonly cacheTtlMs = 60 * 1000;
+  private currentCacheUserId: number | null = null;
+  private hasStatsData = false;
 
   stats: DashboardStats = {
     eventos_activos: 0,
@@ -87,18 +92,40 @@ export class DashboardEventos implements OnInit, OnDestroy {
     private reportesService: ReportesService,
     private eventosService: EventosService,
     private authService: AuthService,
+    private appCacheService: AppCacheService,
+    private alertService: AlertService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
     // Verificar si es organizador
     this.unsubscribeAuthState = this.authService.onAuthStateChange((user, usuario, session) => {
+      const incomingUserId = usuario?.id ?? this.authService.getUsuarioId();
+      const userChanged = incomingUserId !== this.currentCacheUserId;
+      let usedCache = false;
+
+      if (userChanged) {
+        this.currentCacheUserId = incomingUserId ?? null;
+        const cached = this.getCachedState();
+        if (cached) {
+          this.applyCachedState(cached);
+          this.loading = false;
+          this.hasStatsData = true;
+          usedCache = true;
+        } else {
+          this.loading = true;
+        }
+      }
+
       if (usuario && usuario.tipo_usuario_id === 2) {
         this.esOrganizador = true;
         this.organizadorId = usuario.id;
+      } else if (usuario) {
+        this.esOrganizador = false;
+        this.organizadorId = null;
       }
-      this.loadEventos();
-      this.loadStats();
+      void this.loadEventos({ background: usedCache || this.eventos.length > 0 });
+      void this.loadStats({ background: usedCache || this.hasStatsData });
     });
 
     // Configurar debounce para loadReportes
@@ -122,6 +149,7 @@ export class DashboardEventos implements OnInit, OnDestroy {
         this.distribucionMetodoPago = result.distribucionMetodoPago;
         this.distribucionTipoBoleta = result.distribucionTipoBoleta;
         this.reporteEventoSeleccionado = result.reporteEvento;
+        this.persistState();
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -139,7 +167,7 @@ export class DashboardEventos implements OnInit, OnDestroy {
     }
   }
 
-  async loadEventos() {
+  async loadEventos(_options?: { background?: boolean }) {
     // Para el selector de eventos, no necesitamos todos, solo los activos y publicados
     // Reducir el límite y optimizar la consulta
     const filters: any = {
@@ -160,6 +188,7 @@ export class DashboardEventos implements OnInit, OnDestroy {
       } else {
         this.eventos = response.data || [];
       }
+      this.persistState();
       this.cdr.detectChanges();
     } catch (err) {
       console.error('Error cargando eventos:', err);
@@ -171,6 +200,7 @@ export class DashboardEventos implements OnInit, OnDestroy {
         } else {
           this.eventos = response.data || [];
         }
+        this.persistState();
         this.cdr.detectChanges();
       } catch {
         this.eventos = [];
@@ -179,8 +209,18 @@ export class DashboardEventos implements OnInit, OnDestroy {
     }
   }
 
-  async loadStats() {
-    this.loading = true;
+  async loadStats(options?: { background?: boolean; manual?: boolean }) {
+    const hasVisibleData = this.hasStatsData;
+    const background = options?.background ?? hasVisibleData;
+    const manual = options?.manual ?? false;
+    const startedAt = Date.now();
+
+    console.info('[DashboardEventos] Refresco iniciado', {
+      background,
+      organizadorId: this.organizadorId ?? null
+    });
+
+    this.loading = !background && !hasVisibleData;
     this.error = null;
     this.cdr.detectChanges();
 
@@ -190,13 +230,29 @@ export class DashboardEventos implements OnInit, OnDestroy {
         : await this.dashboardService.getStats();
       
       this.stats = stats;
+      this.hasStatsData = true;
       this.loading = false;
+      this.persistState();
       this.loadReportes();
+      if (manual) {
+        void this.alertService.snackbarSuccess('Dashboard actualizado', 'Los reportes y KPIs se recargaron correctamente.');
+      }
+      console.info('[DashboardEventos] Refresco finalizado', {
+        background,
+        durationMs: Date.now() - startedAt
+      });
       this.cdr.detectChanges();
     } catch (err) {
       console.error('Error cargando estadísticas:', err);
       this.error = 'Error al cargar las estadísticas';
       this.loading = false;
+      if (manual) {
+        void this.alertService.snackbarError('No se pudo recargar', 'Ocurrió un error al actualizar el dashboard de eventos.');
+      }
+      console.info('[DashboardEventos] Refresco fallido', {
+        background,
+        durationMs: Date.now() - startedAt
+      });
       this.cdr.detectChanges();
     }
   }
@@ -414,5 +470,68 @@ export class DashboardEventos implements OnInit, OnDestroy {
   }
 
   Math = Math;
+
+  private get cacheKey(): string | null {
+    if (!this.currentCacheUserId) return null;
+    return `eventum:cache:v1:dashboard-eventos:user:${this.currentCacheUserId}`;
+  }
+
+  private getCachedState(): any | null {
+    const key = this.cacheKey;
+    if (!key) return null;
+    const cached = this.appCacheService.get<any>(key, 'session');
+    if (!cached) return null;
+    if (Date.now() - Number(cached.lastUpdated || 0) > this.cacheTtlMs) return null;
+    return cached;
+  }
+
+  private applyCachedState(state: any): void {
+    this.stats = state.stats || this.stats;
+    this.eventos = state.eventos || [];
+    this.ventasPorDia = state.ventasPorDia || [];
+    this.ventasPorMes = state.ventasPorMes || [];
+    this.asistenciaPorEvento = state.asistenciaPorEvento || [];
+    this.asistenciaTotal = state.asistenciaTotal || this.asistenciaPorEvento.length;
+    this.asistenciaPage = state.asistenciaPage || 1;
+    this.ingresosPorEvento = state.ingresosPorEvento || [];
+    this.ingresosTotal = state.ingresosTotal || this.ingresosPorEvento.length;
+    this.ingresosPage = state.ingresosPage || 1;
+    this.distribucionMetodoPago = state.distribucionMetodoPago || [];
+    this.distribucionTipoBoleta = state.distribucionTipoBoleta || [];
+    this.reporteEventoSeleccionado = state.reporteEventoSeleccionado || null;
+    this.tabActivo = state.tabActivo || 'general';
+    this.eventoFiltro = state.eventoFiltro ?? null;
+    this.fechaDesde = state.fechaDesde || '';
+    this.fechaHasta = state.fechaHasta || '';
+    this.esOrganizador = state.esOrganizador ?? this.esOrganizador;
+    this.organizadorId = state.organizadorId ?? this.organizadorId;
+  }
+
+  private persistState(): void {
+    const key = this.cacheKey;
+    if (!key) return;
+    this.appCacheService.set(key, {
+      stats: this.stats,
+      eventos: this.eventos,
+      ventasPorDia: this.ventasPorDia,
+      ventasPorMes: this.ventasPorMes,
+      asistenciaPorEvento: this.asistenciaPorEvento,
+      asistenciaTotal: this.asistenciaTotal,
+      asistenciaPage: this.asistenciaPage,
+      ingresosPorEvento: this.ingresosPorEvento,
+      ingresosTotal: this.ingresosTotal,
+      ingresosPage: this.ingresosPage,
+      distribucionMetodoPago: this.distribucionMetodoPago,
+      distribucionTipoBoleta: this.distribucionTipoBoleta,
+      reporteEventoSeleccionado: this.reporteEventoSeleccionado,
+      tabActivo: this.tabActivo,
+      eventoFiltro: this.eventoFiltro,
+      fechaDesde: this.fechaDesde,
+      fechaHasta: this.fechaHasta,
+      esOrganizador: this.esOrganizador,
+      organizadorId: this.organizadorId,
+      lastUpdated: Date.now()
+    }, 'session');
+  }
 }
 

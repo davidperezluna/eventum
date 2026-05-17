@@ -11,6 +11,31 @@ import type { SweetAlertOptions, SweetAlertResult } from 'sweetalert2';
 })
 export class AlertService {
   /**
+   * Muestra un snackbar/toast no bloqueante
+   */
+  snackbar(message: string): Promise<SweetAlertResult> {
+    return Swal.fire({
+      toast: true,
+      title: message,
+      position: 'bottom-start',
+      showConfirmButton: false,
+      timer: 2200,
+      timerProgressBar: false,
+      allowOutsideClick: true,
+      allowEscapeKey: true,
+      customClass: {
+        popup: 'app-snackbar-toast'
+      },
+      showClass: {
+        popup: 'app-snackbar-enter'
+      },
+      hideClass: {
+        popup: 'app-snackbar-exit'
+      }
+    });
+  }
+
+  /**
    * Muestra un mensaje de éxito
    */
   success(title: string, message?: string): Promise<SweetAlertResult> {
@@ -152,6 +177,14 @@ export class AlertService {
    */
   close(): void {
     Swal.close();
+  }
+
+  snackbarSuccess(title: string, message?: string): Promise<SweetAlertResult> {
+    return this.snackbar(message ? `${title}. ${message}` : title);
+  }
+
+  snackbarError(title: string, message?: string): Promise<SweetAlertResult> {
+    return this.snackbar(message ? `${title}. ${message}` : title);
   }
 }
 

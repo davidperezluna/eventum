@@ -5,6 +5,9 @@
   </div>
 
   <div *ngIf="!loading && evento" class="evento-detalle">
+    <div class="silent-refresh-indicator" *ngIf="isRefreshing" aria-live="polite" aria-label="Actualizando evento">
+      <span class="silent-refresh-spinner" aria-hidden="true"></span>
+    </div>
     <!-- Boton volver -->
     <button class="btn-back" (click)="router.navigate(['/eventos-cliente'])">
       <span class="material-icons">arrow_back</span>
