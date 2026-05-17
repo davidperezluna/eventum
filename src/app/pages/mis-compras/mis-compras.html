@@ -265,7 +265,10 @@
 
     <div class="compra-card">
       <div class="boletas-section evento-boletas-section">
-        <ng-container *ngIf="tiposDetallePorTab(detalle).length > 0; else detalleSinBoletas">
+        <div class="loading-small" *ngIf="loadingBoletasDetalle">
+          <p>Cargando boletas...</p>
+        </div>
+        <ng-container *ngIf="!loadingBoletasDetalle && tiposDetallePorTab(detalle).length > 0; else detalleSinBoletas">
           <div *ngFor="let tipo of tiposDetallePorTab(detalle)" class="tipo-boletas-section">
             <h4>{{ tipo.nombre }} ({{ tipo.boletas.length }})</h4>
             <div class="boletas-grid">
@@ -384,7 +387,7 @@
           </div>
         </ng-container>
         <ng-template #detalleSinBoletas>
-          <p class="actividad-page-vacio">
+          <p class="actividad-page-vacio" *ngIf="!loadingBoletasDetalle">
             No hay boletas {{ tabBoletasDetalle === 'usadas' ? 'usadas' : (tabBoletasDetalle === 'sin-asignar' ? 'sin asignar' : 'sin usar') }} en este evento.
           </p>
         </ng-template>
@@ -439,6 +442,10 @@
       </button>
 
       <div class="boletas-section evento-boletas-section" *ngIf="isEventoBoletasExpandido(grupo.key)">
+        <div class="loading-small" *ngIf="loadingBoletasDetalle">
+          <p>Cargando boletas...</p>
+        </div>
+        <ng-container *ngIf="!loadingBoletasDetalle">
         <div *ngFor="let tipo of grupo.tipos" class="tipo-boletas-section">
           <h4 *ngIf="tipo.totalDisponibles > 0">
             {{ tipo.nombre }} ({{ tipo.totalDisponibles }})
@@ -579,6 +586,7 @@
             </ng-container>
           </div>
         </div>
+        </ng-container>
       </div>
     </div>
     </div>

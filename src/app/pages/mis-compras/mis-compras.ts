@@ -85,6 +85,7 @@ export class MisCompras implements OnInit, OnDestroy {
   tabBoletasDetalle: 'sin-usar' | 'usadas' | 'sin-asignar' = 'sin-usar';
   loading = false;
   isRefreshing = false;
+  loadingBoletasDetalle = false;
   total = 0;
   page = 1;
   limit = 1000;
@@ -434,6 +435,9 @@ export class MisCompras implements OnInit, OnDestroy {
 
   async loadBoletasPorCompra(options?: { background?: boolean }) {
     const background = options?.background ?? false;
+    this.loadingBoletasDetalle = true;
+    this.cdr.detectChanges();
+
     if (!background) {
       this.comprasConBoletas = [];
       this.eventosConBoletas = [];
@@ -442,41 +446,47 @@ export class MisCompras implements OnInit, OnDestroy {
     const uid = this.authService.getUsuarioId();
     if (!uid) {
       this.entradasCedidas = [];
+      this.loadingBoletasDetalle = false;
       return;
     }
 
-    await this.refrescarTrasladosMaps();
-    const nextComprasConBoletas: { compra: Compra; boletas: BoletaComprada[] }[] = [];
-
-    for (const compra of this.compras) {
-      try {
-        const response = await this.boletasService.getBoletasCompradas({
-          compra_id: compra.id,
-          limit: 1000
-        });
-        const boletas = response.data || [];
-        const visibles = boletas.filter((b) => this.esTitularBoleta(b, compra));
-        if (visibles.length === 0) {
-          continue;
-        }
-        nextComprasConBoletas.push({
-          compra,
-          boletas: visibles
-        });
-      } catch (err) {
-        console.error('Error cargando boletas para compra:', compra.id, err);
-      }
-    }
-    this.comprasConBoletas = nextComprasConBoletas;
-
     try {
-      this.entradasCedidas = await this.boletasService.getBoletasCedidasTitular(uid);
-    } catch (e) {
-      console.error('Error cargando entradas cedidas:', e);
-      this.entradasCedidas = [];
-    }
+      await this.refrescarTrasladosMaps();
+      const nextComprasConBoletas: { compra: Compra; boletas: BoletaComprada[] }[] = [];
 
-    this.reconstruirEventosConBoletas();
+      for (const compra of this.compras) {
+        try {
+          const response = await this.boletasService.getBoletasCompradas({
+            compra_id: compra.id,
+            limit: 1000
+          });
+          const boletas = response.data || [];
+          const visibles = boletas.filter((b) => this.esTitularBoleta(b, compra));
+          if (visibles.length === 0) {
+            continue;
+          }
+          nextComprasConBoletas.push({
+            compra,
+            boletas: visibles
+          });
+        } catch (err) {
+          console.error('Error cargando boletas para compra:', compra.id, err);
+        }
+      }
+      this.comprasConBoletas = nextComprasConBoletas;
+
+      try {
+        this.entradasCedidas = await this.boletasService.getBoletasCedidasTitular(uid);
+      } catch (e) {
+        console.error('Error cargando entradas cedidas:', e);
+        this.entradasCedidas = [];
+      }
+
+      this.reconstruirEventosConBoletas();
+    } finally {
+      this.loadingBoletasDetalle = false;
+      this.cdr.detectChanges();
+    }
   }
 
   private reconstruirEventosConBoletas(): void {
@@ -1025,6 +1035,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.totalPages = state.totalPages || 0;
     this.tabBoletasDetalle = state.tabBoletasDetalle || 'sin-usar';
     this.eventoExpandidoKey = state.eventoExpandidoKey ?? null;
+    this.loadingBoletasDetalle = this.comprasConBoletas.length === 0 && this.eventosConBoletas.length > 0;
   }
 
   private persistState(lastUpdated: number): void {
