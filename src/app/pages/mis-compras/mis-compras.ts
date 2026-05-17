@@ -85,7 +85,7 @@ export class MisCompras implements OnInit, OnDestroy {
   tabBoletasDetalle: 'sin-usar' | 'usadas' | 'sin-asignar' = 'sin-usar';
   loading = false;
   isRefreshing = false;
-  loadingBoletasDetalle = false;
+  loadingBoletasDetalle = true;
   total = 0;
   page = 1;
   limit = 1000;
@@ -186,7 +186,8 @@ export class MisCompras implements OnInit, OnDestroy {
         this.compras = response.data || [];
         this.total = response.total || 0;
         this.totalPages = response.totalPages || 0;
-        
+        this.loadingBoletasDetalle = true;
+
         await this.loadBoletasPorCompra({ background: this.currentLoadBackground });
 
         this.loading = false;
@@ -203,6 +204,7 @@ export class MisCompras implements OnInit, OnDestroy {
         this.total = 0;
         this.totalPages = 0;
         this.loading = false;
+        this.loadingBoletasDetalle = false;
         this.endSilentRefreshCycle();
         this.cdr.detectChanges();
       }
@@ -229,6 +231,7 @@ export class MisCompras implements OnInit, OnDestroy {
     const background = options?.background ?? hasVisibleData;
     this.currentLoadBackground = background;
     this.loading = !background && !hasVisibleData;
+    this.loadingBoletasDetalle = true;
     if (background) {
       this.startSilentRefreshCycle();
     } else {
@@ -1035,7 +1038,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.totalPages = state.totalPages || 0;
     this.tabBoletasDetalle = state.tabBoletasDetalle || 'sin-usar';
     this.eventoExpandidoKey = state.eventoExpandidoKey ?? null;
-    this.loadingBoletasDetalle = this.comprasConBoletas.length === 0 && this.eventosConBoletas.length > 0;
+    this.loadingBoletasDetalle = this.eventosConBoletas.length > 0;
   }
 
   private persistState(lastUpdated: number): void {
