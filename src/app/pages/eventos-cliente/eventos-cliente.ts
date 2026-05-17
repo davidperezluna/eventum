@@ -229,11 +229,9 @@ export class EventosCliente implements OnInit, OnDestroy {
     this.categoriaFiltro = id;
     this.aplicarFiltrosLocales();
     
-    // Si se cambia la categoría, ocultar eventos finalizados
-    if (id !== null) {
-      this.eventosFinalizados = [];
-      this.persistState();
-    } else {
+    // Al volver a "Todo", mantener los finalizados ya cacheados y refrescar en background.
+    // Esto evita el parpadeo donde "Finalizados" aparece después de "Próximos eventos".
+    if (id === null) {
       void this.loadEventosFinalizados({ background: true });
     }
   }
@@ -285,6 +283,7 @@ export class EventosCliente implements OnInit, OnDestroy {
     }
 
     const background = options?.background ?? false;
+    const previousFinalizados = [...this.eventosFinalizados];
     this.loadingFinalizados = !background;
     this.cdr.detectChanges();
 
@@ -336,7 +335,8 @@ export class EventosCliente implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     } catch (err) {
       console.error('Error cargando eventos finalizados:', err);
-      this.eventosFinalizados = [];
+      // En refresh silencioso conservamos la última lista para evitar saltos visuales.
+      this.eventosFinalizados = background ? previousFinalizados : [];
       this.loadingFinalizados = false;
       this.cdr.detectChanges();
     }
