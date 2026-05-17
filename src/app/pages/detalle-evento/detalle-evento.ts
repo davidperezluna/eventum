@@ -376,7 +376,16 @@ export class DetalleEvento implements OnInit, OnDestroy {
     const background = options?.background ?? false;
     const hasVisibleData = !!this.evento && this.evento.id === id;
     const silentRefreshMode = background || hasVisibleData;
+    const offline = typeof navigator !== 'undefined' && !navigator.onLine;
     const refreshStartedAt = Date.now();
+
+    if (offline && hasVisibleData) {
+      console.info('[DetalleEvento] Sin conexión, usando datos cacheados', { eventoId: id });
+      this.loading = false;
+      this.stopSilentRefreshIndicator();
+      this.cdr.detectChanges();
+      return;
+    }
 
     this.loading = !silentRefreshMode && !hasVisibleData;
     if (silentRefreshMode) {

@@ -93,7 +93,17 @@ export class EventosCliente implements OnInit, OnDestroy {
     const background = options?.background ?? false;
     const hasVisibleData = this.eventosFiltrados.length > 0 || this.eventos.length > 0;
     const silentRefreshMode = background || hasVisibleData;
+    const offline = typeof navigator !== 'undefined' && !navigator.onLine;
     const refreshStartedAt = Date.now();
+
+    if (offline && hasVisibleData) {
+      console.info('[EventosCliente] Sin conexión, usando datos cacheados');
+      this.loading = false;
+      this.stopSilentRefreshIndicator();
+      this.aplicarFiltrosLocales();
+      this.cdr.detectChanges();
+      return;
+    }
 
     this.loading = !silentRefreshMode && !hasVisibleData;
     if (silentRefreshMode) {
@@ -205,8 +215,16 @@ export class EventosCliente implements OnInit, OnDestroy {
   aplicarFiltrosLocales() {
     let filtrados = [...this.eventos];
 
-    // Solo filtrar por categoría localmente si no filtramos en servidor (que no lo estamos haciendo ahora, solo search)
-    // Nota: Podríamos mover también el filtro de categoría al servidor, pero por ahora local está bien si cargamos pocos
+    // Fallback local para escenarios offline.
+    const search = (this.searchTerm || '').trim().toLowerCase();
+    if (search) {
+      filtrados = filtrados.filter((e) => {
+        const titulo = (e.titulo || '').toLowerCase();
+        const descripcion = (e.descripcion || '').toLowerCase();
+        return titulo.includes(search) || descripcion.includes(search);
+      });
+    }
+
     if (this.categoriaFiltro) {
       filtrados = filtrados.filter(e => e.categoria_id === this.categoriaFiltro);
     }

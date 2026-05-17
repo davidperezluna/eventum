@@ -248,6 +248,17 @@ export class MisCompras implements OnInit, OnDestroy {
       return { data: [], total: 0, page: 1, limit: this.limit, totalPages: 0 };
     }
 
+    if (this.isOffline() && this.compras.length > 0) {
+      console.info('[MisCompras] Sin conexión, usando compras cacheadas');
+      return {
+        data: this.compras,
+        total: this.total || this.compras.length,
+        page: this.page,
+        limit: this.limit,
+        totalPages: this.totalPages || Math.max(1, Math.ceil((this.total || this.compras.length) / this.limit))
+      };
+    }
+
     const filters: any = {
       cliente_id: clienteId,
       page: this.page,
@@ -450,6 +461,13 @@ export class MisCompras implements OnInit, OnDestroy {
     if (!uid) {
       this.entradasCedidas = [];
       this.loadingBoletasDetalle = false;
+      return;
+    }
+
+    if (this.isOffline() && (this.comprasConBoletas.length > 0 || this.eventosConBoletas.length > 0)) {
+      console.info('[MisCompras] Sin conexión, usando boletas cacheadas');
+      this.loadingBoletasDetalle = false;
+      this.cdr.detectChanges();
       return;
     }
 
@@ -1066,6 +1084,10 @@ export class MisCompras implements OnInit, OnDestroy {
       eventoDetalleKey: this.eventoDetalleKey,
       lastUpdated
     });
+  }
+
+  private isOffline(): boolean {
+    return typeof navigator !== 'undefined' && !navigator.onLine;
   }
 
   formatCurrency(value: number): string {

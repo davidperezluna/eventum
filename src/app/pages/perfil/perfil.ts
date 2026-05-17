@@ -106,6 +106,18 @@ export class Perfil implements OnInit, OnDestroy {
   loadUsuario(options?: { background?: boolean }) {
     const background = options?.background ?? !!this.usuario;
     const hasVisibleData = !!this.usuario;
+    const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+
+    if (offline && hasVisibleData) {
+      console.info('[Perfil] Sin conexión, usando datos cacheados');
+      this.loading = false;
+      this.loadingDatosCriticos = false;
+      this.error = null;
+      this.endSilentRefreshCycle();
+      this.cdr.detectChanges();
+      return;
+    }
+
     this.loading = !background && !hasVisibleData;
     this.error = null;
     if (background) {

@@ -83,6 +83,16 @@ export class Dashboard implements OnInit {
     const hasVisibleData = !this.loading;
     const background = options?.background ?? hasVisibleData;
     const manual = options?.manual ?? false;
+    const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+
+    if (offline && hasVisibleData) {
+      console.info('[DashboardAdmin] Sin conexión, usando datos cacheados');
+      if (manual) {
+        void this.alertService.snackbar('Sin conexión. Mostrando datos guardados.');
+      }
+      return;
+    }
+
     if (manual && this.isManualRefreshing) return;
     if (manual) {
       this.isManualRefreshing = true;
