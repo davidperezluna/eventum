@@ -533,6 +533,20 @@
   font-size: var(--font-size-sm);
 }
 
+.info-box-title {
+  margin: 0 0 var(--spacing-sm) 0 !important;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary) !important;
+}
+
+.inventario-modal {
+  max-width: 28rem;
+}
+
+.inventario-resumen {
+  margin: var(--spacing-md) 0;
+}
+
 .modal-actions-header {
   display: flex;
   justify-content: flex-end;
