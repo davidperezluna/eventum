@@ -17,10 +17,6 @@
 
   <!-- Main Content -->
   <div class="content-wrapper">
-    <div class="silent-refresh-indicator" *ngIf="isRefreshing && !loading" aria-live="polite" aria-label="Actualizando eventos">
-      <span class="silent-refresh-spinner" aria-hidden="true"></span>
-    </div>
-
     <!-- Categories Carousel (tras primera carga: categorías + eventos + finalizados) -->
     <section class="categories-section" *ngIf="!initialBootstrapLoading">
       <div class="cat-carousel-wrap">
