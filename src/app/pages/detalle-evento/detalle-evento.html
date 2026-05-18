@@ -142,7 +142,10 @@
             <span *ngIf="esLineaPalcoMultipersona(tipo)" class="palco-badge">
               Palco: {{ cuposPorPalco(tipo) }} pers. por unidad · inventario en palcos
             </span>
-            <span *ngIf="tipo.fecha_venta_fin" class="fin-venta-tipo">Fin de venta: {{ tipo.fecha_venta_fin | dateFormat:'short' }}</span>
+            <div *ngIf="tipo.fecha_venta_fin" class="fin-venta-block">
+              <span class="fin-venta-tipo">Fin de venta: {{ tipo.fecha_venta_fin | dateFormat:'short' }}</span>
+              <span class="fin-venta-nota">Hasta agotar existencias por etapa</span>
+            </div>
             <span *ngIf="tipo.cantidad_disponibles === 0" class="soldout-badge">SOLD OUT</span>
           </div>
           <div class="tipo-actions">
