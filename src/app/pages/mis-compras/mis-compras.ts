@@ -144,6 +144,8 @@ export class MisCompras implements OnInit, OnDestroy {
   emailTrasladoDestino = '';
   enviandoTraslado = false;
   rellenarPerfilBoletaId: number | null = null;
+  /** Error visible junto al panel de asignación (además del modal SweetAlert). */
+  asignacionError: { boletaId: number; mensaje: string } | null = null;
 
   /** Ruta `/mis-compras/actividad`: solo trazabilidad de traslados. */
   vistaActividad = false;
@@ -793,6 +795,8 @@ export class MisCompras implements OnInit, OnDestroy {
     if (!this.puedeMostrarBotonYoAsistoPalco(boleta, compra)) {
       return;
     }
+    this.limpiarErrorAsignacion(boleta.id);
+
     const tipoNombre = boleta.tipo_boleta_meta?.nombre || 'esta entrada';
     const palcoTxt =
       boleta.numero_palco != null ? ` (palco ${boleta.numero_palco})` : '';
@@ -808,43 +812,78 @@ export class MisCompras implements OnInit, OnDestroy {
 
     this.rellenarPerfilBoletaId = boleta.id;
     this.cdr.detectChanges();
-    let ok = false;
-    let errMsg: string | undefined;
     try {
       const res = await this.trasladosBoletaService.rellenarAsistentePalcoDesdePerfil(boleta.id);
       if (!res.ok) {
-        errMsg = res.error || 'Error desconocido';
+        await this.mostrarErrorAsignacion(boleta.id, res.error || 'Error desconocido');
         return;
       }
-      ok = true;
+
+      this.limpiarErrorAsignacion(boleta.id);
+      await this.alertService.success(
+        'Listo',
+        'Se aplicaron los datos de tu perfil. El código QR solo aparecerá el día del evento.'
+      );
+      try {
+        await this.recargarBoletasYTraslados();
+      } catch (e) {
+        console.error(e);
+        await this.alertService.warning(
+          'Aviso',
+          'Se aplicaron los datos, pero no se pudo recargar la pantalla automáticamente.'
+        );
+      }
     } finally {
-      // Liberar el estado del botón inmediatamente para que no se quede “Aplicando…”
       this.rellenarPerfilBoletaId = null;
       this.cdr.detectChanges();
     }
+  }
 
-    if (!ok) {
-      this.alertService.error('No se pudo completar', errMsg || 'Error desconocido');
+  private limpiarErrorAsignacion(boletaId?: number): void {
+    if (!boletaId || this.asignacionError?.boletaId === boletaId) {
+      this.asignacionError = null;
+    }
+  }
+
+  private async mostrarErrorAsignacion(
+    boletaId: number,
+    mensaje: string,
+    titulo = 'No se pudo completar'
+  ): Promise<void> {
+    this.asignacionError = { boletaId, mensaje };
+    this.cdr.detectChanges();
+
+    if (this.esErrorAsignacionDocumento(mensaje)) {
+      await this.alertService.error(titulo, undefined, {
+        html: this.htmlErrorAsignacionConEnlacePerfil(mensaje),
+      });
       return;
     }
 
-    this.alertService.success(
-      'Listo',
-      'Se aplicaron los datos de tu perfil. El código QR solo aparecerá el día del evento.'
+    await this.alertService.error(titulo, mensaje);
+  }
+
+  esErrorAsignacionDocumento(mensaje: string): boolean {
+    return /documento/i.test(mensaje) && /perfil/i.test(mensaje);
+  }
+
+  private htmlErrorAsignacionConEnlacePerfil(mensaje: string): string {
+    const safe = mensaje
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+    return (
+      `<p class="swal-error-text">${safe}</p>` +
+      `<p class="swal-perfil-link-wrap"><a href="/perfil" class="swal-perfil-link">Ir a Mi perfil</a></p>`
     );
-    try {
-      await this.recargarBoletasYTraslados();
-    } catch (e) {
-      console.error(e);
-      // Aun si falla la recarga, el botón ya no queda bloqueado.
-      this.alertService.warning('Aviso', 'Se aplicaron los datos, pero no se pudo recargar la pantalla automáticamente.');
-    }
   }
 
   abrirModalTraslado(boleta: BoletaComprada, compra: Compra): void {
     if (!this.puedeAsignarEntradaPorCorreoPalco(boleta, compra)) {
       return;
     }
+    this.limpiarErrorAsignacion(boleta.id);
     this.trasladoBoleta = boleta;
     this.trasladoCompra = compra;
     this.emailTrasladoDestino = '';
@@ -881,11 +920,16 @@ export class MisCompras implements OnInit, OnDestroy {
     }
 
     this.enviandoTraslado = true;
+    this.limpiarErrorAsignacion(this.trasladoBoleta.id);
     this.cdr.detectChanges();
     try {
       const res = await this.trasladosBoletaService.iniciarTrasladoPalco(this.trasladoBoleta.id, email);
       if (!res.ok) {
-        this.alertService.error('No se pudo enviar', res.error || 'Error desconocido');
+        await this.mostrarErrorAsignacion(
+          this.trasladoBoleta.id,
+          res.error || 'Error desconocido',
+          'No se pudo enviar'
+        );
         return;
       }
       this.alertService.success('Enviado', 'El destinatario debe aceptar el traslado en Mis Boletas. Tú verás el estado como enviado y no podrás usar el QR hasta que canceles o él rechace.');
@@ -930,7 +974,7 @@ export class MisCompras implements OnInit, OnDestroy {
   async marcarRecibidoTraslado(t: TrasladoBoleta): Promise<void> {
     const res = await this.trasladosBoletaService.marcarRecibido(t.id);
     if (!res.ok) {
-      this.alertService.error('Error', res.error || '');
+      await this.alertService.error('Error', res.error || '');
       return;
     }
     this.alertService.success('Listo', 'Marcado como recibido. Puedes aceptar o rechazar.');
@@ -940,7 +984,7 @@ export class MisCompras implements OnInit, OnDestroy {
   async aceptarTraslado(t: TrasladoBoleta): Promise<void> {
     const res = await this.trasladosBoletaService.aceptar(t.id);
     if (!res.ok) {
-      this.alertService.error('Error', res.error || '');
+      await this.alertService.error('Error', res.error || '');
       return;
     }
     this.alertService.success('Aceptado', 'La entrada es tuya. El código QR solo aparecerá el día del evento.');

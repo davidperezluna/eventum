@@ -8,6 +8,56 @@ export interface RpcTrasladoResult {
   traslado_id?: number;
 }
 
+/** Normaliza la respuesta JSON de RPCs de traslado/asignación (PostgREST puede devolver variantes). */
+export function parseRpcTrasladoResult(data: unknown): RpcTrasladoResult {
+  let row: unknown = data;
+
+  if (typeof row === 'string') {
+    try {
+      row = JSON.parse(row);
+    } catch {
+      return { ok: false, error: 'Respuesta inválida del servidor' };
+    }
+  }
+
+  if (Array.isArray(row)) {
+    row = row.length === 1 ? row[0] : row;
+  }
+
+  if (!row || typeof row !== 'object' || Array.isArray(row)) {
+    return { ok: false, error: 'Respuesta inválida del servidor' };
+  }
+
+  const r = row as Record<string, unknown>;
+  const okRaw = r['ok'];
+  const errorText = typeof r['error'] === 'string' ? r['error'] : undefined;
+
+  const isSuccess = okRaw === true || okRaw === 'true' || okRaw === 1 || okRaw === '1';
+  const isFailure =
+    okRaw === false ||
+    okRaw === 'false' ||
+    okRaw === 0 ||
+    okRaw === '0' ||
+    (!isSuccess && !!errorText);
+
+  if (isFailure) {
+    return { ok: false, error: errorText || 'Error desconocido' };
+  }
+
+  if (isSuccess) {
+    const tid = r['traslado_id'];
+    const traslado_id =
+      typeof tid === 'number'
+        ? tid
+        : typeof tid === 'string' && tid.trim() !== ''
+          ? Number(tid)
+          : undefined;
+    return { ok: true, traslado_id: Number.isFinite(traslado_id) ? traslado_id : undefined };
+  }
+
+  return { ok: false, error: errorText || 'Respuesta inválida del servidor' };
+}
+
 @Injectable({ providedIn: 'root' })
 export class TrasladosBoletaService {
   constructor(private supabase: SupabaseService) {}
@@ -49,11 +99,7 @@ export class TrasladosBoletaService {
     if (error) {
       return { ok: false, error: error.message };
     }
-    const row = data as RpcTrasladoResult | null;
-    if (row && typeof row === 'object' && 'ok' in row) {
-      return row as RpcTrasladoResult;
-    }
-    return { ok: false, error: 'Respuesta inválida del servidor' };
+    return parseRpcTrasladoResult(data);
   }
 
   async iniciarTrasladoPalco(boletaId: number, emailDestino: string): Promise<RpcTrasladoResult> {
@@ -64,11 +110,7 @@ export class TrasladosBoletaService {
     if (error) {
       return { ok: false, error: error.message };
     }
-    const row = data as RpcTrasladoResult | null;
-    if (row && typeof row === 'object' && 'ok' in row) {
-      return row as RpcTrasladoResult;
-    }
-    return { ok: false, error: 'Respuesta inválida del servidor' };
+    return parseRpcTrasladoResult(data);
   }
 
   async marcarRecibido(trasladoId: number): Promise<RpcTrasladoResult> {
@@ -78,7 +120,7 @@ export class TrasladosBoletaService {
     if (error) {
       return { ok: false, error: error.message };
     }
-    return (data as RpcTrasladoResult) || { ok: false };
+    return parseRpcTrasladoResult(data);
   }
 
   async aceptar(trasladoId: number): Promise<RpcTrasladoResult> {
@@ -88,7 +130,7 @@ export class TrasladosBoletaService {
     if (error) {
       return { ok: false, error: error.message };
     }
-    return (data as RpcTrasladoResult) || { ok: false };
+    return parseRpcTrasladoResult(data);
   }
 
   async rechazar(trasladoId: number): Promise<RpcTrasladoResult> {
@@ -98,7 +140,7 @@ export class TrasladosBoletaService {
     if (error) {
       return { ok: false, error: error.message };
     }
-    return (data as RpcTrasladoResult) || { ok: false };
+    return parseRpcTrasladoResult(data);
   }
 
   async cancelar(trasladoId: number): Promise<RpcTrasladoResult> {
@@ -108,6 +150,6 @@ export class TrasladosBoletaService {
     if (error) {
       return { ok: false, error: error.message };
     }
-    return (data as RpcTrasladoResult) || { ok: false };
+    return parseRpcTrasladoResult(data);
   }
 }

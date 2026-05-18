@@ -145,6 +145,32 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* SweetAlert2 por encima de modales del panel (z-index 2000+) y header cliente */
+.swal2-container {
+  z-index: 12000 !important;
+}
+
+.swal-error-text {
+  margin: 0 0 0.85rem;
+  line-height: 1.45;
+  color: #4b5563;
+}
+
+.swal-perfil-link-wrap {
+  margin: 0;
+  text-align: center;
+}
+
+.swal-perfil-link {
+  color: #dc2626;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.swal-perfil-link:hover {
+  color: #b91c1c;
+}
+
 /* Snackbar compacto estilo Material-like */
 .app-snackbar-toast.swal2-toast {
   background: linear-gradient(135deg, #15803d 0%, #16a34a 100%) !important;

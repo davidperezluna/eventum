@@ -2064,6 +2064,30 @@
   line-height: 1.2;
 }
 
+.asignacion-error {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.5rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.asignacion-error-link {
+  display: inline-block;
+  margin-top: 0.35rem;
+  color: #991b1b;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.traslado-modal .asignacion-error {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
 .asignar-option-text small {
   font-size: 0.7rem;
   color: #64748b;

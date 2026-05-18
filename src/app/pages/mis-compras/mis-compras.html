@@ -377,6 +377,18 @@
                               </span>
                             </button>
                           </div>
+                          <p
+                            class="asignacion-error"
+                            *ngIf="asignacionError?.boletaId === boleta.id"
+                            role="alert"
+                          >
+                            {{ asignacionError!.mensaje }}
+                            <a
+                              *ngIf="esErrorAsignacionDocumento(asignacionError!.mensaje)"
+                              routerLink="/perfil"
+                              class="asignacion-error-link"
+                            >Ir a Mi perfil</a>
+                          </p>
                         </div>
                       </details>
                     </div>
@@ -578,6 +590,18 @@
                             </span>
                           </button>
                         </div>
+                        <p
+                          class="asignacion-error"
+                          *ngIf="asignacionError?.boletaId === boleta.id"
+                          role="alert"
+                        >
+                          {{ asignacionError!.mensaje }}
+                          <a
+                            *ngIf="esErrorAsignacionDocumento(asignacionError!.mensaje)"
+                            routerLink="/perfil"
+                            class="asignacion-error-link"
+                          >Ir a Mi perfil</a>
+                        </p>
                       </div>
                     </details>
                   </div>
@@ -661,6 +685,13 @@
           autocomplete="email"
         />
       </div>
+      <p
+        class="asignacion-error"
+        *ngIf="trasladoBoleta && asignacionError?.boletaId === trasladoBoleta.id"
+        role="alert"
+      >
+        {{ asignacionError!.mensaje }}
+      </p>
       <div class="traslado-modal-actions">
         <button type="button" class="traslado-btn-secondary" (click)="cerrarModalTraslado()">Cerrar</button>
         <button

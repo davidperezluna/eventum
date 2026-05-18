@@ -53,13 +53,19 @@ export class AlertService {
   }
 
   /**
-   * Muestra un mensaje de error
+   * Muestra un mensaje de error.
+   * Usa `options.html` para contenido con enlaces (no combinar con `message` como texto plano).
    */
-  error(title: string, message?: string): Promise<SweetAlertResult> {
+  error(
+    title: string,
+    message?: string,
+    options?: { html?: string }
+  ): Promise<SweetAlertResult> {
+    const html = options?.html?.trim();
     return Swal.fire({
       icon: 'error',
       title,
-      text: message,
+      ...(html ? { html } : { text: message }),
       confirmButtonText: 'Entendido',
       confirmButtonColor: '#ef4444',
       allowOutsideClick: false,
