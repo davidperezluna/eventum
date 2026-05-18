@@ -421,20 +421,7 @@ export class BoletasService {
         throw response.error;
       }
       
-      const tipos = (response.data as TipoBoleta[]) || [];
-      
-      // Enriquecer con información de boletas vendidas
-      const tiposConVendidas = await Promise.all(
-        tipos.map(async (tipo) => {
-          const cantidadVendidas = await this.getCantidadBoletasVendidas(tipo.id);
-          return {
-            ...tipo,
-            cantidad_vendidas: cantidadVendidas
-          };
-        })
-      );
-      
-      return tiposConVendidas;
+      return (response.data as TipoBoleta[]) || [];
     } catch (error) {
       console.error('Error en getAllTiposBoleta:', error);
       throw error;
@@ -442,8 +429,26 @@ export class BoletasService {
   }
 
   /**
-   * Obtiene la cantidad de boletas vendidas para un tipo de boleta
-   * (solo cuenta boletas con pago completado)
+   * Suma unidades al inventario sin modificar cantidad_vendidas.
+   */
+  async agregarInventarioTipoBoleta(id: number, cantidadAgregar: number): Promise<TipoBoleta> {
+    if (!Number.isFinite(cantidadAgregar) || cantidadAgregar <= 0) {
+      throw new Error('La cantidad a agregar debe ser mayor a 0');
+    }
+    const tipo = await this.getTipoBoletaById(id);
+    const vendidas = Number(tipo.cantidad_vendidas ?? 0);
+    const nuevoTotal = Number(tipo.cantidad_total) + cantidadAgregar;
+    if (nuevoTotal < vendidas) {
+      throw new Error('El inventario total no puede quedar por debajo de las unidades vendidas');
+    }
+    return this.updateTipoBoleta(id, {
+      cantidad_total: nuevoTotal,
+      cantidad_disponibles: nuevoTotal - vendidas
+    });
+  }
+
+  /**
+   * Unidades de inventario consumidas (palcos/entradas con consume_inventario).
    */
   async getCantidadBoletasVendidas(tipoBoletaId: number): Promise<number> {
     try {
@@ -451,7 +456,8 @@ export class BoletasService {
         .from('boletas_compradas')
         .select('*, compras!inner(estado_pago)', { count: 'exact', head: true })
         .eq('tipo_boleta_id', tipoBoletaId)
-        .eq('compras.estado_pago', 'completado');
+        .eq('compras.estado_pago', 'completado')
+        .eq('consume_inventario', true);
       
       if (error) {
         console.error('Error obteniendo cantidad de boletas vendidas:', error);

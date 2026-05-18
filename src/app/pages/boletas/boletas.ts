@@ -49,10 +49,13 @@ export class Boletas implements OnInit, OnDestroy {
   showFiltrosAvanzados = false;
 
   showModal = false;
+  showInventarioModal = false;
   showTiposModal = false;
   showValidarModal = false;
   showScannerModal = false;
   editingTipo: TipoBoleta | null = null;
+  tipoInventario: TipoBoleta | null = null;
+  cantidadAgregarInventario = 1;
   formData: Partial<TipoBoleta> = { activo: true };
   eventoSeleccionado: number | null = null;
   tiposBoletaEvento: TipoBoleta[] = [];
@@ -465,19 +468,73 @@ export class Boletas implements OnInit, OnDestroy {
     this.showModal = true;
   }
 
-  openModalEditTipo(tipo: TipoBoleta) {
-    this.editingTipo = tipo;
-    this.eventoSeleccionado = tipo.evento_id;
+  async openModalEditTipo(tipo: TipoBoleta) {
+    let fresh = tipo;
+    try {
+      fresh = await this.boletasService.getTipoBoletaById(tipo.id);
+    } catch (err) {
+      console.error('No se pudo cargar el tipo desde la base de datos:', err);
+    }
+    this.editingTipo = fresh;
+    this.eventoSeleccionado = fresh.evento_id;
     this.selectedMapaPalcoFile = null;
-    this.previewMapaPalco = tipo.imagen_mapa_palcos || null;
+    this.previewMapaPalco = fresh.imagen_mapa_palcos || null;
     this.formData = {
-      ...tipo,
-      personas_por_unidad: tipo.personas_por_unidad ?? 1,
-      es_palco: tipo.es_palco ?? false,
-      fecha_venta_inicio: tipo.fecha_venta_inicio ? this.formatDateForInput(tipo.fecha_venta_inicio) : undefined,
-      fecha_venta_fin: tipo.fecha_venta_fin ? this.formatDateForInput(tipo.fecha_venta_fin) : undefined
+      evento_id: fresh.evento_id,
+      nombre: fresh.nombre,
+      descripcion: fresh.descripcion,
+      precio: fresh.precio,
+      fecha_venta_inicio: fresh.fecha_venta_inicio ? this.formatDateForInput(fresh.fecha_venta_inicio) : undefined,
+      fecha_venta_fin: fresh.fecha_venta_fin ? this.formatDateForInput(fresh.fecha_venta_fin) : undefined,
+      limite_por_persona: fresh.limite_por_persona,
+      activo: fresh.activo,
+      personas_por_unidad: fresh.personas_por_unidad ?? 1,
+      es_palco: fresh.es_palco ?? false,
+      imagen_mapa_palcos: fresh.imagen_mapa_palcos
     };
     this.showModal = true;
+    this.cdr.detectChanges();
+  }
+
+  async openModalAgregarInventario(tipo: TipoBoleta, ev?: Event) {
+    ev?.stopPropagation();
+    try {
+      this.tipoInventario = await this.boletasService.getTipoBoletaById(tipo.id);
+    } catch (err) {
+      console.error('No se pudo cargar inventario desde la base de datos:', err);
+      this.tipoInventario = tipo;
+    }
+    this.cantidadAgregarInventario = 1;
+    this.showInventarioModal = true;
+    this.cdr.detectChanges();
+  }
+
+  closeInventarioModal() {
+    this.showInventarioModal = false;
+    this.tipoInventario = null;
+    this.cantidadAgregarInventario = 1;
+  }
+
+  async saveAgregarInventario() {
+    if (!this.tipoInventario) return;
+    const cantidad = Math.floor(Number(this.cantidadAgregarInventario));
+    if (!Number.isFinite(cantidad) || cantidad <= 0) {
+      this.alertService.warning('Valor inválido', 'Indica cuántas unidades quieres agregar al inventario');
+      return;
+    }
+    const nombreTipo = this.tipoInventario.nombre;
+    try {
+      await this.boletasService.agregarInventarioTipoBoleta(this.tipoInventario.id, cantidad);
+      this.closeInventarioModal();
+      this.loadAllTiposBoleta();
+      if (this.eventoSeleccionado) {
+        this.loadTiposBoleta(this.eventoSeleccionado);
+      }
+      this.alertService.success('Inventario actualizado', `Se agregaron ${cantidad} unidad(es) al tipo «${nombreTipo}».`);
+    } catch (err: any) {
+      console.error('Error agregando inventario:', err);
+      this.alertService.error('Error', err?.message || 'No se pudo agregar inventario');
+    }
   }
 
   openTiposModal(eventoId: number) {
@@ -502,14 +559,35 @@ export class Boletas implements OnInit, OnDestroy {
   }
 
   calcularCantidades() {
-    if (this.formData.cantidad_total) {
-      const cantidadVendidas = this.editingTipo 
-        ? (this.editingTipo.cantidad_vendidas || 0)
-        : 0;
-      
-      this.formData.cantidad_disponibles = this.formData.cantidad_total - cantidadVendidas;
-      this.formData.cantidad_vendidas = cantidadVendidas;
+    if (!this.editingTipo && this.formData.cantidad_total) {
+      this.formData.cantidad_disponibles = this.formData.cantidad_total;
+      this.formData.cantidad_vendidas = 0;
     }
+  }
+
+  private buildTipoBoletaUpdatePayload(): Partial<TipoBoleta> {
+    const pp = Number(this.formData.personas_por_unidad ?? 1);
+    const payload: Partial<TipoBoleta> = {
+      evento_id: this.formData.evento_id,
+      nombre: this.formData.nombre?.trim(),
+      descripcion: this.formData.descripcion,
+      precio: this.formData.precio,
+      limite_por_persona: this.formData.limite_por_persona,
+      activo: this.formData.activo,
+      personas_por_unidad: Math.max(1, Math.floor(pp)),
+      es_palco: !!this.formData.es_palco,
+      fecha_venta_inicio: this.formData.fecha_venta_inicio
+        ? this.timezoneService.datetimeLocalToISO(this.formData.fecha_venta_inicio as string)
+        : undefined,
+      fecha_venta_fin: this.formData.fecha_venta_fin
+        ? this.timezoneService.datetimeLocalToISO(this.formData.fecha_venta_fin as string)
+        : undefined
+    };
+    if (!payload.descripcion) delete payload.descripcion;
+    if (!payload.limite_por_persona) delete payload.limite_por_persona;
+    if (!payload.fecha_venta_inicio) delete payload.fecha_venta_inicio;
+    if (!payload.fecha_venta_fin) delete payload.fecha_venta_fin;
+    return payload;
   }
 
   mostrarCampoMapaPalcos(): boolean {
@@ -591,7 +669,7 @@ export class Boletas implements OnInit, OnDestroy {
       this.alertService.warning('Valor inválido', 'El precio debe ser mayor o igual a 0');
       return;
     }
-    if (!this.formData.cantidad_total || this.formData.cantidad_total <= 0) {
+    if (!this.editingTipo && (!this.formData.cantidad_total || this.formData.cantidad_total <= 0)) {
       this.alertService.warning('Valor inválido', 'La cantidad total debe ser mayor a 0');
       return;
     }
@@ -601,38 +679,30 @@ export class Boletas implements OnInit, OnDestroy {
       return;
     }
 
-    // Calcular cantidad_disponibles basado en cantidad_total y cantidad_vendidas
-    if (this.formData.cantidad_total) {
-      // Si es edición, mantener cantidad_vendidas existente del tipo original
-      // Si es nuevo, cantidad_vendidas debe ser 0
-      const cantidadVendidas = this.editingTipo 
-        ? (this.editingTipo.cantidad_vendidas || 0)
-        : 0;
-      
-      // Calcular cantidad_disponibles
-      this.formData.cantidad_disponibles = this.formData.cantidad_total - cantidadVendidas;
-      this.formData.cantidad_vendidas = cantidadVendidas;
-      
-      console.log('Cálculo de cantidades:', {
-        cantidad_total: this.formData.cantidad_total,
-        cantidad_vendidas: cantidadVendidas,
-        cantidad_disponibles: this.formData.cantidad_disponibles
-      });
-    }
+    let tipoData: Partial<TipoBoleta>;
 
-    // Preparar datos para envío
-    const tipoData: Partial<TipoBoleta> = {
-      ...this.formData,
-      personas_por_unidad: Math.max(1, Math.floor(pp)),
-      es_palco: !!this.formData.es_palco,
-      // Convertir fechas de datetime-local a ISO usando el servicio de timezone
-      fecha_venta_inicio: this.formData.fecha_venta_inicio 
-        ? this.timezoneService.datetimeLocalToISO(this.formData.fecha_venta_inicio as string)
-        : undefined,
-      fecha_venta_fin: this.formData.fecha_venta_fin 
-        ? this.timezoneService.datetimeLocalToISO(this.formData.fecha_venta_fin as string)
-        : undefined
-    };
+    if (this.editingTipo) {
+      tipoData = this.buildTipoBoletaUpdatePayload();
+    } else {
+      this.calcularCantidades();
+      tipoData = {
+        ...this.formData,
+        personas_por_unidad: Math.max(1, Math.floor(pp)),
+        es_palco: !!this.formData.es_palco,
+        cantidad_vendidas: 0,
+        cantidad_disponibles: this.formData.cantidad_total,
+        fecha_venta_inicio: this.formData.fecha_venta_inicio
+          ? this.timezoneService.datetimeLocalToISO(this.formData.fecha_venta_inicio as string)
+          : undefined,
+        fecha_venta_fin: this.formData.fecha_venta_fin
+          ? this.timezoneService.datetimeLocalToISO(this.formData.fecha_venta_fin as string)
+          : undefined
+      };
+      if (!tipoData.descripcion) delete tipoData.descripcion;
+      if (!tipoData.limite_por_persona) delete tipoData.limite_por_persona;
+      if (!tipoData.fecha_venta_inicio) delete tipoData.fecha_venta_inicio;
+      if (!tipoData.fecha_venta_fin) delete tipoData.fecha_venta_fin;
+    }
 
     if (this.mostrarCampoMapaPalcos()) {
       if (this.selectedMapaPalcoFile) {
@@ -642,15 +712,11 @@ export class Boletas implements OnInit, OnDestroy {
         }
         tipoData.imagen_mapa_palcos = urlMapa;
       }
+    } else if (this.editingTipo) {
+      tipoData.imagen_mapa_palcos = undefined;
     } else {
       delete tipoData.imagen_mapa_palcos;
     }
-
-    // Limpiar campos vacíos opcionales
-    if (!tipoData.descripcion) delete tipoData.descripcion;
-    if (!tipoData.limite_por_persona) delete tipoData.limite_por_persona;
-    if (!tipoData.fecha_venta_inicio) delete tipoData.fecha_venta_inicio;
-    if (!tipoData.fecha_venta_fin) delete tipoData.fecha_venta_fin;
 
     if (this.editingTipo) {
       try {
