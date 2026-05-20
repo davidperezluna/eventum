@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { environment } from '../../../environments/environment';
 
 /**
  * Login unificado para personal: administrador, organizador y lector.
@@ -19,6 +20,8 @@ export class LoginAdmin implements OnInit {
   loading = false;
   error: string | null = null;
   returnUrl = '/dashboard';
+  readonly allowClienteLogin = environment.allowClienteLoginAdmin === true;
+  readonly envProfile = environment.profile;
 
   constructor(
     private formBuilder: FormBuilder,

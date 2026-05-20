@@ -13,6 +13,8 @@ export const environment = {
   production: false,
   /** Identificador del perfil (consola / depuración). */
   profile: 'mobile' as const,
+  /** Pruebas en celular (LAN): clientes pueden usar `/login-admin`. */
+  allowClienteLoginAdmin: true,
   oneSignal: {
     appId: 'cb3f9dcf-6085-43d5-99ae-6c76db8abf57',
     serviceWorkerPath: '/push/onesignal/OneSignalSDKWorker.js',

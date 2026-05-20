@@ -19,7 +19,10 @@
             <span class="badge-staff">Personal Eventum</span>
             <h1>Iniciar sesión</h1>
             <p class="subtitle">
-              Administradores, organizadores y lectores de escaneo QR.
+              Administradores, organizadores y lectores de escaneo QR<ng-container *ngIf="allowClienteLogin">; en pruebas también clientes con email y contraseña</ng-container>.
+            </p>
+            <p *ngIf="allowClienteLogin" class="dev-hint">
+              Modo pruebas ({{ envProfile }}): los clientes pueden iniciar aquí. En producción usan Google en /login.
             </p>
           </div>
         </div>

@@ -1,25 +1,33 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
+import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
+import {
+  RouterOutlet,
+  RouterLink,
+  RouterLinkActive,
+  Router,
+  NavigationEnd,
+} from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { filter, Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 
 export const LECTOR_MENU_ITEMS = [
-  { path: '/lector/inicio', label: 'Inicio', icon: 'home' },
-  { path: '/lector/validar', label: 'Validar boleta', icon: 'qr_code_scanner' },
+  { path: '/lector/inicio', label: 'Inicio', icon: 'home', exact: true },
+  { path: '/lector/validar', label: 'Validar boleta', icon: 'qr_code_scanner', exact: false },
 ] as const;
 
 @Component({
   selector: 'app-lector-layout',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
   templateUrl: './lector-layout.html',
-  styleUrl: './lector-layout.css',
+  styleUrls: ['../layout/layout.css', './lector-layout.css'],
+  encapsulation: ViewEncapsulation.None,
 })
 export class LectorLayout implements OnInit, OnDestroy {
   readonly menuItems = [...LECTOR_MENU_ITEMS];
-  sidebarOpen = false;
+  clientMenuOpen = false;
   userEmail = '';
   userName = '';
+  readonly currentYear = new Date().getFullYear();
   private navSub?: Subscription;
 
   constructor(
@@ -31,11 +39,7 @@ export class LectorLayout implements OnInit, OnDestroy {
     this.syncUser();
     this.navSub = this.router.events
       .pipe(filter((e) => e instanceof NavigationEnd))
-      .subscribe(() => {
-        if (window.innerWidth <= 768) {
-          this.sidebarOpen = false;
-        }
-      });
+      .subscribe(() => this.closeClientMenu());
   }
 
   ngOnDestroy(): void {
@@ -49,12 +53,12 @@ export class LectorLayout implements OnInit, OnDestroy {
     this.userName = nom || 'Lector';
   }
 
-  toggleSidebar(): void {
-    this.sidebarOpen = !this.sidebarOpen;
+  toggleClientMenu(): void {
+    this.clientMenuOpen = !this.clientMenuOpen;
   }
 
-  closeSidebar(): void {
-    this.sidebarOpen = false;
+  closeClientMenu(): void {
+    this.clientMenuOpen = false;
   }
 
   async logout(): Promise<void> {

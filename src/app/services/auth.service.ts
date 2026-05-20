@@ -8,6 +8,7 @@ import { SupabaseService } from './supabase.service';
 import { OneSignalIdentityService } from './onesignal-identity.service';
 import { User, Session } from '@supabase/supabase-js';
 import { Usuario } from '../types/entities';
+import { environment } from '../../environments/environment';
 
 export interface LoginCredentials {
   email: string;
@@ -401,14 +402,13 @@ export class AuthService {
       }
 
       if (!this.canLoginViaLoginAdmin(usuario.tipo_usuario_id)) {
-        console.warn('Cliente u otro rol no permitido en login-admin:', usuario.tipo_usuario_id);
+        console.warn('Rol no permitido en login-admin:', usuario.tipo_usuario_id);
         await this.supabase.auth.signOut();
         return {
           user: null,
           usuario: null,
           error: {
-            message:
-              'Las cuentas de cliente deben iniciar sesión en el acceso público con Google.',
+            message: this.mensajeLoginAdminNoPermitido(usuario.tipo_usuario_id),
           },
         };
       }
@@ -648,13 +648,30 @@ export class AuthService {
     );
   }
 
-  /** Admin, organizador o lector — login unificado en `/login-admin`. */
+  /** Cliente en login-admin solo en dev / build mobile de pruebas (`allowClienteLoginAdmin`). */
+  isClienteLoginAdminEnabled(): boolean {
+    return environment.allowClienteLoginAdmin === true;
+  }
+
+  /** Admin, organizador, lector; cliente solo si el entorno lo permite. */
   canLoginViaLoginAdmin(tipoUsuarioId: number): boolean {
-    return (
+    if (
       tipoUsuarioId === RolesPermitidos.ADMINISTRADOR ||
       tipoUsuarioId === RolesPermitidos.ORGANIZADOR ||
       tipoUsuarioId === RolesPermitidos.LECTOR
+    ) {
+      return true;
+    }
+    return (
+      tipoUsuarioId === RolesPermitidos.CLIENTE && this.isClienteLoginAdminEnabled()
     );
+  }
+
+  private mensajeLoginAdminNoPermitido(tipoUsuarioId: number): string {
+    if (tipoUsuarioId === RolesPermitidos.CLIENTE) {
+      return 'Las cuentas de cliente deben iniciar sesión en el acceso público con Google (/login).';
+    }
+    return 'No tienes permisos para acceder desde esta pantalla.';
   }
 
   getHomeRouteForUsuario(usuario: Usuario | null): string {

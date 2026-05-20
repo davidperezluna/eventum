@@ -1,52 +1,65 @@
-<div class="lector-home">
-  <div class="lector-home-inner">
-    <img src="logo-eventum.svg" alt="Eventum" class="home-logo" />
-    <h1>Hola</h1>
+<div class="lector-page">
+  <header class="page-header">
+    <div>
+      <h1>
+        <span class="material-icons">home</span>
+        Inicio
+      </h1>
+      <p class="page-lead">Hola{{ usuario?.nombre ? ', ' + (usuario?.nombre ?? '') : '' }}. Revisa tu alcance y valida entradas.</p>
+    </div>
+  </header>
 
-    <div *ngIf="usuario" class="user-card">
-      <p class="user-name">{{ usuario.nombre }} {{ usuario.apellido || '' }}</p>
-      <p class="user-email">{{ usuario.email }}</p>
+  <div *ngIf="usuario" class="content-card user-card">
+    <div class="user-card-head">
+      <span class="material-icons user-card-icon">person</span>
+      <div>
+        <p class="user-name">{{ usuario.nombre }} {{ usuario.apellido || '' }}</p>
+        <p class="user-email">{{ usuario.email }}</p>
+      </div>
       <span class="rol-badge">Lector</span>
     </div>
+  </div>
 
-    <section class="alcance-section">
-      <h2>Tu alcance de escaneo</h2>
-      <p class="hint">Asignado desde el panel web. No editable desde aqui.</p>
+  <section class="content-card alcance-section">
+    <h2 class="section-title">
+      <span class="material-icons">event</span>
+      Tu alcance de escaneo
+    </h2>
+    <p class="hint">Asignado desde el panel web. No editable desde aquí.</p>
 
-      <div *ngIf="loading" class="loading">Cargando permisos...</div>
+    <div *ngIf="loading" class="loading-state loading-state--compact">Cargando permisos...</div>
 
-      <div *ngIf="!loading && grupos.length === 0" class="empty-state">
-        <span class="material-icons">event_busy</span>
-        <p>No tienes eventos ni tipos de boleta asignados. Contacta al administrador.</p>
-      </div>
-
-      <div *ngFor="let g of grupos" class="grupo-card">
-        <p class="grupo-label">Evento</p>
-        <div class="tag tag-evento">
-          <span class="material-icons">event</span>
-          {{ g.titulo }}
-        </div>
-        <p class="grupo-label tipos-label">Tipos de boleta que puedes validar</p>
-        <div class="tags-wrap">
-          <span *ngFor="let t of g.tipos" class="tag tag-tipo">
-            <span class="material-icons">confirmation_number</span>
-            {{ t.nombre }}
-          </span>
-        </div>
-      </div>
-    </section>
-
-    <div class="actions">
-      <a
-        routerLink="/lector/validar"
-        class="btn-primary"
-        [class.disabled]="permisos.length === 0"
-        [attr.aria-disabled]="permisos.length === 0"
-        (click)="permisos.length === 0 && $event.preventDefault()"
-      >
-        <span class="material-icons">qr_code_scanner</span>
-        Validar boleta
-      </a>
+    <div *ngIf="!loading && grupos.length === 0" class="empty-state">
+      <span class="material-icons empty-icon">event_busy</span>
+      <p>No tienes eventos ni tipos de boleta asignados. Contacta al administrador.</p>
     </div>
+
+    <div *ngFor="let g of grupos" class="grupo-card">
+      <p class="grupo-label">Evento</p>
+      <div class="tag tag-evento">
+        <span class="material-icons">event</span>
+        {{ g.titulo }}
+      </div>
+      <p class="grupo-label tipos-label">Tipos de boleta que puedes validar</p>
+      <div class="tags-wrap">
+        <span *ngFor="let t of g.tipos" class="tag tag-tipo">
+          <span class="material-icons">confirmation_number</span>
+          {{ t.nombre }}
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <div class="actions">
+    <a
+      routerLink="/lector/validar"
+      class="btn-primary"
+      [class.disabled]="permisos.length === 0"
+      [attr.aria-disabled]="permisos.length === 0"
+      (click)="permisos.length === 0 && $event.preventDefault()"
+    >
+      <span class="material-icons">qr_code_scanner</span>
+      Validar boleta
+    </a>
   </div>
 </div>

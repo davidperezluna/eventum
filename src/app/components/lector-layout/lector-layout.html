@@ -1,40 +1,41 @@
-<div class="lector-shell">
-  <header class="lector-topbar" aria-label="Barra superior">
-    <button
-      type="button"
-      class="menu-toggle"
-      (click)="toggleSidebar()"
-      aria-label="Abrir menú"
-    >
-      <span class="material-icons">menu</span>
-    </button>
-    <a routerLink="/lector/inicio" class="brand" aria-label="Eventum Lector">
-      <img src="logo-eventum.svg" alt="Eventum" class="brand-logo" />
-    </a>
-  </header>
-
+<div class="layout-container client-layout lector-layout-root">
   <div
-    class="sidebar-overlay"
-    *ngIf="sidebarOpen"
-    (click)="closeSidebar()"
+    class="client-menu-overlay"
+    *ngIf="clientMenuOpen"
+    (click)="closeClientMenu()"
     aria-hidden="true"
   ></div>
 
-  <aside class="lector-sidebar" [class.open]="sidebarOpen" aria-label="Menú lector">
+  <aside
+    class="client-mobile-menu"
+    [class.open]="clientMenuOpen"
+    aria-label="Menú lector"
+  >
     <div class="sidebar-header">
-      <h2 class="sidebar-title">App lector</h2>
-      <button type="button" class="sidebar-close" (click)="closeSidebar()" aria-label="Cerrar menú">
-        <span class="material-icons">close</span>
-      </button>
+      <div class="sidebar-header-content">
+        <h1 class="sidebar-logo">
+          <img src="logo-eventum.svg" alt="Eventum" class="logo-img" />
+        </h1>
+        <button
+          type="button"
+          class="sidebar-close"
+          (click)="closeClientMenu()"
+          aria-label="Cerrar menú"
+        >
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <p class="subtitle">Validación de entradas</p>
     </div>
 
-    <nav class="lector-nav">
+    <nav class="sidebar-nav">
       <a
         *ngFor="let item of menuItems"
         [routerLink]="item.path"
         routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: item.exact }"
         class="nav-item"
-        (click)="closeSidebar()"
+        (click)="closeClientMenu()"
       >
         <span class="material-icons nav-icon">{{ item.icon }}</span>
         <span class="nav-label">{{ item.label }}</span>
@@ -42,22 +43,54 @@
     </nav>
 
     <div class="sidebar-footer">
-      <div class="user-block">
-        <span class="material-icons">person</span>
-        <div>
-          <p class="user-name">{{ userName }}</p>
-          <p class="user-email">{{ userEmail }}</p>
-          <span class="rol-badge">Lector</span>
+      <div *ngIf="userName" class="user-info">
+        <div class="user-email">
+          <span class="material-icons">person</span>
+          <span class="email-text">{{ userName }}</span>
         </div>
+        <div class="user-role">
+          <span class="material-icons">badge</span>
+          <span>Lector · {{ userEmail }}</span>
+        </div>
+        <button type="button" class="btn-logout" (click)="logout()">
+          <span class="material-icons">logout</span>
+          <span>Cerrar sesión</span>
+        </button>
       </div>
-      <button type="button" class="btn-logout" (click)="logout()">
-        <span class="material-icons">logout</span>
-        Cerrar sesión
-      </button>
+      <p>&copy; {{ currentYear }} Eventum</p>
     </div>
   </aside>
 
-  <main class="lector-main">
+  <header class="client-header">
+    <div class="header-container">
+      <button
+        type="button"
+        class="client-menu-toggle"
+        (click)="toggleClientMenu()"
+        aria-label="Abrir menú"
+      >
+        <span class="material-icons">menu</span>
+      </button>
+
+      <a routerLink="/lector/inicio" class="brand-logo" aria-label="Eventum, ir al inicio">
+        <img src="logo-eventum.svg" alt="Eventum" class="brand-logo-img" />
+      </a>
+
+      <nav class="client-nav" aria-label="Navegación lector">
+        <a
+          *ngFor="let item of menuItems"
+          [routerLink]="item.path"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: item.exact }"
+          class="client-nav-item"
+        >
+          {{ item.label }}
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="client-content lector-content">
     <router-outlet />
   </main>
 </div>
