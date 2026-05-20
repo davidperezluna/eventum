@@ -222,9 +222,10 @@ export class Ventas implements OnInit, OnDestroy {
     this.loadingVentaManualTipos = true;
     this.cdr.detectChanges();
     try {
-      this.ventaManualTipos = await this.boletasService.getTiposBoleta(this.ventaManualEventoId);
+      const tipos = await this.boletasService.getTiposBoleta(this.ventaManualEventoId);
+      this.ventaManualTipos = (tipos || []).filter((tipo) => Number(tipo.cantidad_disponibles ?? 0) > 0);
       if (!this.ventaManualTipos.length) {
-        await this.alertService.warning('Sin boletas', 'El evento seleccionado no tiene tipos de boleta activos.');
+        await this.alertService.warning('Sin boletas', 'El evento seleccionado no tiene tipos de boleta disponibles.');
       }
     } catch (error) {
       console.error('Error cargando tipos de boleta para venta manual:', error);

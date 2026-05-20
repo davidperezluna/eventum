@@ -147,7 +147,7 @@
           <p *ngIf="tipo.descripcion" class="tipo-descripcion">{{ tipo.descripcion }}</p>
           <div class="tipo-info">
             <div class="tipo-info-metricas">
-              <span class="disponibles" [class.sin-stock]="tipo.cantidad_disponibles === 0">{{ tipo.cantidad_disponibles }} disponibles</span>
+              <span class="disponibles" [class.sin-stock]="!tieneExistencias(tipo)">{{ tipo.cantidad_disponibles }} disponibles</span>
               <span class="reservados" [class.reservados--cero]="cantidadPalcosReservados(tipo) === 0">
                 {{ cantidadPalcosReservados(tipo) }} reservados
               </span>
@@ -161,20 +161,20 @@
               <span class="fin-venta-tipo">Fin de venta: {{ tipo.fecha_venta_fin | dateFormat:'short' }}</span>
               <span class="fin-venta-nota">Hasta agotar existencias por etapa</span>
             </div>
-            <span *ngIf="tipo.cantidad_disponibles === 0" class="soldout-badge">SOLD OUT</span>
+            <span *ngIf="!tieneExistencias(tipo)" class="soldout-badge">SOLD OUT</span>
           </div>
           <div class="tipo-actions">
             <div class="cantidad-controls" *ngIf="getCantidadEnCarrito(tipo) > 0">
               <button class="btn-cantidad" (click)="quitarDelCarrito(tipo)">-</button>
               <span class="cantidad">{{ getCantidadEnCarrito(tipo) }}</span>
               <button class="btn-cantidad" (click)="agregarAlCarrito(tipo)"
-                [disabled]="tipo.cantidad_disponibles === 0 || getCantidadEnCarrito(tipo) >= tipo.cantidad_disponibles">+</button>
+                [disabled]="!tieneExistencias(tipo) || getCantidadEnCarrito(tipo) >= tipo.cantidad_disponibles">+</button>
               <button class="btn-remove" (click)="eliminarDelCarrito(tipo)">
                 <span class="material-icons">delete</span>
               </button>
             </div>
             <button *ngIf="getCantidadEnCarrito(tipo) === 0" class="btn-add" (click)="agregarAlCarrito(tipo)"
-              [disabled]="tipo.cantidad_disponibles === 0">
+              [disabled]="!tieneExistencias(tipo)">
               <span class="material-icons">add_shopping_cart</span>
               Agregar
             </button>

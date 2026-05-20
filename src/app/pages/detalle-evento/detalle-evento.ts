@@ -119,6 +119,12 @@ export class DetalleEvento implements OnInit, OnDestroy {
     return this.carritoCompraService.getItemsSnapshot();
   }
 
+  tieneExistencias(tipo: TipoBoleta): boolean {
+    const disponibles = Number(tipo.cantidad_disponibles ?? 0);
+    const soldOut = disponibles <= 0;
+    return !soldOut;
+  }
+
   ngOnInit() {
     const eventoId = this.route.snapshot.paramMap.get('id');
     if (eventoId) {
@@ -511,9 +517,7 @@ export class DetalleEvento implements OnInit, OnDestroy {
           const disponibles =
             (t.cantidad_disponibles === null || t.cantidad_disponibles === undefined)
               ? disponiblesCalculados
-              : (t.cantidad_disponibles === 0 && disponiblesCalculados > 0)
-                ? disponiblesCalculados
-                : t.cantidad_disponibles;
+              : t.cantidad_disponibles;
 
           return {
             ...t,
@@ -548,6 +552,10 @@ export class DetalleEvento implements OnInit, OnDestroy {
   }
 
   agregarAlCarrito(tipo: TipoBoleta) {
+    if (!this.tieneExistencias(tipo)) {
+      this.alertService.warning('Sold Out', `El tipo "${tipo.nombre}" ya no tiene existencias disponibles`);
+      return;
+    }
     if (this.evento) {
       this.carritoCompraService.syncEvento(this.evento);
     }
