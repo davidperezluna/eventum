@@ -6,12 +6,14 @@ import { Eventos } from './pages/eventos/eventos';
 import { EventosCliente } from './pages/eventos-cliente/eventos-cliente';
 import { ConocenosContacto } from './pages/conocenos-contacto/conocenos-contacto';
 import { DetalleEvento } from './pages/detalle-evento/detalle-evento';
+import { Carrito } from './pages/carrito/carrito';
 import { MisCompras } from './pages/mis-compras/mis-compras';
 import { MisComprasGuia } from './pages/mis-compras-guia/mis-compras-guia';
 import { Boletas } from './pages/boletas/boletas';
 import { Perfil } from './pages/perfil/perfil';
 import { PagoResultado } from './pages/pago-resultado/pago-resultado';
 import { Ventas } from './pages/ventas/ventas';
+import { VentasManual } from './pages/ventas-manual/ventas-manual';
 import { Usuarios } from './pages/usuarios/usuarios';
 import { Categorias } from './pages/categorias/categorias';
 import { Lugares } from './pages/lugares/lugares';
@@ -86,6 +88,7 @@ const appRoutes: Routes = [
       { path: 'eventos-cliente', component: EventosCliente }, // Página principal pública
       { path: 'conocenos', component: ConocenosContacto }, // Conócenos y contacto (público)
       { path: 'detalle-evento/:id', component: DetalleEvento }, // Público: detalle de evento
+      { path: 'carrito', component: Carrito },
     ]
   },
   // Rutas protegidas (requieren autenticación)
@@ -112,6 +115,7 @@ const appRoutes: Routes = [
       { path: 'escanear-qr', component: EscanearQr, data: { modoApp: 'admin' } },
       { path: 'palcos', component: Palcos },
       { path: 'ventas', component: Ventas },
+      { path: 'ventas-manual', component: VentasManual, data: { adminOnly: true } },
       { path: 'calificaciones', component: Calificaciones },
       { path: 'notificaciones', component: Notificaciones },
       { path: 'reportes', component: Reportes },

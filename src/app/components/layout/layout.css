@@ -258,6 +258,11 @@
   border-left: 3px solid transparent;
 }
 
+.nav-item--with-badge {
+  justify-content: flex-start;
+  gap: 0.35rem;
+}
+
 .nav-item:hover {
   background: var(--color-surface-hover);
   color: var(--color-text-inverse);
@@ -594,6 +599,27 @@
   transition: all 0.2s;
   position: relative;
   padding: 0.5rem 0;
+}
+
+.client-nav-item--with-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.menu-badge {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0 6px;
 }
 
 .client-nav-item:hover {

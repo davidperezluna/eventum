@@ -1,0 +1,193 @@
+<div class="carrito-page">
+  <section class="hero-section mini-hero">
+    <div class="hero-content">
+      <h1 class="hero-title">Mi <span class="gradient-text">Carrito</span></h1>
+      <p class="hero-subtitle">Confirma tus boletas y finaliza tu compra de forma segura.</p>
+    </div>
+  </section>
+
+  <section class="carrito-shell">
+    <div class="empty-state" *ngIf="carritoVacio">
+      <div class="empty-state-icon-box">
+        <span class="material-icons">shopping_cart</span>
+      </div>
+      <h2>Tu carrito está vacío</h2>
+      <p>Agrega boletas o palcos desde el detalle del evento.</p>
+      <button type="button" class="btn-primary empty-state__cta" (click)="irAEventos()">
+        Ver eventos
+      </button>
+    </div>
+
+    <ng-container *ngIf="!carritoVacio">
+      <section class="evento-section">
+        <h2>{{ evento?.titulo }}</h2>
+        <p class="section-subtitle">Revisa tus boletas, selecciona palcos y finaliza el pago.</p>
+
+        <div class="carrito-items">
+          <div *ngFor="let item of itemsCompra" class="carrito-item">
+            <div class="carrito-item-info">
+              <div class="info-main">
+                <h4>{{ item.tipo.nombre }}</h4>
+                <p class="carrito-precio">{{ formatCurrency(item.tipo.precio) }} x {{ item.cantidad }}</p>
+              </div>
+              <div class="info-side">
+                <div class="cantidad-controls">
+                  <button class="btn-cantidad" (click)="quitarDelCarrito(item.tipo)">-</button>
+                  <span class="cantidad">{{ item.cantidad }}</span>
+                  <button
+                    class="btn-cantidad"
+                    (click)="agregarAlCarrito(item.tipo)"
+                    [disabled]="item.cantidad >= item.tipo.cantidad_disponibles"
+                  >+</button>
+                </div>
+                <p class="carrito-subtotal">{{ formatCurrency(item.tipo.precio * item.cantidad) }}</p>
+                <button class="btn-remove-item-static" (click)="eliminarDelCarrito(item.tipo)" title="Quitar item">
+                  <span class="material-icons">delete</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="palco-experiencia" *ngIf="esLineaPalcoMultipersona(item.tipo)">
+              <header class="palco-exp-header">
+                <div class="palco-exp-header-text">
+                  <p class="palco-exp-kicker">
+                    <span class="material-icons palco-exp-kicker-icon">weekend</span>
+                    Experiencia palco
+                  </p>
+                  <h5 class="palco-exp-title">Selecciona tus palcos numerados</h5>
+                  <p class="palco-exp-desc">
+                    Elige un palco por cada unidad. Cada palco incluye
+                    <strong>{{ cuposPorPalco(item.tipo) }} acceso(s)</strong>.
+                  </p>
+                </div>
+                <div class="palco-exp-badges">
+                  <span class="palco-exp-chip" [class.palco-exp-chip--ok]="palcosSeleccionCompletos(item)">
+                    <span class="material-icons">
+                      {{ palcosSeleccionCompletos(item) ? 'check_circle' : 'touch_app' }}
+                    </span>
+                    {{ palcosSeleccionCompletos(item) ? 'Listo para pagar' : 'Selección pendiente' }}
+                  </span>
+                  <span class="palco-exp-chip palco-exp-chip--muted">
+                    {{ cantidadPalcosReservados(item.tipo) }} reservados · {{ item.tipo.cantidad_disponibles }} disponibles
+                  </span>
+                </div>
+              </header>
+
+              <div class="palco-exp-body">
+                <div class="palco-exp-mapa" *ngIf="item.tipo.imagen_mapa_palcos as mapUrl">
+                  <button
+                    type="button"
+                    class="palco-mapa-card"
+                    (click)="abrirMapaAmpliado(mapUrl, item.tipo.nombre)"
+                    [attr.aria-label]="'Ampliar mapa de palcos ' + item.tipo.nombre"
+                  >
+                    <img [src]="mapUrl" alt="Plano numerado de palcos" class="palco-mapa-img" />
+                    <div class="palco-mapa-caption">
+                      <span class="material-icons">zoom_in_map</span>
+                      <span>Toca para ampliar</span>
+                    </div>
+                  </button>
+                </div>
+
+                <div class="palco-exp-picker">
+                  <div class="palco-slot-rail" role="tablist" [attr.aria-label]="'Unidades de ' + item.tipo.nombre">
+                    <div
+                      class="palco-slot-pill"
+                      *ngFor="let ui of getIndicesUnidadesPalco(item); trackBy: trackBySlotIndex"
+                      [class.palco-slot-pill--active]="getFocoSlotPalco(item) === ui"
+                      [class.palco-slot-pill--done]="item.palco_ids?.[ui] != null"
+                      (click)="setFocoSlotPalco(item, ui)"
+                    >
+                      <span class="palco-slot-pill-label">Palco {{ ui + 1 }} de {{ item.cantidad }}</span>
+                      <span class="palco-slot-pill-value" *ngIf="item.palco_ids?.[ui] as pid">
+                        N.° {{ numeroPalcoPorId(item, pid) }}
+                      </span>
+                      <span class="palco-slot-pill-value palco-slot-pill-value--pending" *ngIf="item.palco_ids?.[ui] == null">
+                        Sin elegir
+                      </span>
+                      <button
+                        type="button"
+                        class="palco-slot-clear"
+                        *ngIf="item.palco_ids?.[ui] != null"
+                        (click)="limpiarPalcoSlot(item, ui); $event.stopPropagation()"
+                      >
+                        <span class="material-icons">close</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="palco-grid-wrap" *ngIf="palcosGridCatalogo(item).length > 0">
+                    <div class="palco-grid">
+                      <button
+                        type="button"
+                        *ngFor="let p of palcosGridCatalogo(item); trackBy: trackByPalcoId"
+                        [ngClass]="claseCeldaPalco(p, item)"
+                        [disabled]="!esPalcoClicableEnFoco(item, p)"
+                        (click)="seleccionarPalcoCelda(item, p)"
+                      >
+                        <span class="palco-cell-num">{{ p.numero }}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cupon-section">
+          <h5>¿Tienes cupón?</h5>
+          <div class="cupon-input-group" *ngIf="!cuponAplicado">
+            <input type="text" [(ngModel)]="codigoCupon" placeholder="Ingresa el código" (keyup.enter)="aplicarCupon()" />
+            <button class="btn-aplicar-cupon" (click)="aplicarCupon()" [disabled]="validandoCupon || !codigoCupon">
+              {{ validandoCupon ? 'Validando...' : 'Aplicar' }}
+            </button>
+          </div>
+          <div class="cupon-aplicado" *ngIf="cuponAplicado">
+            <span>Cupón <strong>{{ cuponAplicado.codigo }}</strong> aplicado ({{ cuponAplicado.porcentaje_descuento }}%)</span>
+            <button class="btn-quitar-cupon" (click)="quitarCupon()">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="carrito-total">
+          <div class="total-row">
+            <span>Valor boletas/palcos:</span>
+            <span>{{ formatCurrency(getSubtotal()) }}</span>
+          </div>
+          <div class="total-row descuento" *ngIf="cuponAplicado">
+            <span>Descuento:</span>
+            <span>-{{ formatCurrency(getDescuento()) }}</span>
+          </div>
+          <div class="total-row">
+            <span>Subtotal:</span>
+            <span>{{ formatCurrency(getBaseNetaBoletas()) }}</span>
+          </div>
+          <div class="total-row">
+            <span>Servicio ({{ getPorcentajeServicio() }}%):</span>
+            <span>{{ formatCurrency(getValorServicio()) }}</span>
+          </div>
+          <div class="total-row main">
+            <h3>Total: {{ formatCurrency(getTotal()) }}</h3>
+          </div>
+          <button class="btn-comprar" (click)="procesarCompra()" [disabled]="comprando">
+            <span class="material-icons">{{ comprando ? 'hourglass_empty' : 'shopping_cart' }}</span>
+            {{ comprando ? 'Procesando...' : 'Comprar boletas' }}
+          </button>
+        </div>
+      </section>
+    </ng-container>
+  </section>
+
+  <div class="palco-mapa-overlay" *ngIf="mapaAmpliado as mapa" (click)="cerrarMapaAmpliado()">
+    <div class="palco-mapa-dialog" (click)="$event.stopPropagation()">
+      <button type="button" class="palco-mapa-close" (click)="cerrarMapaAmpliado()">
+        <span class="material-icons">close</span>
+      </button>
+      <p class="palco-mapa-dialog-title">{{ mapa.titulo }}</p>
+      <img [src]="mapa.url" alt="Plano de palcos ampliado" class="palco-mapa-dialog-img" />
+    </div>
+  </div>
+</div>
+

@@ -484,7 +484,9 @@ export class MisCompras implements OnInit, OnDestroy {
             limit: 1000
           });
           const boletas = response.data || [];
-          const visibles = boletas.filter((b) => this.esTitularBoleta(b, compra));
+          const visibles = boletas.filter(
+            (b) => this.esTitularBoleta(b, compra) && !this.esBoletaCancelada(b)
+          );
           if (visibles.length === 0) {
             continue;
           }
@@ -499,7 +501,8 @@ export class MisCompras implements OnInit, OnDestroy {
       this.comprasConBoletas = nextComprasConBoletas;
 
       try {
-        this.entradasCedidas = await this.boletasService.getBoletasCedidasTitular(uid);
+        this.entradasCedidas = (await this.boletasService.getBoletasCedidasTitular(uid))
+          .filter((b) => !this.esBoletaCancelada(b));
       } catch (e) {
         console.error('Error cargando entradas cedidas:', e);
         this.entradasCedidas = [];
@@ -596,11 +599,17 @@ export class MisCompras implements OnInit, OnDestroy {
 
     for (const item of this.comprasConBoletas) {
       for (const boleta of item.boletas) {
+        if (this.esBoletaCancelada(boleta)) {
+          continue;
+        }
         agregarBoleta(item.compra, boleta);
       }
     }
 
     for (const boleta of this.entradasCedidas) {
+      if (this.esBoletaCancelada(boleta)) {
+        continue;
+      }
       agregarBoleta(this.compraVistaParaBoletaCedida(boleta), boleta, true);
     }
 
@@ -1279,6 +1288,10 @@ export class MisCompras implements OnInit, OnDestroy {
 
   esBoletaUsada(boleta: BoletaComprada | null | undefined): boolean {
     return (boleta?.estado || '').toLowerCase() === 'usada';
+  }
+
+  esBoletaCancelada(boleta: BoletaComprada | null | undefined): boolean {
+    return (boleta?.estado || '').toLowerCase() === 'cancelada';
   }
 
   puedeAbrirVistaBoleta(boleta: BoletaComprada, compra: Compra): boolean {

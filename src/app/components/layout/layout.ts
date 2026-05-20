@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { CarritoCompraService } from '../../services/carrito-compra.service';
 import { User } from '@supabase/supabase-js';
 import { filter } from 'rxjs';
 
@@ -20,13 +21,16 @@ export class Layout implements OnInit, OnDestroy {
   userRole: string = '';
   sidebarOpen: boolean = false;
   clientMenuOpen: boolean = false;
+  totalItemsCarrito = 0;
 
   readonly currentYear = new Date().getFullYear();
   private routerSubscription?: any;
+  private carritoSubscription?: any;
   private unsubscribeAuthState?: () => void;
 
   constructor(
     private authService: AuthService,
+    private carritoCompraService: CarritoCompraService,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
@@ -76,6 +80,11 @@ export class Layout implements OnInit, OnDestroy {
         // Scroll top on route change
         window.scrollTo(0, 0);
       });
+
+    this.carritoSubscription = this.carritoCompraService.totalItems$.subscribe((total) => {
+      this.totalItemsCarrito = total;
+      this.cdr.detectChanges();
+    });
   }
 
   isCliente(): boolean {
@@ -112,6 +121,9 @@ export class Layout implements OnInit, OnDestroy {
     if (this.routerSubscription) {
       this.routerSubscription.unsubscribe();
     }
+    if (this.carritoSubscription) {
+      this.carritoSubscription.unsubscribe();
+    }
     if (this.unsubscribeAuthState) {
       this.unsubscribeAuthState();
     }
@@ -129,6 +141,7 @@ export class Layout implements OnInit, OnDestroy {
       { path: '/lectores-parametrizacion', label: 'Lectores', icon: 'qr_code_scanner' },
       { path: '/palcos', label: 'Palcos', icon: 'event_seat' },
       { path: '/ventas', label: 'Ventas', icon: 'attach_money' },
+      { path: '/ventas-manual', label: 'Venta manual', icon: 'point_of_sale' },
       { path: '/calificaciones', label: 'Calificaciones', icon: 'star' },
       { path: '/notificaciones', label: 'Notificaciones', icon: 'notifications' },
       { path: '/reportes', label: 'Reportes', icon: 'assessment' },

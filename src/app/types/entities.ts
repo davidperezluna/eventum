@@ -204,6 +204,7 @@ export interface Compra {
   subtotal?: number;
   porcentaje_servicio?: number;
   valor_servicio?: number;
+  valor_servicio_manual?: number;
   // Datos enriquecidos (vienen del join)
   cupon?: {
     id: number;

@@ -14,6 +14,7 @@ import { WompiService } from '../../services/wompi.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { AlertService } from '../../services/alert.service';
 import { DetalleEventoStateService } from '../../services/detalle-evento-state.service';
+import { CarritoCompraService, ItemCarritoEvento } from '../../services/carrito-compra.service';
 import {
   Evento,
   TipoBoleta,
@@ -28,22 +29,6 @@ import {
 import { supabaseConfig } from '../../config/supabase.config';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { SafePipe } from '../../pipes/safe.pipe';
-
-interface DatosAsistenteLinea {
-  nombre?: string;
-  documento?: string;
-  email?: string;
-  telefono?: string;
-}
-
-/** Ítem del carrito en la página de evento */
-interface ItemCarritoEvento {
-  tipo: TipoBoleta;
-  cantidad: number;
-  datosAsistente: DatosAsistenteLinea;
-  /** Un id de tabla `palcos` por cada unidad (misma longitud que cantidad). */
-  palco_ids?: (number | null)[];
-}
 
 @Component({
   selector: 'app-detalle-evento',
@@ -71,7 +56,6 @@ export class DetalleEvento implements OnInit, OnDestroy {
   validandoCupon = false;
 
   // Datos de compra
-  itemsCompra: ItemCarritoEvento[] = [];
   /** Palcos en estado disponible por tipo (para selects en checkout). */
   palcosDisponiblesPorTipo = new Map<number, Palco[]>();
 
@@ -123,12 +107,17 @@ export class DetalleEvento implements OnInit, OnDestroy {
     private usuariosService: UsuariosService,
     private alertService: AlertService,
     private detalleEventoStateService: DetalleEventoStateService,
+    private carritoCompraService: CarritoCompraService,
     private lugaresService: LugaresService,
     private categoriasService: CategoriasService,
     private wompiService: WompiService,
     private supabaseService: SupabaseService,
     private cdr: ChangeDetectorRef
   ) { }
+
+  get itemsCompra(): ItemCarritoEvento[] {
+    return this.carritoCompraService.getItemsSnapshot();
+  }
 
   ngOnInit() {
     const eventoId = this.route.snapshot.paramMap.get('id');
@@ -530,6 +519,12 @@ export class DetalleEvento implements OnInit, OnDestroy {
             ...t,
             cantidad_disponibles: disponibles
           };
+        })
+        .sort((a, b) => {
+          const aSoldOut = Number(a.cantidad_disponibles ?? 0) <= 0;
+          const bSoldOut = Number(b.cantidad_disponibles ?? 0) <= 0;
+          if (aSoldOut === bSoldOut) return 0;
+          return aSoldOut ? 1 : -1;
         });
       await this.refrescarPalcosDisponibles();
       this.loadingBoletas = false;
@@ -553,58 +548,36 @@ export class DetalleEvento implements OnInit, OnDestroy {
   }
 
   agregarAlCarrito(tipo: TipoBoleta) {
-    const datosUsuario = this.getDatosUsuario();
-    const existente = this.itemsCompra.find(item => item.tipo.id === tipo.id);
-    if (existente) {
-      if (existente.cantidad < tipo.cantidad_disponibles) {
-        existente.cantidad++;
-        if (this.esLineaPalcoMultipersona(tipo)) {
-          existente.palco_ids = existente.palco_ids || [];
-          existente.palco_ids.push(null);
-        }
-      } else {
-        this.alertService.warning('Stock limitado', `Solo hay ${tipo.cantidad_disponibles} boletas disponibles`);
-      }
-    } else if (tipo.cantidad_disponibles > 0) {
-      if (this.esLineaPalcoMultipersona(tipo)) {
-        this.itemsCompra.push({
-          tipo,
-          cantidad: 1,
-          datosAsistente: {},
-          palco_ids: [null]
-        });
-      } else {
-        this.itemsCompra.push({
-          tipo,
-          cantidad: 1,
-          datosAsistente: datosUsuario || {}
-        });
-      }
+    if (this.evento) {
+      this.carritoCompraService.syncEvento(this.evento);
+    }
+    const agregado = this.carritoCompraService.agregarAlCarrito(tipo);
+    if (!agregado) {
+      this.alertService.warning('Stock limitado', `Solo hay ${tipo.cantidad_disponibles} boletas disponibles`);
     }
     this.cdr.detectChanges();
   }
 
   quitarDelCarrito(tipo: TipoBoleta) {
-    const index = this.itemsCompra.findIndex(item => item.tipo.id === tipo.id);
-    if (index === -1) return;
-    const item = this.itemsCompra[index];
-    if (item.cantidad > 1) {
-      item.cantidad--;
-      if (this.esLineaPalcoMultipersona(tipo) && item.palco_ids) {
-        item.palco_ids = item.palco_ids.slice(0, item.cantidad);
-      }
-    } else {
-      this.itemsCompra.splice(index, 1);
-    }
+    this.carritoCompraService.quitarDelCarrito(tipo.id);
+    this.cdr.detectChanges();
   }
 
   eliminarDelCarrito(tipo: TipoBoleta) {
-    this.itemsCompra = this.itemsCompra.filter(item => item.tipo.id !== tipo.id);
+    this.carritoCompraService.eliminarDelCarrito(tipo.id);
+    this.cdr.detectChanges();
   }
 
   getCantidadEnCarrito(tipo: TipoBoleta): number {
-    const item = this.itemsCompra.find(i => i.tipo.id === tipo.id);
-    return item ? item.cantidad : 0;
+    return this.carritoCompraService.getCantidadEnCarrito(tipo.id);
+  }
+
+  getCantidadTotalCarrito(): number {
+    return this.itemsCompra.reduce((acc, item) => acc + item.cantidad, 0);
+  }
+
+  irACarrito(): void {
+    this.router.navigate(['/carrito']);
   }
 
   getTotal(): number {

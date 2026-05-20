@@ -12,33 +12,48 @@
       </div>
     </section>
     <section class="actividad-page-section">
-      <div class="traslados-table-wrap" *ngIf="trasladosHistorial.length > 0">
-        <table class="traslados-table">
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Rol</th>
-              <th>Evento</th>
-              <th>Tipo boleta</th>
-              <th>Boleta</th>
-              <th>Email origen</th>
-              <th>Email destino</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let t of trasladosHistorial">
-              <td>{{ t.fecha_creacion | dateFormat:'short' }}</td>
-              <td>{{ rolUsuarioEnTraslado(t) === 'origen' ? 'Envié' : 'Recibí' }}</td>
-              <td>{{ tituloEventoTraslado(t) }}</td>
-              <td>{{ nombreTipoBoletaTraslado(t) }}</td>
-              <td>#{{ t.boleta_id }}</td>
-              <td>{{ t.usuario_origen?.email || '—' }}</td>
-              <td>{{ t.email_destino }}</td>
-              <td><span class="badge" [class]="getEstadoTrasladoClass(t.estado)">{{ getEstadoTrasladoLabel(t.estado) }}</span></td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="actividad-feed" *ngIf="trasladosHistorial.length > 0">
+        <article class="actividad-card" *ngFor="let t of trasladosHistorial">
+          <header class="actividad-card-head">
+            <span
+              class="actividad-rol-chip"
+              [class.actividad-rol-chip--envie]="rolUsuarioEnTraslado(t) === 'origen'"
+              [class.actividad-rol-chip--recibi]="rolUsuarioEnTraslado(t) !== 'origen'"
+            >
+              <span class="material-icons">
+                {{ rolUsuarioEnTraslado(t) === 'origen' ? 'north_east' : 'south_west' }}
+              </span>
+              {{ rolUsuarioEnTraslado(t) === 'origen' ? 'Envié' : 'Recibí' }}
+            </span>
+            <span class="badge" [class]="getEstadoTrasladoClass(t.estado)">
+              {{ getEstadoTrasladoLabel(t.estado) }}
+            </span>
+          </header>
+
+          <div class="actividad-card-main">
+            <p class="actividad-evento">{{ tituloEventoTraslado(t) }}</p>
+            <p class="actividad-resumen">
+              <span>{{ nombreTipoBoletaTraslado(t) }}</span>
+              <span class="actividad-dot">•</span>
+              <span>Boleta #{{ t.boleta_id }}</span>
+            </p>
+          </div>
+
+          <div class="actividad-card-meta">
+            <div class="actividad-meta-item">
+              <span class="actividad-meta-label">Origen</span>
+              <strong>{{ t.usuario_origen?.email || '—' }}</strong>
+            </div>
+            <div class="actividad-meta-item">
+              <span class="actividad-meta-label">Destino</span>
+              <strong>{{ t.email_destino }}</strong>
+            </div>
+            <div class="actividad-meta-item">
+              <span class="actividad-meta-label">Fecha</span>
+              <strong>{{ t.fecha_creacion | dateFormat:'short' }}</strong>
+            </div>
+          </div>
+        </article>
       </div>
       <p class="actividad-page-vacio" *ngIf="trasladosHistorial.length === 0">
         Aún no hay traslados de palco en tu cuenta. Cuando envíes o recibas una asignación por correo, aparecerá aquí.

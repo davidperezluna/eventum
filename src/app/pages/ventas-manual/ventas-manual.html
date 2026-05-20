@@ -1,0 +1,168 @@
+<div class="ventas-manual-page">
+  <header class="page-header">
+    <div>
+      <h1>
+        <span class="material-icons">point_of_sale</span>
+        Registrar venta manual
+      </h1>
+      <p>Crea compras confirmadas sin Wompi (equivalente a cupón 100%).</p>
+    </div>
+  </header>
+
+  <section class="content-card">
+    <div class="manual-grid">
+      <div class="form-group">
+        <label>Buscar usuario (dueño de boletas/palcos)</label>
+        <div class="inline-controls">
+          <input type="text" [(ngModel)]="ventaManualClienteSearch" placeholder="Nombre, apellido o correo" />
+          <button type="button" class="btn-secondary" [disabled]="loadingVentaManualClientes" (click)="cargarClientesVentaManual()">
+            {{ loadingVentaManualClientes ? 'Buscando…' : 'Buscar' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Usuario titular</label>
+        <select [(ngModel)]="ventaManualClienteId">
+          <option [ngValue]="null">Selecciona un usuario</option>
+          <option *ngFor="let usuario of ventaManualClientes" [ngValue]="usuario.id">
+            {{ usuarioLabel(usuario) }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Buscar evento</label>
+        <div class="inline-controls">
+          <input type="text" [(ngModel)]="ventaManualEventoSearch" placeholder="Filtra por título" />
+          <button type="button" class="btn-secondary" [disabled]="loadingVentaManualEventos" (click)="cargarEventosVentaManual()">
+            {{ loadingVentaManualEventos ? 'Cargando…' : 'Recargar' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Evento</label>
+        <select [(ngModel)]="ventaManualEventoId" (ngModelChange)="onVentaManualEventoChange()">
+          <option [ngValue]="null">Selecciona un evento</option>
+          <option
+            *ngFor="let evento of ventaManualEventos"
+            [hidden]="ventaManualEventoSearch && !(evento.titulo || '').toLowerCase().includes(ventaManualEventoSearch.toLowerCase())"
+            [ngValue]="evento.id"
+          >
+            #{{ evento.id }} · {{ evento.titulo }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="manual-resumen-titulares" *ngIf="clienteVentaManualSeleccionado || eventoVentaManualSeleccionado">
+      <p *ngIf="clienteVentaManualSeleccionado">
+        <strong>Titular:</strong>
+        {{ clienteVentaManualSeleccionado.nombre || '' }} {{ clienteVentaManualSeleccionado.apellido || '' }}
+        ({{ clienteVentaManualSeleccionado.email }})
+      </p>
+      <p *ngIf="eventoVentaManualSeleccionado">
+        <strong>Evento:</strong> {{ eventoVentaManualSeleccionado.titulo }}
+      </p>
+    </div>
+
+    <section class="manual-lineas">
+      <div class="manual-lineas-header">
+        <h3>Boletas / palcos a generar</h3>
+        <button type="button" class="btn-secondary" (click)="agregarLineaVentaManual()">+ Agregar línea</button>
+      </div>
+
+      <p *ngIf="loadingVentaManualTipos" class="section-empty-note">Cargando tipos de boleta...</p>
+
+      <div *ngFor="let linea of ventaManualLineas" class="manual-linea-card">
+        <div class="manual-linea-grid">
+          <div class="form-group">
+            <label>Tipo de boleta</label>
+            <select [(ngModel)]="linea.tipo_boleta_id" (ngModelChange)="onLineaTipoChange(linea)">
+              <option [ngValue]="null">Selecciona un tipo</option>
+              <option *ngFor="let tipo of ventaManualTipos" [ngValue]="tipo.id">
+                {{ tipo.nombre }} · ${{ tipo.precio | number:'1.0-0' }} · Disp: {{ tipo.cantidad_disponibles }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Cantidad</label>
+            <input
+              type="number"
+              min="1"
+              [max]="maxCantidadDisponibleLinea(linea)"
+              [(ngModel)]="linea.cantidad"
+              (ngModelChange)="onLineaCantidadChange(linea)"
+            />
+          </div>
+
+          <div class="form-group form-group-inline-btn">
+            <label>&nbsp;</label>
+            <button type="button" class="btn-icon btn-icon-danger" title="Quitar línea" (click)="eliminarLineaVentaManual(linea.id)">
+              <span class="material-icons">delete_forever</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="manual-palcos" *ngIf="esTipoPalcoLinea(linea)">
+          <p class="manual-palcos-title">Selecciona {{ linea.cantidad }} palco(s) disponible(s) para esta línea</p>
+          <div class="manual-palcos-grid">
+            <div class="form-group" *ngFor="let slot of indicesSlotsPalco(linea)">
+              <label>Palco #{{ slot + 1 }}</label>
+              <select [(ngModel)]="linea.palco_ids[slot]">
+                <option [ngValue]="null">Selecciona un palco</option>
+                <option *ngFor="let palco of palcosDisponiblesParaSlot(linea, slot)" [ngValue]="palco.id">
+                  Palco {{ palco.numero }} (ID {{ palco.id }})
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="form-group">
+      <label>Notas (opcional)</label>
+      <textarea [(ngModel)]="ventaManualNotas" rows="2" placeholder="Ejemplo: cortesía, reposición o invitación"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Valor comisión manual (COP)</label>
+      <input
+        type="text"
+        inputmode="numeric"
+        [ngModel]="valorServicioManualDisplay"
+        (ngModelChange)="onValorServicioManualInput($event)"
+        placeholder="Ej: 1.500.000"
+      />
+    </div>
+
+    <div class="financial-summary">
+      <div class="summary-item">
+        <label>Subtotal boletas/palcos:</label>
+        <span>${{ subtotalVentaManual | number:'1.2-2' }}</span>
+      </div>
+      <div class="summary-item">
+        <label>Descuento aplicado (equivalente cupón 100%):</label>
+        <span class="discount-text">-${{ descuentoVentaManual | number:'1.2-2' }}</span>
+      </div>
+      <div class="summary-item">
+        <label>Comisión manual registrada:</label>
+        <span>${{ valorServicioManualNormalizado | number:'1.2-2' }}</span>
+      </div>
+      <div class="summary-item total">
+        <label>Total final:</label>
+        <span>${{ totalVentaManual | number:'1.2-2' }}</span>
+      </div>
+    </div>
+
+    <div class="actions-footer">
+      <button class="btn-primary" [disabled]="savingVentaManual || !puedeGuardarVentaManual" (click)="guardarVentaManual()">
+        {{ savingVentaManual ? 'Creando compra…' : 'Crear compra y boletas' }}
+      </button>
+    </div>
+  </section>
+</div>
+

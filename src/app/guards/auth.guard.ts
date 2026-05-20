@@ -95,6 +95,13 @@ export const authGuard: CanActivateFn = async (route, state) => {
       }
     }
 
+    const adminOnly = route.data?.['adminOnly'] === true;
+    if (adminOnly && !authService.isAdministrador()) {
+      console.log('Auth Guard - Ruta solo admin bloqueada para usuario:', usuario.tipo_usuario_id);
+      router.navigate([authService.isOrganizador() ? '/dashboard-organizador' : '/dashboard']);
+      return false;
+    }
+
     console.log('Auth Guard - Acceso permitido');
     return true;
   } catch (error) {
