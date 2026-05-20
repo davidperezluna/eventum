@@ -315,10 +315,10 @@
                       <p *ngIf="boleta.email_asistente"><strong>Email:</strong> {{ boleta.email_asistente }}</p>
                     </div>
                     <div class="boleta-qr" *ngIf="boleta.codigo_qr && puedeMostrarQrBoleta(boleta, compra)">
-                      <div class="qr-code">
-                        <span class="material-icons">qr_code</span>
-                        <span>QR disponible</span>
-                      </div>
+                      <span class="qr-status-badge" role="status">
+                        <span class="material-icons" aria-hidden="true">qr_code_2</span>
+                        QR disponible
+                      </span>
                     </div>
                     <div class="boleta-palco-pendiente-pago" *ngIf="puedeAbrirVistaBoleta(boleta, compra) && !esDiaEventoBoleta(boleta, compra)">
                       <p class="help-text">
@@ -326,9 +326,14 @@
                       </p>
                     </div>
                     <div class="boleta-actions" *ngIf="puedeAbrirVistaBoleta(boleta, compra)">
-                      <button class="btn-view" (click)="verBoleta(boleta, compra)" title="Ver boleta">
-                        <span class="material-icons">visibility</span>
-                        Ver Boleta
+                      <button
+                        type="button"
+                        class="guia-resumen-link boleta-action-btn"
+                        (click)="verBoleta(boleta, compra)"
+                        title="Ver boleta"
+                      >
+                        <span class="material-icons" aria-hidden="true">confirmation_number</span>
+                        <span>Ver boleta</span>
                       </button>
                     </div>
                     <div class="boleta-asignar-palco" *ngIf="puedeAsignarEntradaPorCorreoPalco(boleta, compra)">
@@ -528,10 +533,10 @@
                     <p *ngIf="boleta.email_asistente"><strong>Email:</strong> {{ boleta.email_asistente }}</p>
                   </div>
                   <div class="boleta-qr" *ngIf="boleta.codigo_qr && puedeMostrarQrBoleta(boleta, compra)">
-                    <div class="qr-code">
-                      <span class="material-icons">qr_code</span>
-                      <span>QR disponible</span>
-                    </div>
+                    <span class="qr-status-badge" role="status">
+                      <span class="material-icons" aria-hidden="true">qr_code_2</span>
+                      QR disponible
+                    </span>
                   </div>
                   <div class="boleta-palco-pendiente-pago" *ngIf="puedeAbrirVistaBoleta(boleta, compra) && !esDiaEventoBoleta(boleta, compra)">
                     <p class="help-text">
@@ -539,9 +544,14 @@
                     </p>
                   </div>
                   <div class="boleta-actions" *ngIf="puedeAbrirVistaBoleta(boleta, compra)">
-                    <button class="btn-view" (click)="verBoleta(boleta, compra)" title="Ver boleta">
-                      <span class="material-icons">visibility</span>
-                      Ver Boleta
+                    <button
+                      type="button"
+                      class="guia-resumen-link boleta-action-btn"
+                      (click)="verBoleta(boleta, compra)"
+                      title="Ver boleta"
+                    >
+                      <span class="material-icons" aria-hidden="true">confirmation_number</span>
+                      <span>Ver boleta</span>
                     </button>
                   </div>
                   <div class="boleta-asignar-palco" *ngIf="puedeAsignarEntradaPorCorreoPalco(boleta, compra)">
