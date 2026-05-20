@@ -1,0 +1,149 @@
+<div class="escanear-page" [class.lector-theme]="modoApp === 'lector'">
+  <header class="page-header">
+    <div class="header-left">
+      <a [routerLink]="volverLink" class="btn-back" title="Volver">
+        <span class="material-icons">arrow_back</span>
+      </a>
+      <div>
+        <h1>
+          <span class="material-icons">qr_code_scanner</span>
+          Check-in QR
+        </h1>
+        <p *ngIf="modoApp === 'lector'">Escanea o busca por documento para validar entradas.</p>
+        <p *ngIf="modoApp !== 'lector'">Validacion desde el panel (admin).</p>
+      </div>
+    </div>
+    <div class="modo-tabs" role="tablist">
+      <button type="button" class="modo-tab" [class.active]="modoBusqueda === 'scanner'" (click)="cambiarModo('scanner')">
+        <span class="material-icons">qr_code_scanner</span>
+        Modo scanner
+      </button>
+      <button type="button" class="modo-tab" [class.active]="modoBusqueda === 'manual'" (click)="cambiarModo('manual')">
+        <span class="material-icons">badge</span>
+        Por documento
+      </button>
+    </div>
+  </header>
+
+  <div *ngIf="cargandoPermisos" class="loading-state">Cargando permisos...</div>
+
+  <ng-container *ngIf="!cargandoPermisos">
+    <section *ngIf="modoBusqueda === 'scanner'" class="scanner-section">
+      <div *ngIf="requierePermisosLector && permisos.length === 0" class="alert-box warn">
+        <span class="material-icons">info</span>
+        <p>No tienes eventos asignados. Contacta al administrador.</p>
+      </div>
+
+      <div *ngIf="cameraError" class="alert-box error">
+        <span class="material-icons">videocam_off</span>
+        <p>{{ cameraError }}</p>
+        <button type="button" class="btn-secondary btn-sm" (click)="cambiarModo('manual')">Buscar por documento</button>
+      </div>
+
+      <div class="scanner-wrap" [class.hidden]="cameraError && !scannerActivo">
+        <div [id]="readerId" class="qr-reader"></div>
+        <p *ngIf="scannerActivo && !modalVisible && !buscando" class="scanner-hint">
+          Centra el codigo QR dentro del recuadro
+        </p>
+      </div>
+
+      <div *ngIf="buscando" class="loading-inline">
+        <span class="material-icons spin">hourglass_top</span>
+        Buscando boleta...
+      </div>
+    </section>
+
+    <section *ngIf="modoBusqueda === 'manual'" class="manual-section content-card">
+      <label for="doc-buscar">Buscar por documento</label>
+      <div class="manual-row">
+        <input
+          id="doc-buscar"
+          type="text"
+          class="form-control"
+          [(ngModel)]="documento"
+          placeholder="Numero de documento del asistente"
+          (keyup.enter)="buscarPorDocumento()"
+          [disabled]="buscando || validando || (requierePermisosLector && permisos.length === 0)"
+        />
+        <button
+          type="button"
+          class="btn-primary"
+          (click)="buscarPorDocumento()"
+          [disabled]="buscando || validando || !documento.trim() || (requierePermisosLector && permisos.length === 0)"
+        >
+          <span class="material-icons">search</span>
+        </button>
+      </div>
+      <p class="manual-hint">Si el QR no funciona, busca por cedula o documento.</p>
+
+      <div *ngIf="boletasEncontradas.length > 1" class="lista-boletas">
+        <h3>{{ boletasEncontradas.length }} entradas encontradas</h3>
+        <button
+          type="button"
+          class="result-card"
+          *ngFor="let b of boletasEncontradas"
+          (click)="seleccionarBoletaLista(b)"
+        >
+          <div>
+            <strong>{{ b.nombre_asistente || 'Sin nombre' }}</strong>
+            <span class="result-hint">{{ b.documento_asistente || '—' }}</span>
+          </div>
+          <span class="material-icons">chevron_right</span>
+        </button>
+      </div>
+    </section>
+  </ng-container>
+
+  <div *ngIf="modalVisible && boleta" class="modal-overlay" (click)="cerrarModal(boletasEncontradas.length > 1)">
+    <div class="modal-sheet" (click)="$event.stopPropagation()">
+      <button type="button" class="modal-close" (click)="cerrarModal(boletasEncontradas.length > 1)">
+        <span class="material-icons">close</span>
+      </button>
+
+      <ng-container *ngIf="boleta.estado === 'usada'">
+        <div class="modal-center">
+          <span class="material-icons modal-icon used">history</span>
+          <h2>Esta boleta ya fue escaneada</h2>
+          <p>Alguien valido esta entrada antes. Sin doble ingreso.</p>
+          <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1); reiniciarEscaneo()">
+            Siguiente
+          </button>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="boleta.estado === 'cancelada' || boleta.estado === 'reembolsada'">
+        <div class="modal-center">
+          <span class="material-icons modal-icon blocked">block</span>
+          <h2>Fuera de juego</h2>
+          <p>Entrada {{ getEstadoLabel(boleta.estado) }}. No hay acceso.</p>
+          <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1)">Cerrar</button>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="puedeValidar(boleta)">
+        <p class="modal-kicker">LECTURA OK</p>
+        <h2 class="modal-title">Boleta lista para ingreso</h2>
+        <div class="modal-info">
+          <div class="modal-row"><span>Tipo</span><strong>{{ nombreTipoBoleta }}</strong></div>
+          <div class="modal-row"><span>Evento</span><strong>{{ tituloEvento }}</strong></div>
+          <div class="modal-row" *ngIf="boleta.nombre_asistente"><span>Asistente</span><strong>{{ boleta.nombre_asistente }}</strong></div>
+          <div class="modal-row" *ngIf="boleta.documento_asistente"><span>Documento</span><strong>{{ boleta.documento_asistente }}</strong></div>
+          <div class="modal-row"><span>QR</span><code>{{ boleta.codigo_qr }}</code></div>
+        </div>
+        <button type="button" class="btn-validate" (click)="validarBoleta()" [disabled]="validando">
+          <span class="material-icons">verified</span>
+          {{ validando ? 'Validando...' : 'Validar entrada' }}
+        </button>
+      </ng-container>
+
+      <ng-container *ngIf="boleta.estado === 'pendiente' && !puedeValidar(boleta)">
+        <div class="modal-center">
+          <span class="material-icons modal-icon warn">payments</span>
+          <h2>Pago pendiente</h2>
+          <p>El pago debe estar completado para validar la entrada.</p>
+          <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1)">Cerrar</button>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>

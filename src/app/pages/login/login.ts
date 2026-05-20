@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
+/** Acceso público para clientes (Google). Personal usa `/login-admin`. */
 @Component({
   selector: 'app-login',
   imports: [CommonModule, RouterModule],
@@ -19,21 +20,21 @@ export class Login implements OnInit {
   ) {}
 
   ngOnInit() {
-    if (this.authService.isAuthenticated()) {
-      const usuario = this.authService.getUsuario();
-      if (usuario) {
-        let dashboardRoute = '/dashboard';
-        if (usuario.tipo_usuario_id === 2) {
-          dashboardRoute = '/dashboard-organizador';
-        } else if (usuario.tipo_usuario_id === 1) {
-          dashboardRoute = '/eventos-cliente';
-        }
-        this.router.navigate([dashboardRoute]);
-      } else {
-        this.router.navigate(['/dashboard']);
-      }
+    if (!this.authService.isAuthenticated()) {
       return;
     }
+
+    const usuario = this.authService.getUsuario();
+    if (!usuario) {
+      return;
+    }
+
+    if (this.authService.canLoginViaLoginAdmin(usuario.tipo_usuario_id)) {
+      void this.router.navigateByUrl(this.authService.getHomeRouteForUsuario(usuario));
+      return;
+    }
+
+    void this.router.navigateByUrl(this.authService.getHomeRouteForUsuario(usuario));
   }
 
   async onLoginWithGoogle() {

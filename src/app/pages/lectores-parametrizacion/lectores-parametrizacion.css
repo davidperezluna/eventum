@@ -28,6 +28,18 @@
   max-width: 42rem;
 }
 
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.btn-escanear {
+  text-decoration: none;
+  font-weight: var(--font-weight-semibold);
+}
+
 .btn-primary {
   background: var(--gradient-button);
   color: var(--color-text-inverse);

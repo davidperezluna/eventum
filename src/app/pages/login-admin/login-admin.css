@@ -4,7 +4,7 @@
   overflow: visible;
 }
 
-.badge-pruebas {
+.badge-staff {
   display: inline-block;
   margin: 0 0 0.85rem;
   max-width: 100%;
@@ -14,9 +14,43 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #92400e;
-  background: #fef3c7;
-  border: 1px solid #fcd34d;
+  color: #3730a3;
+  background: #e0e7ff;
+  border: 1px solid #a5b4fc;
+}
+
+.login-footer--staff {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-client-access {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: #1e293b;
+  background: rgb(255 255 255 / 85%);
+  border: 1px solid rgb(15 23 42 / 12%);
+  transition: background 0.15s ease;
+}
+
+.btn-client-access:hover {
+  background: #fff;
+}
+
+.btn-client-access .material-icons {
+  font-size: 1.25rem;
+  color: #667eea;
 }
 
 .header-text .subtitle {

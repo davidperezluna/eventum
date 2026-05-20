@@ -10,10 +10,25 @@
         escanear.
       </p>
     </div>
-    <button type="button" class="btn-primary" (click)="abrirModal()">
-      <span class="material-icons">add</span>
-      Nueva asignación
-    </button>
+    <div class="header-actions">
+      <a routerLink="/escanear-qr" class="btn-secondary btn-escanear">
+        <span class="material-icons">qr_code_scanner</span>
+        Escanear QR
+      </a>
+      <a
+        routerLink="/login-admin"
+        [queryParams]="{ returnUrl: '/lector/inicio' }"
+        class="btn-secondary btn-escanear"
+        title="App lector PWA / móvil"
+      >
+        <span class="material-icons">smartphone</span>
+        App lector
+      </a>
+      <button type="button" class="btn-primary" (click)="abrirModal()">
+        <span class="material-icons">add</span>
+        Nueva asignación
+      </button>
+    </div>
   </header>
 
   <div class="content-card">

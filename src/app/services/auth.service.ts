@@ -26,7 +26,7 @@ export enum RolesPermitidos {
   ADMINISTRADOR = 3,
   ORGANIZADOR = 2,
   CLIENTE = 1, // Asumiendo que cliente es id 1
-  /** Rol para escaneo QR; no accede al panel web (login-admin / Google panel). */
+  /** Rol para escaneo QR; accede por `/login-admin` y rutas `/lector/*`. */
   LECTOR = 4,
 }
 
@@ -278,10 +278,8 @@ export class AuthService {
 
         const usuario = data as Usuario;
         
-        // Validar que el usuario tenga un rol permitido
-        if (!this.hasRolePermitido(usuario.tipo_usuario_id)) {
-          console.warn('Usuario sin rol permitido al cargar datos:', usuario.tipo_usuario_id);
-          // No cerrar sesión automáticamente, solo no cargar el usuario
+        if (!this.canLoadUsuarioEnSesion(usuario.tipo_usuario_id)) {
+          console.warn('Usuario sin rol reconocido al cargar datos:', usuario.tipo_usuario_id);
           this.setUsuario(null);
           return;
         }
@@ -305,7 +303,11 @@ export class AuthService {
   /**
    * Inicia sesión con email y contraseña
    */
-  async login(credentials: LoginCredentials): Promise<{ user: User | null; usuario: Usuario | null; error: any }> {
+  async login(
+    credentials: LoginCredentials,
+    options?: { context?: 'staff' | 'lector' }
+  ): Promise<{ user: User | null; usuario: Usuario | null; error: any }> {
+    const context = options?.context ?? 'staff';
     console.log('Iniciando login para:', credentials.email);
     
     try {
@@ -372,17 +374,27 @@ export class AuthService {
       const usuario = usuarioResponse.data as Usuario;
       console.log('Usuario encontrado en tabla usuarios:', usuario);
 
-      // Validar que el usuario tenga un rol permitido
-      if (!this.hasRolePermitido(usuario.tipo_usuario_id)) {
-        console.warn('Usuario sin rol permitido:', usuario.tipo_usuario_id);
-        // Cerrar sesión si no tiene rol permitido
+      if (context === 'lector' && usuario.tipo_usuario_id !== RolesPermitidos.LECTOR) {
         await this.supabase.auth.signOut();
         return {
           user: null,
           usuario: null,
           error: {
-            message: 'No tienes permisos para acceder a este panel. Solo administradores y organizadores pueden ingresar.'
-          }
+            message: 'Solo los usuarios con rol Lector pueden acceder a la app de escaneo.',
+          },
+        };
+      }
+
+      if (!this.canLoginViaLoginAdmin(usuario.tipo_usuario_id)) {
+        console.warn('Cliente u otro rol no permitido en login-admin:', usuario.tipo_usuario_id);
+        await this.supabase.auth.signOut();
+        return {
+          user: null,
+          usuario: null,
+          error: {
+            message:
+              'Las cuentas de cliente deben iniciar sesión en el acceso público con Google.',
+          },
         };
       }
 
@@ -402,12 +414,11 @@ export class AuthService {
   /**
    * Cierra sesión
    */
-  async logout(): Promise<void> {
+  async logout(redirectTo = '/login-admin'): Promise<void> {
     try {
       const { error } = await this.supabase.auth.signOut();
-      
+
       this.ngZone.run(() => {
-        // Limpiar todos los estados
         this.setSession(null);
         this.setCurrentUser(null);
         this.setUsuario(null);
@@ -416,19 +427,16 @@ export class AuthService {
         if (error) {
           console.error('Error al cerrar sesión:', error);
         }
-        
-        // Redirigir al login
-        this.router.navigate(['/login']);
+
+        this.router.navigate([redirectTo]);
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.ngZone.run(() => {
-        // Limpiar estados incluso si hay error
         this.setSession(null);
         this.setCurrentUser(null);
         this.setUsuario(null);
         this.oneSignalIdentity.logoutFromOneSignal();
-
-        this.router.navigate(['/login']);
+        this.router.navigate([redirectTo]);
       });
       throw error;
     }
@@ -551,9 +559,70 @@ export class AuthService {
    * Verifica si el usuario tiene un rol permitido
    */
   hasRolePermitido(tipoUsuarioId: number): boolean {
-    return tipoUsuarioId === RolesPermitidos.ADMINISTRADOR || 
-           tipoUsuarioId === RolesPermitidos.ORGANIZADOR ||
-           tipoUsuarioId === RolesPermitidos.CLIENTE;
+    return (
+      tipoUsuarioId === RolesPermitidos.ADMINISTRADOR ||
+      tipoUsuarioId === RolesPermitidos.ORGANIZADOR ||
+      tipoUsuarioId === RolesPermitidos.CLIENTE
+    );
+  }
+
+  /** Admin, organizador o lector — login unificado en `/login-admin`. */
+  canLoginViaLoginAdmin(tipoUsuarioId: number): boolean {
+    return (
+      tipoUsuarioId === RolesPermitidos.ADMINISTRADOR ||
+      tipoUsuarioId === RolesPermitidos.ORGANIZADOR ||
+      tipoUsuarioId === RolesPermitidos.LECTOR
+    );
+  }
+
+  getHomeRouteForUsuario(usuario: Usuario | null): string {
+    if (!usuario) return '/login-admin';
+    switch (usuario.tipo_usuario_id) {
+      case RolesPermitidos.LECTOR:
+        return '/lector/inicio';
+      case RolesPermitidos.ORGANIZADOR:
+        return '/dashboard-organizador';
+      case RolesPermitidos.ADMINISTRADOR:
+        return '/dashboard';
+      case RolesPermitidos.CLIENTE:
+        return '/eventos-cliente';
+      default:
+        return '/eventos-cliente';
+    }
+  }
+
+  /**
+   * Tras login en login-admin: respeta returnUrl si aplica al rol.
+   */
+  resolvePostLoginUrl(usuario: Usuario, returnUrl?: string | null): string {
+    const home = this.getHomeRouteForUsuario(usuario);
+    const target = (returnUrl || '').trim();
+    if (!target || target === '/dashboard') {
+      return home;
+    }
+
+    if (usuario.tipo_usuario_id === RolesPermitidos.LECTOR) {
+      return target.startsWith('/lector') ? target : home;
+    }
+
+    if (usuario.tipo_usuario_id === RolesPermitidos.CLIENTE) {
+      return home;
+    }
+
+    if (target.startsWith('/lector')) {
+      return home;
+    }
+
+    return target;
+  }
+
+  /** Panel web admin / organizador / cliente (no incluye Lector). */
+  canLoadUsuarioEnSesion(tipoUsuarioId: number): boolean {
+    return this.hasRolePermitido(tipoUsuarioId) || tipoUsuarioId === RolesPermitidos.LECTOR;
+  }
+
+  isLector(): boolean {
+    return this.usuario?.tipo_usuario_id === RolesPermitidos.LECTOR;
   }
 
   /**

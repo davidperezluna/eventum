@@ -162,7 +162,7 @@ export class Layout implements OnInit, OnDestroy {
   }
 
   async logout() {
-    await this.authService.logout();
-    this.router.navigate(['/login']);
+    const redirect = this.authService.isCliente() ? '/login' : '/login-admin';
+    await this.authService.logout(redirect);
   }
 }

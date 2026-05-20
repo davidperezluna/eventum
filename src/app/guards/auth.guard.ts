@@ -60,7 +60,7 @@ export const authGuard: CanActivateFn = async (route, state) => {
     // Si no hay sesión ni usuario, redirigir al login
     if (!session || !currentUser) {
       console.log('Auth Guard - No hay sesión, redirigiendo al login');
-      router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
+      router.navigate(['/login-admin'], { queryParams: { returnUrl: state.url } });
       return false;
     }
 
@@ -69,16 +69,20 @@ export const authGuard: CanActivateFn = async (route, state) => {
     
     if (!usuario) {
       console.log('Auth Guard - No hay usuario en tabla usuarios, redirigiendo al login');
-      router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
+      router.navigate(['/login-admin'], { queryParams: { returnUrl: state.url } });
       return false;
     }
 
     console.log('Auth Guard - Usuario cargado:', usuario);
 
-    // Verificar que tenga un rol permitido
+    if (authService.isLector()) {
+      console.log('Auth Guard - Lector redirigido a app de escaneo');
+      router.navigate(['/lector/inicio']);
+      return false;
+    }
+
     if (!authService.hasRolePermitido(usuario.tipo_usuario_id)) {
       console.log('Auth Guard - Usuario sin rol permitido:', usuario.tipo_usuario_id);
-      // Cerrar sesión y redirigir al login
       await authService.logout();
       return false;
     }
@@ -95,7 +99,7 @@ export const authGuard: CanActivateFn = async (route, state) => {
     return true;
   } catch (error) {
     console.error('Auth Guard - Error:', error);
-    router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
+    router.navigate(['/login-admin'], { queryParams: { returnUrl: state.url } });
     return false;
   }
 };

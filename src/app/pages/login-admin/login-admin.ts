@@ -5,8 +5,8 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 /**
- * Ruta oculta `/login-admin`: solo email/contraseña para pruebas internas.
- * El acceso público sigue en `/login` (Google).
+ * Login unificado para personal: administrador, organizador y lector.
+ * Los clientes usan `/login` (Google).
  */
 @Component({
   selector: 'app-login-admin',
@@ -33,23 +33,16 @@ export class LoginAdmin implements OnInit {
   }
 
   ngOnInit() {
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '';
+
     if (this.authService.isAuthenticated()) {
       const usuario = this.authService.getUsuario();
-      if (usuario) {
-        let dashboardRoute = '/dashboard';
-        if (usuario.tipo_usuario_id === 2) {
-          dashboardRoute = '/dashboard-organizador';
-        } else if (usuario.tipo_usuario_id === 1) {
-          dashboardRoute = '/eventos-cliente';
-        }
-        this.router.navigate([dashboardRoute]);
-      } else {
-        this.router.navigate(['/dashboard']);
+      if (usuario && this.authService.canLoginViaLoginAdmin(usuario.tipo_usuario_id)) {
+        void this.router.navigateByUrl(
+          this.authService.resolvePostLoginUrl(usuario, this.returnUrl)
+        );
       }
-      return;
     }
-
-    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
   }
 
   async onSubmit() {
@@ -74,18 +67,15 @@ export class LoginAdmin implements OnInit {
       }
 
       if (response.usuario && response.user) {
-        let dashboardRoute = '/dashboard';
-        if (response.usuario.tipo_usuario_id === 2) {
-          dashboardRoute = '/dashboard-organizador';
-        } else if (response.usuario.tipo_usuario_id === 1) {
-          dashboardRoute = '/eventos-cliente';
-        }
-
-        const finalUrl = this.returnUrl === '/dashboard' ? dashboardRoute : this.returnUrl;
+        const finalUrl = this.authService.resolvePostLoginUrl(
+          response.usuario,
+          this.returnUrl
+        );
         this.loading = false;
-        await this.router.navigate([finalUrl]);
+        await this.router.navigateByUrl(finalUrl);
       } else {
-        this.error = 'Error al cargar datos del usuario. Verifica que el usuario esté registrado correctamente.';
+        this.error =
+          'Error al cargar datos del usuario. Verifica que el usuario esté registrado correctamente.';
         this.loading = false;
       }
     } catch (err) {

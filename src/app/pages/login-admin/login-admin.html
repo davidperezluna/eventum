@@ -16,9 +16,11 @@
             <img src="logo-eventum.svg" alt="Eventum" class="logo-icon" />
           </div>
           <div class="header-text">
-            <span class="badge-pruebas">Acceso pruebas · correo y contraseña</span>
+            <span class="badge-staff">Personal Eventum</span>
             <h1>Iniciar sesión</h1>
-            <p class="subtitle">Ruta interna para pruebas (no uses en producción con usuarios finales).</p>
+            <p class="subtitle">
+              Administradores, organizadores y lectores de escaneo QR.
+            </p>
           </div>
         </div>
 
@@ -73,8 +75,11 @@
           </button>
         </form>
 
-        <div class="login-footer">
-          <p><a routerLink="/login">Volver al acceso con Google</a></p>
+        <div class="login-footer login-footer--staff">
+          <a routerLink="/login" class="btn-client-access">
+            <span class="material-icons">person</span>
+            Soy cliente — acceder con Google
+          </a>
           <p>© 2026 Eventum</p>
         </div>
       </div>

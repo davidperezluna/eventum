@@ -8,7 +8,8 @@ import { environment } from '../../environments/environment';
  * Configuración de Supabase desde environment
  * 
  * Las credenciales se configuran en:
- * - src/environments/environment.ts (desarrollo)
+ * - src/environments/environment.ts (desarrollo PC)
+ * - src/environments/environment.mobile.ts (desarrollo celular + Supabase LAN)
  * - src/environments/environment.prod.ts (producción)
  */
 
@@ -23,7 +24,13 @@ export const supabaseConfig = {
   anonKey: activeConfig.anonKey,
 };
 
-console.info(`[Supabase][Web] Ambiente activo: ${supabaseConfig.env}`);
+const profile =
+  'profile' in environment && environment.profile ? environment.profile : 'unknown';
+
+console.info(
+  `[Supabase][Web] Perfil: ${profile} | Supabase: ${supabaseConfig.env}` +
+    (supabaseConfig.env === 'local' ? ` → ${supabaseConfig.url}` : '')
+);
 
 // Validación de configuración
 if (!supabaseConfig.url || !supabaseConfig.anonKey) {

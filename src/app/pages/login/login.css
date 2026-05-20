@@ -851,6 +851,33 @@
   border: 1px solid rgba(102, 126, 234, 0.18);
 }
 
+.btn-staff-access {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.85rem;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: #3730a3;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-staff-access:hover {
+  background: #e0e7ff;
+  border-color: #a5b4fc;
+}
+
+.btn-staff-access .material-icons {
+  font-size: 1.2rem;
+}
+
 .login-google-loading {
   font-weight: 600;
 }

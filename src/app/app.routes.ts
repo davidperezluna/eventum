@@ -22,7 +22,11 @@ import { ReporteVentasCompletadas } from './pages/reporte-ventas-completadas/rep
 import { DashboardEventos } from './pages/dashboard-eventos/dashboard-eventos';
 import { Palcos } from './pages/palcos/palcos';
 import { LectoresParametrizacion } from './pages/lectores-parametrizacion/lectores-parametrizacion';
+import { EscanearQr } from './pages/escanear-qr/escanear-qr';
+import { LectorHome } from './pages/lector-home/lector-home';
+import { LectorLayout } from './components/lector-layout/lector-layout';
 import { Login } from './pages/login/login';
+import { lectorAuthGuard } from './guards/lector.guard';
 import { LoginAdmin } from './pages/login-admin/login-admin';
 import { Register } from './pages/register/register';
 import { AuthCallback } from './pages/auth-callback/auth-callback';
@@ -35,10 +39,10 @@ const appRoutes: Routes = [
     path: 'login',
     component: Login
   },
-  /** Solo pruebas: email + contraseña. El acceso público es `/login` (Google). */
+  /** Personal: admin, organizador y lector (email/contraseña). Clientes: `/login`. */
   {
     path: 'login-admin',
-    component: LoginAdmin
+    component: LoginAdmin,
   },
   {
     path: 'register',
@@ -47,6 +51,21 @@ const appRoutes: Routes = [
   {
     path: 'auth/callback',
     component: AuthCallback
+  },
+  {
+    path: 'lector/login',
+    redirectTo: 'login-admin',
+    pathMatch: 'full',
+  },
+  {
+    path: 'lector',
+    component: LectorLayout,
+    canActivate: [lectorAuthGuard],
+    children: [
+      { path: '', redirectTo: 'inicio', pathMatch: 'full' },
+      { path: 'inicio', component: LectorHome },
+      { path: 'validar', component: EscanearQr, data: { modoApp: 'lector' } },
+    ],
   },
   // Rutas públicas (sin autenticación) - Página principal
   {
@@ -80,6 +99,7 @@ const appRoutes: Routes = [
       { path: 'boletas', component: Boletas, data: { vistaBoletas: 'pendientes' } },
       { path: 'boletas-usadas', component: Boletas, data: { vistaBoletas: 'usadas' } },
       { path: 'lectores-parametrizacion', component: LectoresParametrizacion },
+      { path: 'escanear-qr', component: EscanearQr, data: { modoApp: 'admin' } },
       { path: 'palcos', component: Palcos },
       { path: 'ventas', component: Ventas },
       { path: 'calificaciones', component: Calificaciones },

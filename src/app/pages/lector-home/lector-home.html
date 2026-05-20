@@ -1,0 +1,56 @@
+<div class="lector-home">
+  <div class="lector-home-inner">
+    <img src="logo-eventum.svg" alt="Eventum" class="home-logo" />
+    <h1>Hola</h1>
+
+    <div *ngIf="usuario" class="user-card">
+      <p class="user-name">{{ usuario.nombre }} {{ usuario.apellido || '' }}</p>
+      <p class="user-email">{{ usuario.email }}</p>
+      <span class="rol-badge">Lector</span>
+    </div>
+
+    <section class="alcance-section">
+      <h2>Tu alcance de escaneo</h2>
+      <p class="hint">Asignado desde el panel web. No editable desde aqui.</p>
+
+      <div *ngIf="loading" class="loading">Cargando permisos...</div>
+
+      <div *ngIf="!loading && grupos.length === 0" class="empty-state">
+        <span class="material-icons">event_busy</span>
+        <p>No tienes eventos ni tipos de boleta asignados. Contacta al administrador.</p>
+      </div>
+
+      <div *ngFor="let g of grupos" class="grupo-card">
+        <p class="grupo-label">Evento</p>
+        <div class="tag tag-evento">
+          <span class="material-icons">event</span>
+          {{ g.titulo }}
+        </div>
+        <p class="grupo-label tipos-label">Tipos de boleta que puedes validar</p>
+        <div class="tags-wrap">
+          <span *ngFor="let t of g.tipos" class="tag tag-tipo">
+            <span class="material-icons">confirmation_number</span>
+            {{ t.nombre }}
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <div class="actions">
+      <a
+        routerLink="/lector/validar"
+        class="btn-primary"
+        [class.disabled]="permisos.length === 0"
+        [attr.aria-disabled]="permisos.length === 0"
+        (click)="permisos.length === 0 && $event.preventDefault()"
+      >
+        <span class="material-icons">qr_code_scanner</span>
+        Validar boleta
+      </a>
+      <button type="button" class="btn-secondary" (click)="logout()">
+        <span class="material-icons">logout</span>
+        Cerrar sesion
+      </button>
+    </div>
+  </div>
+</div>

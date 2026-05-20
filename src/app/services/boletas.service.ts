@@ -536,12 +536,27 @@ export class BoletasService {
    * Incluye información del estado de pago de la compra
    */
   async buscarBoletasPorDocumento(documento: string): Promise<BoletaComprada[]> {
+    return this.buscarBoletasPorDocumentoInterno(documento, false);
+  }
+
+  /** Solo boletas pendientes (sin usar), como en la app móvil. */
+  async buscarBoletasPendientesPorDocumento(documento: string): Promise<BoletaComprada[]> {
+    return this.buscarBoletasPorDocumentoInterno(documento, true);
+  }
+
+  private async buscarBoletasPorDocumentoInterno(
+    documento: string,
+    soloPendientes: boolean
+  ): Promise<BoletaComprada[]> {
     try {
-      const response = await this.supabase
+      let query = this.supabase
         .from('boletas_compradas')
         .select(this.selectBoletaConRelaciones)
-        .ilike('documento_asistente', `%${documento}%`)
-        .order('fecha_creacion', { ascending: false });
+        .ilike('documento_asistente', `%${documento.trim()}%`);
+      if (soloPendientes) {
+        query = query.eq('estado', 'pendiente');
+      }
+      const response = await query.order('fecha_creacion', { ascending: false });
       
       if (response.error) {
         throw response.error;

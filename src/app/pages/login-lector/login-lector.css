@@ -1,0 +1,127 @@
+.lector-login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+
+.lector-login-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 40px rgb(0 0 0 / 25%);
+}
+
+.lector-login-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.lector-logo {
+  max-width: 200px;
+  height: auto;
+  margin-bottom: 12px;
+}
+
+.lector-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #667eea;
+  background: rgb(102 126 234 / 10%);
+  border: 1px solid rgb(102 126 234 / 20%);
+  padding: 4px 12px;
+  border-radius: 100px;
+  margin-bottom: 12px;
+}
+
+.lector-login-header h1 {
+  margin: 0 0 8px;
+  font-size: 24px;
+  color: #1a1a2e;
+}
+
+.lector-login-header p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.lector-login-form .form-group {
+  margin-bottom: 20px;
+}
+
+.lector-login-form label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+}
+
+.lector-login-form input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  border: 2px solid rgb(0 0 0 / 10%);
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.alert-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fee;
+  border: 1px solid #fcc;
+  color: #c33;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.btn-login {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-login:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lector-footer {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 12px;
+  color: #999;
+}
+
+.spin {
+  animation: lector-spin 1s linear infinite;
+}
+
+@keyframes lector-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

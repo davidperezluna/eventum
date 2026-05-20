@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { Usuario } from '../../types';
 
 @Component({
   selector: 'app-auth-callback',
@@ -103,6 +104,10 @@ export class AuthCallback implements OnInit, OnDestroy {
     }
   }
 
+  private rutaTrasOAuth(usuario: Usuario): string {
+    return this.authService.getHomeRouteForUsuario(usuario);
+  }
+
   async ngOnInit() {
     try {
       const queryParams = this.route.snapshot.queryParams;
@@ -137,15 +142,7 @@ export class AuthCallback implements OnInit, OnDestroy {
             }
             this.isLoading = false;
             
-            // Redirigir según tipo de usuario
-            let dashboardRoute = '/dashboard';
-            if (usuario.tipo_usuario_id === 2) {
-              dashboardRoute = '/dashboard-organizador';
-            } else if (usuario.tipo_usuario_id === 1) {
-              dashboardRoute = '/eventos-cliente';
-            }
-            
-            this.router.navigate([dashboardRoute]);
+            this.router.navigateByUrl(this.rutaTrasOAuth(usuario));
           }
         });
 
@@ -159,13 +156,7 @@ export class AuthCallback implements OnInit, OnDestroy {
             const usuario = this.authService.getUsuario();
             if (usuario) {
               this.isLoading = false;
-              let dashboardRoute = '/dashboard';
-              if (usuario.tipo_usuario_id === 2) {
-                dashboardRoute = '/dashboard-organizador';
-              } else if (usuario.tipo_usuario_id === 1) {
-                dashboardRoute = '/eventos-cliente';
-              }
-              this.router.navigate([dashboardRoute]);
+              this.router.navigateByUrl(this.rutaTrasOAuth(usuario));
             } else {
               this.error = 'Error al cargar los datos del usuario. Intenta iniciar sesión nuevamente.';
               this.isLoading = false;

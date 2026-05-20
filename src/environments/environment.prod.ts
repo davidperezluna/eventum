@@ -4,6 +4,7 @@
 
 export const environment = {
   production: true,
+  profile: 'production' as const,
   /** Mantener alineado con `index.html` (OneSignal se inicializa allí antes del bundle). */
   oneSignal: {
     appId: 'cb3f9dcf-6085-43d5-99ae-6c76db8abf57',

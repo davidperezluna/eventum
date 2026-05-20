@@ -1,0 +1,41 @@
+<div class="lector-login-page">
+  <div class="lector-login-card">
+    <div class="lector-login-header">
+      <img src="logo-eventum.svg" alt="Eventum" class="lector-logo" />
+      <span class="lector-badge">LECTOR &middot; ESCANEO</span>
+      <h1>Bienvenido</h1>
+      <p>Ingresa con tu cuenta de lector para validar boletas</p>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="lector-login-form">
+      <div class="form-group">
+        <label for="email-lector">
+          <span class="material-icons">email</span>
+          Email
+        </label>
+        <input id="email-lector" type="email" formControlName="email" placeholder="tu@email.com" autocomplete="username" />
+      </div>
+
+      <div class="form-group">
+        <label for="password-lector">
+          <span class="material-icons">lock</span>
+          Contrasena
+        </label>
+        <input id="password-lector" type="password" formControlName="password" placeholder="********" autocomplete="current-password" />
+      </div>
+
+      <div *ngIf="error" class="alert-error">
+        <span class="material-icons">error</span>
+        <span>{{ error }}</span>
+      </div>
+
+      <button type="submit" class="btn-login" [disabled]="loading || loginForm.invalid">
+        <span *ngIf="loading" class="material-icons spin">hourglass_top</span>
+        <span *ngIf="!loading" class="material-icons">login</span>
+        {{ loading ? 'Ingresando...' : 'Iniciar sesion' }}
+      </button>
+    </form>
+
+    <p class="lector-footer">Eventum - Validacion en puerta</p>
+  </div>
+</div>
