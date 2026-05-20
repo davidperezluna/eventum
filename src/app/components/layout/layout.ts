@@ -49,6 +49,10 @@ export class Layout implements OnInit, OnDestroy {
         } else if (usuario.tipo_usuario_id === 1) {
           this.userRole = 'Cliente';
           this.loadMenuCliente();
+        } else if (this.authService.isLector()) {
+          this.userRole = 'Lector';
+          this.menuItems = [];
+          this.redirectLectorFueraDeApp();
         } else {
           this.userRole = 'Usuario';
         }
@@ -76,6 +80,17 @@ export class Layout implements OnInit, OnDestroy {
 
   isCliente(): boolean {
     return this.usuario?.tipo_usuario_id === 1;
+  }
+
+  isLector(): boolean {
+    return this.authService.isLector();
+  }
+
+  private redirectLectorFueraDeApp(): void {
+    const path = this.router.url.split('?')[0];
+    if (!path.startsWith('/lector')) {
+      void this.router.navigate(['/lector/inicio']);
+    }
   }
 
   /** Nombre/apellidos para menú cliente; si no hay, el pie solo muestra el correo */

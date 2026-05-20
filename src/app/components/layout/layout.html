@@ -1,7 +1,7 @@
-<div class="layout-container" [class.client-layout]="isCliente() || !currentUser || !usuario">
+<div class="layout-container" [class.client-layout]="isCliente() || isLector() || !currentUser || !usuario">
   
   <!-- Layout para Administradores y Organizadores (Sidebar) -->
-  <ng-container *ngIf="!isCliente() && currentUser && usuario">
+  <ng-container *ngIf="!isCliente() && !isLector() && currentUser && usuario">
     <header class="admin-mobile-topbar" aria-label="Barra superior móvil">
       <div class="admin-mobile-topbar-inner">
         <button type="button" class="menu-toggle" (click)="toggleSidebar()" aria-label="Abrir menú">
@@ -198,7 +198,7 @@
     </header>
   </ng-container>
 
-  <main [class.main-content]="!isCliente() && currentUser && usuario" [class.client-content]="isCliente() && currentUser && usuario" [class.public-content]="!currentUser || !usuario">
+  <main [class.main-content]="!isCliente() && !isLector() && currentUser && usuario" [class.client-content]="isCliente() && currentUser && usuario" [class.public-content]="!currentUser || !usuario || isLector()">
     <router-outlet />
   </main>
 </div>

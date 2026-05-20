@@ -1,0 +1,63 @@
+<div class="lector-shell">
+  <header class="lector-topbar" aria-label="Barra superior">
+    <button
+      type="button"
+      class="menu-toggle"
+      (click)="toggleSidebar()"
+      aria-label="Abrir menú"
+    >
+      <span class="material-icons">menu</span>
+    </button>
+    <a routerLink="/lector/inicio" class="brand" aria-label="Eventum Lector">
+      <img src="logo-eventum.svg" alt="Eventum" class="brand-logo" />
+    </a>
+  </header>
+
+  <div
+    class="sidebar-overlay"
+    *ngIf="sidebarOpen"
+    (click)="closeSidebar()"
+    aria-hidden="true"
+  ></div>
+
+  <aside class="lector-sidebar" [class.open]="sidebarOpen" aria-label="Menú lector">
+    <div class="sidebar-header">
+      <h2 class="sidebar-title">App lector</h2>
+      <button type="button" class="sidebar-close" (click)="closeSidebar()" aria-label="Cerrar menú">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+
+    <nav class="lector-nav">
+      <a
+        *ngFor="let item of menuItems"
+        [routerLink]="item.path"
+        routerLinkActive="active"
+        class="nav-item"
+        (click)="closeSidebar()"
+      >
+        <span class="material-icons nav-icon">{{ item.icon }}</span>
+        <span class="nav-label">{{ item.label }}</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-block">
+        <span class="material-icons">person</span>
+        <div>
+          <p class="user-name">{{ userName }}</p>
+          <p class="user-email">{{ userEmail }}</p>
+          <span class="rol-badge">Lector</span>
+        </div>
+      </div>
+      <button type="button" class="btn-logout" (click)="logout()">
+        <span class="material-icons">logout</span>
+        Cerrar sesión
+      </button>
+    </div>
+  </aside>
+
+  <main class="lector-main">
+    <router-outlet />
+  </main>
+</div>

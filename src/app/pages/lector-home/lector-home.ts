@@ -1,6 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import {
   LectorPermisosService,
@@ -27,7 +27,6 @@ export class LectorHome implements OnInit {
   constructor(
     private authService: AuthService,
     private lectorPermisos: LectorPermisosService,
-    private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -71,7 +70,4 @@ export class LectorHome implements OnInit {
     return [...map.values()];
   }
 
-  async logout(): Promise<void> {
-    await this.authService.logout('/login-admin');
-  }
 }

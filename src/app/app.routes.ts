@@ -26,7 +26,11 @@ import { EscanearQr } from './pages/escanear-qr/escanear-qr';
 import { LectorHome } from './pages/lector-home/lector-home';
 import { LectorLayout } from './components/lector-layout/lector-layout';
 import { Login } from './pages/login/login';
-import { lectorAuthGuard } from './guards/lector.guard';
+import {
+  lectorAuthGuard,
+  lectorChildGuard,
+  lectorFueraDeAppGuard,
+} from './guards/lector.guard';
 import { LoginAdmin } from './pages/login-admin/login-admin';
 import { Register } from './pages/register/register';
 import { AuthCallback } from './pages/auth-callback/auth-callback';
@@ -63,14 +67,20 @@ const appRoutes: Routes = [
     canActivate: [lectorAuthGuard],
     children: [
       { path: '', redirectTo: 'inicio', pathMatch: 'full' },
-      { path: 'inicio', component: LectorHome },
-      { path: 'validar', component: EscanearQr, data: { modoApp: 'lector' } },
+      { path: 'inicio', component: LectorHome, canActivate: [lectorChildGuard] },
+      {
+        path: 'validar',
+        component: EscanearQr,
+        canActivate: [lectorChildGuard],
+        data: { modoApp: 'lector' },
+      },
     ],
   },
   // Rutas públicas (sin autenticación) - Página principal
   {
     path: '',
     component: Layout,
+    canActivate: [lectorFueraDeAppGuard],
     children: [
       { path: '', redirectTo: 'eventos-cliente', pathMatch: 'full' },
       { path: 'eventos-cliente', component: EventosCliente }, // Página principal pública
