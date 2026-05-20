@@ -19,7 +19,9 @@ export class Login implements OnInit {
     private router: Router
   ) {}
 
-  ngOnInit() {
+  async ngOnInit() {
+    await this.authService.waitForInitialization();
+
     if (!this.authService.isAuthenticated()) {
       return;
     }
@@ -30,11 +32,15 @@ export class Login implements OnInit {
     }
 
     if (this.authService.canLoginViaLoginAdmin(usuario.tipo_usuario_id)) {
-      void this.router.navigateByUrl(this.authService.getHomeRouteForUsuario(usuario));
+      await this.router.navigateByUrl(this.authService.getHomeRouteForUsuario(usuario), {
+        replaceUrl: true,
+      });
       return;
     }
 
-    void this.router.navigateByUrl(this.authService.getHomeRouteForUsuario(usuario));
+    await this.router.navigateByUrl(this.authService.getHomeRouteForUsuario(usuario), {
+      replaceUrl: true,
+    });
   }
 
   async onLoginWithGoogle() {

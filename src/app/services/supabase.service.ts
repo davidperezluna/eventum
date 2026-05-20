@@ -13,7 +13,17 @@ export class SupabaseService {
   private supabase: SupabaseClient;
 
   constructor() {
-    this.supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+    this.supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storage:
+          typeof globalThis !== 'undefined' && 'localStorage' in globalThis
+            ? globalThis.localStorage
+            : undefined,
+      },
+    });
   }
 
   /**

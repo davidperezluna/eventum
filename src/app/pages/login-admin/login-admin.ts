@@ -32,16 +32,21 @@ export class LoginAdmin implements OnInit {
     });
   }
 
-  ngOnInit() {
+  async ngOnInit() {
     this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '';
 
-    if (this.authService.isAuthenticated()) {
-      const usuario = this.authService.getUsuario();
-      if (usuario && this.authService.canLoginViaLoginAdmin(usuario.tipo_usuario_id)) {
-        void this.router.navigateByUrl(
-          this.authService.resolvePostLoginUrl(usuario, this.returnUrl)
-        );
-      }
+    await this.authService.waitForInitialization();
+
+    if (!this.authService.isAuthenticated()) {
+      return;
+    }
+
+    const usuario = this.authService.getUsuario();
+    if (usuario && this.authService.canLoginViaLoginAdmin(usuario.tipo_usuario_id)) {
+      await this.router.navigateByUrl(
+        this.authService.resolvePostLoginUrl(usuario, this.returnUrl),
+        { replaceUrl: true }
+      );
     }
   }
 

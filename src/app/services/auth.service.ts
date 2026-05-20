@@ -34,6 +34,9 @@ export enum RolesPermitidos {
 export type AuthStateCallback = (user: User | null, usuario: Usuario | null, session: Session | null) => void;
 export type InitializedCallback = (initialized: boolean) => void;
 
+/** Marca cierre de sesión si la PWA se cierra antes de que Supabase termine signOut. */
+const FORCE_LOGOUT_STORAGE_KEY = 'eventum_force_logout';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -62,6 +65,8 @@ export class AuthService {
   private async initAuth() {
     this.ngZone.runOutsideAngular(async () => {
       try {
+        await this.applyForcedLogoutIfNeeded();
+
         // Verificar sesión actual
         const { data: { session }, error } = await this.supabase.auth.getSession();
         
@@ -97,11 +102,20 @@ export class AuthService {
         // Escuchar cambios de autenticación
         this.supabase.auth.onAuthStateChange(async (event, session) => {
           console.log('Auth state changed:', event, session?.user?.id);
-          
+
+          if (event === 'SIGNED_OUT') {
+            this.clearPersistedAuthStorage();
+          }
+
+          if (this.hasForcedLogoutFlag() && session?.user) {
+            await this.applyForcedLogoutIfNeeded();
+            return;
+          }
+
           this.ngZone.run(async () => {
             this.setSession(session);
             this.setCurrentUser(session?.user ?? null);
-            
+
             if (session?.user) {
               await this.loadUsuarioData(session.user.id);
             } else {
@@ -284,6 +298,7 @@ export class AuthService {
           return;
         }
 
+        this.clearForcedLogoutFlag();
         this.setUsuario(usuario);
         console.log('Datos del usuario cargados correctamente:', usuario);
         this.oneSignalIdentity.syncLoggedInUser(
@@ -398,12 +413,14 @@ export class AuthService {
         };
       }
 
+      this.clearForcedLogoutFlag();
+
       // Actualizar el usuario
       this.ngZone.run(() => {
         this.setUsuario(usuario);
       });
       console.log('Login exitoso, usuario actualizado:', usuario);
-      
+
       return { user, usuario, error: null };
     } catch (error: any) {
       console.error('Error en login:', error);
@@ -412,34 +429,99 @@ export class AuthService {
   }
 
   /**
-   * Cierra sesión
+   * Cierra sesión y borra tokens persistidos (crítico en PWA al cerrar la app en segundo plano).
    */
   async logout(redirectTo = '/login-admin'): Promise<void> {
+    this.setForcedLogoutFlag();
+
     try {
-      const { error } = await this.supabase.auth.signOut();
-
-      this.ngZone.run(() => {
-        this.setSession(null);
-        this.setCurrentUser(null);
-        this.setUsuario(null);
-        this.oneSignalIdentity.logoutFromOneSignal();
-
-        if (error) {
-          console.error('Error al cerrar sesión:', error);
-        }
-
-        this.router.navigate([redirectTo]);
-      });
+      const { error } = await this.supabase.auth.signOut({ scope: 'global' });
+      if (error) {
+        console.error('Error al cerrar sesión:', error);
+      }
     } catch (error: unknown) {
-      this.ngZone.run(() => {
-        this.setSession(null);
-        this.setCurrentUser(null);
-        this.setUsuario(null);
-        this.oneSignalIdentity.logoutFromOneSignal();
-        this.router.navigate([redirectTo]);
-      });
-      throw error;
+      console.error('Error en signOut:', error);
     }
+
+    this.clearPersistedAuthStorage();
+    this.clearInMemoryAuthState();
+    this.oneSignalIdentity.logoutFromOneSignal();
+
+    await this.router.navigateByUrl(redirectTo, { replaceUrl: true });
+  }
+
+  /** Si el usuario cerró sesión y la PWA murió antes de limpiar storage, forzar cierre al reabrir. */
+  private async applyForcedLogoutIfNeeded(): Promise<void> {
+    if (!this.hasForcedLogoutFlag()) {
+      return;
+    }
+
+    try {
+      await this.supabase.auth.signOut({ scope: 'global' });
+    } catch {
+      /* ignorar: igual limpiamos storage local */
+    }
+
+    this.clearPersistedAuthStorage();
+    this.clearForcedLogoutFlag();
+    this.clearInMemoryAuthState();
+  }
+
+  private setForcedLogoutFlag(): void {
+    try {
+      localStorage.setItem(FORCE_LOGOUT_STORAGE_KEY, '1');
+    } catch {
+      /* storage no disponible */
+    }
+  }
+
+  private hasForcedLogoutFlag(): boolean {
+    try {
+      return localStorage.getItem(FORCE_LOGOUT_STORAGE_KEY) === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  private clearForcedLogoutFlag(): void {
+    try {
+      localStorage.removeItem(FORCE_LOGOUT_STORAGE_KEY);
+    } catch {
+      /* noop */
+    }
+  }
+
+  /** Elimina claves sb-*-auth* que Supabase deja en local/session storage. */
+  private clearPersistedAuthStorage(): void {
+    const removeAuthKeys = (storage: Storage): void => {
+      const keys: string[] = [];
+      for (let i = 0; i < storage.length; i++) {
+        const key = storage.key(i);
+        if (key && key.startsWith('sb-') && key.includes('auth')) {
+          keys.push(key);
+        }
+      }
+      keys.forEach((key) => storage.removeItem(key));
+    };
+
+    try {
+      if (typeof localStorage !== 'undefined') {
+        removeAuthKeys(localStorage);
+      }
+      if (typeof sessionStorage !== 'undefined') {
+        removeAuthKeys(sessionStorage);
+      }
+    } catch (error) {
+      console.warn('No se pudo limpiar almacenamiento de auth:', error);
+    }
+  }
+
+  private clearInMemoryAuthState(): void {
+    this.ngZone.run(() => {
+      this.setSession(null);
+      this.setCurrentUser(null);
+      this.setUsuario(null);
+    });
   }
 
   /**
