@@ -66,6 +66,9 @@
               <span class="venta-transaccion">{{ venta.numero_transaccion }}</span>
               <span class="venta-fecha">{{ venta.fecha_compra | dateFormat:'short' }}</span>
             </div>
+            <div class="venta-evento" *ngIf="venta.evento?.titulo">
+              {{ venta.evento.titulo }}
+            </div>
             <div class="venta-details">
               <span class="venta-total">{{ formatCurrency(venta.total || 0) }}</span>
               <span class="venta-estado" [class]="venta.estado_pago === 'completado' ? 'badge-success' : 'badge-warning'">

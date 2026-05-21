@@ -90,6 +90,7 @@ export interface Lugar {
 export interface Evento {
   id: number;
   organizador_id: number;
+  wompi_cuenta_id?: number | null;
   categoria_id: number;
   lugar_id?: number;
   titulo: string;
@@ -116,6 +117,22 @@ export interface Evento {
   fecha_creacion?: Date | string;
   fecha_actualizacion?: Date | string;
   lugar?: Lugar;
+}
+
+/**
+ * Cuenta Wompi (referencia por evento)
+ */
+export interface WompiCuenta {
+  id: number;
+  nombre: string;
+  private_key_env: string;
+  public_key_env?: string | null;
+  events_secret_env?: string | null;
+  integrity_key_env?: string | null;
+  environment_env?: string | null;
+  activo: boolean;
+  fecha_creacion?: Date | string;
+  fecha_actualizacion?: Date | string;
 }
 
 /**
@@ -180,6 +197,7 @@ export interface Compra {
   id: number;
   cliente_id: number;
   evento_id: number;
+  wompi_cuenta_id?: number | null;
   numero_transaccion: string;
   total: number;
   metodo_pago?: MetodoPago; // Opcional ahora, viene de Wompi

@@ -172,7 +172,7 @@ export class ReportesService {
   /**
    * Obtiene reporte de ventas por mes
    */
-  async getVentasPorMes(organizadorId?: number): Promise<{ mes: string; ventas: number; ingresos: number }[]> {
+  async getVentasPorMes(organizadorId?: number, eventoId?: number): Promise<{ mes: string; ventas: number; ingresos: number }[]> {
     try {
       type CompraVentaMes = { total: number; fecha_compra: string; evento_id: number };
 
@@ -180,18 +180,26 @@ export class ReportesService {
       let error: { message: string } | null = null;
 
       if (organizadorId != null) {
-        const response = await this.supabase
+        let query = this.supabase
           .from('compras')
           .select('total, fecha_compra, evento_id, eventos!inner(organizador_id)')
           .eq('estado_pago', 'completado')
           .eq('eventos.organizador_id', organizadorId);
+        if (eventoId) {
+          query = query.eq('evento_id', eventoId);
+        }
+        const response = await query;
         data = response.data as CompraVentaMes[] | null;
         error = response.error;
       } else {
-        const response = await this.supabase
+        let query = this.supabase
           .from('compras')
           .select('total, fecha_compra, evento_id')
           .eq('estado_pago', 'completado');
+        if (eventoId) {
+          query = query.eq('evento_id', eventoId);
+        }
+        const response = await query;
         data = response.data;
         error = response.error;
       }
@@ -415,7 +423,7 @@ export class ReportesService {
   /**
    * Obtiene distribución de métodos de pago (por cantidad de compras completadas).
    */
-  async getDistribucionMetodoPago(organizadorId?: number): Promise<{ metodo: string; cantidad: number; porcentaje: number }[]> {
+  async getDistribucionMetodoPago(organizadorId?: number, eventoId?: number): Promise<{ metodo: string; cantidad: number; porcentaje: number }[]> {
     try {
       type CompraMetodo = { metodo_pago: string | null };
 
@@ -423,18 +431,26 @@ export class ReportesService {
       let error: { message: string } | null = null;
 
       if (organizadorId != null) {
-        const response = await this.supabase
+        let query = this.supabase
           .from('compras')
           .select('metodo_pago, evento_id, eventos!inner(organizador_id)')
           .eq('estado_pago', 'completado')
           .eq('eventos.organizador_id', organizadorId);
+        if (eventoId) {
+          query = query.eq('evento_id', eventoId);
+        }
+        const response = await query;
         data = response.data as CompraMetodo[] | null;
         error = response.error;
       } else {
-        const response = await this.supabase
+        let query = this.supabase
           .from('compras')
-          .select('metodo_pago')
+          .select('metodo_pago, evento_id')
           .eq('estado_pago', 'completado');
+        if (eventoId) {
+          query = query.eq('evento_id', eventoId);
+        }
+        const response = await query;
         data = response.data;
         error = response.error;
       }
@@ -467,7 +483,7 @@ export class ReportesService {
   /**
    * Obtiene distribución por tipo de boleta (por cantidad de boletas vendidas con pago completado).
    */
-  async getDistribucionTipoBoleta(organizadorId?: number): Promise<{ tipo: string; cantidad: number; porcentaje: number }[]> {
+  async getDistribucionTipoBoleta(organizadorId?: number, eventoId?: number): Promise<{ tipo: string; cantidad: number; porcentaje: number }[]> {
     try {
       type BoletaTipo = {
         tipo_boleta_id: number;
@@ -478,18 +494,26 @@ export class ReportesService {
       let error: { message: string } | null = null;
 
       if (organizadorId != null) {
-        const response = await this.supabase
+        let query = this.supabase
           .from('boletas_compradas')
           .select('tipo_boleta_id, tipos_boleta!inner(nombre, eventos!inner(titulo, organizador_id)), compras!inner(estado_pago)')
           .eq('compras.estado_pago', 'completado')
           .eq('eventos.organizador_id', organizadorId);
+        if (eventoId) {
+          query = query.eq('tipos_boleta.evento_id', eventoId);
+        }
+        const response = await query;
         data = response.data as BoletaTipo[] | null;
         error = response.error;
       } else {
-        const response = await this.supabase
+        let query = this.supabase
           .from('boletas_compradas')
           .select('tipo_boleta_id, tipos_boleta!inner(nombre, eventos(titulo)), compras!inner(estado_pago)')
           .eq('compras.estado_pago', 'completado');
+        if (eventoId) {
+          query = query.eq('tipos_boleta.evento_id', eventoId);
+        }
+        const response = await query;
         data = response.data as BoletaTipo[] | null;
         error = response.error;
       }

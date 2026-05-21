@@ -75,6 +75,11 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "allowedHosts": [
+              "unsealed-protector-greasily.ngrok-free.dev"
+            ]
+          },
           "configurations": {
             "production": {
               "buildTarget": "admin-panel:build:production"

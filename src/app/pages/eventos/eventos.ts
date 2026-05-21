@@ -13,7 +13,8 @@ import { ImageOptimizationService } from '../../services/image-optimization.serv
 import { TimezoneService } from '../../services/timezone.service';
 import { AlertService } from '../../services/alert.service';
 import { CuponesService } from '../../services/cupones.service';
-import { Evento, CategoriaEvento, Lugar, Usuario, PaginatedResponse, TipoEstadoEvento, CuponDescuento } from '../../types';
+import { WompiCuentasService } from '../../services/wompi-cuentas.service';
+import { Evento, CategoriaEvento, Lugar, Usuario, PaginatedResponse, TipoEstadoEvento, CuponDescuento, WompiCuenta } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 @Component({
@@ -28,6 +29,7 @@ export class Eventos implements OnInit, OnDestroy {
   categorias: CategoriaEvento[] = [];
   lugares: Lugar[] = [];
   organizadores: Usuario[] = [];
+  wompiCuentas: WompiCuenta[] = [];
   loading = false;
   total = 0;
   page = 1;
@@ -75,6 +77,7 @@ export class Eventos implements OnInit, OnDestroy {
     private storageService: StorageService,
     private imageOptimizationService: ImageOptimizationService,
     private cuponesService: CuponesService,
+    private wompiCuentasService: WompiCuentasService,
     private alertService: AlertService,
     private cdr: ChangeDetectorRef
   ) {}
@@ -83,6 +86,7 @@ export class Eventos implements OnInit, OnDestroy {
     this.loadCategorias();
     this.loadLugares();
     this.loadOrganizadores();
+    this.loadWompiCuentas();
     this.loadEventos();
   }
 
@@ -117,6 +121,17 @@ export class Eventos implements OnInit, OnDestroy {
       console.error('Error cargando organizadores:', err);
       this.organizadores = [];
       this.cdr.detectChanges();
+      this.cdr.detectChanges();
+    }
+  }
+
+  async loadWompiCuentas() {
+    try {
+      this.wompiCuentas = await this.wompiCuentasService.getCuentasActivas();
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('Error cargando cuentas Wompi:', err);
+      this.wompiCuentas = [];
       this.cdr.detectChanges();
     }
   }
@@ -203,6 +218,7 @@ export class Eventos implements OnInit, OnDestroy {
         activo: true,
         estado: TipoEstadoEvento.BORRADOR,
         organizador_id: usuario?.id || (this.organizadores.length > 0 ? this.organizadores[0].id : 0),
+        wompi_cuenta_id: null,
         es_gratis: false,
         edad_minima: 0,
         destacado: false,
@@ -464,7 +480,8 @@ export class Eventos implements OnInit, OnDestroy {
       organizador_id: this.formData.organizador_id || 0,
       // Agregar URL de imagen
       imagen_principal: imagenUrl || undefined,
-      porcentaje_servicio: porcentajeServicio
+      porcentaje_servicio: porcentajeServicio,
+      wompi_cuenta_id: this.formData.wompi_cuenta_id ?? null
     };
 
     // Limpiar campos vacíos opcionales y propiedades de relación que no existen en la BD

@@ -154,6 +154,20 @@
             </select>
           </div>
           <div class="form-group">
+            <label>Wompi Cuenta</label>
+            <select [(ngModel)]="formData.wompi_cuenta_id">
+              <option [ngValue]="null">Sin cuenta asignada</option>
+              <option *ngFor="let cuenta of wompiCuentas" [ngValue]="cuenta.id">
+                {{ cuenta.nombre }} (ID {{ cuenta.id }})
+              </option>
+            </select>
+            <small class="form-help">
+              Define qué cuenta Wompi usará este evento para cobrar.
+            </small>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
             <label>Imagen Principal</label>
             <button type="button" class="btn-secondary" (click)="selectImage()" [disabled]="uploadingImage">
               <span class="material-icons">image</span>
