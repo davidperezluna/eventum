@@ -106,26 +106,23 @@ export class LugaresService {
   private normalizeLugarData(lugar: Partial<Lugar>): Partial<Lugar> {
     const normalized = { ...lugar };
 
-    // Normalizar latitud (precisión 10, escala 8 = máximo 99.99999999)
+    // Normalizar latitud (-90 a 90, grados decimales)
     if (normalized.latitud !== undefined && normalized.latitud !== null) {
       const lat = Number(normalized.latitud);
-      if (!isNaN(lat)) {
-        // Limitar a rango válido y redondear a 8 decimales
+      if (!isNaN(lat) && Math.abs(lat) <= 90) {
         const clampedLat = Math.max(-90, Math.min(90, lat));
-        normalized.latitud = Math.round(clampedLat * 100000000) / 100000000;
+        normalized.latitud = Math.round(clampedLat * 10000000) / 10000000;
       } else {
         delete normalized.latitud;
       }
     }
 
-    // Normalizar longitud (precisión 10, escala 8 = máximo 99.99999999)
+    // Normalizar longitud (-180 a 180, grados decimales)
     if (normalized.longitud !== undefined && normalized.longitud !== null) {
       const lng = Number(normalized.longitud);
-      if (!isNaN(lng)) {
-        // Limitar a rango válido y redondear a 8 decimales
-        // Nota: Si la BD solo acepta hasta 99.99999999, limitamos a ese rango
-        const clampedLng = Math.max(-99.99999999, Math.min(99.99999999, lng));
-        normalized.longitud = Math.round(clampedLng * 100000000) / 100000000;
+      if (!isNaN(lng) && Math.abs(lng) <= 180) {
+        const clampedLng = Math.max(-180, Math.min(180, lng));
+        normalized.longitud = Math.round(clampedLng * 10000000) / 10000000;
       } else {
         delete normalized.longitud;
       }

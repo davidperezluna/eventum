@@ -233,20 +233,32 @@ export class Lugares implements OnInit, OnDestroy {
       const latStr = String(latValue).trim();
       if (latStr !== '') {
         const latNum = Number(latStr);
-        if (!isNaN(latNum)) {
-          lugarData.latitud = latNum;
+        if (isNaN(latNum)) {
+          this.alertService.warning('Coordenadas inválidas', 'La latitud debe ser un número en grados decimales (ej: 1.222367).');
+          return;
         }
+        if (Math.abs(latNum) > 90) {
+          this.alertService.warning('Coordenadas inválidas', 'La latitud debe estar entre -90 y 90. Usa grados decimales, no el valor sin punto decimal.');
+          return;
+        }
+        lugarData.latitud = latNum;
       }
     }
-    
+
     if (formDataRaw.longitud !== null && formDataRaw.longitud !== undefined && formDataRaw.longitud !== '') {
       const lngValue = formDataRaw.longitud;
       const lngStr = String(lngValue).trim();
       if (lngStr !== '') {
         const lngNum = Number(lngStr);
-        if (!isNaN(lngNum)) {
-          lugarData.longitud = lngNum;
+        if (isNaN(lngNum)) {
+          this.alertService.warning('Coordenadas inválidas', 'La longitud debe ser un número en grados decimales (ej: -77.597056).');
+          return;
         }
+        if (Math.abs(lngNum) > 180) {
+          this.alertService.warning('Coordenadas inválidas', 'La longitud debe estar entre -180 y 180. Usa grados decimales, no el valor sin punto decimal.');
+          return;
+        }
+        lugarData.longitud = lngNum;
       }
     }
     
