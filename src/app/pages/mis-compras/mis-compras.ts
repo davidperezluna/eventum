@@ -185,7 +185,9 @@ export class MisCompras implements OnInit, OnDestroy {
       takeUntil(this.destroy$)
     ).subscribe({
       next: async (response: PaginatedResponse<Compra>) => {
-        this.compras = response.data || [];
+        this.compras = (response.data || []).filter(
+          (compra) => compra.estado_pago === TipoEstadoPago.COMPLETADO
+        );
         this.total = response.total || 0;
         this.totalPages = response.totalPages || 0;
         this.loadingBoletasDetalle = true;
@@ -253,7 +255,7 @@ export class MisCompras implements OnInit, OnDestroy {
     if (this.isOffline() && this.compras.length > 0) {
       console.info('[MisCompras] Sin conexión, usando compras cacheadas');
       return {
-        data: this.compras,
+        data: this.compras.filter((compra) => compra.estado_pago === TipoEstadoPago.COMPLETADO),
         total: this.total || this.compras.length,
         page: this.page,
         limit: this.limit,
@@ -264,13 +266,11 @@ export class MisCompras implements OnInit, OnDestroy {
     const filters: any = {
       cliente_id: clienteId,
       page: this.page,
-      limit: this.limit
+      limit: this.limit,
+      estado_pago: TipoEstadoPago.COMPLETADO,
     };
 
-    // Aplicar filtros
-    if (this.estadoPagoFiltro) {
-      filters.estado_pago = this.estadoPagoFiltro;
-    }
+    // Aplicar filtros adicionales
     if (this.estadoCompraFiltro) {
       filters.estado_compra = this.estadoCompraFiltro;
     }
@@ -335,6 +335,7 @@ export class MisCompras implements OnInit, OnDestroy {
     try {
       const response: PaginatedResponse<Compra> = await this.comprasService.getCompras({
         cliente_id: clienteId,
+        estado_pago: TipoEstadoPago.COMPLETADO,
         limit: 1000 // Límite alto para obtener todas las compras
       });
       
@@ -478,6 +479,9 @@ export class MisCompras implements OnInit, OnDestroy {
       const nextComprasConBoletas: { compra: Compra; boletas: BoletaComprada[] }[] = [];
 
       for (const compra of this.compras) {
+        if (compra.estado_pago !== TipoEstadoPago.COMPLETADO) {
+          continue;
+        }
         try {
           const response = await this.boletasService.getBoletasCompradas({
             compra_id: compra.id,
@@ -502,7 +506,11 @@ export class MisCompras implements OnInit, OnDestroy {
 
       try {
         this.entradasCedidas = (await this.boletasService.getBoletasCedidasTitular(uid))
-          .filter((b) => !this.esBoletaCancelada(b));
+          .filter(
+            (b) =>
+              !this.esBoletaCancelada(b) &&
+              b.compra?.estado_pago === TipoEstadoPago.COMPLETADO
+          );
       } catch (e) {
         console.error('Error cargando entradas cedidas:', e);
         this.entradasCedidas = [];
@@ -1091,13 +1099,19 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   private applyCachedState(state: any): void {
-    this.compras = state.compras || [];
-    this.comprasConBoletas = state.comprasConBoletas || [];
+    this.compras = (state.compras || []).filter(
+      (compra: Compra) => compra.estado_pago === TipoEstadoPago.COMPLETADO
+    );
+    this.comprasConBoletas = (state.comprasConBoletas || []).filter(
+      (item: { compra: Compra }) => item.compra?.estado_pago === TipoEstadoPago.COMPLETADO
+    );
     this.eventosConBoletas = state.eventosConBoletas || [];
     this.eventosDisponibles = state.eventosDisponibles || [];
     this.trasladosHistorial = state.trasladosHistorial || [];
     this.trasladosPendientesRecibir = state.trasladosPendientesRecibir || [];
-    this.entradasCedidas = state.entradasCedidas || [];
+    this.entradasCedidas = (state.entradasCedidas || []).filter(
+      (b: BoletaComprada) => b.compra?.estado_pago === TipoEstadoPago.COMPLETADO
+    );
     this.estadoPagoFiltro = state.estadoPagoFiltro ?? null;
     this.estadoCompraFiltro = state.estadoCompraFiltro ?? null;
     this.eventoFiltro = state.eventoFiltro ?? null;

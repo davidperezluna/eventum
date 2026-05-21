@@ -28,8 +28,8 @@ export const environment = {
     anonKey: 'sb_publishable_zScIqYpiyMpCRtV0wzXtmA_U3fwfoxw'
   },
   supabaseLocal: {
-    url: 'http://127.0.0.1:54321',
-    anonKey: 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH'
+    url: 'https://modctxrsohemzlzlvlih.supabase.co',
+    anonKey: 'sb_publishable_zScIqYpiyMpCRtV0wzXtmA_U3fwfoxw'
   },
 
   /**

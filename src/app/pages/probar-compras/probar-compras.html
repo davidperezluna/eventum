@@ -1,0 +1,103 @@
+<div class="probar-compras-page">
+  <header class="page-header">
+    <div>
+      <h1>
+        <span class="material-icons">shopping_cart_checkout</span>
+        Probar compras
+      </h1>
+      <p>Incluye eventos desactivados u ocultos al público para probar el checkout completo.</p>
+    </div>
+    <div class="page-header-actions">
+      <a routerLink="/carrito" class="action-link action-link--carrito">
+        <span class="material-icons">shopping_cart</span>
+        Mi carrito
+        <span *ngIf="totalItemsCarrito > 0" class="action-badge">{{ totalItemsCarrito }}</span>
+      </a>
+      <a routerLink="/mis-compras" class="action-link">
+        <span class="material-icons">confirmation_number</span>
+        Mis compras
+      </a>
+    </div>
+  </header>
+
+  <div class="admin-banner" role="note">
+    <span class="material-icons">science</span>
+    <div>
+      <strong>Modo prueba (solo admin)</strong>
+      <p>Las compras se registran con tu usuario y pasan por el mismo checkout que un cliente.</p>
+    </div>
+  </div>
+
+  <div class="filters-card">
+    <input
+      type="text"
+      [(ngModel)]="searchTerm"
+      (ngModelChange)="onFiltrosChange()"
+      placeholder="Buscar eventos..."
+      class="search-input"
+    />
+    <select [(ngModel)]="categoriaFiltro" (ngModelChange)="onFiltrosChange()" class="select-input">
+      <option [ngValue]="null">Todas las categorías</option>
+      <option *ngFor="let categoria of categorias" [ngValue]="categoria.id">{{ categoria.nombre }}</option>
+    </select>
+    <button type="button" class="btn-secondary" (click)="loadData()" [disabled]="loading">
+      <span class="material-icons">refresh</span>
+      Recargar
+    </button>
+  </div>
+
+  <div class="content-card">
+    <div *ngIf="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Cargando eventos...</p>
+    </div>
+
+    <div *ngIf="!loading && eventosFiltrados.length > 0" class="eventos-grid">
+      <article
+        *ngFor="let evento of eventosFiltrados; trackBy: trackByEventoId"
+        class="evento-card"
+        [routerLink]="['/probar-compras/evento', evento.id]"
+      >
+        <div class="evento-thumb">
+          <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
+          <span class="evento-badge evento-badge--destacado" *ngIf="evento.destacado">
+            <span class="material-icons">star</span>
+            Destacado
+          </span>
+          <span class="evento-badge evento-badge--inactivo" *ngIf="evento.activo !== true">
+            Inactivo
+          </span>
+          <span class="evento-badge evento-badge--estado" *ngIf="evento.estado">
+            {{ etiquetaEstado(evento) }}
+          </span>
+        </div>
+        <div class="evento-body">
+          <h3>{{ evento.titulo }}</h3>
+          <div class="evento-meta">
+            <span>
+              <span class="material-icons">place</span>
+              {{ evento.lugar?.nombre || 'Sin ubicación' }}
+            </span>
+            <span>
+              <span class="material-icons">calendar_today</span>
+              {{ evento.fecha_inicio | dateFormat:'shortDate' }}
+            </span>
+          </div>
+          <div class="evento-footer">
+            <span class="precio">{{ formatCurrency(evento.precio_minimo) }}</span>
+            <span class="cta">
+              Comprar
+              <span class="material-icons">arrow_forward</span>
+            </span>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div *ngIf="!loading && eventosFiltrados.length === 0" class="empty-state">
+      <span class="material-icons">event_busy</span>
+      <h3>No hay eventos disponibles</h3>
+      <p>No se encontraron eventos para probar compras.</p>
+    </div>
+  </div>
+</div>

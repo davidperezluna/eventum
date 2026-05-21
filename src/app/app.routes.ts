@@ -14,6 +14,7 @@ import { Perfil } from './pages/perfil/perfil';
 import { PagoResultado } from './pages/pago-resultado/pago-resultado';
 import { Ventas } from './pages/ventas/ventas';
 import { VentasManual } from './pages/ventas-manual/ventas-manual';
+import { ProbarCompras } from './pages/probar-compras/probar-compras';
 import { Usuarios } from './pages/usuarios/usuarios';
 import { Categorias } from './pages/categorias/categorias';
 import { Lugares } from './pages/lugares/lugares';
@@ -116,6 +117,12 @@ const appRoutes: Routes = [
       { path: 'palcos', component: Palcos },
       { path: 'ventas', component: Ventas },
       { path: 'ventas-manual', component: VentasManual, data: { adminOnly: true } },
+      { path: 'probar-compras', component: ProbarCompras, data: { adminOnly: true } },
+      {
+        path: 'probar-compras/evento/:id',
+        component: DetalleEvento,
+        data: { adminOnly: true, modoPruebaCompra: true },
+      },
       { path: 'calificaciones', component: Calificaciones },
       { path: 'notificaciones', component: Notificaciones },
       { path: 'reportes', component: Reportes },

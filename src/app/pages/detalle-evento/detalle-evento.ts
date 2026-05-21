@@ -119,6 +119,22 @@ export class DetalleEvento implements OnInit, OnDestroy {
     return this.carritoCompraService.getItemsSnapshot();
   }
 
+  /** Ruta protegida de prueba de compras (solo admin). */
+  get modoPruebaCompraAdmin(): boolean {
+    return this.route.snapshot.data['modoPruebaCompra'] === true;
+  }
+
+  get rutaVolverEventos(): string[] {
+    return this.modoPruebaCompraAdmin ? ['/probar-compras'] : ['/eventos-cliente'];
+  }
+
+  get rutaDetalleEventoActual(): string {
+    if (!this.evento) return '/eventos-cliente';
+    return this.modoPruebaCompraAdmin
+      ? `/probar-compras/evento/${this.evento.id}`
+      : `/detalle-evento/${this.evento.id}`;
+  }
+
   tieneExistencias(tipo: TipoBoleta): boolean {
     const disponibles = Number(tipo.cantidad_disponibles ?? 0);
     const soldOut = disponibles <= 0;
@@ -446,7 +462,7 @@ export class DetalleEvento implements OnInit, OnDestroy {
       console.error('Error cargando evento:', err);
       this.loading = false;
       if (!silentRefreshMode) {
-        this.router.navigate(['/eventos-cliente']);
+        this.router.navigate(this.rutaVolverEventos);
       }
     } finally {
       this.stopSilentRefreshIndicator();
@@ -703,7 +719,10 @@ export class DetalleEvento implements OnInit, OnDestroy {
     const clienteId = this.authService.getUsuarioId();
     if (!clienteId) {
       this.alertService.warning('Inicia sesión para continuar', 'Debes iniciar sesión para comprar boletas');
-      this.router.navigate(['/login'], { queryParams: { returnUrl: `/detalle-evento/${this.evento.id}` } });
+      const loginRoute = this.authService.isAdministrador() || this.authService.isOrganizador()
+        ? '/login-admin'
+        : '/login';
+      this.router.navigate([loginRoute], { queryParams: { returnUrl: this.rutaDetalleEventoActual } });
       return;
     }
 

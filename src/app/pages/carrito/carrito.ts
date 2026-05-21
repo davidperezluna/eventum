@@ -93,7 +93,8 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   irAEventos(): void {
-    this.router.navigate(['/eventos-cliente']);
+    const destino = this.authService.isAdministrador() ? '/probar-compras' : '/eventos-cliente';
+    this.router.navigate([destino]);
   }
 
   async refrescarEvento(eventoId: number): Promise<void> {

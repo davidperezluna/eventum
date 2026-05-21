@@ -6,10 +6,28 @@
 
   <div *ngIf="!loading && evento" class="evento-detalle">
     <!-- Boton volver -->
-    <button class="btn-back" (click)="router.navigate(['/eventos-cliente'])">
+    <button class="btn-back" (click)="router.navigate(rutaVolverEventos)">
       <span class="material-icons">arrow_back</span>
       Volver
     </button>
+
+    <div class="admin-prueba-banner" *ngIf="modoPruebaCompraAdmin" role="note">
+      <span class="material-icons">science</span>
+      <div class="admin-prueba-banner__copy">
+        <span>Modo prueba admin — flujo de compra igual al de un cliente (incluye Wompi).</span>
+        <div class="admin-prueba-banner__links">
+          <button type="button" class="admin-prueba-link" (click)="router.navigate(['/carrito'])">
+            <span class="material-icons">shopping_cart</span>
+            Mi carrito
+            <span *ngIf="getCantidadTotalCarrito() > 0" class="admin-prueba-badge">{{ getCantidadTotalCarrito() }}</span>
+          </button>
+          <button type="button" class="admin-prueba-link" (click)="router.navigate(['/mis-compras'])">
+            <span class="material-icons">confirmation_number</span>
+            Mis compras
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Header del evento -->
     <div class="evento-header">
