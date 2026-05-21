@@ -48,8 +48,8 @@
             <div class="filter-group">
               <label>Evento</label>
               <select [(ngModel)]="eventoFiltro" (ngModelChange)="aplicarFiltros()" class="select-input">
-                <option [value]="null">Todos los eventos</option>
-                <option *ngFor="let evento of eventos" [value]="evento.id">{{ evento.titulo }}</option>
+                <option [ngValue]="null">Todos los eventos</option>
+                <option *ngFor="let evento of eventos" [ngValue]="evento.id">{{ evento.titulo }}</option>
               </select>
             </div>
             <div class="filter-group">

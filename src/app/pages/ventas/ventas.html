@@ -11,11 +11,15 @@
 
   <!-- Filtros -->
   <div class="filters-card">
-    <select [(ngModel)]="estadoPagoFiltro" (ngModelChange)="loadCompras()" class="select-input">
+    <select [(ngModel)]="eventoFiltro" (ngModelChange)="onFiltrosChange()" class="select-input">
+      <option [ngValue]="null">Todos los eventos</option>
+      <option *ngFor="let evento of eventosFiltro" [ngValue]="evento.id">{{ evento.titulo }}</option>
+    </select>
+    <select [(ngModel)]="estadoPagoFiltro" (ngModelChange)="onFiltrosChange()" class="select-input">
       <option [value]="null">Todos los estados de pago</option>
       <option *ngFor="let estado of estadosPago" [value]="estado.value">{{ estado.label }}</option>
     </select>
-    <select [(ngModel)]="estadoCompraFiltro" (ngModelChange)="loadCompras()" class="select-input">
+    <select [(ngModel)]="estadoCompraFiltro" (ngModelChange)="onFiltrosChange()" class="select-input">
       <option [value]="null">Todos los estados de compra</option>
       <option *ngFor="let estado of estadosCompra" [value]="estado.value">{{ estado.label }}</option>
     </select>

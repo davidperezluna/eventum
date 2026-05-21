@@ -21,7 +21,7 @@ export class DashboardService {
   /**
    * Obtiene las estadísticas del dashboard
    */
-  async getStats(): Promise<DashboardStats> {
+  async getStats(eventoId?: number): Promise<DashboardStats> {
     const now = this.timezoneService.getCurrentDateISO();
 
     // Función helper para manejar errores
@@ -34,15 +34,21 @@ export class DashboardService {
       }
     };
 
+    const withEventFilter = (query: any, column = 'evento_id') =>
+      eventoId ? query.eq(column, eventoId) : query;
+
     // Eventos activos: publicados, flag activo, y aún vigentes (sin fecha_fin o fecha_fin >= ahora).
     // Se divide en dos conteos para evitar NULL en comparaciones y alinearse con la zona horaria de la app.
     const eventosActivos = safeExecute(async () => {
       const base = () =>
-        this.supabase
+        withEventFilter(
+          this.supabase
           .from('eventos')
           .select('id', { count: 'exact', head: true })
           .eq('activo', true)
-          .eq('estado', 'publicado');
+          .eq('estado', 'publicado'),
+          'id'
+        );
 
       const [sinFechaFin, conFechaFinVigente] = await Promise.all([
         base().is('fecha_fin', null),
@@ -62,10 +68,10 @@ export class DashboardService {
 
     // Boletas vendidas (solo con pago completado)
     const boletasVendidas = safeExecute(async () => {
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('boletas_compradas')
-        .select('*, compras!inner(estado_pago)', { count: 'exact' })
-        .eq('compras.estado_pago', 'completado');
+        .select('*, compras!inner(estado_pago, evento_id)', { count: 'exact' })
+        .eq('compras.estado_pago', 'completado'), 'compras.evento_id');
       
       if (response.error) {
         console.error('Error en boletas vendidas:', response.error);
@@ -76,10 +82,10 @@ export class DashboardService {
 
     // Ingresos y servicio totales
     const ingresosYServicioTotalesPromise = safeExecute(async () => {
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('compras')
         .select('total, porcentaje_servicio, valor_servicio')
-        .eq('estado_pago', 'completado');
+        .eq('estado_pago', 'completado'));
       
       if (response.error) {
         console.error('Error en ingresos totales:', response.error);
@@ -135,10 +141,10 @@ export class DashboardService {
 
     // Clientes únicos (solo con pago completado)
     const clientes = safeExecute(async () => {
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('compras')
         .select('cliente_id')
-        .eq('estado_pago', 'completado');
+        .eq('estado_pago', 'completado'));
       
       if (response.error) {
         console.error('Error en clientes:', response.error);
@@ -153,12 +159,12 @@ export class DashboardService {
 
     // Ventas recientes (últimas 5, solo con pago completado)
     const ventasRecientes = safeExecute(async () => {
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('compras')
-        .select('*')
+        .select('*, evento:eventos(id, titulo)')
         .eq('estado_pago', 'completado')
         .order('fecha_compra', { ascending: false })
-        .limit(5);
+        .limit(5));
       
       if (response.error) {
         console.error('Error en ventas recientes:', response.error);
@@ -169,13 +175,13 @@ export class DashboardService {
 
     // Eventos próximos (próximos 5)
     const eventosProximos = safeExecute(async () => {
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('eventos')
         .select('*')
         .eq('activo', true)
         .gte('fecha_inicio', now)
         .order('fecha_inicio', { ascending: true })
-        .limit(5);
+        .limit(5), 'id');
       
       if (response.error) {
         console.error('Error en eventos próximos:', response.error);
@@ -186,9 +192,9 @@ export class DashboardService {
 
     // Eventos totales
     const eventosTotales = safeExecute(async () => {
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('eventos')
-        .select('*', { count: 'exact' });
+        .select('*', { count: 'exact' }), 'id');
       
       return response.error ? 0 : (response.count || 0);
     }, 0);
@@ -219,11 +225,11 @@ export class DashboardService {
       inicioMes.setDate(1);
       inicioMes.setHours(0, 0, 0, 0);
       
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('compras')
         .select('total')
         .eq('estado_pago', 'completado')
-        .gte('fecha_compra', inicioMes.toISOString());
+        .gte('fecha_compra', inicioMes.toISOString()));
       
       if (response.error) return 0;
       if (response.data && Array.isArray(response.data)) {
@@ -243,12 +249,12 @@ export class DashboardService {
       finMesAnterior.setDate(0);
       finMesAnterior.setHours(23, 59, 59, 999);
       
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('compras')
         .select('total')
         .eq('estado_pago', 'completado')
         .gte('fecha_compra', inicioMesAnterior.toISOString())
-        .lte('fecha_compra', finMesAnterior.toISOString());
+        .lte('fecha_compra', finMesAnterior.toISOString()));
       
       if (response.error) return 0;
       if (response.data && Array.isArray(response.data)) {
@@ -258,12 +264,12 @@ export class DashboardService {
     }, 0);
 
     const ingresosDiaActual = safeExecute(async () => {
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('compras')
         .select('total')
         .eq('estado_pago', 'completado')
         .gte('fecha_compra', DateTimeUtil.dayStartDaysAgo(0))
-        .lte('fecha_compra', DateTimeUtil.dayEndDaysAgo(0));
+        .lte('fecha_compra', DateTimeUtil.dayEndDaysAgo(0)));
 
       if (response.error) return 0;
       if (response.data && Array.isArray(response.data)) {
@@ -273,12 +279,12 @@ export class DashboardService {
     }, 0);
 
     const ingresosDiaAnterior = safeExecute(async () => {
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('compras')
         .select('total')
         .eq('estado_pago', 'completado')
         .gte('fecha_compra', DateTimeUtil.dayStartDaysAgo(1))
-        .lte('fecha_compra', DateTimeUtil.dayEndDaysAgo(1));
+        .lte('fecha_compra', DateTimeUtil.dayEndDaysAgo(1)));
 
       if (response.error) return 0;
       if (response.data && Array.isArray(response.data)) {
@@ -289,15 +295,15 @@ export class DashboardService {
 
     // Boletas por estado (solo con pago completado)
     const boletasPorEstado = safeExecute(async () => {
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('boletas_compradas')
-        .select('estado, compras!inner(estado_pago)')
-        .eq('compras.estado_pago', 'completado');
+        .select('estado, compras!inner(estado_pago, evento_id)')
+        .eq('compras.estado_pago', 'completado'), 'compras.evento_id');
       
       if (response.error) return [];
       if (response.data) {
         const estados: { [key: string]: number } = {};
-        response.data.forEach(boleta => {
+        response.data.forEach((boleta: any) => {
           const estado = boleta.estado || 'pendiente';
           estados[estado] = (estados[estado] || 0) + 1;
         });
@@ -309,6 +315,29 @@ export class DashboardService {
     // Top eventos (por boletas vendidas con pago completado)
     const topEventos = safeExecute(async () => {
       try {
+        if (eventoId) {
+          const [{ data: eventoData, error: eventoError }, { count, error: countError }] = await Promise.all([
+            this.supabase
+              .from('eventos')
+              .select('id, titulo, imagen_principal')
+              .eq('id', eventoId)
+              .maybeSingle(),
+            this.supabase
+              .from('boletas_compradas')
+              .select('id, compras!inner(estado_pago, evento_id)', { count: 'exact', head: true })
+              .eq('compras.estado_pago', 'completado')
+              .eq('compras.evento_id', eventoId)
+          ]);
+
+          if (eventoError || !eventoData || countError) {
+            return [];
+          }
+          return [{
+            ...eventoData,
+            boletas_vendidas: count || 0
+          }];
+        }
+
         // Obtener boletas compradas con información del tipo de boleta, evento y compra (solo con pago completado)
         const { data: boletasData, error: boletasError } = await this.supabase
           .from('boletas_compradas')

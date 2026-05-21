@@ -45,6 +45,8 @@ export class Ventas implements OnInit, OnDestroy {
   limit = 10;
   estadoPagoFiltro: string | null = null;
   estadoCompraFiltro: string | null = null;
+  eventoFiltro: number | null = null;
+  eventosFiltro: Evento[] = [];
 
   showModal = false;
   editingCompra: Compra | null = null;
@@ -100,6 +102,7 @@ export class Ventas implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
+    void this.cargarEventosFiltro();
     this.loadCompras();
   }
 
@@ -506,6 +509,24 @@ export class Ventas implements OnInit, OnDestroy {
     this.ventaManualLineaSeq = 1;
   }
 
+  async cargarEventosFiltro(): Promise<void> {
+    try {
+      const response = await this.eventosService.getEventos({
+        page: 1,
+        limit: 500,
+        activo: true,
+        sortBy: 'titulo',
+        sortOrder: 'asc'
+      });
+      this.eventosFiltro = response.data || [];
+      this.cdr.detectChanges();
+    } catch (error) {
+      console.error('Error cargando eventos para filtro de ventas:', error);
+      this.eventosFiltro = [];
+      this.cdr.detectChanges();
+    }
+  }
+
   loadCompras() {
     console.log('loadCompras llamado');
     this.loading = true;
@@ -514,11 +535,17 @@ export class Ventas implements OnInit, OnDestroy {
     this.loadComprasInternal();
   }
 
+  onFiltrosChange(): void {
+    this.page = 1;
+    this.loadCompras();
+  }
+
   private async loadComprasInternal() {
     try {
       const response: PaginatedResponse<Compra> = await this.comprasService.getCompras({
         page: this.page,
         limit: this.limit,
+        evento_id: this.eventoFiltro || undefined,
         estado_pago: this.estadoPagoFiltro || undefined,
         estado_compra: this.estadoCompraFiltro || undefined
       });

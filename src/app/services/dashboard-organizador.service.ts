@@ -21,7 +21,7 @@ export class DashboardOrganizadorService {
   /**
    * Obtiene las estadísticas del dashboard para un organizador específico
    */
-  async getStats(organizadorId: number): Promise<DashboardStats> {
+  async getStats(organizadorId: number, eventoId?: number): Promise<DashboardStats> {
     const now = this.timezoneService.getCurrentDateISO();
 
     // Función helper para manejar errores
@@ -34,15 +34,21 @@ export class DashboardOrganizadorService {
       }
     };
 
+    const withEventFilter = (query: any, column = 'evento_id') =>
+      eventoId ? query.eq(column, eventoId) : query;
+
     // Eventos activos del organizador (misma regla que dashboard admin)
     const eventosActivos = safeExecute(async () => {
       const base = () =>
-        this.supabase
+        withEventFilter(
+          this.supabase
           .from('eventos')
           .select('id', { count: 'exact', head: true })
           .eq('organizador_id', organizadorId)
           .eq('activo', true)
-          .eq('estado', 'publicado');
+          .eq('estado', 'publicado'),
+          'id'
+        );
 
       const [sinFechaFin, conFechaFinVigente] = await Promise.all([
         base().is('fecha_fin', null),
@@ -64,10 +70,10 @@ export class DashboardOrganizadorService {
     const boletasVendidas = safeExecute(async () => {
       try {
         // Obtener todos los tipos de boleta de eventos del organizador
-        const { data: tiposData, error: tiposError } = await this.supabase
+        const { data: tiposData, error: tiposError } = await withEventFilter(this.supabase
           .from('tipos_boleta')
           .select('id, evento_id, eventos!inner(organizador_id)')
-          .eq('eventos.organizador_id', organizadorId);
+          .eq('eventos.organizador_id', organizadorId));
 
         if (tiposError || !tiposData || tiposData.length === 0) {
           return 0;
@@ -95,11 +101,11 @@ export class DashboardOrganizadorService {
 
     // Ingresos, servicio y estimación Wompi (misma lógica que dashboard admin)
     const ingresosYServicioTotales = safeExecute(async () => {
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('compras')
         .select('total, valor_servicio, porcentaje_servicio, evento_id, eventos!inner(organizador_id)')
         .eq('estado_pago', 'completado')
-        .eq('eventos.organizador_id', organizadorId);
+        .eq('eventos.organizador_id', organizadorId));
 
       if (response.error) {
         console.error('Error en ingresos/agregados financieros:', response.error);
@@ -155,11 +161,11 @@ export class DashboardOrganizadorService {
 
     // Clientes únicos que compraron eventos del organizador (solo con pago completado)
     const clientes = safeExecute(async () => {
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('compras')
         .select('cliente_id, evento_id, eventos!inner(organizador_id)')
         .eq('eventos.organizador_id', organizadorId)
-        .eq('estado_pago', 'completado');
+        .eq('estado_pago', 'completado'));
       
       if (response.error) {
         console.error('Error en clientes:', response.error);
@@ -174,13 +180,13 @@ export class DashboardOrganizadorService {
 
     // Ventas recientes del organizador (últimas 5, solo con pago completado)
     const ventasRecientes = safeExecute(async () => {
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('compras')
-        .select('*, eventos!inner(organizador_id)')
-        .eq('eventos.organizador_id', organizadorId)
+        .select('*, evento:eventos!inner(id, titulo, organizador_id)')
+        .eq('evento.organizador_id', organizadorId)
         .eq('estado_pago', 'completado')
         .order('fecha_compra', { ascending: false })
-        .limit(5);
+        .limit(5));
       
       if (response.error) {
         console.error('Error en ventas recientes:', response.error);
@@ -191,14 +197,14 @@ export class DashboardOrganizadorService {
 
     // Eventos próximos del organizador (próximos 5)
     const eventosProximos = safeExecute(async () => {
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('eventos')
         .select('*')
         .eq('organizador_id', organizadorId)
         .eq('activo', true)
         .gte('fecha_inicio', now)
         .order('fecha_inicio', { ascending: true })
-        .limit(5);
+        .limit(5), 'id');
       
       if (response.error) {
         console.error('Error en eventos próximos:', response.error);
@@ -209,10 +215,10 @@ export class DashboardOrganizadorService {
 
     // Eventos totales del organizador
     const eventosTotales = safeExecute(async () => {
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('eventos')
         .select('*', { count: 'exact' })
-        .eq('organizador_id', organizadorId);
+        .eq('organizador_id', organizadorId), 'id');
       
       return response.error ? 0 : (response.count || 0);
     }, 0);
@@ -223,12 +229,12 @@ export class DashboardOrganizadorService {
       inicioMes.setDate(1);
       inicioMes.setHours(0, 0, 0, 0);
       
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('compras')
         .select('total, evento_id, eventos!inner(organizador_id)')
         .eq('estado_pago', 'completado')
         .eq('eventos.organizador_id', organizadorId)
-        .gte('fecha_compra', inicioMes.toISOString());
+        .gte('fecha_compra', inicioMes.toISOString()));
       
       if (response.error) return 0;
       if (response.data && Array.isArray(response.data)) {
@@ -248,13 +254,13 @@ export class DashboardOrganizadorService {
       finMesAnterior.setDate(0);
       finMesAnterior.setHours(23, 59, 59, 999);
       
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('compras')
         .select('total, evento_id, eventos!inner(organizador_id)')
         .eq('estado_pago', 'completado')
         .eq('eventos.organizador_id', organizadorId)
         .gte('fecha_compra', inicioMesAnterior.toISOString())
-        .lte('fecha_compra', finMesAnterior.toISOString());
+        .lte('fecha_compra', finMesAnterior.toISOString()));
       
       if (response.error) return 0;
       if (response.data && Array.isArray(response.data)) {
@@ -264,13 +270,13 @@ export class DashboardOrganizadorService {
     }, 0);
 
     const ingresosDiaActual = safeExecute(async () => {
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('compras')
         .select('total, evento_id, eventos!inner(organizador_id)')
         .eq('estado_pago', 'completado')
         .eq('eventos.organizador_id', organizadorId)
         .gte('fecha_compra', DateTimeUtil.dayStartDaysAgo(0))
-        .lte('fecha_compra', DateTimeUtil.dayEndDaysAgo(0));
+        .lte('fecha_compra', DateTimeUtil.dayEndDaysAgo(0)));
 
       if (response.error) return 0;
       if (response.data && Array.isArray(response.data)) {
@@ -280,13 +286,13 @@ export class DashboardOrganizadorService {
     }, 0);
 
     const ingresosDiaAnterior = safeExecute(async () => {
-      const response = await this.supabase
+      const response = await withEventFilter(this.supabase
         .from('compras')
         .select('total, evento_id, eventos!inner(organizador_id)')
         .eq('estado_pago', 'completado')
         .eq('eventos.organizador_id', organizadorId)
         .gte('fecha_compra', DateTimeUtil.dayStartDaysAgo(1))
-        .lte('fecha_compra', DateTimeUtil.dayEndDaysAgo(1));
+        .lte('fecha_compra', DateTimeUtil.dayEndDaysAgo(1)));
 
       if (response.error) return 0;
       if (response.data && Array.isArray(response.data)) {
@@ -299,10 +305,10 @@ export class DashboardOrganizadorService {
     const boletasPorEstado = safeExecute(async () => {
       try {
         // Obtener tipos de boleta de eventos del organizador
-        const { data: tiposData, error: tiposError } = await this.supabase
+        const { data: tiposData, error: tiposError } = await withEventFilter(this.supabase
           .from('tipos_boleta')
           .select('id, evento_id, eventos!inner(organizador_id)')
-          .eq('eventos.organizador_id', organizadorId);
+          .eq('eventos.organizador_id', organizadorId));
 
         if (tiposError || !tiposData || tiposData.length === 0) {
           return [];
@@ -336,11 +342,11 @@ export class DashboardOrganizadorService {
     const topEventos = safeExecute(async () => {
       try {
         // Obtener eventos del organizador
-        const { data: eventosData, error: eventosError } = await this.supabase
+        const { data: eventosData, error: eventosError } = await withEventFilter(this.supabase
           .from('eventos')
           .select('id, titulo, imagen_principal')
           .eq('organizador_id', organizadorId)
-          .eq('activo', true);
+          .eq('activo', true), 'id');
 
         if (eventosError || !eventosData || eventosData.length === 0) {
           return [];

@@ -211,7 +211,7 @@ export class DashboardEventos implements OnInit, OnDestroy {
     }
   }
 
-  async loadStats(options?: { background?: boolean; manual?: boolean }) {
+  async loadStats(options?: { background?: boolean; manual?: boolean; reloadReportes?: boolean }) {
     const hasVisibleData = this.hasStatsData;
     const background = options?.background ?? hasVisibleData;
     const manual = options?.manual ?? false;
@@ -231,10 +231,13 @@ export class DashboardEventos implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     }
     const startedAt = Date.now();
+    const eventoFiltro = this.eventoFiltro || undefined;
+    const reloadReportes = options?.reloadReportes ?? true;
 
     console.info('[DashboardEventos] Refresco iniciado', {
       background,
-      organizadorId: this.organizadorId ?? null
+      organizadorId: this.organizadorId ?? null,
+      eventoFiltro: eventoFiltro ?? null
     });
 
     this.loading = !background && !hasVisibleData;
@@ -243,14 +246,16 @@ export class DashboardEventos implements OnInit, OnDestroy {
 
     try {
       const stats = this.esOrganizador && this.organizadorId
-        ? await this.dashboardOrganizadorService.getStats(this.organizadorId)
-        : await this.dashboardService.getStats();
+        ? await this.dashboardOrganizadorService.getStats(this.organizadorId, eventoFiltro)
+        : await this.dashboardService.getStats(eventoFiltro);
       
       this.stats = stats;
       this.hasStatsData = true;
       this.loading = false;
       this.persistState();
-      this.loadReportes();
+      if (reloadReportes) {
+        this.loadReportes();
+      }
       if (manual) {
         void this.alertService.snackbarSuccess('Dashboard actualizado', 'Los reportes y KPIs se recargaron correctamente.');
       }
@@ -301,11 +306,11 @@ export class DashboardEventos implements OnInit, OnDestroy {
         distribucionTipoBoleta,
         reporteEvento
       ] = await Promise.all([
-        this.reportesService.getVentasPorDia(fechaDesde, fechaHasta, organizadorId).catch((err) => {
+        this.reportesService.getVentasPorDia(fechaDesde, fechaHasta, organizadorId, eventoFiltro).catch((err) => {
           console.error('Error cargando ventas por día:', err);
           return [];
         }),
-        this.reportesService.getVentasPorMes(organizadorId).catch((err) => {
+        this.reportesService.getVentasPorMes(organizadorId, eventoFiltro).catch((err) => {
           console.error('Error cargando ventas por mes:', err);
           return [];
         }),
@@ -313,15 +318,15 @@ export class DashboardEventos implements OnInit, OnDestroy {
           console.error('Error cargando asistencia:', err);
           return [];
         }),
-        this.reportesService.getIngresosPorEvento(organizadorId).catch((err) => {
+        this.reportesService.getIngresosPorEvento(organizadorId, eventoFiltro).catch((err) => {
           console.error('Error cargando ingresos por evento:', err);
           return [];
         }),
-        this.reportesService.getDistribucionMetodoPago(organizadorId).catch((err) => {
+        this.reportesService.getDistribucionMetodoPago(organizadorId, eventoFiltro).catch((err) => {
           console.error('Error cargando distribución método pago:', err);
           return [];
         }),
-        this.reportesService.getDistribucionTipoBoleta(organizadorId).catch((err) => {
+        this.reportesService.getDistribucionTipoBoleta(organizadorId, eventoFiltro).catch((err) => {
           console.error('Error cargando distribución tipo boleta:', err);
           return [];
         }),
@@ -404,6 +409,7 @@ export class DashboardEventos implements OnInit, OnDestroy {
   }
 
   aplicarFiltros() {
+    void this.loadStats({ background: true, reloadReportes: false });
     this.loadReportes();
   }
 
@@ -412,6 +418,7 @@ export class DashboardEventos implements OnInit, OnDestroy {
     this.fechaDesde = '';
     this.fechaHasta = '';
     this.filtrosExpandidos = false;
+    void this.loadStats({ background: true, reloadReportes: false });
     this.loadReportes();
   }
 
