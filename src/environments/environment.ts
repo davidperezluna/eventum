@@ -18,10 +18,14 @@ export const environment = {
   maintenanceMessage: 'Estamos en mantenimiento. Volvemos pronto.',
   googleTagId: 'GT-5TJZWP3P', // Google Tag ID
   /** `prod` = front en localhost usa Supabase alojado (PRD). `local` = API en 127.0.0.1:54321 */
-  supabaseEnv: 'local' as 'prod' | 'local',
+  supabaseEnv: 'prod' as 'prod' | 'local',
+  // supabase: {
+  //   url: 'https://jiknhvnaavhfguqfqbod.supabase.co',
+  //   anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imppa25odm5hYXZoZmd1cWZxYm9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5NDUyMDgsImV4cCI6MjA4MDUyMTIwOH0.Kv3i3ospuT_D1NW3nPCIPsBMo04814hmKNLrYdGY6PA'
+  // },
   supabase: {
-    url: 'https://jiknhvnaavhfguqfqbod.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imppa25odm5hYXZoZmd1cWZxYm9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5NDUyMDgsImV4cCI6MjA4MDUyMTIwOH0.Kv3i3ospuT_D1NW3nPCIPsBMo04814hmKNLrYdGY6PA'
+    url: 'https://modctxrsohemzlzlvlih.supabase.co',
+    anonKey: 'sb_publishable_zScIqYpiyMpCRtV0wzXtmA_U3fwfoxw'
   },
   supabaseLocal: {
     url: 'http://127.0.0.1:54321',
