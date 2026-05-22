@@ -28,6 +28,8 @@ export const environment = {
     url: 'https://modctxrsohemzlzlvlih.supabase.co',
     anonKey: 'sb_publishable_zScIqYpiyMpCRtV0wzXtmA_U3fwfoxw',
   },
+  /** Redirect Wompi y enlaces absolutos en build dev desplegado */
+  publicAppUrl: 'https://dev.eventumcol.com',
 
   /**
    * Rutas de iconos Web Push (servidos desde `public/` → raíz del sitio).

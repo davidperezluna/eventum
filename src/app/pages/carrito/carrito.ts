@@ -14,6 +14,7 @@ import { AlertService } from '../../services/alert.service';
 import { EventosService } from '../../services/eventos.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { supabaseConfig } from '../../config/supabase.config';
+import { getPagoResultadoUrl } from '../../config/app-url';
 import { TERMINOS_LICOR_TEXTO, TERMINOS_LICOR_TITULO } from '../../constants/productos.constants';
 import {
   CuponDescuento,
@@ -636,12 +637,8 @@ export class Carrito implements OnInit, OnDestroy {
         customer_email: this.usuario?.email || ''
       };
 
-      // redirect_url lo construye wompi-payment (incluye transaccion_producto_id).
-      // Solo enviamos compra_id si hay boletas y no hay productos pendientes en servidor.
-      if (compraBoletasId && !pedidoProductos) {
-        wompiBody['redirect_url'] =
-          `${window.location.origin}/pago-resultado?compra_id=${compraBoletasId}`;
-      }
+      // Origen real del navegador; wompi-payment añade transaccion_producto_id / compra_id.
+      wompiBody['redirect_url'] = getPagoResultadoUrl();
 
       const supabaseUrl = supabaseConfig.url;
       const { data: { session } } = await this.supabaseService.auth.getSession();

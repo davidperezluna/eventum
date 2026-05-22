@@ -92,6 +92,8 @@ const appRoutes: Routes = [
       { path: 'detalle-evento/:id', component: DetalleEvento }, // Público: detalle de evento
       { path: 'carrito', component: Carrito },
       { path: 'carrito-productos', redirectTo: 'carrito', pathMatch: 'full' },
+      { path: 'pago-resultado', component: PagoResultado },
+      { path: 'pago-resultado-producto', redirectTo: 'pago-resultado', pathMatch: 'full' },
     ]
   },
   // Rutas protegidas (requieren autenticación)
@@ -109,8 +111,6 @@ const appRoutes: Routes = [
       { path: 'mis-compras/guia', component: MisComprasGuia }, // Cliente: guía de uso de entradas
       { path: 'mis-compras/evento/:id', component: MisCompras }, // Cliente: detalle de boletas por evento
       { path: 'mis-compras', component: MisCompras }, // Cliente: ver compras
-      { path: 'pago-resultado', component: PagoResultado },
-      { path: 'pago-resultado-producto', redirectTo: 'pago-resultado', pathMatch: 'full' },
       { path: 'categorias', component: Categorias },
       { path: 'lugares', component: Lugares },
       { path: 'boletas', component: Boletas, data: { vistaBoletas: 'pendientes' } },

@@ -161,7 +161,7 @@
         <button
           type="button"
           class="btn-carrito-rapido"
-          *ngIf="itemsCompra.length > 0"
+          *ngIf="getCantidadTotalCarrito() > 0"
           (click)="irACarrito()"
           aria-label="Ir al carrito de compra"
         >
@@ -412,7 +412,7 @@
   <button
     type="button"
     class="carrito-fab"
-    *ngIf="itemsCompra.length > 0 && !isEventoFinalizado()"
+    *ngIf="getCantidadTotalCarrito() > 0 && !isEventoFinalizado()"
     (click)="irACarrito()"
     aria-label="Abrir carrito"
   >

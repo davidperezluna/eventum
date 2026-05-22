@@ -150,6 +150,38 @@ export class PagoResultado implements OnInit {
           if (this.transaccionProducto.compra_producto_id) {
             this.compraProductoId = this.transaccionProducto.compra_producto_id;
           }
+
+          if (
+            this.wompiTxnId &&
+            (this.transaccionProducto.estado === 'pendiente' ||
+              this.transaccionProducto.wompi_status === 'PENDING')
+          ) {
+            await this.comprasProductoService.sincronizarEstadoWompi({
+              wompi_transaction_id: this.wompiTxnId,
+              transaccion_producto_id: this.transaccionProductoId,
+              compra_id: this.compraId ?? undefined,
+            });
+            this.transaccionProducto = await this.comprasProductoService.getTransaccionById(
+              this.transaccionProductoId
+            );
+            if (this.transaccionProducto.compra_producto_id) {
+              this.compraProductoId = this.transaccionProducto.compra_producto_id;
+            }
+          }
+        }
+
+        if (this.compraId && this.wompiTxnId && !this.transaccionProductoId) {
+          const compraPendiente =
+            !this.compra ||
+            this.compra.estado_pago === 'pendiente' ||
+            this.compra.wompi_status === 'PENDING';
+          if (compraPendiente) {
+            await this.comprasProductoService.sincronizarEstadoWompi({
+              wompi_transaction_id: this.wompiTxnId,
+              compra_id: this.compraId,
+            });
+            this.compra = await this.comprasClienteService.getCompraById(this.compraId);
+          }
         }
 
         if (this.compraProductoId) {

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { TimezoneService } from './timezone.service';
+import { supabaseConfig } from '../config/supabase.config';
 import {
   CompraProducto,
   CompraProductoItem,
@@ -371,6 +372,45 @@ export class ComprasProductoService {
     }
 
     return false;
+  }
+
+  /** Consulta Wompi y reprocesa el pago cuando el webhook no llegó a tiempo. */
+  async sincronizarEstadoWompi(params: {
+    wompi_transaction_id: string;
+    transaccion_producto_id?: number;
+    compra_id?: number;
+  }): Promise<{ success: boolean; wompi_status?: string }> {
+    const wompiTransactionId = params.wompi_transaction_id?.trim();
+    if (!wompiTransactionId) {
+      return { success: false };
+    }
+
+    const { data: { session } } = await this.supabase.getClient().auth.getSession();
+    const accessToken = session?.access_token;
+    if (!accessToken) {
+      return { success: false };
+    }
+
+    const response = await fetch(`${supabaseConfig.url}/functions/v1/wompi-sync-status`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        apikey: supabaseConfig.anonKey,
+      },
+      body: JSON.stringify({
+        wompi_transaction_id: wompiTransactionId,
+        transaccion_producto_id: params.transaccion_producto_id,
+        compra_id: params.compra_id,
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      return { success: false, wompi_status: data.wompi_status };
+    }
+
+    return { success: true, wompi_status: data.wompi_status };
   }
 
   async confirmarPago(compraProductoId: number): Promise<CompraProducto> {

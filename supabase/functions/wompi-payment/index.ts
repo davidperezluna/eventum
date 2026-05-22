@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 /** Versión desplegada — debe coincidir en logs de Supabase al probar checkout de productos. */
 const WOMPI_PAYMENT_VERSION = '2.1.0-pedido-pendiente'
+// Secret opcional en Supabase (Edge Functions → Secrets): PUBLIC_APP_URL=https://dev.eventumcol.com
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -153,29 +154,34 @@ async function resolveWompiCredentials(
 function resolveRedirectUrl(
   requestedRedirectUrl: string | undefined,
   fallbackRedirectUrl: string,
-  forceFallback = false,
 ): string {
-  if (forceFallback) {
-    return fallbackRedirectUrl
-  }
+  const publicAppUrl = (Deno.env.get('PUBLIC_APP_URL') || '').trim().replace(/\/+$/, '')
   const requested =
     typeof requestedRedirectUrl === 'string' && requestedRedirectUrl.trim().length > 0
       ? requestedRedirectUrl.trim()
-      : fallbackRedirectUrl
-  const publicAppUrl = (Deno.env.get('PUBLIC_APP_URL') || '').trim().replace(/\/+$/, '')
-  const isLocalRedirect = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//i.test(requested)
-  if (isLocalRedirect && publicAppUrl) {
-    return fallbackRedirectUrl
+      : null
+
+  let baseUrl = fallbackRedirectUrl
+  if (requested) {
+    const isLocalRedirect = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//i.test(requested)
+    // Preferir la URL del navegador (dev/prod) salvo que sea localhost y exista PUBLIC_APP_URL.
+    if (!isLocalRedirect || !publicAppUrl) {
+      baseUrl = requested
+    }
   }
+
   try {
-    const reqUrl = new URL(requested)
+    const resultUrl = new URL(baseUrl)
     const fbUrl = new URL(fallbackRedirectUrl)
+    if (!resultUrl.pathname.includes('pago-resultado')) {
+      resultUrl.pathname = fbUrl.pathname
+    }
     for (const [key, value] of fbUrl.searchParams.entries()) {
-      if (!reqUrl.searchParams.has(key)) {
-        reqUrl.searchParams.set(key, value)
+      if (!resultUrl.searchParams.has(key)) {
+        resultUrl.searchParams.set(key, value)
       }
     }
-    return reqUrl.toString()
+    return resultUrl.toString()
   } catch {
     return fallbackRedirectUrl
   }
@@ -358,11 +364,7 @@ serve(async (req) => {
     const fallbackRedirectUrl = publicAppUrl
       ? `${publicAppUrl}/pago-resultado?${query.toString()}`
       : `http://localhost:4200/pago-resultado?${query.toString()}`
-    const redirectUrlFinal = resolveRedirectUrl(
-      redirectUrl,
-      fallbackRedirectUrl,
-      !!pedidoProductos,
-    )
+    const redirectUrlFinal = resolveRedirectUrl(redirectUrl, fallbackRedirectUrl)
 
     const paymentName = (() => {
       if (tipo === 'mixto') return `Compra mixta ${compraId}/TXN-${transaccionProductoId} - ${eventoTitulo}`

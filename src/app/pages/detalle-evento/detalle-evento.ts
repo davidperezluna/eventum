@@ -30,6 +30,7 @@ import {
   EstadoPalco
 } from '../../types';
 import { supabaseConfig } from '../../config/supabase.config';
+import { getPagoResultadoUrl } from '../../config/app-url';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { SafePipe } from '../../pipes/safe.pipe';
 
@@ -872,7 +873,7 @@ export class DetalleEvento implements OnInit, OnDestroy {
       }
 
       // Crear transacción en Wompi usando fetch directo (SOLO SI EL TOTAL > 0)
-      const redirectUrl = `${window.location.origin}/pago-resultado?compra_id=${resultado.compra.id}`;
+      const redirectUrl = getPagoResultadoUrl(`compra_id=${resultado.compra.id}`);
 
       try {
         // Obtener URL de Supabase y token de autenticación
