@@ -480,7 +480,7 @@ export interface CompraProducto {
   fecha_confirmacion?: Date | string;
   fecha_cancelacion?: Date | string;
   motivo_cancelacion?: string;
-  eventos?: Pick<Evento, 'id' | 'titulo' | 'imagen_principal'>;
+  eventos?: Pick<Evento, 'id' | 'titulo' | 'imagen_principal' | 'fecha_inicio' | 'fecha_fin' | 'lugar'>;
   compras_productos_items?: CompraProductoItem[];
 }
 

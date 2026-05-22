@@ -66,7 +66,7 @@
   <section class="hero-section mini-hero">
     <div class="hero-content">
       <h1 class="hero-title">Mis <span class="gradient-text">Compras</span></h1>
-      <p class="hero-subtitle">Historial de boletas, productos y pedidos en eventos</p>
+      <p class="hero-subtitle">Boletas y productos agrupados por evento</p>
     </div>
   </section>
 
@@ -207,125 +207,6 @@
     </div>
   </div>
 
-  <!-- Compras de productos -->
-  <section
-    *ngIf="!loading && !eventoDetalleKey && (comprasProductos.length > 0 || loadingComprasProductos)"
-    class="compras-productos-section"
-    aria-labelledby="mis-productos-titulo"
-  >
-    <h3 class="section-traslados-title" id="mis-productos-titulo">
-      <span class="material-icons">shopping_bag</span>
-      Mis productos
-    </h3>
-    <p class="section-traslados-desc">
-      Pedidos de comida, bebidas y extras. Retíralos en el evento el día indicado.
-    </p>
-
-    <div class="loading-small" *ngIf="loadingComprasProductos">
-      <p>Cargando productos...</p>
-    </div>
-
-    <div class="compras-productos-list" *ngIf="!loadingComprasProductos && comprasProductos.length > 0">
-      <article
-        *ngFor="let compra of comprasProductos"
-        class="compra-card mc-event-card mc-producto-card"
-        [class.expanded]="isCompraProductoExpandida(compra.id)"
-      >
-        <button
-          type="button"
-          class="evento-card-toggle mc-event-card-toggle mc-producto-card-toggle"
-          (click)="toggleCompraProductoExpandida(compra.id)"
-          [attr.aria-expanded]="isCompraProductoExpandida(compra.id)"
-          [attr.aria-label]="'Ver productos del pedido ' + compra.numero_pedido"
-        >
-          <div class="event-body">
-            <h3 class="event-title">{{ tituloEventoProducto(compra) }}</h3>
-            <div class="event-meta">
-              <span class="event-meta-line">
-                <span class="material-icons">receipt_long</span>
-                Pedido {{ compra.numero_pedido }}
-              </span>
-              <span class="event-meta-line" *ngIf="compra.fecha_compra">
-                <span class="material-icons">calendar_today</span>
-                {{ compra.fecha_compra | dateFormat:'short' }}
-              </span>
-            </div>
-            <div class="compra-estados compra-estados--event-card">
-              <span class="badge" [class]="getEstadoClass(compra.estado_pago)">
-                Pago: {{ getEstadoPagoLabel(compra.estado_pago) }}
-              </span>
-              <span class="badge" [class]="getEstadoClass(compra.estado_compra)">
-                {{ getEstadoCompraLabel(compra.estado_compra) }}
-              </span>
-              <span class="badge badge-info-soft">
-                {{ totalItemsProducto(compra) }}
-                {{ totalItemsProducto(compra) === 1 ? 'producto' : 'productos' }}
-              </span>
-            </div>
-            <div class="event-footer">
-              <div class="mc-event-boletas-stat">
-                <span class="total-label">Total</span>
-                <span class="total-value">{{ formatCurrency(compra.total) }}</span>
-              </div>
-              <span class="event-cta" aria-hidden="true">
-                <span class="event-cta-text">{{ isCompraProductoExpandida(compra.id) ? 'Ocultar' : 'Ver' }}</span>
-                <span class="material-icons mc-producto-chevron">
-                  {{ isCompraProductoExpandida(compra.id) ? 'expand_less' : 'expand_more' }}
-                </span>
-              </span>
-            </div>
-          </div>
-        </button>
-
-        <div class="mc-producto-items" *ngIf="isCompraProductoExpandida(compra.id)">
-          <div
-            *ngFor="let item of compra.compras_productos_items"
-            class="mc-producto-item"
-          >
-            <div class="mc-producto-item__media">
-              <img
-                *ngIf="item.productos?.imagen_url; else productoSinImagen"
-                [src]="item.productos!.imagen_url"
-                [alt]="item.productos!.nombre"
-                loading="lazy"
-              />
-              <ng-template #productoSinImagen>
-                <span class="material-icons" aria-hidden="true">inventory_2</span>
-              </ng-template>
-            </div>
-            <div class="mc-producto-item__info">
-              <p class="mc-producto-item__name">
-                {{ item.productos?.nombre || 'Producto' }}
-                <span class="mc-producto-licor-tag" *ngIf="item.productos?.es_licor">+18</span>
-              </p>
-              <p class="mc-producto-item__meta">
-                {{ item.cantidad }} × {{ formatCurrency(item.precio_unitario) }}
-              </p>
-            </div>
-            <strong class="mc-producto-item__total">
-              {{ formatCurrency(item.subtotal_linea ?? item.cantidad * item.precio_unitario) }}
-            </strong>
-          </div>
-
-          <div class="mc-producto-resumen">
-            <div class="mc-producto-resumen__row" *ngIf="compra.valor_servicio > 0">
-              <span>Servicio ({{ compra.porcentaje_servicio }}%)</span>
-              <span>{{ formatCurrency(compra.valor_servicio) }}</span>
-            </div>
-            <div class="mc-producto-resumen__row" *ngIf="compra.descuento_total > 0">
-              <span>Descuento</span>
-              <span>-{{ formatCurrency(compra.descuento_total) }}</span>
-            </div>
-            <div class="mc-producto-resumen__row mc-producto-resumen__row--total">
-              <span>Total pagado</span>
-              <span>{{ formatCurrency(compra.total) }}</span>
-            </div>
-          </div>
-        </div>
-      </article>
-    </div>
-  </section>
-
   <!-- Lista agrupada por evento -->
   <div *ngIf="!loading && eventoDetalleBoletas() as detalle" class="evento-detalle-page">
     <button type="button" class="btn-back-eventos" (click)="volverAMisCompras()">
@@ -356,17 +237,55 @@
             <span class="badge badge-info">{{ detalle.totalSinAsignar }} sin asignar</span>
             <span class="badge badge-warning">{{ detalle.totalUsadas }} usadas</span>
             <span class="badge badge-success" *ngIf="detalle.totalCedidas > 0">{{ detalle.totalCedidas }} {{ detalle.totalCedidas === 1 ? 'recibida' : 'recibidas' }}</span>
+            <span class="badge badge-info-soft" *ngIf="detalle.totalItemsProducto > 0">
+              {{ detalle.totalItemsProducto }} {{ detalle.totalItemsProducto === 1 ? 'producto' : 'productos' }}
+            </span>
           </div>
-          <div class="event-footer mc-event-card-footer--static">
-            <div class="mc-event-boletas-stat">
+          <div class="event-footer mc-event-card-footer--static mc-event-footer--dual">
+            <div class="mc-event-boletas-stat" *ngIf="eventoTieneEntradas(detalle)">
               <span class="total-label">Boletas</span>
               <span class="total-value">{{ detalle.totalBoletas }}</span>
+            </div>
+            <div class="mc-event-boletas-stat" *ngIf="eventoTieneProductos(detalle)">
+              <span class="total-label">Productos</span>
+              <span class="total-value">{{ detalle.totalItemsProducto }}</span>
             </div>
           </div>
         </div>
       </div>
     </div>
 
+    <div
+      class="evento-detalle-tabs"
+      role="tablist"
+      aria-label="Contenido del evento"
+      *ngIf="eventoTieneEntradas(detalle) && eventoTieneProductos(detalle)"
+    >
+      <button
+        type="button"
+        class="evento-detalle-tab"
+        role="tab"
+        [class.active]="tabEventoDetalle === 'entradas'"
+        [attr.aria-selected]="tabEventoDetalle === 'entradas'"
+        (click)="tabEventoDetalle = 'entradas'"
+      >
+        Entradas
+        <span>{{ detalle.totalBoletas }}</span>
+      </button>
+      <button
+        type="button"
+        class="evento-detalle-tab"
+        role="tab"
+        [class.active]="tabEventoDetalle === 'productos'"
+        [attr.aria-selected]="tabEventoDetalle === 'productos'"
+        (click)="tabEventoDetalle = 'productos'"
+      >
+        Productos
+        <span>{{ detalle.totalItemsProducto }}</span>
+      </button>
+    </div>
+
+    <ng-container *ngIf="tabEventoDetalle === 'entradas' && eventoTieneEntradas(detalle)">
     <div class="boletas-tabs" role="tablist" aria-label="Estado de boletas">
       <button
         type="button"
@@ -544,6 +463,121 @@
         </ng-template>
       </div>
     </div>
+    </ng-container>
+
+    <section
+      *ngIf="tabEventoDetalle === 'productos' && eventoTieneProductos(detalle)"
+      class="evento-productos-section"
+      aria-labelledby="evento-productos-titulo"
+    >
+      <h3 class="section-traslados-title" id="evento-productos-titulo">
+        <span class="material-icons">shopping_bag</span>
+        Productos del evento
+      </h3>
+      <p class="section-traslados-desc">
+        Retira estos productos en el evento. Presenta tu pedido confirmado al personal autorizado.
+      </p>
+
+      <div class="loading-small" *ngIf="loadingComprasProductos">
+        <p>Cargando productos...</p>
+      </div>
+
+      <div class="compras-productos-list" *ngIf="!loadingComprasProductos">
+        <article
+          *ngFor="let compra of detalle.comprasProductos"
+          class="compra-card mc-event-card mc-producto-card"
+          [class.expanded]="isCompraProductoExpandida(compra.id)"
+        >
+          <button
+            type="button"
+            class="evento-card-toggle mc-event-card-toggle mc-producto-card-toggle"
+            (click)="toggleCompraProductoExpandida(compra.id)"
+            [attr.aria-expanded]="isCompraProductoExpandida(compra.id)"
+            [attr.aria-label]="'Ver detalle del pedido ' + compra.numero_pedido"
+          >
+            <div class="event-body">
+              <div class="event-meta">
+                <span class="event-meta-line">
+                  <span class="material-icons">receipt_long</span>
+                  Pedido {{ compra.numero_pedido }}
+                </span>
+                <span class="event-meta-line" *ngIf="compra.fecha_compra">
+                  <span class="material-icons">calendar_today</span>
+                  {{ compra.fecha_compra | dateFormat:'short' }}
+                </span>
+              </div>
+              <div class="compra-estados compra-estados--event-card">
+                <span class="badge" [class]="getEstadoClass(compra.estado_pago)">
+                  Pago: {{ getEstadoPagoLabel(compra.estado_pago) }}
+                </span>
+                <span class="badge" [class]="getEstadoClass(compra.estado_compra)">
+                  {{ getEstadoCompraLabel(compra.estado_compra) }}
+                </span>
+                <span class="badge badge-info-soft">
+                  {{ totalItemsProducto(compra) }}
+                  {{ totalItemsProducto(compra) === 1 ? 'producto' : 'productos' }}
+                </span>
+              </div>
+              <div class="event-footer">
+                <div class="mc-event-boletas-stat">
+                  <span class="total-label">Total</span>
+                  <span class="total-value">{{ formatCurrency(compra.total) }}</span>
+                </div>
+                <span class="event-cta" aria-hidden="true">
+                  <span class="event-cta-text">{{ isCompraProductoExpandida(compra.id) ? 'Ocultar' : 'Ver' }}</span>
+                  <span class="material-icons mc-producto-chevron">
+                    {{ isCompraProductoExpandida(compra.id) ? 'expand_less' : 'expand_more' }}
+                  </span>
+                </span>
+              </div>
+            </div>
+          </button>
+
+          <div class="mc-producto-items" *ngIf="isCompraProductoExpandida(compra.id)">
+            <div *ngFor="let item of compra.compras_productos_items" class="mc-producto-item">
+              <div class="mc-producto-item__media">
+                <img
+                  *ngIf="item.productos?.imagen_url; else productoSinImagenDetalle"
+                  [src]="item.productos!.imagen_url"
+                  [alt]="item.productos!.nombre"
+                  loading="lazy"
+                />
+                <ng-template #productoSinImagenDetalle>
+                  <span class="material-icons" aria-hidden="true">inventory_2</span>
+                </ng-template>
+              </div>
+              <div class="mc-producto-item__info">
+                <p class="mc-producto-item__name">
+                  {{ item.productos?.nombre || 'Producto' }}
+                  <span class="mc-producto-licor-tag" *ngIf="item.productos?.es_licor">+18</span>
+                </p>
+                <p class="mc-producto-item__meta">
+                  {{ item.cantidad }} × {{ formatCurrency(item.precio_unitario) }}
+                </p>
+              </div>
+              <strong class="mc-producto-item__total">
+                {{ formatCurrency(item.subtotal_linea ?? item.cantidad * item.precio_unitario) }}
+              </strong>
+            </div>
+
+            <div class="mc-producto-resumen">
+              <div class="mc-producto-resumen__row" *ngIf="compra.valor_servicio > 0">
+                <span>Servicio ({{ compra.porcentaje_servicio }}%)</span>
+                <span>{{ formatCurrency(compra.valor_servicio) }}</span>
+              </div>
+              <div class="mc-producto-resumen__row" *ngIf="compra.descuento_total > 0">
+                <span>Descuento</span>
+                <span>-{{ formatCurrency(compra.descuento_total) }}</span>
+              </div>
+              <div class="mc-producto-resumen__row mc-producto-resumen__row--total">
+                <span>Total pagado</span>
+                <span>{{ formatCurrency(compra.total) }}</span>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
   </div>
 
   <section *ngIf="!loading && !eventoDetalleKey && eventosConBoletas.length > 0">
@@ -553,7 +587,7 @@
         type="button"
         class="evento-card-toggle mc-event-card-toggle"
         (click)="abrirDetalleEventoBoletas(grupo.key)"
-        [attr.aria-label]="'Ver boletas de ' + grupo.titulo"
+        [attr.aria-label]="'Ver compras de ' + grupo.titulo"
       >
         <div class="event-body">
           <h3 class="event-title">{{ grupo.titulo }}</h3>
@@ -575,14 +609,21 @@
             <span class="badge badge-success" *ngIf="grupo.totalCedidas > 0">{{ grupo.totalCedidas }} {{ grupo.totalCedidas === 1 ? 'recibida' : 'recibidas' }}</span>
             <span class="badge badge-info" *ngIf="grupo.totalSinAsignar > 0">{{ grupo.totalSinAsignar }} sin asignar</span>
             <span class="badge badge-warning" *ngIf="grupo.totalUsadas > 0">{{ grupo.totalUsadas }} usadas</span>
+            <span class="badge badge-info-soft" *ngIf="grupo.totalItemsProducto > 0">
+              {{ grupo.totalItemsProducto }} {{ grupo.totalItemsProducto === 1 ? 'producto' : 'productos' }}
+            </span>
           </div>
-          <div class="event-footer">
-            <div class="mc-event-boletas-stat">
+          <div class="event-footer mc-event-footer--dual">
+            <div class="mc-event-boletas-stat" *ngIf="eventoTieneEntradas(grupo)">
               <span class="total-label">Boletas</span>
               <span class="total-value">{{ grupo.totalDisponibles }}</span>
               <span class="evento-total-caption" *ngIf="grupo.totalTrasladoSaliente > 0">
                 {{ grupo.totalTrasladoSaliente }} con envío pendiente
               </span>
+            </div>
+            <div class="mc-event-boletas-stat" *ngIf="eventoTieneProductos(grupo)">
+              <span class="total-label">Productos</span>
+              <span class="total-value">{{ grupo.totalItemsProducto }}</span>
             </div>
             <span class="event-cta" aria-hidden="true">
               <span class="event-cta-text">Ver</span>

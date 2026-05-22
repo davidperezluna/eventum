@@ -55,6 +55,7 @@ interface EventoBoletasGrupo {
   lugar?: any;
   tipos: TipoBoletasGrupo[];
   compras: Compra[];
+  comprasProductos: CompraProducto[];
   totalCedidas: number;
   totalBoletas: number;
   totalDisponibles: number;
@@ -62,6 +63,7 @@ interface EventoBoletasGrupo {
   totalUsadas: number;
   totalSinUsar: number;
   totalSinAsignar: number;
+  totalItemsProducto: number;
 }
 
 @Component({
@@ -81,13 +83,14 @@ export class MisCompras implements OnInit, OnDestroy {
   
   compras: Compra[] = [];
   comprasProductos: CompraProducto[] = [];
-  compraProductoExpandidaId: number | null = null;
   loadingComprasProductos = false;
   comprasConBoletas: { compra: Compra; boletas: BoletaComprada[] }[] = [];
   eventosConBoletas: EventoBoletasGrupo[] = [];
   eventoExpandidoKey: string | null = null;
   eventoDetalleKey: string | null = null;
   tabBoletasDetalle: 'sin-usar' | 'usadas' | 'sin-asignar' = 'sin-usar';
+  tabEventoDetalle: 'entradas' | 'productos' = 'entradas';
+  compraProductoExpandidaId: number | null = null;
   loading = false;
   isRefreshing = false;
   loadingBoletasDetalle = true;
@@ -231,6 +234,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.vistaActividad = path.endsWith('/mis-compras/actividad');
     const detalleMatch = path.match(/\/mis-compras\/evento\/([^/]+)$/);
     this.eventoDetalleKey = detalleMatch ? decodeURIComponent(detalleMatch[1]) : null;
+    this.syncTabEventoDetalle();
     this.cdr.detectChanges();
   }
 
@@ -271,7 +275,81 @@ export class MisCompras implements OnInit, OnDestroy {
       this.comprasProductos = [];
     } finally {
       this.loadingComprasProductos = false;
+      this.fusionarProductosEnEventos();
+      this.syncTabEventoDetalle();
+      this.cdr.detectChanges();
     }
+  }
+
+  eventoTieneEntradas(grupo: EventoBoletasGrupo | null | undefined): boolean {
+    return (grupo?.totalBoletas ?? 0) > 0;
+  }
+
+  eventoTieneProductos(grupo: EventoBoletasGrupo | null | undefined): boolean {
+    return (grupo?.totalItemsProducto ?? 0) > 0;
+  }
+
+  private syncTabEventoDetalle(): void {
+    const detalle = this.eventoDetalleBoletas();
+    if (!detalle) {
+      return;
+    }
+    if (!this.eventoTieneEntradas(detalle) && this.eventoTieneProductos(detalle)) {
+      this.tabEventoDetalle = 'productos';
+    } else if (!this.eventoTieneProductos(detalle)) {
+      this.tabEventoDetalle = 'entradas';
+    }
+  }
+
+  private fusionarProductosEnEventos(): void {
+    for (const grupo of this.eventosConBoletas) {
+      grupo.comprasProductos = [];
+      grupo.totalItemsProducto = 0;
+    }
+
+    for (const compra of this.comprasProductos) {
+      const eventoKey = String(compra.evento_id);
+      let grupo = this.eventosConBoletas.find((g) => g.key === eventoKey);
+
+      if (!grupo) {
+        grupo = {
+          key: eventoKey,
+          titulo: compra.eventos?.titulo || 'Evento',
+          fechaInicio: compra.eventos?.fecha_inicio,
+          fechaFin: compra.eventos?.fecha_fin,
+          lugar: compra.eventos?.lugar,
+          tipos: [],
+          compras: [],
+          comprasProductos: [],
+          totalCedidas: 0,
+          totalBoletas: 0,
+          totalDisponibles: 0,
+          totalTrasladoSaliente: 0,
+          totalUsadas: 0,
+          totalSinUsar: 0,
+          totalSinAsignar: 0,
+          totalItemsProducto: 0
+        };
+        this.eventosConBoletas.push(grupo);
+      }
+
+      grupo.comprasProductos.push(compra);
+      grupo.totalItemsProducto += this.totalItemsProducto(compra);
+    }
+
+    this.eventosConBoletas = this.eventosConBoletas
+      .filter(
+        (grupo) =>
+          grupo.totalBoletas > 0 ||
+          grupo.totalItemsProducto > 0 ||
+          grupo.totalCedidas > 0
+      )
+      .sort((a, b) => {
+        const fechaA = a.fechaInicio ? new Date(a.fechaInicio).getTime() : 0;
+        const fechaB = b.fechaInicio ? new Date(b.fechaInicio).getTime() : 0;
+        if (fechaA !== fechaB) return fechaB - fechaA;
+        return a.titulo.localeCompare(b.titulo);
+      });
   }
 
   toggleCompraProductoExpandida(compraId: number): void {
@@ -281,10 +359,6 @@ export class MisCompras implements OnInit, OnDestroy {
 
   isCompraProductoExpandida(compraId: number): boolean {
     return this.compraProductoExpandidaId === compraId;
-  }
-
-  tituloEventoProducto(compra: CompraProducto): string {
-    return compra.eventos?.titulo || 'Evento';
   }
 
   totalItemsProducto(compra: CompraProducto): number {
@@ -590,13 +664,15 @@ export class MisCompras implements OnInit, OnDestroy {
           lugar: evento?.lugar || compra.evento?.lugar,
           tipos: [],
           compras: [],
+          comprasProductos: [],
           totalCedidas: 0,
           totalBoletas: 0,
           totalDisponibles: 0,
           totalTrasladoSaliente: 0,
           totalUsadas: 0,
           totalSinUsar: 0,
-          totalSinAsignar: 0
+          totalSinAsignar: 0,
+          totalItemsProducto: 0
         };
         eventosMap.set(eventoKey, grupoEvento);
       }
@@ -673,6 +749,8 @@ export class MisCompras implements OnInit, OnDestroy {
     this.eventosConBoletas = Array.from(eventosMap.values())
       .map((grupo) => ({
         ...grupo,
+        comprasProductos: grupo.comprasProductos ?? [],
+        totalItemsProducto: grupo.totalItemsProducto ?? 0,
         tipos: grupo.tipos.sort((a, b) => a.nombre.localeCompare(b.nombre))
       }))
       .sort((a, b) => {
@@ -681,6 +759,8 @@ export class MisCompras implements OnInit, OnDestroy {
         if (fechaA !== fechaB) return fechaB - fechaA;
         return a.titulo.localeCompare(b.titulo);
       });
+
+    this.fusionarProductosEnEventos();
   }
 
   esTitularBoleta(b: BoletaComprada, compra: Compra): boolean {
@@ -725,6 +805,12 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   abrirDetalleEventoBoletas(eventoKey: string): void {
+    const grupo = this.eventosConBoletas.find((g) => g.key === eventoKey);
+    if (grupo && !this.eventoTieneEntradas(grupo) && this.eventoTieneProductos(grupo)) {
+      this.tabEventoDetalle = 'productos';
+    } else {
+      this.tabEventoDetalle = 'entradas';
+    }
     this.router.navigate(['/mis-compras/evento', eventoKey]);
   }
 
@@ -1099,7 +1185,6 @@ export class MisCompras implements OnInit, OnDestroy {
   tieneContenidoMisBoletas(): boolean {
     return (
       this.eventosConBoletas.length > 0 ||
-      this.comprasProductos.length > 0 ||
       this.entradasCedidas.length > 0 ||
       this.trasladosPendientesRecibir.length > 0
     );

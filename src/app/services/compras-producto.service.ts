@@ -217,7 +217,7 @@ export class ComprasProductoService {
       .from('compras_productos')
       .select(`
         *,
-        eventos(id, titulo, imagen_principal, fecha_inicio, fecha_fin),
+        eventos(id, titulo, imagen_principal, fecha_inicio, fecha_fin, lugar:lugares(id, nombre)),
         compras_productos_items(
           *,
           productos(id, nombre, imagen_url, es_licor)
