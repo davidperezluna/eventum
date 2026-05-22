@@ -244,6 +244,135 @@ export class ComprasProductoService {
     return data as TransaccionProducto;
   }
 
+  /** Resuelve compra/transacción cuando Wompi redirige solo con ?id=...&env=... */
+  async resolverPorWompiRedirect(wompiTxnId: string): Promise<{
+    compraId: number | null;
+    compraProductoId: number | null;
+    transaccionProductoId: number | null;
+  }> {
+    const id = wompiTxnId.trim();
+    if (!id) {
+      return { compraId: null, compraProductoId: null, transaccionProductoId: null };
+    }
+
+    const vacio = { compraId: null, compraProductoId: null, transaccionProductoId: null };
+
+    const { data: txnDirecta } = await this.supabase
+      .from('transacciones_producto')
+      .select('id, compra_producto_id')
+      .eq('es_activa', true)
+      .or(
+        [
+          `wompi_transaction_id.eq.${id}`,
+          `response_payload->>id.eq.${id}`,
+          `webhook_payload->data->transaction->>id.eq.${id}`,
+        ].join(',')
+      )
+      .order('fecha_creacion', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (txnDirecta) {
+      return {
+        compraId: null,
+        compraProductoId: txnDirecta.compra_producto_id ?? null,
+        transaccionProductoId: txnDirecta.id,
+      };
+    }
+
+    const { data: compraDirecta } = await this.supabase
+      .from('compras')
+      .select('id')
+      .or(
+        [
+          `wompi_transaction_id.eq.${id}`,
+          `wompi_response->>id.eq.${id}`,
+          `wompi_webhook_data->data->transaction->>id.eq.${id}`,
+        ].join(',')
+      )
+      .order('fecha_compra', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (compraDirecta) {
+      return { compraId: compraDirecta.id, compraProductoId: null, transaccionProductoId: null };
+    }
+
+    const { data: txnsRecientes } = await this.supabase
+      .from('transacciones_producto')
+      .select('id, compra_producto_id, wompi_transaction_id, response_payload, webhook_payload')
+      .eq('es_activa', true)
+      .order('fecha_creacion', { ascending: false })
+      .limit(40);
+
+    const txnPorPayload = (txnsRecientes ?? []).find((row) =>
+      this.payloadContieneWompiId(row.response_payload, id) ||
+      this.payloadContieneWompiId(row.webhook_payload, id) ||
+      row.wompi_transaction_id === id
+    );
+
+    if (txnPorPayload) {
+      return {
+        compraId: null,
+        compraProductoId: txnPorPayload.compra_producto_id ?? null,
+        transaccionProductoId: txnPorPayload.id,
+      };
+    }
+
+    const { data: comprasRecientes } = await this.supabase
+      .from('compras')
+      .select('id, wompi_transaction_id, wompi_response, wompi_webhook_data')
+      .order('fecha_compra', { ascending: false })
+      .limit(40);
+
+    const compraPorPayload = (comprasRecientes ?? []).find(
+      (row) =>
+        row.wompi_transaction_id === id ||
+        this.payloadContieneWompiId(row.wompi_response, id) ||
+        this.payloadContieneWompiId(row.wompi_webhook_data, id)
+    );
+
+    if (compraPorPayload) {
+      return {
+        compraId: compraPorPayload.id,
+        compraProductoId: null,
+        transaccionProductoId: null,
+      };
+    }
+
+    return vacio;
+  }
+
+  private payloadContieneWompiId(payload: unknown, wompiId: string): boolean {
+    if (!payload || typeof payload !== 'object') {
+      return false;
+    }
+
+    const visitados = new Set<unknown>();
+    const cola: unknown[] = [payload];
+
+    while (cola.length > 0) {
+      const actual = cola.pop();
+      if (!actual || typeof actual !== 'object' || visitados.has(actual)) {
+        continue;
+      }
+      visitados.add(actual);
+
+      const obj = actual as Record<string, unknown>;
+      if (obj['id'] === wompiId) {
+        return true;
+      }
+
+      for (const valor of Object.values(obj)) {
+        if (valor && typeof valor === 'object') {
+          cola.push(valor);
+        }
+      }
+    }
+
+    return false;
+  }
+
   async confirmarPago(compraProductoId: number): Promise<CompraProducto> {
     const { error: rpcError } = await this.supabase.getClient().rpc('confirmar_compra_producto', {
       p_compra_producto_id: compraProductoId

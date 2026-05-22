@@ -6,6 +6,8 @@ import { ComprasProductoService } from '../../services/compras-producto.service'
 import { Compra, CompraProducto, TransaccionProducto } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
+const PAGO_PENDIENTE_STORAGE_KEY = 'eventum_pago_pendiente';
+
 @Component({
   selector: 'app-pago-resultado',
   imports: [CommonModule, RouterModule, DateFormatPipe],
@@ -16,6 +18,7 @@ export class PagoResultado implements OnInit {
   compraId: number | null = null;
   compraProductoId: number | null = null;
   transaccionProductoId: number | null = null;
+  wompiTxnId: string | null = null;
   compra: Compra | null = null;
   compraProducto: CompraProducto | null = null;
   transaccionProducto: TransaccionProducto | null = null;
@@ -32,71 +35,171 @@ export class PagoResultado implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.subscribe((params) => {
       this.compraId = params['compra_id'] ? Number(params['compra_id']) : null;
       this.compraProductoId = params['compra_producto_id'] ? Number(params['compra_producto_id']) : null;
-      this.transaccionProductoId = params['transaccion_producto_id'] ? Number(params['transaccion_producto_id']) : null;
-      if (this.compraId || this.compraProductoId || this.transaccionProductoId) {
-        this.verificarEstadoCompra();
+      this.transaccionProductoId = params['transaccion_producto_id']
+        ? Number(params['transaccion_producto_id'])
+        : null;
+      this.wompiTxnId = params['id'] ? String(params['id']) : null;
+
+      const reference = params['reference'] ? String(params['reference']) : null;
+      if (!this.transaccionProductoId && reference) {
+        const txnMatch = reference.match(/TXN-(\d+)/i);
+        if (txnMatch) {
+          this.transaccionProductoId = Number(txnMatch[1]);
+        }
+      }
+
+      if (this.compraId || this.compraProductoId || this.transaccionProductoId || this.wompiTxnId) {
+        void this.verificarEstadoCompra();
       } else {
-        this.errorTitulo = 'Falta información del pago';
-        this.error =
-          'Este enlace no incluye la referencia de la compra. Vuelve desde el evento o revisa Mis compras; si pagaste por Wompi, el comprobante puede tardar unos minutos en reflejarse.';
-        this.loading = false;
+        this.mostrarErrorSinReferencia();
       }
     });
   }
 
-  async verificarEstadoCompra() {
-    if (!this.compraId && !this.compraProductoId && !this.transaccionProductoId) return;
+  private restaurarReferenciasPendientes(): void {
+    if (typeof sessionStorage === 'undefined') {
+      return;
+    }
 
-    setTimeout(async () => {
+    try {
+      const raw = sessionStorage.getItem(PAGO_PENDIENTE_STORAGE_KEY);
+      if (!raw) {
+        return;
+      }
+
+      const pending = JSON.parse(raw) as {
+        compra_id?: number;
+        compra_producto_id?: number;
+        transaccion_producto_id?: number;
+      };
+
+      if (!this.compraId && pending.compra_id) {
+        this.compraId = Number(pending.compra_id);
+      }
+      if (!this.compraProductoId && pending.compra_producto_id) {
+        this.compraProductoId = Number(pending.compra_producto_id);
+      }
+      if (!this.transaccionProductoId && pending.transaccion_producto_id) {
+        this.transaccionProductoId = Number(pending.transaccion_producto_id);
+      }
+    } catch {
+      // Ignorar JSON inválido
+    }
+  }
+
+  private limpiarReferenciasPendientes(): void {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem(PAGO_PENDIENTE_STORAGE_KEY);
+    }
+  }
+
+  private mostrarErrorSinReferencia(): void {
+    this.errorTitulo = 'Falta información del pago';
+    this.error =
+      'Este enlace no incluye la referencia de la compra. Vuelve desde el evento o revisa Mis compras; si pagaste por Wompi, el comprobante puede tardar unos minutos en reflejarse.';
+    this.loading = false;
+  }
+
+  private async resolverReferencias(): Promise<boolean> {
+    if (this.compraId || this.compraProductoId || this.transaccionProductoId) {
+      return true;
+    }
+    if (!this.wompiTxnId) {
+      return false;
+    }
+
+    const resuelto = await this.comprasProductoService.resolverPorWompiRedirect(this.wompiTxnId);
+    if (resuelto.compraId) this.compraId = resuelto.compraId;
+    if (resuelto.compraProductoId) this.compraProductoId = resuelto.compraProductoId;
+    if (resuelto.transaccionProductoId) this.transaccionProductoId = resuelto.transaccionProductoId;
+
+    return !!(this.compraId || this.compraProductoId || this.transaccionProductoId);
+  }
+
+  async verificarEstadoCompra(): Promise<void> {
+    const intentosMax = this.wompiTxnId && !this.transaccionProductoId ? 12 : this.wompiTxnId ? 10 : 1;
+    const delayMs = 2500;
+
+    for (let intento = 0; intento < intentosMax; intento++) {
+      if (intento > 0) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+
       try {
+        const tieneReferencia = await this.resolverReferencias();
+        if (!tieneReferencia) {
+          if (intento < intentosMax - 1) {
+            continue;
+          }
+          this.mostrarErrorSinReferencia();
+          this.cdr.detectChanges();
+          return;
+        }
+
         if (this.compraId) {
-          this.compra = await this.comprasClienteService.getCompraById(this.compraId!);
+          this.compra = await this.comprasClienteService.getCompraById(this.compraId);
         }
 
         if (this.transaccionProductoId) {
-          this.transaccionProducto = await this.comprasProductoService.getTransaccionById(this.transaccionProductoId!);
-          const compraDesdeTransaccion = this.transaccionProducto.compra_producto_id;
-          if (compraDesdeTransaccion) {
-            this.compraProductoId = compraDesdeTransaccion;
+          this.transaccionProducto = await this.comprasProductoService.getTransaccionById(
+            this.transaccionProductoId
+          );
+          if (this.transaccionProducto.compra_producto_id) {
+            this.compraProductoId = this.transaccionProducto.compra_producto_id;
           }
         }
 
         if (this.compraProductoId) {
-          this.compraProducto = await this.comprasProductoService.getCompraById(this.compraProductoId!);
+          this.compraProducto = await this.comprasProductoService.getCompraById(this.compraProductoId);
         }
 
         this.loading = false;
+        this.error = null;
+        this.limpiarReferenciasPendientes();
         this.cdr.detectChanges();
-      } catch (err: any) {
-        console.error('Error cargando compra:', err);
-        const code = err?.code ?? err?.error?.code;
+        return;
+      } catch (err: unknown) {
+        const errorObj = err as { code?: string; error?: { code?: string } };
+        const code = errorObj?.code ?? errorObj?.error?.code;
 
         if (this.transaccionProducto && !this.compraProducto) {
-          if (this.transaccionProducto.estado === 'rechazada' || this.transaccionProducto.estado === 'cancelada') {
+          if (
+            this.transaccionProducto.estado === 'rechazada' ||
+            this.transaccionProducto.estado === 'cancelada'
+          ) {
             this.errorTitulo = 'El pago no se completó';
             this.error =
               'Tu transacción de productos no quedó confirmada. No se registró ningún pedido de productos.';
+          } else if (intento < intentosMax - 1) {
+            continue;
           } else {
-            this.errorTitulo = 'Confirmando tu pedido de productos';
-            this.error =
-              'El pago puede estar procesándose. En unos minutos debería aparecer tu pedido; refresca esta página.';
+            this.loading = false;
+            this.error = null;
+            this.cdr.detectChanges();
+            return;
           }
+        } else if (code === 'PGRST116' && intento < intentosMax - 1) {
+          continue;
         } else if (code === 'PGRST116') {
           this.errorTitulo = 'El pago no se completó';
           this.error =
             'Tu transacción no quedó confirmada en el sistema (o fue rechazada). Si ves un cobro en tu cuenta, revisa Mis compras o contacta a tu banco.';
+        } else if (intento < intentosMax - 1) {
+          continue;
         } else {
           this.errorTitulo = 'No pudimos verificar tu compra';
           this.error =
             'Hubo un fallo temporal al obtener los datos. Revisa Mis compras en unos minutos o intenta refrescar esta página.';
         }
+
         this.loading = false;
         this.cdr.detectChanges();
+        return;
       }
-    }, 2000);
+    }
   }
 
   getEstadoPagoReferencia(): 'completado' | 'pendiente' | 'fallido' | 'otro' {

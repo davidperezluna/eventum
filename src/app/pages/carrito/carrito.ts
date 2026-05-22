@@ -631,9 +631,17 @@ export class Carrito implements OnInit, OnDestroy {
         return;
       }
 
-      const query = new URLSearchParams();
-      if (compraBoletasId) query.set('compra_id', String(compraBoletasId));
-      const redirectUrl = `${window.location.origin}/pago-resultado?${query.toString()}`;
+      const wompiBody: Record<string, unknown> = {
+        amount_in_cents: Math.round(totalPago * 100),
+        customer_email: this.usuario?.email || ''
+      };
+
+      // redirect_url lo construye wompi-payment (incluye transaccion_producto_id).
+      // Solo enviamos compra_id si hay boletas y no hay productos pendientes en servidor.
+      if (compraBoletasId && !pedidoProductos) {
+        wompiBody['redirect_url'] =
+          `${window.location.origin}/pago-resultado?compra_id=${compraBoletasId}`;
+      }
 
       const supabaseUrl = supabaseConfig.url;
       const { data: { session } } = await this.supabaseService.auth.getSession();
@@ -641,13 +649,6 @@ export class Carrito implements OnInit, OnDestroy {
       if (!accessToken) {
         throw new Error('No se pudo obtener token de autenticación');
       }
-
-      const wompiBody: Record<string, unknown> = {
-        amount_in_cents: Math.round(totalPago * 100),
-        redirect_url: redirectUrl,
-        customer_email: this.usuario?.email || ''
-      };
-
       if (compraBoletasId && pedidoProductos) {
         wompiBody['tipo'] = 'mixto';
         wompiBody['compra_id'] = compraBoletasId;
@@ -680,6 +681,17 @@ export class Carrito implements OnInit, OnDestroy {
       const checkoutUrl = responseData.checkout_url || responseData.transaction?.checkout_url;
       if (!checkoutUrl) {
         throw new Error('No se obtuvo URL de checkout');
+      }
+
+      if (typeof sessionStorage !== 'undefined') {
+        const pending: Record<string, number> = {};
+        if (compraBoletasId) pending['compra_id'] = compraBoletasId;
+        if (responseData.transaccion_producto_id) {
+          pending['transaccion_producto_id'] = Number(responseData.transaccion_producto_id);
+        }
+        if (Object.keys(pending).length > 0) {
+          sessionStorage.setItem('eventum_pago_pendiente', JSON.stringify(pending));
+        }
       }
 
       this.carritoCompraService.vaciarCarrito();

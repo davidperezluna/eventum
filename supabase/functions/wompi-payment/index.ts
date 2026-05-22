@@ -153,14 +153,32 @@ async function resolveWompiCredentials(
 function resolveRedirectUrl(
   requestedRedirectUrl: string | undefined,
   fallbackRedirectUrl: string,
+  forceFallback = false,
 ): string {
+  if (forceFallback) {
+    return fallbackRedirectUrl
+  }
   const requested =
     typeof requestedRedirectUrl === 'string' && requestedRedirectUrl.trim().length > 0
       ? requestedRedirectUrl.trim()
       : fallbackRedirectUrl
   const publicAppUrl = (Deno.env.get('PUBLIC_APP_URL') || '').trim().replace(/\/+$/, '')
   const isLocalRedirect = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//i.test(requested)
-  return isLocalRedirect && publicAppUrl ? fallbackRedirectUrl : requested
+  if (isLocalRedirect && publicAppUrl) {
+    return fallbackRedirectUrl
+  }
+  try {
+    const reqUrl = new URL(requested)
+    const fbUrl = new URL(fallbackRedirectUrl)
+    for (const [key, value] of fbUrl.searchParams.entries()) {
+      if (!reqUrl.searchParams.has(key)) {
+        reqUrl.searchParams.set(key, value)
+      }
+    }
+    return reqUrl.toString()
+  } catch {
+    return fallbackRedirectUrl
+  }
 }
 
 async function crearTransaccionPendienteProductos(
@@ -340,7 +358,11 @@ serve(async (req) => {
     const fallbackRedirectUrl = publicAppUrl
       ? `${publicAppUrl}/pago-resultado?${query.toString()}`
       : `http://localhost:4200/pago-resultado?${query.toString()}`
-    const redirectUrlFinal = resolveRedirectUrl(redirectUrl, fallbackRedirectUrl)
+    const redirectUrlFinal = resolveRedirectUrl(
+      redirectUrl,
+      fallbackRedirectUrl,
+      !!pedidoProductos,
+    )
 
     const paymentName = (() => {
       if (tipo === 'mixto') return `Compra mixta ${compraId}/TXN-${transaccionProductoId} - ${eventoTitulo}`
