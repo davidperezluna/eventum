@@ -765,7 +765,17 @@ export class DetalleEvento implements OnInit, OnDestroy {
       return;
     }
 
-    // Verificar autenticación antes de comprar
+    // Verificar autenticación y sesión activa antes de comprar
+    const sesionValida = await this.authService.ensureActiveSession();
+    if (!sesionValida) {
+      this.alertService.warning(
+        'Sesión expirada',
+        'Tu sesión terminó por inactividad. Inicia sesión de nuevo para completar la compra.'
+      );
+      this.router.navigate(['/login'], { queryParams: { returnUrl: this.rutaDetalleEventoActual } });
+      return;
+    }
+
     const clienteId = this.authService.getUsuarioId();
     if (!clienteId) {
       this.alertService.warning('Inicia sesión para continuar', 'Debes iniciar sesión para comprar boletas');
@@ -932,6 +942,16 @@ export class DetalleEvento implements OnInit, OnDestroy {
       }
     } catch (err: any) {
       console.error('Error procesando compra:', err);
+      if (this.authService.isAuthOrRlsError(err?.message)) {
+        await this.authService.ensureActiveSession();
+        this.alertService.warning(
+          'Sesión expirada',
+          'Tu sesión terminó por inactividad. Inicia sesión de nuevo para completar la compra.'
+        );
+        this.router.navigate(['/login'], { queryParams: { returnUrl: this.rutaDetalleEventoActual } });
+        this.comprando = false;
+        return;
+      }
       this.alertService.error('Error al procesar compra', 'Error al procesar la compra: ' + (err.message || 'Error desconocido'));
       this.comprando = false;
     }

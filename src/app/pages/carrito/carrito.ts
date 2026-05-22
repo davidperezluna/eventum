@@ -176,9 +176,50 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   loadUsuario(): void {
-    const usuarioId = this.authService.getUsuarioId();
-    if (!usuarioId) return;
-    void this.loadUsuarioById(usuarioId);
+    void this.syncUsuarioDesdeSesion();
+  }
+
+  private async syncUsuarioDesdeSesion(): Promise<void> {
+    const sesionValida = await this.authService.ensureActiveSession();
+    if (!sesionValida) {
+      this.usuario = null;
+      this.cdr.detectChanges();
+      return;
+    }
+    this.usuario = this.authService.getUsuario();
+    this.cdr.detectChanges();
+  }
+
+  private async requerirSesionActiva(): Promise<number | null> {
+    const sesionValida = await this.authService.ensureActiveSession();
+    if (!sesionValida) {
+      this.usuario = null;
+      this.alertService.warning(
+        'Sesión expirada',
+        'Tu sesión terminó por inactividad. Inicia sesión de nuevo para completar la compra.'
+      );
+      this.router.navigate(['/login'], { queryParams: { returnUrl: '/carrito' } });
+      return null;
+    }
+
+    const clienteId = this.authService.getUsuarioId();
+    if (!clienteId) {
+      this.alertService.warning('Inicia sesión para continuar', 'Debes iniciar sesión para completar la compra');
+      this.router.navigate(['/login'], { queryParams: { returnUrl: '/carrito' } });
+      return null;
+    }
+
+    this.usuario = this.authService.getUsuario();
+    return clienteId;
+  }
+
+  private manejarErrorSesionExpirada(): void {
+    this.usuario = null;
+    this.alertService.warning(
+      'Sesión expirada',
+      'Tu sesión terminó por inactividad. Inicia sesión de nuevo para completar la compra.'
+    );
+    this.router.navigate(['/login'], { queryParams: { returnUrl: '/carrito' } });
   }
 
   async loadUsuarioById(usuarioId: number): Promise<void> {
@@ -529,10 +570,8 @@ export class Carrito implements OnInit, OnDestroy {
       return;
     }
 
-    const clienteId = this.authService.getUsuarioId();
+    const clienteId = await this.requerirSesionActiva();
     if (!clienteId) {
-      this.alertService.warning('Inicia sesión para continuar', 'Debes iniciar sesión para completar la compra');
-      this.router.navigate(['/login'], { queryParams: { returnUrl: '/carrito' } });
       return;
     }
 
@@ -710,6 +749,11 @@ export class Carrito implements OnInit, OnDestroy {
       window.location.href = checkoutUrl;
     } catch (error: any) {
       console.error('Error procesando compra:', error);
+      if (this.authService.isAuthOrRlsError(error?.message)) {
+        await this.authService.ensureActiveSession();
+        this.manejarErrorSesionExpirada();
+        return;
+      }
       this.alertService.error('Error al procesar compra', error?.message || 'Error desconocido');
     } finally {
       this.comprando = false;
