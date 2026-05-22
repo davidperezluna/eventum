@@ -9,6 +9,7 @@ import { environment } from '../../environments/environment';
  * 
  * Las credenciales se configuran en:
  * - src/environments/environment.ts (desarrollo PC)
+ * - src/environments/environment.dev.ts (dev desplegado / Vercel staging)
  * - src/environments/environment.mobile.ts (desarrollo celular + Supabase LAN)
  * - src/environments/environment.prod.ts (producción)
  */
