@@ -500,7 +500,9 @@ export interface CompraProductoItem {
 /** Transacción Wompi para compra de productos. */
 export interface TransaccionProducto {
   id: number;
-  compra_producto_id: number;
+  compra_producto_id?: number | null;
+  evento_id?: number;
+  cliente_id?: number;
   wompi_cuenta_id?: number;
   numero_transaccion: string;
   wompi_transaction_id?: string;

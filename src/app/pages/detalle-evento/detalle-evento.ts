@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -100,13 +100,15 @@ export class DetalleEvento implements OnInit, OnDestroy {
   };
 
   setTabCompra(tab: 'entradas' | 'productos'): void {
+    if (this.tabCompra === tab) return;
     this.tabCompra = tab;
-    this.router.navigate([], {
+
+    const urlTree = this.router.createUrlTree([], {
       relativeTo: this.route,
-      queryParams: { tab },
+      queryParams: tab === 'productos' ? { tab: 'productos' } : { tab: null },
       queryParamsHandling: 'merge',
-      replaceUrl: true
     });
+    this.location.replaceState(this.router.serializeUrl(urlTree));
   }
 
   toggleAcordeon(seccion: keyof typeof this.acordeones) {
@@ -116,6 +118,7 @@ export class DetalleEvento implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     public router: Router,
+    private location: Location,
     private eventosService: EventosService,
     private boletasService: BoletasService,
     private cuponesService: CuponesService,
@@ -180,16 +183,6 @@ export class DetalleEvento implements OnInit, OnDestroy {
     if (tabQuery === 'productos') {
       this.tabCompra = 'productos';
     }
-
-    this.route.queryParamMap.subscribe((params) => {
-      const tab = params.get('tab');
-      if (tab === 'productos') {
-        this.tabCompra = 'productos';
-      } else if (tab === 'entradas') {
-        this.tabCompra = 'entradas';
-      }
-      this.cdr.detectChanges();
-    });
 
     this.loadUsuario();
 

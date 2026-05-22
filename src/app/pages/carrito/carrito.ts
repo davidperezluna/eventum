@@ -554,6 +554,19 @@ export class Carrito implements OnInit, OnDestroy {
     this.comprando = true;
     let compraBoletasId: number | null = null;
     let compraProductosId: number | null = null;
+    const tieneProductosEnCarrito = this.itemsProductos.length > 0;
+    const pedidoProductos = tieneProductosEnCarrito
+      ? {
+          evento_id: this.evento.id,
+          cliente_id: clienteId,
+          items: itemsProductosCompra,
+          subtotal: this.getSubtotalProductos(),
+          porcentaje_servicio: this.getPorcentajeServicio(),
+          valor_servicio: this.getTotalProductos() - this.getSubtotalProductos(),
+          total: this.getTotalProductos(),
+          terminos_licor_aceptados: this.tieneLicor() && this.terminosAceptados
+        }
+      : null;
 
     try {
       if (this.itemsCompra.length > 0) {
@@ -588,28 +601,16 @@ export class Carrito implements OnInit, OnDestroy {
         compraBoletasId = resultadoBoletas.compra.id;
       }
 
-      if (this.itemsProductos.length > 0) {
-        try {
-          const resultadoProductos = await this.comprasProductoService.procesarCompra({
-            evento_id: this.evento.id,
-            cliente_id: clienteId,
-            items: itemsProductosCompra,
-            subtotal: this.getSubtotalProductos(),
-            porcentaje_servicio: this.getPorcentajeServicio(),
-            valor_servicio: this.getTotalProductos() - this.getSubtotalProductos(),
-            total: this.getTotalProductos(),
-            terminos_licor_aceptados: this.tieneLicor() && this.terminosAceptados
-          });
-          compraProductosId = resultadoProductos.compra.id;
-        } catch (productosError) {
-          if (compraBoletasId) {
-            await this.supabaseService.from('compras').delete().eq('id', compraBoletasId);
-          }
-          throw productosError;
-        }
-      }
-
       const totalPago = this.getTotal();
+
+      // Compra gratuita: sí se crean registros porque no hay pasarela (éxito inmediato).
+      if (totalPago === 0 && tieneProductosEnCarrito && pedidoProductos) {
+        const resultadoProductos = await this.comprasProductoService.procesarCompra({
+          ...pedidoProductos,
+          terminos_licor_aceptados: pedidoProductos.terminos_licor_aceptados
+        });
+        compraProductosId = resultadoProductos.compra.id;
+      }
 
       if (totalPago === 0) {
         if (compraBoletasId) {
@@ -632,7 +633,6 @@ export class Carrito implements OnInit, OnDestroy {
 
       const query = new URLSearchParams();
       if (compraBoletasId) query.set('compra_id', String(compraBoletasId));
-      if (compraProductosId) query.set('compra_producto_id', String(compraProductosId));
       const redirectUrl = `${window.location.origin}/pago-resultado?${query.toString()}`;
 
       const supabaseUrl = supabaseConfig.url;
@@ -648,13 +648,13 @@ export class Carrito implements OnInit, OnDestroy {
         customer_email: this.usuario?.email || ''
       };
 
-      if (compraBoletasId && compraProductosId) {
+      if (compraBoletasId && pedidoProductos) {
         wompiBody['tipo'] = 'mixto';
         wompiBody['compra_id'] = compraBoletasId;
-        wompiBody['compra_producto_id'] = compraProductosId;
-      } else if (compraProductosId) {
+        wompiBody['pedido_productos'] = pedidoProductos;
+      } else if (pedidoProductos) {
         wompiBody['tipo'] = 'productos';
-        wompiBody['compra_producto_id'] = compraProductosId;
+        wompiBody['pedido_productos'] = pedidoProductos;
       } else if (compraBoletasId) {
         wompiBody['compra_id'] = compraBoletasId;
       }
@@ -671,6 +671,9 @@ export class Carrito implements OnInit, OnDestroy {
 
       const responseData = await response.json();
       if (!response.ok || !responseData.success) {
+        if (compraBoletasId) {
+          await this.supabaseService.from('compras').delete().eq('id', compraBoletasId);
+        }
         throw new Error(responseData.error || 'Error creando transacción en Wompi');
       }
 

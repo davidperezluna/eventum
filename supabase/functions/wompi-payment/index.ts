@@ -1,6 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+/** Versión desplegada — debe coincidir en logs de Supabase al probar checkout de productos. */
+const WOMPI_PAYMENT_VERSION = '2.1.0-pedido-pendiente'
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, signature',
@@ -31,24 +34,67 @@ function inferirTipoPago(body: Record<string, unknown>): TipoPago {
     return tipo as TipoPago
   }
   const compraId = body.compra_id
-  const compraProductoId = body.compra_producto_id
-  if (compraId && compraProductoId) return 'mixto'
-  if (compraProductoId) return 'productos'
+  const pedidoProductos = body.pedido_productos
+  if (compraId && pedidoProductos) return 'mixto'
+  if (pedidoProductos) return 'productos'
   return 'boletas'
 }
 
-function buildReference(tipo: TipoPago, compraId: number | null, compraProductoId: number | null): string {
+function buildReference(
+  tipo: TipoPago,
+  compraId: number | null,
+  transaccionProductoId: number | null,
+): string {
   const ts = Date.now()
-  if (tipo === 'mixto' && compraId && compraProductoId) {
-    return `EVENTUM-MIX-${compraId}-${compraProductoId}-${ts}`
+  if (tipo === 'mixto' && compraId && transaccionProductoId) {
+    return `EVENTUM-MIX-${compraId}-TXN-${transaccionProductoId}-${ts}`
   }
-  if (tipo === 'productos' && compraProductoId) {
-    return `EVENTUM-PROD-${compraProductoId}-${ts}`
+  if (tipo === 'productos' && transaccionProductoId) {
+    return `EVENTUM-PROD-TXN-${transaccionProductoId}-${ts}`
   }
   if (compraId) {
     return `EVENTUM-${compraId}-${ts}`
   }
   throw new Error('No se pudo generar referencia Wompi')
+}
+
+interface PedidoProductosPayload {
+  evento_id: number
+  cliente_id: number
+  items: Array<{ producto_id: number; cantidad: number; precio_unitario: number }>
+  subtotal: number
+  porcentaje_servicio: number
+  valor_servicio: number
+  total: number
+  terminos_licor_aceptados?: boolean
+}
+
+function parsePedidoProductos(raw: unknown): PedidoProductosPayload {
+  if (!raw || typeof raw !== 'object') {
+    throw new Error('pedido_productos es requerido para pagos de productos')
+  }
+  const pedido = raw as Record<string, unknown>
+  const items = Array.isArray(pedido.items) ? pedido.items : []
+  if (items.length === 0) {
+    throw new Error('pedido_productos.items no puede estar vacío')
+  }
+  return {
+    evento_id: Number(pedido.evento_id),
+    cliente_id: Number(pedido.cliente_id),
+    items: items.map((item) => {
+      const row = item as Record<string, unknown>
+      return {
+        producto_id: Number(row.producto_id),
+        cantidad: Number(row.cantidad),
+        precio_unitario: Number(row.precio_unitario),
+      }
+    }),
+    subtotal: Number(pedido.subtotal),
+    porcentaje_servicio: Number(pedido.porcentaje_servicio ?? 0),
+    valor_servicio: Number(pedido.valor_servicio ?? 0),
+    total: Number(pedido.total),
+    terminos_licor_aceptados: !!pedido.terminos_licor_aceptados,
+  }
 }
 
 async function resolveWompiCredentials(
@@ -117,41 +163,31 @@ function resolveRedirectUrl(
   return isLocalRedirect && publicAppUrl ? fallbackRedirectUrl : requested
 }
 
-async function ensureTransaccionProducto(  supabaseClient: ReturnType<typeof createClient>,
-  compraProductoId: number,
-  monto: number,
+async function crearTransaccionPendienteProductos(
+  supabaseClient: ReturnType<typeof createClient>,
+  pedido: PedidoProductosPayload,
   wompiCuentaId: number | null,
 ): Promise<number> {
-  const { data: existing } = await supabaseClient
-    .from('transacciones_producto')
-    .select('id')
-    .eq('compra_producto_id', compraProductoId)
-    .eq('es_activa', true)
-    .order('fecha_creacion', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  if (existing?.id) {
-    return existing.id
-  }
-
   const { data: created, error } = await supabaseClient
     .from('transacciones_producto')
     .insert({
-      compra_producto_id: compraProductoId,
+      compra_producto_id: null,
+      evento_id: pedido.evento_id,
+      cliente_id: pedido.cliente_id,
       wompi_cuenta_id: wompiCuentaId,
-      numero_transaccion: `WPROD-${compraProductoId}-${Date.now()}`,
-      monto,
-      monto_centavos: Math.round(monto * 100),
+      numero_transaccion: `WPROD-PEND-${Date.now()}`,
+      monto: pedido.total,
+      monto_centavos: Math.round(pedido.total * 100),
       moneda: 'COP',
       estado: 'pendiente',
       es_activa: true,
+      request_payload: { pedido },
     })
     .select('id')
     .single()
 
   if (error || !created) {
-    throw new Error(`No se pudo crear transacción de producto: ${error?.message || 'desconocido'}`)
+    throw new Error(`No se pudo crear transacción pendiente de productos: ${error?.message || 'desconocido'}`)
   }
 
   return created.id
@@ -163,7 +199,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('=== Iniciando wompi-payment ===')
+    console.log('=== Iniciando wompi-payment ===', WOMPI_PAYMENT_VERSION)
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -184,7 +220,7 @@ serve(async (req) => {
 
     const tipo = inferirTipoPago(requestBody)
     const compraId = requestBody.compra_id ? Number(requestBody.compra_id) : null
-    const compraProductoId = requestBody.compra_producto_id ? Number(requestBody.compra_producto_id) : null
+    const pedidoProductosRaw = requestBody.pedido_productos
     const amountInCents = requestBody.amount_in_cents ? Number(requestBody.amount_in_cents) : null
     const redirectUrl = typeof requestBody.redirect_url === 'string' ? requestBody.redirect_url : undefined
     const customerEmail = typeof requestBody.customer_email === 'string' ? requestBody.customer_email : undefined
@@ -192,15 +228,19 @@ serve(async (req) => {
     if (tipo === 'boletas' && !compraId) {
       throw new Error('compra_id es requerido para pagos de boletas')
     }
-    if (tipo === 'productos' && !compraProductoId) {
-      throw new Error('compra_producto_id es requerido para pagos de productos')
+    if ((tipo === 'productos' || tipo === 'mixto') && !pedidoProductosRaw) {
+      throw new Error('pedido_productos es requerido para pagos de productos')
     }
-    if (tipo === 'mixto' && (!compraId || !compraProductoId)) {
-      throw new Error('compra_id y compra_producto_id son requeridos para pagos mixtos')
+    if (tipo === 'mixto' && !compraId) {
+      throw new Error('compra_id es requerido para pagos mixtos')
+    }
+
+    let pedidoProductos: PedidoProductosPayload | null = null
+    if (pedidoProductosRaw) {
+      pedidoProductos = parsePedidoProductos(pedidoProductosRaw)
     }
 
     let compra: Record<string, unknown> | null = null
-    let compraProducto: Record<string, unknown> | null = null
     let eventoTitulo = 'Evento'
     let eventoId: number | null = null
     let clienteId: number | null = null
@@ -226,31 +266,29 @@ serve(async (req) => {
       totalEsperado += Number(data.total || 0)
     }
 
-    if (compraProductoId) {
-      const { data, error } = await supabaseClient
-        .from('compras_productos')
-        .select('*, eventos!inner(id, titulo, wompi_cuenta_id)')
-        .eq('id', compraProductoId)
-        .single()
+    if (pedidoProductos) {
+      eventoId = eventoId ?? pedidoProductos.evento_id
+      clienteId = clienteId ?? pedidoProductos.cliente_id
+      totalEsperado += pedidoProductos.total
 
-      if (error || !data) {
-        throw new Error('Error al obtener la compra de productos: ' + (error?.message || 'no encontrada'))
-      }
-      compraProducto = data
-      const evento = toObject<{ id?: number; titulo?: string; wompi_cuenta_id?: number | null }>(data.eventos)
-      eventoTitulo = evento?.titulo || eventoTitulo
-      const productoEventoId = evento?.id ?? Number(data.evento_id)
-      if (eventoId && productoEventoId !== eventoId) {
+      if (eventoId !== pedidoProductos.evento_id) {
         throw new Error('Las compras mixtas deben pertenecer al mismo evento')
       }
-      eventoId = eventoId ?? productoEventoId
-      const productoClienteId = Number(data.cliente_id)
-      if (clienteId && productoClienteId !== clienteId) {
+      if (clienteId && clienteId !== pedidoProductos.cliente_id) {
         throw new Error('Las compras mixtas deben pertenecer al mismo cliente')
       }
-      clienteId = clienteId ?? productoClienteId
-      wompiCuentaHint = wompiCuentaHint ?? (data.wompi_cuenta_id as number | null) ?? evento?.wompi_cuenta_id ?? null
-      totalEsperado += Number(data.total || 0)
+
+      const { data: eventoProductos } = await supabaseClient
+        .from('eventos')
+        .select('id, titulo, wompi_cuenta_id')
+        .eq('id', pedidoProductos.evento_id)
+        .single()
+
+      if (!eventoProductos) {
+        throw new Error('Evento de productos no encontrado')
+      }
+      eventoTitulo = eventoProductos.titulo || eventoTitulo
+      wompiCuentaHint = wompiCuentaHint ?? eventoProductos.wompi_cuenta_id ?? null
     }
 
     const { wompiPrivateKey, wompiEnvironment, wompiCuentaId } = await resolveWompiCredentials(
@@ -285,28 +323,37 @@ serve(async (req) => {
       : 'https://sandbox.wompi.co/v1'
     const publicAppUrl = (Deno.env.get('PUBLIC_APP_URL') || '').trim().replace(/\/+$/, '')
 
-    const reference = buildReference(tipo, compraId, compraProductoId)
+    let transaccionProductoId: number | null = null
+    if (pedidoProductos) {
+      transaccionProductoId = await crearTransaccionPendienteProductos(
+        supabaseClient,
+        pedidoProductos,
+        wompiCuentaId,
+      )
+    }
+
+    const reference = buildReference(tipo, compraId, transaccionProductoId)
 
     const query = new URLSearchParams()
     if (compraId) query.set('compra_id', String(compraId))
-    if (compraProductoId) query.set('compra_producto_id', String(compraProductoId))
+    if (transaccionProductoId) query.set('transaccion_producto_id', String(transaccionProductoId))
     const fallbackRedirectUrl = publicAppUrl
       ? `${publicAppUrl}/pago-resultado?${query.toString()}`
       : `http://localhost:4200/pago-resultado?${query.toString()}`
     const redirectUrlFinal = resolveRedirectUrl(redirectUrl, fallbackRedirectUrl)
 
     const paymentName = (() => {
-      if (tipo === 'mixto') return `Compra mixta ${compraId}/${compraProductoId} - ${eventoTitulo}`
-      if (tipo === 'productos') return `Pedido productos ${compraProductoId} - ${eventoTitulo}`
+      if (tipo === 'mixto') return `Compra mixta ${compraId}/TXN-${transaccionProductoId} - ${eventoTitulo}`
+      if (tipo === 'productos') return `Pedido productos TXN-${transaccionProductoId} - ${eventoTitulo}`
       return `Compra ${compraId} - ${eventoTitulo}`
     })()
 
     const paymentDescription = (() => {
       if (tipo === 'mixto') {
-        return `Pago combinado boletas #${compraId} + productos #${compraProductoId}`
+        return `Pago combinado boletas #${compraId} + productos (TXN ${transaccionProductoId})`
       }
       if (tipo === 'productos') {
-        return `Pago pedido productos #${compraProductoId}`
+        return `Pago pedido productos (TXN ${transaccionProductoId})`
       }
       return `Pago para compra #${compraId}`
     })()
@@ -376,14 +423,7 @@ serve(async (req) => {
       }
     }
 
-    if (compraProductoId && compraProducto) {
-      const transaccionProductoId = await ensureTransaccionProducto(
-        supabaseClient,
-        compraProductoId,
-        Number(compraProducto.total || 0),
-        wompiCuentaId,
-      )
-
+    if (transaccionProductoId && pedidoProductos) {
       const { error: updateTransaccionError } = await supabaseClient
         .from('transacciones_producto')
         .update({
@@ -393,7 +433,7 @@ serve(async (req) => {
           wompi_status: wompiData.data?.status || 'PENDING',
           checkout_url: wompiData.data?.checkout_url,
           redirect_url: redirectUrlFinal,
-          request_payload: paymentLinkRequest,
+          request_payload: { pedido: pedidoProductos, payment_link: paymentLinkRequest },
           response_payload: wompiData,
           fecha_actualizacion: new Date().toISOString(),
         })
@@ -402,23 +442,16 @@ serve(async (req) => {
       if (updateTransaccionError) {
         console.error('Error actualizando transacción de producto:', updateTransaccionError)
       }
-
-      const { error: updateCompraProductoError } = await supabaseClient
-        .from('compras_productos')
-        .update({ wompi_cuenta_id: wompiCuentaId })
-        .eq('id', compraProductoId)
-
-      if (updateCompraProductoError) {
-        console.error('Error actualizando compra de productos:', updateCompraProductoError)
-      }
     }
 
-    console.log('Pago creado:', { tipo, compraId, compraProductoId, reference, paymentLinkId, clienteEmail })
+    console.log('Pago creado:', { tipo, compraId, transaccionProductoId, reference, paymentLinkId, clienteEmail })
 
     return new Response(
       JSON.stringify({
         success: true,
+        version: WOMPI_PAYMENT_VERSION,
         tipo,
+        transaccion_producto_id: transaccionProductoId,
         transaction: wompiData.data,
         checkout_url: wompiData.data?.checkout_url || wompiData.data?.permalink,
       }),
@@ -433,6 +466,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
+        version: WOMPI_PAYMENT_VERSION,
         error: errorMessage,
         details: error instanceof Error ? error.stack : undefined,
       }),

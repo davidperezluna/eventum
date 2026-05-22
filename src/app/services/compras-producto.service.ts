@@ -30,6 +30,18 @@ export interface DatosCompraProducto {
   datos_facturacion?: Record<string, unknown>;
 }
 
+/** Payload enviado a Wompi antes del pago; la compra se crea solo si el cobro es exitoso. */
+export interface PedidoProductosPendiente {
+  evento_id: number;
+  cliente_id: number;
+  items: ItemCompraProducto[];
+  subtotal: number;
+  porcentaje_servicio: number;
+  valor_servicio: number;
+  total: number;
+  terminos_licor_aceptados: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -217,6 +229,19 @@ export class ComprasProductoService {
       throw error;
     }
     return data as CompraProducto;
+  }
+
+  async getTransaccionById(id: number): Promise<TransaccionProducto> {
+    const { data, error } = await this.supabase
+      .from('transacciones_producto')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+    return data as TransaccionProducto;
   }
 
   async confirmarPago(compraProductoId: number): Promise<CompraProducto> {

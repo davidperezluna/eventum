@@ -24,18 +24,40 @@ function parseReference(reference: string | null | undefined): {
   tipo: TipoPago | null
   compraId: number | null
   compraProductoId: number | null
+  transaccionProductoId: number | null
 } {
   const ref = String(reference || '').trim()
   if (!ref) {
-    return { tipo: null, compraId: null, compraProductoId: null }
+    return { tipo: null, compraId: null, compraProductoId: null, transaccionProductoId: null }
   }
 
-  const mixMatch = ref.match(/^EVENTUM-MIX-(\d+)-(\d+)-/i)
+  const mixMatch = ref.match(/^EVENTUM-MIX-(\d+)-TXN-(\d+)-/i)
   if (mixMatch) {
     return {
       tipo: 'mixto',
       compraId: Number(mixMatch[1]),
-      compraProductoId: Number(mixMatch[2]),
+      compraProductoId: null,
+      transaccionProductoId: Number(mixMatch[2]),
+    }
+  }
+
+  const mixLegacyMatch = ref.match(/^EVENTUM-MIX-(\d+)-(\d+)-/i)
+  if (mixLegacyMatch) {
+    return {
+      tipo: 'mixto',
+      compraId: Number(mixLegacyMatch[1]),
+      compraProductoId: Number(mixLegacyMatch[2]),
+      transaccionProductoId: null,
+    }
+  }
+
+  const prodTxnMatch = ref.match(/^EVENTUM-PROD-TXN-(\d+)-/i)
+  if (prodTxnMatch) {
+    return {
+      tipo: 'productos',
+      compraId: null,
+      compraProductoId: null,
+      transaccionProductoId: Number(prodTxnMatch[1]),
     }
   }
 
@@ -45,6 +67,7 @@ function parseReference(reference: string | null | undefined): {
       tipo: 'productos',
       compraId: null,
       compraProductoId: Number(prodMatch[1]),
+      transaccionProductoId: null,
     }
   }
 
@@ -54,10 +77,11 @@ function parseReference(reference: string | null | undefined): {
       tipo: 'boletas',
       compraId: Number(boletaMatch[1]),
       compraProductoId: null,
+      transaccionProductoId: null,
     }
   }
 
-  return { tipo: null, compraId: null, compraProductoId: null }
+  return { tipo: null, compraId: null, compraProductoId: null, transaccionProductoId: null }
 }
 
 function mapEstadosWompi(wompiStatus: string | undefined): {
@@ -169,39 +193,123 @@ async function actualizarCompraBoletas(  supabaseClient: ReturnType<typeof creat
   }
 }
 
-async function actualizarCompraProductos(
+async function crearCompraProductoDesdePedido(
   supabaseClient: ReturnType<typeof createClient>,
-  compraProductoId: number,
-  transaccionProductoId: number | null,
+  transaccionProductoId: number,
+  wompiCuentaId: number | null,
+): Promise<number> {
+  const { data: transaccion, error: txnError } = await supabaseClient
+    .from('transacciones_producto')
+    .select('id, compra_producto_id, request_payload')
+    .eq('id', transaccionProductoId)
+    .single()
+
+  if (txnError || !transaccion) {
+    throw txnError || new Error(`Transacción producto ${transaccionProductoId} no encontrada`)
+  }
+
+  if (transaccion.compra_producto_id) {
+    return Number(transaccion.compra_producto_id)
+  }
+
+  const payload = transaccion.request_payload as { pedido?: Record<string, unknown> } | null
+  const pedido = payload?.pedido
+  if (!pedido || !Array.isArray(pedido.items) || pedido.items.length === 0) {
+    throw new Error('La transacción no tiene pedido de productos pendiente')
+  }
+
+  const numeroPedido = `PROD-${Date.now()}-${Math.floor(Math.random() * 10000)}`
+  const { data: compra, error: compraError } = await supabaseClient
+    .from('compras_productos')
+    .insert({
+      cliente_id: Number(pedido.cliente_id),
+      evento_id: Number(pedido.evento_id),
+      wompi_cuenta_id: wompiCuentaId,
+      numero_pedido: numeroPedido,
+      subtotal: Number(pedido.subtotal ?? 0),
+      descuento_total: 0,
+      porcentaje_servicio: Number(pedido.porcentaje_servicio ?? 0),
+      valor_servicio: Number(pedido.valor_servicio ?? 0),
+      total: Number(pedido.total ?? 0),
+      estado_pago: 'pendiente',
+      estado_compra: 'pendiente',
+      terminos_licor_aceptados: !!pedido.terminos_licor_aceptados,
+      terminos_licor_aceptados_at: pedido.terminos_licor_aceptados ? new Date().toISOString() : null,
+      fecha_compra: new Date().toISOString(),
+    })
+    .select('id')
+    .single()
+
+  if (compraError || !compra) {
+    throw compraError || new Error('No se pudo crear compras_productos')
+  }
+
+  const compraProductoId = Number(compra.id)
+  const rows = (pedido.items as Array<Record<string, unknown>>).map((item) => ({
+    compra_producto_id: compraProductoId,
+    producto_id: Number(item.producto_id),
+    cantidad: Number(item.cantidad),
+    precio_unitario: Number(item.precio_unitario),
+    estado: 'pendiente',
+  }))
+
+  const { error: itemsError } = await supabaseClient.from('compras_productos_items').insert(rows)
+  if (itemsError) {
+    await supabaseClient.from('compras_productos').delete().eq('id', compraProductoId)
+    throw itemsError
+  }
+
+  await supabaseClient
+    .from('transacciones_producto')
+    .update({ compra_producto_id: compraProductoId, fecha_actualizacion: new Date().toISOString() })
+    .eq('id', transaccionProductoId)
+
+  return compraProductoId
+}
+
+async function procesarTransaccionProducto(
+  supabaseClient: ReturnType<typeof createClient>,
+  transaccionProductoId: number,
   transaction: Record<string, unknown>,
   webhookData: Record<string, unknown>,
   wompiCuentaId: number | null,
-) {
+): Promise<number | null> {
   const estados = mapEstadosWompi(String(transaction.status || ''))
   const now = new Date().toISOString()
+  let compraProductoId: number | null = null
+
+  const { data: transaccionActual } = await supabaseClient
+    .from('transacciones_producto')
+    .select('id, compra_producto_id, request_payload, evento_id')
+    .eq('id', transaccionProductoId)
+    .maybeSingle()
+
+  if (!transaccionActual) {
+    throw new Error(`Transacción producto ${transaccionProductoId} no encontrada`)
+  }
 
   if (transaction.status === 'APPROVED') {
+    compraProductoId = transaccionActual.compra_producto_id
+      ? Number(transaccionActual.compra_producto_id)
+      : await crearCompraProductoDesdePedido(supabaseClient, transaccionProductoId, wompiCuentaId)
+
     const { error: rpcError } = await supabaseClient.rpc('confirmar_compra_producto', {
       p_compra_producto_id: compraProductoId,
     })
     if (rpcError) {
       console.warn('RPC confirmar_compra_producto falló, aplicando update manual:', rpcError.message)
-      const { error: updateCompraError } = await supabaseClient
+      await supabaseClient
         .from('compras_productos')
         .update({
           estado_pago: estados.estadoPago,
           estado_compra: estados.estadoCompra,
           fecha_confirmacion: now,
-          fecha_cancelacion: null,
-          motivo_cancelacion: null,
           wompi_cuenta_id: wompiCuentaId,
         })
         .eq('id', compraProductoId)
-      if (updateCompraError) {
-        throw updateCompraError
-      }
     }
-  } else {
+  } else if (transaccionActual.compra_producto_id) {
+    compraProductoId = Number(transaccionActual.compra_producto_id)
     const updateCompra: Record<string, unknown> = {
       estado_pago: estados.estadoPago,
       estado_compra: estados.estadoCompra,
@@ -214,47 +322,24 @@ async function actualizarCompraProductos(
         ((transaction.error as { message?: string } | undefined)?.message) ||
         'Pago rechazado por Wompi'
     }
-    const { error: updateCompraError } = await supabaseClient
-      .from('compras_productos')
-      .update(updateCompra)
-      .eq('id', compraProductoId)
-    if (updateCompraError) {
-      throw updateCompraError
-    }
+    await supabaseClient.from('compras_productos').update(updateCompra).eq('id', compraProductoId)
   }
 
-  const transaccionUpdate: Record<string, unknown> = {
-    wompi_status: transaction.status,
-    webhook_payload: webhookData,
-    response_payload: transaction,
-    wompi_cuenta_id: wompiCuentaId,
-    estado: estados.estadoTransaccionProducto,
-    fecha_actualizacion: now,
-  }
-  if (transaction.status === 'APPROVED') {
-    transaccionUpdate.fecha_confirmacion = now
-  }
-
-  if (transaccionProductoId) {
-    const { error } = await supabaseClient
-      .from('transacciones_producto')
-      .update(transaccionUpdate)
-      .eq('id', transaccionProductoId)
-    if (error) {
-      throw error
-    }
-    return
-  }
-
-  const { error } = await supabaseClient
+  await supabaseClient
     .from('transacciones_producto')
-    .update(transaccionUpdate)
-    .eq('compra_producto_id', compraProductoId)
-    .eq('es_activa', true)
+    .update({
+      wompi_status: transaction.status,
+      webhook_payload: webhookData,
+      response_payload: transaction,
+      wompi_cuenta_id: wompiCuentaId,
+      estado: estados.estadoTransaccionProducto,
+      fecha_actualizacion: now,
+      fecha_confirmacion: transaction.status === 'APPROVED' ? now : null,
+      compra_producto_id: compraProductoId ?? transaccionActual.compra_producto_id,
+    })
+    .eq('id', transaccionProductoId)
 
-  if (error) {
-    throw error
-  }
+  return compraProductoId
 }
 
 serve(async (req) => {
@@ -324,10 +409,24 @@ serve(async (req) => {
       transaccionProducto = transaccionData
     }
 
-    let compraBoletasId = compraBoletas?.id ? Number(compraBoletas.id) : parsedRef.compraId
+    let transaccionProductoId = transaccionProducto?.id
+      ? Number(transaccionProducto.id)
+      : parsedRef.transaccionProductoId
+
+    if (!transaccionProducto && transaccionProductoId) {
+      const { data } = await supabaseClient
+        .from('transacciones_producto')
+        .select('id, compra_producto_id, wompi_cuenta_id, wompi_reference, wompi_transaction_id, estado, evento_id')
+        .eq('id', transaccionProductoId)
+        .maybeSingle()
+      transaccionProducto = data
+    }
+
     let compraProductoId = transaccionProducto?.compra_producto_id
       ? Number(transaccionProducto.compra_producto_id)
       : parsedRef.compraProductoId
+
+    const compraBoletasId = compraBoletas?.id ? Number(compraBoletas.id) : parsedRef.compraId
 
     if (!compraBoletas && compraBoletasId) {
       const { data } = await supabaseClient
@@ -338,19 +437,7 @@ serve(async (req) => {
       compraBoletas = data
     }
 
-    if (!transaccionProducto && compraProductoId) {
-      const { data } = await supabaseClient
-        .from('transacciones_producto')
-        .select('id, compra_producto_id, wompi_cuenta_id, wompi_reference, wompi_transaction_id, estado')
-        .eq('compra_producto_id', compraProductoId)
-        .eq('es_activa', true)
-        .order('fecha_creacion', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      transaccionProducto = data
-    }
-
-    if (!compraBoletas && !compraProductoId) {
+    if (!compraBoletas && !transaccionProducto) {
       console.error('No se encontró compra de boletas ni de productos para el webhook')
       return new Response(
         JSON.stringify({
@@ -368,7 +455,11 @@ serve(async (req) => {
       (transaccionProducto?.wompi_cuenta_id as number | null) ??
       null
 
-    const eventoId = compraBoletas?.evento_id ? Number(compraBoletas.evento_id) : null
+    const eventoId = compraBoletas?.evento_id
+      ? Number(compraBoletas.evento_id)
+      : transaccionProducto?.evento_id
+        ? Number(transaccionProducto.evento_id)
+        : null
     if (!wompiCuentaId && eventoId) {
       const { data: eventoData } = await supabaseClient
         .from('eventos')
@@ -376,6 +467,18 @@ serve(async (req) => {
         .eq('id', eventoId)
         .maybeSingle()
       wompiCuentaId = eventoData?.wompi_cuenta_id ?? null
+    }
+
+    if (!wompiCuentaId && transaccionProductoId && !compraProductoId) {
+      const eventoTxnId = transaccionProducto?.evento_id ? Number(transaccionProducto.evento_id) : eventoId
+      if (eventoTxnId) {
+        const { data: eventoData } = await supabaseClient
+          .from('eventos')
+          .select('wompi_cuenta_id')
+          .eq('id', eventoTxnId)
+          .maybeSingle()
+        wompiCuentaId = eventoData?.wompi_cuenta_id ?? null
+      }
     }
 
     if (!wompiCuentaId && compraProductoId) {
@@ -425,16 +528,15 @@ serve(async (req) => {
       console.log(`✅ Compra boletas ${compraBoletas.id} actualizada`)
     }
 
-    if (compraProductoId) {
-      await actualizarCompraProductos(
+    if (transaccionProductoId) {
+      compraProductoId = await procesarTransaccionProducto(
         supabaseClient,
-        compraProductoId,
-        transaccionProducto?.id ? Number(transaccionProducto.id) : null,
+        transaccionProductoId,
         transaction,
         webhookData,
         wompiCuentaId,
       )
-      console.log(`✅ Compra productos ${compraProductoId} actualizada`)
+      console.log(`✅ Transacción productos ${transaccionProductoId} procesada`, { compraProductoId })
     }
 
     return new Response(
@@ -442,7 +544,8 @@ serve(async (req) => {
         received: true,
         compra_id: compraBoletas?.id ?? null,
         compra_producto_id: compraProductoId,
-        tipo: parsedRef.tipo || (compraBoletas && compraProductoId ? 'mixto' : compraProductoId ? 'productos' : 'boletas'),
+        transaccion_producto_id: transaccionProductoId,
+        tipo: parsedRef.tipo || (compraBoletas && transaccionProductoId ? 'mixto' : transaccionProductoId ? 'productos' : 'boletas'),
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

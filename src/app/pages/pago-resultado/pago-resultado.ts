@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ComprasClienteService } from '../../services/compras-cliente.service';
 import { ComprasProductoService } from '../../services/compras-producto.service';
-import { Compra, CompraProducto } from '../../types';
+import { Compra, CompraProducto, TransaccionProducto } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 @Component({
@@ -15,11 +15,12 @@ import { DateFormatPipe } from '../../pipes/date-format.pipe';
 export class PagoResultado implements OnInit {
   compraId: number | null = null;
   compraProductoId: number | null = null;
+  transaccionProductoId: number | null = null;
   compra: Compra | null = null;
   compraProducto: CompraProducto | null = null;
+  transaccionProducto: TransaccionProducto | null = null;
   loading = true;
   error: string | null = null;
-  /** Titular corto cuando hay error técnico o de negocio */
   errorTitulo = 'No pudimos mostrar tu compra';
 
   constructor(
@@ -34,7 +35,8 @@ export class PagoResultado implements OnInit {
     this.route.queryParams.subscribe(params => {
       this.compraId = params['compra_id'] ? Number(params['compra_id']) : null;
       this.compraProductoId = params['compra_producto_id'] ? Number(params['compra_producto_id']) : null;
-      if (this.compraId || this.compraProductoId) {
+      this.transaccionProductoId = params['transaccion_producto_id'] ? Number(params['transaccion_producto_id']) : null;
+      if (this.compraId || this.compraProductoId || this.transaccionProductoId) {
         this.verificarEstadoCompra();
       } else {
         this.errorTitulo = 'Falta información del pago';
@@ -46,26 +48,46 @@ export class PagoResultado implements OnInit {
   }
 
   async verificarEstadoCompra() {
-    if (!this.compraId && !this.compraProductoId) return;
+    if (!this.compraId && !this.compraProductoId && !this.transaccionProductoId) return;
 
     setTimeout(async () => {
       try {
         if (this.compraId) {
           this.compra = await this.comprasClienteService.getCompraById(this.compraId!);
         }
+
+        if (this.transaccionProductoId) {
+          this.transaccionProducto = await this.comprasProductoService.getTransaccionById(this.transaccionProductoId!);
+          const compraDesdeTransaccion = this.transaccionProducto.compra_producto_id;
+          if (compraDesdeTransaccion) {
+            this.compraProductoId = compraDesdeTransaccion;
+          }
+        }
+
         if (this.compraProductoId) {
           this.compraProducto = await this.comprasProductoService.getCompraById(this.compraProductoId!);
         }
+
         this.loading = false;
         this.cdr.detectChanges();
       } catch (err: any) {
         console.error('Error cargando compra:', err);
         const code = err?.code ?? err?.error?.code;
-        // Tras pago fallido el webhook puede purgar la compra (sin filas → PGRST116).
-        if (code === 'PGRST116') {
+
+        if (this.transaccionProducto && !this.compraProducto) {
+          if (this.transaccionProducto.estado === 'rechazada' || this.transaccionProducto.estado === 'cancelada') {
+            this.errorTitulo = 'El pago no se completó';
+            this.error =
+              'Tu transacción de productos no quedó confirmada. No se registró ningún pedido de productos.';
+          } else {
+            this.errorTitulo = 'Confirmando tu pedido de productos';
+            this.error =
+              'El pago puede estar procesándose. En unos minutos debería aparecer tu pedido; refresca esta página.';
+          }
+        } else if (code === 'PGRST116') {
           this.errorTitulo = 'El pago no se completó';
           this.error =
-            'Tu transacción no quedó confirmada en el sistema (o fue rechazada). No hay compra registrada con este enlace y los cupos reservados se liberaron. Si ves un cobro en tu cuenta, revisa Mis compras o contacta a tu banco; el reembolso depende del medio de pago.';
+            'Tu transacción no quedó confirmada en el sistema (o fue rechazada). Si ves un cobro en tu cuenta, revisa Mis compras o contacta a tu banco.';
         } else {
           this.errorTitulo = 'No pudimos verificar tu compra';
           this.error =
@@ -74,11 +96,26 @@ export class PagoResultado implements OnInit {
         this.loading = false;
         this.cdr.detectChanges();
       }
-    }, 2000); // Esperar 2 segundos para que el webhook procese
+    }, 2000);
   }
 
   getEstadoPagoReferencia(): 'completado' | 'pendiente' | 'fallido' | 'otro' {
-    const estados = [this.compra?.estado_pago, this.compraProducto?.estado_pago].filter(Boolean) as string[];
+    const estadosTransaccion = this.transaccionProducto?.estado;
+    const estadoTransaccionProducto =
+      estadosTransaccion === 'aprobada'
+        ? 'completado'
+        : estadosTransaccion === 'rechazada' || estadosTransaccion === 'cancelada'
+          ? 'fallido'
+          : estadosTransaccion === 'pendiente'
+            ? 'pendiente'
+            : null;
+
+    const estados = [
+      this.compra?.estado_pago,
+      this.compraProducto?.estado_pago,
+      estadoTransaccionProducto
+    ].filter(Boolean) as string[];
+
     if (estados.some((e) => e === 'fallido')) return 'fallido';
     if (estados.length > 0 && estados.every((e) => e === 'completado')) return 'completado';
     if (estados.some((e) => e === 'pendiente')) return 'pendiente';
@@ -125,7 +162,8 @@ export class PagoResultado implements OnInit {
   }
 
   getTotalMostrado(): number {
-    return (this.compra?.total ?? 0) + (this.compraProducto?.total ?? 0);
+    const totalProductos = this.compraProducto?.total ?? this.transaccionProducto?.monto ?? 0;
+    return (this.compra?.total ?? 0) + totalProductos;
   }
 
   formatCurrency(value: number): string {
@@ -137,4 +175,3 @@ export class PagoResultado implements OnInit {
     }).format(value);
   }
 }
-

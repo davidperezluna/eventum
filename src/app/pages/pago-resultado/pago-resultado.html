@@ -24,7 +24,7 @@
     </div>
   </article>
 
-  <div *ngIf="!loading && !error && (compra || compraProducto)" class="resultado-wrapper">
+  <div *ngIf="!loading && !error && (compra || compraProducto || transaccionProducto)" class="resultado-wrapper">
     <article
       class="resultado-card"
       [class.resultado-card--success]="getEstadoPagoReferencia() === 'completado'"
@@ -51,6 +51,10 @@
           <div class="summary-row" *ngIf="compraProducto">
             <dt>Pedido productos</dt>
             <dd>{{ compraProducto.numero_pedido }}</dd>
+          </div>
+          <div class="summary-row" *ngIf="!compraProducto && transaccionProducto">
+            <dt>Referencia productos</dt>
+            <dd>{{ transaccionProducto.numero_transaccion }}</dd>
           </div>
           <div class="summary-row" *ngIf="compra?.wompi_reference">
             <dt>Referencia Wompi</dt>

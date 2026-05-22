@@ -167,6 +167,10 @@
   border-bottom-color: #0f172a;
 }
 
+.detalle-tab-panel[hidden] {
+  display: none !important;
+}
+
 .detalle-zone-title {
   font-size: 1.0625rem;
   font-weight: 700;

@@ -21,6 +21,7 @@ export class EventoProductosTab implements OnInit, OnDestroy {
   productos: Producto[] = [];
   loading = false;
   totalItemsCarrito = 0;
+  private productosCargados = false;
 
   private destroy$ = new Subject<void>();
 
@@ -49,10 +50,11 @@ export class EventoProductosTab implements OnInit, OnDestroy {
   }
 
   async loadProductos(): Promise<void> {
-    if (!this.evento?.id) return;
+    if (!this.evento?.id || this.productosCargados) return;
     this.loading = true;
     try {
       this.productos = await this.productosService.getProductosPorEvento(this.evento.id);
+      this.productosCargados = true;
     } catch (err) {
       console.error('Error cargando productos:', err);
       this.productos = [];
