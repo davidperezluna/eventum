@@ -177,15 +177,32 @@
           </div>
         </div>
 
-        <div class="cupon-section licor-section" *ngIf="tieneLicor()">
-          <h5>Términos — bebidas alcohólicas</h5>
-          <p class="licor-section-text">
-            Debes ser mayor de 18 años. Eventum actúa solo como intermediario, no como distribuidor.
-          </p>
-          <label class="licor-check">
+        <div class="licor-legal-card" *ngIf="tieneLicor()" [class.licor-legal-card--accepted]="terminosAceptados">
+          <div class="licor-legal-card__head">
+            <span class="licor-legal-badge" aria-hidden="true">+18</span>
+            <div class="licor-legal-card__titles">
+              <h5>Bebidas alcohólicas</h5>
+              <p>Confirmación obligatoria antes de pagar productos con alcohol.</p>
+            </div>
+            <span class="material-icons licor-legal-card__icon" aria-hidden="true">local_bar</span>
+          </div>
+        
+          <ul class="licor-legal-points">
+            <li>Debes ser mayor de 18 años.</li>
+            <li>Eventum actúa solo como intermediario, no como distribuidor.</li>
+            <li>La entrega se realiza en el evento según normas del organizador.</li>
+          </ul>
+        
+          <label class="licor-legal-check" [class.licor-legal-check--checked]="terminosAceptados">
             <input type="checkbox" [(ngModel)]="terminosAceptados" />
-            Acepto los términos para bebidas alcohólicas
+            <span class="licor-legal-check__box" aria-hidden="true"></span>
+            <span class="licor-legal-check__text">
+              Acepto los términos para bebidas alcohólicas
+            </span>
           </label>
+<button type="button" class="licor-legal-link" (click)="abrirModalTerminosLicor()">
+  Leer términos completos
+</button>
         </div>
 
         <div class="carrito-total">
@@ -232,14 +249,31 @@
   </div>
 </div>
 
-<div class="modal-overlay" *ngIf="modalTerminosLicor" (click)="modalTerminosLicor = false">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <h2>{{ terminosLicorTitulo }}</h2>
-    <div class="terminos-texto">{{ terminosLicorTexto }}</div>
-    <div class="modal-actions">
-      <button type="button" class="btn-secondary" (click)="modalTerminosLicor = false">Cancelar</button>
-      <button type="button" class="btn-primary-modal" (click)="aceptarTerminosLicor()">Acepto y continuar</button>
+<div class="licor-modal-overlay" *ngIf="modalTerminosLicor" (click)="cerrarModalTerminosLicor()" role="presentation">
+  <div class="licor-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+    aria-labelledby="licor-modal-title">
+    <header class="licor-modal__header">
+      <div class="licor-modal__header-text">
+        <span class="licor-legal-badge licor-legal-badge--modal">+18</span>
+        <h2 id="licor-modal-title">{{ terminosLicorTitulo }}</h2>
+        <p>Lee y acepta para continuar con tu compra.</p>
+      </div>
+      <button type="button" class="licor-modal__close" (click)="cerrarModalTerminosLicor()" aria-label="Cerrar">
+        <span class="material-icons">close</span>
+      </button>
+    </header>
+
+    <div class="licor-modal__body">
+      <p *ngFor="let linea of terminosLicorLineas" class="licor-modal__line">{{ linea }}</p>
     </div>
+<footer class="licor-modal__footer">
+  <button type="button" class="btn-secondary licor-modal__btn" (click)="cerrarModalTerminosLicor()">
+    Volver al carrito
+  </button>
+  <button type="button" class="btn-primary-modal licor-modal__btn" (click)="aceptarTerminosLicor()">
+    Acepto y continuar
+  </button>
+</footer>
   </div>
 </div>
 

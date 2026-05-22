@@ -11,6 +11,7 @@ import { EventosService } from '../../services/eventos.service';
 import { AuthService } from '../../services/auth.service';
 import { AlertService } from '../../services/alert.service';
 import { MisComprasStateService } from '../../services/mis-compras-state.service';
+import { ComprasProductoService } from '../../services/compras-producto.service';
 import {
   Compra,
   BoletaComprada,
@@ -20,7 +21,8 @@ import {
   TipoEstadoPago,
   TipoEstadoCompra,
   TrasladoBoleta,
-  EstadoTrasladoBoleta
+  EstadoTrasladoBoleta,
+  CompraProducto
 } from '../../types';
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
@@ -78,6 +80,9 @@ export class MisCompras implements OnInit, OnDestroy {
   private currentLoadBackground = false;
   
   compras: Compra[] = [];
+  comprasProductos: CompraProducto[] = [];
+  compraProductoExpandidaId: number | null = null;
+  loadingComprasProductos = false;
   comprasConBoletas: { compra: Compra; boletas: BoletaComprada[] }[] = [];
   eventosConBoletas: EventoBoletasGrupo[] = [];
   eventoExpandidoKey: string | null = null;
@@ -152,6 +157,7 @@ export class MisCompras implements OnInit, OnDestroy {
 
   constructor(
     private comprasService: ComprasService,
+    private comprasProductoService: ComprasProductoService,
     private boletasService: BoletasService,
     private trasladosBoletaService: TrasladosBoletaService,
     private eventosService: EventosService,
@@ -193,6 +199,7 @@ export class MisCompras implements OnInit, OnDestroy {
         this.loadingBoletasDetalle = true;
 
         await this.loadBoletasPorCompra({ background: this.currentLoadBackground });
+        await this.loadComprasProductos();
 
         this.loading = false;
         this.endSilentRefreshCycle();
@@ -202,6 +209,7 @@ export class MisCompras implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Error cargando compras:', err);
         this.compras = [];
+        this.comprasProductos = [];
         this.comprasConBoletas = [];
         this.eventosConBoletas = [];
         this.eventoExpandidoKey = null;
@@ -231,7 +239,10 @@ export class MisCompras implements OnInit, OnDestroy {
       this.page = 1; // Resetear a primera página al filtrar
     }
 
-    const hasVisibleData = this.compras.length > 0 || this.eventosConBoletas.length > 0;
+    const hasVisibleData =
+      this.compras.length > 0 ||
+      this.comprasProductos.length > 0 ||
+      this.eventosConBoletas.length > 0;
     const background = options?.background ?? hasVisibleData;
     this.currentLoadBackground = background;
     this.loading = !background && !hasVisibleData;
@@ -243,6 +254,44 @@ export class MisCompras implements OnInit, OnDestroy {
     }
     this.cdr.detectChanges();
     this.loadComprasSubject.next();
+  }
+
+  private async loadComprasProductos(): Promise<void> {
+    const clienteId = this.authService.getUsuarioId();
+    if (!clienteId) {
+      this.comprasProductos = [];
+      return;
+    }
+
+    this.loadingComprasProductos = true;
+    try {
+      this.comprasProductos = await this.comprasProductoService.getComprasByCliente(clienteId);
+    } catch (err) {
+      console.error('Error cargando compras de productos:', err);
+      this.comprasProductos = [];
+    } finally {
+      this.loadingComprasProductos = false;
+    }
+  }
+
+  toggleCompraProductoExpandida(compraId: number): void {
+    this.compraProductoExpandidaId =
+      this.compraProductoExpandidaId === compraId ? null : compraId;
+  }
+
+  isCompraProductoExpandida(compraId: number): boolean {
+    return this.compraProductoExpandidaId === compraId;
+  }
+
+  tituloEventoProducto(compra: CompraProducto): string {
+    return compra.eventos?.titulo || 'Evento';
+  }
+
+  totalItemsProducto(compra: CompraProducto): number {
+    return (compra.compras_productos_items || []).reduce(
+      (sum, item) => sum + (item.cantidad || 0),
+      0
+    );
   }
 
   private async loadComprasInternal(): Promise<PaginatedResponse<Compra>> {
@@ -1050,6 +1099,7 @@ export class MisCompras implements OnInit, OnDestroy {
   tieneContenidoMisBoletas(): boolean {
     return (
       this.eventosConBoletas.length > 0 ||
+      this.comprasProductos.length > 0 ||
       this.entradasCedidas.length > 0 ||
       this.trasladosPendientesRecibir.length > 0
     );

@@ -212,6 +212,27 @@ export class ComprasProductoService {
     return data as TransaccionProducto;
   }
 
+  async getComprasByCliente(clienteId: number): Promise<CompraProducto[]> {
+    const { data, error } = await this.supabase
+      .from('compras_productos')
+      .select(`
+        *,
+        eventos(id, titulo, imagen_principal, fecha_inicio, fecha_fin),
+        compras_productos_items(
+          *,
+          productos(id, nombre, imagen_url, es_licor)
+        )
+      `)
+      .eq('cliente_id', clienteId)
+      .neq('estado_compra', TipoEstadoCompra.CANCELADA)
+      .order('fecha_compra', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+    return (data as CompraProducto[]) ?? [];
+  }
+
   async getCompraById(id: number): Promise<CompraProducto> {
     const { data, error } = await this.supabase
       .from('compras_productos')

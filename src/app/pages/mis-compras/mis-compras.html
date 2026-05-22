@@ -66,7 +66,7 @@
   <section class="hero-section mini-hero">
     <div class="hero-content">
       <h1 class="hero-title">Mis <span class="gradient-text">Compras</span></h1>
-      <p class="hero-subtitle">Historial de tus experiencias y boletas adquiridas</p>
+      <p class="hero-subtitle">Historial de boletas, productos y pedidos en eventos</p>
     </div>
   </section>
 
@@ -206,6 +206,125 @@
       </div>
     </div>
   </div>
+
+  <!-- Compras de productos -->
+  <section
+    *ngIf="!loading && !eventoDetalleKey && (comprasProductos.length > 0 || loadingComprasProductos)"
+    class="compras-productos-section"
+    aria-labelledby="mis-productos-titulo"
+  >
+    <h3 class="section-traslados-title" id="mis-productos-titulo">
+      <span class="material-icons">shopping_bag</span>
+      Mis productos
+    </h3>
+    <p class="section-traslados-desc">
+      Pedidos de comida, bebidas y extras. Retíralos en el evento el día indicado.
+    </p>
+
+    <div class="loading-small" *ngIf="loadingComprasProductos">
+      <p>Cargando productos...</p>
+    </div>
+
+    <div class="compras-productos-list" *ngIf="!loadingComprasProductos && comprasProductos.length > 0">
+      <article
+        *ngFor="let compra of comprasProductos"
+        class="compra-card mc-event-card mc-producto-card"
+        [class.expanded]="isCompraProductoExpandida(compra.id)"
+      >
+        <button
+          type="button"
+          class="evento-card-toggle mc-event-card-toggle mc-producto-card-toggle"
+          (click)="toggleCompraProductoExpandida(compra.id)"
+          [attr.aria-expanded]="isCompraProductoExpandida(compra.id)"
+          [attr.aria-label]="'Ver productos del pedido ' + compra.numero_pedido"
+        >
+          <div class="event-body">
+            <h3 class="event-title">{{ tituloEventoProducto(compra) }}</h3>
+            <div class="event-meta">
+              <span class="event-meta-line">
+                <span class="material-icons">receipt_long</span>
+                Pedido {{ compra.numero_pedido }}
+              </span>
+              <span class="event-meta-line" *ngIf="compra.fecha_compra">
+                <span class="material-icons">calendar_today</span>
+                {{ compra.fecha_compra | dateFormat:'short' }}
+              </span>
+            </div>
+            <div class="compra-estados compra-estados--event-card">
+              <span class="badge" [class]="getEstadoClass(compra.estado_pago)">
+                Pago: {{ getEstadoPagoLabel(compra.estado_pago) }}
+              </span>
+              <span class="badge" [class]="getEstadoClass(compra.estado_compra)">
+                {{ getEstadoCompraLabel(compra.estado_compra) }}
+              </span>
+              <span class="badge badge-info-soft">
+                {{ totalItemsProducto(compra) }}
+                {{ totalItemsProducto(compra) === 1 ? 'producto' : 'productos' }}
+              </span>
+            </div>
+            <div class="event-footer">
+              <div class="mc-event-boletas-stat">
+                <span class="total-label">Total</span>
+                <span class="total-value">{{ formatCurrency(compra.total) }}</span>
+              </div>
+              <span class="event-cta" aria-hidden="true">
+                <span class="event-cta-text">{{ isCompraProductoExpandida(compra.id) ? 'Ocultar' : 'Ver' }}</span>
+                <span class="material-icons mc-producto-chevron">
+                  {{ isCompraProductoExpandida(compra.id) ? 'expand_less' : 'expand_more' }}
+                </span>
+              </span>
+            </div>
+          </div>
+        </button>
+
+        <div class="mc-producto-items" *ngIf="isCompraProductoExpandida(compra.id)">
+          <div
+            *ngFor="let item of compra.compras_productos_items"
+            class="mc-producto-item"
+          >
+            <div class="mc-producto-item__media">
+              <img
+                *ngIf="item.productos?.imagen_url; else productoSinImagen"
+                [src]="item.productos!.imagen_url"
+                [alt]="item.productos!.nombre"
+                loading="lazy"
+              />
+              <ng-template #productoSinImagen>
+                <span class="material-icons" aria-hidden="true">inventory_2</span>
+              </ng-template>
+            </div>
+            <div class="mc-producto-item__info">
+              <p class="mc-producto-item__name">
+                {{ item.productos?.nombre || 'Producto' }}
+                <span class="mc-producto-licor-tag" *ngIf="item.productos?.es_licor">+18</span>
+              </p>
+              <p class="mc-producto-item__meta">
+                {{ item.cantidad }} × {{ formatCurrency(item.precio_unitario) }}
+              </p>
+            </div>
+            <strong class="mc-producto-item__total">
+              {{ formatCurrency(item.subtotal_linea ?? item.cantidad * item.precio_unitario) }}
+            </strong>
+          </div>
+
+          <div class="mc-producto-resumen">
+            <div class="mc-producto-resumen__row" *ngIf="compra.valor_servicio > 0">
+              <span>Servicio ({{ compra.porcentaje_servicio }}%)</span>
+              <span>{{ formatCurrency(compra.valor_servicio) }}</span>
+            </div>
+            <div class="mc-producto-resumen__row" *ngIf="compra.descuento_total > 0">
+              <span>Descuento</span>
+              <span>-{{ formatCurrency(compra.descuento_total) }}</span>
+            </div>
+            <div class="mc-producto-resumen__row mc-producto-resumen__row--total">
+              <span>Total pagado</span>
+              <span>{{ formatCurrency(compra.total) }}</span>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
 
   <!-- Lista agrupada por evento -->
   <div *ngIf="!loading && eventoDetalleBoletas() as detalle" class="evento-detalle-page">
@@ -644,8 +763,8 @@
   <!-- Empty state -->
   <div *ngIf="!loading && !vistaActividad && !tieneContenidoMisBoletas()" class="empty-state">
     <span class="material-icons empty-state__lead-icon" aria-hidden="true">shopping_bag</span>
-    <p class="empty-state__title">No has realizado ninguna compra aún</p>
-    <p class="empty-subtitle">Explora los eventos disponibles y compra tus boletas</p>
+    <p class="empty-state__title">Aún no tienes compras</p>
+    <p class="empty-subtitle">Explora eventos y adquiere boletas o productos para tu experiencia</p>
     <a routerLink="/eventos-cliente" class="btn-primary empty-state__cta">
       <span class="material-icons" aria-hidden="true">event</span>
       Ver Eventos

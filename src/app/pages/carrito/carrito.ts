@@ -133,8 +133,23 @@ export class Carrito implements OnInit, OnDestroy {
 
   aceptarTerminosLicor(): void {
     this.terminosAceptados = true;
-    this.modalTerminosLicor = false;
+    this.cerrarModalTerminosLicor();
     void this.procesarCompra();
+  }
+
+  abrirModalTerminosLicor(): void {
+    this.modalTerminosLicor = true;
+  }
+
+  cerrarModalTerminosLicor(): void {
+    this.modalTerminosLicor = false;
+  }
+
+  get terminosLicorLineas(): string[] {
+    return this.terminosLicorTexto
+      .split('\n')
+      .map((linea) => linea.replace(/\*\*/g, '').trim())
+      .filter(Boolean);
   }
 
   volverAlEvento(): void {
