@@ -1,0 +1,384 @@
+/* Copiado de detalle-evento.css — catálogo de compra (entradas/productos) */
+
+.evento-section {
+  border-radius: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  padding: 1.15rem;
+  margin-bottom: 0.9rem;
+  background: white;
+}
+
+.evento-section h2 {
+  font-size: 1.1rem;
+  margin-bottom: 0.9rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.section-heading-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.section-heading-row h2 {
+  margin: 0 0 0.35rem;
+}
+
+.evento-section .section-heading-row h2 {
+  margin-bottom: 0.35rem;
+}
+
+.section-kicker {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #64748b;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.btn-carrito-rapido {
+  border: 1px solid #dbe4ff;
+  background: #fff;
+  color: #334155;
+  border-radius: 999px;
+  padding: 0.5rem 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px -10px rgba(99, 102, 241, 0.45);
+}
+
+.btn-carrito-rapido:hover {
+  background: #f8fafc;
+  border-color: #c7d2fe;
+}
+
+.btn-carrito-rapido .material-icons {
+  font-size: 1.05rem;
+}
+
+.btn-carrito-rapido-texto {
+  font-size: 0.83rem;
+}
+
+.tipos-boleta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.tipo-boleta-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.95rem;
+  padding: 1rem;
+  transition: all 0.2s;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.tipo-boleta-card:hover {
+  transform: none;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+  border-color: #cbd5e1;
+}
+
+.tipo-boleta-card--licor {
+  border-color: #fcd34d;
+}
+
+.tipo-boleta-imagen {
+  margin: -1rem -1rem 1rem;
+  overflow: hidden;
+  border-radius: 0.95rem 0.95rem 0 0;
+}
+
+.tipo-boleta-imagen img {
+  width: 100%;
+  height: 168px;
+  object-fit: cover;
+  display: block;
+}
+
+.tipo-boleta-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.tipo-boleta-header h3 {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.tipo-boleta-header .precio {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.tipo-descripcion {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+.tipo-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.tipo-info-metricas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.65rem;
+  row-gap: 0.35rem;
+}
+
+.tipo-info .disponibles.sin-stock {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.tipo-info .vendidas {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.tipo-info .reservados {
+  color: #d97706;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tipo-info .reservados.reservados--cero {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.tipo-info .palco-badge {
+  flex-basis: 100%;
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.tipo-info .palco-badge--licor {
+  background: #fff7ed;
+  color: #b45309;
+  border-color: #fed7aa;
+}
+
+.tipo-info .fin-venta-block {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.tipo-info .fin-venta-tipo {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.tipo-info .fin-venta-nota {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.soldout-badge {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cantidad-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 100px;
+  padding: 0.28rem 0.4rem 0.28rem 0.28rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.btn-cantidad {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #f1f5f9;
+  color: #1e293b;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, transform 0.18s ease, color 0.2s ease;
+  outline: none;
+}
+
+.btn-cantidad:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #0f172a;
+  transform: translateY(-1px);
+}
+
+.btn-cantidad:focus-visible {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.18);
+}
+
+.btn-cantidad:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.cantidad {
+  font-weight: 800;
+  color: #0f172a;
+  font-size: 1.02rem;
+  min-width: 20px;
+  text-align: center;
+}
+
+.btn-remove {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #fff1f2;
+  color: #be123c;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, transform 0.18s ease, color 0.2s ease;
+  outline: none;
+}
+
+.btn-remove .material-icons {
+  font-size: 1.08rem !important;
+  line-height: 1;
+}
+
+.btn-remove:hover {
+  background: #ffe4e6;
+  color: #9f1239;
+  transform: translateY(-1px);
+}
+
+.btn-remove:focus-visible {
+  box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.2);
+}
+
+.btn-add {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+  border-radius: 11px;
+  font-size: 0.9rem;
+}
+
+.btn-add .material-icons {
+  font-size: 1.03rem;
+  color: #4f46e5;
+}
+
+.btn-add:hover:not(:disabled) {
+  background: #e0e7ff;
+  border-color: #a5b4fc;
+  color: #312e81;
+}
+
+.btn-add:disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+  border-color: #e2e8f0;
+  cursor: not-allowed;
+}
+
+.evento-finalizado-message {
+  text-align: center;
+  padding: 2rem 1.5rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 1rem;
+  border: 2px dashed #cbd5e1;
+}
+
+.evento-finalizado-message p {
+  font-size: 1.1rem;
+  color: #64748b;
+  line-height: 1.6;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  color: #64748b;
+}
+
+.empty-state p {
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .tipos-boleta-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .tipo-boleta-card {
+    padding: 0.9rem;
+  }
+
+  .section-heading-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-carrito-rapido {
+    width: 100%;
+    justify-content: center;
+  }
+}

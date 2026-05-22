@@ -4,8 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { BoletasService } from '../../services/boletas.service';
-import { CarritoCompraService, ItemCarritoEvento } from '../../services/carrito-compra.service';
+import { CarritoCompraService, ItemCarritoEvento, ItemCarritoProducto } from '../../services/carrito-compra.service';
 import { ComprasClienteService, ItemCompra } from '../../services/compras-cliente.service';
+import { ComprasProductoService } from '../../services/compras-producto.service';
 import { CuponesService } from '../../services/cupones.service';
 import { AuthService } from '../../services/auth.service';
 import { UsuariosService } from '../../services/usuarios.service';
@@ -13,11 +14,13 @@ import { AlertService } from '../../services/alert.service';
 import { EventosService } from '../../services/eventos.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { supabaseConfig } from '../../config/supabase.config';
+import { TERMINOS_LICOR_TEXTO, TERMINOS_LICOR_TITULO } from '../../constants/productos.constants';
 import {
   CuponDescuento,
   EstadoPalco,
   Evento,
   Palco,
+  Producto,
   TipoBoleta,
   TipoEstadoEvento,
   Usuario
@@ -33,11 +36,16 @@ export class Carrito implements OnInit, OnDestroy {
   evento: Evento | null = null;
   usuario: Usuario | null = null;
   itemsCompra: ItemCarritoEvento[] = [];
+  itemsProductos: ItemCarritoProducto[] = [];
 
   codigoCupon = '';
   cuponAplicado: CuponDescuento | null = null;
   validandoCupon = false;
   comprando = false;
+  terminosAceptados = false;
+  modalTerminosLicor = false;
+  readonly terminosLicorTitulo = TERMINOS_LICOR_TITULO;
+  readonly terminosLicorTexto = TERMINOS_LICOR_TEXTO;
 
   palcosDisponiblesPorTipo = new Map<number, Palco[]>();
   palcosCatalogoPorTipo = new Map<number, Palco[]>();
@@ -52,6 +60,7 @@ export class Carrito implements OnInit, OnDestroy {
     private boletasService: BoletasService,
     private carritoCompraService: CarritoCompraService,
     private comprasClienteService: ComprasClienteService,
+    private comprasProductoService: ComprasProductoService,
     private cuponesService: CuponesService,
     private authService: AuthService,
     private usuariosService: UsuariosService,
@@ -73,6 +82,15 @@ export class Carrito implements OnInit, OnDestroy {
     );
 
     this.subscriptions.add(
+      this.carritoCompraService.itemsProductos$.subscribe((items) => {
+        this.itemsProductos = items.map((item) => ({
+          ...item,
+          producto: { ...item.producto }
+        }));
+      })
+    );
+
+    this.subscriptions.add(
       this.carritoCompraService.evento$.subscribe((evento) => {
         this.evento = evento;
         if (evento?.id) {
@@ -89,7 +107,41 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   get carritoVacio(): boolean {
-    return !this.evento || this.itemsCompra.length === 0;
+    return !this.evento || this.carritoCompraService.estaVacio();
+  }
+
+  tieneLicor(): boolean {
+    return this.carritoCompraService.tieneLicorEnCarrito();
+  }
+
+  getDisponiblesProducto(producto: Producto): number {
+    return producto.cantidad_disponibles ?? Math.max(0, producto.cantidad_total - (producto.cantidad_vendidas ?? 0));
+  }
+
+  agregarProducto(item: ItemCarritoProducto): void {
+    this.carritoCompraService.agregarProductoAlCarrito(item.producto);
+  }
+
+  quitarProducto(item: ItemCarritoProducto): void {
+    this.carritoCompraService.quitarProductoDelCarrito(item.producto.id);
+  }
+
+  eliminarProducto(item: ItemCarritoProducto): void {
+    this.carritoCompraService.eliminarProductoDelCarrito(item.producto.id);
+  }
+
+  aceptarTerminosLicor(): void {
+    this.terminosAceptados = true;
+    this.modalTerminosLicor = false;
+    void this.procesarCompra();
+  }
+
+  volverAlEvento(): void {
+    if (this.evento?.id) {
+      this.router.navigate(['/detalle-evento', this.evento.id], { queryParams: { tab: 'productos' } });
+    } else {
+      this.irAEventos();
+    }
   }
 
   irAEventos(): void {
@@ -148,14 +200,21 @@ export class Carrito implements OnInit, OnDestroy {
     this.carritoCompraService.eliminarDelCarrito(tipo.id);
   }
 
-  getSubtotal(): number {
+  getSubtotalBoletas(): number {
     return this.itemsCompra.reduce((sum, item) => sum + (item.tipo.precio * item.cantidad), 0);
+  }
+
+  getSubtotalProductos(): number {
+    return this.carritoCompraService.getSubtotalProductos();
+  }
+
+  getSubtotal(): number {
+    return this.getSubtotalBoletas() + this.getSubtotalProductos();
   }
 
   getDescuento(): number {
     if (!this.cuponAplicado) return 0;
-    const subtotal = this.getSubtotal();
-    return (subtotal * this.cuponAplicado.porcentaje_descuento) / 100;
+    return (this.getSubtotalBoletas() * this.cuponAplicado.porcentaje_descuento) / 100;
   }
 
   getPorcentajeServicio(): number {
@@ -165,17 +224,35 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   getBaseNetaBoletas(): number {
-    return Math.max(0, this.getSubtotal() - this.getDescuento());
+    return Math.max(0, this.getSubtotalBoletas() - this.getDescuento());
   }
 
   getValorServicio(): number {
-    const base = this.getBaseNetaBoletas();
+    const base = this.getBaseNetaBoletas() + this.getSubtotalProductos();
     const porcentaje = this.getPorcentajeServicio();
     return (base * porcentaje) / 100;
   }
 
+  getTotalBoletas(): number {
+    if (this.itemsCompra.length === 0) return 0;
+    const base = this.getBaseNetaBoletas();
+    const baseTotal = this.getBaseNetaBoletas() + this.getSubtotalProductos();
+    if (baseTotal === 0) return 0;
+    const servicio = this.getValorServicio() * (base / baseTotal);
+    return base + servicio;
+  }
+
+  getTotalProductos(): number {
+    if (this.itemsProductos.length === 0) return 0;
+    const base = this.getSubtotalProductos();
+    const baseTotal = this.getBaseNetaBoletas() + this.getSubtotalProductos();
+    if (baseTotal === 0) return 0;
+    const servicio = this.getValorServicio() * (base / baseTotal);
+    return base + servicio;
+  }
+
   getTotal(): number {
-    return this.getBaseNetaBoletas() + this.getValorServicio();
+    return this.getBaseNetaBoletas() + this.getSubtotalProductos() + this.getValorServicio();
   }
 
   formatCurrency(value: number): string {
@@ -419,8 +496,13 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   async procesarCompra(): Promise<void> {
-    if (!this.evento || this.itemsCompra.length === 0) {
-      this.alertService.warning('Carrito vacío', 'Debes agregar al menos una boleta o palco');
+    if (!this.evento || this.carritoCompraService.estaVacio()) {
+      this.alertService.warning('Carrito vacío', 'Debes agregar al menos una boleta, palco o producto');
+      return;
+    }
+
+    if (this.tieneLicor() && !this.terminosAceptados) {
+      this.modalTerminosLicor = true;
       return;
     }
 
@@ -448,7 +530,7 @@ export class Carrito implements OnInit, OnDestroy {
       }
     }
 
-    const items: ItemCompra[] = this.itemsCompra.map((item) => {
+    const itemsBoletas: ItemCompra[] = this.itemsCompra.map((item) => {
       const base = {
         tipo_boleta_id: item.tipo.id,
         cantidad: item.cantidad,
@@ -463,46 +545,120 @@ export class Carrito implements OnInit, OnDestroy {
       return base;
     });
 
+    const itemsProductosCompra = this.itemsProductos.map((item) => ({
+      producto_id: item.producto.id,
+      cantidad: item.cantidad,
+      precio_unitario: item.producto.precio
+    }));
+
     this.comprando = true;
+    let compraBoletasId: number | null = null;
+    let compraProductosId: number | null = null;
+
     try {
-      await this.refrescarPalcosDisponibles();
-      const validacion = await this.comprasClienteService.validarDisponibilidad(items);
-      if (!validacion.valido) {
-        this.alertService.error('Error de disponibilidad', validacion.errores.join('\n'));
-        this.comprando = false;
-        return;
+      if (this.itemsCompra.length > 0) {
+        await this.refrescarPalcosDisponibles();
+        const validacionBoletas = await this.comprasClienteService.validarDisponibilidad(itemsBoletas);
+        if (!validacionBoletas.valido) {
+          this.alertService.error('Error de disponibilidad', validacionBoletas.errores.join('\n'));
+          return;
+        }
       }
 
-      const resultado = await this.comprasClienteService.procesarCompra({
-        evento_id: this.evento.id,
-        cliente_id: clienteId,
-        items,
-        cupon_id: this.cuponAplicado?.id,
-        descuento_total: this.getDescuento(),
-        subtotal: this.getSubtotal(),
-        porcentaje_servicio: this.getPorcentajeServicio(),
-        valor_servicio: this.getValorServicio(),
-        total: this.getTotal()
-      });
+      if (this.itemsProductos.length > 0) {
+        const validacionProductos = await this.comprasProductoService.validarDisponibilidad(itemsProductosCompra);
+        if (!validacionProductos.valido) {
+          this.alertService.error('Disponibilidad de productos', validacionProductos.errores.join('\n'));
+          return;
+        }
+      }
 
-      if (resultado.compra.total === 0) {
-        await this.comprasClienteService.confirmarPago(resultado.compra.id);
+      if (this.itemsCompra.length > 0) {
+        const resultadoBoletas = await this.comprasClienteService.procesarCompra({
+          evento_id: this.evento.id,
+          cliente_id: clienteId,
+          items: itemsBoletas,
+          cupon_id: this.cuponAplicado?.id,
+          descuento_total: this.getDescuento(),
+          subtotal: this.getSubtotalBoletas(),
+          porcentaje_servicio: this.getPorcentajeServicio(),
+          valor_servicio: this.getTotalBoletas() - this.getBaseNetaBoletas(),
+          total: this.getTotalBoletas()
+        });
+        compraBoletasId = resultadoBoletas.compra.id;
+      }
+
+      if (this.itemsProductos.length > 0) {
+        try {
+          const resultadoProductos = await this.comprasProductoService.procesarCompra({
+            evento_id: this.evento.id,
+            cliente_id: clienteId,
+            items: itemsProductosCompra,
+            subtotal: this.getSubtotalProductos(),
+            porcentaje_servicio: this.getPorcentajeServicio(),
+            valor_servicio: this.getTotalProductos() - this.getSubtotalProductos(),
+            total: this.getTotalProductos(),
+            terminos_licor_aceptados: this.tieneLicor() && this.terminosAceptados
+          });
+          compraProductosId = resultadoProductos.compra.id;
+        } catch (productosError) {
+          if (compraBoletasId) {
+            await this.supabaseService.from('compras').delete().eq('id', compraBoletasId);
+          }
+          throw productosError;
+        }
+      }
+
+      const totalPago = this.getTotal();
+
+      if (totalPago === 0) {
+        if (compraBoletasId) {
+          await this.comprasClienteService.confirmarPago(compraBoletasId);
+        }
+        if (compraProductosId) {
+          await this.comprasProductoService.confirmarPago(compraProductosId);
+        }
         this.carritoCompraService.vaciarCarrito();
-        this.alertService.success('¡Compra exitosa!', 'Tu compra gratuita fue confirmada correctamente');
+        this.alertService.success('¡Compra exitosa!', 'Tu pedido fue confirmado correctamente');
         this.router.navigate(['/pago-resultado'], {
-          queryParams: { compra_id: resultado.compra.id, status: 'APPROVED' }
+          queryParams: {
+            compra_id: compraBoletasId ?? undefined,
+            compra_producto_id: compraProductosId ?? undefined,
+            status: 'APPROVED'
+          }
         });
         return;
       }
 
-      const redirectUrl = `${window.location.origin}/pago-resultado?compra_id=${resultado.compra.id}`;
+      const query = new URLSearchParams();
+      if (compraBoletasId) query.set('compra_id', String(compraBoletasId));
+      if (compraProductosId) query.set('compra_producto_id', String(compraProductosId));
+      const redirectUrl = `${window.location.origin}/pago-resultado?${query.toString()}`;
+
       const supabaseUrl = supabaseConfig.url;
       const { data: { session } } = await this.supabaseService.auth.getSession();
       const accessToken = session?.access_token;
       if (!accessToken) {
         throw new Error('No se pudo obtener token de autenticación');
       }
-      const customerEmail = this.usuario?.email || '';
+
+      const wompiBody: Record<string, unknown> = {
+        amount_in_cents: Math.round(totalPago * 100),
+        redirect_url: redirectUrl,
+        customer_email: this.usuario?.email || ''
+      };
+
+      if (compraBoletasId && compraProductosId) {
+        wompiBody['tipo'] = 'mixto';
+        wompiBody['compra_id'] = compraBoletasId;
+        wompiBody['compra_producto_id'] = compraProductosId;
+      } else if (compraProductosId) {
+        wompiBody['tipo'] = 'productos';
+        wompiBody['compra_producto_id'] = compraProductosId;
+      } else if (compraBoletasId) {
+        wompiBody['compra_id'] = compraBoletasId;
+      }
+
       const response = await fetch(`${supabaseUrl}/functions/v1/wompi-payment`, {
         method: 'POST',
         headers: {
@@ -510,26 +666,25 @@ export class Carrito implements OnInit, OnDestroy {
           Authorization: `Bearer ${accessToken}`,
           apikey: supabaseConfig.anonKey
         },
-        body: JSON.stringify({
-          compra_id: resultado.compra.id,
-          amount_in_cents: Math.round(resultado.compra.total * 100),
-          redirect_url: redirectUrl,
-          customer_email: customerEmail
-        })
+        body: JSON.stringify(wompiBody)
       });
 
       const responseData = await response.json();
       if (!response.ok || !responseData.success) {
         throw new Error(responseData.error || 'Error creando transacción en Wompi');
       }
+
       const checkoutUrl = responseData.checkout_url || responseData.transaction?.checkout_url;
       if (!checkoutUrl) {
         throw new Error('No se obtuvo URL de checkout');
       }
+
+      this.carritoCompraService.vaciarCarrito();
       window.location.href = checkoutUrl;
     } catch (error: any) {
       console.error('Error procesando compra:', error);
       this.alertService.error('Error al procesar compra', error?.message || 'Error desconocido');
+    } finally {
       this.comprando = false;
     }
   }

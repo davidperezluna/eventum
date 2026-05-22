@@ -1,0 +1,96 @@
+<div class="evento-section" *ngIf="!eventoFinalizado">
+  <div class="section-heading-row">
+    <div>
+      <h2>Productos</h2>
+      <p class="section-kicker">Selecciona tus productos y revisa el total antes de pagar.</p>
+    </div>
+    <button
+      type="button"
+      class="btn-carrito-rapido"
+      *ngIf="totalItemsCarrito > 0"
+      (click)="irACarrito()"
+      aria-label="Ir al carrito de productos"
+    >
+      <span class="material-icons">shopping_cart</span>
+      <span class="btn-carrito-rapido-texto">
+        {{ totalItemsCarrito }} item(s) · {{ formatCurrency(getTotalCarrito()) }}
+      </span>
+      <span class="material-icons">arrow_forward</span>
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading-small">
+    <p>Cargando productos...</p>
+  </div>
+
+  <div *ngIf="!loading && productos.length > 0" class="tipos-boleta-grid">
+    <div
+      *ngFor="let producto of productos"
+      class="tipo-boleta-card"
+      [class.tipo-boleta-card--licor]="producto.es_licor"
+    >
+      <div class="tipo-boleta-imagen" *ngIf="producto.imagen_url">
+        <img [src]="producto.imagen_url" [alt]="producto.nombre" loading="lazy" />
+      </div>
+      <div class="tipo-boleta-header">
+        <h3>{{ producto.nombre }}</h3>
+        <span class="precio">{{ formatCurrency(producto.precio) }}</span>
+      </div>
+      <p *ngIf="producto.descripcion" class="tipo-descripcion">{{ producto.descripcion }}</p>
+      <div class="tipo-info">
+        <div class="tipo-info-metricas">
+          <span class="disponibles" [class.sin-stock]="!tieneExistencias(producto)">
+            {{ getDisponibles(producto) }} disponibles
+          </span>
+          <span *ngIf="producto.cantidad_vendidas !== undefined && producto.cantidad_vendidas > 0" class="vendidas">
+            {{ producto.cantidad_vendidas }} vendidos de {{ producto.cantidad_total }} totales
+          </span>
+          <span *ngIf="producto.limite_por_persona" class="limite">Máx. {{ producto.limite_por_persona }} por persona</span>
+        </div>
+        <span *ngIf="producto.es_licor" class="palco-badge palco-badge--licor">
+          Licor · +18 · Eventum es intermediario
+        </span>
+        <div *ngIf="producto.fecha_venta_fin" class="fin-venta-block">
+          <span class="fin-venta-tipo">Fin de venta: {{ producto.fecha_venta_fin | dateFormat:'short' }}</span>
+          <span class="fin-venta-nota">Hasta agotar existencias</span>
+        </div>
+        <span *ngIf="!tieneExistencias(producto)" class="soldout-badge">SOLD OUT</span>
+      </div>
+      <div class="tipo-actions">
+        <div class="cantidad-controls" *ngIf="getCantidadEnCarrito(producto.id) > 0">
+          <button type="button" class="btn-cantidad" (click)="quitarDelCarrito(producto)">-</button>
+          <span class="cantidad">{{ getCantidadEnCarrito(producto.id) }}</span>
+          <button
+            type="button"
+            class="btn-cantidad"
+            (click)="agregarAlCarrito(producto)"
+            [disabled]="!tieneExistencias(producto) || getCantidadEnCarrito(producto.id) >= getDisponibles(producto)"
+          >+</button>
+          <button type="button" class="btn-remove" (click)="eliminarDelCarrito(producto)">
+            <span class="material-icons">delete</span>
+          </button>
+        </div>
+        <button
+          *ngIf="getCantidadEnCarrito(producto.id) === 0"
+          type="button"
+          class="btn-add"
+          (click)="agregarAlCarrito(producto)"
+          [disabled]="!tieneExistencias(producto)"
+        >
+          <span class="material-icons">add_shopping_cart</span>
+          Agregar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!loading && productos.length === 0" class="empty-state">
+    <p>No hay productos disponibles para este evento</p>
+  </div>
+</div>
+
+<div class="evento-section" *ngIf="eventoFinalizado">
+  <div class="evento-finalizado-message">
+    <p>Este evento ya terminó. Los productos no están disponibles para compra.</p>
+  </div>
+</div>

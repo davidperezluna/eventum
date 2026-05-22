@@ -143,6 +143,30 @@
   margin-bottom: 2.5rem;
 }
 
+.detalle-compra-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.25rem;
+}
+
+.detalle-compra-tab {
+  border: none;
+  background: transparent;
+  padding: 0.65rem 1rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.detalle-compra-tab.active {
+  color: #0f172a;
+  border-bottom-color: #0f172a;
+}
+
 .detalle-zone-title {
   font-size: 1.0625rem;
   font-weight: 700;

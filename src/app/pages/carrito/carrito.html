@@ -2,7 +2,7 @@
   <section class="hero-section mini-hero">
     <div class="hero-content">
       <h1 class="hero-title">Mi <span class="gradient-text">Carrito</span></h1>
-      <p class="hero-subtitle">Confirma tus boletas y finaliza tu compra de forma segura.</p>
+      <p class="hero-subtitle">Confirma tus boletas, productos y finaliza tu compra de forma segura.</p>
     </div>
   </section>
 
@@ -12,7 +12,7 @@
         <span class="material-icons">shopping_cart</span>
       </div>
       <h2>Tu carrito está vacío</h2>
-      <p>Agrega boletas o palcos desde el detalle del evento.</p>
+      <p>Agrega boletas, palcos o productos desde el detalle del evento.</p>
       <button type="button" class="btn-primary empty-state__cta" (click)="irAEventos()">
         Ver eventos
       </button>
@@ -21,7 +21,7 @@
     <ng-container *ngIf="!carritoVacio">
       <section class="evento-section">
         <h2>{{ evento?.titulo }}</h2>
-        <p class="section-subtitle">Revisa tus boletas, selecciona palcos y finaliza el pago.</p>
+        <p class="section-subtitle">Revisa tus boletas, productos, selecciona palcos y finaliza el pago.</p>
 
         <div class="carrito-items">
           <div *ngFor="let item of itemsCompra" class="carrito-item">
@@ -133,9 +133,35 @@
               </div>
             </div>
           </div>
+
+          <div *ngFor="let item of itemsProductos" class="carrito-item carrito-item--producto">
+            <div class="carrito-item-info">
+              <div class="info-main">
+                <h4>{{ item.producto.nombre }}</h4>
+                <p class="carrito-precio">{{ formatCurrency(item.producto.precio) }} x {{ item.cantidad }}</p>
+                <p *ngIf="item.producto.es_licor" class="licor-tag">Bebida alcohólica (+18)</p>
+              </div>
+              <div class="info-side">
+                <div class="cantidad-controls">
+                  <button type="button" class="btn-cantidad" (click)="quitarProducto(item)">-</button>
+                  <span class="cantidad">{{ item.cantidad }}</span>
+                  <button
+                    type="button"
+                    class="btn-cantidad"
+                    (click)="agregarProducto(item)"
+                    [disabled]="item.cantidad >= getDisponiblesProducto(item.producto)"
+                  >+</button>
+                </div>
+                <p class="carrito-subtotal">{{ formatCurrency(item.producto.precio * item.cantidad) }}</p>
+                <button type="button" class="btn-remove-item-static" (click)="eliminarProducto(item)" title="Quitar producto">
+                  <span class="material-icons">delete</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="cupon-section">
+        <div class="cupon-section" *ngIf="itemsCompra.length > 0">
           <h5>¿Tienes cupón?</h5>
           <div class="cupon-input-group" *ngIf="!cuponAplicado">
             <input type="text" [(ngModel)]="codigoCupon" placeholder="Ingresa el código" (keyup.enter)="aplicarCupon()" />
@@ -151,18 +177,33 @@
           </div>
         </div>
 
+        <div class="cupon-section licor-section" *ngIf="tieneLicor()">
+          <h5>Términos — bebidas alcohólicas</h5>
+          <p class="licor-section-text">
+            Debes ser mayor de 18 años. Eventum actúa solo como intermediario, no como distribuidor.
+          </p>
+          <label class="licor-check">
+            <input type="checkbox" [(ngModel)]="terminosAceptados" />
+            Acepto los términos para bebidas alcohólicas
+          </label>
+        </div>
+
         <div class="carrito-total">
-          <div class="total-row">
+          <div class="total-row" *ngIf="itemsCompra.length > 0">
             <span>Valor boletas/palcos:</span>
-            <span>{{ formatCurrency(getSubtotal()) }}</span>
+            <span>{{ formatCurrency(getSubtotalBoletas()) }}</span>
+          </div>
+          <div class="total-row" *ngIf="itemsProductos.length > 0">
+            <span>Valor productos:</span>
+            <span>{{ formatCurrency(getSubtotalProductos()) }}</span>
           </div>
           <div class="total-row descuento" *ngIf="cuponAplicado">
-            <span>Descuento:</span>
+            <span>Descuento (boletas):</span>
             <span>-{{ formatCurrency(getDescuento()) }}</span>
           </div>
           <div class="total-row">
             <span>Subtotal:</span>
-            <span>{{ formatCurrency(getBaseNetaBoletas()) }}</span>
+            <span>{{ formatCurrency(getBaseNetaBoletas() + getSubtotalProductos()) }}</span>
           </div>
           <div class="total-row">
             <span>Servicio ({{ getPorcentajeServicio() }}%):</span>
@@ -173,7 +214,7 @@
           </div>
           <button class="btn-comprar" (click)="procesarCompra()" [disabled]="comprando">
             <span class="material-icons">{{ comprando ? 'hourglass_empty' : 'shopping_cart' }}</span>
-            {{ comprando ? 'Procesando...' : 'Comprar boletas' }}
+            {{ comprando ? 'Procesando...' : 'Finalizar compra' }}
           </button>
         </div>
       </section>
@@ -187,6 +228,17 @@
       </button>
       <p class="palco-mapa-dialog-title">{{ mapa.titulo }}</p>
       <img [src]="mapa.url" alt="Plano de palcos ampliado" class="palco-mapa-dialog-img" />
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="modalTerminosLicor" (click)="modalTerminosLicor = false">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <h2>{{ terminosLicorTitulo }}</h2>
+    <div class="terminos-texto">{{ terminosLicorTexto }}</div>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" (click)="modalTerminosLicor = false">Cancelar</button>
+      <button type="button" class="btn-primary-modal" (click)="aceptarTerminosLicor()">Acepto y continuar</button>
     </div>
   </div>
 </div>

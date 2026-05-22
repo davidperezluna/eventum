@@ -2,7 +2,8 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ComprasClienteService } from '../../services/compras-cliente.service';
-import { Compra } from '../../types';
+import { ComprasProductoService } from '../../services/compras-producto.service';
+import { Compra, CompraProducto } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 @Component({
@@ -13,7 +14,9 @@ import { DateFormatPipe } from '../../pipes/date-format.pipe';
 })
 export class PagoResultado implements OnInit {
   compraId: number | null = null;
+  compraProductoId: number | null = null;
   compra: Compra | null = null;
+  compraProducto: CompraProducto | null = null;
   loading = true;
   error: string | null = null;
   /** Titular corto cuando hay error técnico o de negocio */
@@ -23,13 +26,15 @@ export class PagoResultado implements OnInit {
     private route: ActivatedRoute,
     public router: Router,
     private comprasClienteService: ComprasClienteService,
+    private comprasProductoService: ComprasProductoService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
       this.compraId = params['compra_id'] ? Number(params['compra_id']) : null;
-      if (this.compraId) {
+      this.compraProductoId = params['compra_producto_id'] ? Number(params['compra_producto_id']) : null;
+      if (this.compraId || this.compraProductoId) {
         this.verificarEstadoCompra();
       } else {
         this.errorTitulo = 'Falta información del pago';
@@ -41,13 +46,16 @@ export class PagoResultado implements OnInit {
   }
 
   async verificarEstadoCompra() {
-    if (!this.compraId) return;
+    if (!this.compraId && !this.compraProductoId) return;
 
-    // Esperar un momento para que el webhook procese
     setTimeout(async () => {
       try {
-        const compra = await this.comprasClienteService.getCompraById(this.compraId!);
-        this.compra = compra;
+        if (this.compraId) {
+          this.compra = await this.comprasClienteService.getCompraById(this.compraId!);
+        }
+        if (this.compraProductoId) {
+          this.compraProducto = await this.comprasProductoService.getCompraById(this.compraProductoId!);
+        }
         this.loading = false;
         this.cdr.detectChanges();
       } catch (err: any) {
@@ -69,9 +77,16 @@ export class PagoResultado implements OnInit {
     }, 2000); // Esperar 2 segundos para que el webhook procese
   }
 
+  getEstadoPagoReferencia(): 'completado' | 'pendiente' | 'fallido' | 'otro' {
+    const estados = [this.compra?.estado_pago, this.compraProducto?.estado_pago].filter(Boolean) as string[];
+    if (estados.some((e) => e === 'fallido')) return 'fallido';
+    if (estados.length > 0 && estados.every((e) => e === 'completado')) return 'completado';
+    if (estados.some((e) => e === 'pendiente')) return 'pendiente';
+    return 'otro';
+  }
+
   getEstadoPagoLabel(): string {
-    if (!this.compra) return '';
-    switch (this.compra.estado_pago) {
+    switch (this.getEstadoPagoReferencia()) {
       case 'completado':
         return 'Pago confirmado';
       case 'pendiente':
@@ -83,10 +98,8 @@ export class PagoResultado implements OnInit {
     }
   }
 
-  /** Etiqueta pequeña encima del título (jerarquía visual) */
   getEstadoPagoEyebrow(): string {
-    if (!this.compra) return '';
-    switch (this.compra.estado_pago) {
+    switch (this.getEstadoPagoReferencia()) {
       case 'completado':
         return 'Estado · Compra registrada';
       case 'pendiente':
@@ -98,19 +111,21 @@ export class PagoResultado implements OnInit {
     }
   }
 
-  /** Una línea visible bajo el título principal */
   getEstadoPagoLead(): string {
-    if (!this.compra) return '';
-    switch (this.compra.estado_pago) {
+    switch (this.getEstadoPagoReferencia()) {
       case 'completado':
-        return 'Tu compra quedó registrada. Tus boletas están en Mis compras; el QR puede habilitarse más cerca del evento.';
+        return 'Tu compra quedó registrada. Revisa Mis compras para boletas; los productos se entregan en el evento.';
       case 'pendiente':
-        return 'Tu banco o Wompi aún pueden estar procesando el cobro. En unos minutos debería actualizarse aquí y en Mis compras. Si cerraste antes de terminar, vuelve a intentar desde el evento.';
+        return 'Tu banco o Wompi aún pueden estar procesando el cobro. En unos minutos debería actualizarse aquí y en Mis compras.';
       case 'fallido':
         return 'No se aplicó ningún cobro válido desde esta solicitud. Puedes volver al evento e intentarlo con otro medio de pago.';
       default:
         return 'Revisa Mis compras o contacta soporte si el problema continúa.';
     }
+  }
+
+  getTotalMostrado(): number {
+    return (this.compra?.total ?? 0) + (this.compraProducto?.total ?? 0);
   }
 
   formatCurrency(value: number): string {

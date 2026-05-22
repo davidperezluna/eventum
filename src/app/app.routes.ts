@@ -15,6 +15,7 @@ import { PagoResultado } from './pages/pago-resultado/pago-resultado';
 import { Ventas } from './pages/ventas/ventas';
 import { VentasManual } from './pages/ventas-manual/ventas-manual';
 import { ProbarCompras } from './pages/probar-compras/probar-compras';
+import { Productos } from './pages/productos/productos';
 import { Usuarios } from './pages/usuarios/usuarios';
 import { Categorias } from './pages/categorias/categorias';
 import { Lugares } from './pages/lugares/lugares';
@@ -90,6 +91,7 @@ const appRoutes: Routes = [
       { path: 'conocenos', component: ConocenosContacto }, // Conócenos y contacto (público)
       { path: 'detalle-evento/:id', component: DetalleEvento }, // Público: detalle de evento
       { path: 'carrito', component: Carrito },
+      { path: 'carrito-productos', redirectTo: 'carrito', pathMatch: 'full' },
     ]
   },
   // Rutas protegidas (requieren autenticación)
@@ -107,11 +109,13 @@ const appRoutes: Routes = [
       { path: 'mis-compras/guia', component: MisComprasGuia }, // Cliente: guía de uso de entradas
       { path: 'mis-compras/evento/:id', component: MisCompras }, // Cliente: detalle de boletas por evento
       { path: 'mis-compras', component: MisCompras }, // Cliente: ver compras
-      { path: 'pago-resultado', component: PagoResultado }, // Resultado de pago Wompi
+      { path: 'pago-resultado', component: PagoResultado },
+      { path: 'pago-resultado-producto', redirectTo: 'pago-resultado', pathMatch: 'full' },
       { path: 'categorias', component: Categorias },
       { path: 'lugares', component: Lugares },
       { path: 'boletas', component: Boletas, data: { vistaBoletas: 'pendientes' } },
       { path: 'boletas-usadas', component: Boletas, data: { vistaBoletas: 'usadas' } },
+      { path: 'productos', component: Productos, data: { adminOnly: true } },
       { path: 'lectores-parametrizacion', component: LectoresParametrizacion },
       { path: 'escanear-qr', component: EscanearQr, data: { modoApp: 'admin' } },
       { path: 'palcos', component: Palcos },

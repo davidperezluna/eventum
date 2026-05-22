@@ -138,6 +138,7 @@ export class Layout implements OnInit, OnDestroy {
       { path: '/lugares', label: 'Lugares', icon: 'place' },
       { path: '/boletas', label: 'Boletas sin usar', icon: 'confirmation_number' },
       { path: '/boletas-usadas', label: 'Boletas usadas', icon: 'how_to_reg' },
+      { path: '/productos', label: 'Productos', icon: 'local_mall' },
       { path: '/lectores-parametrizacion', label: 'Lectores', icon: 'qr_code_scanner' },
       { path: '/palcos', label: 'Palcos', icon: 'event_seat' },
       { path: '/ventas', label: 'Ventas', icon: 'attach_money' },

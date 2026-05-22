@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef, CUSTOM_ELEMENTS_SCHEMA
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { EventosService } from '../../services/eventos.service';
 import { BoletasService } from '../../services/boletas.service';
 import { ComprasClienteService, ItemCompra } from '../../services/compras-cliente.service';
@@ -15,6 +16,8 @@ import { SupabaseService } from '../../services/supabase.service';
 import { AlertService } from '../../services/alert.service';
 import { DetalleEventoStateService } from '../../services/detalle-evento-state.service';
 import { CarritoCompraService, ItemCarritoEvento } from '../../services/carrito-compra.service';
+import { ProductosService } from '../../services/productos.service';
+import { EventoProductosTab } from '../../components/evento-productos-tab/evento-productos-tab';
 import {
   Evento,
   TipoBoleta,
@@ -32,7 +35,7 @@ import { SafePipe } from '../../pipes/safe.pipe';
 
 @Component({
   selector: 'app-detalle-evento',
-  imports: [CommonModule, FormsModule, RouterModule, DateFormatPipe, SafePipe],
+  imports: [CommonModule, FormsModule, RouterModule, DateFormatPipe, SafePipe, EventoProductosTab],
   templateUrl: './detalle-evento.html',
   styleUrl: './detalle-evento.css',
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
@@ -45,6 +48,9 @@ export class DetalleEvento implements OnInit, OnDestroy {
   loading = false;
   isRefreshing = false;
   loadingBoletas = false;
+  loadingProductosFlag = false;
+  tieneProductos = false;
+  tabCompra: 'entradas' | 'productos' = 'entradas';
   loadingLugar = false;
   loadingCategoria = false;
   comprando = false;
@@ -76,6 +82,7 @@ export class DetalleEvento implements OnInit, OnDestroy {
   private currentEventoId: number | null = null;
   private refreshIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly refreshIndicatorDelayMs = 800;
+  private carritoSubscription?: Subscription;
 
   // Control de acordeones (todos cerrados por defecto)
   acordeones: {
@@ -91,6 +98,16 @@ export class DetalleEvento implements OnInit, OnDestroy {
     politica: false,
     eventoFinalizado: false
   };
+
+  setTabCompra(tab: 'entradas' | 'productos'): void {
+    this.tabCompra = tab;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+  }
 
   toggleAcordeon(seccion: keyof typeof this.acordeones) {
     this.acordeones[seccion] = !this.acordeones[seccion];
@@ -108,6 +125,7 @@ export class DetalleEvento implements OnInit, OnDestroy {
     private alertService: AlertService,
     private detalleEventoStateService: DetalleEventoStateService,
     private carritoCompraService: CarritoCompraService,
+    private productosService: ProductosService,
     private lugaresService: LugaresService,
     private categoriasService: CategoriasService,
     private wompiService: WompiService,
@@ -157,10 +175,31 @@ export class DetalleEvento implements OnInit, OnDestroy {
       const useBackgroundRefresh = !!cachedState;
       void this.loadEvento(parsedId, { background: useBackgroundRefresh });
     }
+
+    const tabQuery = this.route.snapshot.queryParamMap.get('tab');
+    if (tabQuery === 'productos') {
+      this.tabCompra = 'productos';
+    }
+
+    this.route.queryParamMap.subscribe((params) => {
+      const tab = params.get('tab');
+      if (tab === 'productos') {
+        this.tabCompra = 'productos';
+      } else if (tab === 'entradas') {
+        this.tabCompra = 'entradas';
+      }
+      this.cdr.detectChanges();
+    });
+
     this.loadUsuario();
+
+    this.carritoSubscription = this.carritoCompraService.totalItems$.subscribe(() => {
+      this.cdr.detectChanges();
+    });
   }
 
   ngOnDestroy(): void {
+    this.carritoSubscription?.unsubscribe();
     this.persistState(Date.now());
     this.stopSilentRefreshIndicator();
   }
@@ -454,6 +493,15 @@ export class DetalleEvento implements OnInit, OnDestroy {
       // Esperar a que todas las cargas terminen en paralelo
       await Promise.all(promesas);
 
+      this.loadingProductosFlag = true;
+      try {
+        this.tieneProductos = await this.productosService.eventoTieneProductos(id);
+      } catch {
+        this.tieneProductos = false;
+      } finally {
+        this.loadingProductosFlag = false;
+      }
+
       // Actualizar estado y vista después de que todo esté cargado
       this.loading = false;
       this.persistState(Date.now());
@@ -597,26 +645,30 @@ export class DetalleEvento implements OnInit, OnDestroy {
   }
 
   getCantidadTotalCarrito(): number {
-    return this.itemsCompra.reduce((acc, item) => acc + item.cantidad, 0);
+    const boletas = this.itemsCompra.reduce((acc, item) => acc + item.cantidad, 0);
+    const productos = this.carritoCompraService.getItemsProductosSnapshot().reduce((acc, item) => acc + item.cantidad, 0);
+    return boletas + productos;
   }
 
   irACarrito(): void {
     this.router.navigate(['/carrito']);
   }
 
-  getTotal(): number {
-    const baseNeta = Math.max(0, this.getSubtotal() - this.getDescuento());
-    return baseNeta + this.getValorServicio();
+  getSubtotal(): number {
+    return this.getSubtotalBoletas() + this.getSubtotalProductos();
   }
 
-  getSubtotal(): number {
+  getSubtotalBoletas(): number {
     return this.itemsCompra.reduce((sum, item) => sum + (item.tipo.precio * item.cantidad), 0);
+  }
+
+  getSubtotalProductos(): number {
+    return this.carritoCompraService.getSubtotalProductos();
   }
 
   getDescuento(): number {
     if (!this.cuponAplicado) return 0;
-    const subtotal = this.getSubtotal();
-    return (subtotal * this.cuponAplicado.porcentaje_descuento) / 100;
+    return (this.getSubtotalBoletas() * this.cuponAplicado.porcentaje_descuento) / 100;
   }
 
   getPorcentajeServicio(): number {
@@ -626,13 +678,17 @@ export class DetalleEvento implements OnInit, OnDestroy {
   }
 
   getBaseNetaBoletas(): number {
-    return Math.max(0, this.getSubtotal() - this.getDescuento());
+    return Math.max(0, this.getSubtotalBoletas() - this.getDescuento());
   }
 
   getValorServicio(): number {
-    const base = this.getBaseNetaBoletas();
+    const base = this.getBaseNetaBoletas() + this.getSubtotalProductos();
     const porcentaje = this.getPorcentajeServicio();
     return (base * porcentaje) / 100;
+  }
+
+  getTotal(): number {
+    return this.getBaseNetaBoletas() + this.getSubtotalProductos() + this.getValorServicio();
   }
 
   async aplicarCupon() {

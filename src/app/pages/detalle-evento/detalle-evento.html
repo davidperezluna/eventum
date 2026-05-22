@@ -132,8 +132,27 @@
 
     <!-- Compra primero (entradas y carrito) -->
     <div class="detalle-zone detalle-zone--compra">
+      <nav class="detalle-compra-tabs" *ngIf="tieneProductos || loadingProductosFlag" aria-label="Secciones de compra">
+        <button
+          type="button"
+          class="detalle-compra-tab"
+          [class.active]="tabCompra === 'entradas'"
+          (click)="setTabCompra('entradas')"
+        >
+          Entradas
+        </button>
+        <button
+          type="button"
+          class="detalle-compra-tab"
+          [class.active]="tabCompra === 'productos'"
+          (click)="setTabCompra('productos')"
+        >
+          Productos
+        </button>
+      </nav>
+
       <!-- Tipos de boleta -->
-      <div class="evento-section" *ngIf="!isEventoFinalizado()">
+      <div class="evento-section" *ngIf="tabCompra === 'entradas' && !isEventoFinalizado()">
       <div class="section-heading-row">
         <div>
           <h2>Entradas</h2>
@@ -148,7 +167,7 @@
         >
           <span class="material-icons">shopping_cart</span>
           <span class="btn-carrito-rapido-texto">
-            {{ getCantidadTotalCarrito() }} item(s) · {{ formatCurrency(getSubtotal()) }}
+            {{ getCantidadTotalCarrito() }} item(s) · {{ formatCurrency(getTotal()) }}
           </span>
           <span class="material-icons">arrow_forward</span>
         </button>
@@ -204,8 +223,14 @@
       </div>
       </div>
 
+      <app-evento-productos-tab
+        *ngIf="tabCompra === 'productos' && evento"
+        [evento]="evento"
+        [eventoFinalizado]="isEventoFinalizado()"
+      ></app-evento-productos-tab>
+
       <!-- Mensaje si el evento está finalizado -->
-      <div class="evento-section evento-accordion" *ngIf="isEventoFinalizado()">
+      <div class="evento-section evento-accordion" *ngIf="tabCompra === 'entradas' && isEventoFinalizado()">
       <button class="accordion-header" (click)="toggleAcordeon('eventoFinalizado')" type="button">
         <h2>
           <span class="material-icons">event_busy</span>
