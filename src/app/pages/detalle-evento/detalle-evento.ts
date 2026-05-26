@@ -27,7 +27,8 @@ import {
   TipoEstadoEvento,
   CuponDescuento,
   Palco,
-  EstadoPalco
+  EstadoPalco,
+  Producto
 } from '../../types';
 import { supabaseConfig } from '../../config/supabase.config';
 import { getPagoResultadoUrl } from '../../config/app-url';
@@ -51,6 +52,7 @@ export class DetalleEvento implements OnInit, OnDestroy {
   loadingBoletas = false;
   loadingProductosFlag = false;
   tieneProductos = false;
+  productosCache: Producto[] = [];
   tabCompra: 'entradas' | 'productos' = 'entradas';
   loadingLugar = false;
   loadingCategoria = false;
@@ -460,14 +462,30 @@ export class DetalleEvento implements OnInit, OnDestroy {
       const promesas: Promise<any>[] = [];
 
       // Comenzar temprano la verificación de productos para que la tab sea visible antes.
-      this.loadingProductosFlag = true;
+      this.loadingProductosFlag = !silentRefreshMode;
       promesas.push(
         this.productosService.eventoTieneProductos(id)
-          .then((tieneProductos) => {
+          .then(async (tieneProductos) => {
             this.tieneProductos = tieneProductos;
+            if (!tieneProductos) {
+              this.productosCache = [];
+              return;
+            }
+
+            try {
+              this.productosCache = await this.productosService.getProductosPorEvento(id);
+            } catch (productosError) {
+              console.warn('[DetalleEvento] No se pudo refrescar productos cacheados:', productosError);
+              if (!this.productosCache.length) {
+                this.productosCache = [];
+              }
+            }
           })
           .catch(() => {
             this.tieneProductos = false;
+            if (!this.productosCache.length) {
+              this.productosCache = [];
+            }
           })
           .finally(() => {
             this.loadingProductosFlag = false;
@@ -1035,6 +1053,8 @@ export class DetalleEvento implements OnInit, OnDestroy {
   private applyCachedState(state: {
     evento: Evento;
     tiposBoleta: TipoBoleta[];
+    tieneProductos: boolean;
+    productos: Producto[];
     lugar: Lugar | null;
     categoria: CategoriaEvento | null;
     palcosDisponiblesPorTipo: Map<number, Palco[]>;
@@ -1042,6 +1062,8 @@ export class DetalleEvento implements OnInit, OnDestroy {
   }): void {
     this.evento = { ...state.evento };
     this.tiposBoleta = [...state.tiposBoleta];
+    this.tieneProductos = state.tieneProductos;
+    this.productosCache = [...state.productos];
     this.lugar = state.lugar ? { ...state.lugar } : null;
     this.categoria = state.categoria ? { ...state.categoria } : null;
     this.palcosDisponiblesPorTipo = new Map(
@@ -1057,6 +1079,8 @@ export class DetalleEvento implements OnInit, OnDestroy {
     this.detalleEventoStateService.saveState(this.currentEventoId, {
       evento: this.evento,
       tiposBoleta: this.tiposBoleta,
+      tieneProductos: this.tieneProductos,
+      productos: this.productosCache,
       lugar: this.lugar,
       categoria: this.categoria,
       palcosDisponiblesPorTipo: this.palcosDisponiblesPorTipo,
@@ -1082,6 +1106,13 @@ export class DetalleEvento implements OnInit, OnDestroy {
       this.refreshIndicatorTimer = null;
     }
     this.isRefreshing = false;
+  }
+
+  onProductosActualizados(productos: Producto[]): void {
+    this.productosCache = [...productos];
+    this.tieneProductos = this.productosCache.length > 0;
+    this.persistState(Date.now());
+    this.cdr.detectChanges();
   }
 }
 

@@ -1,10 +1,12 @@
 import { Injectable } from '@angular/core';
-import { CategoriaEvento, Evento, Lugar, Palco, TipoBoleta } from '../types';
+import { CategoriaEvento, Evento, Lugar, Palco, Producto, TipoBoleta } from '../types';
 import { AppCacheService } from './app-cache.service';
 
 export interface DetalleEventoState {
   evento: Evento;
   tiposBoleta: TipoBoleta[];
+  tieneProductos: boolean;
+  productos: Producto[];
   lugar: Lugar | null;
   categoria: CategoriaEvento | null;
   palcosDisponiblesPorTipo: Map<number, Palco[]>;
@@ -58,6 +60,7 @@ export class DetalleEventoStateService {
     return {
       ...state,
       tiposBoleta: [...state.tiposBoleta],
+      productos: [...state.productos],
       lugar: state.lugar ? { ...state.lugar } : null,
       categoria: state.categoria ? { ...state.categoria } : null,
       palcosDisponiblesPorTipo: new Map(
@@ -102,6 +105,8 @@ export class DetalleEventoStateService {
     return {
       evento: raw.evento,
       tiposBoleta: raw.tiposBoleta || [],
+      tieneProductos: !!raw.tieneProductos,
+      productos: raw.productos || [],
       lugar: raw.lugar || null,
       categoria: raw.categoria || null,
       palcosDisponiblesPorTipo: new Map((raw.palcosDisponiblesPorTipo || []) as Array<[number, Palco[]]>),

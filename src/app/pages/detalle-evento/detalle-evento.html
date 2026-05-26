@@ -231,6 +231,9 @@
         class="detalle-tab-panel"
         [evento]="evento"
         [eventoFinalizado]="isEventoFinalizado()"
+        [productosIniciales]="productosCache"
+        [refrescoSilenciosoInicial]="productosCache.length > 0"
+        (productosActualizados)="onProductosActualizados($event)"
       ></app-evento-productos-tab>
 
       <div

@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
@@ -17,6 +17,9 @@ import { DateFormatPipe } from '../../pipes/date-format.pipe';
 export class EventoProductosTab implements OnInit, OnDestroy {
   @Input({ required: true }) evento!: Evento;
   @Input() eventoFinalizado = false;
+  @Input() productosIniciales: Producto[] = [];
+  @Input() refrescoSilenciosoInicial = false;
+  @Output() productosActualizados = new EventEmitter<Producto[]>();
 
   productos: Producto[] = [];
   loading = false;
@@ -41,7 +44,14 @@ export class EventoProductosTab implements OnInit, OnDestroy {
         this.totalItemsCarrito = total;
         this.cdr.detectChanges();
       });
-    this.loadProductos();
+
+    if (this.productosIniciales.length > 0) {
+      this.productos = [...this.productosIniciales];
+      this.productosCargados = true;
+      this.cdr.detectChanges();
+    }
+
+    this.loadProductos({ background: this.refrescoSilenciosoInicial || this.productosCargados });
   }
 
   ngOnDestroy(): void {
@@ -49,15 +59,22 @@ export class EventoProductosTab implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  async loadProductos(): Promise<void> {
-    if (!this.evento?.id || this.productosCargados) return;
-    this.loading = true;
+  async loadProductos(options?: { background?: boolean; force?: boolean }): Promise<void> {
+    if (!this.evento?.id) return;
+    const background = options?.background ?? false;
+    const force = options?.force ?? false;
+    if (!force && this.productosCargados && !background) return;
+
+    this.loading = !background;
     try {
       this.productos = await this.productosService.getProductosPorEvento(this.evento.id);
       this.productosCargados = true;
+      this.productosActualizados.emit([...this.productos]);
     } catch (err) {
       console.error('Error cargando productos:', err);
-      this.productos = [];
+      if (!background) {
+        this.productos = [];
+      }
     } finally {
       this.loading = false;
       this.cdr.detectChanges();
