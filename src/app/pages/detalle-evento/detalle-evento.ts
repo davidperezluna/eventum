@@ -459,6 +459,22 @@ export class DetalleEvento implements OnInit, OnDestroy {
       // Preparar promesas para carga en paralelo
       const promesas: Promise<any>[] = [];
 
+      // Comenzar temprano la verificación de productos para que la tab sea visible antes.
+      this.loadingProductosFlag = true;
+      promesas.push(
+        this.productosService.eventoTieneProductos(id)
+          .then((tieneProductos) => {
+            this.tieneProductos = tieneProductos;
+          })
+          .catch(() => {
+            this.tieneProductos = false;
+          })
+          .finally(() => {
+            this.loadingProductosFlag = false;
+            this.cdr.detectChanges();
+          })
+      );
+
       // Agregar carga de lugar si existe
       if (evento.lugar_id) {
         promesas.push(this.loadLugar(evento.lugar_id, { background: silentRefreshMode }));
@@ -486,15 +502,6 @@ export class DetalleEvento implements OnInit, OnDestroy {
 
       // Esperar a que todas las cargas terminen en paralelo
       await Promise.all(promesas);
-
-      this.loadingProductosFlag = true;
-      try {
-        this.tieneProductos = await this.productosService.eventoTieneProductos(id);
-      } catch {
-        this.tieneProductos = false;
-      } finally {
-        this.loadingProductosFlag = false;
-      }
 
       // Actualizar estado y vista después de que todo esté cargado
       this.loading = false;

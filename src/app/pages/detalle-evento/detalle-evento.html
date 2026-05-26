@@ -144,10 +144,12 @@
         <button
           type="button"
           class="detalle-compra-tab"
+          [class.detalle-compra-tab--loading]="loadingProductosFlag"
           [class.active]="tabCompra === 'productos'"
           (click)="setTabCompra('productos')"
         >
-          Productos
+          <span>Productos</span>
+          <span *ngIf="loadingProductosFlag" class="tab-loading-pill" aria-live="polite">cargando...</span>
         </button>
       </nav>
 
@@ -230,6 +232,28 @@
         [evento]="evento"
         [eventoFinalizado]="isEventoFinalizado()"
       ></app-evento-productos-tab>
+
+      <div
+        *ngIf="tabCompra === 'productos' && loadingProductosFlag"
+        class="evento-section detalle-tab-panel productos-pending-state"
+        aria-live="polite"
+      >
+        <div class="loading-small">
+          <p>Estamos cargando los productos de este evento...</p>
+        </div>
+      </div>
+
+      <div
+        *ngIf="tabCompra === 'productos' && !loadingProductosFlag && !tieneProductos"
+        class="evento-section detalle-tab-panel productos-pending-state"
+      >
+        <div class="empty-state">
+          <p>Este evento no tiene productos disponibles por ahora.</p>
+          <button type="button" class="btn-add" (click)="setTabCompra('entradas')">
+            Ver entradas
+          </button>
+        </div>
+      </div>
 
       <!-- Mensaje si el evento está finalizado -->
       <div class="evento-section evento-accordion detalle-tab-panel" [hidden]="tabCompra !== 'entradas' || !isEventoFinalizado()">
