@@ -759,6 +759,9 @@ export class Carrito implements OnInit, OnDestroy {
     const checkoutPendiente = await this.resolverCheckoutPendiente(clienteId, this.evento.id);
     if (checkoutPendiente) {
       this.guardarCheckoutPendienteEnCarrito(checkoutPendiente);
+      this.alertService.snackbar(
+        'Tienes un pago en curso. Recupéralo o cancélalo para poder finalizar una compra nueva.'
+      );
       return;
     }
     this.checkoutPendienteEnCurso = null;

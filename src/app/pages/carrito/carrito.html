@@ -268,9 +268,9 @@
           <div class="total-row main">
             <h3>Total: {{ formatCurrency(getTotal()) }}</h3>
           </div>
-          <button class="btn-comprar" (click)="procesarCompra()" [disabled]="comprando">
+          <button class="btn-comprar" (click)="procesarCompra()" [disabled]="comprando || !!checkoutPendienteEnCurso">
             <span class="material-icons">{{ comprando ? 'hourglass_empty' : 'shopping_cart' }}</span>
-            {{ comprando ? 'Procesando...' : 'Finalizar compra' }}
+            {{ comprando ? 'Procesando...' : (checkoutPendienteEnCurso ? 'Pago en curso: recupéralo o cancélalo' : 'Finalizar compra') }}
           </button>
         </div>
       </section>
