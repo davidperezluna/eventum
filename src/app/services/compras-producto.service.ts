@@ -47,10 +47,22 @@ export interface PedidoProductosPendiente {
   providedIn: 'root'
 })
 export class ComprasProductoService {
+  private transaccionesProductoDisponible: boolean | null = null;
+
   constructor(
     private supabase: SupabaseService,
     private timezoneService: TimezoneService
   ) {}
+
+  private esErrorTablaNoExiste(error: unknown): boolean {
+    const e = error as { code?: string; message?: string } | null;
+    const message = String(e?.message || '').toLowerCase();
+    return (
+      e?.code === 'PGRST205' ||
+      e?.code === '42P01' ||
+      (message.includes('could not find the table') && message.includes('transacciones_producto'))
+    );
+  }
 
   private generarNumeroPedido(): string {
     const timestamp = Date.now();
@@ -305,6 +317,52 @@ export class ComprasProductoService {
     }
   }
 
+  async getTransaccionCheckoutById(id: number): Promise<{
+    id: number;
+    estado: string;
+    wompi_status: string | null;
+    total: number;
+    numero_intento: string | null;
+    wompi_reference: string | null;
+    compra_id: number | null;
+    compra_producto_id: number | null;
+    fecha_creacion: string | null;
+    fecha_confirmacion: string | null;
+    fecha_cancelacion: string | null;
+    expires_at: string | null;
+  } | null> {
+    if (!Number.isFinite(id) || id <= 0) {
+      return null;
+    }
+
+    const { data, error } = await this.supabase
+      .from('transacciones_checkout')
+      .select(
+        'id, estado, wompi_status, total, numero_intento, wompi_reference, compra_id, compra_producto_id, fecha_creacion, fecha_confirmacion, fecha_cancelacion, expires_at'
+      )
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return {
+      id: Number(data.id),
+      estado: String(data.estado ?? 'pendiente'),
+      wompi_status: data.wompi_status ? String(data.wompi_status) : null,
+      total: Number(data.total ?? 0),
+      numero_intento: data.numero_intento ? String(data.numero_intento) : null,
+      wompi_reference: data.wompi_reference ? String(data.wompi_reference) : null,
+      compra_id: data.compra_id ? Number(data.compra_id) : null,
+      compra_producto_id: data.compra_producto_id ? Number(data.compra_producto_id) : null,
+      fecha_creacion: data.fecha_creacion ? String(data.fecha_creacion) : null,
+      fecha_confirmacion: data.fecha_confirmacion ? String(data.fecha_confirmacion) : null,
+      fecha_cancelacion: data.fecha_cancelacion ? String(data.fecha_cancelacion) : null,
+      expires_at: data.expires_at ? String(data.expires_at) : null,
+    };
+  }
+
   /** Resuelve compra/transacción cuando Wompi redirige solo con ?id=...&env=... */
   async resolverPorWompiRedirect(wompiTxnId: string): Promise<{
     compraId: number | null;
@@ -318,27 +376,35 @@ export class ComprasProductoService {
 
     const vacio = { compraId: null, compraProductoId: null, transaccionProductoId: null };
 
-    const { data: txnDirecta } = await this.supabase
-      .from('transacciones_producto')
-      .select('id, compra_producto_id')
-      .eq('es_activa', true)
-      .or(
-        [
-          `wompi_transaction_id.eq.${id}`,
-          `response_payload->>id.eq.${id}`,
-          `webhook_payload->data->transaction->>id.eq.${id}`,
-        ].join(',')
-      )
-      .order('fecha_creacion', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    if (this.transaccionesProductoDisponible !== false) {
+      const { data: txnDirecta, error: txnDirectaError } = await this.supabase
+        .from('transacciones_producto')
+        .select('id, compra_producto_id')
+        .eq('es_activa', true)
+        .or(
+          [
+            `wompi_transaction_id.eq.${id}`,
+            `response_payload->>id.eq.${id}`,
+            `webhook_payload->data->transaction->>id.eq.${id}`,
+          ].join(',')
+        )
+        .order('fecha_creacion', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    if (txnDirecta) {
-      return {
-        compraId: null,
-        compraProductoId: txnDirecta.compra_producto_id ?? null,
-        transaccionProductoId: txnDirecta.id,
-      };
+      if (txnDirectaError && this.esErrorTablaNoExiste(txnDirectaError)) {
+        this.transaccionesProductoDisponible = false;
+      } else if (!txnDirectaError) {
+        this.transaccionesProductoDisponible = true;
+      }
+
+      if (txnDirecta) {
+        return {
+          compraId: null,
+          compraProductoId: txnDirecta.compra_producto_id ?? null,
+          transaccionProductoId: txnDirecta.id,
+        };
+      }
     }
 
     const { data: compraDirecta } = await this.supabase
@@ -359,24 +425,54 @@ export class ComprasProductoService {
       return { compraId: compraDirecta.id, compraProductoId: null, transaccionProductoId: null };
     }
 
-    const { data: txnsRecientes } = await this.supabase
-      .from('transacciones_producto')
-      .select('id, compra_producto_id, wompi_transaction_id, response_payload, webhook_payload')
-      .eq('es_activa', true)
+    if (this.transaccionesProductoDisponible !== false) {
+      const { data: txnsRecientes, error: txnsRecientesError } = await this.supabase
+        .from('transacciones_producto')
+        .select('id, compra_producto_id, wompi_transaction_id, response_payload, webhook_payload')
+        .eq('es_activa', true)
+        .order('fecha_creacion', { ascending: false })
+        .limit(40);
+
+      if (txnsRecientesError && this.esErrorTablaNoExiste(txnsRecientesError)) {
+        this.transaccionesProductoDisponible = false;
+      } else if (!txnsRecientesError) {
+        this.transaccionesProductoDisponible = true;
+      }
+
+      const txnPorPayload = (txnsRecientes ?? []).find((row) =>
+        this.payloadContieneWompiId(row.response_payload, id) ||
+        this.payloadContieneWompiId(row.webhook_payload, id) ||
+        row.wompi_transaction_id === id
+      );
+
+      if (txnPorPayload) {
+        return {
+          compraId: null,
+          compraProductoId: txnPorPayload.compra_producto_id ?? null,
+          transaccionProductoId: txnPorPayload.id,
+        };
+      }
+    }
+
+    const { data: checkoutDirecto } = await this.supabase
+      .from('transacciones_checkout')
+      .select('id, compra_id, compra_producto_id, wompi_transaction_id, response_payload, webhook_payload')
+      .or(
+        [
+          `wompi_transaction_id.eq.${id}`,
+          `response_payload->>id.eq.${id}`,
+          `webhook_payload->data->transaction->>id.eq.${id}`,
+        ].join(',')
+      )
       .order('fecha_creacion', { ascending: false })
-      .limit(40);
+      .limit(1)
+      .maybeSingle();
 
-    const txnPorPayload = (txnsRecientes ?? []).find((row) =>
-      this.payloadContieneWompiId(row.response_payload, id) ||
-      this.payloadContieneWompiId(row.webhook_payload, id) ||
-      row.wompi_transaction_id === id
-    );
-
-    if (txnPorPayload) {
+    if (checkoutDirecto) {
       return {
-        compraId: null,
-        compraProductoId: txnPorPayload.compra_producto_id ?? null,
-        transaccionProductoId: txnPorPayload.id,
+        compraId: checkoutDirecto.compra_id ? Number(checkoutDirecto.compra_id) : null,
+        compraProductoId: checkoutDirecto.compra_producto_id ? Number(checkoutDirecto.compra_producto_id) : null,
+        transaccionProductoId: null,
       };
     }
 

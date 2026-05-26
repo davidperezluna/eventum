@@ -407,6 +407,59 @@ async function crearCompraProductoDesdeCheckout(
   return compraProductoId
 }
 
+async function actualizarCompraProductoDesdeCheckout(
+  supabaseClient: ReturnType<typeof createClient>,
+  compraProductoId: number,
+  transaction: Record<string, unknown>,
+  wompiCuentaId: number | null,
+): Promise<void> {
+  const estados = mapEstadosWompi(String(transaction.status || ''))
+  const now = new Date().toISOString()
+
+  if (String(transaction.status || '').toUpperCase() === 'APPROVED') {
+    const { error: rpcError } = await supabaseClient.rpc('confirmar_compra_producto', {
+      p_compra_producto_id: compraProductoId,
+    })
+    if (rpcError) {
+      console.warn('RPC confirmar_compra_producto falló (checkout-only), aplicando update manual:', rpcError.message)
+      const { error: compraError } = await supabaseClient
+        .from('compras_productos')
+        .update({
+          estado_pago: estados.estadoPago,
+          estado_compra: estados.estadoCompra,
+          fecha_confirmacion: now,
+          fecha_cancelacion: null,
+          motivo_cancelacion: null,
+          wompi_cuenta_id: wompiCuentaId,
+        })
+        .eq('id', compraProductoId)
+      if (compraError) {
+        throw compraError
+      }
+    }
+    return
+  }
+
+  if (isFailedWompiStatus(transaction.status)) {
+    const { error: compraError } = await supabaseClient
+      .from('compras_productos')
+      .update({
+        estado_pago: estados.estadoPago,
+        estado_compra: estados.estadoCompra,
+        fecha_cancelacion: now,
+        motivo_cancelacion:
+          (transaction.status_text as string) ||
+          ((transaction.error as { message?: string } | undefined)?.message) ||
+          'Pago rechazado por Wompi',
+        wompi_cuenta_id: wompiCuentaId,
+      })
+      .eq('id', compraProductoId)
+    if (compraError) {
+      throw compraError
+    }
+  }
+}
+
 function generarNumeroTransaccionBoletas(): string {
   return `TXN-${Date.now()}-${Math.floor(Math.random() * 10000)}`
 }
@@ -423,6 +476,20 @@ function getPedidoBoletasFromCheckout(checkout: CheckoutIntent): Record<string, 
   const direct = payload.pedido_boletas
   if (direct && typeof direct === 'object') return direct as Record<string, unknown>
   return null
+}
+
+function hasPedidoBoletas(checkout: CheckoutIntent): boolean {
+  const pedido = getPedidoBoletasFromCheckout(checkout)
+  if (!pedido) return false
+  return Array.isArray((pedido as Record<string, unknown>).items) &&
+    ((pedido as Record<string, unknown>).items as unknown[]).length > 0
+}
+
+function hasPedidoProductos(checkout: CheckoutIntent): boolean {
+  const pedido = getPedidoProductosFromCheckout(checkout)
+  if (!pedido) return false
+  return Array.isArray((pedido as Record<string, unknown>).items) &&
+    ((pedido as Record<string, unknown>).items as unknown[]).length > 0
 }
 
 async function crearCompraBoletasDesdeCheckout(
@@ -962,7 +1029,18 @@ serve(async (req) => {
       }
     }
 
-    if (!compraBoletas?.id && transaccionCheckout && String(transaction.status || '').toUpperCase() === 'APPROVED') {
+    const checkoutTipo = String((transaccionCheckout?.metadata as Record<string, unknown> | null)?.tipo || (transaccionCheckout as Record<string, unknown> | null)?.tipo || '')
+      .trim()
+      .toLowerCase()
+    const checkoutTieneBoletas = !!transaccionCheckout && (checkoutTipo === 'boletas' || checkoutTipo === 'mixto' || hasPedidoBoletas(transaccionCheckout))
+    const checkoutTieneProductos = !!transaccionCheckout && (checkoutTipo === 'productos' || checkoutTipo === 'mixto' || hasPedidoProductos(transaccionCheckout))
+
+    if (
+      !compraBoletas?.id &&
+      transaccionCheckout &&
+      checkoutTieneBoletas &&
+      String(transaction.status || '').toUpperCase() === 'APPROVED'
+    ) {
       const compraIdMaterializada = await crearCompraBoletasDesdeCheckout(
         supabaseClient,
         transaccionCheckout,
@@ -999,13 +1077,28 @@ serve(async (req) => {
       console.log(`✅ Transacción productos ${transaccionProductoId} procesada`, { compraProductoId })
     }
 
-    if (!compraProductoId && transaccionCheckout && String(transaction.status || '').toUpperCase() === 'APPROVED') {
+    if (
+      !compraProductoId &&
+      transaccionCheckout &&
+      checkoutTieneProductos &&
+      String(transaction.status || '').toUpperCase() === 'APPROVED'
+    ) {
       compraProductoId = await crearCompraProductoDesdeCheckout(
         supabaseClient,
         transaccionCheckout,
         wompiCuentaId,
       )
       console.log(`✅ Compra productos materializada desde checkout ${transaccionCheckout.id} -> ${compraProductoId}`)
+    }
+
+    // Checkout-only productos (sin transacciones_producto): reflejar estado final en compras_productos.
+    if (compraProductoId && !transaccionProductoId) {
+      await actualizarCompraProductoDesdeCheckout(
+        supabaseClient,
+        Number(compraProductoId),
+        transaction,
+        wompiCuentaId,
+      )
     }
 
     if (transaccionCheckout?.id && isFailedWompiStatus(transaction.status)) {

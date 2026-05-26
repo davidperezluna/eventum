@@ -19,6 +19,20 @@ export class PagoResultado implements OnInit {
   compraProductoId: number | null = null;
   transaccionProductoId: number | null = null;
   transaccionCheckoutId: number | null = null;
+  transaccionCheckout: {
+    id: number;
+    estado: string;
+    wompi_status: string | null;
+    total: number;
+    numero_intento: string | null;
+    wompi_reference: string | null;
+    compra_id: number | null;
+    compra_producto_id: number | null;
+    fecha_creacion: string | null;
+    fecha_confirmacion: string | null;
+    fecha_cancelacion: string | null;
+    expires_at: string | null;
+  } | null = null;
   wompiTxnId: string | null = null;
   compra: Compra | null = null;
   compraProducto: CompraProducto | null = null;
@@ -118,7 +132,7 @@ export class PagoResultado implements OnInit {
   }
 
   private async resolverReferencias(): Promise<boolean> {
-    if (this.compraId || this.compraProductoId || this.transaccionProductoId) {
+    if (this.compraId || this.compraProductoId || this.transaccionProductoId || this.transaccionCheckoutId) {
       return true;
     }
 
@@ -170,6 +184,36 @@ export class PagoResultado implements OnInit {
           this.mostrarErrorSinReferencia();
           this.cdr.detectChanges();
           return;
+        }
+
+        if (this.transaccionCheckoutId) {
+          this.transaccionCheckout = await this.comprasProductoService.getTransaccionCheckoutById(
+            this.transaccionCheckoutId
+          );
+
+          if (this.wompiTxnId && this.transaccionCheckout) {
+            const checkoutPendiente =
+              this.transaccionCheckout.estado === 'pendiente' ||
+              this.transaccionCheckout.wompi_status === 'PENDING';
+            if (checkoutPendiente) {
+              await this.comprasProductoService.sincronizarEstadoWompi({
+                wompi_transaction_id: this.wompiTxnId,
+                transaccion_checkout_id: this.transaccionCheckoutId,
+                compra_id: this.compraId ?? undefined,
+                transaccion_producto_id: this.transaccionProductoId ?? undefined,
+              });
+              this.transaccionCheckout = await this.comprasProductoService.getTransaccionCheckoutById(
+                this.transaccionCheckoutId
+              );
+            }
+          }
+
+          if (!this.compraId && this.transaccionCheckout?.compra_id) {
+            this.compraId = this.transaccionCheckout.compra_id;
+          }
+          if (!this.compraProductoId && this.transaccionCheckout?.compra_producto_id) {
+            this.compraProductoId = this.transaccionCheckout.compra_producto_id;
+          }
         }
 
         if (this.compraId) {
@@ -293,6 +337,18 @@ export class PagoResultado implements OnInit {
   }
 
   getEstadoPagoReferencia(): 'completado' | 'pendiente' | 'fallido' | 'otro' {
+    const estadoCheckout =
+      this.transaccionCheckout?.estado === 'aprobada'
+        ? 'completado'
+        : this.transaccionCheckout?.estado === 'rechazada' ||
+            this.transaccionCheckout?.estado === 'cancelada' ||
+            this.transaccionCheckout?.estado === 'expirada' ||
+            this.transaccionCheckout?.estado === 'error'
+          ? 'fallido'
+          : this.transaccionCheckout?.estado === 'pendiente'
+            ? 'pendiente'
+            : null;
+
     const estadosTransaccion = this.transaccionProducto?.estado;
     const estadoTransaccionProducto =
       estadosTransaccion === 'aprobada'
@@ -306,7 +362,8 @@ export class PagoResultado implements OnInit {
     const estados = [
       this.compra?.estado_pago,
       this.compraProducto?.estado_pago,
-      estadoTransaccionProducto
+      estadoTransaccionProducto,
+      estadoCheckout
     ].filter(Boolean) as string[];
 
     if (estados.some((e) => e === 'fallido')) return 'fallido';
@@ -355,6 +412,9 @@ export class PagoResultado implements OnInit {
   }
 
   getTotalMostrado(): number {
+    if (!this.compra && !this.compraProducto && !this.transaccionProducto && this.transaccionCheckout) {
+      return this.transaccionCheckout.total ?? 0;
+    }
     const totalProductos = this.compraProducto?.total ?? this.transaccionProducto?.monto ?? 0;
     return (this.compra?.total ?? 0) + totalProductos;
   }

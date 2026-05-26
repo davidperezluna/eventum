@@ -146,6 +146,9 @@ async function runSyntheticWebhook(
   if (!webhookResponse.ok) {
     throw new Error(webhookResult?.error || 'El webhook interno no procesó la sincronización')
   }
+  if (webhookResult?.error) {
+    throw new Error(String(webhookResult.error))
+  }
   return webhookResult
 }
 

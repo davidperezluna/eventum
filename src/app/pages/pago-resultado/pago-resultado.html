@@ -24,7 +24,7 @@
     </div>
   </article>
 
-  <div *ngIf="!loading && !error && (compra || compraProducto || transaccionProducto)" class="resultado-wrapper">
+  <div *ngIf="!loading && !error && (compra || compraProducto || transaccionProducto || transaccionCheckout)" class="resultado-wrapper">
     <article
       class="resultado-card"
       [class.resultado-card--success]="getEstadoPagoReferencia() === 'completado'"
@@ -56,9 +56,17 @@
             <dt>Referencia productos</dt>
             <dd>{{ transaccionProducto.numero_transaccion }}</dd>
           </div>
+          <div class="summary-row" *ngIf="!compra && !compraProducto && transaccionCheckout?.numero_intento">
+            <dt>Intento checkout</dt>
+            <dd>{{ transaccionCheckout!.numero_intento }}</dd>
+          </div>
           <div class="summary-row" *ngIf="compra?.wompi_reference">
             <dt>Referencia Wompi</dt>
             <dd>{{ compra!.wompi_reference }}</dd>
+          </div>
+          <div class="summary-row" *ngIf="!compra?.wompi_reference && transaccionCheckout?.wompi_reference">
+            <dt>Referencia Wompi</dt>
+            <dd>{{ transaccionCheckout!.wompi_reference }}</dd>
           </div>
           <div class="summary-row summary-row--accent">
             <dt>Total cobrado</dt>
@@ -71,6 +79,10 @@
           <div class="summary-row" *ngIf="compra?.fecha_compra || compraProducto?.fecha_compra">
             <dt>Fecha</dt>
             <dd>{{ (compra?.fecha_compra || compraProducto?.fecha_compra) | dateFormat:'medium' }}</dd>
+          </div>
+          <div class="summary-row" *ngIf="!compra?.fecha_compra && !compraProducto?.fecha_compra && transaccionCheckout?.fecha_creacion">
+            <dt>Fecha</dt>
+            <dd>{{ transaccionCheckout!.fecha_creacion | dateFormat:'medium' }}</dd>
           </div>
         </dl>
       </section>
