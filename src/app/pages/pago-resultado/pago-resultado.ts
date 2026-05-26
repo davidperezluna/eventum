@@ -18,6 +18,7 @@ export class PagoResultado implements OnInit {
   compraId: number | null = null;
   compraProductoId: number | null = null;
   transaccionProductoId: number | null = null;
+  transaccionCheckoutId: number | null = null;
   wompiTxnId: string | null = null;
   compra: Compra | null = null;
   compraProducto: CompraProducto | null = null;
@@ -41,19 +42,26 @@ export class PagoResultado implements OnInit {
       this.transaccionProductoId = params['transaccion_producto_id']
         ? Number(params['transaccion_producto_id'])
         : null;
+      this.transaccionCheckoutId = params['transaccion_checkout_id']
+        ? Number(params['transaccion_checkout_id'])
+        : null;
       this.wompiTxnId = params['id'] ? String(params['id']) : null;
 
       const reference = params['reference'] ? String(params['reference']) : null;
       if (!this.transaccionProductoId && reference) {
-        const txnMatch = reference.match(/TXN-(\d+)/i);
-        if (txnMatch) {
+        // Solo referencias de productos/mixto contienen el TXN de transaccion_producto.
+        // En checkout unificado boletas usamos EVENTUM-CHK-TXN-<checkoutId>, que NO debe mapearse aquí.
+        const prodTxnMatch = reference.match(/^EVENTUM-PROD-TXN-(\d+)-/i);
+        const mixTxnMatch = reference.match(/^EVENTUM-MIX-\d+-TXN-(\d+)-/i);
+        const txnMatch = prodTxnMatch ?? mixTxnMatch;
+        if (txnMatch?.[1]) {
           this.transaccionProductoId = Number(txnMatch[1]);
         }
       }
 
       this.restaurarReferenciasPendientes();
 
-      if (this.compraId || this.compraProductoId || this.transaccionProductoId || this.wompiTxnId) {
+      if (this.compraId || this.compraProductoId || this.transaccionProductoId || this.transaccionCheckoutId || this.wompiTxnId) {
         void this.verificarEstadoCompra();
       } else {
         this.mostrarErrorSinReferencia();
@@ -76,6 +84,7 @@ export class PagoResultado implements OnInit {
         compra_id?: number;
         compra_producto_id?: number;
         transaccion_producto_id?: number;
+        transaccion_checkout_id?: number;
       };
 
       if (!this.compraId && pending.compra_id) {
@@ -86,6 +95,9 @@ export class PagoResultado implements OnInit {
       }
       if (!this.transaccionProductoId && pending.transaccion_producto_id) {
         this.transaccionProductoId = Number(pending.transaccion_producto_id);
+      }
+      if (!this.transaccionCheckoutId && pending.transaccion_checkout_id) {
+        this.transaccionCheckoutId = Number(pending.transaccion_checkout_id);
       }
     } catch {
       // Ignorar JSON inválido
@@ -109,6 +121,19 @@ export class PagoResultado implements OnInit {
     if (this.compraId || this.compraProductoId || this.transaccionProductoId) {
       return true;
     }
+
+    if (this.transaccionCheckoutId) {
+      const fromCheckout = await this.comprasProductoService.resolverPorCheckoutId(this.transaccionCheckoutId);
+      if (!this.compraId && fromCheckout.compraId) this.compraId = fromCheckout.compraId;
+      if (!this.compraProductoId && fromCheckout.compraProductoId) this.compraProductoId = fromCheckout.compraProductoId;
+      if (!this.transaccionProductoId && fromCheckout.transaccionProductoId) {
+        this.transaccionProductoId = fromCheckout.transaccionProductoId;
+      }
+      if (this.compraId || this.compraProductoId || this.transaccionProductoId) {
+        return true;
+      }
+    }
+
     if (!this.wompiTxnId) {
       return false;
     }
@@ -133,6 +158,12 @@ export class PagoResultado implements OnInit {
       try {
         const tieneReferencia = await this.resolverReferencias();
         if (!tieneReferencia) {
+          if (this.transaccionCheckoutId && this.wompiTxnId) {
+            await this.comprasProductoService.sincronizarEstadoWompi({
+              wompi_transaction_id: this.wompiTxnId,
+              transaccion_checkout_id: this.transaccionCheckoutId,
+            });
+          }
           if (intento < intentosMax - 1) {
             continue;
           }
@@ -162,6 +193,7 @@ export class PagoResultado implements OnInit {
           ) {
             await this.comprasProductoService.sincronizarEstadoWompi({
               wompi_transaction_id: wompiTxnParaSync,
+              transaccion_checkout_id: this.transaccionCheckoutId ?? undefined,
               transaccion_producto_id: this.transaccionProductoId,
               compra_id: this.compraId ?? undefined,
             });
@@ -202,6 +234,7 @@ export class PagoResultado implements OnInit {
           if (compraPendiente) {
             await this.comprasProductoService.sincronizarEstadoWompi({
               wompi_transaction_id: this.wompiTxnId,
+              transaccion_checkout_id: this.transaccionCheckoutId ?? undefined,
               compra_id: this.compraId,
             });
             this.compra = await this.comprasClienteService.getCompraById(this.compraId);

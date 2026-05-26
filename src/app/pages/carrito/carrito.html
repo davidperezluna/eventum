@@ -7,6 +7,45 @@
   </section>
 
   <section class="carrito-shell">
+    <div class="checkout-pendiente-alert" *ngIf="checkoutPendienteEnCurso as pendiente">
+      <div class="checkout-pendiente-alert__icon" aria-hidden="true">
+        <span class="material-icons">pending_actions</span>
+      </div>
+      <div class="checkout-pendiente-alert__content">
+        <div class="checkout-pendiente-alert__header">
+          <h4>Pago pendiente detectado</h4>
+          <span class="checkout-pendiente-alert__badge" [class.checkout-pendiente-alert__badge--expired]="pendiente.expiro">
+            {{ pendiente.expiro ? 'Vencido' : 'En curso' }}
+          </span>
+        </div>
+        <p>
+          {{
+            pendiente.expiro
+              ? 'Encontramos un checkout pendiente vencido. Puedes revisar su estado o cancelarlo para crear una compra nueva.'
+              : 'Encontramos una compra pendiente de confirmación. Reanúdala para evitar duplicados y completar tu pedido.'
+          }}
+        </p>
+        <div class="checkout-pendiente-alert__actions">
+          <button
+            type="button"
+            class="checkout-pendiente-alert__btn"
+            (click)="recuperarCheckoutPendiente()"
+            [disabled]="cancelandoCheckoutPendiente"
+          >
+            {{ pendiente.expiro ? 'Revisar estado pendiente' : 'Recuperar pago pendiente' }}
+          </button>
+          <button
+            type="button"
+            class="checkout-pendiente-alert__btn-alt"
+            (click)="cancelarCheckoutPendiente()"
+            [disabled]="cancelandoCheckoutPendiente"
+          >
+            {{ cancelandoCheckoutPendiente ? 'Cancelando...' : 'Cancelar intento y seguir' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="empty-state" *ngIf="carritoVacio">
       <div class="empty-state-icon-box">
         <span class="material-icons">shopping_cart</span>

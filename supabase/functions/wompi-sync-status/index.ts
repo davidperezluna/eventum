@@ -68,6 +68,16 @@ function isFinalWompiStatus(status: string | null | undefined): boolean {
   return ['APPROVED', 'DECLINED', 'VOIDED', 'ERROR'].includes(String(status || '').toUpperCase())
 }
 
+function isMissingRpcError(error: unknown): boolean {
+  const e = error as { code?: string; message?: string } | null
+  const message = String(e?.message || '').toLowerCase()
+  return (
+    e?.code === '42883' ||
+    e?.code === 'PGRST202' ||
+    (message.includes('function') && message.includes('does not exist'))
+  )
+}
+
 async function fetchTransactionById(
   wompiBaseUrl: string,
   privateKey: string,
@@ -189,6 +199,61 @@ async function expirarTransaccionProductoPendiente(
   }
 }
 
+async function expirarTransaccionCheckoutPendiente(
+  supabaseClient: ReturnType<typeof createClient>,
+  transaccionCheckoutId: number,
+): Promise<void> {
+  const now = new Date().toISOString()
+  const motivo = 'Pago no completado: intento de checkout expirado o abandonado'
+
+  const { data: checkout } = await supabaseClient
+    .from('transacciones_checkout')
+    .select('id, compra_id')
+    .eq('id', transaccionCheckoutId)
+    .maybeSingle()
+
+  const { error } = await supabaseClient
+    .from('transacciones_checkout')
+    .update({
+      estado: 'expirada',
+      wompi_status: 'EXPIRED',
+      es_activa: false,
+      fecha_cancelacion: now,
+      motivo_cancelacion: motivo,
+      webhook_payload: { source: 'wompi-sync-status', reason: motivo, expired_at: now },
+    })
+    .eq('id', transaccionCheckoutId)
+
+  if (error) throw error
+
+  const { error: liberarCheckoutError } = await supabaseClient.rpc('cancelar_reserva_palcos_checkout', {
+    p_transaccion_checkout_id: transaccionCheckoutId,
+  })
+  if (liberarCheckoutError && !isMissingRpcError(liberarCheckoutError)) {
+    throw liberarCheckoutError
+  }
+
+  const compraId = checkout?.compra_id ? Number(checkout.compra_id) : null
+  if (compraId) {
+    await supabaseClient
+      .from('compras')
+      .update({
+        estado_pago: 'fallido',
+        estado_compra: 'cancelada',
+        fecha_cancelacion: now,
+        motivo_cancelacion: motivo,
+      })
+      .eq('id', compraId)
+
+    const { error: liberarCompraError } = await supabaseClient.rpc('cancelar_reserva_palcos_compra', {
+      p_compra_id: compraId,
+    })
+    if (liberarCompraError && !isMissingRpcError(liberarCompraError)) {
+      throw liberarCompraError
+    }
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -203,18 +268,24 @@ serve(async (req) => {
 
     const body = await req.json() as {
       transaccion_producto_id?: number
+      transaccion_checkout_id?: number
       compra_id?: number
       wompi_transaction_id?: string
+      force_cancel?: boolean
     }
 
     const transaccionProductoId = body.transaccion_producto_id
       ? Number(body.transaccion_producto_id)
       : null
-    const compraId = body.compra_id ? Number(body.compra_id) : null
+    let compraId = body.compra_id ? Number(body.compra_id) : null
+    const transaccionCheckoutId = body.transaccion_checkout_id
+      ? Number(body.transaccion_checkout_id)
+      : null
     const wompiTransactionId = body.wompi_transaction_id?.trim() || null
+    const forceCancel = !!body.force_cancel
 
-    if (!transaccionProductoId && !compraId) {
-      throw new Error('transaccion_producto_id o compra_id es requerido')
+    if (!transaccionProductoId && !compraId && !transaccionCheckoutId && !wompiTransactionId) {
+      throw new Error('wompi_transaction_id, transaccion_producto_id, transaccion_checkout_id o compra_id es requerido')
     }
 
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey)
@@ -228,6 +299,73 @@ serve(async (req) => {
     let wompiStatusTxn: string | null = null
     let esActivaTxn: boolean | null = null
     let wompiTransactionStored: string | null = null
+    let estadoCheckout: string | null = null
+    let wompiStatusCheckout: string | null = null
+    let fechaCreacionCheckout: string | null = null
+    let esActivaCheckout: boolean | null = null
+
+    if (transaccionCheckoutId) {
+      let checkout: Record<string, unknown> | null = null
+      try {
+        const { data } = await supabaseClient
+          .from('transacciones_checkout')
+          .select(
+            'id, evento_id, wompi_cuenta_id, compra_id, compra_producto_id, estado, wompi_status, wompi_reference, wompi_transaction_id, fecha_creacion, es_activa, metadata',
+          )
+          .eq('id', transaccionCheckoutId)
+          .maybeSingle()
+        checkout = data
+      } catch (e) {
+        throw new Error(`No se pudo consultar transacciones_checkout: ${(e as Error).message}`)
+      }
+
+      if (!checkout) {
+        throw new Error(`Transacción checkout ${transaccionCheckoutId} no encontrada`)
+      }
+
+      if (checkout.estado === 'aprobada' || checkout.wompi_status === 'APPROVED') {
+        return new Response(
+          JSON.stringify({ success: true, already_synced: true, status: 'APPROVED' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
+        )
+      }
+
+      if (!compraId && checkout.compra_id) compraId = Number(checkout.compra_id)
+      if (!compraProductoId && checkout.compra_producto_id) compraProductoId = Number(checkout.compra_producto_id)
+      eventoId = checkout.evento_id ? Number(checkout.evento_id) : eventoId
+      wompiCuentaId = checkout.wompi_cuenta_id ? Number(checkout.wompi_cuenta_id) : wompiCuentaId
+      wompiReference = checkout.wompi_reference ? String(checkout.wompi_reference) : wompiReference
+      wompiTransactionStored = checkout.wompi_transaction_id ? String(checkout.wompi_transaction_id) : wompiTransactionStored
+      estadoCheckout = checkout.estado ? String(checkout.estado) : null
+      wompiStatusCheckout = checkout.wompi_status ? String(checkout.wompi_status) : null
+      fechaCreacionCheckout = checkout.fecha_creacion ? String(checkout.fecha_creacion) : null
+      esActivaCheckout = checkout.es_activa == null ? null : !!checkout.es_activa
+
+      if (forceCancel) {
+        const estadoActual = String(checkout.estado || '').toLowerCase()
+        const yaCerrada =
+          checkout.es_activa === false ||
+          ['cancelada', 'expirada', 'rechazada', 'error', 'aprobada'].includes(estadoActual)
+
+        if (yaCerrada) {
+          return new Response(
+            JSON.stringify({
+              success: true,
+              force_cancelled: true,
+              already_closed: true,
+              status: String(checkout.wompi_status || 'UNKNOWN'),
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
+          )
+        }
+
+        await expirarTransaccionCheckoutPendiente(supabaseClient, transaccionCheckoutId)
+        return new Response(
+          JSON.stringify({ success: true, force_cancelled: true, status: 'EXPIRED' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
+        )
+      }
+    }
 
     if (transaccionProductoId) {
       const { data: txn } = await supabaseClient
@@ -328,6 +466,17 @@ serve(async (req) => {
           status: 200,
         },
       )
+    }
+
+    if (transaccionCheckoutId && estadoCheckout === 'pendiente' && esActivaCheckout !== false) {
+      const createdAtMs = fechaCreacionCheckout ? Date.parse(fechaCreacionCheckout) : Number.NaN
+      const ttlMs = resolveProductosPendingTtlMinutes() * 60_000
+      const isOlderThanTtl = Number.isFinite(createdAtMs) && Date.now() - createdAtMs >= ttlMs
+      const wompiIsPending = !wompiStatusCheckout || String(wompiStatusCheckout).toUpperCase() === 'PENDING'
+
+      if (isOlderThanTtl && wompiIsPending) {
+        await expirarTransaccionCheckoutPendiente(supabaseClient, transaccionCheckoutId)
+      }
     }
 
     if (transaccionProductoId && estadoTxn === 'pendiente' && esActivaTxn !== false) {

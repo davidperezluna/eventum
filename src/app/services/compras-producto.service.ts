@@ -266,6 +266,45 @@ export class ComprasProductoService {
     return data as TransaccionProducto;
   }
 
+  /**
+   * Resuelve ids legacy desde la capa unificada de checkout.
+   * Si la tabla/campos aun no existen en el ambiente, retorna vacio para mantener compatibilidad.
+   */
+  async resolverPorCheckoutId(transaccionCheckoutId: number): Promise<{
+    compraId: number | null;
+    compraProductoId: number | null;
+    transaccionProductoId: number | null;
+  }> {
+    if (!Number.isFinite(transaccionCheckoutId) || transaccionCheckoutId <= 0) {
+      return { compraId: null, compraProductoId: null, transaccionProductoId: null };
+    }
+
+    try {
+      const { data } = await this.supabase
+        .from('transacciones_checkout')
+        .select('id, compra_id, compra_producto_id, metadata, request_payload')
+        .eq('id', transaccionCheckoutId)
+        .maybeSingle();
+
+      if (!data) {
+        return { compraId: null, compraProductoId: null, transaccionProductoId: null };
+      }
+
+      const metadata = (data.metadata ?? {}) as Record<string, unknown>;
+      const requestPayload = (data.request_payload ?? {}) as Record<string, unknown>;
+      const transaccionProductoId =
+        Number(metadata['transaccion_producto_id'] ?? requestPayload['transaccion_producto_id'] ?? 0) || null;
+
+      return {
+        compraId: data.compra_id ? Number(data.compra_id) : null,
+        compraProductoId: data.compra_producto_id ? Number(data.compra_producto_id) : null,
+        transaccionProductoId
+      };
+    } catch {
+      return { compraId: null, compraProductoId: null, transaccionProductoId: null };
+    }
+  }
+
   /** Resuelve compra/transacción cuando Wompi redirige solo con ?id=...&env=... */
   async resolverPorWompiRedirect(wompiTxnId: string): Promise<{
     compraId: number | null;
@@ -397,12 +436,17 @@ export class ComprasProductoService {
 
   /** Consulta Wompi y reprocesa el pago cuando el webhook no llegó a tiempo. */
   async sincronizarEstadoWompi(params: {
-    wompi_transaction_id: string;
+    wompi_transaction_id?: string;
+    transaccion_checkout_id?: number;
     transaccion_producto_id?: number;
     compra_id?: number;
+    force_cancel?: boolean;
   }): Promise<{ success: boolean; wompi_status?: string }> {
     const wompiTransactionId = params.wompi_transaction_id?.trim();
-    if (!wompiTransactionId) {
+    const transaccionCheckoutId = params.transaccion_checkout_id
+      ? Number(params.transaccion_checkout_id)
+      : null;
+    if (!wompiTransactionId && !transaccionCheckoutId) {
       return { success: false };
     }
 
@@ -412,26 +456,48 @@ export class ComprasProductoService {
       return { success: false };
     }
 
-    const response = await fetch(`${supabaseConfig.url}/functions/v1/wompi-sync-status`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-        apikey: supabaseConfig.anonKey,
-      },
-      body: JSON.stringify({
-        wompi_transaction_id: wompiTransactionId,
-        transaccion_producto_id: params.transaccion_producto_id,
-        compra_id: params.compra_id,
-      }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    try {
+      const response = await fetch(`${supabaseConfig.url}/functions/v1/wompi-sync-status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+          apikey: supabaseConfig.anonKey,
+        },
+        body: JSON.stringify({
+          wompi_transaction_id: wompiTransactionId,
+          transaccion_checkout_id: transaccionCheckoutId ?? undefined,
+          transaccion_producto_id: params.transaccion_producto_id,
+          compra_id: params.compra_id,
+          force_cancel: !!params.force_cancel,
+        }),
+        signal: controller.signal,
+      });
 
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      return { success: false, wompi_status: data.wompi_status };
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        return { success: false, wompi_status: data.wompi_status };
+      }
+
+      return { success: true, wompi_status: data.wompi_status };
+    } catch {
+      return { success: false };
+    } finally {
+      clearTimeout(timeout);
     }
+  }
 
-    return { success: true, wompi_status: data.wompi_status };
+  async cancelarCheckoutPendiente(transaccionCheckoutId: number): Promise<boolean> {
+    if (!Number.isFinite(transaccionCheckoutId) || transaccionCheckoutId <= 0) {
+      return false;
+    }
+    const result = await this.sincronizarEstadoWompi({
+      transaccion_checkout_id: transaccionCheckoutId,
+      force_cancel: true,
+    });
+    return !!result.success;
   }
 
   async confirmarPago(compraProductoId: number): Promise<CompraProducto> {

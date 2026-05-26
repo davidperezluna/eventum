@@ -15,6 +15,7 @@ import { EventosService } from '../../services/eventos.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { supabaseConfig } from '../../config/supabase.config';
 import { getPagoResultadoUrl } from '../../config/app-url';
+import { environment } from '../../../environments/environment';
 import { TERMINOS_LICOR_TEXTO, TERMINOS_LICOR_TITULO } from '../../constants/productos.constants';
 import {
   CuponDescuento,
@@ -53,6 +54,14 @@ export class Carrito implements OnInit, OnDestroy {
   private palcoFocoSlotPorTipo = new Map<number, number>();
   private palcosLoadingTipo = new Set<number>();
   private refreshPalcosSeq = 0;
+  private readonly checkoutUnificadoEnabled = !!environment.checkoutUnificadoEnabled;
+  checkoutPendienteEnCurso: {
+    transaccionCheckoutId: number;
+    checkoutUrl: string | null;
+    expiro: boolean;
+  } | null = null;
+  cancelandoCheckoutPendiente = false;
+  private cancelacionCheckoutSeq = 0;
   mapaAmpliado: { url: string; titulo: string } | null = null;
   private subscriptions = new Subscription();
 
@@ -97,6 +106,7 @@ export class Carrito implements OnInit, OnDestroy {
         if (evento?.id) {
           void this.refrescarEvento(evento.id);
         }
+        void this.cargarCheckoutPendienteEnCarrito();
       })
     );
 
@@ -183,10 +193,12 @@ export class Carrito implements OnInit, OnDestroy {
     const sesionValida = await this.authService.ensureActiveSession();
     if (!sesionValida) {
       this.usuario = null;
+      this.checkoutPendienteEnCurso = null;
       this.cdr.detectChanges();
       return;
     }
     this.usuario = this.authService.getUsuario();
+    await this.cargarCheckoutPendienteEnCarrito();
     this.cdr.detectChanges();
   }
 
@@ -220,6 +232,175 @@ export class Carrito implements OnInit, OnDestroy {
       'Tu sesión terminó por inactividad. Inicia sesión de nuevo para completar la compra.'
     );
     this.router.navigate(['/login'], { queryParams: { returnUrl: '/carrito' } });
+  }
+
+  private async resolverCheckoutPendiente(clienteId: number, eventoId: number | null): Promise<{
+    transaccionCheckoutId: number;
+    checkoutUrl: string | null;
+    expiro: boolean;
+  } | null> {
+    try {
+      const { data } = await this.supabaseService
+        .from('transacciones_checkout')
+        .select('id, checkout_url, expires_at, evento_id')
+        .eq('cliente_id', clienteId)
+        .eq('estado', 'pendiente')
+        .eq('es_activa', true)
+        .order('fecha_creacion', { ascending: false })
+        .limit(20);
+
+      const candidatos = (data || []).map((row) => {
+        const expiresAt = row.expires_at ? new Date(String(row.expires_at)).getTime() : Number.NaN;
+        const expiro = Number.isFinite(expiresAt) && expiresAt <= Date.now();
+        return {
+          ...row,
+          expiro,
+        };
+      });
+      if (candidatos.length === 0) {
+        return null;
+      }
+
+      const candidato =
+        (eventoId ? candidatos.find((row) => Number(row.evento_id) === eventoId) : null) ?? candidatos[0];
+
+      return {
+        transaccionCheckoutId: Number(candidato.id),
+        checkoutUrl: candidato.checkout_url ? String(candidato.checkout_url) : null,
+        expiro: !!candidato.expiro,
+      };
+    } catch {
+      // Ambientes sin tabla unificada no deben bloquear el checkout legacy.
+      return null;
+    }
+  }
+
+  private async cargarCheckoutPendienteEnCarrito(): Promise<void> {
+    const clienteId = this.authService.getUsuarioId();
+    if (!clienteId) {
+      this.checkoutPendienteEnCurso = null;
+      return;
+    }
+    const eventoId = this.evento?.id ?? null;
+    this.checkoutPendienteEnCurso = await this.resolverCheckoutPendiente(clienteId, eventoId);
+  }
+
+  private async siguePendienteCheckout(transaccionCheckoutId: number): Promise<boolean> {
+    try {
+      const { data } = await this.supabaseService
+        .from('transacciones_checkout')
+        .select('id, estado, es_activa')
+        .eq('id', transaccionCheckoutId)
+        .maybeSingle();
+      if (!data) return false;
+      return data.estado === 'pendiente' && data.es_activa === true;
+    } catch {
+      return true;
+    }
+  }
+
+  private async withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    try {
+      const timeoutPromise = new Promise<T>((resolve) => {
+        timer = setTimeout(() => resolve(fallback), timeoutMs);
+      });
+      return await Promise.race([promise, timeoutPromise]);
+    } finally {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    }
+  }
+
+  private guardarCheckoutPendienteEnCarrito(
+    pendiente: { transaccionCheckoutId: number; checkoutUrl: string | null; expiro: boolean }
+  ): void {
+    this.checkoutPendienteEnCurso = pendiente;
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(
+        'eventum_pago_pendiente',
+        JSON.stringify({ transaccion_checkout_id: pendiente.transaccionCheckoutId })
+      );
+    }
+  }
+
+  recuperarCheckoutPendiente(): void {
+    const pendiente = this.checkoutPendienteEnCurso;
+    if (!pendiente) {
+      return;
+    }
+    if (!pendiente.expiro && pendiente.checkoutUrl) {
+      window.location.href = pendiente.checkoutUrl;
+      return;
+    }
+    this.router.navigate(['/pago-resultado'], {
+      queryParams: { transaccion_checkout_id: pendiente.transaccionCheckoutId }
+    });
+  }
+
+  ocultarAvisoCheckoutPendiente(): void {
+    this.checkoutPendienteEnCurso = null;
+  }
+
+  async cancelarCheckoutPendiente(): Promise<void> {
+    const pendiente = this.checkoutPendienteEnCurso;
+    if (!pendiente || this.cancelandoCheckoutPendiente) {
+      return;
+    }
+    const opId = ++this.cancelacionCheckoutSeq;
+    this.cancelandoCheckoutPendiente = true;
+    this.cdr.detectChanges();
+    const watchdog = setTimeout(() => {
+      if (this.cancelacionCheckoutSeq === opId && this.cancelandoCheckoutPendiente) {
+        this.cancelandoCheckoutPendiente = false;
+        this.cdr.detectChanges();
+      }
+    }, 15000);
+    try {
+      const ok = await this.withTimeout(
+        this.comprasProductoService.cancelarCheckoutPendiente(pendiente.transaccionCheckoutId),
+        12000,
+        false
+      );
+      if (!ok) {
+        const siguePendiente = await this.withTimeout(
+          this.siguePendienteCheckout(pendiente.transaccionCheckoutId),
+          6000,
+          true
+        );
+        if (!siguePendiente) {
+          this.checkoutPendienteEnCurso = null;
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.removeItem('eventum_pago_pendiente');
+          }
+          this.alertService.snackbarSuccess('Pago pendiente cancelado', 'Ya puedes crear una compra nueva.');
+          return;
+        }
+        this.alertService.snackbarError(
+          'No se pudo cancelar el pago pendiente',
+          'Intenta de nuevo en unos segundos o usa "Recuperar pago pendiente".'
+        );
+        return;
+      }
+
+      this.checkoutPendienteEnCurso = null;
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('eventum_pago_pendiente');
+      }
+      this.alertService.snackbarSuccess('Pago pendiente cancelado', 'Ya puedes crear una compra nueva.');
+    } catch (error: any) {
+      this.alertService.snackbarError(
+        'No se pudo cancelar el pago pendiente',
+        error?.message || 'Error inesperado al cancelar el checkout.'
+      );
+    } finally {
+      clearTimeout(watchdog);
+      if (this.cancelacionCheckoutSeq === opId) {
+        this.cancelandoCheckoutPendiente = false;
+      }
+      this.cdr.detectChanges();
+    }
   }
 
   async loadUsuarioById(usuarioId: number): Promise<void> {
@@ -575,6 +756,13 @@ export class Carrito implements OnInit, OnDestroy {
       return;
     }
 
+    const checkoutPendiente = await this.resolverCheckoutPendiente(clienteId, this.evento.id);
+    if (checkoutPendiente) {
+      this.guardarCheckoutPendienteEnCarrito(checkoutPendiente);
+      return;
+    }
+    this.checkoutPendienteEnCurso = null;
+
     for (const item of this.itemsCompra) {
       if (this.esLineaPalcoMultipersona(item.tipo)) {
         const pids = item.palco_ids || [];
@@ -622,6 +810,19 @@ export class Carrito implements OnInit, OnDestroy {
           terminos_licor_aceptados: this.tieneLicor() && this.terminosAceptados
         }
       : null;
+    const pedidoBoletas = this.itemsCompra.length > 0
+      ? {
+          evento_id: this.evento.id,
+          cliente_id: clienteId,
+          items: itemsBoletas,
+          cupon_id: this.cuponAplicado?.id ?? null,
+          descuento_total: this.getDescuento(),
+          subtotal: this.getSubtotalBoletas(),
+          porcentaje_servicio: this.getPorcentajeServicio(),
+          valor_servicio: this.getTotalBoletas() - this.getBaseNetaBoletas(),
+          total: this.getTotalBoletas()
+        }
+      : null;
 
     try {
       if (this.itemsCompra.length > 0) {
@@ -641,7 +842,7 @@ export class Carrito implements OnInit, OnDestroy {
         }
       }
 
-      if (this.itemsCompra.length > 0) {
+      if (this.itemsCompra.length > 0 && !this.checkoutUnificadoEnabled) {
         const resultadoBoletas = await this.comprasClienteService.procesarCompra({
           evento_id: this.evento.id,
           cliente_id: clienteId,
@@ -668,6 +869,20 @@ export class Carrito implements OnInit, OnDestroy {
       }
 
       if (totalPago === 0) {
+        if (!compraBoletasId && this.itemsCompra.length > 0) {
+          const resultadoBoletas = await this.comprasClienteService.procesarCompra({
+            evento_id: this.evento.id,
+            cliente_id: clienteId,
+            items: itemsBoletas,
+            cupon_id: this.cuponAplicado?.id,
+            descuento_total: this.getDescuento(),
+            subtotal: this.getSubtotalBoletas(),
+            porcentaje_servicio: this.getPorcentajeServicio(),
+            valor_servicio: this.getTotalBoletas() - this.getBaseNetaBoletas(),
+            total: this.getTotalBoletas()
+          });
+          compraBoletasId = resultadoBoletas.compra.id;
+        }
         if (compraBoletasId) {
           await this.comprasClienteService.confirmarPago(compraBoletasId);
         }
@@ -700,7 +915,14 @@ export class Carrito implements OnInit, OnDestroy {
       if (!accessToken) {
         throw new Error('No se pudo obtener token de autenticación');
       }
-      if (compraBoletasId && pedidoProductos) {
+      if (this.checkoutUnificadoEnabled && pedidoBoletas && pedidoProductos) {
+        wompiBody['tipo'] = 'mixto';
+        wompiBody['pedido_boletas'] = pedidoBoletas;
+        wompiBody['pedido_productos'] = pedidoProductos;
+      } else if (this.checkoutUnificadoEnabled && pedidoBoletas) {
+        wompiBody['tipo'] = 'boletas';
+        wompiBody['pedido_boletas'] = pedidoBoletas;
+      } else if (compraBoletasId && pedidoProductos) {
         wompiBody['tipo'] = 'mixto';
         wompiBody['compra_id'] = compraBoletasId;
         wompiBody['pedido_productos'] = pedidoProductos;
@@ -723,7 +945,7 @@ export class Carrito implements OnInit, OnDestroy {
 
       const responseData = await response.json();
       if (!response.ok || !responseData.success) {
-        if (compraBoletasId) {
+        if (compraBoletasId && !this.checkoutUnificadoEnabled) {
           await this.supabaseService.from('compras').delete().eq('id', compraBoletasId);
         }
         throw new Error(responseData.error || 'Error creando transacción en Wompi');
@@ -739,6 +961,9 @@ export class Carrito implements OnInit, OnDestroy {
         if (compraBoletasId) pending['compra_id'] = compraBoletasId;
         if (responseData.transaccion_producto_id) {
           pending['transaccion_producto_id'] = Number(responseData.transaccion_producto_id);
+        }
+        if (responseData.transaccion_checkout_id) {
+          pending['transaccion_checkout_id'] = Number(responseData.transaccion_checkout_id);
         }
         if (Object.keys(pending).length > 0) {
           sessionStorage.setItem('eventum_pago_pendiente', JSON.stringify(pending));

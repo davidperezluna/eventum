@@ -14,6 +14,7 @@ export const environment = {
     serviceWorkerScope: '/push/onesignal/',
   },
   maintenanceMode: false,
+  checkoutUnificadoEnabled: false,
   maintenanceMessage: 'Estamos en mantenimiento. Volvemos pronto.',
   googleTagId: 'GT-5TJZWP3P', // Google Tag ID
   supabaseEnv: 'prod' as 'prod' | 'local',
