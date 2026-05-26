@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 /** Versión desplegada — debe coincidir en logs de Supabase al probar checkout de productos. */
-const WOMPI_PAYMENT_VERSION = '2.1.0-pedido-pendiente'
+const WOMPI_PAYMENT_VERSION = '2.2.0-product-link-expiration'
 // Secret opcional en Supabase (Edge Functions → Secrets): PUBLIC_APP_URL=https://dev.eventumcol.com
 
 const corsHeaders = {
@@ -11,6 +11,12 @@ const corsHeaders = {
 }
 
 const ENV_VAR_NAME_REGEX = /^[A-Z][A-Z0-9_]*$/
+
+function resolveProductosPendingTtlMinutes(): number {
+  const raw = Number(Deno.env.get('WOMPI_PRODUCT_PENDING_TTL_MINUTES') || 30)
+  if (!Number.isFinite(raw)) return 30
+  return Math.min(1440, Math.max(5, Math.floor(raw)))
+}
 
 function toObject<T>(value: T | T[] | null | undefined): T | null {
   if (!value) return null
@@ -382,7 +388,7 @@ serve(async (req) => {
       return `Pago para compra #${compraId}`
     })()
 
-    const paymentLinkRequest = {
+    const paymentLinkRequest: Record<string, unknown> = {
       name: paymentName,
       description: paymentDescription,
       single_use: true,
@@ -391,6 +397,12 @@ serve(async (req) => {
       amount_in_cents: montoCentavos,
       redirect_url: redirectUrlFinal,
       reference,
+    }
+
+    // Para pagos con productos, expirar el link evita pendientes eternos por abandono.
+    if (pedidoProductos) {
+      const ttlMinutes = resolveProductosPendingTtlMinutes()
+      paymentLinkRequest.expires_at = new Date(Date.now() + ttlMinutes * 60_000).toISOString()
     }
 
     console.log('Payment link request:', JSON.stringify(paymentLinkRequest, null, 2))

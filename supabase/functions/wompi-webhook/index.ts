@@ -308,6 +308,15 @@ async function procesarTransaccionProducto(
         })
         .eq('id', compraProductoId)
     }
+
+    // Si la compra fue marcada antes como cancelada/expirada, limpiar esos campos al aprobar.
+    await supabaseClient
+      .from('compras_productos')
+      .update({
+        fecha_cancelacion: null,
+        motivo_cancelacion: null,
+      })
+      .eq('id', compraProductoId)
   } else if (transaccionActual.compra_producto_id) {
     compraProductoId = Number(transaccionActual.compra_producto_id)
     const updateCompra: Record<string, unknown> = {

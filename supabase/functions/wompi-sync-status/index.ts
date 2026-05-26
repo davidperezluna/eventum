@@ -8,6 +8,12 @@ const corsHeaders = {
 
 const ENV_VAR_NAME_REGEX = /^[A-Z][A-Z0-9_]*$/
 
+function resolveProductosPendingTtlMinutes(): number {
+  const raw = Number(Deno.env.get('WOMPI_PRODUCT_PENDING_TTL_MINUTES') || 30)
+  if (!Number.isFinite(raw)) return 30
+  return Math.min(1440, Math.max(5, Math.floor(raw)))
+}
+
 function resolveSecretByEnvName(envVarName: string | null | undefined): string | null {
   const name = String(envVarName || '').trim()
   if (!name) return null
@@ -58,6 +64,131 @@ async function resolveWompiPrivateKey(
   return { privateKey, environment }
 }
 
+function isFinalWompiStatus(status: string | null | undefined): boolean {
+  return ['APPROVED', 'DECLINED', 'VOIDED', 'ERROR'].includes(String(status || '').toUpperCase())
+}
+
+async function fetchTransactionById(
+  wompiBaseUrl: string,
+  privateKey: string,
+  wompiTransactionId: string,
+): Promise<Record<string, unknown> | null> {
+  const response = await fetch(`${wompiBaseUrl}/transactions/${encodeURIComponent(wompiTransactionId)}`, {
+    headers: { Authorization: `Bearer ${privateKey}` },
+  })
+  const data = await response.json()
+  if (!response.ok) {
+    return null
+  }
+  const transaction = data?.data as Record<string, unknown> | undefined
+  if (!transaction?.status) return null
+  return transaction
+}
+
+async function fetchTransactionByReference(
+  wompiBaseUrl: string,
+  privateKey: string,
+  wompiReference: string,
+): Promise<Record<string, unknown> | null> {
+  const response = await fetch(
+    `${wompiBaseUrl}/transactions?reference=${encodeURIComponent(wompiReference)}`,
+    { headers: { Authorization: `Bearer ${privateKey}` } },
+  )
+  const data = await response.json()
+  if (!response.ok) {
+    return null
+  }
+
+  const rows = Array.isArray(data?.data) ? data.data : (data?.data ? [data.data] : [])
+  if (!rows.length) return null
+  const chosen =
+    rows.find((row: Record<string, unknown>) => isFinalWompiStatus(String(row.status || ''))) ||
+    rows[rows.length - 1]
+  return chosen as Record<string, unknown>
+}
+
+async function runSyntheticWebhook(
+  supabaseUrl: string,
+  supabaseServiceKey: string,
+  environment: string,
+  transaction: Record<string, unknown>,
+) {
+  const syntheticWebhook = {
+    event: 'transaction.updated',
+    data: { transaction },
+    environment: environment === 'production' ? 'prod' : 'test',
+    timestamp: Math.floor(Date.now() / 1000),
+    sent_at: new Date().toISOString(),
+    source: 'wompi-sync-status',
+  }
+
+  const webhookResponse = await fetch(`${supabaseUrl}/functions/v1/wompi-webhook`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${supabaseServiceKey}`,
+      apikey: supabaseServiceKey,
+    },
+    body: JSON.stringify(syntheticWebhook),
+  })
+
+  const webhookResult = await webhookResponse.json()
+  if (!webhookResponse.ok) {
+    throw new Error(webhookResult?.error || 'El webhook interno no procesó la sincronización')
+  }
+  return webhookResult
+}
+
+async function expirarTransaccionProductoPendiente(
+  supabaseClient: ReturnType<typeof createClient>,
+  transaccionProductoId: number,
+  compraProductoId: number | null,
+): Promise<void> {
+  const now = new Date().toISOString()
+  const motivo = 'Pago no completado: transacción expirada o abandonada en checkout Wompi'
+
+  const { error: txnError } = await supabaseClient
+    .from('transacciones_producto')
+    .update({
+      estado: 'cancelada',
+      wompi_status: 'EXPIRED',
+      es_activa: false,
+      fecha_actualizacion: now,
+      webhook_payload: { source: 'wompi-sync-status', reason: motivo, expired_at: now },
+    })
+    .eq('id', transaccionProductoId)
+
+  if (txnError) {
+    throw txnError
+  }
+
+  if (compraProductoId) {
+    const { error: compraError } = await supabaseClient
+      .from('compras_productos')
+      .update({
+        estado_pago: 'fallido',
+        estado_compra: 'cancelada',
+        fecha_cancelacion: now,
+        motivo_cancelacion: motivo,
+      })
+      .eq('id', compraProductoId)
+
+    if (compraError) {
+      throw compraError
+    }
+
+    const { error: itemsError } = await supabaseClient
+      .from('compras_productos_items')
+      .update({ estado: 'cancelado' })
+      .eq('compra_producto_id', compraProductoId)
+      .eq('estado', 'pendiente')
+
+    if (itemsError) {
+      throw itemsError
+    }
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -85,19 +216,23 @@ serve(async (req) => {
     if (!transaccionProductoId && !compraId) {
       throw new Error('transaccion_producto_id o compra_id es requerido')
     }
-    if (!wompiTransactionId) {
-      throw new Error('wompi_transaction_id es requerido')
-    }
 
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey)
 
     let eventoId: number | null = null
     let wompiCuentaId: number | null = null
+    let wompiReference: string | null = null
+    let compraProductoId: number | null = null
+    let fechaCreacionTxn: string | null = null
+    let estadoTxn: string | null = null
+    let wompiStatusTxn: string | null = null
+    let esActivaTxn: boolean | null = null
+    let wompiTransactionStored: string | null = null
 
     if (transaccionProductoId) {
       const { data: txn } = await supabaseClient
         .from('transacciones_producto')
-        .select('id, evento_id, wompi_cuenta_id, estado, wompi_status')
+        .select('id, evento_id, wompi_cuenta_id, estado, wompi_status, wompi_reference, compra_producto_id, fecha_creacion, es_activa, wompi_transaction_id')
         .eq('id', transaccionProductoId)
         .maybeSingle()
 
@@ -114,6 +249,13 @@ serve(async (req) => {
 
       eventoId = txn.evento_id ? Number(txn.evento_id) : null
       wompiCuentaId = txn.wompi_cuenta_id ? Number(txn.wompi_cuenta_id) : null
+      wompiReference = txn.wompi_reference ? String(txn.wompi_reference) : null
+      compraProductoId = txn.compra_producto_id ? Number(txn.compra_producto_id) : null
+      fechaCreacionTxn = txn.fecha_creacion ? String(txn.fecha_creacion) : null
+      estadoTxn = txn.estado ? String(txn.estado) : null
+      wompiStatusTxn = txn.wompi_status ? String(txn.wompi_status) : null
+      esActivaTxn = txn.es_activa == null ? null : !!txn.es_activa
+      wompiTransactionStored = txn.wompi_transaction_id ? String(txn.wompi_transaction_id) : null
     }
 
     if (compraId) {
@@ -148,53 +290,77 @@ serve(async (req) => {
       ? 'https://production.wompi.co/v1'
       : 'https://sandbox.wompi.co/v1'
 
-    const wompiResponse = await fetch(`${wompiBaseUrl}/transactions/${encodeURIComponent(wompiTransactionId)}`, {
-      headers: {
-        Authorization: `Bearer ${privateKey}`,
-      },
-    })
+    const idsToTry = new Set<string>()
+    if (wompiTransactionId) idsToTry.add(wompiTransactionId)
+    if (wompiTransactionStored) idsToTry.add(wompiTransactionStored)
 
-    const wompiData = await wompiResponse.json()
-    if (!wompiResponse.ok) {
-      throw new Error(
-        wompiData?.error?.message || wompiData?.error?.reason || 'No se pudo consultar la transacción en Wompi',
+    let transaction: Record<string, unknown> | null = null
+    let lookupSource: 'transaction_id' | 'reference' | null = null
+
+    for (const id of idsToTry) {
+      const byId = await fetchTransactionById(wompiBaseUrl, privateKey, id)
+      if (byId) {
+        transaction = byId
+        lookupSource = 'transaction_id'
+        break
+      }
+    }
+
+    if (!transaction && wompiReference) {
+      const byReference = await fetchTransactionByReference(wompiBaseUrl, privateKey, wompiReference)
+      if (byReference) {
+        transaction = byReference
+        lookupSource = 'reference'
+      }
+    }
+
+    if (transaction) {
+      const webhookResult = await runSyntheticWebhook(supabaseUrl, supabaseServiceKey, environment, transaction)
+      return new Response(
+        JSON.stringify({
+          success: true,
+          wompi_status: transaction.status,
+          webhook: webhookResult,
+          lookup_source: lookupSource,
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        },
       )
     }
 
-    const transaction = wompiData.data as Record<string, unknown> | undefined
-    if (!transaction?.status) {
-      throw new Error('Respuesta de Wompi sin estado de transacción')
+    if (transaccionProductoId && estadoTxn === 'pendiente' && esActivaTxn !== false) {
+      const createdAtMs = fechaCreacionTxn ? Date.parse(fechaCreacionTxn) : Number.NaN
+      const ttlMs = resolveProductosPendingTtlMinutes() * 60_000
+      const isOlderThanTtl = Number.isFinite(createdAtMs) && Date.now() - createdAtMs >= ttlMs
+      const wompiIsPending = !wompiStatusTxn || String(wompiStatusTxn).toUpperCase() === 'PENDING'
+
+      if (isOlderThanTtl && wompiIsPending) {
+        await expirarTransaccionProductoPendiente(supabaseClient, transaccionProductoId, compraProductoId)
+        return new Response(
+          JSON.stringify({
+            success: true,
+            expired: true,
+            wompi_status: 'EXPIRED',
+            transaccion_producto_id: transaccionProductoId,
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          },
+        )
+      }
     }
 
-    const syntheticWebhook = {
-      event: 'transaction.updated',
-      data: { transaction },
-      environment: environment === 'production' ? 'prod' : 'test',
-      timestamp: Math.floor(Date.now() / 1000),
-      sent_at: new Date().toISOString(),
-      source: 'wompi-sync-status',
-    }
-
-    const webhookResponse = await fetch(`${supabaseUrl}/functions/v1/wompi-webhook`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${supabaseServiceKey}`,
-        apikey: supabaseServiceKey,
-      },
-      body: JSON.stringify(syntheticWebhook),
-    })
-
-    const webhookResult = await webhookResponse.json()
-    if (!webhookResponse.ok) {
-      throw new Error(webhookResult?.error || 'El webhook interno no procesó la sincronización')
-    }
-
+    const message = !wompiTransactionId && !wompiTransactionStored && !wompiReference
+      ? 'No hay identificador Wompi para sincronizar'
+      : 'No se encontró transacción en Wompi aún'
     return new Response(
       JSON.stringify({
-        success: true,
-        wompi_status: transaction.status,
-        webhook: webhookResult,
+        success: false,
+        wompi_status: 'PENDING',
+        message,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

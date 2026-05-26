@@ -51,6 +51,8 @@ export class PagoResultado implements OnInit {
         }
       }
 
+      this.restaurarReferenciasPendientes();
+
       if (this.compraId || this.compraProductoId || this.transaccionProductoId || this.wompiTxnId) {
         void this.verificarEstadoCompra();
       } else {
@@ -151,13 +153,15 @@ export class PagoResultado implements OnInit {
             this.compraProductoId = this.transaccionProducto.compra_producto_id;
           }
 
+          const wompiTxnParaSync =
+            this.wompiTxnId || this.transaccionProducto.wompi_transaction_id || null;
           if (
-            this.wompiTxnId &&
+            wompiTxnParaSync &&
             (this.transaccionProducto.estado === 'pendiente' ||
               this.transaccionProducto.wompi_status === 'PENDING')
           ) {
             await this.comprasProductoService.sincronizarEstadoWompi({
-              wompi_transaction_id: this.wompiTxnId,
+              wompi_transaction_id: wompiTxnParaSync,
               transaccion_producto_id: this.transaccionProductoId,
               compra_id: this.compraId ?? undefined,
             });
@@ -167,6 +171,26 @@ export class PagoResultado implements OnInit {
             if (this.transaccionProducto.compra_producto_id) {
               this.compraProductoId = this.transaccionProducto.compra_producto_id;
             }
+          }
+
+          const creadaMs = this.transaccionProducto.fecha_creacion
+            ? new Date(this.transaccionProducto.fecha_creacion).getTime()
+            : Number.NaN;
+          const pasaronDiezMinutos = Number.isFinite(creadaMs) && Date.now() - creadaMs >= 10 * 60 * 1000;
+          const siguePendiente =
+            this.transaccionProducto.estado === 'pendiente' ||
+            !this.transaccionProducto.wompi_status ||
+            this.transaccionProducto.wompi_status === 'PENDING';
+          const noHayWompiTxn =
+            !(this.wompiTxnId || this.transaccionProducto.wompi_transaction_id);
+
+          if (siguePendiente && noHayWompiTxn && pasaronDiezMinutos) {
+            this.errorTitulo = 'El pago no se completó';
+            this.error =
+              'Tu transacción de productos no quedó confirmada y el intento de pago expiró. Puedes volver al evento para intentarlo de nuevo.';
+            this.loading = false;
+            this.cdr.detectChanges();
+            return;
           }
         }
 
@@ -200,7 +224,8 @@ export class PagoResultado implements OnInit {
         if (this.transaccionProducto && !this.compraProducto) {
           if (
             this.transaccionProducto.estado === 'rechazada' ||
-            this.transaccionProducto.estado === 'cancelada'
+            this.transaccionProducto.estado === 'cancelada' ||
+            this.transaccionProducto.wompi_status === 'EXPIRED'
           ) {
             this.errorTitulo = 'El pago no se completó';
             this.error =
