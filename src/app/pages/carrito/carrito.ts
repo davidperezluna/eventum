@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -58,6 +58,7 @@ export class Carrito implements OnInit, OnDestroy {
     private alertService: AlertService,
     private eventosService: EventosService,
     private supabaseService: SupabaseService,
+    private ngZone: NgZone,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -188,22 +189,32 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   async aplicarCupon(): Promise<void> {
-    if (!this.codigoCupon || !this.evento) return;
+    const codigoNormalizado = this.codigoCupon.trim().toUpperCase();
+    if (!codigoNormalizado || !this.evento) return;
+
+    this.codigoCupon = codigoNormalizado;
     this.validandoCupon = true;
     try {
-      const cupon = await this.cuponesService.validarCupon(this.codigoCupon, this.evento.id);
-      if (cupon) {
-        this.cuponAplicado = cupon;
-        this.alertService.success('¡Cupón aplicado!', `Se aplicó un descuento del ${cupon.porcentaje_descuento}%`);
-      } else {
-        this.alertService.error('Cupón inválido', 'El código no existe, expiró o alcanzó su límite de usos');
-        this.cuponAplicado = null;
-      }
+      const cupon = await this.cuponesService.validarCupon(codigoNormalizado, this.evento.id);
+      this.ngZone.run(() => {
+        if (cupon) {
+          this.cuponAplicado = cupon;
+          this.alertService.success('¡Cupón aplicado!', `Se aplicó un descuento del ${cupon.porcentaje_descuento}%`);
+        } else {
+          this.alertService.error('Cupón inválido', 'El código no existe, expiró o alcanzó su límite de usos');
+          this.cuponAplicado = null;
+        }
+      });
     } catch (error) {
       console.error('Error aplicando cupón:', error);
-      this.alertService.error('Error', 'No se pudo validar el cupón');
+      this.ngZone.run(() => {
+        this.alertService.error('Error', 'No se pudo validar el cupón');
+      });
     } finally {
-      this.validandoCupon = false;
+      this.ngZone.run(() => {
+        this.validandoCupon = false;
+        this.cdr.detectChanges();
+      });
     }
   }
 
