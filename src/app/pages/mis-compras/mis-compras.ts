@@ -11,6 +11,7 @@ import { EventosService } from '../../services/eventos.service';
 import { AuthService } from '../../services/auth.service';
 import { AlertService } from '../../services/alert.service';
 import { MisComprasStateService } from '../../services/mis-compras-state.service';
+import { ComprasProductoService } from '../../services/compras-producto.service';
 import {
   Compra,
   BoletaComprada,
@@ -20,7 +21,10 @@ import {
   TipoEstadoPago,
   TipoEstadoCompra,
   TrasladoBoleta,
-  EstadoTrasladoBoleta
+  EstadoTrasladoBoleta,
+  CompraProducto,
+  CompraProductoItem,
+  TipoEstadoItemProducto
 } from '../../types';
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
@@ -45,6 +49,11 @@ interface TipoBoletasGrupo {
   totalSinAsignar: number;
 }
 
+interface ProductoConCompra {
+  compra: CompraProducto;
+  item: CompraProductoItem;
+}
+
 interface EventoBoletasGrupo {
   key: string;
   titulo: string;
@@ -53,6 +62,7 @@ interface EventoBoletasGrupo {
   lugar?: any;
   tipos: TipoBoletasGrupo[];
   compras: Compra[];
+  comprasProductos: CompraProducto[];
   totalCedidas: number;
   totalBoletas: number;
   totalDisponibles: number;
@@ -60,6 +70,9 @@ interface EventoBoletasGrupo {
   totalUsadas: number;
   totalSinUsar: number;
   totalSinAsignar: number;
+  totalItemsProducto: number;
+  totalProductosComprados: number;
+  totalProductosRedimidos: number;
 }
 
 @Component({
@@ -78,11 +91,15 @@ export class MisCompras implements OnInit, OnDestroy {
   private currentLoadBackground = false;
   
   compras: Compra[] = [];
+  comprasProductos: CompraProducto[] = [];
+  loadingComprasProductos = false;
   comprasConBoletas: { compra: Compra; boletas: BoletaComprada[] }[] = [];
   eventosConBoletas: EventoBoletasGrupo[] = [];
   eventoExpandidoKey: string | null = null;
   eventoDetalleKey: string | null = null;
   tabBoletasDetalle: 'sin-usar' | 'usadas' | 'sin-asignar' = 'sin-usar';
+  tabEventoDetalle: 'entradas' | 'productos' = 'entradas';
+  tabProductosDetalle: 'compradas' | 'redimidas' = 'compradas';
   loading = false;
   isRefreshing = false;
   loadingBoletasDetalle = true;
@@ -152,6 +169,7 @@ export class MisCompras implements OnInit, OnDestroy {
 
   constructor(
     private comprasService: ComprasService,
+    private comprasProductoService: ComprasProductoService,
     private boletasService: BoletasService,
     private trasladosBoletaService: TrasladosBoletaService,
     private eventosService: EventosService,
@@ -193,6 +211,7 @@ export class MisCompras implements OnInit, OnDestroy {
         this.loadingBoletasDetalle = true;
 
         await this.loadBoletasPorCompra({ background: this.currentLoadBackground });
+        await this.loadComprasProductos();
 
         this.loading = false;
         this.endSilentRefreshCycle();
@@ -202,6 +221,7 @@ export class MisCompras implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Error cargando compras:', err);
         this.compras = [];
+        this.comprasProductos = [];
         this.comprasConBoletas = [];
         this.eventosConBoletas = [];
         this.eventoExpandidoKey = null;
@@ -223,6 +243,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.vistaActividad = path.endsWith('/mis-compras/actividad');
     const detalleMatch = path.match(/\/mis-compras\/evento\/([^/]+)$/);
     this.eventoDetalleKey = detalleMatch ? decodeURIComponent(detalleMatch[1]) : null;
+    this.syncTabEventoDetalle();
     this.cdr.detectChanges();
   }
 
@@ -231,7 +252,10 @@ export class MisCompras implements OnInit, OnDestroy {
       this.page = 1; // Resetear a primera página al filtrar
     }
 
-    const hasVisibleData = this.compras.length > 0 || this.eventosConBoletas.length > 0;
+    const hasVisibleData =
+      this.compras.length > 0 ||
+      this.comprasProductos.length > 0 ||
+      this.eventosConBoletas.length > 0;
     const background = options?.background ?? hasVisibleData;
     this.currentLoadBackground = background;
     this.loading = !background && !hasVisibleData;
@@ -243,6 +267,212 @@ export class MisCompras implements OnInit, OnDestroy {
     }
     this.cdr.detectChanges();
     this.loadComprasSubject.next();
+  }
+
+  private async loadComprasProductos(): Promise<void> {
+    const clienteId = this.authService.getUsuarioId();
+    if (!clienteId) {
+      this.comprasProductos = [];
+      return;
+    }
+
+    this.loadingComprasProductos = true;
+    try {
+      this.comprasProductos = await this.comprasProductoService.getComprasByCliente(clienteId);
+    } catch (err) {
+      console.error('Error cargando compras de productos:', err);
+      this.comprasProductos = [];
+    } finally {
+      this.loadingComprasProductos = false;
+      this.fusionarProductosEnEventos();
+      this.syncTabEventoDetalle();
+      this.cdr.detectChanges();
+    }
+  }
+
+  eventoTieneEntradas(grupo: EventoBoletasGrupo | null | undefined): boolean {
+    return (grupo?.totalBoletas ?? 0) > 0;
+  }
+
+  eventoTieneProductos(grupo: EventoBoletasGrupo | null | undefined): boolean {
+    return (grupo?.totalItemsProducto ?? 0) > 0;
+  }
+
+  private syncTabEventoDetalle(): void {
+    const detalle = this.eventoDetalleBoletas();
+    if (!detalle) {
+      return;
+    }
+    if (!this.eventoTieneEntradas(detalle) && this.eventoTieneProductos(detalle)) {
+      this.tabEventoDetalle = 'productos';
+    } else if (!this.eventoTieneProductos(detalle)) {
+      this.tabEventoDetalle = 'entradas';
+    }
+    this.syncTabProductosDetalle();
+  }
+
+  private syncTabProductosDetalle(): void {
+    const detalle = this.eventoDetalleBoletas();
+    if (!detalle) {
+      return;
+    }
+    if ((detalle.totalProductosComprados ?? 0) > 0) {
+      this.tabProductosDetalle = 'compradas';
+    } else if ((detalle.totalProductosRedimidos ?? 0) > 0) {
+      this.tabProductosDetalle = 'redimidas';
+    }
+  }
+
+  esProductoComprado(item: CompraProductoItem): boolean {
+    const estado = (item.estado || TipoEstadoItemProducto.PENDIENTE).toLowerCase();
+    return (
+      estado === TipoEstadoItemProducto.CONFIRMADO ||
+      estado === TipoEstadoItemProducto.PENDIENTE
+    );
+  }
+
+  esProductoRedimido(item: CompraProductoItem): boolean {
+    return (item.estado || '').toLowerCase() === TipoEstadoItemProducto.ENTREGADO;
+  }
+
+  productosDetallePorTab(grupo: EventoBoletasGrupo): ProductoConCompra[] {
+    const filas: ProductoConCompra[] = [];
+    for (const compra of grupo.comprasProductos || []) {
+      for (const item of compra.compras_productos_items || []) {
+        const incluir =
+          (this.tabProductosDetalle === 'compradas' && this.esProductoComprado(item)) ||
+          (this.tabProductosDetalle === 'redimidas' && this.esProductoRedimido(item));
+        if (incluir) {
+          filas.push({ compra, item });
+        }
+      }
+    }
+    return filas;
+  }
+
+  referenciaPedidoCorta(numeroPedido?: string): string {
+    const numero = (numeroPedido || '').trim();
+    if (!numero) {
+      return '—';
+    }
+    if (numero.length <= 18) {
+      return numero;
+    }
+    return `…${numero.slice(-10)}`;
+  }
+
+  getEstadoProductoLabel(item: CompraProductoItem): string {
+    if (this.esProductoRedimido(item)) {
+      return 'Redimido';
+    }
+    if (this.esProductoComprado(item)) {
+      return 'Por retirar';
+    }
+    const estados: Record<string, string> = {
+      [TipoEstadoItemProducto.CANCELADO]: 'Cancelado',
+      [TipoEstadoItemProducto.PENDIENTE]: 'Pendiente',
+      [TipoEstadoItemProducto.CONFIRMADO]: 'Por retirar',
+      [TipoEstadoItemProducto.ENTREGADO]: 'Redimido'
+    };
+    return estados[(item.estado || '').toLowerCase()] || item.estado || 'Pendiente';
+  }
+
+  getEstadoProductoClass(item: CompraProductoItem): string {
+    if (this.esProductoRedimido(item)) {
+      return 'badge-warning';
+    }
+    if (this.esProductoComprado(item)) {
+      return 'badge-success';
+    }
+    if ((item.estado || '').toLowerCase() === TipoEstadoItemProducto.CANCELADO) {
+      return 'badge-danger';
+    }
+    return 'badge-info';
+  }
+
+  private recalcularContadoresProducto(grupo: EventoBoletasGrupo): void {
+    let comprados = 0;
+    let redimidos = 0;
+
+    for (const compra of grupo.comprasProductos || []) {
+      for (const item of compra.compras_productos_items || []) {
+        const cantidad = item.cantidad || 0;
+        if (this.esProductoRedimido(item)) {
+          redimidos += cantidad;
+        } else if (this.esProductoComprado(item)) {
+          comprados += cantidad;
+        }
+      }
+    }
+
+    grupo.totalProductosComprados = comprados;
+    grupo.totalProductosRedimidos = redimidos;
+    grupo.totalItemsProducto = comprados + redimidos;
+  }
+
+  private fusionarProductosEnEventos(): void {
+    for (const grupo of this.eventosConBoletas) {
+      grupo.comprasProductos = [];
+      grupo.totalItemsProducto = 0;
+      grupo.totalProductosComprados = 0;
+      grupo.totalProductosRedimidos = 0;
+    }
+
+    for (const compra of this.comprasProductos) {
+      const eventoKey = String(compra.evento_id);
+      let grupo = this.eventosConBoletas.find((g) => g.key === eventoKey);
+
+      if (!grupo) {
+        grupo = {
+          key: eventoKey,
+          titulo: compra.eventos?.titulo || 'Evento',
+          fechaInicio: compra.eventos?.fecha_inicio,
+          fechaFin: compra.eventos?.fecha_fin,
+          lugar: compra.eventos?.lugar,
+          tipos: [],
+          compras: [],
+          comprasProductos: [],
+          totalCedidas: 0,
+          totalBoletas: 0,
+          totalDisponibles: 0,
+          totalTrasladoSaliente: 0,
+          totalUsadas: 0,
+          totalSinUsar: 0,
+          totalSinAsignar: 0,
+          totalItemsProducto: 0,
+          totalProductosComprados: 0,
+          totalProductosRedimidos: 0
+        };
+        this.eventosConBoletas.push(grupo);
+      }
+
+      grupo.comprasProductos.push(compra);
+    }
+
+    for (const grupo of this.eventosConBoletas) {
+      this.recalcularContadoresProducto(grupo);
+    }
+
+    this.eventosConBoletas = this.eventosConBoletas
+      .filter(
+        (grupo) =>
+          grupo.totalBoletas > 0 ||
+          grupo.totalItemsProducto > 0 ||
+          grupo.totalCedidas > 0
+      )
+      .sort((a, b) => {
+        const fechaA = a.fechaInicio ? new Date(a.fechaInicio).getTime() : 0;
+        const fechaB = b.fechaInicio ? new Date(b.fechaInicio).getTime() : 0;
+        if (fechaA !== fechaB) return fechaB - fechaA;
+        return a.titulo.localeCompare(b.titulo);
+      });
+  }
+
+  totalItemsProducto(compra: CompraProducto): number {
+    return (compra.compras_productos_items || []).reduce(
+      (sum, item) => sum + (item.cantidad || 0),
+      0
+    );
   }
 
   private async loadComprasInternal(): Promise<PaginatedResponse<Compra>> {
@@ -541,13 +771,17 @@ export class MisCompras implements OnInit, OnDestroy {
           lugar: evento?.lugar || compra.evento?.lugar,
           tipos: [],
           compras: [],
+          comprasProductos: [],
           totalCedidas: 0,
           totalBoletas: 0,
           totalDisponibles: 0,
           totalTrasladoSaliente: 0,
           totalUsadas: 0,
           totalSinUsar: 0,
-          totalSinAsignar: 0
+          totalSinAsignar: 0,
+          totalItemsProducto: 0,
+          totalProductosComprados: 0,
+          totalProductosRedimidos: 0
         };
         eventosMap.set(eventoKey, grupoEvento);
       }
@@ -624,6 +858,10 @@ export class MisCompras implements OnInit, OnDestroy {
     this.eventosConBoletas = Array.from(eventosMap.values())
       .map((grupo) => ({
         ...grupo,
+        comprasProductos: grupo.comprasProductos ?? [],
+        totalItemsProducto: grupo.totalItemsProducto ?? 0,
+        totalProductosComprados: grupo.totalProductosComprados ?? 0,
+        totalProductosRedimidos: grupo.totalProductosRedimidos ?? 0,
         tipos: grupo.tipos.sort((a, b) => a.nombre.localeCompare(b.nombre))
       }))
       .sort((a, b) => {
@@ -632,6 +870,8 @@ export class MisCompras implements OnInit, OnDestroy {
         if (fechaA !== fechaB) return fechaB - fechaA;
         return a.titulo.localeCompare(b.titulo);
       });
+
+    this.fusionarProductosEnEventos();
   }
 
   esTitularBoleta(b: BoletaComprada, compra: Compra): boolean {
@@ -676,6 +916,13 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   abrirDetalleEventoBoletas(eventoKey: string): void {
+    const grupo = this.eventosConBoletas.find((g) => g.key === eventoKey);
+    if (grupo && !this.eventoTieneEntradas(grupo) && this.eventoTieneProductos(grupo)) {
+      this.tabEventoDetalle = 'productos';
+    } else {
+      this.tabEventoDetalle = 'entradas';
+    }
+    this.syncTabProductosDetalle();
     this.router.navigate(['/mis-compras/evento', eventoKey]);
   }
 
@@ -686,6 +933,20 @@ export class MisCompras implements OnInit, OnDestroy {
   eventoDetalleBoletas(): EventoBoletasGrupo | null {
     if (!this.eventoDetalleKey) return null;
     return this.eventosConBoletas.find((grupo) => grupo.key === this.eventoDetalleKey) || null;
+  }
+
+  resumenDetalleEvento(grupo: EventoBoletasGrupo): string {
+    const partes: string[] = [];
+    if (grupo.totalBoletas > 0) {
+      partes.push(`${grupo.totalBoletas} entrada${grupo.totalBoletas === 1 ? '' : 's'}`);
+    }
+    if (grupo.totalItemsProducto > 0) {
+      partes.push(`${grupo.totalItemsProducto} producto${grupo.totalItemsProducto === 1 ? '' : 's'}`);
+    }
+    if (grupo.totalCedidas > 0) {
+      partes.push(`${grupo.totalCedidas} recibida${grupo.totalCedidas === 1 ? '' : 's'}`);
+    }
+    return partes.join(' · ');
   }
 
   /** Tipos con nombre y cantidad > 0 para badges de resumen (sin fila genérica «N tipos»). */

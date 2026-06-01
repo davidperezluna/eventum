@@ -2,17 +2,56 @@
   <section class="hero-section mini-hero">
     <div class="hero-content">
       <h1 class="hero-title">Mi <span class="gradient-text">Carrito</span></h1>
-      <p class="hero-subtitle">Confirma tus boletas y finaliza tu compra de forma segura.</p>
+      <p class="hero-subtitle">Confirma tus boletas, productos y finaliza tu compra de forma segura.</p>
     </div>
   </section>
 
   <section class="carrito-shell">
+    <div class="checkout-pendiente-alert" *ngIf="checkoutPendienteEnCurso as pendiente">
+      <div class="checkout-pendiente-alert__icon" aria-hidden="true">
+        <span class="material-icons">pending_actions</span>
+      </div>
+      <div class="checkout-pendiente-alert__content">
+        <div class="checkout-pendiente-alert__header">
+          <h4>Pago pendiente detectado</h4>
+          <span class="checkout-pendiente-alert__badge" [class.checkout-pendiente-alert__badge--expired]="pendiente.expiro">
+            {{ pendiente.expiro ? 'Vencido' : 'En curso' }}
+          </span>
+        </div>
+        <p>
+          {{
+            pendiente.expiro
+              ? 'Encontramos un checkout pendiente vencido. Puedes revisar su estado o cancelarlo para crear una compra nueva.'
+              : 'Encontramos una compra pendiente de confirmación. Reanúdala para evitar duplicados y completar tu pedido.'
+          }}
+        </p>
+        <div class="checkout-pendiente-alert__actions">
+          <button
+            type="button"
+            class="checkout-pendiente-alert__btn"
+            (click)="recuperarCheckoutPendiente()"
+            [disabled]="cancelandoCheckoutPendiente"
+          >
+            {{ pendiente.expiro ? 'Revisar estado pendiente' : 'Recuperar pago pendiente' }}
+          </button>
+          <button
+            type="button"
+            class="checkout-pendiente-alert__btn-alt"
+            (click)="cancelarCheckoutPendiente()"
+            [disabled]="cancelandoCheckoutPendiente"
+          >
+            {{ cancelandoCheckoutPendiente ? 'Cancelando...' : 'Cancelar intento y seguir' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="empty-state" *ngIf="carritoVacio">
       <div class="empty-state-icon-box">
         <span class="material-icons">shopping_cart</span>
       </div>
       <h2>Tu carrito está vacío</h2>
-      <p>Agrega boletas o palcos desde el detalle del evento.</p>
+      <p>Agrega boletas, palcos o productos desde el detalle del evento.</p>
       <button type="button" class="btn-primary empty-state__cta" (click)="irAEventos()">
         Ver eventos
       </button>
@@ -21,7 +60,7 @@
     <ng-container *ngIf="!carritoVacio">
       <section class="evento-section">
         <h2>{{ evento?.titulo }}</h2>
-        <p class="section-subtitle">Revisa tus boletas, selecciona palcos y finaliza el pago.</p>
+        <p class="section-subtitle">Revisa tus boletas, productos, selecciona palcos y finaliza el pago.</p>
 
         <div class="carrito-items">
           <div *ngFor="let item of itemsCompra" class="carrito-item">
@@ -133,9 +172,35 @@
               </div>
             </div>
           </div>
+
+          <div *ngFor="let item of itemsProductos" class="carrito-item carrito-item--producto">
+            <div class="carrito-item-info">
+              <div class="info-main">
+                <h4>{{ item.producto.nombre }}</h4>
+                <p class="carrito-precio">{{ formatCurrency(item.producto.precio) }} x {{ item.cantidad }}</p>
+                <p *ngIf="item.producto.es_licor" class="licor-tag">Bebida alcohólica (+18)</p>
+              </div>
+              <div class="info-side">
+                <div class="cantidad-controls">
+                  <button type="button" class="btn-cantidad" (click)="quitarProducto(item)">-</button>
+                  <span class="cantidad">{{ item.cantidad }}</span>
+                  <button
+                    type="button"
+                    class="btn-cantidad"
+                    (click)="agregarProducto(item)"
+                    [disabled]="item.cantidad >= getDisponiblesProducto(item.producto)"
+                  >+</button>
+                </div>
+                <p class="carrito-subtotal">{{ formatCurrency(item.producto.precio * item.cantidad) }}</p>
+                <button type="button" class="btn-remove-item-static" (click)="eliminarProducto(item)" title="Quitar producto">
+                  <span class="material-icons">delete</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="cupon-section">
+        <div class="cupon-section" *ngIf="itemsCompra.length > 0">
           <h5>¿Tienes cupón?</h5>
           <div class="cupon-input-group" *ngIf="!cuponAplicado">
             <input type="text" [(ngModel)]="codigoCupon" placeholder="Ingresa el código" (keyup.enter)="aplicarCupon()" />
@@ -151,18 +216,50 @@
           </div>
         </div>
 
+        <div class="licor-legal-card" *ngIf="tieneLicor()" [class.licor-legal-card--accepted]="terminosAceptados">
+          <div class="licor-legal-card__head">
+            <span class="licor-legal-badge" aria-hidden="true">+18</span>
+            <div class="licor-legal-card__titles">
+              <h5>Bebidas alcohólicas</h5>
+              <p>Confirmación obligatoria antes de pagar productos con alcohol.</p>
+            </div>
+            <span class="material-icons licor-legal-card__icon" aria-hidden="true">local_bar</span>
+          </div>
+        
+          <ul class="licor-legal-points">
+            <li>Debes ser mayor de 18 años.</li>
+            <li>Eventum actúa solo como intermediario, no como distribuidor.</li>
+            <li>La entrega se realiza en el evento según normas del organizador.</li>
+          </ul>
+        
+          <label class="licor-legal-check" [class.licor-legal-check--checked]="terminosAceptados">
+            <input type="checkbox" [(ngModel)]="terminosAceptados" />
+            <span class="licor-legal-check__box" aria-hidden="true"></span>
+            <span class="licor-legal-check__text">
+              Acepto los términos para bebidas alcohólicas
+            </span>
+          </label>
+<button type="button" class="licor-legal-link" (click)="abrirModalTerminosLicor()">
+  Leer términos completos
+</button>
+        </div>
+
         <div class="carrito-total">
-          <div class="total-row">
+          <div class="total-row" *ngIf="itemsCompra.length > 0">
             <span>Valor boletas/palcos:</span>
-            <span>{{ formatCurrency(getSubtotal()) }}</span>
+            <span>{{ formatCurrency(getSubtotalBoletas()) }}</span>
+          </div>
+          <div class="total-row" *ngIf="itemsProductos.length > 0">
+            <span>Valor productos:</span>
+            <span>{{ formatCurrency(getSubtotalProductos()) }}</span>
           </div>
           <div class="total-row descuento" *ngIf="cuponAplicado">
-            <span>Descuento:</span>
+            <span>Descuento (boletas):</span>
             <span>-{{ formatCurrency(getDescuento()) }}</span>
           </div>
           <div class="total-row">
             <span>Subtotal:</span>
-            <span>{{ formatCurrency(getBaseNetaBoletas()) }}</span>
+            <span>{{ formatCurrency(getBaseNetaBoletas() + getSubtotalProductos()) }}</span>
           </div>
           <div class="total-row">
             <span>Servicio ({{ getPorcentajeServicio() }}%):</span>
@@ -171,9 +268,9 @@
           <div class="total-row main">
             <h3>Total: {{ formatCurrency(getTotal()) }}</h3>
           </div>
-          <button class="btn-comprar" (click)="procesarCompra()" [disabled]="comprando">
+          <button class="btn-comprar" (click)="procesarCompra()" [disabled]="comprando || !!checkoutPendienteEnCurso">
             <span class="material-icons">{{ comprando ? 'hourglass_empty' : 'shopping_cart' }}</span>
-            {{ comprando ? 'Procesando...' : 'Comprar boletas' }}
+            {{ comprando ? 'Procesando...' : (checkoutPendienteEnCurso ? 'Pago en curso: recupéralo o cancélalo' : 'Finalizar compra') }}
           </button>
         </div>
       </section>
@@ -188,6 +285,34 @@
       <p class="palco-mapa-dialog-title">{{ mapa.titulo }}</p>
       <img [src]="mapa.url" alt="Plano de palcos ampliado" class="palco-mapa-dialog-img" />
     </div>
+  </div>
+</div>
+
+<div class="licor-modal-overlay" *ngIf="modalTerminosLicor" (click)="cerrarModalTerminosLicor()" role="presentation">
+  <div class="licor-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+    aria-labelledby="licor-modal-title">
+    <header class="licor-modal__header">
+      <div class="licor-modal__header-text">
+        <span class="licor-legal-badge licor-legal-badge--modal">+18</span>
+        <h2 id="licor-modal-title">{{ terminosLicorTitulo }}</h2>
+        <p>Lee y acepta para continuar con tu compra.</p>
+      </div>
+      <button type="button" class="licor-modal__close" (click)="cerrarModalTerminosLicor()" aria-label="Cerrar">
+        <span class="material-icons">close</span>
+      </button>
+    </header>
+
+    <div class="licor-modal__body">
+      <p *ngFor="let linea of terminosLicorLineas" class="licor-modal__line">{{ linea }}</p>
+    </div>
+<footer class="licor-modal__footer">
+  <button type="button" class="btn-secondary licor-modal__btn" (click)="cerrarModalTerminosLicor()">
+    Volver al carrito
+  </button>
+  <button type="button" class="btn-primary-modal licor-modal__btn" (click)="aceptarTerminosLicor()">
+    Acepto y continuar
+  </button>
+</footer>
   </div>
 </div>
 

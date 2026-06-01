@@ -11,7 +11,9 @@ import {
   TipoGenero,
   MetodoPago,
   EstadoPalco,
-  EstadoTrasladoBoleta
+  EstadoTrasladoBoleta,
+  TipoEstadoItemProducto,
+  TipoEstadoTransaccionProducto
 } from './enums';
 
 /**
@@ -433,4 +435,90 @@ export interface LectorEventoTipoBoleta {
   usuarios?: Pick<Usuario, 'id' | 'nombre' | 'apellido' | 'email'>;
   eventos?: Pick<Evento, 'id' | 'titulo'>;
   tipos_boleta?: Pick<TipoBoleta, 'id' | 'nombre' | 'evento_id'>;
+}
+
+/** Producto del catálogo de un evento (venta separada de boletas). */
+export interface Producto {
+  id: number;
+  evento_id: number;
+  nombre: string;
+  descripcion?: string;
+  precio: number;
+  imagen_url?: string;
+  es_licor?: boolean;
+  cantidad_total: number;
+  cantidad_vendidas?: number;
+  cantidad_disponibles?: number;
+  limite_por_persona?: number;
+  fecha_venta_inicio?: Date | string;
+  fecha_venta_fin?: Date | string;
+  activo?: boolean;
+  orden?: number;
+  fecha_creacion?: Date | string;
+  fecha_actualizacion?: Date | string;
+  eventos?: Pick<Evento, 'id' | 'titulo'>;
+}
+
+/** Cabecera de compra de productos. */
+export interface CompraProducto {
+  id: number;
+  cliente_id: number;
+  evento_id: number;
+  wompi_cuenta_id?: number;
+  numero_pedido: string;
+  subtotal: number;
+  porcentaje_servicio: number;
+  valor_servicio: number;
+  descuento_total: number;
+  total: number;
+  estado_pago: TipoEstadoPago;
+  estado_compra: TipoEstadoCompra;
+  terminos_licor_aceptados?: boolean;
+  terminos_licor_aceptados_at?: Date | string;
+  datos_facturacion?: Record<string, unknown>;
+  fecha_compra?: Date | string;
+  fecha_confirmacion?: Date | string;
+  fecha_cancelacion?: Date | string;
+  motivo_cancelacion?: string;
+  eventos?: Pick<Evento, 'id' | 'titulo' | 'imagen_principal' | 'fecha_inicio' | 'fecha_fin' | 'lugar'>;
+  compras_productos_items?: CompraProductoItem[];
+}
+
+/** Línea de compra de productos. */
+export interface CompraProductoItem {
+  id: number;
+  compra_producto_id: number;
+  producto_id: number;
+  cantidad: number;
+  precio_unitario: number;
+  subtotal_linea?: number;
+  estado?: TipoEstadoItemProducto | string;
+  fecha_creacion?: Date | string;
+  productos?: Pick<Producto, 'id' | 'nombre' | 'imagen_url' | 'es_licor'>;
+}
+
+/** Transacción Wompi para compra de productos. */
+export interface TransaccionProducto {
+  id: number;
+  compra_producto_id?: number | null;
+  evento_id?: number;
+  cliente_id?: number;
+  wompi_cuenta_id?: number;
+  numero_transaccion: string;
+  wompi_transaction_id?: string;
+  wompi_reference?: string;
+  wompi_status?: string;
+  monto: number;
+  monto_centavos: number;
+  moneda?: string;
+  estado: TipoEstadoTransaccionProducto | string;
+  checkout_url?: string;
+  redirect_url?: string;
+  request_payload?: Record<string, unknown>;
+  response_payload?: Record<string, unknown>;
+  webhook_payload?: Record<string, unknown>;
+  es_activa?: boolean;
+  fecha_creacion?: Date | string;
+  fecha_actualizacion?: Date | string;
+  fecha_confirmacion?: Date | string;
 }

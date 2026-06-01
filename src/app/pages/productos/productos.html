@@ -1,0 +1,160 @@
+<div class="productos-page">
+  <header class="page-header">
+    <div>
+      <h1>
+        <span class="material-icons">local_mall</span>
+        Productos por evento
+      </h1>
+      <p>Catálogo independiente de las entradas. Marca licor para exigir términos (+18, intermediación).</p>
+    </div>
+    <button type="button" class="btn-primary" (click)="openModal()">
+      <span class="material-icons">add</span>
+      Nuevo producto
+    </button>
+  </header>
+
+  <div class="filters-card">
+    <div class="form-group filtros-evento">
+      <label for="filtro-evento">Evento</label>
+      <select id="filtro-evento" [(ngModel)]="eventoFiltro" (ngModelChange)="onFiltroChange()">
+        <option [ngValue]="null">Todos los eventos</option>
+        <option *ngFor="let e of eventos" [ngValue]="e.id">{{ e.titulo }}</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <div *ngIf="loading" class="loading-state">Cargando productos...</div>
+
+    <div *ngIf="!loading && productos.length > 0" class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Evento</th>
+            <th>Producto</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th>Licor</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of productos">
+            <td>{{ getEventoTitulo(p.evento_id) }}</td>
+            <td>
+              <strong>{{ p.nombre }}</strong>
+              <span *ngIf="p.es_licor" class="badge-licor">+18</span>
+            </td>
+            <td>{{ formatCurrency(p.precio) }}</td>
+            <td>{{ p.cantidad_disponibles ?? (p.cantidad_total - (p.cantidad_vendidas ?? 0)) }} / {{ p.cantidad_total }}</td>
+            <td>{{ p.es_licor ? 'Sí' : 'No' }}</td>
+            <td>
+              <span [class]="p.activo ? 'badge-success' : 'badge-danger'">
+                {{ p.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td class="acciones">
+              <button type="button" class="btn-icon" (click)="openModal(p)" title="Editar">
+                <span class="material-icons">edit</span>
+              </button>
+              <button type="button" class="btn-icon btn-icon-danger" (click)="deleteProducto(p)" title="Eliminar">
+                <span class="material-icons">delete</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="!loading && productos.length === 0" class="empty-state">
+      <div class="empty-icon-wrapper">
+        <span class="material-icons empty-icon">local_mall</span>
+      </div>
+      <h3 class="empty-title">No hay productos</h3>
+      <p class="empty-subtitle">Crea productos ligados a un evento para venderlos aparte de las entradas.</p>
+      <button type="button" class="btn-view-all" (click)="openModal()">Crear producto</button>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ editingProducto ? 'Editar producto' : 'Nuevo producto' }}</h2>
+        <button type="button" class="btn-close" (click)="closeModal()" aria-label="Cerrar">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      <form (ngSubmit)="saveProducto()">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="prod-evento">Evento *</label>
+            <select id="prod-evento" [(ngModel)]="formData.evento_id" name="evento_id" required>
+              <option [ngValue]="undefined">Seleccionar evento...</option>
+              <option *ngFor="let e of eventos" [ngValue]="e.id">{{ e.titulo }}</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="prod-nombre">Nombre *</label>
+            <input id="prod-nombre" type="text" [(ngModel)]="formData.nombre" name="nombre" required />
+          </div>
+
+          <div class="form-group">
+            <label for="prod-descripcion">Descripción</label>
+            <textarea id="prod-descripcion" [(ngModel)]="formData.descripcion" name="descripcion" rows="3"></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prod-precio">Precio (COP)</label>
+              <input id="prod-precio" type="number" [(ngModel)]="formData.precio" name="precio" min="0" />
+            </div>
+            <div class="form-group">
+              <label for="prod-orden">Orden</label>
+              <input id="prod-orden" type="number" [(ngModel)]="formData.orden" name="orden" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prod-stock">Cantidad total</label>
+              <input id="prod-stock" type="number" [(ngModel)]="formData.cantidad_total" name="cantidad_total" min="0" />
+            </div>
+            <div class="form-group">
+              <label for="prod-limite">Límite por persona</label>
+              <input id="prod-limite" type="number" [(ngModel)]="formData.limite_por_persona" name="limite_por_persona" min="1" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="prod-imagen">URL imagen</label>
+            <input id="prod-imagen" type="url" [(ngModel)]="formData.imagen_url" name="imagen_url" placeholder="https://..." />
+          </div>
+
+          <div class="form-group form-group-check">
+            <label class="check-label">
+              <input type="checkbox" [(ngModel)]="formData.es_licor" name="es_licor" />
+              Es licor / contiene alcohol (+18)
+            </label>
+            <p class="field-hint">Si está marcado, el cliente debe aceptar términos de intermediación y mayoría de edad.</p>
+          </div>
+
+          <div class="form-group form-group-check">
+            <label class="check-label">
+              <input type="checkbox" [(ngModel)]="formData.activo" name="activo" />
+              Activo (visible en el evento)
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeModal()">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

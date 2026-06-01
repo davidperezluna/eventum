@@ -132,8 +132,29 @@
 
     <!-- Compra primero (entradas y carrito) -->
     <div class="detalle-zone detalle-zone--compra">
+      <nav class="detalle-compra-tabs" *ngIf="tieneProductos || loadingProductosFlag" aria-label="Secciones de compra">
+        <button
+          type="button"
+          class="detalle-compra-tab"
+          [class.active]="tabCompra === 'entradas'"
+          (click)="setTabCompra('entradas')"
+        >
+          Entradas
+        </button>
+        <button
+          type="button"
+          class="detalle-compra-tab"
+          [class.detalle-compra-tab--loading]="loadingProductosFlag"
+          [class.active]="tabCompra === 'productos'"
+          (click)="setTabCompra('productos')"
+        >
+          <span>Productos</span>
+          <span *ngIf="loadingProductosFlag" class="tab-loading-pill" aria-live="polite">cargando...</span>
+        </button>
+      </nav>
+
       <!-- Tipos de boleta -->
-      <div class="evento-section" *ngIf="!isEventoFinalizado()">
+      <div class="evento-section detalle-tab-panel" [hidden]="tabCompra !== 'entradas' || isEventoFinalizado()">
       <div class="section-heading-row">
         <div>
           <h2>Entradas</h2>
@@ -142,13 +163,13 @@
         <button
           type="button"
           class="btn-carrito-rapido"
-          *ngIf="itemsCompra.length > 0"
+          *ngIf="getCantidadTotalCarrito() > 0"
           (click)="irACarrito()"
           aria-label="Ir al carrito de compra"
         >
           <span class="material-icons">shopping_cart</span>
           <span class="btn-carrito-rapido-texto">
-            {{ getCantidadTotalCarrito() }} item(s) · {{ formatCurrency(getSubtotal()) }}
+            {{ getCantidadTotalCarrito() }} item(s) · {{ formatCurrency(getTotal()) }}
           </span>
           <span class="material-icons">arrow_forward</span>
         </button>
@@ -204,8 +225,41 @@
       </div>
       </div>
 
+      <app-evento-productos-tab
+        *ngIf="evento && tieneProductos"
+        [hidden]="tabCompra !== 'productos'"
+        class="detalle-tab-panel"
+        [evento]="evento"
+        [eventoFinalizado]="isEventoFinalizado()"
+        [productosIniciales]="productosCache"
+        [refrescoSilenciosoInicial]="productosCache.length > 0"
+        (productosActualizados)="onProductosActualizados($event)"
+      ></app-evento-productos-tab>
+
+      <div
+        *ngIf="tabCompra === 'productos' && loadingProductosFlag"
+        class="evento-section detalle-tab-panel productos-pending-state"
+        aria-live="polite"
+      >
+        <div class="loading-small">
+          <p>Estamos cargando los productos de este evento...</p>
+        </div>
+      </div>
+
+      <div
+        *ngIf="tabCompra === 'productos' && !loadingProductosFlag && !tieneProductos"
+        class="evento-section detalle-tab-panel productos-pending-state"
+      >
+        <div class="empty-state">
+          <p>Este evento no tiene productos disponibles por ahora.</p>
+          <button type="button" class="btn-add" (click)="setTabCompra('entradas')">
+            Ver entradas
+          </button>
+        </div>
+      </div>
+
       <!-- Mensaje si el evento está finalizado -->
-      <div class="evento-section evento-accordion" *ngIf="isEventoFinalizado()">
+      <div class="evento-section evento-accordion detalle-tab-panel" [hidden]="tabCompra !== 'entradas' || !isEventoFinalizado()">
       <button class="accordion-header" (click)="toggleAcordeon('eventoFinalizado')" type="button">
         <h2>
           <span class="material-icons">event_busy</span>
@@ -385,7 +439,7 @@
   <button
     type="button"
     class="carrito-fab"
-    *ngIf="itemsCompra.length > 0 && !isEventoFinalizado()"
+    *ngIf="getCantidadTotalCarrito() > 0 && !isEventoFinalizado()"
     (click)="irACarrito()"
     aria-label="Abrir carrito"
   >

@@ -88,6 +88,21 @@ export interface BoletaFilters extends BaseFilters {
   documento_asistente?: string;
 }
 
+/** Filtros para productos */
+export interface ProductoFilters extends BaseFilters {
+  evento_id?: number;
+  activo?: boolean;
+  es_licor?: boolean;
+}
+
+/** Filtros para compras de productos */
+export interface CompraProductoFilters extends BaseFilters {
+  cliente_id?: number;
+  evento_id?: number;
+  estado_pago?: string;
+  estado_compra?: string;
+}
+
 /**
  * Estadísticas del dashboard
  */

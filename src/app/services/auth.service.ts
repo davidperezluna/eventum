@@ -620,6 +620,73 @@ export class AuthService {
   }
 
   /**
+   * Valida la sesión JWT con Supabase (no solo caché en memoria).
+   * Intenta refresh si expiró y el refresh token sigue vigente.
+   */
+  async ensureActiveSession(): Promise<boolean> {
+    try {
+      const { data: { user }, error } = await this.supabase.auth.getUser();
+
+      if (!error && user) {
+        const { data: { session } } = await this.supabase.auth.getSession();
+        this.ngZone.run(() => {
+          if (session) {
+            this.setSession(session);
+          }
+          this.setCurrentUser(user);
+        });
+        if (!this.usuario) {
+          await this.loadUsuarioData(user.id);
+        }
+        return this.usuario !== null;
+      }
+
+      const { data: refreshed, error: refreshError } = await this.supabase.auth.refreshSession();
+      if (!refreshError && refreshed.session?.user) {
+        this.ngZone.run(() => {
+          this.setSession(refreshed.session);
+          this.setCurrentUser(refreshed.session!.user);
+        });
+        await this.loadUsuarioData(refreshed.session.user.id);
+        return this.usuario !== null;
+      }
+
+      await this.clearExpiredSessionLocally();
+      return false;
+    } catch (err) {
+      console.error('ensureActiveSession:', err);
+      await this.clearExpiredSessionLocally();
+      return false;
+    }
+  }
+
+  /** Errores típicos cuando la sesión expiró o el JWT ya no es válido para RLS. */
+  isAuthOrRlsError(message?: string): boolean {
+    if (!message) {
+      return false;
+    }
+    const normalized = message.toLowerCase();
+    return (
+      normalized.includes('row-level security') ||
+      normalized.includes('jwt expired') ||
+      normalized.includes('invalid jwt') ||
+      normalized.includes('not authenticated') ||
+      normalized.includes('session missing') ||
+      (normalized.includes('token') && normalized.includes('expired')) ||
+      normalized.includes('no se pudo obtener token de autenticación')
+    );
+  }
+
+  private async clearExpiredSessionLocally(): Promise<void> {
+    try {
+      await this.supabase.auth.signOut({ scope: 'local' });
+    } catch {
+      /* ignorar */
+    }
+    this.clearInMemoryAuthState();
+  }
+
+  /**
    * Espera a que la inicialización termine
    */
   async waitForInitialization(): Promise<boolean> {

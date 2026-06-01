@@ -1,7 +1,8 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { EventosService } from '../../services/eventos.service';
 import { BoletasService } from '../../services/boletas.service';
 import { ComprasClienteService, ItemCompra } from '../../services/compras-cliente.service';
@@ -15,6 +16,8 @@ import { SupabaseService } from '../../services/supabase.service';
 import { AlertService } from '../../services/alert.service';
 import { DetalleEventoStateService } from '../../services/detalle-evento-state.service';
 import { CarritoCompraService, ItemCarritoEvento } from '../../services/carrito-compra.service';
+import { ProductosService } from '../../services/productos.service';
+import { EventoProductosTab } from '../../components/evento-productos-tab/evento-productos-tab';
 import {
   Evento,
   TipoBoleta,
@@ -24,15 +27,17 @@ import {
   TipoEstadoEvento,
   CuponDescuento,
   Palco,
-  EstadoPalco
+  EstadoPalco,
+  Producto
 } from '../../types';
 import { supabaseConfig } from '../../config/supabase.config';
+import { getPagoResultadoUrl } from '../../config/app-url';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { SafePipe } from '../../pipes/safe.pipe';
 
 @Component({
   selector: 'app-detalle-evento',
-  imports: [CommonModule, FormsModule, RouterModule, DateFormatPipe, SafePipe],
+  imports: [CommonModule, FormsModule, RouterModule, DateFormatPipe, SafePipe, EventoProductosTab],
   templateUrl: './detalle-evento.html',
   styleUrl: './detalle-evento.css',
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
@@ -45,6 +50,10 @@ export class DetalleEvento implements OnInit, OnDestroy {
   loading = false;
   isRefreshing = false;
   loadingBoletas = false;
+  loadingProductosFlag = false;
+  tieneProductos = false;
+  productosCache: Producto[] = [];
+  tabCompra: 'entradas' | 'productos' = 'entradas';
   loadingLugar = false;
   loadingCategoria = false;
   comprando = false;
@@ -76,6 +85,7 @@ export class DetalleEvento implements OnInit, OnDestroy {
   private currentEventoId: number | null = null;
   private refreshIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly refreshIndicatorDelayMs = 800;
+  private carritoSubscription?: Subscription;
 
   // Control de acordeones (todos cerrados por defecto)
   acordeones: {
@@ -92,6 +102,18 @@ export class DetalleEvento implements OnInit, OnDestroy {
     eventoFinalizado: false
   };
 
+  setTabCompra(tab: 'entradas' | 'productos'): void {
+    if (this.tabCompra === tab) return;
+    this.tabCompra = tab;
+
+    const urlTree = this.router.createUrlTree([], {
+      relativeTo: this.route,
+      queryParams: tab === 'productos' ? { tab: 'productos' } : { tab: null },
+      queryParamsHandling: 'merge',
+    });
+    this.location.replaceState(this.router.serializeUrl(urlTree));
+  }
+
   toggleAcordeon(seccion: keyof typeof this.acordeones) {
     this.acordeones[seccion] = !this.acordeones[seccion];
   }
@@ -99,6 +121,7 @@ export class DetalleEvento implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     public router: Router,
+    private location: Location,
     private eventosService: EventosService,
     private boletasService: BoletasService,
     private cuponesService: CuponesService,
@@ -108,6 +131,7 @@ export class DetalleEvento implements OnInit, OnDestroy {
     private alertService: AlertService,
     private detalleEventoStateService: DetalleEventoStateService,
     private carritoCompraService: CarritoCompraService,
+    private productosService: ProductosService,
     private lugaresService: LugaresService,
     private categoriasService: CategoriasService,
     private wompiService: WompiService,
@@ -157,10 +181,21 @@ export class DetalleEvento implements OnInit, OnDestroy {
       const useBackgroundRefresh = !!cachedState;
       void this.loadEvento(parsedId, { background: useBackgroundRefresh });
     }
+
+    const tabQuery = this.route.snapshot.queryParamMap.get('tab');
+    if (tabQuery === 'productos') {
+      this.tabCompra = 'productos';
+    }
+
     this.loadUsuario();
+
+    this.carritoSubscription = this.carritoCompraService.totalItems$.subscribe(() => {
+      this.cdr.detectChanges();
+    });
   }
 
   ngOnDestroy(): void {
+    this.carritoSubscription?.unsubscribe();
     this.persistState(Date.now());
     this.stopSilentRefreshIndicator();
   }
@@ -426,6 +461,38 @@ export class DetalleEvento implements OnInit, OnDestroy {
       // Preparar promesas para carga en paralelo
       const promesas: Promise<any>[] = [];
 
+      // Comenzar temprano la verificación de productos para que la tab sea visible antes.
+      this.loadingProductosFlag = !silentRefreshMode;
+      promesas.push(
+        this.productosService.eventoTieneProductos(id)
+          .then(async (tieneProductos) => {
+            this.tieneProductos = tieneProductos;
+            if (!tieneProductos) {
+              this.productosCache = [];
+              return;
+            }
+
+            try {
+              this.productosCache = await this.productosService.getProductosPorEvento(id);
+            } catch (productosError) {
+              console.warn('[DetalleEvento] No se pudo refrescar productos cacheados:', productosError);
+              if (!this.productosCache.length) {
+                this.productosCache = [];
+              }
+            }
+          })
+          .catch(() => {
+            this.tieneProductos = false;
+            if (!this.productosCache.length) {
+              this.productosCache = [];
+            }
+          })
+          .finally(() => {
+            this.loadingProductosFlag = false;
+            this.cdr.detectChanges();
+          })
+      );
+
       // Agregar carga de lugar si existe
       if (evento.lugar_id) {
         promesas.push(this.loadLugar(evento.lugar_id, { background: silentRefreshMode }));
@@ -597,26 +664,30 @@ export class DetalleEvento implements OnInit, OnDestroy {
   }
 
   getCantidadTotalCarrito(): number {
-    return this.itemsCompra.reduce((acc, item) => acc + item.cantidad, 0);
+    const boletas = this.itemsCompra.reduce((acc, item) => acc + item.cantidad, 0);
+    const productos = this.carritoCompraService.getItemsProductosSnapshot().reduce((acc, item) => acc + item.cantidad, 0);
+    return boletas + productos;
   }
 
   irACarrito(): void {
     this.router.navigate(['/carrito']);
   }
 
-  getTotal(): number {
-    const baseNeta = Math.max(0, this.getSubtotal() - this.getDescuento());
-    return baseNeta + this.getValorServicio();
+  getSubtotal(): number {
+    return this.getSubtotalBoletas() + this.getSubtotalProductos();
   }
 
-  getSubtotal(): number {
+  getSubtotalBoletas(): number {
     return this.itemsCompra.reduce((sum, item) => sum + (item.tipo.precio * item.cantidad), 0);
+  }
+
+  getSubtotalProductos(): number {
+    return this.carritoCompraService.getSubtotalProductos();
   }
 
   getDescuento(): number {
     if (!this.cuponAplicado) return 0;
-    const subtotal = this.getSubtotal();
-    return (subtotal * this.cuponAplicado.porcentaje_descuento) / 100;
+    return (this.getSubtotalBoletas() * this.cuponAplicado.porcentaje_descuento) / 100;
   }
 
   getPorcentajeServicio(): number {
@@ -626,13 +697,17 @@ export class DetalleEvento implements OnInit, OnDestroy {
   }
 
   getBaseNetaBoletas(): number {
-    return Math.max(0, this.getSubtotal() - this.getDescuento());
+    return Math.max(0, this.getSubtotalBoletas() - this.getDescuento());
   }
 
   getValorServicio(): number {
-    const base = this.getBaseNetaBoletas();
+    const base = this.getBaseNetaBoletas() + this.getSubtotalProductos();
     const porcentaje = this.getPorcentajeServicio();
     return (base * porcentaje) / 100;
+  }
+
+  getTotal(): number {
+    return this.getBaseNetaBoletas() + this.getSubtotalProductos() + this.getValorServicio();
   }
 
   async aplicarCupon() {
@@ -715,7 +790,17 @@ export class DetalleEvento implements OnInit, OnDestroy {
       return;
     }
 
-    // Verificar autenticación antes de comprar
+    // Verificar autenticación y sesión activa antes de comprar
+    const sesionValida = await this.authService.ensureActiveSession();
+    if (!sesionValida) {
+      this.alertService.warning(
+        'Sesión expirada',
+        'Tu sesión terminó por inactividad. Inicia sesión de nuevo para completar la compra.'
+      );
+      this.router.navigate(['/login'], { queryParams: { returnUrl: this.rutaDetalleEventoActual } });
+      return;
+    }
+
     const clienteId = this.authService.getUsuarioId();
     if (!clienteId) {
       this.alertService.warning('Inicia sesión para continuar', 'Debes iniciar sesión para comprar boletas');
@@ -823,7 +908,7 @@ export class DetalleEvento implements OnInit, OnDestroy {
       }
 
       // Crear transacción en Wompi usando fetch directo (SOLO SI EL TOTAL > 0)
-      const redirectUrl = `${window.location.origin}/pago-resultado?compra_id=${resultado.compra.id}`;
+      const redirectUrl = getPagoResultadoUrl(`compra_id=${resultado.compra.id}`);
 
       try {
         // Obtener URL de Supabase y token de autenticación
@@ -882,6 +967,16 @@ export class DetalleEvento implements OnInit, OnDestroy {
       }
     } catch (err: any) {
       console.error('Error procesando compra:', err);
+      if (this.authService.isAuthOrRlsError(err?.message)) {
+        await this.authService.ensureActiveSession();
+        this.alertService.warning(
+          'Sesión expirada',
+          'Tu sesión terminó por inactividad. Inicia sesión de nuevo para completar la compra.'
+        );
+        this.router.navigate(['/login'], { queryParams: { returnUrl: this.rutaDetalleEventoActual } });
+        this.comprando = false;
+        return;
+      }
       this.alertService.error('Error al procesar compra', 'Error al procesar la compra: ' + (err.message || 'Error desconocido'));
       this.comprando = false;
     }
@@ -958,6 +1053,8 @@ export class DetalleEvento implements OnInit, OnDestroy {
   private applyCachedState(state: {
     evento: Evento;
     tiposBoleta: TipoBoleta[];
+    tieneProductos: boolean;
+    productos: Producto[];
     lugar: Lugar | null;
     categoria: CategoriaEvento | null;
     palcosDisponiblesPorTipo: Map<number, Palco[]>;
@@ -965,6 +1062,8 @@ export class DetalleEvento implements OnInit, OnDestroy {
   }): void {
     this.evento = { ...state.evento };
     this.tiposBoleta = [...state.tiposBoleta];
+    this.tieneProductos = state.tieneProductos;
+    this.productosCache = [...state.productos];
     this.lugar = state.lugar ? { ...state.lugar } : null;
     this.categoria = state.categoria ? { ...state.categoria } : null;
     this.palcosDisponiblesPorTipo = new Map(
@@ -980,6 +1079,8 @@ export class DetalleEvento implements OnInit, OnDestroy {
     this.detalleEventoStateService.saveState(this.currentEventoId, {
       evento: this.evento,
       tiposBoleta: this.tiposBoleta,
+      tieneProductos: this.tieneProductos,
+      productos: this.productosCache,
       lugar: this.lugar,
       categoria: this.categoria,
       palcosDisponiblesPorTipo: this.palcosDisponiblesPorTipo,
@@ -1005,6 +1106,13 @@ export class DetalleEvento implements OnInit, OnDestroy {
       this.refreshIndicatorTimer = null;
     }
     this.isRefreshing = false;
+  }
+
+  onProductosActualizados(productos: Producto[]): void {
+    this.productosCache = [...productos];
+    this.tieneProductos = this.productosCache.length > 0;
+    this.persistState(Date.now());
+    this.cdr.detectChanges();
   }
 }
 

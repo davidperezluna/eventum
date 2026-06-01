@@ -14,6 +14,7 @@ export const environment = {
     serviceWorkerScope: '/push/onesignal/',
   },
   maintenanceMode: false,
+  checkoutUnificadoEnabled: true,
   maintenanceMessage: 'Estamos en mantenimiento. Volvemos pronto.',
   googleTagId: 'GT-5TJZWP3P', // Google Tag ID
   supabaseEnv: 'prod' as 'prod' | 'local',
@@ -28,6 +29,7 @@ export const environment = {
     url: 'http://127.0.0.1:54321',
     anonKey: 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH',
   },
+  publicAppUrl: 'https://www.eventumcol.com',
 
   /**
    * Rutas de iconos Web Push (servidos desde `public/` → raíz del sitio).

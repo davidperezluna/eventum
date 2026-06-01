@@ -24,17 +24,17 @@
     </div>
   </article>
 
-  <div *ngIf="!loading && !error && compra" class="resultado-wrapper">
+  <div *ngIf="!loading && !error && (compra || compraProducto || transaccionProducto || transaccionCheckout)" class="resultado-wrapper">
     <article
       class="resultado-card"
-      [class.resultado-card--success]="compra.estado_pago === 'completado'"
-      [class.resultado-card--warning]="compra.estado_pago === 'pendiente'"
-      [class.resultado-card--error]="compra.estado_pago === 'fallido'"
+      [class.resultado-card--success]="getEstadoPagoReferencia() === 'completado'"
+      [class.resultado-card--warning]="getEstadoPagoReferencia() === 'pendiente'"
+      [class.resultado-card--error]="getEstadoPagoReferencia() === 'fallido'"
     >
       <div class="resultado-card__icon" aria-hidden="true">
-        <span class="material-icons" *ngIf="compra.estado_pago === 'completado'">check_circle</span>
-        <span class="material-icons" *ngIf="compra.estado_pago === 'pendiente'">schedule</span>
-        <span class="material-icons" *ngIf="compra.estado_pago === 'fallido'">error</span>
+        <span class="material-icons" *ngIf="getEstadoPagoReferencia() === 'completado'">check_circle</span>
+        <span class="material-icons" *ngIf="getEstadoPagoReferencia() === 'pendiente'">schedule</span>
+        <span class="material-icons" *ngIf="getEstadoPagoReferencia() === 'fallido'">error</span>
       </div>
 
       <p class="resultado-eyebrow">{{ getEstadoPagoEyebrow() }}</p>
@@ -44,31 +44,51 @@
       <section class="compra-summary" aria-labelledby="summary-heading">
         <h2 id="summary-heading" class="compra-summary__heading">Resumen de la operación</h2>
         <dl class="compra-summary__grid">
-          <div class="summary-row">
-            <dt>Transacción</dt>
+          <div class="summary-row" *ngIf="compra">
+            <dt>Transacción boletas</dt>
             <dd>{{ compra.numero_transaccion }}</dd>
           </div>
-          <div class="summary-row" *ngIf="compra.wompi_reference">
+          <div class="summary-row" *ngIf="compraProducto">
+            <dt>Pedido productos</dt>
+            <dd>{{ compraProducto.numero_pedido }}</dd>
+          </div>
+          <div class="summary-row" *ngIf="!compraProducto && transaccionProducto">
+            <dt>Referencia productos</dt>
+            <dd>{{ transaccionProducto.numero_transaccion }}</dd>
+          </div>
+          <div class="summary-row" *ngIf="!compra && !compraProducto && transaccionCheckout?.numero_intento">
+            <dt>Intento checkout</dt>
+            <dd>{{ transaccionCheckout!.numero_intento }}</dd>
+          </div>
+          <div class="summary-row" *ngIf="compra?.wompi_reference">
             <dt>Referencia Wompi</dt>
-            <dd>{{ compra.wompi_reference }}</dd>
+            <dd>{{ compra!.wompi_reference }}</dd>
+          </div>
+          <div class="summary-row" *ngIf="!compra?.wompi_reference && transaccionCheckout?.wompi_reference">
+            <dt>Referencia Wompi</dt>
+            <dd>{{ transaccionCheckout!.wompi_reference }}</dd>
           </div>
           <div class="summary-row summary-row--accent">
             <dt>Total cobrado</dt>
-            <dd>{{ formatCurrency(compra.total) }}</dd>
+            <dd>{{ formatCurrency(getTotalMostrado()) }}</dd>
           </div>
-          <div class="summary-row" *ngIf="compra.wompi_payment_method">
+          <div class="summary-row" *ngIf="compra?.wompi_payment_method">
             <dt>Método de pago</dt>
-            <dd>{{ compra.wompi_payment_method }}</dd>
+            <dd>{{ compra!.wompi_payment_method }}</dd>
           </div>
-          <div class="summary-row" *ngIf="compra.fecha_compra">
+          <div class="summary-row" *ngIf="compra?.fecha_compra || compraProducto?.fecha_compra">
             <dt>Fecha</dt>
-            <dd>{{ compra.fecha_compra | dateFormat:'medium' }}</dd>
+            <dd>{{ (compra?.fecha_compra || compraProducto?.fecha_compra) | dateFormat:'medium' }}</dd>
+          </div>
+          <div class="summary-row" *ngIf="!compra?.fecha_compra && !compraProducto?.fecha_compra && transaccionCheckout?.fecha_creacion">
+            <dt>Fecha</dt>
+            <dd>{{ transaccionCheckout!.fecha_creacion | dateFormat:'medium' }}</dd>
           </div>
         </dl>
       </section>
 
       <div class="resultado-actions">
-        <ng-container *ngIf="compra.estado_pago === 'completado'">
+        <ng-container *ngIf="getEstadoPagoReferencia() === 'completado'">
           <button type="button" class="btn btn-primary" (click)="router.navigate(['/mis-compras'])">
             Ver mis boletas
           </button>
@@ -76,7 +96,7 @@
             Explorar más eventos
           </button>
         </ng-container>
-        <ng-container *ngIf="compra.estado_pago === 'pendiente'">
+        <ng-container *ngIf="getEstadoPagoReferencia() === 'pendiente'">
           <button type="button" class="btn btn-primary" (click)="router.navigate(['/mis-compras'])">
             Revisar estado en Mis compras
           </button>
@@ -84,7 +104,7 @@
             Volver al inicio
           </button>
         </ng-container>
-        <ng-container *ngIf="compra.estado_pago === 'fallido'">
+        <ng-container *ngIf="getEstadoPagoReferencia() === 'fallido'">
           <button type="button" class="btn btn-primary" (click)="router.navigate(['/eventos-cliente'])">
             Intentar de nuevo desde eventos
           </button>

@@ -143,6 +143,57 @@
   margin-bottom: 2.5rem;
 }
 
+.detalle-compra-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.25rem;
+}
+
+.detalle-compra-tab {
+  border: none;
+  background: transparent;
+  padding: 0.65rem 1rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.detalle-compra-tab.active {
+  color: #0f172a;
+  border-bottom-color: #0f172a;
+}
+
+.detalle-compra-tab--loading {
+  color: #334155;
+}
+
+.tab-loading-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #4338ca;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  padding: 0.12rem 0.45rem;
+  text-transform: lowercase;
+}
+
+.detalle-tab-panel[hidden] {
+  display: none !important;
+}
+
+.productos-pending-state .loading-small,
+.productos-pending-state .empty-state {
+  margin: 0;
+}
+
 .detalle-zone-title {
   font-size: 1.0625rem;
   font-weight: 700;

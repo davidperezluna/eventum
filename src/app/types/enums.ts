@@ -102,3 +102,19 @@ export enum EstadoTrasladoBoleta {
   CANCELADO = 'cancelado'
 }
 
+/** Estado de línea en compra de productos */
+export enum TipoEstadoItemProducto {
+  PENDIENTE = 'pendiente',
+  CONFIRMADO = 'confirmado',
+  CANCELADO = 'cancelado',
+  ENTREGADO = 'entregado'
+}
+
+/** Estado de transacción Wompi (productos) */
+export enum TipoEstadoTransaccionProducto {
+  PENDIENTE = 'pendiente',
+  APROBADA = 'aprobada',
+  RECHAZADA = 'rechazada',
+  CANCELADA = 'cancelada'
+}
+

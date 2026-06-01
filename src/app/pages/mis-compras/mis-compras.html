@@ -66,7 +66,7 @@
   <section class="hero-section mini-hero">
     <div class="hero-content">
       <h1 class="hero-title">Mis <span class="gradient-text">Compras</span></h1>
-      <p class="hero-subtitle">Historial de tus experiencias y boletas adquiridas</p>
+      <p class="hero-subtitle">Boletas y productos agrupados por evento</p>
     </div>
   </section>
 
@@ -214,71 +214,133 @@
       Volver a mis compras
     </button>
 
-    <div class="compra-card evento-card evento-detalle-card mc-event-card">
-      <div class="evento-card-toggle evento-card-toggle--static mc-event-card-toggle">
-        <div class="event-body">
-          <h3 class="event-title">{{ detalle.titulo }}</h3>
-          <div class="event-meta">
-            <span class="event-meta-line" *ngIf="detalle.lugar?.nombre">
-              <span class="material-icons">place</span>
-              {{ detalle.lugar.nombre }}
-            </span>
-            <span class="event-meta-line" *ngIf="detalle.fechaInicio">
-              <span class="material-icons">calendar_today</span>
-              {{ detalle.fechaInicio | dateFormat:'short' }}
-              <ng-container *ngIf="detalle.fechaFin"> — {{ detalle.fechaFin | dateFormat:'short' }}</ng-container>
-            </span>
-          </div>
-          <div class="compra-estados compra-estados--event-card">
-            <span *ngFor="let tipo of tiposResumenParaBadges(detalle)" class="badge badge-info-soft">
-              {{ tipo.totalBoletas }} {{ tipo.nombre }}
-            </span>
-            <span class="badge badge-success">{{ detalle.totalSinUsar }} sin usar</span>
-            <span class="badge badge-info">{{ detalle.totalSinAsignar }} sin asignar</span>
-            <span class="badge badge-warning">{{ detalle.totalUsadas }} usadas</span>
-            <span class="badge badge-success" *ngIf="detalle.totalCedidas > 0">{{ detalle.totalCedidas }} {{ detalle.totalCedidas === 1 ? 'recibida' : 'recibidas' }}</span>
-          </div>
-          <div class="event-footer mc-event-card-footer--static">
-            <div class="mc-event-boletas-stat">
-              <span class="total-label">Boletas</span>
-              <span class="total-value">{{ detalle.totalBoletas }}</span>
-            </div>
-          </div>
+    <article class="evento-detalle-hero">
+      <header class="evento-detalle-hero__header">
+        <h3 class="evento-detalle-hero__title">{{ detalle.titulo }}</h3>
+        <div class="evento-detalle-hero__meta">
+          <span class="evento-detalle-hero__meta-line" *ngIf="detalle.lugar?.nombre">
+            <span class="material-icons" aria-hidden="true">place</span>
+            {{ detalle.lugar.nombre }}
+          </span>
+          <span class="evento-detalle-hero__meta-line" *ngIf="detalle.fechaInicio">
+            <span class="material-icons" aria-hidden="true">calendar_today</span>
+            {{ detalle.fechaInicio | dateFormat:'short' }}
+            <ng-container *ngIf="detalle.fechaFin"> — {{ detalle.fechaFin | dateFormat:'short' }}</ng-container>
+          </span>
+        </div>
+        <p class="evento-detalle-hero__resumen" *ngIf="resumenDetalleEvento(detalle) as resumen">
+          {{ resumen }}
+        </p>
+      </header>
+
+      <div class="evento-detalle-hero__tipos" *ngIf="tiposResumenParaBadges(detalle).length > 0">
+        <span *ngFor="let tipo of tiposResumenParaBadges(detalle)" class="badge badge-info-soft">
+          {{ tipo.totalBoletas }} {{ tipo.nombre }}
+        </span>
+        <span class="badge badge-success" *ngIf="detalle.totalCedidas > 0">
+          {{ detalle.totalCedidas }} {{ detalle.totalCedidas === 1 ? 'recibida' : 'recibidas' }}
+        </span>
+      </div>
+
+      <div class="evento-detalle-hero__nav">
+        <div
+          class="badge-tabs"
+          role="tablist"
+          aria-label="Contenido del evento"
+          *ngIf="eventoTieneEntradas(detalle) && eventoTieneProductos(detalle)"
+        >
+          <button
+            type="button"
+            class="badge badge-tab badge-info-soft"
+            role="tab"
+            [class.badge-tab--selected]="tabEventoDetalle === 'entradas'"
+            [attr.aria-selected]="tabEventoDetalle === 'entradas'"
+            (click)="tabEventoDetalle = 'entradas'"
+          >
+            {{ detalle.totalBoletas }} entradas
+          </button>
+          <button
+            type="button"
+            class="badge badge-tab badge-info-soft"
+            role="tab"
+            [class.badge-tab--selected]="tabEventoDetalle === 'productos'"
+            [attr.aria-selected]="tabEventoDetalle === 'productos'"
+            (click)="tabEventoDetalle = 'productos'"
+          >
+            {{ detalle.totalItemsProducto }} productos
+          </button>
+        </div>
+
+        <div
+          class="badge-tabs"
+          role="tablist"
+          aria-label="Estado de boletas"
+          *ngIf="tabEventoDetalle === 'entradas' && eventoTieneEntradas(detalle)"
+        >
+          <button
+            type="button"
+            class="badge badge-tab badge-success"
+            role="tab"
+            [class.badge-tab--selected]="tabBoletasDetalle === 'sin-usar'"
+            [attr.aria-selected]="tabBoletasDetalle === 'sin-usar'"
+            (click)="tabBoletasDetalle = 'sin-usar'"
+          >
+            {{ detalle.totalSinUsar }} sin usar
+          </button>
+          <button
+            type="button"
+            class="badge badge-tab badge-info"
+            role="tab"
+            [class.badge-tab--selected]="tabBoletasDetalle === 'sin-asignar'"
+            [attr.aria-selected]="tabBoletasDetalle === 'sin-asignar'"
+            (click)="tabBoletasDetalle = 'sin-asignar'"
+          >
+            {{ detalle.totalSinAsignar }} sin asignar
+          </button>
+          <button
+            type="button"
+            class="badge badge-tab badge-warning"
+            role="tab"
+            [class.badge-tab--selected]="tabBoletasDetalle === 'usadas'"
+            [attr.aria-selected]="tabBoletasDetalle === 'usadas'"
+            (click)="tabBoletasDetalle = 'usadas'"
+          >
+            {{ detalle.totalUsadas }} usadas
+          </button>
+        </div>
+
+        <div
+          class="badge-tabs"
+          role="tablist"
+          aria-label="Estado de productos"
+          *ngIf="tabEventoDetalle === 'productos' && eventoTieneProductos(detalle)"
+        >
+          <button
+            type="button"
+            class="badge badge-tab badge-success"
+            role="tab"
+            [class.badge-tab--selected]="tabProductosDetalle === 'compradas'"
+            [attr.aria-selected]="tabProductosDetalle === 'compradas'"
+            (click)="tabProductosDetalle = 'compradas'"
+          >
+            {{ detalle.totalProductosComprados }} por retirar
+          </button>
+          <button
+            type="button"
+            class="badge badge-tab badge-warning"
+            role="tab"
+            [class.badge-tab--selected]="tabProductosDetalle === 'redimidas'"
+            [attr.aria-selected]="tabProductosDetalle === 'redimidas'"
+            (click)="tabProductosDetalle = 'redimidas'"
+          >
+            {{ detalle.totalProductosRedimidos }} redimidas
+          </button>
         </div>
       </div>
-    </div>
+    </article>
 
-    <div class="boletas-tabs" role="tablist" aria-label="Estado de boletas">
-      <button
-        type="button"
-        class="boletas-tab"
-        [class.active]="tabBoletasDetalle === 'sin-usar'"
-        (click)="tabBoletasDetalle = 'sin-usar'"
-      >
-        Sin usar
-        <span>{{ detalle.totalSinUsar }}</span>
-      </button>
-      <button
-        type="button"
-        class="boletas-tab"
-        [class.active]="tabBoletasDetalle === 'sin-asignar'"
-        (click)="tabBoletasDetalle = 'sin-asignar'"
-      >
-        Sin asignar
-        <span>{{ detalle.totalSinAsignar }}</span>
-      </button>
-      <button
-        type="button"
-        class="boletas-tab"
-        [class.active]="tabBoletasDetalle === 'usadas'"
-        (click)="tabBoletasDetalle = 'usadas'"
-      >
-        Usadas
-        <span>{{ detalle.totalUsadas }}</span>
-      </button>
-    </div>
-
-    <div class="compra-card">
+    <ng-container *ngIf="tabEventoDetalle === 'entradas' && eventoTieneEntradas(detalle)">
+      <div class="compra-card evento-detalle-content">
       <div class="boletas-section evento-boletas-section">
         <div class="loading-small" *ngIf="loadingBoletasDetalle">
           <p>Cargando boletas...</p>
@@ -424,7 +486,84 @@
           </p>
         </ng-template>
       </div>
-    </div>
+      </div>
+    </ng-container>
+
+    <section
+      *ngIf="tabEventoDetalle === 'productos' && eventoTieneProductos(detalle)"
+      class="evento-productos-section"
+      aria-label="Productos del evento"
+    >
+      <div class="compra-card evento-detalle-content productos-panel">
+        <p class="productos-panel-hint" *ngIf="tabProductosDetalle === 'compradas'">
+          Retira en el punto de entrega del evento. Muestra tu pedido confirmado al personal.
+        </p>
+        <p class="productos-panel-hint productos-panel-hint--redimidas" *ngIf="tabProductosDetalle === 'redimidas'">
+          Productos que ya retiraste o consumiste en este evento.
+        </p>
+
+        <div class="loading-small" *ngIf="loadingComprasProductos">
+          <p>Cargando productos...</p>
+        </div>
+
+        <ng-container *ngIf="!loadingComprasProductos">
+          <div class="productos-list" *ngIf="productosDetallePorTab(detalle).length > 0; else detalleSinProductos">
+            <article
+              *ngFor="let fila of productosDetallePorTab(detalle)"
+              class="producto-item-card"
+            >
+              <div class="producto-item-card__row">
+                <div class="producto-item-card__media" aria-hidden="true">
+                  <img
+                    *ngIf="fila.item.productos?.imagen_url; else productoSinImagenCard"
+                    [src]="fila.item.productos!.imagen_url"
+                    [alt]=""
+                    loading="lazy"
+                  />
+                  <ng-template #productoSinImagenCard>
+                    <span class="material-icons">inventory_2</span>
+                  </ng-template>
+                </div>
+
+                <div class="producto-item-card__body">
+                  <div class="producto-item-card__top">
+                    <h4 class="producto-item-card__name">
+                      {{ fila.item.productos?.nombre || 'Producto' }}
+                      <span class="mc-producto-licor-tag" *ngIf="fila.item.productos?.es_licor">+18</span>
+                    </h4>
+                    <span class="badge producto-item-card__badge" [class]="getEstadoProductoClass(fila.item)">
+                      {{ getEstadoProductoLabel(fila.item) }}
+                    </span>
+                  </div>
+                  <p class="producto-item-card__meta">
+                    {{ fila.item.cantidad }} × {{ formatCurrency(fila.item.precio_unitario) }}
+                  </p>
+                  <p class="producto-item-card__pedido" [title]="fila.compra.numero_pedido">
+                    Pedido {{ referenciaPedidoCorta(fila.compra.numero_pedido) }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="producto-item-card__footer">
+                <span>Total</span>
+                <strong>{{ formatCurrency(fila.item.subtotal_linea ?? fila.item.cantidad * fila.item.precio_unitario) }}</strong>
+              </div>
+            </article>
+          </div>
+
+          <ng-template #detalleSinProductos>
+            <div class="productos-empty">
+              <span class="material-icons" aria-hidden="true">shopping_bag</span>
+              <p>
+                No hay productos
+                {{ tabProductosDetalle === 'redimidas' ? 'redimidos' : 'por retirar' }}
+                en este evento.
+              </p>
+            </div>
+          </ng-template>
+        </ng-container>
+      </div>
+    </section>
   </div>
 
   <section *ngIf="!loading && !eventoDetalleKey && eventosConBoletas.length > 0">
@@ -434,7 +573,7 @@
         type="button"
         class="evento-card-toggle mc-event-card-toggle"
         (click)="abrirDetalleEventoBoletas(grupo.key)"
-        [attr.aria-label]="'Ver boletas de ' + grupo.titulo"
+        [attr.aria-label]="'Ver compras de ' + grupo.titulo"
       >
         <div class="event-body">
           <h3 class="event-title">{{ grupo.titulo }}</h3>
@@ -456,13 +595,26 @@
             <span class="badge badge-success" *ngIf="grupo.totalCedidas > 0">{{ grupo.totalCedidas }} {{ grupo.totalCedidas === 1 ? 'recibida' : 'recibidas' }}</span>
             <span class="badge badge-info" *ngIf="grupo.totalSinAsignar > 0">{{ grupo.totalSinAsignar }} sin asignar</span>
             <span class="badge badge-warning" *ngIf="grupo.totalUsadas > 0">{{ grupo.totalUsadas }} usadas</span>
+            <span class="badge badge-info-soft" *ngIf="grupo.totalProductosComprados > 0">
+              {{ grupo.totalProductosComprados }} por retirar
+            </span>
+            <span class="badge badge-warning" *ngIf="grupo.totalProductosRedimidos > 0">
+              {{ grupo.totalProductosRedimidos }} redimidos
+            </span>
           </div>
-          <div class="event-footer">
-            <div class="mc-event-boletas-stat">
+          <div class="event-footer mc-event-footer--dual">
+            <div class="mc-event-boletas-stat" *ngIf="eventoTieneEntradas(grupo)">
               <span class="total-label">Boletas</span>
               <span class="total-value">{{ grupo.totalDisponibles }}</span>
               <span class="evento-total-caption" *ngIf="grupo.totalTrasladoSaliente > 0">
                 {{ grupo.totalTrasladoSaliente }} con envío pendiente
+              </span>
+            </div>
+            <div class="mc-event-boletas-stat" *ngIf="eventoTieneProductos(grupo)">
+              <span class="total-label">Productos</span>
+              <span class="total-value">{{ grupo.totalProductosComprados }}</span>
+              <span class="evento-total-caption" *ngIf="grupo.totalProductosRedimidos > 0">
+                {{ grupo.totalProductosRedimidos }} redimidos
               </span>
             </div>
             <span class="event-cta" aria-hidden="true">
@@ -644,8 +796,8 @@
   <!-- Empty state -->
   <div *ngIf="!loading && !vistaActividad && !tieneContenidoMisBoletas()" class="empty-state">
     <span class="material-icons empty-state__lead-icon" aria-hidden="true">shopping_bag</span>
-    <p class="empty-state__title">No has realizado ninguna compra aún</p>
-    <p class="empty-subtitle">Explora los eventos disponibles y compra tus boletas</p>
+    <p class="empty-state__title">Aún no tienes compras</p>
+    <p class="empty-subtitle">Explora eventos y adquiere boletas o productos para tu experiencia</p>
     <a routerLink="/eventos-cliente" class="btn-primary empty-state__cta">
       <span class="material-icons" aria-hidden="true">event</span>
       Ver Eventos
