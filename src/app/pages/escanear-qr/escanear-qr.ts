@@ -419,6 +419,12 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
       this.boletasEncontradas = [];
     }
     this.cdr.markForCheck();
+
+    // Si el usuario cierra la modal manualmente en modo scanner,
+    // reactivar lectura para evitar que la cámara quede pausada.
+    if (this.modoBusqueda === 'scanner' && this.escaneoPausado) {
+      void this.reanudarCamara();
+    }
   }
 
   private async verificarPermisoLector(boleta: BoletaComprada): Promise<boolean> {
