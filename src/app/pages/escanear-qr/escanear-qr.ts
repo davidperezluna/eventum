@@ -53,6 +53,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
   permisos: PermisoEscaneo[] = [];
   permisoKeys = new Set<string>();
   permisoEventoIds = new Set<number>();
+  permisoEventoProductoIds = new Set<number>();
   esLector = false;
   cargandoPermisos = true;
 
@@ -107,9 +108,15 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
             .map((p) => buildPermisoKey(p.evento_id, p.tipo_boleta_id as number))
         );
         this.permisoEventoIds = new Set(this.permisos.map((p) => p.evento_id));
+        this.permisoEventoProductoIds = new Set(
+          this.permisos
+            .filter((p) => p.categoria === 'producto')
+            .map((p) => p.evento_id)
+        );
       } catch {
         this.permisos = [];
         this.permisoEventoIds = new Set<number>();
+        this.permisoEventoProductoIds = new Set<number>();
         await this.alertService.error(
           'No se pudieron cargar tus permisos de escaneo.'
         );
@@ -388,7 +395,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
   private async mostrarProductoEnModal(item: ItemProductoEscaneo): Promise<void> {
     if (this.requierePermisosLector) {
       const eventoId = item.compra?.evento_id;
-      if (!eventoId || !this.permisoEventoIds.has(eventoId)) {
+      if (!eventoId || !this.permisoEventoProductoIds.has(eventoId)) {
         this.errorPermiso = 'Este producto no corresponde a un evento asignado para escanear.';
         await this.alertService.warning('Sin permiso', this.errorPermiso);
         await this.reiniciarEscaneo();
