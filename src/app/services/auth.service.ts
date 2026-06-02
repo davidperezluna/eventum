@@ -474,6 +474,9 @@ export class AuthService {
   }
 
   private setForcedLogoutFlag(): void {
+    if (this.shouldSkipForcedLogoutFlow()) {
+      return;
+    }
     try {
       localStorage.setItem(FORCE_LOGOUT_STORAGE_KEY, '1');
     } catch {
@@ -482,6 +485,9 @@ export class AuthService {
   }
 
   private hasForcedLogoutFlag(): boolean {
+    if (this.shouldSkipForcedLogoutFlow()) {
+      return false;
+    }
     try {
       return localStorage.getItem(FORCE_LOGOUT_STORAGE_KEY) === '1';
     } catch {
@@ -494,6 +500,19 @@ export class AuthService {
       localStorage.removeItem(FORCE_LOGOUT_STORAGE_KEY);
     } catch {
       /* noop */
+    }
+  }
+
+  /**
+   * En flujo lector (operación en puerta) evitamos auto-logout por bandera local
+   * para no cortar validaciones durante alto tráfico.
+   */
+  private shouldSkipForcedLogoutFlow(): boolean {
+    try {
+      const path = globalThis?.location?.pathname || '';
+      return path.startsWith('/lector');
+    } catch {
+      return false;
     }
   }
 
