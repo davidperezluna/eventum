@@ -47,6 +47,18 @@
         </p>
       </div>
 
+      <div class="scanner-actions">
+        <button
+          type="button"
+          class="btn-secondary btn-camera-refresh"
+          (click)="forzarReinicioCamara()"
+          [disabled]="cargandoPermisos || buscando || validando || (requierePermisosLector && permisos.length === 0)"
+        >
+          <span class="material-icons">autorenew</span>
+          Reiniciar camara
+        </button>
+      </div>
+
       <div *ngIf="buscando" class="loading-inline">
         <span class="material-icons spin">hourglass_top</span>
         Buscando codigo...

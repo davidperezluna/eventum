@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -7,6 +7,7 @@ import {
   PermisoEscaneo,
 } from '../../services/lector-permisos.service';
 import { LectorStateService } from '../../services/lector-state.service';
+import type { AuthStateCallback } from '../../services/auth.service';
 
 type GrupoEvento = {
   evento_id: number;
@@ -20,11 +21,12 @@ type GrupoEvento = {
   templateUrl: './lector-home.html',
   styleUrl: './lector-home.css',
 })
-export class LectorHome implements OnInit {
+export class LectorHome implements OnInit, OnDestroy {
   permisos: PermisoEscaneo[] = [];
   grupos: GrupoEvento[] = [];
   loading = true;
   refreshing = false;
+  private unsubscribeAuthState: (() => void) | null = null;
 
   constructor(
     private authService: AuthService,
@@ -35,18 +37,29 @@ export class LectorHome implements OnInit {
 
   ngOnInit(): void {
     const userId = this.authService.getUsuarioId();
-    const cachedPermisos = userId ? this.lectorStateService.getPermisos(userId) : null;
+    const cachedPermisos =
+      (userId ? this.lectorStateService.getPermisos(userId) : null) ||
+      this.lectorStateService.getLatestPermisos();
 
     if (cachedPermisos) {
       this.permisos = cachedPermisos;
       this.grupos = this.agruparPorEvento(this.permisos);
       this.loading = false;
       this.cdr.markForCheck();
-      void this.cargarPermisos({ background: true, userId });
+      void this.cargarPermisos({ background: true, userId: this.authService.getUsuarioId() });
+      this.suscribirRecargaPorAuth();
       return;
     }
 
-    void this.cargarPermisos({ background: false, userId });
+    void this.cargarPermisos({ background: false, userId: this.authService.getUsuarioId() });
+    this.suscribirRecargaPorAuth();
+  }
+
+  ngOnDestroy(): void {
+    if (this.unsubscribeAuthState) {
+      this.unsubscribeAuthState();
+      this.unsubscribeAuthState = null;
+    }
   }
 
   get usuario() {
@@ -73,6 +86,20 @@ export class LectorHome implements OnInit {
       this.refreshing = false;
       this.cdr.markForCheck();
     }
+  }
+
+  private suscribirRecargaPorAuth(): void {
+    const callback: AuthStateCallback = () => {
+      const userId = this.authService.getUsuarioId();
+      if (!userId) return;
+
+      if (this.permisos.length > 0) {
+        void this.cargarPermisos({ background: true, userId });
+      } else {
+        void this.cargarPermisos({ background: false, userId });
+      }
+    };
+    this.unsubscribeAuthState = this.authService.onAuthStateChange(callback);
   }
 
   private agruparPorEvento(permisos: PermisoEscaneo[]): GrupoEvento[] {

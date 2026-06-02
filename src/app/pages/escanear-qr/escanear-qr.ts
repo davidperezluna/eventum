@@ -66,6 +66,13 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
   private permisosReady = false;
   private cameraDomRetries = 0;
   private readonly maxCameraDomRetries = 8;
+  private visibilityHandler = () => {
+    void this.onVisibilityChange();
+  };
+  private focusHandler = () => {
+    this.programarReinicioCamara(250);
+  };
+  private restartTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly readerId = 'eventum-qr-reader';
 
@@ -125,6 +132,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
       this.scheduleIniciarCamaraTrasRender();
     }
     this.cdr.markForCheck();
+    this.registrarEventosCicloVida();
   }
 
   private aplicarPermisos(permisos: PermisoEscaneo[]): void {
@@ -184,7 +192,75 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.removerEventosCicloVida();
+    if (this.restartTimer) {
+      clearTimeout(this.restartTimer);
+      this.restartTimer = null;
+    }
     void this.detenerCamara();
+  }
+
+  private registrarEventosCicloVida(): void {
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', this.visibilityHandler);
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', this.focusHandler);
+      window.addEventListener('pageshow', this.focusHandler);
+    }
+  }
+
+  private removerEventosCicloVida(): void {
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+    }
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('focus', this.focusHandler);
+      window.removeEventListener('pageshow', this.focusHandler);
+    }
+  }
+
+  private async onVisibilityChange(): Promise<void> {
+    if (typeof document === 'undefined') return;
+    if (document.hidden) {
+      // Al bloquear o enviar a segundo plano, liberamos stream para evitar cámara congelada al volver.
+      await this.detenerCamara();
+      this.cdr.markForCheck();
+      return;
+    }
+    this.programarReinicioCamara(300);
+  }
+
+  private programarReinicioCamara(delayMs = 200): void {
+    if (this.modoBusqueda !== 'scanner' || this.cargandoPermisos || this.modalVisible) {
+      return;
+    }
+    if (this.requierePermisosLector && this.permisos.length === 0) {
+      return;
+    }
+    if (this.restartTimer) {
+      clearTimeout(this.restartTimer);
+    }
+    this.restartTimer = setTimeout(() => {
+      this.restartTimer = null;
+      void this.forzarReinicioCamara();
+    }, Math.max(0, delayMs));
+  }
+
+  async forzarReinicioCamara(): Promise<void> {
+    if (this.modoBusqueda !== 'scanner' || this.cargandoPermisos || this.iniciandoCamara) {
+      return;
+    }
+    if (this.requierePermisosLector && this.permisos.length === 0) {
+      return;
+    }
+    this.cameraError = null;
+    this.escaneoPausado = false;
+    this.ultimoCodigo = '';
+    this.cameraDomRetries = 0;
+    this.cdr.markForCheck();
+    await this.detenerCamara();
+    await this.iniciarCamara();
   }
 
   async cambiarModo(modo: 'scanner' | 'manual'): Promise<void> {
