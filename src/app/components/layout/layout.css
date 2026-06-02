@@ -16,7 +16,7 @@
 .layout-container.client-layout {
   flex-direction: column !important;
   width: 100%;
-  overflow-x: hidden;
+  overflow: visible;
 }
 
 /* Asegurar que cuando hay header de cliente, el layout use columna */
@@ -693,8 +693,7 @@
   background: #f8fafc;
   min-height: calc(100vh - 73px);
   position: relative;
-  z-index: 1;
-  overflow-x: clip;
+  overflow: visible;
 }
 
 /* ============================================
@@ -740,8 +739,7 @@
   background: #f8fafc;
   min-height: calc(100vh - 73px);
   position: relative;
-  z-index: 1;
-  overflow-x: clip;
+  overflow: visible;
 }
 
 /* ============================================

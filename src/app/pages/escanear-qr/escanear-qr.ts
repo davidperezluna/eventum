@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink, ActivatedRoute } from '@angular/router';
 import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
 import { BoletasService } from '../../services/boletas.service';
+import { ComprasProductoService, ItemProductoEscaneo } from '../../services/compras-producto.service';
 import { AlertService } from '../../services/alert.service';
 import { AuthService, RolesPermitidos } from '../../services/auth.service';
 import {
@@ -35,6 +36,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
   buscando = false;
   validando = false;
   boleta: BoletaComprada | null = null;
+  productoItem: ItemProductoEscaneo | null = null;
   boletasEncontradas: BoletaComprada[] = [];
   modalVisible = false;
   nombreTipoBoleta = '';
@@ -50,6 +52,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
 
   permisos: PermisoEscaneo[] = [];
   permisoKeys = new Set<string>();
+  permisoEventoIds = new Set<number>();
   esLector = false;
   cargandoPermisos = true;
 
@@ -73,6 +76,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(
     private boletasService: BoletasService,
+    private comprasProductoService: ComprasProductoService,
     private alertService: AlertService,
     private authService: AuthService,
     private lectorPermisos: LectorPermisosService,
@@ -100,8 +104,10 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
         this.permisoKeys = new Set(
           this.permisos.map((p) => buildPermisoKey(p.evento_id, p.tipo_boleta_id))
         );
+        this.permisoEventoIds = new Set(this.permisos.map((p) => p.evento_id));
       } catch {
         this.permisos = [];
+        this.permisoEventoIds = new Set<number>();
         await this.alertService.error(
           'No se pudieron cargar tus permisos de escaneo.'
         );
@@ -275,6 +281,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
 
     this.buscando = true;
     this.boleta = null;
+    this.productoItem = null;
     this.boletasEncontradas = [];
     this.modalVisible = false;
     this.cdr.markForCheck();
@@ -323,16 +330,22 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
 
     try {
       const encontrada = await this.boletasService.buscarBoletaPorCodigoQR(codigo.trim());
-      if (!encontrada) {
+      if (encontrada) {
+        await this.mostrarBoletaEnModal(encontrada);
+        return;
+      }
+
+      const producto = await this.comprasProductoService.buscarItemPorCodigoQR(codigo.trim());
+      if (!producto) {
         await this.alertService.info(
           'No encontrado',
-          'No hay ninguna boleta con ese código QR.'
+          'No hay ninguna boleta o producto con ese código QR.'
         );
         await this.reiniciarEscaneo();
         return;
       }
 
-      await this.mostrarBoletaEnModal(encontrada);
+      await this.mostrarProductoEnModal(producto);
     } catch (err: unknown) {
       console.error(err);
       const msg = err instanceof Error ? err.message : 'Error desconocido';
@@ -365,6 +378,23 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     this.tituloEvento =
       eventoTitulo || boleta.evento?.titulo || `Evento #${tipoBoleta?.evento_id ?? ''}`;
     this.boleta = boleta;
+    this.productoItem = null;
+    this.modalVisible = true;
+    this.cdr.markForCheck();
+  }
+
+  private async mostrarProductoEnModal(item: ItemProductoEscaneo): Promise<void> {
+    if (this.requierePermisosLector) {
+      const eventoId = item.compra?.evento_id;
+      if (!eventoId || !this.permisoEventoIds.has(eventoId)) {
+        this.errorPermiso = 'Este producto no corresponde a un evento asignado para escanear.';
+        await this.alertService.warning('Sin permiso', this.errorPermiso);
+        await this.reiniciarEscaneo();
+        return;
+      }
+    }
+    this.boleta = null;
+    this.productoItem = item;
     this.modalVisible = true;
     this.cdr.markForCheck();
   }
@@ -372,6 +402,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
   cerrarModal(mantenerLista = false): void {
     this.modalVisible = false;
     this.boleta = null;
+    this.productoItem = null;
     this.nombreTipoBoleta = '';
     this.tituloEvento = '';
     if (!mantenerLista) {
@@ -442,6 +473,42 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     try {
       await this.boletasService.validarBoleta(this.boleta.id);
       await this.alertService.success('¡Boleta validada!', 'Entrada validada correctamente.');
+      this.cerrarModal();
+      await this.reiniciarEscaneo();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error desconocido';
+      await this.alertService.error('Error al validar', msg);
+    } finally {
+      this.validando = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  puedeValidarProducto(item: ItemProductoEscaneo): boolean {
+    return (
+      (item.estado || '').toLowerCase() !== 'entregado' &&
+      (item.compra?.estado_pago || '').toLowerCase() === 'completado'
+    );
+  }
+
+  async validarProducto(): Promise<void> {
+    if (!this.productoItem) return;
+    if (!this.puedeValidarProducto(this.productoItem)) {
+      await this.alertService.warning('No se puede validar', 'Este producto ya fue redimido o no tiene pago completado.');
+      return;
+    }
+
+    const ok = await this.alertService.confirm(
+      'Validar producto',
+      `¿Marcar como entregado el QR ${this.productoItem.codigo_qr}?`
+    );
+    if (!ok) return;
+
+    this.validando = true;
+    this.cdr.markForCheck();
+    try {
+      await this.comprasProductoService.validarItemProducto(this.productoItem.id);
+      await this.alertService.success('Producto validado', 'El producto quedó marcado como redimido.');
       this.cerrarModal();
       await this.reiniciarEscaneo();
     } catch (err: unknown) {

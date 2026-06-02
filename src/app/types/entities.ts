@@ -437,13 +437,30 @@ export interface LectorEventoTipoBoleta {
   tipos_boleta?: Pick<TipoBoleta, 'id' | 'nombre' | 'evento_id'>;
 }
 
+/**
+ * Permiso de escaneo para productos: usuario con rol Lector + evento.
+ */
+export interface LectorEventoProducto {
+  id: number;
+  usuario_id: number;
+  evento_id: number;
+  fecha_creacion?: Date | string;
+  usuarios?: Pick<Usuario, 'id' | 'nombre' | 'apellido' | 'email'>;
+  eventos?: Pick<Evento, 'id' | 'titulo'>;
+}
+
 /** Producto del catálogo de un evento (venta separada de boletas). */
 export interface Producto {
   id: number;
   evento_id: number;
   nombre: string;
   descripcion?: string;
+  /** Precio preventa (antes de iniciar el evento). */
   precio: number;
+  /** Precio aplicable durante el evento; si no existe, usa `precio`. */
+  precio_evento?: number;
+  /** Solo frontend: referencia del precio preventa al guardar en carrito. */
+  precio_preventa?: number;
   imagen_url?: string;
   es_licor?: boolean;
   cantidad_total: number;
@@ -489,12 +506,15 @@ export interface CompraProductoItem {
   id: number;
   compra_producto_id: number;
   producto_id: number;
+  codigo_qr?: string;
   cantidad: number;
   precio_unitario: number;
   subtotal_linea?: number;
   estado?: TipoEstadoItemProducto | string;
+  fecha_redencion?: Date | string;
+  validado_por_usuario_id?: number;
   fecha_creacion?: Date | string;
-  productos?: Pick<Producto, 'id' | 'nombre' | 'imagen_url' | 'es_licor'>;
+  productos?: Pick<Producto, 'id' | 'nombre' | 'imagen_url' | 'es_licor' | 'precio' | 'precio_evento'>;
 }
 
 /** Transacción Wompi para compra de productos. */

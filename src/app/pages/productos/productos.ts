@@ -24,6 +24,8 @@ export class Productos implements OnInit {
   showModal = false;
   editingProducto: Producto | null = null;
   formData: Partial<Producto> = { activo: true, es_licor: false, cantidad_total: 0, orden: 0 };
+  precioPreventaInput = '';
+  precioEventoInput = '';
 
   constructor(
     private productosService: ProductosService,
@@ -76,18 +78,29 @@ export class Productos implements OnInit {
     this.editingProducto = producto ?? null;
     this.formData = producto
       ? { ...producto }
-      : { activo: true, es_licor: false, cantidad_total: 0, cantidad_vendidas: 0, orden: 0 };
+      : { activo: true, es_licor: false, cantidad_total: 0, cantidad_vendidas: 0, orden: 0, precio: 0, precio_evento: 0 };
+    this.precioPreventaInput = this.formatMiles(this.formData.precio);
+    this.precioEventoInput = this.formatMiles(this.formData.precio_evento);
     this.showModal = true;
   }
 
   closeModal(): void {
     this.showModal = false;
     this.editingProducto = null;
+    this.precioPreventaInput = '';
+    this.precioEventoInput = '';
   }
 
   async saveProducto(): Promise<void> {
     if (!this.formData.evento_id || !this.formData.nombre?.trim()) {
       this.alertService.warning('Datos incompletos', 'Evento y nombre son obligatorios.');
+      return;
+    }
+
+    const precioPreventa = Number(this.formData.precio ?? 0);
+    const precioEvento = Number(this.formData.precio_evento ?? 0);
+    if (!Number.isFinite(precioPreventa) || precioPreventa < 0 || !Number.isFinite(precioEvento) || precioEvento < 0) {
+      this.alertService.warning('Precio inválido', 'Los precios deben ser números iguales o mayores a 0.');
       return;
     }
 
@@ -130,5 +143,37 @@ export class Productos implements OnInit {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(value);
+  }
+
+  onPrecioInputChange(tipo: 'preventa' | 'evento', rawValue: string): void {
+    const digits = (rawValue ?? '').replace(/\D/g, '');
+    const formatted = this.formatMilesFromDigits(digits);
+
+    if (tipo === 'preventa') {
+      this.precioPreventaInput = formatted;
+      this.formData.precio = digits.length > 0 ? Number(digits) : 0;
+      return;
+    }
+
+    this.precioEventoInput = formatted;
+    this.formData.precio_evento = digits.length > 0 ? Number(digits) : undefined;
+  }
+
+  private formatMiles(value: number | null | undefined): string {
+    if (value === null || value === undefined || !Number.isFinite(Number(value))) {
+      return '';
+    }
+    return new Intl.NumberFormat('es-CO', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+      useGrouping: true
+    }).format(Number(value));
+  }
+
+  private formatMilesFromDigits(digits: string): string {
+    if (!digits) return '';
+    const numeric = Number(digits);
+    if (!Number.isFinite(numeric)) return '';
+    return this.formatMiles(numeric);
   }
 }

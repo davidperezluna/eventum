@@ -3,6 +3,14 @@
     <div>
       <h2>Productos</h2>
       <p class="section-kicker">Selecciona tus productos y revisa el total antes de pagar.</p>
+      <p
+        class="preventa-hint"
+        [class.preventa-hint--urgent]="preventaUrgente()"
+        [class.preventa-hint--evento]="!preventaActiva()"
+      >
+        <span class="material-icons">{{ preventaActiva() ? 'schedule' : 'local_offer' }}</span>
+        {{ getPrecioEstadoHintLabel() }}
+      </p>
     </div>
     <button
       type="button"
@@ -34,7 +42,22 @@
       </div>
       <div class="tipo-boleta-header">
         <h3>{{ producto.nombre }}</h3>
-        <span class="precio">{{ formatCurrency(producto.precio) }}</span>
+        <div class="producto-precio-stack">
+          <span class="producto-precio-badge" [class.producto-precio-badge--evento]="precioEventoVigente()">
+            {{ getEstadoPrecioLabel() }}
+          </span>
+          <span class="precio">{{ formatCurrency(getPrecioVigente(producto)) }}</span>
+          <small
+            *ngIf="tienePrecioDiferenciado(producto)"
+            class="producto-precio-contexto producto-precio-contexto--tachado"
+          >
+            {{ precioEventoVigente() ? 'Preventa' : 'En evento' }}:
+            {{ formatCurrency(getPrecioReferencia(producto)) }}
+          </small>
+          <small *ngIf="getAhorroUnitario(producto) > 0" class="producto-precio-ahorro">
+            Ahorras {{ formatCurrency(getAhorroUnitario(producto)) }} comprando antes
+          </small>
+        </div>
       </div>
       <p *ngIf="producto.descripcion" class="tipo-descripcion">{{ producto.descripcion }}</p>
       <div class="tipo-info">

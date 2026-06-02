@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { EventosService } from '../../services/eventos.service';
 import { CategoriasService } from '../../services/categorias.service';
 import { EventosClienteStateService } from '../../services/eventos-cliente-state.service';
+import { ProductosService } from '../../services/productos.service';
 import { Evento, CategoriaEvento, TipoEstadoEvento } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { Subject, Subscription } from 'rxjs';
@@ -31,17 +32,20 @@ export class EventosCliente implements OnInit, OnDestroy {
   initialBootstrapLoading = true;
   searchTerm = '';
   categoriaFiltro: number | null = null;
+  resumenProductosPorEvento = new Map<number, { cantidad: number; precioMinimo: number }>();
 
   private searchSubject = new Subject<string>();
   private searchSubscription: Subscription | null = null;
   private refreshIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly refreshIndicatorDelayMs = 800;
+  private readonly maxProductosDestacados = 4;
   currentYear = new Date().getFullYear();
 
   constructor(
     private eventosService: EventosService,
     private categoriasService: CategoriasService,
     private eventosClienteStateService: EventosClienteStateService,
+    private productosService: ProductosService,
     private cdr: ChangeDetectorRef
   ) { }
 
@@ -184,14 +188,14 @@ export class EventosCliente implements OnInit, OnDestroy {
         eventos = response.data || [];
       }
 
-      this.procesarEventos(eventos);
+      await this.procesarEventos(eventos);
     } catch (err) {
       console.error('Error cargando eventos:', err);
-      this.procesarEventos([]);
+      await this.procesarEventos([]);
     }
   }
 
-  procesarEventos(eventos: Evento[]) {
+  private async procesarEventos(eventos: Evento[]): Promise<void> {
     const ahora = new Date();
     // Filtrar eventos activos y que no hayan finalizado (fecha_fin aún no ha pasado)
     this.eventos = eventos.filter(e => {
@@ -206,10 +210,78 @@ export class EventosCliente implements OnInit, OnDestroy {
       return true;
     });
 
+    await this.cargarResumenProductosEventos();
+
     // Ya no filtramos localmente por search, el servidor ya lo hizo
     this.aplicarFiltrosLocales();
     this.persistState();
     this.cdr.detectChanges();
+  }
+
+  private async cargarResumenProductosEventos(): Promise<void> {
+    const ids = this.eventos.map((evento) => evento.id);
+    if (ids.length === 0) {
+      this.resumenProductosPorEvento = new Map();
+      this.cdr.detectChanges();
+      return;
+    }
+
+    try {
+      this.resumenProductosPorEvento = await this.productosService.getResumenProductosPorEvento(ids);
+    } catch (error) {
+      console.warn('No se pudo cargar resumen de productos por evento:', error);
+      this.resumenProductosPorEvento = new Map();
+    } finally {
+      this.cdr.detectChanges();
+    }
+  }
+
+  tieneProductosEvento(eventoId: number): boolean {
+    return this.resumenProductosPorEvento.has(eventoId);
+  }
+
+  getCantidadProductosEvento(eventoId: number): number {
+    return this.resumenProductosPorEvento.get(eventoId)?.cantidad ?? 0;
+  }
+
+  getPrecioMinimoProductoEvento(eventoId: number): number {
+    return this.resumenProductosPorEvento.get(eventoId)?.precioMinimo ?? 0;
+  }
+
+  get eventosConProductos(): Evento[] {
+    const seen = new Set<number>();
+    const merged = [...this.eventosDestacados, ...this.eventosRegulares];
+    return merged.filter((evento) => {
+      if (seen.has(evento.id)) return false;
+      seen.add(evento.id);
+      return this.tieneProductosEvento(evento.id);
+    });
+  }
+
+  get eventosConProductosPreview(): Evento[] {
+    return this.eventosConProductos.slice(0, this.maxProductosDestacados);
+  }
+
+  getProductosChipLabel(evento: Evento): string {
+    const cantidad = this.getCantidadProductosEvento(evento.id);
+    const sufijo = cantidad === 1 ? 'producto' : 'productos';
+    const estadoLabel = this.precioEventoActivo(evento) ? 'Precio en evento activo' : 'Preventa en productos';
+    const precioMinimo = this.getPrecioMinimoProductoEvento(evento.id);
+    return `${estadoLabel} · ${cantidad} ${sufijo} · Desde ${this.formatCurrency(precioMinimo)}`;
+  }
+
+  getProductosBadgeShortLabel(evento: Evento): string {
+    return this.precioEventoActivo(evento) ? 'Precio en evento activo' : 'Preventa en productos';
+  }
+
+  getCantidadProductosLabel(eventoId: number): string {
+    const cantidad = this.getCantidadProductosEvento(eventoId);
+    return `${cantidad} ${cantidad === 1 ? 'producto' : 'productos'}`;
+  }
+
+  precioEventoActivo(evento: Evento): boolean {
+    if (!evento.fecha_inicio) return false;
+    return new Date(evento.fecha_inicio).getTime() <= Date.now();
   }
 
   aplicarFiltrosLocales() {
@@ -365,6 +437,7 @@ export class EventosCliente implements OnInit, OnDestroy {
     eventosFiltrados: Evento[];
     eventosFinalizados: Evento[];
     categorias: CategoriaEvento[];
+    resumenProductosPorEvento: Record<string, { cantidad: number; precioMinimo: number }>;
     searchTerm: string;
     categoriaFiltro: number | null;
   }) {
@@ -372,6 +445,7 @@ export class EventosCliente implements OnInit, OnDestroy {
     this.eventosFiltrados = [...state.eventosFiltrados];
     this.eventosFinalizados = [...state.eventosFinalizados];
     this.categorias = [...state.categorias];
+    this.resumenProductosPorEvento = this.deserializeResumenProductosPorEvento(state.resumenProductosPorEvento);
     this.searchTerm = state.searchTerm;
     this.categoriaFiltro = state.categoriaFiltro;
   }
@@ -383,11 +457,24 @@ export class EventosCliente implements OnInit, OnDestroy {
       eventosFiltrados: this.eventosFiltrados,
       eventosFinalizados: this.eventosFinalizados,
       categorias: this.categorias,
+      resumenProductosPorEvento: this.serializeResumenProductosPorEvento(),
       searchTerm: this.searchTerm,
       categoriaFiltro: this.categoriaFiltro,
       scrollY: window.scrollY,
       lastUpdated: lastUpdated ?? existingState?.lastUpdated ?? 0
     });
+  }
+
+  private serializeResumenProductosPorEvento(): Record<string, { cantidad: number; precioMinimo: number }> {
+    return Object.fromEntries(this.resumenProductosPorEvento.entries());
+  }
+
+  private deserializeResumenProductosPorEvento(
+    resumen: Record<string, { cantidad: number; precioMinimo: number }> | undefined
+  ): Map<number, { cantidad: number; precioMinimo: number }> {
+    const source = resumen ?? {};
+    const entries = Object.entries(source).map(([eventoId, data]) => [Number(eventoId), data] as const);
+    return new Map(entries);
   }
 
   trackByEventoId(_: number, evento: Evento): number {

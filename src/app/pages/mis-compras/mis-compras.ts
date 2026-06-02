@@ -147,6 +147,10 @@ export class MisCompras implements OnInit, OnDestroy {
   tipoBoletaSeleccionado: TipoBoleta | null = null;
   qrCodeUrl: string = '';
   loadingQR = false;
+  showProductoQrModal = false;
+  productoFilaSeleccionada: ProductoConCompra | null = null;
+  productoQrCodeUrl = '';
+  loadingProductoQR = false;
 
   /** Traslados de palcos: historial y mapas para ocultar QR al remitente con envío pendiente. */
   trasladosHistorial: TrasladoBoleta[] = [];
@@ -278,7 +282,10 @@ export class MisCompras implements OnInit, OnDestroy {
 
     this.loadingComprasProductos = true;
     try {
-      this.comprasProductos = await this.comprasProductoService.getComprasByCliente(clienteId);
+      const compras = await this.comprasProductoService.getComprasByCliente(clienteId);
+      this.comprasProductos = compras.filter(
+        (compra) => (compra.estado_pago || '').toLowerCase() === TipoEstadoPago.COMPLETADO
+      );
     } catch (err) {
       console.error('Error cargando compras de productos:', err);
       this.comprasProductos = [];
@@ -298,6 +305,25 @@ export class MisCompras implements OnInit, OnDestroy {
     return (grupo?.totalItemsProducto ?? 0) > 0;
   }
 
+  mostrarTabBoletas(
+    grupo: EventoBoletasGrupo | null | undefined,
+    tab: 'sin-usar' | 'sin-asignar' | 'usadas'
+  ): boolean {
+    if (!grupo) return false;
+    if (tab === 'sin-usar') return (grupo.totalSinUsar ?? 0) > 0;
+    if (tab === 'sin-asignar') return (grupo.totalSinAsignar ?? 0) > 0;
+    return (grupo.totalUsadas ?? 0) > 0;
+  }
+
+  mostrarTabProductos(
+    grupo: EventoBoletasGrupo | null | undefined,
+    tab: 'compradas' | 'redimidas'
+  ): boolean {
+    if (!grupo) return false;
+    if (tab === 'compradas') return (grupo.totalProductosComprados ?? 0) > 0;
+    return (grupo.totalProductosRedimidos ?? 0) > 0;
+  }
+
   private syncTabEventoDetalle(): void {
     const detalle = this.eventoDetalleBoletas();
     if (!detalle) {
@@ -308,6 +334,7 @@ export class MisCompras implements OnInit, OnDestroy {
     } else if (!this.eventoTieneProductos(detalle)) {
       this.tabEventoDetalle = 'entradas';
     }
+    this.normalizarTabBoletasDetalle(detalle);
     this.syncTabProductosDetalle();
   }
 
@@ -316,11 +343,29 @@ export class MisCompras implements OnInit, OnDestroy {
     if (!detalle) {
       return;
     }
-    if ((detalle.totalProductosComprados ?? 0) > 0) {
-      this.tabProductosDetalle = 'compradas';
-    } else if ((detalle.totalProductosRedimidos ?? 0) > 0) {
-      this.tabProductosDetalle = 'redimidas';
+    this.normalizarTabProductosDetalle(detalle);
+  }
+
+  private normalizarTabBoletasDetalle(detalle: EventoBoletasGrupo): void {
+    if (this.mostrarTabBoletas(detalle, this.tabBoletasDetalle)) return;
+    if (this.mostrarTabBoletas(detalle, 'sin-usar')) {
+      this.tabBoletasDetalle = 'sin-usar';
+      return;
     }
+    if (this.mostrarTabBoletas(detalle, 'sin-asignar')) {
+      this.tabBoletasDetalle = 'sin-asignar';
+      return;
+    }
+    this.tabBoletasDetalle = 'usadas';
+  }
+
+  private normalizarTabProductosDetalle(detalle: EventoBoletasGrupo): void {
+    if (this.mostrarTabProductos(detalle, this.tabProductosDetalle)) return;
+    if (this.mostrarTabProductos(detalle, 'compradas')) {
+      this.tabProductosDetalle = 'compradas';
+      return;
+    }
+    this.tabProductosDetalle = 'redimidas';
   }
 
   esProductoComprado(item: CompraProductoItem): boolean {
@@ -388,6 +433,170 @@ export class MisCompras implements OnInit, OnDestroy {
       return 'badge-danger';
     }
     return 'badge-info';
+  }
+
+  esDiaEventoGrupo(grupo: EventoBoletasGrupo | null | undefined): boolean {
+    if (!grupo?.fechaInicio) return true;
+    const inicio = new Date(grupo.fechaInicio);
+    if (Number.isNaN(inicio.getTime())) return true;
+    const fin = grupo.fechaFin ? new Date(grupo.fechaFin) : inicio;
+    if (Number.isNaN(fin.getTime())) return true;
+    const hoy = this.diaCalendarioLocal(new Date());
+    const desde = Math.min(this.diaCalendarioLocal(inicio), this.diaCalendarioLocal(fin));
+    const hasta = Math.max(this.diaCalendarioLocal(inicio), this.diaCalendarioLocal(fin));
+    return hoy >= desde && hoy <= hasta;
+  }
+
+  private formatFechaHabilitacionAmigable(fecha: Date): string {
+    return new Intl.DateTimeFormat('es-CO', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'long',
+    }).format(fecha);
+  }
+
+  mensajeHabilitacionQrProducto(grupo: EventoBoletasGrupo | null | undefined): string {
+    if (!grupo?.fechaInicio) {
+      return 'El QR de este producto estará disponible el día del evento.';
+    }
+    const inicio = new Date(grupo.fechaInicio);
+    if (Number.isNaN(inicio.getTime())) {
+      return 'El QR de este producto estará disponible el día del evento.';
+    }
+    return `El código QR se habilita el ${this.formatFechaHabilitacionAmigable(inicio)}.`;
+  }
+
+  mensajeEstadoQrProducto(fila: ProductoConCompra, grupo: EventoBoletasGrupo | null | undefined): string {
+    if (!this.productoTieneCodigoQR(fila)) {
+      return 'Estamos preparando el QR de este item. Vuelve a intentar en unos segundos.';
+    }
+    if ((fila.compra.estado_pago || '').toLowerCase() !== TipoEstadoPago.COMPLETADO) {
+      return 'El código QR estará disponible cuando se confirme el pago.';
+    }
+    if (!this.esProductoComprado(fila.item)) {
+      return 'Este item ya fue redimido.';
+    }
+    if (this.esDiaEventoGrupo(grupo)) {
+      return 'QR disponible para retiro.';
+    }
+    return this.mensajeHabilitacionQrProducto(grupo);
+  }
+
+  etiquetaQrProducto(grupo: EventoBoletasGrupo | null | undefined): string {
+    if (this.esDiaEventoGrupo(grupo)) {
+      return 'QR disponible para retiro';
+    }
+    if (!grupo?.fechaInicio) {
+      return 'QR disponible el día del evento';
+    }
+    const inicio = new Date(grupo.fechaInicio);
+    if (Number.isNaN(inicio.getTime())) {
+      return 'QR disponible el día del evento';
+    }
+    return `Disponible desde ${this.formatFechaHabilitacionAmigable(inicio)}`;
+  }
+
+  puedeAbrirQrProducto(fila: ProductoConCompra, grupo: EventoBoletasGrupo): boolean {
+    return (
+      this.productoTieneCodigoQR(fila) &&
+      fila.compra.estado_pago === TipoEstadoPago.COMPLETADO &&
+      this.esProductoComprado(fila.item)
+    );
+  }
+
+  puedeMostrarQrProducto(fila: ProductoConCompra, grupo: EventoBoletasGrupo): boolean {
+    return this.puedeAbrirQrProducto(fila, grupo) && this.esDiaEventoGrupo(grupo);
+  }
+
+  async verQrProducto(fila: ProductoConCompra, grupo: EventoBoletasGrupo): Promise<void> {
+    if (!this.esProductoComprado(fila.item) || fila.compra.estado_pago !== TipoEstadoPago.COMPLETADO) return;
+    if (!this.productoTieneCodigoQR(fila)) {
+      this.alertService.warning(
+        'QR en preparación',
+        'Este item aún no tiene código QR asignado. Recarga en unos segundos o vuelve a intentarlo.'
+      );
+      return;
+    }
+    this.productoFilaSeleccionada = fila;
+    this.productoQrCodeUrl = '';
+    this.showProductoQrModal = true;
+    this.loadingProductoQR = this.puedeMostrarQrProducto(fila, grupo);
+    this.cdr.detectChanges();
+
+    if (!this.loadingProductoQR || !fila.item.codigo_qr) return;
+    try {
+      this.productoQrCodeUrl = await QRCode.toDataURL(fila.item.codigo_qr, {
+        width: 200,
+        margin: 2,
+        color: { dark: '#000000', light: '#FFFFFF' }
+      });
+    } catch (err) {
+      console.error('Error generando QR de producto:', err);
+      this.productoQrCodeUrl = '';
+    } finally {
+      this.loadingProductoQR = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  cerrarProductoQrModal(): void {
+    this.showProductoQrModal = false;
+    this.productoFilaSeleccionada = null;
+    this.productoQrCodeUrl = '';
+    this.loadingProductoQR = false;
+    this.cdr.detectChanges();
+  }
+
+  productoTieneCodigoQR(fila: ProductoConCompra): boolean {
+    return typeof fila.item.codigo_qr === 'string' && fila.item.codigo_qr.trim().length > 0;
+  }
+
+  getPrecioPreventaProductoDetalle(fila: ProductoConCompra): number {
+    const precioCatalogo = Number(fila.item.productos?.precio);
+    if (Number.isFinite(precioCatalogo) && precioCatalogo >= 0) {
+      return precioCatalogo;
+    }
+    return Number(fila.item.precio_unitario || 0);
+  }
+
+  getPrecioEventoProductoDetalle(fila: ProductoConCompra): number {
+    const precioEventoCatalogo = Number(fila.item.productos?.precio_evento);
+    if (Number.isFinite(precioEventoCatalogo) && precioEventoCatalogo >= 0) {
+      return precioEventoCatalogo;
+    }
+    return this.getPrecioPreventaProductoDetalle(fila);
+  }
+
+  tienePrecioDiferenciadoProductoDetalle(fila: ProductoConCompra): boolean {
+    return this.getPrecioEventoProductoDetalle(fila) !== this.getPrecioPreventaProductoDetalle(fila);
+  }
+
+  getPrecioReferenciaProductoDetalle(fila: ProductoConCompra): number {
+    const pagado = Number(fila.item.precio_unitario || 0);
+    const preventa = this.getPrecioPreventaProductoDetalle(fila);
+    const evento = this.getPrecioEventoProductoDetalle(fila);
+
+    if (!this.tienePrecioDiferenciadoProductoDetalle(fila)) return pagado;
+    if (Math.abs(pagado - preventa) < 0.01) return evento;
+    if (Math.abs(pagado - evento) < 0.01) return preventa;
+    return Math.max(preventa, evento);
+  }
+
+  getAhorroProductoDetalle(fila: ProductoConCompra): number {
+    const pagado = Number(fila.item.precio_unitario || 0);
+    const referencia = this.getPrecioReferenciaProductoDetalle(fila);
+    const ahorro = referencia - pagado;
+    return ahorro > 0 ? ahorro : 0;
+  }
+
+  getEstadoPrecioProductoDetalleLabel(fila: ProductoConCompra): string {
+    const pagado = Number(fila.item.precio_unitario || 0);
+    const preventa = this.getPrecioPreventaProductoDetalle(fila);
+    const evento = this.getPrecioEventoProductoDetalle(fila);
+
+    if (Math.abs(pagado - preventa) < 0.01) return 'Compraste en preventa';
+    if (Math.abs(pagado - evento) < 0.01) return 'Compraste en evento';
+    return 'Precio aplicado';
   }
 
   private recalcularContadoresProducto(grupo: EventoBoletasGrupo): void {
@@ -1549,16 +1758,7 @@ export class MisCompras implements OnInit, OnDestroy {
     if (!inicio) {
       return 'El código QR solo será visible el día del evento. Hoy aún no está disponible en la app.';
     }
-    const fin = this.fechaFinEventoBoleta(boleta, compra);
-    const fmt = new Intl.DateTimeFormat('es-CO', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-    if (fin && this.diaCalendarioLocal(inicio) !== this.diaCalendarioLocal(fin)) {
-      return `El código QR solo se mostrará entre el ${fmt.format(inicio)} y el ${fmt.format(fin)} (fechas del evento). Hoy aún no lo verás.`;
-    }
-    return `El código QR solo se mostrará el día del evento: ${fmt.format(inicio)}. Hoy aún no lo verás en la app.`;
+    return `El código QR se habilita el ${this.formatFechaHabilitacionAmigable(inicio)}.`;
   }
 
   esBoletaUsada(boleta: BoletaComprada | null | undefined): boolean {

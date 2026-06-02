@@ -139,6 +139,7 @@
           [class.active]="tabCompra === 'entradas'"
           (click)="setTabCompra('entradas')"
         >
+          <span class="material-icons" aria-hidden="true">confirmation_number</span>
           Entradas
         </button>
         <button
@@ -148,6 +149,7 @@
           [class.active]="tabCompra === 'productos'"
           (click)="setTabCompra('productos')"
         >
+          <span class="material-icons" aria-hidden="true">storefront</span>
           <span>Productos</span>
           <span *ngIf="loadingProductosFlag" class="tab-loading-pill" aria-live="polite">cargando...</span>
         </button>

@@ -7,6 +7,7 @@ export interface EventosClienteState {
   eventosFiltrados: Evento[];
   eventosFinalizados: Evento[];
   categorias: CategoriaEvento[];
+  resumenProductosPorEvento: Record<string, { cantidad: number; precioMinimo: number }>;
   searchTerm: string;
   categoriaFiltro: number | null;
   scrollY: number;
@@ -55,7 +56,8 @@ export class EventosClienteStateService {
       eventos: [...state.eventos],
       eventosFiltrados: [...state.eventosFiltrados],
       eventosFinalizados: [...state.eventosFinalizados],
-      categorias: [...state.categorias]
+      categorias: [...state.categorias],
+      resumenProductosPorEvento: { ...state.resumenProductosPorEvento }
     };
   }
 }

@@ -8,6 +8,7 @@ export type PermisoEscaneo = {
   tipo_boleta_id: number;
   titulo_evento: string;
   nombre_tipo_boleta: string;
+  categoria: 'boleta' | 'producto';
 };
 
 type RowDb = {
@@ -16,6 +17,12 @@ type RowDb = {
   tipo_boleta_id: number;
   eventos: { titulo?: string } | { titulo?: string }[] | null;
   tipos_boleta: { nombre?: string } | { nombre?: string }[] | null;
+};
+
+type RowProductoDb = {
+  id: number;
+  evento_id: number;
+  eventos: { titulo?: string } | { titulo?: string }[] | null;
 };
 
 function unwrapRel<T>(v: T | T[] | null | undefined): T | null {
@@ -43,8 +50,18 @@ export class LectorPermisosService {
       throw error;
     }
 
+    const { data: dataProductos, error: errorProductos } = await this.supabase
+      .from('lector_evento_producto')
+      .select('id, evento_id, eventos(titulo)')
+      .order('evento_id', { ascending: true });
+
+    if (errorProductos) {
+      console.error('fetchMisPermisosEscaneo(productos):', errorProductos);
+      throw errorProductos;
+    }
+
     const rows = (data as RowDb[]) || [];
-    return rows.map((r) => {
+    const permisosBoleta = rows.map((r) => {
       const ev = unwrapRel(r.eventos);
       const tb = unwrapRel(r.tipos_boleta);
       return {
@@ -53,8 +70,24 @@ export class LectorPermisosService {
         tipo_boleta_id: r.tipo_boleta_id,
         titulo_evento: ev?.titulo || `Evento #${r.evento_id}`,
         nombre_tipo_boleta: tb?.nombre || `Tipo #${r.tipo_boleta_id}`,
+        categoria: 'boleta' as const,
       };
     });
+
+    const rowsProductos = (dataProductos as RowProductoDb[]) || [];
+    const permisosProducto = rowsProductos.map((r) => {
+      const ev = unwrapRel(r.eventos);
+      return {
+        id: 1000000000 + r.id,
+        evento_id: r.evento_id,
+        tipo_boleta_id: 0,
+        titulo_evento: ev?.titulo || `Evento #${r.evento_id}`,
+        nombre_tipo_boleta: 'Productos del evento',
+        categoria: 'producto' as const,
+      };
+    });
+
+    return [...permisosBoleta, ...permisosProducto];
   }
 
   /** Filtra boletas según evento + tipo asignados al lector. */

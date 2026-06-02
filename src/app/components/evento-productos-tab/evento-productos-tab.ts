@@ -25,6 +25,8 @@ export class EventoProductosTab implements OnInit, OnDestroy {
   loading = false;
   totalItemsCarrito = 0;
   private productosCargados = false;
+  nowMs = Date.now();
+  private countdownTimer: ReturnType<typeof setInterval> | null = null;
 
   private destroy$ = new Subject<void>();
 
@@ -51,10 +53,12 @@ export class EventoProductosTab implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     }
 
+    this.startCountdownTicker();
     this.loadProductos({ background: this.refrescoSilenciosoInicial || this.productosCargados });
   }
 
   ngOnDestroy(): void {
+    this.stopCountdownTicker();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -94,12 +98,94 @@ export class EventoProductosTab implements OnInit, OnDestroy {
     return producto.cantidad_disponibles ?? Math.max(0, producto.cantidad_total - (producto.cantidad_vendidas ?? 0));
   }
 
+  precioEventoVigente(): boolean {
+    if (!this.evento?.fecha_inicio) return false;
+    return new Date(this.evento.fecha_inicio).getTime() <= Date.now();
+  }
+
+  getPrecioEvento(producto: Producto): number {
+    const precioEvento = Number(producto.precio_evento ?? producto.precio);
+    return Number.isFinite(precioEvento) && precioEvento >= 0 ? precioEvento : Number(producto.precio ?? 0);
+  }
+
+  getPrecioPreventa(producto: Producto): number {
+    const precioPreventa = Number(producto.precio ?? 0);
+    return Number.isFinite(precioPreventa) && precioPreventa >= 0 ? precioPreventa : 0;
+  }
+
+  getPrecioVigente(producto: Producto): number {
+    if (this.precioEventoVigente()) {
+      return this.getPrecioEvento(producto);
+    }
+    return this.getPrecioPreventa(producto);
+  }
+
+  tienePrecioDiferenciado(producto: Producto): boolean {
+    return this.getPrecioEvento(producto) !== this.getPrecioPreventa(producto);
+  }
+
+  getPrecioReferencia(producto: Producto): number {
+    return this.precioEventoVigente() ? this.getPrecioPreventa(producto) : this.getPrecioEvento(producto);
+  }
+
+  getAhorroUnitario(producto: Producto): number {
+    if (this.precioEventoVigente()) return 0;
+    return Math.max(0, this.getPrecioEvento(producto) - this.getPrecioPreventa(producto));
+  }
+
+  getEstadoPrecioLabel(): 'Preventa' | 'En evento' {
+    return this.precioEventoVigente() ? 'En evento' : 'Preventa';
+  }
+
+  preventaActiva(): boolean {
+    if (!this.evento?.fecha_inicio) return false;
+    return new Date(this.evento.fecha_inicio).getTime() > this.nowMs;
+  }
+
+  shouldShowPreventaHint(): boolean {
+    if (!this.preventaUrgente()) return false;
+    return this.productos.some((producto) => this.getAhorroUnitario(producto) > 0);
+  }
+
+  getPrecioEstadoHintLabel(): string {
+    if (this.preventaActiva()) {
+      return `Preventa activa${this.getPreventaCountdownLabel() ? ' · ' + this.getPreventaCountdownLabel() : ''}`;
+    }
+    return 'Precio en evento activo';
+  }
+
+  getPreventaCountdownLabel(): string {
+    if (!this.preventaActiva() || !this.evento?.fecha_inicio) return '';
+    const targetMs = new Date(this.evento.fecha_inicio).getTime();
+    const remainingMs = Math.max(0, targetMs - this.nowMs);
+    const totalMinutes = Math.floor(remainingMs / 60000);
+    const dias = Math.floor(totalMinutes / (60 * 24));
+    const horas = Math.floor((totalMinutes % (60 * 24)) / 60);
+    const minutos = totalMinutes % 60;
+
+    if (dias > 0) return `Termina en ${dias}d ${horas}h`;
+    if (horas > 0) return `Termina en ${horas}h ${minutos}m`;
+    return `Termina en ${Math.max(1, minutos)}m`;
+  }
+
+  preventaUrgente(): boolean {
+    if (!this.preventaActiva() || !this.evento?.fecha_inicio) return false;
+    const targetMs = new Date(this.evento.fecha_inicio).getTime();
+    return targetMs - this.nowMs <= 24 * 60 * 60 * 1000;
+  }
+
   agregarAlCarrito(producto: Producto): void {
     if (this.eventoFinalizado) {
       this.alertService.warning('Evento finalizado', 'No se pueden comprar productos en un evento finalizado.');
       return;
     }
-    const ok = this.carritoCompraService.agregarProductoAlCarrito(producto);
+    const productoConPrecioVigente: Producto = {
+      ...producto,
+      precio_preventa: this.getPrecioPreventa(producto),
+      precio_evento: this.getPrecioEvento(producto),
+      precio: this.getPrecioVigente(producto),
+    };
+    const ok = this.carritoCompraService.agregarProductoAlCarrito(productoConPrecioVigente);
     if (!ok) {
       this.alertService.warning('Sin stock', 'No hay más unidades disponibles de este producto.');
     }
@@ -130,5 +216,20 @@ export class EventoProductosTab implements OnInit, OnDestroy {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(value);
+  }
+
+  private startCountdownTicker(): void {
+    this.stopCountdownTicker();
+    this.countdownTimer = setInterval(() => {
+      this.nowMs = Date.now();
+      this.cdr.detectChanges();
+    }, 30000);
+  }
+
+  private stopCountdownTicker(): void {
+    if (this.countdownTimer) {
+      clearInterval(this.countdownTimer);
+      this.countdownTimer = null;
+    }
   }
 }

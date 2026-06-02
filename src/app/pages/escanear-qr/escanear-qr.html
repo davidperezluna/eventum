@@ -9,8 +9,8 @@
           <span class="material-icons">qr_code_scanner</span>
           Check-in QR
         </h1>
-        <p *ngIf="modoApp === 'lector'">Escanea o busca por documento para validar entradas.</p>
-        <p *ngIf="modoApp !== 'lector'">Validacion desde el panel (admin).</p>
+        <p *ngIf="modoApp === 'lector'">Escanea o busca por documento para validar entradas y productos.</p>
+        <p *ngIf="modoApp !== 'lector'">Validación desde el panel (admin).</p>
       </div>
     </div>
     <div class="modo-tabs" role="tablist">
@@ -49,7 +49,7 @@
 
       <div *ngIf="buscando" class="loading-inline">
         <span class="material-icons spin">hourglass_top</span>
-        Buscando boleta...
+        Buscando codigo...
       </div>
     </section>
 
@@ -94,12 +94,13 @@
     </section>
   </ng-container>
 
-  <div *ngIf="modalVisible && boleta" class="modal-overlay" (click)="cerrarModal(boletasEncontradas.length > 1)">
+  <div *ngIf="modalVisible && (boleta || productoItem)" class="modal-overlay" (click)="cerrarModal(boletasEncontradas.length > 1)">
     <div class="modal-sheet" (click)="$event.stopPropagation()">
       <button type="button" class="modal-close" (click)="cerrarModal(boletasEncontradas.length > 1)">
         <span class="material-icons">close</span>
       </button>
 
+      <ng-container *ngIf="boleta">
       <ng-container *ngIf="boleta.estado === 'usada'">
         <div class="modal-center">
           <span class="material-icons modal-icon used">history</span>
@@ -143,6 +144,44 @@
           <p>El pago debe estar completado para validar la entrada.</p>
           <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1)">Cerrar</button>
         </div>
+      </ng-container>
+      </ng-container>
+
+      <ng-container *ngIf="productoItem">
+        <ng-container *ngIf="(productoItem.estado || '').toLowerCase() === 'entregado'">
+          <div class="modal-center">
+            <span class="material-icons modal-icon used">inventory</span>
+            <h2>Producto ya redimido</h2>
+            <p>Este QR ya se valido previamente.</p>
+            <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1); reiniciarEscaneo()">
+              Siguiente
+            </button>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="(productoItem.estado || '').toLowerCase() !== 'entregado' && puedeValidarProducto(productoItem)">
+          <p class="modal-kicker">LECTURA OK</p>
+          <h2 class="modal-title">Producto listo para entrega</h2>
+          <div class="modal-info">
+            <div class="modal-row"><span>Producto</span><strong>{{ productoItem.producto?.nombre || 'Producto' }}</strong></div>
+            <div class="modal-row"><span>Cantidad</span><strong>{{ productoItem.cantidad }}</strong></div>
+            <div class="modal-row"><span>Pedido</span><strong>{{ productoItem.compra?.numero_pedido || '—' }}</strong></div>
+            <div class="modal-row"><span>QR</span><code>{{ productoItem.codigo_qr }}</code></div>
+          </div>
+          <button type="button" class="btn-validate" (click)="validarProducto()" [disabled]="validando">
+            <span class="material-icons">verified</span>
+            {{ validando ? 'Validando...' : 'Validar producto' }}
+          </button>
+        </ng-container>
+
+        <ng-container *ngIf="(productoItem.estado || '').toLowerCase() !== 'entregado' && !puedeValidarProducto(productoItem)">
+          <div class="modal-center">
+            <span class="material-icons modal-icon warn">payments</span>
+            <h2>Pago pendiente</h2>
+            <p>El pago debe estar completado para validar este producto.</p>
+            <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1)">Cerrar</button>
+          </div>
+        </ng-container>
       </ng-container>
     </div>
   </div>

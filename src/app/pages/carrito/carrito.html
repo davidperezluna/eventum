@@ -61,6 +61,10 @@
       <section class="evento-section">
         <h2>{{ evento?.titulo }}</h2>
         <p class="section-subtitle">Revisa tus boletas, productos, selecciona palcos y finaliza el pago.</p>
+        <p *ngIf="shouldShowPreventaHintProducto()" class="preventa-hint preventa-hint--urgent">
+          <span class="material-icons">local_offer</span>
+          Preventa por tiempo limitado · {{ getPreventaCountdownLabelProducto() }}
+        </p>
 
         <div class="carrito-items">
           <div *ngFor="let item of itemsCompra" class="carrito-item">
@@ -177,7 +181,27 @@
             <div class="carrito-item-info">
               <div class="info-main">
                 <h4>{{ item.producto.nombre }}</h4>
-                <p class="carrito-precio">{{ formatCurrency(item.producto.precio) }} x {{ item.cantidad }}</p>
+                <div class="carrito-producto-pricing">
+                  <p class="carrito-precio-badge-wrap">
+                    <span
+                      class="carrito-precio-badge"
+                      [class.carrito-precio-badge--evento]="precioEventoVigenteProducto()"
+                    >
+                      {{ getEstadoPrecioProductoLabel() }}
+                    </span>
+                  </p>
+                  <p class="carrito-precio">{{ formatCurrency(item.producto.precio) }} x {{ item.cantidad }}</p>
+                  <p
+                    *ngIf="tienePrecioDiferenciadoProducto(item.producto)"
+                    class="carrito-precio-referencia"
+                  >
+                    {{ precioEventoVigenteProducto() ? 'Preventa' : 'En evento' }}:
+                    {{ formatCurrency(getPrecioReferenciaProducto(item.producto)) }}
+                  </p>
+                  <p *ngIf="getAhorroUnitarioProducto(item.producto) > 0" class="carrito-precio-ahorro">
+                    Ahorras {{ formatCurrency(getAhorroUnitarioProducto(item.producto) * item.cantidad) }} en este item
+                  </p>
+                </div>
                 <p *ngIf="item.producto.es_licor" class="licor-tag">Bebida alcohólica (+18)</p>
               </div>
               <div class="info-side">
@@ -242,6 +266,18 @@
 <button type="button" class="licor-legal-link" (click)="abrirModalTerminosLicor()">
   Leer términos completos
 </button>
+        </div>
+
+        <div class="upsell-productos-card" *ngIf="mostrarInvitacionProductos">
+          <div class="upsell-productos-card__copy">
+            <p class="upsell-productos-card__kicker">Completa tu experiencia</p>
+            <h5>¿Quieres agregar productos antes de pagar?</h5>
+            <p>Vimos que este evento tiene productos disponibles. Agrégalos ahora y cierras todo en una sola compra.</p>
+          </div>
+          <button type="button" class="upsell-productos-card__cta" (click)="volverAlEvento()">
+            <span class="material-icons">storefront</span>
+            Ver productos del evento
+          </button>
         </div>
 
         <div class="carrito-total">
@@ -310,7 +346,7 @@
     Volver al carrito
   </button>
   <button type="button" class="btn-primary-modal licor-modal__btn" (click)="aceptarTerminosLicor()">
-    Acepto y continuar
+    Aceptar términos
   </button>
 </footer>
   </div>

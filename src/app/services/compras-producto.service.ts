@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { TimezoneService } from './timezone.service';
+import { AuthService } from './auth.service';
 import { supabaseConfig } from '../config/supabase.config';
 import {
   CompraProducto,
@@ -43,6 +44,26 @@ export interface PedidoProductosPendiente {
   terminos_licor_aceptados: boolean;
 }
 
+export interface ItemProductoEscaneo {
+  id: number;
+  codigo_qr: string;
+  estado: string;
+  cantidad: number;
+  precio_unitario: number;
+  fecha_redencion?: string;
+  validado_por_usuario_id?: number;
+  compra: {
+    id: number;
+    evento_id: number;
+    estado_pago: string;
+    numero_pedido: string;
+  } | null;
+  producto: {
+    id: number;
+    nombre: string;
+  } | null;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -51,7 +72,8 @@ export class ComprasProductoService {
 
   constructor(
     private supabase: SupabaseService,
-    private timezoneService: TimezoneService
+    private timezoneService: TimezoneService,
+    private authService: AuthService
   ) {}
 
   private esErrorTablaNoExiste(error: unknown): boolean {
@@ -232,10 +254,11 @@ export class ComprasProductoService {
         eventos(id, titulo, imagen_principal, fecha_inicio, fecha_fin, lugar:lugares(id, nombre)),
         compras_productos_items(
           *,
-          productos(id, nombre, imagen_url, es_licor)
+          productos(id, nombre, imagen_url, es_licor, precio, precio_evento)
         )
       `)
       .eq('cliente_id', clienteId)
+      .eq('estado_pago', TipoEstadoPago.COMPLETADO)
       .neq('estado_compra', TipoEstadoCompra.CANCELADA)
       .order('fecha_compra', { ascending: false });
 
@@ -253,7 +276,7 @@ export class ComprasProductoService {
         eventos(id, titulo, imagen_principal),
         compras_productos_items(
           *,
-          productos(id, nombre, imagen_url, es_licor)
+          productos(id, nombre, imagen_url, es_licor, precio, precio_evento)
         )
       `)
       .eq('id', id)
@@ -263,6 +286,61 @@ export class ComprasProductoService {
       throw error;
     }
     return data as CompraProducto;
+  }
+
+  async buscarItemPorCodigoQR(codigoQR: string): Promise<ItemProductoEscaneo | null> {
+    const { data, error } = await this.supabase
+      .from('compras_productos_items')
+      .select(`
+        id,
+        codigo_qr,
+        estado,
+        cantidad,
+        precio_unitario,
+        fecha_redencion,
+        validado_por_usuario_id,
+        compra:compras_productos(id, evento_id, estado_pago, numero_pedido),
+        producto:productos(id, nombre)
+      `)
+      .eq('codigo_qr', codigoQR)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+    if (!data) return null;
+
+    return {
+      id: data.id,
+      codigo_qr: data.codigo_qr,
+      estado: data.estado || TipoEstadoItemProducto.PENDIENTE,
+      cantidad: data.cantidad || 0,
+      precio_unitario: Number(data.precio_unitario || 0),
+      fecha_redencion: data.fecha_redencion || undefined,
+      validado_por_usuario_id: data.validado_por_usuario_id || undefined,
+      compra: Array.isArray(data.compra) ? (data.compra[0] as ItemProductoEscaneo['compra']) : (data.compra as ItemProductoEscaneo['compra']),
+      producto: Array.isArray(data.producto) ? (data.producto[0] as ItemProductoEscaneo['producto']) : (data.producto as ItemProductoEscaneo['producto']),
+    };
+  }
+
+  async validarItemProducto(itemId: number): Promise<void> {
+    const validadorId = this.authService.getUsuarioId();
+    const payload: Record<string, unknown> = {
+      estado: TipoEstadoItemProducto.ENTREGADO,
+      fecha_redencion: this.timezoneService.getCurrentDateISO(),
+    };
+    if (validadorId != null) {
+      payload['validado_por_usuario_id'] = validadorId;
+    }
+
+    const { error } = await this.supabase
+      .from('compras_productos_items')
+      .update(payload)
+      .eq('id', itemId);
+
+    if (error) {
+      throw error;
+    }
   }
 
   async getTransaccionById(id: number): Promise<TransaccionProducto> {

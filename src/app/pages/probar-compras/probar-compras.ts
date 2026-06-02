@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { EventosService } from '../../services/eventos.service';
 import { CategoriasService } from '../../services/categorias.service';
 import { CarritoCompraService } from '../../services/carrito-compra.service';
+import { ProductosService } from '../../services/productos.service';
 import { Evento, CategoriaEvento, TipoEstadoEvento } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
@@ -23,6 +24,7 @@ export class ProbarCompras implements OnInit, OnDestroy {
   searchTerm = '';
   categoriaFiltro: number | null = null;
   totalItemsCarrito = 0;
+  resumenProductosPorEvento = new Map<number, { cantidad: number; precioMinimo: number }>();
 
   private carritoSubscription?: Subscription;
 
@@ -30,6 +32,7 @@ export class ProbarCompras implements OnInit, OnDestroy {
     private eventosService: EventosService,
     private categoriasService: CategoriasService,
     private carritoCompraService: CarritoCompraService,
+    private productosService: ProductosService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -82,9 +85,11 @@ export class ProbarCompras implements OnInit, OnDestroy {
         if (evento.fecha_fin && new Date(evento.fecha_fin) < ahora) return false;
         return true;
       });
+      await this.cargarResumenProductosEventos();
     } catch (err) {
       console.error('Error cargando eventos:', err);
       this.eventos = [];
+      this.resumenProductosPorEvento = new Map();
     }
   }
 
@@ -133,4 +138,44 @@ export class ProbarCompras implements OnInit, OnDestroy {
   trackByEventoId(_: number, evento: Evento): number {
     return evento.id;
   }
+
+  private async cargarResumenProductosEventos(): Promise<void> {
+    const ids = this.eventos.map((evento) => evento.id);
+    if (ids.length === 0) {
+      this.resumenProductosPorEvento = new Map();
+      return;
+    }
+    try {
+      this.resumenProductosPorEvento = await this.productosService.getResumenProductosPorEvento(ids);
+    } catch (error) {
+      console.warn('No se pudo cargar resumen de productos por evento (probar-compras):', error);
+      this.resumenProductosPorEvento = new Map();
+    }
+  }
+
+  tieneProductosEvento(eventoId: number): boolean {
+    return this.resumenProductosPorEvento.has(eventoId);
+  }
+
+  getCantidadProductosEvento(eventoId: number): number {
+    return this.resumenProductosPorEvento.get(eventoId)?.cantidad ?? 0;
+  }
+
+  getPrecioMinimoProductoEvento(eventoId: number): number {
+    return this.resumenProductosPorEvento.get(eventoId)?.precioMinimo ?? 0;
+  }
+
+  getProductosChipLabel(evento: Evento): string {
+    const cantidad = this.getCantidadProductosEvento(evento.id);
+    const sufijo = cantidad === 1 ? 'producto' : 'productos';
+    const estadoLabel = this.precioEventoActivo(evento) ? 'Precio activo' : 'Preventa';
+    const precioMinimo = this.getPrecioMinimoProductoEvento(evento.id);
+    return `${estadoLabel} · ${cantidad} ${sufijo} · Desde ${this.formatCurrency(precioMinimo)}`;
+  }
+
+  precioEventoActivo(evento: Evento): boolean {
+    if (!evento.fecha_inicio) return false;
+    return new Date(evento.fecha_inicio).getTime() <= Date.now();
+  }
+
 }

@@ -85,6 +85,22 @@
   overflow-x: auto;
 }
 
+.table-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.table-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-primary);
+}
+
+.table-title--secondary {
+  margin-top: var(--spacing-sm);
+}
+
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -263,4 +279,10 @@ select.form-control {
 
 .tipo-row:hover {
   background: var(--color-bg-secondary, #f9fafb);
+}
+
+.permiso-productos-row {
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--border-radius-sm);
+  margin-top: var(--spacing-xs);
 }

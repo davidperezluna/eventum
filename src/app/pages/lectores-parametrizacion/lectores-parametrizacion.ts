@@ -7,9 +7,11 @@ import { EventosService } from '../../services/eventos.service';
 import { BoletasService } from '../../services/boletas.service';
 import { UsuariosService } from '../../services/usuarios.service';
 import { LectorEventoTipoBoletaService } from '../../services/lector-evento-tipo-boleta.service';
+import { LectorEventoProductoService } from '../../services/lector-evento-producto.service';
 import { AlertService } from '../../services/alert.service';
 import {
   Evento,
+  LectorEventoProducto,
   LectorEventoTipoBoleta,
   TipoBoleta,
   Usuario,
@@ -24,6 +26,7 @@ import {
 })
 export class LectoresParametrizacion implements OnInit {
   filas: LectorEventoTipoBoleta[] = [];
+  filasProductos: LectorEventoProducto[] = [];
   loading = false;
   showModal = false;
 
@@ -35,6 +38,7 @@ export class LectoresParametrizacion implements OnInit {
   formEventoId: number | null = null;
   /** IDs de tipos de boleta seleccionados para la asignación actual */
   tiposSeleccionados: Set<number> = new Set();
+  formPermitirProductos = false;
 
   constructor(
     private authService: AuthService,
@@ -42,6 +46,7 @@ export class LectoresParametrizacion implements OnInit {
     private boletasService: BoletasService,
     private usuariosService: UsuariosService,
     private lectorEvtService: LectorEventoTipoBoletaService,
+    private lectorEventoProductoService: LectorEventoProductoService,
     private alertService: AlertService,
     private cdr: ChangeDetectorRef
   ) {}
@@ -54,10 +59,16 @@ export class LectoresParametrizacion implements OnInit {
     this.loading = true;
     this.cdr.markForCheck();
     try {
-      this.filas = await this.lectorEvtService.listar();
+      const [filasBoletas, filasProductos] = await Promise.all([
+        this.lectorEvtService.listar(),
+        this.lectorEventoProductoService.listar(),
+      ]);
+      this.filas = filasBoletas;
+      this.filasProductos = filasProductos;
     } catch (e) {
       console.error(e);
       this.filas = [];
+      this.filasProductos = [];
       await this.alertService.error('No se pudo cargar la parametrización de lectores.');
     } finally {
       this.loading = false;
@@ -70,6 +81,7 @@ export class LectoresParametrizacion implements OnInit {
     this.formEventoId = null;
     this.tiposBoletaEvento = [];
     this.tiposSeleccionados = new Set();
+    this.formPermitirProductos = false;
     this.showModal = true;
 
     try {
@@ -141,16 +153,31 @@ export class LectoresParametrizacion implements OnInit {
       return;
     }
     const ids = [...this.tiposSeleccionados];
-    if (!ids.length) {
-      await this.alertService.warning('Selecciona al menos un tipo de boleta del evento.');
+    if (!ids.length && !this.formPermitirProductos) {
+      await this.alertService.warning('Selecciona al menos un tipo de boleta o habilita productos para el evento.');
       return;
     }
     try {
-      await this.lectorEvtService.crearAsignaciones(
-        this.formUsuarioId,
-        this.formEventoId,
-        ids
-      );
+      const operaciones: Promise<void>[] = [];
+      if (ids.length) {
+        operaciones.push(
+          this.lectorEvtService.crearAsignaciones(
+            this.formUsuarioId,
+            this.formEventoId,
+            ids
+          )
+        );
+      }
+      if (this.formPermitirProductos) {
+        operaciones.push(
+          this.lectorEventoProductoService.crearAsignacion(
+            this.formUsuarioId,
+            this.formEventoId
+          )
+        );
+      }
+
+      await Promise.all(operaciones);
       await this.alertService.success('Asignación guardada correctamente.');
       this.cerrarModal();
       await this.cargarTabla();
@@ -182,14 +209,32 @@ export class LectoresParametrizacion implements OnInit {
     }
   }
 
-  nombreLector(f: LectorEventoTipoBoleta): string {
+  async eliminarFilaProducto(fila: LectorEventoProducto): Promise<void> {
+    const ok = await this.alertService.confirm(
+      '¿Eliminar permiso de productos?',
+      'Se quitará el permiso de escaneo de productos para este evento.'
+    );
+    if (!ok) {
+      return;
+    }
+    try {
+      await this.lectorEventoProductoService.eliminar(fila.id);
+      await this.alertService.success('Permiso eliminado.');
+      await this.cargarTabla();
+    } catch (e) {
+      console.error(e);
+      await this.alertService.error('No se pudo eliminar.');
+    }
+  }
+
+  nombreLector(f: LectorEventoTipoBoleta | LectorEventoProducto): string {
     const u = f.usuarios;
     if (!u) return `#${f.usuario_id}`;
     const n = [u.nombre, u.apellido].filter(Boolean).join(' ').trim();
     return n || u.email || `#${u.id}`;
   }
 
-  tituloEvento(f: LectorEventoTipoBoleta): string {
+  tituloEvento(f: LectorEventoTipoBoleta | LectorEventoProducto): string {
     return f.eventos?.titulo || `#${f.evento_id}`;
   }
 

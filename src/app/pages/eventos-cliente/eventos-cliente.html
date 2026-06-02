@@ -87,6 +87,12 @@
                 {{ evento.fecha_inicio | dateFormat:'shortDate' }}
               </span>
             </div>
+            <div class="event-products-badge-row" *ngIf="tieneProductosEvento(evento.id)">
+              <span class="event-products-badge" [class.event-products-badge--evento]="precioEventoActivo(evento)">
+                <span class="material-icons">{{ precioEventoActivo(evento) ? 'sell' : 'local_offer' }}</span>
+                {{ getProductosBadgeShortLabel(evento) }}
+              </span>
+            </div>
             <div class="event-footer">
               <span class="price">{{ formatCurrency(evento.precio_minimo) }}</span>
               <span class="event-cta" aria-hidden="true">
@@ -123,6 +129,12 @@
                 {{ evento.fecha_inicio | dateFormat:'shortDate' }}
               </span>
             </div>
+            <div class="event-products-badge-row" *ngIf="tieneProductosEvento(evento.id)">
+              <span class="event-products-badge" [class.event-products-badge--evento]="precioEventoActivo(evento)">
+                <span class="material-icons">{{ precioEventoActivo(evento) ? 'sell' : 'local_offer' }}</span>
+                {{ getProductosBadgeShortLabel(evento) }}
+              </span>
+            </div>
             <div class="event-footer">
               <span class="price">{{ formatCurrency(evento.precio_minimo) }}</span>
               <span class="event-cta" aria-hidden="true">
@@ -145,6 +157,52 @@
             <ion-icon name="arrow-forward-outline" aria-hidden="true"></ion-icon>
           </button>
         </div>
+      </div>
+    </section>
+
+    <section
+      class="events-section products-panel"
+      *ngIf="!loading && !searchTerm && !categoriaFiltro && eventosConProductosPreview.length > 0"
+    >
+      <div class="section-header">
+        <h2>
+          <span class="material-icons" aria-hidden="true">storefront</span>
+          Productos destacados
+        </h2>
+      </div>
+      <p class="products-panel-subtitle">
+        Descubre eventos con productos disponibles y aprovecha precios de preventa antes del inicio.
+      </p>
+      <div class="products-panel-list">
+        <a
+          class="products-panel-item"
+          *ngFor="let evento of eventosConProductosPreview; trackBy: trackByEventoId"
+          [routerLink]="['/detalle-evento', evento.id]"
+        >
+          <div class="products-panel-item__thumb" aria-hidden="true">
+            <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
+          </div>
+          <div class="products-panel-item__main">
+            <div class="products-panel-item__title">{{ evento.titulo }}</div>
+            <div class="products-panel-item__chips">
+              <span class="products-panel-chip" [class.products-panel-chip--evento]="precioEventoActivo(evento)">
+                <span class="material-icons">{{ precioEventoActivo(evento) ? 'sell' : 'local_offer' }}</span>
+                {{ getProductosBadgeShortLabel(evento) }}
+              </span>
+              <span class="products-panel-chip products-panel-chip--count">
+                <span class="material-icons">inventory_2</span>
+                {{ getCantidadProductosLabel(evento.id) }}
+              </span>
+            </div>
+            <div class="products-panel-item__meta">
+              Desde {{ formatCurrency(getPrecioMinimoProductoEvento(evento.id)) }}
+            </div>
+          </div>
+          <span class="products-panel-item__cta">
+            Ver
+            <span class="material-icons" aria-hidden="true">arrow_forward</span>
+          </span>
+        </a>
       </div>
     </section>
 

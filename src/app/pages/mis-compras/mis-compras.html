@@ -247,27 +247,33 @@
           class="badge-tabs"
           role="tablist"
           aria-label="Contenido del evento"
-          *ngIf="eventoTieneEntradas(detalle) && eventoTieneProductos(detalle)"
+          *ngIf="eventoTieneEntradas(detalle) || eventoTieneProductos(detalle)"
         >
           <button
             type="button"
             class="badge badge-tab badge-info-soft"
             role="tab"
+            *ngIf="eventoTieneEntradas(detalle)"
             [class.badge-tab--selected]="tabEventoDetalle === 'entradas'"
             [attr.aria-selected]="tabEventoDetalle === 'entradas'"
             (click)="tabEventoDetalle = 'entradas'"
           >
-            {{ detalle.totalBoletas }} entradas
+            <span class="material-icons badge-tab__icon" aria-hidden="true">confirmation_number</span>
+            <span class="badge-tab__label">Entradas</span>
+            <span class="badge-tab__count">{{ detalle.totalBoletas }}</span>
           </button>
           <button
             type="button"
             class="badge badge-tab badge-info-soft"
             role="tab"
+            *ngIf="eventoTieneProductos(detalle)"
             [class.badge-tab--selected]="tabEventoDetalle === 'productos'"
             [attr.aria-selected]="tabEventoDetalle === 'productos'"
             (click)="tabEventoDetalle = 'productos'"
           >
-            {{ detalle.totalItemsProducto }} productos
+            <span class="material-icons badge-tab__icon" aria-hidden="true">inventory_2</span>
+            <span class="badge-tab__label">Productos</span>
+            <span class="badge-tab__count">{{ detalle.totalItemsProducto }}</span>
           </button>
         </div>
 
@@ -281,31 +287,40 @@
             type="button"
             class="badge badge-tab badge-success"
             role="tab"
+            *ngIf="mostrarTabBoletas(detalle, 'sin-usar')"
             [class.badge-tab--selected]="tabBoletasDetalle === 'sin-usar'"
             [attr.aria-selected]="tabBoletasDetalle === 'sin-usar'"
             (click)="tabBoletasDetalle = 'sin-usar'"
           >
-            {{ detalle.totalSinUsar }} sin usar
+            <span class="material-icons badge-tab__icon" aria-hidden="true">check_circle</span>
+            <span class="badge-tab__label">Sin usar</span>
+            <span class="badge-tab__count">{{ detalle.totalSinUsar }}</span>
           </button>
           <button
             type="button"
             class="badge badge-tab badge-info"
             role="tab"
+            *ngIf="mostrarTabBoletas(detalle, 'sin-asignar')"
             [class.badge-tab--selected]="tabBoletasDetalle === 'sin-asignar'"
             [attr.aria-selected]="tabBoletasDetalle === 'sin-asignar'"
             (click)="tabBoletasDetalle = 'sin-asignar'"
           >
-            {{ detalle.totalSinAsignar }} sin asignar
+            <span class="material-icons badge-tab__icon" aria-hidden="true">person_add</span>
+            <span class="badge-tab__label">Sin asignar</span>
+            <span class="badge-tab__count">{{ detalle.totalSinAsignar }}</span>
           </button>
           <button
             type="button"
             class="badge badge-tab badge-warning"
             role="tab"
+            *ngIf="mostrarTabBoletas(detalle, 'usadas')"
             [class.badge-tab--selected]="tabBoletasDetalle === 'usadas'"
             [attr.aria-selected]="tabBoletasDetalle === 'usadas'"
             (click)="tabBoletasDetalle = 'usadas'"
           >
-            {{ detalle.totalUsadas }} usadas
+            <span class="material-icons badge-tab__icon" aria-hidden="true">task_alt</span>
+            <span class="badge-tab__label">Usadas</span>
+            <span class="badge-tab__count">{{ detalle.totalUsadas }}</span>
           </button>
         </div>
 
@@ -319,21 +334,27 @@
             type="button"
             class="badge badge-tab badge-success"
             role="tab"
+            *ngIf="mostrarTabProductos(detalle, 'compradas')"
             [class.badge-tab--selected]="tabProductosDetalle === 'compradas'"
             [attr.aria-selected]="tabProductosDetalle === 'compradas'"
             (click)="tabProductosDetalle = 'compradas'"
           >
-            {{ detalle.totalProductosComprados }} por retirar
+            <span class="material-icons badge-tab__icon" aria-hidden="true">shopping_bag</span>
+            <span class="badge-tab__label">Por retirar</span>
+            <span class="badge-tab__count">{{ detalle.totalProductosComprados }}</span>
           </button>
           <button
             type="button"
             class="badge badge-tab badge-warning"
             role="tab"
+            *ngIf="mostrarTabProductos(detalle, 'redimidas')"
             [class.badge-tab--selected]="tabProductosDetalle === 'redimidas'"
             [attr.aria-selected]="tabProductosDetalle === 'redimidas'"
             (click)="tabProductosDetalle = 'redimidas'"
           >
-            {{ detalle.totalProductosRedimidos }} redimidas
+            <span class="material-icons badge-tab__icon" aria-hidden="true">inventory</span>
+            <span class="badge-tab__label">Redimidas</span>
+            <span class="badge-tab__count">{{ detalle.totalProductosRedimidos }}</span>
           </button>
         </div>
       </div>
@@ -391,18 +412,12 @@
                       <p *ngIf="boleta.documento_asistente"><strong>Documento:</strong> {{ boleta.documento_asistente }}</p>
                       <p *ngIf="boleta.email_asistente"><strong>Email:</strong> {{ boleta.email_asistente }}</p>
                     </div>
-                    <div class="boleta-qr" *ngIf="boleta.codigo_qr && puedeMostrarQrBoleta(boleta, compra)">
-                      <span class="qr-status-badge" role="status">
-                        <span class="material-icons" aria-hidden="true">qr_code_2</span>
-                        QR disponible
-                      </span>
-                    </div>
                     <div class="boleta-palco-pendiente-pago" *ngIf="puedeAbrirVistaBoleta(boleta, compra) && !esDiaEventoBoleta(boleta, compra)">
                       <p class="help-text">
                         {{ mensajeHabilitacionQrBoleta(boleta, compra) }}
                       </p>
                     </div>
-                    <div class="boleta-actions" *ngIf="puedeAbrirVistaBoleta(boleta, compra)">
+                    <div class="boleta-actions" *ngIf="puedeMostrarQrBoleta(boleta, compra)">
                       <button
                         type="button"
                         class="guia-resumen-link boleta-action-btn"
@@ -538,9 +553,38 @@
                   <p class="producto-item-card__meta">
                     {{ fila.item.cantidad }} × {{ formatCurrency(fila.item.precio_unitario) }}
                   </p>
+                  <div class="producto-item-card__pricing" *ngIf="tienePrecioDiferenciadoProductoDetalle(fila)">
+                    <p class="producto-item-card__pricing-status">{{ getEstadoPrecioProductoDetalleLabel(fila) }}</p>
+                    <p class="producto-item-card__pricing-row">
+                      <span class="producto-item-card__pricing-current">{{ formatCurrency(fila.item.precio_unitario) }}</span>
+                      <span class="producto-item-card__pricing-ref">
+                        {{ formatCurrency(getPrecioReferenciaProductoDetalle(fila)) }}
+                      </span>
+                    </p>
+                    <p class="producto-item-card__pricing-saving" *ngIf="getAhorroProductoDetalle(fila) > 0">
+                      Ahorro por unidad: {{ formatCurrency(getAhorroProductoDetalle(fila)) }}
+                    </p>
+                  </div>
                   <p class="producto-item-card__pedido" [title]="fila.compra.numero_pedido">
                     Pedido {{ referenciaPedidoCorta(fila.compra.numero_pedido) }}
                   </p>
+                  <div class="producto-item-card__qr" *ngIf="esProductoComprado(fila.item)">
+                    <div class="boleta-palco-pendiente-pago" *ngIf="!productoTieneCodigoQR(fila) || !puedeMostrarQrProducto(fila, detalle)">
+                      <p class="help-text">
+                        {{ mensajeEstadoQrProducto(fila, detalle) }}
+                      </p>
+                    </div>
+                    <div class="producto-item-card__qr-action-row" *ngIf="productoTieneCodigoQR(fila) && puedeMostrarQrProducto(fila, detalle)">
+                      <button
+                        type="button"
+                        class="producto-item-card__qr-action"
+                        (click)="verQrProducto(fila, detalle)"
+                      >
+                        <span class="material-icons" aria-hidden="true">qr_code_2</span>
+                        <span>Ver boleta</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -699,18 +743,12 @@
                     <p *ngIf="boleta.documento_asistente"><strong>Documento:</strong> {{ boleta.documento_asistente }}</p>
                     <p *ngIf="boleta.email_asistente"><strong>Email:</strong> {{ boleta.email_asistente }}</p>
                   </div>
-                  <div class="boleta-qr" *ngIf="boleta.codigo_qr && puedeMostrarQrBoleta(boleta, compra)">
-                    <span class="qr-status-badge" role="status">
-                      <span class="material-icons" aria-hidden="true">qr_code_2</span>
-                      QR disponible
-                    </span>
-                  </div>
                   <div class="boleta-palco-pendiente-pago" *ngIf="puedeAbrirVistaBoleta(boleta, compra) && !esDiaEventoBoleta(boleta, compra)">
                     <p class="help-text">
                       {{ mensajeHabilitacionQrBoleta(boleta, compra) }}
                     </p>
                   </div>
-                  <div class="boleta-actions" *ngIf="puedeAbrirVistaBoleta(boleta, compra)">
+                  <div class="boleta-actions" *ngIf="puedeMostrarQrBoleta(boleta, compra)">
                     <button
                       type="button"
                       class="guia-resumen-link boleta-action-btn"
@@ -836,6 +874,51 @@
     </div>
   </div>
   </ng-container>
+</div>
+
+<!-- Modal QR de producto -->
+<div class="modal-overlay" *ngIf="showProductoQrModal && productoFilaSeleccionada">
+  <div class="modal-content boleta-modal" (click)="$event.stopPropagation()">
+    <button class="modal-close" (click)="cerrarProductoQrModal()">
+      <span class="material-icons">close</span>
+    </button>
+
+    <div class="boleta-preview">
+      <div class="boleta-header-preview">
+        <h2>{{ productoFilaSeleccionada.item.productos?.nombre || 'Producto' }}</h2>
+        <p class="boleta-tipo">Retiro en evento</p>
+      </div>
+
+      <div class="boleta-qr-preview" *ngIf="loadingProductoQR">
+        <div class="qr-loading">
+          <div class="spinner"></div>
+          <p>Generando código QR...</p>
+        </div>
+      </div>
+
+      <div class="boleta-qr-preview" *ngIf="!loadingProductoQR && productoQrCodeUrl">
+        <img [src]="productoQrCodeUrl" alt="Código QR producto" class="qr-image">
+      </div>
+
+      <div class="boleta-qr-preview" *ngIf="!loadingProductoQR && !productoQrCodeUrl">
+        <div class="qr-pending">
+          <span class="material-icons">shield</span>
+          <p>El código QR estará disponible el día del evento.</p>
+        </div>
+      </div>
+
+      <div class="boleta-info-preview">
+        <div class="info-row">
+          <span class="info-label">Cantidad</span>
+          <span class="info-value">{{ productoFilaSeleccionada.item.cantidad }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Pedido</span>
+          <span class="info-value">{{ referenciaPedidoCorta(productoFilaSeleccionada.compra.numero_pedido) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Modal enviar entrada (traslado palco) -->

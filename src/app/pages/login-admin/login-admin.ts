@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, NgZone, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
@@ -27,7 +27,9 @@ export class LoginAdmin implements OnInit {
     private formBuilder: FormBuilder,
     private authService: AuthService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {
     this.loginForm = this.formBuilder.group({
       email: ['', [Validators.required, Validators.email]],
@@ -58,8 +60,7 @@ export class LoginAdmin implements OnInit {
       return;
     }
 
-    this.loading = true;
-    this.error = null;
+    this.updateViewState({ loading: true, error: null });
 
     const credentials = {
       email: this.loginForm.get('email')?.value,
@@ -69,8 +70,10 @@ export class LoginAdmin implements OnInit {
     try {
       const response = await this.authService.login(credentials);
       if (response.error) {
-        this.error = response.error.message || 'Error al iniciar sesión';
-        this.loading = false;
+        this.updateViewState({
+          error: response.error.message || 'Error al iniciar sesión',
+          loading: false,
+        });
         return;
       }
 
@@ -79,18 +82,34 @@ export class LoginAdmin implements OnInit {
           response.usuario,
           this.returnUrl
         );
-        this.loading = false;
+        this.updateViewState({ loading: false });
         await this.router.navigateByUrl(finalUrl);
       } else {
-        this.error =
-          'Error al cargar datos del usuario. Verifica que el usuario esté registrado correctamente.';
-        this.loading = false;
+        this.updateViewState({
+          error:
+            'Error al cargar datos del usuario. Verifica que el usuario esté registrado correctamente.',
+          loading: false,
+        });
       }
     } catch (err) {
       console.error('Error en login:', err);
-      this.error = 'Error de conexión. Por favor, intenta nuevamente.';
-      this.loading = false;
+      this.updateViewState({
+        error: 'Error de conexión. Por favor, intenta nuevamente.',
+        loading: false,
+      });
     }
+  }
+
+  private updateViewState(next: { loading?: boolean; error?: string | null }): void {
+    this.ngZone.run(() => {
+      if (next.loading !== undefined) {
+        this.loading = next.loading;
+      }
+      if (next.error !== undefined) {
+        this.error = next.error;
+      }
+      this.cdr.detectChanges();
+    });
   }
 
   get email() {
