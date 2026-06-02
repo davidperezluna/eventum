@@ -430,23 +430,12 @@ export interface LectorEventoTipoBoleta {
   id: number;
   usuario_id: number;
   evento_id: number;
-  tipo_boleta_id: number;
+  /** null => permiso de productos para el evento */
+  tipo_boleta_id: number | null;
   fecha_creacion?: Date | string;
   usuarios?: Pick<Usuario, 'id' | 'nombre' | 'apellido' | 'email'>;
   eventos?: Pick<Evento, 'id' | 'titulo'>;
   tipos_boleta?: Pick<TipoBoleta, 'id' | 'nombre' | 'evento_id'>;
-}
-
-/**
- * Permiso de escaneo para productos: usuario con rol Lector + evento.
- */
-export interface LectorEventoProducto {
-  id: number;
-  usuario_id: number;
-  evento_id: number;
-  fecha_creacion?: Date | string;
-  usuarios?: Pick<Usuario, 'id' | 'nombre' | 'apellido' | 'email'>;
-  eventos?: Pick<Evento, 'id' | 'titulo'>;
 }
 
 /** Producto del catálogo de un evento (venta separada de boletas). */

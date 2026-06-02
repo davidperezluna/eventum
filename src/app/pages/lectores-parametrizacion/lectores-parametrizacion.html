@@ -34,9 +34,9 @@
   <div class="content-card">
     <div *ngIf="loading" class="loading-state">Cargando parametrización...</div>
 
-    <div *ngIf="!loading && (filas.length > 0 || filasProductos.length > 0)" class="table-block">
+    <div *ngIf="!loading && (filasBoletas.length > 0 || filasProductos.length > 0)" class="table-block">
       <h3 class="table-title">Permisos de boletas</h3>
-      <div class="table-wrap" *ngIf="filas.length > 0">
+      <div class="table-wrap" *ngIf="filasBoletas.length > 0">
       <table class="data-table">
         <thead>
           <tr>
@@ -49,7 +49,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let f of filas">
+          <tr *ngFor="let f of filasBoletas">
             <td>{{ nombreLector(f) }}</td>
             <td>{{ f.usuarios?.email || '—' }}</td>
             <td>{{ tituloEvento(f) }}</td>
@@ -64,7 +64,7 @@
         </tbody>
       </table>
       </div>
-      <p class="hint warn" *ngIf="filas.length === 0">
+      <p class="hint warn" *ngIf="filasBoletas.length === 0">
         No hay permisos de boletas configurados.
       </p>
 
@@ -89,7 +89,7 @@
               <td>Productos del evento</td>
               <td>{{ f.fecha_creacion | date : 'short' }}</td>
               <td>
-                <button type="button" class="btn-icon danger" (click)="eliminarFilaProducto(f)" title="Eliminar">
+                <button type="button" class="btn-icon danger" (click)="eliminarFila(f)" title="Eliminar">
                   <span class="material-icons">delete</span>
                 </button>
               </td>
@@ -102,7 +102,7 @@
       </p>
     </div>
 
-    <div *ngIf="!loading && filas.length === 0 && filasProductos.length === 0" class="empty-state">
+    <div *ngIf="!loading && filasBoletas.length === 0 && filasProductos.length === 0" class="empty-state">
       <span class="material-icons empty-icon">qr_code_scanner</span>
       <h3>Sin asignaciones</h3>
       <p>Crea usuarios con rol Lector en Usuarios y luego agrégalos aquí con permisos de boletas o productos.</p>

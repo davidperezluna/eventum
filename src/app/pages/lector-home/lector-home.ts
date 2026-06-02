@@ -10,7 +10,7 @@ import {
 type GrupoEvento = {
   evento_id: number;
   titulo: string;
-  tipos: { tipo_boleta_id: number; nombre: string }[];
+  tipos: { tipo_boleta_id: number | null; nombre: string }[];
 };
 
 @Component({

@@ -102,7 +102,9 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
       try {
         this.permisos = await this.lectorPermisos.fetchMisPermisosEscaneo();
         this.permisoKeys = new Set(
-          this.permisos.map((p) => buildPermisoKey(p.evento_id, p.tipo_boleta_id))
+          this.permisos
+            .filter((p) => p.tipo_boleta_id != null)
+            .map((p) => buildPermisoKey(p.evento_id, p.tipo_boleta_id as number))
         );
         this.permisoEventoIds = new Set(this.permisos.map((p) => p.evento_id));
       } catch {

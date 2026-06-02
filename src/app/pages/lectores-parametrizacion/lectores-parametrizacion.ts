@@ -7,11 +7,9 @@ import { EventosService } from '../../services/eventos.service';
 import { BoletasService } from '../../services/boletas.service';
 import { UsuariosService } from '../../services/usuarios.service';
 import { LectorEventoTipoBoletaService } from '../../services/lector-evento-tipo-boleta.service';
-import { LectorEventoProductoService } from '../../services/lector-evento-producto.service';
 import { AlertService } from '../../services/alert.service';
 import {
   Evento,
-  LectorEventoProducto,
   LectorEventoTipoBoleta,
   TipoBoleta,
   Usuario,
@@ -26,7 +24,6 @@ import {
 })
 export class LectoresParametrizacion implements OnInit {
   filas: LectorEventoTipoBoleta[] = [];
-  filasProductos: LectorEventoProducto[] = [];
   loading = false;
   showModal = false;
 
@@ -46,7 +43,6 @@ export class LectoresParametrizacion implements OnInit {
     private boletasService: BoletasService,
     private usuariosService: UsuariosService,
     private lectorEvtService: LectorEventoTipoBoletaService,
-    private lectorEventoProductoService: LectorEventoProductoService,
     private alertService: AlertService,
     private cdr: ChangeDetectorRef
   ) {}
@@ -59,16 +55,10 @@ export class LectoresParametrizacion implements OnInit {
     this.loading = true;
     this.cdr.markForCheck();
     try {
-      const [filasBoletas, filasProductos] = await Promise.all([
-        this.lectorEvtService.listar(),
-        this.lectorEventoProductoService.listar(),
-      ]);
-      this.filas = filasBoletas;
-      this.filasProductos = filasProductos;
+      this.filas = await this.lectorEvtService.listar();
     } catch (e) {
       console.error(e);
       this.filas = [];
-      this.filasProductos = [];
       await this.alertService.error('No se pudo cargar la parametrización de lectores.');
     } finally {
       this.loading = false;
@@ -170,7 +160,7 @@ export class LectoresParametrizacion implements OnInit {
       }
       if (this.formPermitirProductos) {
         operaciones.push(
-          this.lectorEventoProductoService.crearAsignacion(
+          this.lectorEvtService.crearAsignacionProductos(
             this.formUsuarioId,
             this.formEventoId
           )
@@ -192,9 +182,12 @@ export class LectoresParametrizacion implements OnInit {
   }
 
   async eliminarFila(fila: LectorEventoTipoBoleta): Promise<void> {
+    const esPermisoProducto = fila.tipo_boleta_id == null;
     const ok = await this.alertService.confirm(
-      '¿Eliminar esta asignación?',
-      'Se quitará el permiso de escaneo para ese tipo de boleta.'
+      esPermisoProducto ? '¿Eliminar permiso de productos?' : '¿Eliminar esta asignación?',
+      esPermisoProducto
+        ? 'Se quitará el permiso de escaneo de productos para este evento.'
+        : 'Se quitará el permiso de escaneo para ese tipo de boleta.'
     );
     if (!ok) {
       return;
@@ -209,37 +202,30 @@ export class LectoresParametrizacion implements OnInit {
     }
   }
 
-  async eliminarFilaProducto(fila: LectorEventoProducto): Promise<void> {
-    const ok = await this.alertService.confirm(
-      '¿Eliminar permiso de productos?',
-      'Se quitará el permiso de escaneo de productos para este evento.'
-    );
-    if (!ok) {
-      return;
-    }
-    try {
-      await this.lectorEventoProductoService.eliminar(fila.id);
-      await this.alertService.success('Permiso eliminado.');
-      await this.cargarTabla();
-    } catch (e) {
-      console.error(e);
-      await this.alertService.error('No se pudo eliminar.');
-    }
-  }
-
-  nombreLector(f: LectorEventoTipoBoleta | LectorEventoProducto): string {
+  nombreLector(f: LectorEventoTipoBoleta): string {
     const u = f.usuarios;
     if (!u) return `#${f.usuario_id}`;
     const n = [u.nombre, u.apellido].filter(Boolean).join(' ').trim();
     return n || u.email || `#${u.id}`;
   }
 
-  tituloEvento(f: LectorEventoTipoBoleta | LectorEventoProducto): string {
+  tituloEvento(f: LectorEventoTipoBoleta): string {
     return f.eventos?.titulo || `#${f.evento_id}`;
   }
 
   nombreTipoBoleta(f: LectorEventoTipoBoleta): string {
+    if (f.tipo_boleta_id == null) {
+      return 'Productos del evento';
+    }
     return f.tipos_boleta?.nombre || `#${f.tipo_boleta_id}`;
+  }
+
+  get filasBoletas(): LectorEventoTipoBoleta[] {
+    return this.filas.filter((f) => f.tipo_boleta_id != null);
+  }
+
+  get filasProductos(): LectorEventoTipoBoleta[] {
+    return this.filas.filter((f) => f.tipo_boleta_id == null);
   }
 
   etiquetaLectorEnLista(u: Usuario): string {

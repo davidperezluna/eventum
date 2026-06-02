@@ -31,7 +31,7 @@
 
     <div *ngIf="!loading && grupos.length === 0" class="empty-state">
       <span class="material-icons empty-icon">event_busy</span>
-      <p>No tienes eventos ni tipos de boleta asignados. Contacta al administrador.</p>
+      <p>No tienes permisos de boletas o productos asignados. Contacta al administrador.</p>
     </div>
 
     <div *ngFor="let g of grupos" class="grupo-card">
@@ -43,7 +43,7 @@
       <p class="grupo-label tipos-label">Permisos de validación en este evento</p>
       <div class="tags-wrap">
         <span *ngFor="let t of g.tipos" class="tag tag-tipo">
-          <span class="material-icons">{{ t.tipo_boleta_id === 0 ? 'inventory_2' : 'confirmation_number' }}</span>
+          <span class="material-icons">{{ t.tipo_boleta_id == null ? 'inventory_2' : 'confirmation_number' }}</span>
           {{ t.nombre }}
         </span>
       </div>
