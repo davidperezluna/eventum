@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, CUSTOM_ELEMENTS_SCHEMA, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -12,6 +12,7 @@ import { AuthService } from '../../services/auth.service';
 import { AlertService } from '../../services/alert.service';
 import { MisComprasStateService } from '../../services/mis-compras-state.service';
 import { ComprasProductoService } from '../../services/compras-producto.service';
+import { SupabaseService } from '../../services/supabase.service';
 import {
   Compra,
   BoletaComprada,
@@ -29,7 +30,9 @@ import {
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
 import html2canvas from 'html2canvas';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
+import type { AuthStateCallback } from '../../services/auth.service';
 
 interface BoletaConCompra {
   compra: Compra;
@@ -94,6 +97,8 @@ export class MisCompras implements OnInit, OnDestroy {
   private readonly refreshIndicatorDelayMs = 800;
   private refreshStartedAt: number | null = null;
   private currentLoadBackground = false;
+  private notificacionesChannel: RealtimeChannel | null = null;
+  private unsubscribeAuthState: (() => void) | null = null;
   
   compras: Compra[] = [];
   comprasProductos: CompraProducto[] = [];
@@ -156,6 +161,10 @@ export class MisCompras implements OnInit, OnDestroy {
   productoFilaSeleccionada: ProductoConCompra | null = null;
   productoQrCodeUrl = '';
   loadingProductoQR = false;
+  showMensajeIngresoModal = false;
+  mensajeIngresoTitulo = '';
+  mensajeIngresoDetalle = '';
+  mensajeIngresoTipo: 'entrada' | 'producto' = 'entrada';
 
   /** Traslados de palcos: historial y mapas para ocultar QR al remitente con envío pendiente. */
   trasladosHistorial: TrasladoBoleta[] = [];
@@ -185,7 +194,9 @@ export class MisCompras implements OnInit, OnDestroy {
     private authService: AuthService,
     private alertService: AlertService,
     private misComprasStateService: MisComprasStateService,
+    private supabaseService: SupabaseService,
     private cdr: ChangeDetectorRef,
+    private ngZone: NgZone,
     private router: Router
   ) {}
 
@@ -245,6 +256,8 @@ export class MisCompras implements OnInit, OnDestroy {
 
     this.loadEventosDisponibles(); // Cargar eventos disponibles
     this.loadCompras({ background: !!cachedState }); // Carga inicial
+    this.iniciarRealtimeNotificaciones();
+    this.suscribirReinicioRealtimePorAuth();
   }
 
   private syncVistaActividadDesdeUrl(url: string): void {
@@ -601,6 +614,21 @@ export class MisCompras implements OnInit, OnDestroy {
     this.productoFilaSeleccionada = null;
     this.productoQrCodeUrl = '';
     this.loadingProductoQR = false;
+    this.cdr.detectChanges();
+  }
+
+  private abrirMensajeIngreso(tipo: 'entrada' | 'producto', titulo: string, detalle: string): void {
+    this.mensajeIngresoTipo = tipo;
+    this.mensajeIngresoTitulo = titulo;
+    this.mensajeIngresoDetalle = detalle;
+    this.showMensajeIngresoModal = true;
+    this.cdr.detectChanges();
+  }
+
+  cerrarMensajeIngresoModal(): void {
+    this.showMensajeIngresoModal = false;
+    this.mensajeIngresoTitulo = '';
+    this.mensajeIngresoDetalle = '';
     this.cdr.detectChanges();
   }
 
@@ -1625,8 +1653,101 @@ export class MisCompras implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.persistState(Date.now());
     this.endSilentRefreshCycle();
+    this.detenerRealtimeNotificaciones();
+    if (this.unsubscribeAuthState) {
+      this.unsubscribeAuthState();
+      this.unsubscribeAuthState = null;
+    }
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private iniciarRealtimeNotificaciones(): void {
+    const usuarioId = this.authService.getUsuario()?.id || null;
+    if (!usuarioId) return;
+
+    this.detenerRealtimeNotificaciones();
+
+    this.notificacionesChannel = this.supabaseService
+      .getClient()
+      .channel(`mis-compras-notificaciones-${usuarioId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notificaciones_usuario',
+        },
+        (payload) => {
+          this.ngZone.run(() => {
+            const row = payload.new as {
+              usuario_id?: number | string | null;
+              titulo?: string | null;
+              mensaje?: string | null;
+              tipo?: string | null;
+            };
+            const rowUsuarioId = Number(row?.usuario_id ?? 0);
+            if (!Number.isFinite(rowUsuarioId) || rowUsuarioId !== usuarioId) {
+              return;
+            }
+            const titulo = String(row?.titulo || 'Actualizacion');
+            const mensaje = String(row?.mensaje || 'Tu estado de compra cambio.');
+            const tipo = String(row?.tipo || '').toLowerCase();
+            const esEntradaValidada = tipo === 'entrada_validada';
+            const esProductoRedimido = tipo === 'productos_redimidos';
+            const teniaQrAbierto =
+              (esEntradaValidada && this.showBoletaModal) ||
+              (esProductoRedimido && this.showProductoQrModal);
+            const toast =
+              esEntradaValidada
+                ? `Bienvenido. ${mensaje} Gracias por asistir.`
+                : esProductoRedimido
+                  ? `Gracias por tu compra. ${mensaje} Bienvenido al evento.`
+                  : `${titulo}. ${mensaje}`;
+
+            if (esEntradaValidada && this.showBoletaModal) {
+              this.cerrarBoletaModal();
+            }
+            if (esProductoRedimido && this.showProductoQrModal) {
+              this.cerrarProductoQrModal();
+            }
+            if (teniaQrAbierto) {
+              if (esEntradaValidada) {
+                this.abrirMensajeIngreso(
+                  'entrada',
+                  'Bienvenido al evento',
+                  mensaje || 'Tu entrada fue validada correctamente. Disfruta la experiencia.'
+                );
+              } else if (esProductoRedimido) {
+                this.abrirMensajeIngreso(
+                  'producto',
+                  'Gracias por tu compra',
+                  mensaje || 'Tu pedido fue redimido correctamente. Esperamos que lo disfrutes.'
+                );
+              }
+            }
+
+            void this.alertService.snackbar(toast, { timerMs: 6000 });
+            this.loadCompras({ background: true, resetPage: false });
+          });
+        }
+      )
+      .subscribe();
+  }
+
+  private suscribirReinicioRealtimePorAuth(): void {
+    const callback: AuthStateCallback = () => {
+      if (!this.notificacionesChannel) {
+        this.iniciarRealtimeNotificaciones();
+      }
+    };
+    this.unsubscribeAuthState = this.authService.onAuthStateChange(callback);
+  }
+
+  private detenerRealtimeNotificaciones(): void {
+    if (!this.notificacionesChannel) return;
+    void this.supabaseService.getClient().removeChannel(this.notificacionesChannel);
+    this.notificacionesChannel = null;
   }
 
   private startSilentRefreshCycle(): void {
@@ -1979,6 +2100,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.eventoSeleccionado = null;
     this.tipoBoletaSeleccionado = null;
     this.qrCodeUrl = '';
+    this.cdr.detectChanges();
   }
 
   /**

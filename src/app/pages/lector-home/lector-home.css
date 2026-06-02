@@ -105,6 +105,11 @@
   color: var(--color-text-secondary);
 }
 
+.hint-refresh {
+  margin-top: calc(var(--spacing-sm) * -1);
+  color: var(--color-secondary);
+}
+
 .alcance-section .empty-state {
   padding: var(--spacing-xl) var(--spacing-md);
   text-align: center;

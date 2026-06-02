@@ -20,6 +20,7 @@ import {
   buildPermisoKey,
   PermisoEscaneo,
 } from '../../services/lector-permisos.service';
+import { LectorStateService } from '../../services/lector-state.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { BoletaComprada, TipoEstadoBoleta } from '../../types';
 @Component({
@@ -81,6 +82,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     private alertService: AlertService,
     private authService: AuthService,
     private lectorPermisos: LectorPermisosService,
+    private lectorStateService: LectorStateService,
     private supabase: SupabaseService,
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
@@ -98,23 +100,59 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
 
     const usuario = this.authService.getUsuario();
     this.esLector = usuario?.tipo_usuario_id === RolesPermitidos.LECTOR;
+    const userId = this.authService.getUsuarioId();
 
     if (this.requierePermisosLector) {
-      try {
-        this.permisos = await this.lectorPermisos.fetchMisPermisosEscaneo();
-        this.permisoKeys = new Set(
-          this.permisos
-            .filter((p) => p.tipo_boleta_id != null)
-            .map((p) => buildPermisoKey(p.evento_id, p.tipo_boleta_id as number))
-        );
-        this.permisoEventoIds = new Set(this.permisos.map((p) => p.evento_id));
-        this.permisoEventoProductoIds = new Set(
-          this.permisos
-            .filter((p) => p.categoria === 'producto')
-            .map((p) => p.evento_id)
-        );
-      } catch {
+      const cachedPermisos = userId ? this.lectorStateService.getPermisos(userId) : null;
+      if (cachedPermisos) {
+        this.aplicarPermisos(cachedPermisos);
+        this.cargandoPermisos = false;
+        this.permisosReady = true;
+        this.cdr.detectChanges();
+        this.scheduleIniciarCamaraTrasRender();
+        void this.cargarPermisosLector({ background: true, userId });
+      } else {
+        await this.cargarPermisosLector({ background: false, userId });
+        this.cargandoPermisos = false;
+        this.permisosReady = true;
+        this.cdr.detectChanges();
+        this.scheduleIniciarCamaraTrasRender();
+      }
+    } else {
+      this.cargandoPermisos = false;
+      this.permisosReady = true;
+      this.cdr.detectChanges();
+      this.scheduleIniciarCamaraTrasRender();
+    }
+    this.cdr.markForCheck();
+  }
+
+  private aplicarPermisos(permisos: PermisoEscaneo[]): void {
+    this.permisos = [...(permisos || [])];
+    this.permisoKeys = new Set(
+      this.permisos
+        .filter((p) => p.tipo_boleta_id != null)
+        .map((p) => buildPermisoKey(p.evento_id, p.tipo_boleta_id as number))
+    );
+    this.permisoEventoIds = new Set(this.permisos.map((p) => p.evento_id));
+    this.permisoEventoProductoIds = new Set(
+      this.permisos
+        .filter((p) => p.categoria === 'producto')
+        .map((p) => p.evento_id)
+    );
+  }
+
+  private async cargarPermisosLector(options: { background: boolean; userId: number | null }): Promise<void> {
+    try {
+      const permisos = await this.lectorPermisos.fetchMisPermisosEscaneo();
+      this.aplicarPermisos(permisos);
+      if (options.userId) {
+        this.lectorStateService.savePermisos(options.userId, permisos);
+      }
+    } catch {
+      if (!options.background) {
         this.permisos = [];
+        this.permisoKeys = new Set<string>();
         this.permisoEventoIds = new Set<number>();
         this.permisoEventoProductoIds = new Set<number>();
         await this.alertService.error(
@@ -122,11 +160,6 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
         );
       }
     }
-    this.cargandoPermisos = false;
-    this.permisosReady = true;
-    this.cdr.detectChanges();
-    this.scheduleIniciarCamaraTrasRender();
-    this.cdr.markForCheck();
   }
 
   ngAfterViewInit(): void {

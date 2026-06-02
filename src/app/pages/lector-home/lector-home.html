@@ -26,6 +26,7 @@
       Tu alcance de escaneo
     </h2>
       <p class="hint">Asignado desde el panel web. No editable desde aquí.</p>
+      <p class="hint hint-refresh" *ngIf="refreshing && !loading">Actualizando permisos en segundo plano…</p>
 
     <div *ngIf="loading" class="loading-state loading-state--compact">Cargando permisos...</div>
 

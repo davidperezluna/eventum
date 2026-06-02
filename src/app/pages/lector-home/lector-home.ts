@@ -6,6 +6,7 @@ import {
   LectorPermisosService,
   PermisoEscaneo,
 } from '../../services/lector-permisos.service';
+import { LectorStateService } from '../../services/lector-state.service';
 
 type GrupoEvento = {
   evento_id: number;
@@ -23,31 +24,53 @@ export class LectorHome implements OnInit {
   permisos: PermisoEscaneo[] = [];
   grupos: GrupoEvento[] = [];
   loading = true;
+  refreshing = false;
 
   constructor(
     private authService: AuthService,
     private lectorPermisos: LectorPermisosService,
+    private lectorStateService: LectorStateService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    void this.cargarPermisos();
+    const userId = this.authService.getUsuarioId();
+    const cachedPermisos = userId ? this.lectorStateService.getPermisos(userId) : null;
+
+    if (cachedPermisos) {
+      this.permisos = cachedPermisos;
+      this.grupos = this.agruparPorEvento(this.permisos);
+      this.loading = false;
+      this.cdr.markForCheck();
+      void this.cargarPermisos({ background: true, userId });
+      return;
+    }
+
+    void this.cargarPermisos({ background: false, userId });
   }
 
   get usuario() {
     return this.authService.getUsuario();
   }
 
-  private async cargarPermisos(): Promise<void> {
-    this.loading = true;
+  private async cargarPermisos(options?: { background?: boolean; userId: number | null }): Promise<void> {
+    const background = options?.background ?? false;
+    this.loading = !background;
+    this.refreshing = background;
     try {
       this.permisos = await this.lectorPermisos.fetchMisPermisosEscaneo();
       this.grupos = this.agruparPorEvento(this.permisos);
+      if (options?.userId) {
+        this.lectorStateService.savePermisos(options.userId, this.permisos);
+      }
     } catch {
-      this.permisos = [];
-      this.grupos = [];
+      if (!background) {
+        this.permisos = [];
+        this.grupos = [];
+      }
     } finally {
       this.loading = false;
+      this.refreshing = false;
       this.cdr.markForCheck();
     }
   }

@@ -939,6 +939,32 @@
   </div>
 </div>
 
+<!-- Modal de bienvenida/agradecimiento después de validar QR -->
+<div class="modal-overlay modal-overlay--mensaje-ingreso" *ngIf="showMensajeIngresoModal">
+  <div class="modal-content boleta-modal mensaje-ingreso-modal" (click)="$event.stopPropagation()">
+    <button class="modal-close" (click)="cerrarMensajeIngresoModal()">
+      <span class="material-icons">close</span>
+    </button>
+
+    <div class="mensaje-ingreso-card" [class.mensaje-ingreso-card--producto]="mensajeIngresoTipo === 'producto'">
+      <div class="mensaje-ingreso-icon-wrap">
+        <span class="material-icons">
+          {{ mensajeIngresoTipo === 'producto' ? 'celebration' : 'verified' }}
+        </span>
+      </div>
+      <p class="mensaje-ingreso-kicker">
+        {{ mensajeIngresoTipo === 'producto' ? 'PEDIDO ENTREGADO' : 'ACCESO CONFIRMADO' }}
+      </p>
+      <h2>{{ mensajeIngresoTitulo }}</h2>
+      <p>{{ mensajeIngresoDetalle }}</p>
+
+      <button type="button" class="btn-primary" (click)="cerrarMensajeIngresoModal()">
+        Continuar
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal enviar entrada (traslado palco) -->
 <div class="modal-overlay modal-overlay--traslado" *ngIf="showTrasladoModal" (click)="cerrarModalTraslado()">
   <div class="modal-content boleta-modal traslado-modal" (click)="$event.stopPropagation()">
