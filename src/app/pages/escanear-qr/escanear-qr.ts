@@ -345,7 +345,8 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
       }
 
       const producto = await this.comprasProductoService.buscarItemPorCodigoQR(codigo.trim());
-      if (!producto) {
+      const productoPedido = producto || await this.comprasProductoService.buscarCompraPorCodigoQR(codigo.trim());
+      if (!productoPedido) {
         await this.alertService.info(
           'No encontrado',
           'No hay ninguna boleta o producto con ese código QR.'
@@ -354,7 +355,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
         return;
       }
 
-      await this.mostrarProductoEnModal(producto);
+      await this.mostrarProductoEnModal(productoPedido);
     } catch (err: unknown) {
       console.error(err);
       const msg = err instanceof Error ? err.message : 'Error desconocido';
@@ -516,8 +517,13 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     this.validando = true;
     this.cdr.markForCheck();
     try {
-      await this.comprasProductoService.validarItemProducto(this.productoItem.id);
-      await this.alertService.success('Producto validado', 'El producto quedó marcado como redimido.');
+      if (this.productoItem.scope === 'compra') {
+        await this.comprasProductoService.validarCompraProductos(this.productoItem.id);
+        await this.alertService.success('Pedido validado', 'Todos los productos del pedido quedaron marcados como redimidos.');
+      } else {
+        await this.comprasProductoService.validarItemProducto(this.productoItem.id);
+        await this.alertService.success('Producto validado', 'El producto quedó marcado como redimido.');
+      }
       this.cerrarModal();
       await this.reiniciarEscaneo();
     } catch (err: unknown) {

@@ -468,7 +468,7 @@ export class MisCompras implements OnInit, OnDestroy {
 
   mensajeEstadoQrProducto(fila: ProductoConCompra, grupo: EventoBoletasGrupo | null | undefined): string {
     if (!this.productoTieneCodigoQR(fila)) {
-      return 'Estamos preparando el QR de este item. Vuelve a intentar en unos segundos.';
+      return 'Estamos preparando el QR del pedido. Vuelve a intentar en unos segundos.';
     }
     if ((fila.compra.estado_pago || '').toLowerCase() !== TipoEstadoPago.COMPLETADO) {
       return 'El código QR estará disponible cuando se confirme el pago.';
@@ -513,7 +513,7 @@ export class MisCompras implements OnInit, OnDestroy {
     if (!this.productoTieneCodigoQR(fila)) {
       this.alertService.warning(
         'QR en preparación',
-        'Este item aún no tiene código QR asignado. Recarga en unos segundos o vuelve a intentarlo.'
+        'Este pedido aún no tiene código QR asignado. Recarga en unos segundos o vuelve a intentarlo.'
       );
       return;
     }
@@ -523,9 +523,10 @@ export class MisCompras implements OnInit, OnDestroy {
     this.loadingProductoQR = this.puedeMostrarQrProducto(fila, grupo);
     this.cdr.detectChanges();
 
-    if (!this.loadingProductoQR || !fila.item.codigo_qr) return;
+    const codigoPedido = this.getCodigoQrCompraProducto(fila.compra);
+    if (!this.loadingProductoQR || !codigoPedido) return;
     try {
-      this.productoQrCodeUrl = await QRCode.toDataURL(fila.item.codigo_qr, {
+      this.productoQrCodeUrl = await QRCode.toDataURL(codigoPedido, {
         width: 200,
         margin: 2,
         color: { dark: '#000000', light: '#FFFFFF' }
@@ -548,7 +549,19 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   productoTieneCodigoQR(fila: ProductoConCompra): boolean {
-    return typeof fila.item.codigo_qr === 'string' && fila.item.codigo_qr.trim().length > 0;
+    return this.getCodigoQrCompraProducto(fila.compra) !== null;
+  }
+
+  getCodigoQrCompraProducto(compra: CompraProducto | null | undefined): string | null {
+    const numeroPedido = String(compra?.numero_pedido || '').trim();
+    if (!numeroPedido) return null;
+    return `PROD-ORD-${numeroPedido}`;
+  }
+
+  esPrimerItemPedidoEnTab(fila: ProductoConCompra, grupo: EventoBoletasGrupo): boolean {
+    const filas = this.productosDetallePorTab(grupo);
+    const primeraFila = filas.find((x) => x.compra.id === fila.compra.id);
+    return !!primeraFila && primeraFila.item.id === fila.item.id;
   }
 
   getPrecioPreventaProductoDetalle(fila: ProductoConCompra): number {

@@ -161,16 +161,21 @@
 
         <ng-container *ngIf="(productoItem.estado || '').toLowerCase() !== 'entregado' && puedeValidarProducto(productoItem)">
           <p class="modal-kicker">LECTURA OK</p>
-          <h2 class="modal-title">Producto listo para entrega</h2>
+          <h2 class="modal-title">
+            {{ productoItem.scope === 'compra' ? 'Pedido listo para entrega' : 'Producto listo para entrega' }}
+          </h2>
           <div class="modal-info">
-            <div class="modal-row"><span>Producto</span><strong>{{ productoItem.producto?.nombre || 'Producto' }}</strong></div>
-            <div class="modal-row"><span>Cantidad</span><strong>{{ productoItem.cantidad }}</strong></div>
+            <div class="modal-row">
+              <span>{{ productoItem.scope === 'compra' ? 'Pedido' : 'Producto' }}</span>
+              <strong>{{ productoItem.scope === 'compra' ? 'Compra de productos' : (productoItem.producto?.nombre || 'Producto') }}</strong>
+            </div>
+            <div class="modal-row"><span>Cantidad total</span><strong>{{ productoItem.cantidad }}</strong></div>
             <div class="modal-row"><span>Pedido</span><strong>{{ productoItem.compra?.numero_pedido || '—' }}</strong></div>
             <div class="modal-row"><span>QR</span><code>{{ productoItem.codigo_qr }}</code></div>
           </div>
           <button type="button" class="btn-validate" (click)="validarProducto()" [disabled]="validando">
             <span class="material-icons">verified</span>
-            {{ validando ? 'Validando...' : 'Validar producto' }}
+            {{ validando ? 'Validando...' : (productoItem.scope === 'compra' ? 'Validar pedido completo' : 'Validar producto') }}
           </button>
         </ng-container>
 

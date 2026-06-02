@@ -49,6 +49,7 @@ export interface ItemProductoEscaneo {
   codigo_qr: string;
   estado: string;
   cantidad: number;
+  scope?: 'item' | 'compra';
   precio_unitario: number;
   fecha_redencion?: string;
   validado_por_usuario_id?: number;
@@ -62,6 +63,7 @@ export interface ItemProductoEscaneo {
     id: number;
     nombre: string;
   } | null;
+  productos_resumen?: string[];
 }
 
 @Injectable({
@@ -314,12 +316,102 @@ export class ComprasProductoService {
       id: data.id,
       codigo_qr: data.codigo_qr,
       estado: data.estado || TipoEstadoItemProducto.PENDIENTE,
+      scope: 'item',
       cantidad: data.cantidad || 0,
       precio_unitario: Number(data.precio_unitario || 0),
       fecha_redencion: data.fecha_redencion || undefined,
       validado_por_usuario_id: data.validado_por_usuario_id || undefined,
       compra: Array.isArray(data.compra) ? (data.compra[0] as ItemProductoEscaneo['compra']) : (data.compra as ItemProductoEscaneo['compra']),
       producto: Array.isArray(data.producto) ? (data.producto[0] as ItemProductoEscaneo['producto']) : (data.producto as ItemProductoEscaneo['producto']),
+    };
+  }
+
+  private extraerNumeroPedidoDesdeCodigoQR(codigoQR: string): string | null {
+    const value = String(codigoQR || '').trim();
+    if (!value) return null;
+    const prefix = 'PROD-ORD-';
+    if (!value.startsWith(prefix)) return null;
+    const numeroPedido = value.slice(prefix.length).trim();
+    return numeroPedido || null;
+  }
+
+  async buscarCompraPorCodigoQR(codigoQR: string): Promise<ItemProductoEscaneo | null> {
+    const numeroPedido = this.extraerNumeroPedidoDesdeCodigoQR(codigoQR);
+    if (!numeroPedido) return null;
+
+    const { data, error } = await this.supabase
+      .from('compras_productos')
+      .select(`
+        id,
+        evento_id,
+        estado_pago,
+        numero_pedido,
+        compras_productos_items(
+          id,
+          estado,
+          cantidad,
+          precio_unitario,
+          fecha_redencion,
+          validado_por_usuario_id,
+          producto:productos(id, nombre)
+        )
+      `)
+      .eq('numero_pedido', numeroPedido)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+    if (!data) return null;
+
+    const items = ((data.compras_productos_items || []) as Array<{
+      id: number;
+      estado?: string;
+      cantidad?: number;
+      precio_unitario?: number;
+      fecha_redencion?: string;
+      validado_por_usuario_id?: number;
+      producto?: { id?: number; nombre?: string } | Array<{ id?: number; nombre?: string }> | null;
+    }>).filter(Boolean);
+
+    if (items.length === 0) {
+      return null;
+    }
+
+    const totalCantidad = items.reduce((acc, item) => acc + Number(item.cantidad || 0), 0);
+    const totalValor = items.reduce(
+      (acc, item) => acc + Number(item.precio_unitario || 0) * Number(item.cantidad || 0),
+      0
+    );
+    const todosEntregados = items.every(
+      (item) => String(item.estado || '').toLowerCase() === TipoEstadoItemProducto.ENTREGADO
+    );
+    const nombres = items
+      .map((item) => (Array.isArray(item.producto) ? item.producto[0] : item.producto)?.nombre || '')
+      .filter((n) => n.trim().length > 0);
+
+    const primerItem = items[0];
+
+    return {
+      id: Number(data.id),
+      codigo_qr: codigoQR,
+      estado: todosEntregados ? TipoEstadoItemProducto.ENTREGADO : TipoEstadoItemProducto.CONFIRMADO,
+      scope: 'compra',
+      cantidad: totalCantidad,
+      precio_unitario: totalCantidad > 0 ? totalValor / totalCantidad : 0,
+      fecha_redencion: primerItem?.fecha_redencion || undefined,
+      validado_por_usuario_id: primerItem?.validado_por_usuario_id || undefined,
+      compra: {
+        id: Number(data.id),
+        evento_id: Number(data.evento_id),
+        estado_pago: String(data.estado_pago || ''),
+        numero_pedido: String(data.numero_pedido || numeroPedido),
+      },
+      producto: {
+        id: 0,
+        nombre: 'Pedido de productos',
+      },
+      productos_resumen: nombres,
     };
   }
 
@@ -337,6 +429,27 @@ export class ComprasProductoService {
       .from('compras_productos_items')
       .update(payload)
       .eq('id', itemId);
+
+    if (error) {
+      throw error;
+    }
+  }
+
+  async validarCompraProductos(compraId: number): Promise<void> {
+    const validadorId = this.authService.getUsuarioId();
+    const payload: Record<string, unknown> = {
+      estado: TipoEstadoItemProducto.ENTREGADO,
+      fecha_redencion: this.timezoneService.getCurrentDateISO(),
+    };
+    if (validadorId != null) {
+      payload['validado_por_usuario_id'] = validadorId;
+    }
+
+    const { error } = await this.supabase
+      .from('compras_productos_items')
+      .update(payload)
+      .eq('compra_producto_id', compraId)
+      .neq('estado', TipoEstadoItemProducto.ENTREGADO);
 
     if (error) {
       throw error;
