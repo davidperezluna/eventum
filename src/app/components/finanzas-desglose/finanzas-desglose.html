@@ -1,41 +1,119 @@
 <div class="finanzas-desglose">
+  <p class="finanzas-desglose__nota" *ngIf="mostrarProductos; else notaSoloBoletas">
+    Vista simplificada por línea de negocio: primero <strong>Boletas</strong> y luego <strong>Productos</strong>.
+  </p>
+  <ng-template #notaSoloBoletas>
+    <p class="finanzas-desglose__nota">
+      Vista simplificada por línea de negocio: <strong>Boletas</strong>.
+    </p>
+  </ng-template>
+
+  <div class="finanzas-switch" role="tablist" aria-label="Filtrar línea de negocio" *ngIf="mostrarProductos">
+    <button
+      type="button"
+      class="finanzas-switch__btn"
+      [class.is-active]="viewMode === 'boletas'"
+      [attr.aria-selected]="viewMode === 'boletas'"
+      (click)="setViewMode('boletas')"
+    >
+      Boletas
+    </button>
+    <button
+      type="button"
+      class="finanzas-switch__btn"
+      [class.is-active]="viewMode === 'productos'"
+      [attr.aria-selected]="viewMode === 'productos'"
+      (click)="setViewMode('productos')"
+    >
+      Productos
+    </button>
+    <button
+      type="button"
+      class="finanzas-switch__btn"
+      [class.is-active]="viewMode === 'todo'"
+      [attr.aria-selected]="viewMode === 'todo'"
+      (click)="setViewMode('todo')"
+    >
+      Todo
+    </button>
+  </div>
+
   <div class="finanzas-desglose__grupos">
-    <section class="finanzas-grupo finanzas-grupo--cliente" aria-labelledby="fin-cliente-h">
+    <section *ngIf="showBoletas" class="finanzas-grupo finanzas-grupo--cliente finanzas-grupo--boletas" aria-labelledby="fin-cliente-h">
       <div class="finanzas-grupo__head">
-        <h3 id="fin-cliente-h">Valor cliente (empresario)</h3>
-        <p class="finanzas-grupo__sub">{{ clienteSubtext }}</p>
+        <h3 id="fin-cliente-h">
+          <span class="finanzas-chip">Boletas</span>
+          Valor cliente (empresario)
+        </h3>
+        <p class="finanzas-grupo__sub">Subtotal cobrado por boletas, costo Wompi y neto final.</p>
       </div>
       <div class="finanzas-grupo__cards stats-grid-secondary">
         <div class="finanzas-grupo__metric" title="∑ max(0, total − valor servicio) por compra">
           <span class="material-icons">shopping_bag</span>
           <div>
             <p class="stat-mini-value">{{ formatCurrency(stats.ingresos_ventas_bruto_total) }}</p>
-            <p class="stat-mini-label">Ingresos ventas (bruto)</p>
+            <p class="stat-mini-label">Bruto boletas</p>
           </div>
         </div>
         <div class="finanzas-grupo__metric" title="Parte proporcional sobre ventas/boletas">
           <span class="material-icons">sell</span>
           <div>
             <p class="stat-mini-value">{{ formatCurrency(stats.wompi_ventas_total) }}</p>
-            <p class="stat-mini-label">Wompi ventas</p>
+            <p class="stat-mini-label">Wompi boletas</p>
           </div>
         </div>
         <div class="finanzas-grupo__metric">
           <span class="material-icons">inventory_2</span>
           <div>
             <p class="stat-mini-value">{{ formatCurrency(stats.neto_ventas_post_wompi_total) }}</p>
-            <p class="stat-mini-label">Neto ventas post-Wompi</p>
+            <p class="stat-mini-label">Neto boletas</p>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="finanzas-grupo finanzas-grupo--platform" aria-labelledby="fin-eventum-h">
+    <section *ngIf="showProductos" class="finanzas-grupo finanzas-grupo--cliente finanzas-grupo--productos" aria-labelledby="fin-productos-h">
       <div class="finanzas-grupo__head">
-        <h3 id="fin-eventum-h">Valor servicio (Eventum)</h3>
+        <h3 id="fin-productos-h">
+          <span class="finanzas-chip">Productos</span>
+          Valor cliente (empresario)
+        </h3>
+        <p class="finanzas-grupo__sub">Subtotal cobrado por productos, costo Wompi y neto final.</p>
+      </div>
+      <div class="finanzas-grupo__cards stats-grid-secondary">
+        <div class="finanzas-grupo__metric" title="∑ max(0, total − valor servicio) por compra de productos">
+          <span class="material-icons">local_mall</span>
+          <div>
+            <p class="stat-mini-value">{{ formatCurrency(stats.ingresos_productos_bruto_total) }}</p>
+            <p class="stat-mini-label">Bruto productos</p>
+          </div>
+        </div>
+        <div class="finanzas-grupo__metric" title="Parte proporcional sobre ventas de productos">
+          <span class="material-icons">sell</span>
+          <div>
+            <p class="stat-mini-value">{{ formatCurrency(stats.wompi_productos_ventas_total) }}</p>
+            <p class="stat-mini-label">Wompi productos</p>
+          </div>
+        </div>
+        <div class="finanzas-grupo__metric">
+          <span class="material-icons">inventory</span>
+          <div>
+            <p class="stat-mini-value">{{ formatCurrency(stats.neto_productos_ventas_post_wompi_total) }}</p>
+            <p class="stat-mini-label">Neto productos</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section *ngIf="showBoletas" class="finanzas-grupo finanzas-grupo--platform finanzas-grupo--boletas" aria-labelledby="fin-eventum-h">
+      <div class="finanzas-grupo__head">
+        <h3 id="fin-eventum-h">
+          <span class="finanzas-chip">Boletas</span>
+          Valor servicio (Eventum)
+        </h3>
         <p class="finanzas-grupo__sub">
-          Comision de plataforma: cargo por servicio, Wompi asociado y neto del servicio.
-          Servicio promedio: <strong>{{ (stats.porcentaje_servicio_promedio || 0) | number:'1.0-2' }}%</strong>.
+          Cargo por servicio de boletas.
+          Promedio aplicado: <strong>{{ (stats.porcentaje_servicio_promedio || 0) | number:'1.0-2' }}%</strong>.
         </p>
       </div>
       <div class="finanzas-grupo__cards stats-grid-secondary">
@@ -43,21 +121,57 @@
           <span class="material-icons">request_quote</span>
           <div>
             <p class="stat-mini-value">{{ formatCurrency(stats.valor_servicio_total) }}</p>
-            <p class="stat-mini-label">Valor servicio (bruto)</p>
+            <p class="stat-mini-label">Servicio bruto boletas</p>
           </div>
         </div>
         <div class="finanzas-grupo__metric">
           <span class="material-icons">handyman</span>
           <div>
             <p class="stat-mini-value">{{ formatCurrency(stats.wompi_servicio_total) }}</p>
-            <p class="stat-mini-label">Wompi servicio</p>
+            <p class="stat-mini-label">Wompi servicio boletas</p>
           </div>
         </div>
         <div class="finanzas-grupo__metric">
           <span class="material-icons">build_circle</span>
           <div>
             <p class="stat-mini-value">{{ formatCurrency(stats.neto_servicio_post_wompi_total) }}</p>
-            <p class="stat-mini-label">Neto servicio post-Wompi</p>
+            <p class="stat-mini-label">Neto servicio boletas</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section *ngIf="showProductos" class="finanzas-grupo finanzas-grupo--platform finanzas-grupo--productos" aria-labelledby="fin-eventum-prod-h">
+      <div class="finanzas-grupo__head">
+        <h3 id="fin-eventum-prod-h">
+          <span class="finanzas-chip">Productos</span>
+          Valor servicio (Eventum)
+        </h3>
+        <p class="finanzas-grupo__sub">
+          Cargo por servicio de productos.
+          Promedio aplicado: <strong>{{ (stats.porcentaje_servicio_productos_promedio || 0) | number:'1.0-2' }}%</strong>.
+        </p>
+      </div>
+      <div class="finanzas-grupo__cards stats-grid-secondary">
+        <div class="finanzas-grupo__metric">
+          <span class="material-icons">wallet</span>
+          <div>
+            <p class="stat-mini-value">{{ formatCurrency(stats.valor_servicio_productos_total) }}</p>
+            <p class="stat-mini-label">Servicio bruto productos</p>
+          </div>
+        </div>
+        <div class="finanzas-grupo__metric">
+          <span class="material-icons">construction</span>
+          <div>
+            <p class="stat-mini-value">{{ formatCurrency(stats.wompi_productos_servicio_total) }}</p>
+            <p class="stat-mini-label">Wompi servicio productos</p>
+          </div>
+        </div>
+        <div class="finanzas-grupo__metric">
+          <span class="material-icons">build</span>
+          <div>
+            <p class="stat-mini-value">{{ formatCurrency(stats.neto_productos_servicio_post_wompi_total) }}</p>
+            <p class="stat-mini-label">Neto servicio productos</p>
           </div>
         </div>
       </div>
@@ -65,18 +179,18 @@
   </div>
 
   <div class="finanzas-desglose__totales">
-    <div class="stat-card-mini" title="Comisión total estimada">
+    <div class="stat-card-mini" [attr.title]="'Comisión total estimada ' + totalLabelSuffix">
       <span class="material-icons">percent</span>
       <div>
-        <p class="stat-mini-value">{{ formatCurrency(stats.wompi_total_estimado) }}</p>
-        <p class="stat-mini-label">Wompi total (estim.)</p>
+        <p class="stat-mini-value">{{ formatCurrency(wompiTotalVisible) }}</p>
+        <p class="stat-mini-label">Wompi total ({{ totalLabelSuffix }})</p>
       </div>
     </div>
-    <div class="stat-card-mini" title="Bruto − Wompi total estimado">
+    <div class="stat-card-mini" [attr.title]="'Neto total ' + totalLabelSuffix">
       <span class="material-icons">account_balance</span>
       <div>
-        <p class="stat-mini-value">{{ formatCurrency(stats.neto_total_post_wompi_total) }}</p>
-        <p class="stat-mini-label">Neto total post-Wompi</p>
+        <p class="stat-mini-value">{{ formatCurrency(netoTotalVisible) }}</p>
+        <p class="stat-mini-label">Neto total ({{ totalLabelSuffix }})</p>
       </div>
     </div>
   </div>

@@ -99,6 +99,75 @@ export class DashboardOrganizadorService {
       }
     }, 0);
 
+    const eventosDelOrganizadorIds = safeExecute(async () => {
+      const response = await withEventFilter(this.supabase
+        .from('eventos')
+        .select('id')
+        .eq('organizador_id', organizadorId), 'id');
+
+      if (response.error || !Array.isArray(response.data)) {
+        return [] as number[];
+      }
+      return response.data
+        .map((e: any) => Number(e.id))
+        .filter((id: number) => Number.isFinite(id) && id > 0);
+    }, [] as number[]);
+
+    // Unidades de productos vendidas de eventos del organizador (solo pago completado)
+    const productosVendidos = safeExecute(async () => {
+      const eventosIds = await eventosDelOrganizadorIds;
+      if (eventosIds.length === 0) return 0;
+
+      const response = await withEventFilter(this.supabase
+        .from('compras_productos_items')
+        .select('cantidad, compra:compras_productos!inner(estado_pago, evento_id)')
+        .eq('compra.estado_pago', 'completado')
+        .in('compra.evento_id', eventosIds), 'compra.evento_id');
+
+      if (response.error) {
+        console.error('Error en productos vendidos del organizador:', response.error);
+        return 0;
+      }
+      if (!Array.isArray(response.data)) return 0;
+      return response.data.reduce((sum: number, item: any) => sum + Number(item.cantidad || 0), 0);
+    }, 0);
+
+    // Pedidos de productos completados del organizador
+    const pedidosProductos = safeExecute(async () => {
+      const eventosIds = await eventosDelOrganizadorIds;
+      if (eventosIds.length === 0) return 0;
+
+      const response = await withEventFilter(this.supabase
+        .from('compras_productos')
+        .select('id', { count: 'exact', head: true })
+        .eq('estado_pago', 'completado')
+        .in('evento_id', eventosIds));
+
+      if (response.error) {
+        console.error('Error en pedidos de productos del organizador:', response.error);
+        return 0;
+      }
+      return response.count || 0;
+    }, 0);
+
+    // Disponibilidad de productos configurados en los eventos del organizador
+    const tieneProductos = safeExecute(async () => {
+      const eventosIds = await eventosDelOrganizadorIds;
+      if (eventosIds.length === 0) return false;
+
+      const response = await withEventFilter(this.supabase
+        .from('productos')
+        .select('id', { count: 'exact', head: true })
+        .eq('activo', true)
+        .in('evento_id', eventosIds));
+
+      if (response.error) {
+        console.error('Error validando productos configurados del organizador:', response.error);
+        return false;
+      }
+      return (response.count || 0) > 0;
+    }, false);
+
     // Ingresos, servicio y estimación Wompi (misma lógica que dashboard admin)
     const ingresosYServicioTotales = safeExecute(async () => {
       const response = await withEventFilter(this.supabase
@@ -124,6 +193,65 @@ export class DashboardOrganizadorService {
       if (response.data && Array.isArray(response.data)) {
         const filas = response.data as any[];
         const a = agregarFinanzasDesdeComprasCompletadas(filas);
+        return {
+          ingresos: a.ingresos,
+          valorServicioTotal: a.valorServicioTotal,
+          porcentajeServicioPromedio: a.porcentajeServicioPromedio,
+          wompiTotalEstimado: a.wompi_total_estimado,
+          wompiVentasTotal: a.wompi_ventas_total,
+          wompiServicioTotal: a.wompi_servicio_total,
+          netoVentasPostWompiTotal: a.neto_ventas_post_wompi_total,
+          netoServicioPostWompiTotal: a.neto_servicio_post_wompi_total,
+          ingresosVentasBrutoTotal: a.ingresos_ventas_bruto_total,
+        };
+      }
+      return {
+        ingresos: 0,
+        valorServicioTotal: 0,
+        porcentajeServicioPromedio: 0,
+        wompiTotalEstimado: 0,
+        wompiVentasTotal: 0,
+        wompiServicioTotal: 0,
+        netoVentasPostWompiTotal: 0,
+        netoServicioPostWompiTotal: 0,
+        ingresosVentasBrutoTotal: 0,
+      };
+    }, {
+      ingresos: 0,
+      valorServicioTotal: 0,
+      porcentajeServicioPromedio: 0,
+      wompiTotalEstimado: 0,
+      wompiVentasTotal: 0,
+      wompiServicioTotal: 0,
+      netoVentasPostWompiTotal: 0,
+      netoServicioPostWompiTotal: 0,
+      ingresosVentasBrutoTotal: 0,
+    });
+
+    // Ingresos, servicio y Wompi para compras de productos del organizador
+    const ingresosYServicioProductos = safeExecute(async () => {
+      const response = await withEventFilter(this.supabase
+        .from('compras_productos')
+        .select('total, valor_servicio, porcentaje_servicio, evento_id, eventos!inner(organizador_id)')
+        .eq('estado_pago', 'completado')
+        .eq('eventos.organizador_id', organizadorId));
+
+      if (response.error) {
+        console.error('Error en ingresos/agregados de productos:', response.error);
+        return {
+          ingresos: 0,
+          valorServicioTotal: 0,
+          porcentajeServicioPromedio: 0,
+          wompiTotalEstimado: 0,
+          wompiVentasTotal: 0,
+          wompiServicioTotal: 0,
+          netoVentasPostWompiTotal: 0,
+          netoServicioPostWompiTotal: 0,
+          ingresosVentasBrutoTotal: 0,
+        };
+      }
+      if (Array.isArray(response.data)) {
+        const a = agregarFinanzasDesdeComprasCompletadas(response.data as any[]);
         return {
           ingresos: a.ingresos,
           valorServicioTotal: a.valorServicioTotal,
@@ -394,7 +522,11 @@ export class DashboardOrganizadorService {
     const [
       eventos_activos,
       boletas_vendidas,
+      productos_vendidos,
+      pedidos_productos,
+      tiene_productos,
       ingresos_agg,
+      ingresos_productos_agg,
       clientes_count,
       ventas_recientes,
       eventos_proximos,
@@ -408,7 +540,11 @@ export class DashboardOrganizadorService {
     ] = await Promise.all([
       eventosActivos,
       boletasVendidas,
+      productosVendidos,
+      pedidosProductos,
+      tieneProductos,
       ingresosYServicioTotales,
+      ingresosYServicioProductos,
       clientes,
       ventasRecientes,
       eventosProximos,
@@ -424,7 +560,11 @@ export class DashboardOrganizadorService {
     return {
       eventos_activos,
       boletas_vendidas,
+      productos_vendidos,
+      pedidos_productos,
+      tiene_productos,
       ingresos_totales: ingresos_agg.ingresos,
+      ingresos_productos_totales: ingresos_productos_agg.ingresos,
       clientes: clientes_count,
       ventas_recientes: ventas_recientes as any[],
       eventos_proximos: eventos_proximos as any[],
@@ -437,13 +577,23 @@ export class DashboardOrganizadorService {
       ingresos_dia_anterior,
       porcentaje_servicio_promedio: ingresos_agg.porcentajeServicioPromedio,
       valor_servicio_total: ingresos_agg.valorServicioTotal,
+      porcentaje_servicio_productos_promedio: ingresos_productos_agg.porcentajeServicioPromedio,
+      valor_servicio_productos_total: ingresos_productos_agg.valorServicioTotal,
       ingresos_ventas_bruto_total: ingresos_agg.ingresosVentasBrutoTotal,
+      ingresos_productos_bruto_total: ingresos_productos_agg.ingresosVentasBrutoTotal,
       wompi_total_estimado: ingresos_agg.wompiTotalEstimado,
+      wompi_productos_total_estimado: ingresos_productos_agg.wompiTotalEstimado,
       wompi_ventas_total: ingresos_agg.wompiVentasTotal,
+      wompi_productos_ventas_total: ingresos_productos_agg.wompiVentasTotal,
       wompi_servicio_total: ingresos_agg.wompiServicioTotal,
+      wompi_productos_servicio_total: ingresos_productos_agg.wompiServicioTotal,
       neto_ventas_post_wompi_total: ingresos_agg.netoVentasPostWompiTotal,
+      neto_productos_ventas_post_wompi_total: ingresos_productos_agg.netoVentasPostWompiTotal,
       neto_servicio_post_wompi_total: ingresos_agg.netoServicioPostWompiTotal,
+      neto_productos_servicio_post_wompi_total: ingresos_productos_agg.netoServicioPostWompiTotal,
       neto_total_post_wompi_total: ingresos_agg.ingresos - ingresos_agg.wompiTotalEstimado,
+      neto_productos_total_post_wompi_total:
+        ingresos_productos_agg.ingresos - ingresos_productos_agg.wompiTotalEstimado,
       boletas_por_estado: boletas_por_estado as any[],
       top_eventos: top_eventos as any[]
     };

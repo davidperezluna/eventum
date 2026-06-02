@@ -1,52 +1,59 @@
-<div class="stats-grid">
-  <article class="stat-card stat-primary">
-    <div class="stat-icon-wrapper">
-      <span class="material-icons stat-icon">event</span>
+<div class="kpi-panel">
+  <section class="kpi-hero" title="Suma de totales cobrados (bruto).">
+    <p class="kpi-hero__label">Ingresos totales</p>
+    <p class="kpi-hero__value">{{ formatAmountNoCurrency(ingresosTotalesGlobales) }}</p>
+    <div class="kpi-hero__breakdown">
+      <span class="kpi-pill kpi-pill--boletas">Boletas: {{ formatAmountNoCurrency(ingresosTotalesBoletas) }}</span>
+      <span class="kpi-pill kpi-pill--productos" *ngIf="mostrarProductos">Productos: {{ formatAmountNoCurrency(ingresosTotalesProductos) }}</span>
+      <span class="kpi-pill kpi-pill--neutral">(bruto total)</span>
     </div>
-    <div class="stat-content">
-      <h3>{{ eventosLabel }}</h3>
-      <p class="stat-value">{{ formatNumber(stats.eventos_activos) }}</p>
-      <p class="stat-subtitle">de {{ formatNumber(stats.eventos_totales) }} totales</p>
-    </div>
-  </article>
+    <p class="kpi-hero__meta" *ngIf="showIngresosVariacion && stats.ingresos_mes_anterior">
+      <span [class]="getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior || 0) >= 0 ? 'positive' : 'negative'">
+        {{ getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior || 0) >= 0 ? '↑' : '↓' }}
+        {{ Math.abs(getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior || 0)) }}%
+      </span>
+      vs mes anterior (boletas)
+    </p>
 
-  <article class="stat-card stat-success">
-    <div class="stat-icon-wrapper">
-      <span class="material-icons stat-icon">confirmation_number</span>
+    <div class="kpi-hero__insights">
+      <div class="kpi-insight-card">
+        <span class="kpi-insight-card__label">Margen neto total</span>
+        <strong class="kpi-insight-card__value">{{ formatAmountNoCurrency(netoTotalConsolidado) }}</strong>
+      </div>
+      <div class="kpi-insight-card">
+        <span class="kpi-insight-card__label">Neto servicio total</span>
+        <strong class="kpi-insight-card__value">{{ formatAmountNoCurrency(netoServicioTotalConsolidado) }}</strong>
+      </div>
+      <div class="kpi-insight-card" *ngIf="mostrarProductos">
+        <span class="kpi-insight-card__label">Mix ingresos</span>
+        <strong class="kpi-insight-card__value">{{ mixBoletasPorcentaje }}% Boletas · {{ mixProductosPorcentaje }}% Productos</strong>
+      </div>
     </div>
-    <div class="stat-content">
-      <h3>Boletas Vendidas</h3>
-      <p class="stat-value">{{ formatNumber(stats.boletas_vendidas) }}</p>
-      <p class="stat-subtitle">Total de boletas</p>
-    </div>
-  </article>
+  </section>
 
-  <article class="stat-card stat-warning" title="Suma de totales cobrados (bruto). Más abajo: desglose Wompi estimado y netos.">
-    <div class="stat-icon-wrapper">
-      <span class="material-icons stat-icon">attach_money</span>
-    </div>
-    <div class="stat-content">
-      <h3>Ingresos totales</h3>
-      <p class="stat-value">{{ formatAmountNoCurrency(stats.ingresos_totales) }}</p>
-      <p class="stat-subtitle">(bruto)</p>
-      <p class="stat-subtitle" *ngIf="showIngresosVariacion && stats.ingresos_mes_anterior">
-        <span [class]="getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior || 0) >= 0 ? 'positive' : 'negative'">
-          {{ getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior || 0) >= 0 ? '↑' : '↓' }}
-          {{ Math.abs(getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior || 0)) }}%
-        </span>
-        vs mes anterior
-      </p>
-    </div>
-  </article>
+  <section class="kpi-grid" aria-label="Indicadores rápidos">
+    <article class="kpi-card kpi-card--boletas">
+      <p class="kpi-card__label">Boletas vendidas</p>
+      <p class="kpi-card__value">{{ formatNumber(stats.boletas_vendidas) }}</p>
+      <p class="kpi-card__meta">Total de boletas</p>
+    </article>
 
-  <article class="stat-card stat-info">
-    <div class="stat-icon-wrapper">
-      <span class="material-icons stat-icon">people</span>
-    </div>
-    <div class="stat-content">
-      <h3>Clientes</h3>
-      <p class="stat-value">{{ formatNumber(stats.clientes) }}</p>
-      <p class="stat-subtitle">Clientes únicos</p>
-    </div>
-  </article>
+    <article class="kpi-card kpi-card--productos" *ngIf="mostrarProductos">
+      <p class="kpi-card__label">Productos vendidos</p>
+      <p class="kpi-card__value">{{ formatNumber(stats.productos_vendidos) }}</p>
+      <p class="kpi-card__meta">{{ formatNumber(stats.pedidos_productos) }} pedidos completados</p>
+    </article>
+
+    <article class="kpi-card kpi-card--eventos">
+      <p class="kpi-card__label">{{ eventosLabel }}</p>
+      <p class="kpi-card__value">{{ formatNumber(stats.eventos_activos) }}</p>
+      <p class="kpi-card__meta">de {{ formatNumber(stats.eventos_totales) }} totales</p>
+    </article>
+
+    <article class="kpi-card kpi-card--clientes">
+      <p class="kpi-card__label">Clientes</p>
+      <p class="kpi-card__value">{{ formatNumber(stats.clientes) }}</p>
+      <p class="kpi-card__meta">Clientes únicos</p>
+    </article>
+  </section>
 </div>

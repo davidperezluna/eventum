@@ -80,6 +80,49 @@ export class DashboardService {
       return response.count || 0;
     }, 0);
 
+    // Unidades de productos vendidas (solo pago completado)
+    const productosVendidos = safeExecute(async () => {
+      const response = await withEventFilter(this.supabase
+        .from('compras_productos_items')
+        .select('cantidad, compra:compras_productos!inner(estado_pago, evento_id)')
+        .eq('compra.estado_pago', 'completado'), 'compra.evento_id');
+
+      if (response.error) {
+        console.error('Error en productos vendidos:', response.error);
+        return 0;
+      }
+      if (!Array.isArray(response.data)) return 0;
+      return response.data.reduce((sum: number, item: any) => sum + Number(item.cantidad || 0), 0);
+    }, 0);
+
+    // Pedidos de productos completados
+    const pedidosProductos = safeExecute(async () => {
+      const response = await withEventFilter(this.supabase
+        .from('compras_productos')
+        .select('id', { count: 'exact', head: true })
+        .eq('estado_pago', 'completado'));
+
+      if (response.error) {
+        console.error('Error en pedidos de productos:', response.error);
+        return 0;
+      }
+      return response.count || 0;
+    }, 0);
+
+    // Disponibilidad de productos configurados en el alcance actual
+    const tieneProductos = safeExecute(async () => {
+      const response = await withEventFilter(this.supabase
+        .from('productos')
+        .select('id', { count: 'exact', head: true })
+        .eq('activo', true));
+
+      if (response.error) {
+        console.error('Error validando productos configurados:', response.error);
+        return false;
+      }
+      return (response.count || 0) > 0;
+    }, false);
+
     // Ingresos y servicio totales
     const ingresosYServicioTotalesPromise = safeExecute(async () => {
       const response = await withEventFilter(this.supabase
@@ -104,6 +147,64 @@ export class DashboardService {
       if (response.data && Array.isArray(response.data)) {
         const filas = response.data as any[];
         const a = agregarFinanzasDesdeComprasCompletadas(filas);
+        return {
+          ingresos: a.ingresos,
+          valorServicioTotal: a.valorServicioTotal,
+          porcentajeServicioPromedio: a.porcentajeServicioPromedio,
+          wompiTotalEstimado: a.wompi_total_estimado,
+          wompiVentasTotal: a.wompi_ventas_total,
+          wompiServicioTotal: a.wompi_servicio_total,
+          netoVentasPostWompiTotal: a.neto_ventas_post_wompi_total,
+          netoServicioPostWompiTotal: a.neto_servicio_post_wompi_total,
+          ingresosVentasBrutoTotal: a.ingresos_ventas_bruto_total,
+        };
+      }
+      return {
+        ingresos: 0,
+        valorServicioTotal: 0,
+        porcentajeServicioPromedio: 0,
+        wompiTotalEstimado: 0,
+        wompiVentasTotal: 0,
+        wompiServicioTotal: 0,
+        netoVentasPostWompiTotal: 0,
+        netoServicioPostWompiTotal: 0,
+        ingresosVentasBrutoTotal: 0,
+      };
+    }, {
+      ingresos: 0,
+      valorServicioTotal: 0,
+      porcentajeServicioPromedio: 0,
+      wompiTotalEstimado: 0,
+      wompiVentasTotal: 0,
+      wompiServicioTotal: 0,
+      netoVentasPostWompiTotal: 0,
+      netoServicioPostWompiTotal: 0,
+      ingresosVentasBrutoTotal: 0,
+    });
+
+    // Ingresos y servicio de compras de productos
+    const ingresosYServicioProductosPromise = safeExecute(async () => {
+      const response = await withEventFilter(this.supabase
+        .from('compras_productos')
+        .select('total, porcentaje_servicio, valor_servicio')
+        .eq('estado_pago', 'completado'));
+
+      if (response.error) {
+        console.error('Error en ingresos de productos:', response.error);
+        return {
+          ingresos: 0,
+          valorServicioTotal: 0,
+          porcentajeServicioPromedio: 0,
+          wompiTotalEstimado: 0,
+          wompiVentasTotal: 0,
+          wompiServicioTotal: 0,
+          netoVentasPostWompiTotal: 0,
+          netoServicioPostWompiTotal: 0,
+          ingresosVentasBrutoTotal: 0,
+        };
+      }
+      if (Array.isArray(response.data)) {
+        const a = agregarFinanzasDesdeComprasCompletadas(response.data as any[]);
         return {
           ingresos: a.ingresos,
           valorServicioTotal: a.valorServicioTotal,
@@ -391,7 +492,11 @@ export class DashboardService {
     const [
       eventos_activos,
       boletas_vendidas,
+      productos_vendidos,
+      pedidos_productos,
+      tiene_productos,
       ingresosYServicioTotales,
+      ingresosYServicioProductos,
       clientes_count,
       ventas_recientes,
       eventos_proximos,
@@ -407,7 +512,11 @@ export class DashboardService {
     ] = await Promise.all([
       eventosActivos,
       boletasVendidas,
+      productosVendidos,
+      pedidosProductos,
+      tieneProductos,
       ingresosYServicioTotalesPromise,
+      ingresosYServicioProductosPromise,
       clientes,
       ventasRecientes,
       eventosProximos,
@@ -425,7 +534,11 @@ export class DashboardService {
     return {
       eventos_activos,
       boletas_vendidas,
+      productos_vendidos,
+      pedidos_productos,
+      tiene_productos,
       ingresos_totales: ingresosYServicioTotales.ingresos,
+      ingresos_productos_totales: ingresosYServicioProductos.ingresos,
       clientes: clientes_count,
       ventas_recientes: ventas_recientes as any[],
       eventos_proximos: eventos_proximos as any[],
@@ -438,14 +551,24 @@ export class DashboardService {
       ingresos_dia_anterior,
       porcentaje_servicio_promedio: ingresosYServicioTotales.porcentajeServicioPromedio,
       valor_servicio_total: ingresosYServicioTotales.valorServicioTotal,
+      porcentaje_servicio_productos_promedio: ingresosYServicioProductos.porcentajeServicioPromedio,
+      valor_servicio_productos_total: ingresosYServicioProductos.valorServicioTotal,
       ingresos_ventas_bruto_total: ingresosYServicioTotales.ingresosVentasBrutoTotal,
+      ingresos_productos_bruto_total: ingresosYServicioProductos.ingresosVentasBrutoTotal,
       wompi_total_estimado: ingresosYServicioTotales.wompiTotalEstimado,
+      wompi_productos_total_estimado: ingresosYServicioProductos.wompiTotalEstimado,
       wompi_ventas_total: ingresosYServicioTotales.wompiVentasTotal,
+      wompi_productos_ventas_total: ingresosYServicioProductos.wompiVentasTotal,
       wompi_servicio_total: ingresosYServicioTotales.wompiServicioTotal,
+      wompi_productos_servicio_total: ingresosYServicioProductos.wompiServicioTotal,
       neto_ventas_post_wompi_total: ingresosYServicioTotales.netoVentasPostWompiTotal,
+      neto_productos_ventas_post_wompi_total: ingresosYServicioProductos.netoVentasPostWompiTotal,
       neto_servicio_post_wompi_total: ingresosYServicioTotales.netoServicioPostWompiTotal,
+      neto_productos_servicio_post_wompi_total: ingresosYServicioProductos.netoServicioPostWompiTotal,
       neto_total_post_wompi_total:
         ingresosYServicioTotales.ingresos - ingresosYServicioTotales.wompiTotalEstimado,
+      neto_productos_total_post_wompi_total:
+        ingresosYServicioProductos.ingresos - ingresosYServicioProductos.wompiTotalEstimado,
       boletas_por_estado: boletas_por_estado as any[],
       top_eventos: top_eventos as any[]
     };
