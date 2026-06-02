@@ -61,9 +61,15 @@ export class LectorHome implements OnInit {
         map.set(p.evento_id, g);
       }
       if (!g.tipos.some((t) => t.tipo_boleta_id === p.tipo_boleta_id)) {
+        const tipoEsProducto = p.tipo_boleta_id == null || p.categoria === 'producto';
+        const nombreRaw = String(p.nombre_tipo_boleta || '').trim();
+        const nombreSeguro = tipoEsProducto
+          ? 'Productos del evento'
+          : (!nombreRaw || nombreRaw.toLowerCase().includes('null') ? 'Tipo de boleta' : nombreRaw);
+
         g.tipos.push({
-          tipo_boleta_id: p.tipo_boleta_id,
-          nombre: p.nombre_tipo_boleta,
+          tipo_boleta_id: tipoEsProducto ? null : p.tipo_boleta_id,
+          nombre: nombreSeguro,
         });
       }
     }

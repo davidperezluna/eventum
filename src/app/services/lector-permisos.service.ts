@@ -14,7 +14,7 @@ export type PermisoEscaneo = {
 type RowDb = {
   id: number;
   evento_id: number;
-  tipo_boleta_id: number | null;
+  tipo_boleta_id: number | string | null;
 };
 
 export function buildPermisoKey(eventoId: number, tipoBoletaId: number): string {
@@ -24,6 +24,23 @@ export function buildPermisoKey(eventoId: number, tipoBoletaId: number): string 
 @Injectable({ providedIn: 'root' })
 export class LectorPermisosService {
   constructor(private supabase: SupabaseService) {}
+
+  private normalizarTipoBoletaId(raw: number | string | null | undefined): number | null {
+    if (raw == null) {
+      return null;
+    }
+    if (typeof raw === 'string') {
+      const clean = raw.trim().toLowerCase();
+      if (!clean || clean === 'null' || clean === 'undefined') {
+        return null;
+      }
+    }
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return null;
+    }
+    return parsed;
+  }
 
   /** Permisos del lector autenticado (RLS: solo filas propias). */
   async fetchMisPermisosEscaneo(): Promise<PermisoEscaneo[]> {
@@ -39,9 +56,15 @@ export class LectorPermisosService {
 
     const rows = (data as RowDb[]) || [];
     const eventoIds = [...new Set(rows.map((r) => r.evento_id).filter((id) => id != null))];
+    const filasNormalizadas = rows.map((r) => ({
+      id: Number(r.id || 0),
+      evento_id: Number(r.evento_id),
+      tipo_boleta_id: this.normalizarTipoBoletaId(r.tipo_boleta_id),
+    }));
+
     const tipoIds = [
       ...new Set(
-        rows
+        filasNormalizadas
           .map((r) => r.tipo_boleta_id)
           .filter((id): id is number => typeof id === 'number')
       ),
@@ -80,7 +103,7 @@ export class LectorPermisosService {
       }
     }
 
-    return rows
+    return filasNormalizadas
       .map((r) => {
         const eventoId = Number(r.evento_id);
         if (!Number.isFinite(eventoId) || eventoId <= 0) {
@@ -88,11 +111,11 @@ export class LectorPermisosService {
         }
 
         const esProducto = r.tipo_boleta_id == null;
-        const tipoId = esProducto ? null : Number(r.tipo_boleta_id);
+        const tipoId = esProducto ? null : r.tipo_boleta_id;
         const tipoValido = typeof tipoId === 'number' && Number.isFinite(tipoId) && tipoId > 0;
 
         return {
-          id: Number(r.id || 0),
+          id: r.id,
           evento_id: eventoId,
           tipo_boleta_id: esProducto ? null : (tipoValido ? tipoId : null),
           titulo_evento: nombresEvento.get(eventoId) || `Evento ${eventoId}`,

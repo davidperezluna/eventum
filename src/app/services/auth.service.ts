@@ -327,6 +327,10 @@ export class AuthService {
     console.log('Iniciando login para:', credentials.email);
     
     try {
+      // Si quedó un flag de logout previo en esta misma sesión de app,
+      // evitar que el próximo SIGNED_IN dispare un signOut inmediato.
+      this.clearForcedLogoutFlag();
+
       const authResponse = await this.supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password
@@ -445,6 +449,8 @@ export class AuthService {
 
     this.clearPersistedAuthStorage();
     this.clearInMemoryAuthState();
+    // Logout completado en esta ejecución: ya no hace falta forzar en el próximo arranque.
+    this.clearForcedLogoutFlag();
     this.oneSignalIdentity.logoutFromOneSignal();
 
     await this.router.navigateByUrl(redirectTo, { replaceUrl: true });
