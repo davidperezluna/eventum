@@ -58,6 +58,8 @@ export interface ItemProductoEscaneo {
     evento_id: number;
     estado_pago: string;
     numero_pedido: string;
+    evento_titulo?: string;
+    documento_cliente?: string;
   } | null;
   producto: {
     id: number;
@@ -301,7 +303,14 @@ export class ComprasProductoService {
         precio_unitario,
         fecha_redencion,
         validado_por_usuario_id,
-        compra:compras_productos(id, evento_id, estado_pago, numero_pedido),
+        compra:compras_productos(
+          id,
+          evento_id,
+          estado_pago,
+          numero_pedido,
+          eventos(titulo),
+          cliente:usuarios(documento_identidad)
+        ),
         producto:productos(id, nombre)
       `)
       .eq('codigo_qr', codigoQR)
@@ -312,6 +321,10 @@ export class ComprasProductoService {
     }
     if (!data) return null;
 
+    const compraRaw = Array.isArray(data.compra) ? data.compra[0] : data.compra;
+    const eventoRel = Array.isArray(compraRaw?.eventos) ? compraRaw?.eventos[0] : compraRaw?.eventos;
+    const clienteRel = Array.isArray(compraRaw?.cliente) ? compraRaw?.cliente[0] : compraRaw?.cliente;
+
     return {
       id: data.id,
       codigo_qr: data.codigo_qr,
@@ -321,7 +334,14 @@ export class ComprasProductoService {
       precio_unitario: Number(data.precio_unitario || 0),
       fecha_redencion: data.fecha_redencion || undefined,
       validado_por_usuario_id: data.validado_por_usuario_id || undefined,
-      compra: Array.isArray(data.compra) ? (data.compra[0] as ItemProductoEscaneo['compra']) : (data.compra as ItemProductoEscaneo['compra']),
+      compra: compraRaw ? {
+        id: Number(compraRaw.id),
+        evento_id: Number(compraRaw.evento_id),
+        estado_pago: String(compraRaw.estado_pago || ''),
+        numero_pedido: String(compraRaw.numero_pedido || ''),
+        evento_titulo: String(eventoRel?.titulo || ''),
+        documento_cliente: String(clienteRel?.documento_identidad || ''),
+      } : null,
       producto: Array.isArray(data.producto) ? (data.producto[0] as ItemProductoEscaneo['producto']) : (data.producto as ItemProductoEscaneo['producto']),
     };
   }
@@ -346,6 +366,8 @@ export class ComprasProductoService {
         evento_id,
         estado_pago,
         numero_pedido,
+        eventos(titulo),
+        cliente:usuarios(documento_identidad),
         compras_productos_items(
           id,
           estado,
@@ -421,6 +443,8 @@ export class ComprasProductoService {
         evento_id: Number(data.evento_id),
         estado_pago: String(data.estado_pago || ''),
         numero_pedido: String(data.numero_pedido || numeroPedido),
+        evento_titulo: String((Array.isArray((data as any).eventos) ? (data as any).eventos[0]?.titulo : (data as any).eventos?.titulo) || ''),
+        documento_cliente: String((Array.isArray((data as any).cliente) ? (data as any).cliente[0]?.documento_identidad : (data as any).cliente?.documento_identidad) || ''),
       },
       producto: {
         id: 0,

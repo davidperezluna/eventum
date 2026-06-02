@@ -178,7 +178,8 @@
                 </span>
               </strong>
             </div>
-            <div class="modal-row"><span>Pedido</span><strong>{{ productoItem.compra?.numero_pedido || '—' }}</strong></div>
+            <div class="modal-row"><span>Documento</span><strong>{{ productoItem.compra?.documento_cliente || '—' }}</strong></div>
+            <div class="modal-row"><span>Evento</span><strong>{{ productoItem.compra?.evento_titulo || ('Evento #' + (productoItem.compra?.evento_id || '—')) }}</strong></div>
             <div class="modal-row"><span>QR</span><code>{{ productoItem.codigo_qr }}</code></div>
           </div>
           <button type="button" class="btn-validate" (click)="validarProducto()" [disabled]="validando">
