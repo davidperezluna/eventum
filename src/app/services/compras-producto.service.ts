@@ -386,9 +386,24 @@ export class ComprasProductoService {
     const todosEntregados = items.every(
       (item) => String(item.estado || '').toLowerCase() === TipoEstadoItemProducto.ENTREGADO
     );
-    const nombres = items
-      .map((item) => (Array.isArray(item.producto) ? item.producto[0] : item.producto)?.nombre || '')
-      .filter((n) => n.trim().length > 0);
+    const resumenPorProducto = new Map<string, { nombre: string; cantidad: number }>();
+    for (const item of items) {
+      const productoObj = Array.isArray(item.producto) ? item.producto[0] : item.producto;
+      const nombre = String(productoObj?.nombre || 'Producto').trim();
+      const key = String(productoObj?.id ?? nombre);
+      const actual = resumenPorProducto.get(key);
+      if (actual) {
+        actual.cantidad += Number(item.cantidad || 0);
+      } else {
+        resumenPorProducto.set(key, {
+          nombre,
+          cantidad: Number(item.cantidad || 0),
+        });
+      }
+    }
+    const resumenEntrega = Array.from(resumenPorProducto.values()).map(
+      (r) => `${r.nombre} x${r.cantidad}`
+    );
 
     const primerItem = items[0];
 
@@ -411,7 +426,7 @@ export class ComprasProductoService {
         id: 0,
         nombre: 'Pedido de productos',
       },
-      productos_resumen: nombres,
+      productos_resumen: resumenEntrega,
     };
   }
 
