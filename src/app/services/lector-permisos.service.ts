@@ -80,19 +80,29 @@ export class LectorPermisosService {
       }
     }
 
-    return rows.map((r) => {
-      const esProducto = r.tipo_boleta_id == null;
-      return {
-        id: r.id,
-        evento_id: r.evento_id,
-        tipo_boleta_id: r.tipo_boleta_id,
-        titulo_evento: nombresEvento.get(r.evento_id) || `Evento #${r.evento_id}`,
-        nombre_tipo_boleta: esProducto
-          ? 'Productos del evento'
-          : nombresTipo.get(r.tipo_boleta_id as number) || `Tipo #${r.tipo_boleta_id}`,
-        categoria: esProducto ? ('producto' as const) : ('boleta' as const),
-      };
-    });
+    return rows
+      .map((r) => {
+        const eventoId = Number(r.evento_id);
+        if (!Number.isFinite(eventoId) || eventoId <= 0) {
+          return null;
+        }
+
+        const esProducto = r.tipo_boleta_id == null;
+        const tipoId = esProducto ? null : Number(r.tipo_boleta_id);
+        const tipoValido = typeof tipoId === 'number' && Number.isFinite(tipoId) && tipoId > 0;
+
+        return {
+          id: Number(r.id || 0),
+          evento_id: eventoId,
+          tipo_boleta_id: esProducto ? null : (tipoValido ? tipoId : null),
+          titulo_evento: nombresEvento.get(eventoId) || `Evento ${eventoId}`,
+          nombre_tipo_boleta: esProducto
+            ? 'Productos del evento'
+            : (tipoValido ? (nombresTipo.get(tipoId!) || `Tipo ${tipoId}`) : 'Tipo de boleta'),
+          categoria: esProducto ? ('producto' as const) : ('boleta' as const),
+        };
+      })
+      .filter((p): p is PermisoEscaneo => p !== null);
   }
 
   /** Filtra boletas según evento + tipo asignados al lector. */
