@@ -397,6 +397,14 @@
   padding: 16px 0;
 }
 
+.modal-auto-next {
+  margin: 10px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.02em;
+}
+
 .modal-icon {
   font-size: 64px;
   display: block;

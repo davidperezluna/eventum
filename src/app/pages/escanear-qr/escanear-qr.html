@@ -118,6 +118,7 @@
           <span class="material-icons modal-icon used">history</span>
           <h2>Esta boleta ya fue escaneada</h2>
           <p>Alguien valido esta entrada antes. Sin doble ingreso.</p>
+          <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
           <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1); reiniciarEscaneo()">
             Siguiente
           </button>
@@ -129,6 +130,7 @@
           <span class="material-icons modal-icon blocked">block</span>
           <h2>Fuera de juego</h2>
           <p>Entrada {{ getEstadoLabel(boleta.estado) }}. No hay acceso.</p>
+          <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
           <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1)">Cerrar</button>
         </div>
       </ng-container>
@@ -145,7 +147,7 @@
         </div>
         <button type="button" class="btn-validate" (click)="validarBoleta()" [disabled]="validando">
           <span class="material-icons">verified</span>
-          {{ validando ? 'Validando...' : 'Validar entrada' }}
+          {{ validando ? 'Validando...' : (requierePermisosLector && modoBusqueda === 'scanner' ? 'Validar y siguiente' : 'Validar entrada') }}
         </button>
       </ng-container>
 
@@ -154,6 +156,7 @@
           <span class="material-icons modal-icon warn">payments</span>
           <h2>Pago pendiente</h2>
           <p>El pago debe estar completado para validar la entrada.</p>
+          <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
           <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1)">Cerrar</button>
         </div>
       </ng-container>
@@ -165,6 +168,7 @@
             <span class="material-icons modal-icon used">inventory</span>
             <h2>Producto ya redimido</h2>
             <p>Este QR ya se valido previamente.</p>
+            <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
             <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1); reiniciarEscaneo()">
               Siguiente
             </button>
@@ -196,7 +200,7 @@
           </div>
           <button type="button" class="btn-validate" (click)="validarProducto()" [disabled]="validando">
             <span class="material-icons">verified</span>
-            {{ validando ? 'Validando...' : (productoItem.scope === 'compra' ? 'Validar pedido completo' : 'Validar producto') }}
+            {{ validando ? 'Validando...' : (requierePermisosLector && modoBusqueda === 'scanner' ? 'Validar y siguiente' : (productoItem.scope === 'compra' ? 'Validar pedido completo' : 'Validar producto')) }}
           </button>
         </ng-container>
 
@@ -205,6 +209,7 @@
             <span class="material-icons modal-icon warn">payments</span>
             <h2>Pago pendiente</h2>
             <p>El pago debe estar completado para validar este producto.</p>
+            <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
             <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1)">Cerrar</button>
           </div>
         </ng-container>

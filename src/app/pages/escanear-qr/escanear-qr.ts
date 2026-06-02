@@ -73,6 +73,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     this.programarReinicioCamara(250);
   };
   private restartTimer: ReturnType<typeof setTimeout> | null = null;
+  private autoAdvanceTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly readerId = 'eventum-qr-reader';
 
@@ -197,6 +198,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
       clearTimeout(this.restartTimer);
       this.restartTimer = null;
     }
+    this.limpiarAutoAvance();
     void this.detenerCamara();
   }
 
@@ -266,6 +268,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
   async cambiarModo(modo: 'scanner' | 'manual'): Promise<void> {
     if (this.modoBusqueda === modo) return;
     this.modoBusqueda = modo;
+    this.limpiarAutoAvance();
     this.cerrarModal();
     if (modo === 'scanner') {
       this.cameraDomRetries = 0;
@@ -499,6 +502,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     this.boleta = boleta;
     this.productoItem = null;
     this.modalVisible = true;
+    this.programarAutoAvanceModalSiAplica();
     this.cdr.markForCheck();
   }
 
@@ -515,10 +519,12 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     this.boleta = null;
     this.productoItem = item;
     this.modalVisible = true;
+    this.programarAutoAvanceModalSiAplica();
     this.cdr.markForCheck();
   }
 
   cerrarModal(mantenerLista = false): void {
+    this.limpiarAutoAvance();
     this.modalVisible = false;
     this.boleta = null;
     this.productoItem = null;
@@ -587,17 +593,23 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const ok = await this.alertService.confirm(
-      'Validar boleta',
-      `¿Validar la boleta ${this.boleta.codigo_qr}?`
-    );
-    if (!ok) return;
+    if (!this.esFlujoRapidoLector()) {
+      const ok = await this.alertService.confirm(
+        'Validar boleta',
+        `¿Validar la boleta ${this.boleta.codigo_qr}?`
+      );
+      if (!ok) return;
+    }
 
     this.validando = true;
     this.cdr.markForCheck();
     try {
       await this.boletasService.validarBoleta(this.boleta.id);
-      await this.alertService.success('¡Boleta validada!', 'Entrada validada correctamente.');
+      if (this.esFlujoRapidoLector()) {
+        void this.alertService.snackbar('Entrada validada', { timerMs: 1600 });
+      } else {
+        await this.alertService.success('¡Boleta validada!', 'Entrada validada correctamente.');
+      }
       this.cerrarModal();
       await this.reiniciarEscaneo();
     } catch (err: unknown) {
@@ -623,21 +635,31 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const ok = await this.alertService.confirm(
-      'Validar producto',
-      `¿Marcar como entregado el QR ${this.productoItem.codigo_qr}?`
-    );
-    if (!ok) return;
+    if (!this.esFlujoRapidoLector()) {
+      const ok = await this.alertService.confirm(
+        'Validar producto',
+        `¿Marcar como entregado el QR ${this.productoItem.codigo_qr}?`
+      );
+      if (!ok) return;
+    }
 
     this.validando = true;
     this.cdr.markForCheck();
     try {
       if (this.productoItem.scope === 'compra') {
         await this.comprasProductoService.validarCompraProductos(this.productoItem.id);
-        await this.alertService.success('Pedido validado', 'Todos los productos del pedido quedaron marcados como redimidos.');
+        if (this.esFlujoRapidoLector()) {
+          void this.alertService.snackbar('Pedido redimido', { timerMs: 1600 });
+        } else {
+          await this.alertService.success('Pedido validado', 'Todos los productos del pedido quedaron marcados como redimidos.');
+        }
       } else {
         await this.comprasProductoService.validarItemProducto(this.productoItem.id);
-        await this.alertService.success('Producto validado', 'El producto quedó marcado como redimido.');
+        if (this.esFlujoRapidoLector()) {
+          void this.alertService.snackbar('Producto redimido', { timerMs: 1600 });
+        } else {
+          await this.alertService.success('Producto validado', 'El producto quedó marcado como redimido.');
+        }
       }
       this.cerrarModal();
       await this.reiniciarEscaneo();
@@ -651,6 +673,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async reiniciarEscaneo(): Promise<void> {
+    this.limpiarAutoAvance();
     this.cerrarModal();
     this.errorPermiso = null;
     this.documento = '';
@@ -707,5 +730,42 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     if (nombre) return nombre;
     if (v.email) return v.email;
     return `Usuario #${v.id}`;
+  }
+
+  private esFlujoRapidoLector(): boolean {
+    return this.modoBusqueda === 'scanner' && this.requierePermisosLector;
+  }
+
+  private limpiarAutoAvance(): void {
+    if (this.autoAdvanceTimer) {
+      clearTimeout(this.autoAdvanceTimer);
+      this.autoAdvanceTimer = null;
+    }
+  }
+
+  private programarAutoAvanceModalSiAplica(): void {
+    this.limpiarAutoAvance();
+    if (!this.esFlujoRapidoLector()) return;
+
+    let debeAutoAvanzar = false;
+    if (this.boleta) {
+      const estado = String(this.boleta.estado || '').toLowerCase();
+      debeAutoAvanzar =
+        estado === 'usada' ||
+        estado === 'cancelada' ||
+        estado === 'reembolsada' ||
+        (estado === 'pendiente' && !this.puedeValidar(this.boleta));
+    } else if (this.productoItem) {
+      const estadoProducto = String(this.productoItem.estado || '').toLowerCase();
+      debeAutoAvanzar = estadoProducto === 'entregado' || !this.puedeValidarProducto(this.productoItem);
+    }
+
+    if (!debeAutoAvanzar) return;
+
+    this.autoAdvanceTimer = setTimeout(() => {
+      this.autoAdvanceTimer = null;
+      if (this.validando || !this.modalVisible) return;
+      void this.reiniciarEscaneo();
+    }, 1400);
   }
 }
