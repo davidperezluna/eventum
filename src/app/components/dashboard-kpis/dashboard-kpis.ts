@@ -71,17 +71,4 @@ export class DashboardKpisComponent {
     return Number(this.stats.neto_servicio_post_wompi_total || 0)
       + (this.mostrarProductos ? Number(this.stats.neto_productos_servicio_post_wompi_total || 0) : 0);
   }
-
-  get mixBoletasPorcentaje(): number {
-    const total = this.ingresosTotalesGlobales;
-    if (total <= 0) return 0;
-    if (!this.mostrarProductos) return 100;
-    return Math.round((this.ingresosTotalesBoletas / total) * 100);
-  }
-
-  get mixProductosPorcentaje(): number {
-    const total = this.ingresosTotalesGlobales;
-    if (total <= 0) return 0;
-    return Math.max(0, 100 - this.mixBoletasPorcentaje);
-  }
 }

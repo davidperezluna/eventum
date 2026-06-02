@@ -1,12 +1,13 @@
 <div class="kpi-panel">
-  <section class="kpi-hero" title="Suma de totales cobrados (bruto).">
+  <section class="kpi-hero" title="Suma de totales cobrados (bruto)">
     <p class="kpi-hero__label">Ingresos totales</p>
     <p class="kpi-hero__value">{{ formatAmountNoCurrency(ingresosTotalesGlobales) }}</p>
-    <div class="kpi-hero__breakdown">
-      <span class="kpi-pill kpi-pill--boletas">Boletas: {{ formatAmountNoCurrency(ingresosTotalesBoletas) }}</span>
-      <span class="kpi-pill kpi-pill--productos" *ngIf="mostrarProductos">Productos: {{ formatAmountNoCurrency(ingresosTotalesProductos) }}</span>
-      <span class="kpi-pill kpi-pill--neutral">(bruto total)</span>
+
+    <div class="kpi-hero__split">
+      <span>Boletas <strong>{{ formatAmountNoCurrency(ingresosTotalesBoletas) }}</strong></span>
+      <span *ngIf="mostrarProductos">Productos <strong>{{ formatAmountNoCurrency(ingresosTotalesProductos) }}</strong></span>
     </div>
+
     <p class="kpi-hero__meta" *ngIf="showIngresosVariacion && stats.ingresos_mes_anterior">
       <span [class]="getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior || 0) >= 0 ? 'positive' : 'negative'">
         {{ getVariacionPorcentual(stats.ingresos_mes_actual || 0, stats.ingresos_mes_anterior || 0) >= 0 ? '↑' : '↓' }}
@@ -14,40 +15,36 @@
       </span>
       vs mes anterior (boletas)
     </p>
-
-    <div class="kpi-hero__insights">
-      <div class="kpi-insight-card">
-        <span class="kpi-insight-card__label">Margen neto total</span>
-        <strong class="kpi-insight-card__value">{{ formatAmountNoCurrency(netoTotalConsolidado) }}</strong>
-      </div>
-      <div class="kpi-insight-card">
-        <span class="kpi-insight-card__label">Neto servicio total</span>
-        <strong class="kpi-insight-card__value">{{ formatAmountNoCurrency(netoServicioTotalConsolidado) }}</strong>
-      </div>
-      <div class="kpi-insight-card" *ngIf="mostrarProductos">
-        <span class="kpi-insight-card__label">Mix ingresos</span>
-        <strong class="kpi-insight-card__value">{{ mixBoletasPorcentaje }}% Boletas · {{ mixProductosPorcentaje }}% Productos</strong>
-      </div>
-    </div>
   </section>
 
-  <section class="kpi-grid" aria-label="Indicadores rápidos">
+  <section class="kpi-insights" aria-label="Indicadores financieros clave">
+    <article class="kpi-insight">
+      <p class="kpi-insight__label">Margen neto total</p>
+      <p class="kpi-insight__value">{{ formatAmountNoCurrency(netoTotalConsolidado) }}</p>
+    </article>
+    <article class="kpi-insight">
+      <p class="kpi-insight__label">Neto servicio total</p>
+      <p class="kpi-insight__value">{{ formatAmountNoCurrency(netoServicioTotalConsolidado) }}</p>
+    </article>
+  </section>
+
+  <section class="kpi-grid" aria-label="Indicadores operativos">
     <article class="kpi-card kpi-card--boletas">
       <p class="kpi-card__label">Boletas vendidas</p>
       <p class="kpi-card__value">{{ formatNumber(stats.boletas_vendidas) }}</p>
-      <p class="kpi-card__meta">Total de boletas</p>
+      <p class="kpi-card__meta">Total boletas</p>
     </article>
 
     <article class="kpi-card kpi-card--productos" *ngIf="mostrarProductos">
       <p class="kpi-card__label">Productos vendidos</p>
       <p class="kpi-card__value">{{ formatNumber(stats.productos_vendidos) }}</p>
-      <p class="kpi-card__meta">{{ formatNumber(stats.pedidos_productos) }} pedidos completados</p>
+      <p class="kpi-card__meta">{{ formatNumber(stats.pedidos_productos) }} pedidos</p>
     </article>
 
     <article class="kpi-card kpi-card--eventos">
       <p class="kpi-card__label">{{ eventosLabel }}</p>
       <p class="kpi-card__value">{{ formatNumber(stats.eventos_activos) }}</p>
-      <p class="kpi-card__meta">de {{ formatNumber(stats.eventos_totales) }} totales</p>
+      <p class="kpi-card__meta">{{ formatNumber(stats.eventos_totales) }} totales</p>
     </article>
 
     <article class="kpi-card kpi-card--clientes">
