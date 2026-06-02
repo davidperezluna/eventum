@@ -299,6 +299,7 @@ export interface BoletaComprada {
   compra?: {
     id: number;
     cliente_id?: number;
+    numero_transaccion?: string;
     estado_pago?: TipoEstadoPago;
     estado_compra?: TipoEstadoCompra;
   };

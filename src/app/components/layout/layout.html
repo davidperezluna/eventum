@@ -32,16 +32,45 @@
         <p class="subtitle">Panel de Administración</p>
       </div>
       <nav class="sidebar-nav">
-        <a
-          *ngFor="let item of menuItems"
-          [routerLink]="item.path"
-          routerLinkActive="active"
-          class="nav-item"
-          (click)="closeSidebar()"
-        >
-          <span class="material-icons nav-icon">{{ item.icon }}</span>
-          <span class="nav-label">{{ item.label }}</span>
-        </a>
+        <ng-container *ngFor="let item of menuItems">
+          <a
+            *ngIf="!item.children?.length"
+            [routerLink]="item.path"
+            class="nav-item"
+            [class.active]="isMenuItemActive(item)"
+            (click)="closeSidebar()"
+          >
+            <span class="material-icons nav-icon">{{ item.icon }}</span>
+            <span class="nav-label">{{ item.label }}</span>
+          </a>
+
+          <div *ngIf="item.children?.length" class="nav-group">
+            <button
+              type="button"
+              class="nav-item nav-item--group"
+              [class.active]="isMenuItemActive(item)"
+              [attr.aria-expanded]="item.expanded"
+              (click)="toggleMenuGroup(item)"
+            >
+              <span class="material-icons nav-icon">{{ item.icon }}</span>
+              <span class="nav-label">{{ item.label }}</span>
+              <span class="material-icons nav-group-chevron">{{ item.expanded ? 'expand_less' : 'expand_more' }}</span>
+            </button>
+
+            <div class="nav-submenu" *ngIf="item.expanded">
+              <a
+                *ngFor="let child of item.children"
+                [routerLink]="child.path"
+                class="nav-item nav-subitem"
+                [class.active]="isMenuItemActive(child)"
+                (click)="closeSidebar()"
+              >
+                <span class="material-icons nav-icon">{{ child.icon }}</span>
+                <span class="nav-label">{{ child.label }}</span>
+              </a>
+            </div>
+          </div>
+        </ng-container>
       </nav>
       <div class="sidebar-footer">
         <div *ngIf="currentUser && usuario" class="user-info">

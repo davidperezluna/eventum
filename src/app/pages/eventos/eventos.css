@@ -571,6 +571,117 @@
   background: #fee2e2 !important;
 }
 
+.modal-actions-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--spacing-lg);
+}
+
+.tipos-boleta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.tipo-boleta-card {
+  background: var(--color-surface);
+  border: 2px solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.tipo-boleta-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.tipo-boleta-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.tipo-boleta-header h3 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
+}
+
+.tipo-boleta-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.tipo-descripcion {
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.tipo-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+}
+
+.tipo-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.info-box {
+  background: var(--color-background);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-md);
+}
+
+.info-box p {
+  margin: var(--spacing-xs) 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.info-box-title {
+  margin: 0 0 var(--spacing-sm) 0 !important;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary) !important;
+}
+
+.inventario-modal {
+  max-width: 28rem;
+}
+
+.inventario-resumen {
+  margin: var(--spacing-md) 0;
+}
+
+.mapa-palco-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+  margin-top: var(--spacing-sm);
+}
+
+.mapa-palco-preview {
+  margin-top: var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--color-border-light);
+  max-width: 480px;
+}
+
+.mapa-palco-preview img {
+  display: block;
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+}
+
 .empty-state-small {
   text-align: center;
   padding: 2rem;

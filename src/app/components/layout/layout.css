@@ -258,6 +258,36 @@
   border-left: 3px solid transparent;
 }
 
+.nav-item--group {
+  width: 100%;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nav-group {
+  display: block;
+}
+
+.nav-group-chevron {
+  margin-left: auto;
+  font-size: 1.1rem;
+  opacity: 0.85;
+}
+
+.nav-submenu {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-subitem {
+  padding-left: calc(var(--spacing-lg) + 1.4rem);
+  background: rgba(255, 255, 255, 0.03);
+}
+
 .nav-item--with-badge {
   justify-content: flex-start;
   gap: 0.35rem;

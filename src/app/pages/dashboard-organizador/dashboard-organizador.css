@@ -267,6 +267,35 @@
   font-size: var(--font-size-md);
 }
 
+.venta-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.venta-tipo-badge {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: capitalize;
+}
+
+.badge-ventas {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.badge-productos {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-mixta {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
 .badge-success {
   padding: var(--spacing-xs) var(--spacing-sm);
   background: #4CAF50;

@@ -258,20 +258,125 @@ export class DashboardService {
       return 0;
     }, 0);
 
-    // Ventas recientes (últimas 5, solo con pago completado)
+    // Ventas recientes (boletas + productos, solo pago completado)
     const ventasRecientes = safeExecute(async () => {
-      const response = await withEventFilter(this.supabase
-        .from('compras')
-        .select('*, evento:eventos(id, titulo)')
-        .eq('estado_pago', 'completado')
-        .order('fecha_compra', { ascending: false })
-        .limit(5));
-      
-      if (response.error) {
-        console.error('Error en ventas recientes:', response.error);
-        return [];
+      const [comprasRes, comprasProductosRes] = await Promise.all([
+        withEventFilter(this.supabase
+          .from('compras')
+          .select('id, cliente_id, evento_id, numero_transaccion, total, estado_pago, fecha_compra, evento:eventos(id, titulo)')
+          .eq('estado_pago', 'completado')
+          .order('fecha_compra', { ascending: false })
+          .limit(20)),
+        withEventFilter(this.supabase
+          .from('compras_productos')
+          .select('id, cliente_id, evento_id, numero_pedido, total, estado_pago, fecha_compra, evento:eventos(id, titulo)')
+          .eq('estado_pago', 'completado')
+          .order('fecha_compra', { ascending: false })
+          .limit(20))
+      ]);
+
+      if (comprasRes.error) {
+        console.error('Error en ventas recientes (boletas):', comprasRes.error);
       }
-      return response.data || [];
+      if (comprasProductosRes.error) {
+        console.error('Error en ventas recientes (productos):', comprasProductosRes.error);
+      }
+
+      const boletas = Array.isArray(comprasRes.data) ? comprasRes.data : [];
+      const productos = Array.isArray(comprasProductosRes.data) ? comprasProductosRes.data : [];
+
+      const normalizarFecha = (v: any): number => {
+        const t = new Date(v || 0).getTime();
+        return Number.isFinite(t) ? t : 0;
+      };
+      const extractSeed = (value: unknown): number => {
+        const raw = String(value || '');
+        const m = raw.match(/(\d{10,})/);
+        if (!m) return 0;
+        const n = Number(m[1]);
+        return Number.isFinite(n) ? n : 0;
+      };
+      const pickEvent = (raw: any): any => Array.isArray(raw) ? (raw[0] || null) : raw;
+
+      const rows = [
+        ...boletas.map((c: any) => ({
+          source: 'ventas' as const,
+          id: c.id,
+          cliente_id: c.cliente_id,
+          evento_id: c.evento_id,
+          fecha_compra: c.fecha_compra,
+          total: Number(c.total || 0),
+          estado_pago: c.estado_pago || 'completado',
+          numero_transaccion: String(c.numero_transaccion || `COMP-${c.id}`),
+          seed: extractSeed(c.numero_transaccion),
+          evento: pickEvent(c.evento)
+        })),
+        ...productos.map((c: any) => ({
+          source: 'productos' as const,
+          id: c.id,
+          cliente_id: c.cliente_id,
+          evento_id: c.evento_id,
+          fecha_compra: c.fecha_compra,
+          total: Number(c.total || 0),
+          estado_pago: c.estado_pago || 'completado',
+          numero_transaccion: String(c.numero_pedido || `PROD-${c.id}`),
+          seed: extractSeed(c.numero_pedido),
+          evento: pickEvent(c.evento)
+        }))
+      ];
+
+      const merged: any[] = [];
+      const sorted = [...rows].sort((a, b) => normalizarFecha(b.fecha_compra) - normalizarFecha(a.fecha_compra));
+      const used = new Array(sorted.length).fill(false);
+      const mergeWindowMs = 2 * 60 * 1000; // 2 minutos
+
+      for (let i = 0; i < sorted.length; i++) {
+        if (used[i]) continue;
+        used[i] = true;
+        const base = sorted[i];
+        const arr = [base];
+        const baseTs = normalizarFecha(base.fecha_compra);
+        const baseCliente = Number(base.cliente_id || 0);
+        const baseEvento = Number(base.evento_id || 0);
+
+        for (let j = i + 1; j < sorted.length; j++) {
+          if (used[j]) continue;
+          const cand = sorted[j];
+          if (Number(cand.evento_id || 0) !== baseEvento) continue;
+          const candTs = normalizarFecha(cand.fecha_compra);
+          const sameCliente = baseCliente > 0 && Number(cand.cliente_id || 0) === baseCliente;
+          const sameTimeWindow = Math.abs(baseTs - candTs) <= mergeWindowMs;
+          const sameSeedWindow =
+            Number(base.seed || 0) > 0 &&
+            Number(cand.seed || 0) > 0 &&
+            Math.abs(Number(base.seed || 0) - Number(cand.seed || 0)) <= mergeWindowMs;
+          if (!((sameCliente && sameTimeWindow) || sameSeedWindow)) continue;
+          used[j] = true;
+          arr.push(cand);
+        }
+
+        const hasVentas = arr.some((r) => r.source === 'ventas');
+        const hasProductos = arr.some((r) => r.source === 'productos');
+        const latest = [...arr].sort((a, b) => normalizarFecha(b.fecha_compra) - normalizarFecha(a.fecha_compra))[0];
+        if (hasVentas && hasProductos) {
+          const ventaBase = arr.find((r) => r.source === 'ventas') || latest;
+          merged.push({
+            ...latest,
+            numero_transaccion: ventaBase.numero_transaccion || latest.numero_transaccion,
+            total: arr.reduce((sum, r) => sum + Number(r.total || 0), 0),
+            tipo_venta: 'mixta'
+          });
+        } else {
+          merged.push({
+            ...latest,
+            tipo_venta: hasProductos ? 'productos' : 'ventas'
+          });
+        }
+      }
+
+      return merged
+        .sort((a, b) => normalizarFecha(b.fecha_compra) - normalizarFecha(a.fecha_compra))
+        .slice(0, 5);
     }, []);
 
     // Eventos próximos (próximos 5)

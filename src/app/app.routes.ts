@@ -13,6 +13,9 @@ import { Boletas } from './pages/boletas/boletas';
 import { Perfil } from './pages/perfil/perfil';
 import { PagoResultado } from './pages/pago-resultado/pago-resultado';
 import { Ventas } from './pages/ventas/ventas';
+import { VentasPalcos } from './pages/ventas-palcos/ventas-palcos';
+import { VentasProductos } from './pages/ventas-productos/ventas-productos';
+import { TransaccionesCheckout } from './pages/transacciones-checkout/transacciones-checkout';
 import { VentasManual } from './pages/ventas-manual/ventas-manual';
 import { ProbarCompras } from './pages/probar-compras/probar-compras';
 import { Productos } from './pages/productos/productos';
@@ -119,7 +122,10 @@ const appRoutes: Routes = [
       { path: 'lectores-parametrizacion', component: LectoresParametrizacion },
       { path: 'escanear-qr', component: EscanearQr, data: { modoApp: 'admin' } },
       { path: 'palcos', component: Palcos },
-      { path: 'ventas', component: Ventas },
+      { path: 'ventas', component: Ventas, data: { adminOnly: true } },
+      { path: 'ventas-palcos', component: VentasPalcos, data: { adminOnly: true } },
+      { path: 'ventas-productos', component: VentasProductos, data: { adminOnly: true } },
+      { path: 'transacciones-checkout', component: TransaccionesCheckout, data: { adminOnly: true } },
       { path: 'ventas-manual', component: VentasManual, data: { adminOnly: true } },
       { path: 'probar-compras', component: ProbarCompras, data: { adminOnly: true } },
       {

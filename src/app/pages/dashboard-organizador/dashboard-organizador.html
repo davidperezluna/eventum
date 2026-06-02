@@ -71,9 +71,17 @@
             </div>
             <div class="venta-details">
               <span class="venta-total">{{ formatCurrency(venta.total || 0) }}</span>
-              <span class="venta-estado" [class]="venta.estado_pago === 'completado' ? 'badge-success' : 'badge-warning'">
-                {{ venta.estado_pago || 'Pendiente' }}
-              </span>
+              <div class="venta-badges">
+                <span class="venta-tipo-badge" [class]="
+                  venta.tipo_venta === 'productos' ? 'badge-productos' :
+                  (venta.tipo_venta === 'mixta' ? 'badge-mixta' : 'badge-ventas')
+                ">
+                  {{ venta.tipo_venta === 'productos' ? 'Productos' : (venta.tipo_venta === 'mixta' ? 'Mixta' : 'Ventas') }}
+                </span>
+                <span class="venta-estado" [class]="venta.estado_pago === 'completado' ? 'badge-success' : 'badge-warning'">
+                  {{ venta.estado_pago || 'Pendiente' }}
+                </span>
+              </div>
             </div>
           </div>
         </div>

@@ -5,7 +5,9 @@ import { AuthService } from './auth.service';
 import { supabaseConfig } from '../config/supabase.config';
 import {
   CompraProducto,
+  CompraProductoFilters,
   CompraProductoItem,
+  PaginatedResponse,
   TipoEstadoCompra,
   TipoEstadoItemProducto,
   TipoEstadoPago,
@@ -272,6 +274,68 @@ export class ComprasProductoService {
     return (data as CompraProducto[]) ?? [];
   }
 
+  async getComprasAdmin(filters?: CompraProductoFilters): Promise<PaginatedResponse<CompraProducto>> {
+    let query = this.supabase
+      .from('compras_productos')
+      .select(
+        `
+        *,
+        cliente:usuarios(id, nombre, apellido, email, telefono, documento_identidad),
+        eventos(id, titulo, fecha_inicio),
+        compras_productos_items(
+          id,
+          compra_producto_id,
+          producto_id,
+          cantidad,
+          precio_unitario,
+          estado,
+          productos(id, nombre)
+        )
+      `,
+        { count: 'exact' }
+      );
+
+    if (filters?.cliente_id) {
+      query = query.eq('cliente_id', filters.cliente_id);
+    }
+    if (filters?.evento_id) {
+      query = query.eq('evento_id', filters.evento_id);
+    }
+    if (filters?.estado_pago) {
+      query = query.eq('estado_pago', filters.estado_pago);
+    }
+    if (filters?.estado_compra) {
+      query = query.eq('estado_compra', filters.estado_compra);
+    }
+    if (filters?.search?.trim()) {
+      query = query.ilike('numero_pedido', `%${filters.search.trim()}%`);
+    }
+
+    const sortBy = filters?.sortBy || 'fecha_compra';
+    const sortOrder = filters?.sortOrder || 'desc';
+    query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 10;
+    const fromIndex = (page - 1) * limit;
+    const toIndex = fromIndex + limit - 1;
+    query = query.range(fromIndex, toIndex);
+
+    const { data, error, count } = await query;
+    if (error) {
+      throw error;
+    }
+
+    const total = count || 0;
+    return {
+      data: (data as CompraProducto[]) || [],
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
   async getCompraById(id: number): Promise<CompraProducto> {
     const { data, error } = await this.supabase
       .from('compras_productos')
@@ -289,6 +353,43 @@ export class ComprasProductoService {
     if (error) {
       throw error;
     }
+    return data as CompraProducto;
+  }
+
+  async updateCompraAdmin(id: number, compra: Partial<CompraProducto>): Promise<CompraProducto> {
+    const { data: existingData, error: checkError } = await this.supabase
+      .from('compras_productos')
+      .select('id')
+      .eq('id', id)
+      .single();
+
+    if (checkError || !existingData) {
+      throw new Error(`No se encontró la compra de productos con ID ${id}`);
+    }
+
+    const { data, error } = await this.supabase
+      .from('compras_productos')
+      .update(compra)
+      .eq('id', id)
+      .select('*')
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        const { data: retryData, error: retryError } = await this.supabase
+          .from('compras_productos')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (retryError) {
+          throw retryError;
+        }
+        return retryData as CompraProducto;
+      }
+      throw error;
+    }
+
     return data as CompraProducto;
   }
 

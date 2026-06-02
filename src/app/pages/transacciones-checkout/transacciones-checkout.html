@@ -1,0 +1,183 @@
+<div class="tx-checkout-page">
+  <header class="page-header">
+    <div>
+      <h1>
+        <span class="material-icons">receipt_long</span>
+        Transacciones checkout
+      </h1>
+      <p>Consulta los intentos de pago unificados para boletas, productos y compras mixtas.</p>
+    </div>
+  </header>
+
+  <div class="filters-card">
+    <select [(ngModel)]="eventoFiltro" (ngModelChange)="onFiltrosChange()" class="select-input">
+      <option [ngValue]="null">Todos los eventos</option>
+      <option *ngFor="let evento of eventosFiltro" [ngValue]="evento.id">{{ evento.titulo }}</option>
+    </select>
+
+    <select [(ngModel)]="tipoFiltro" (ngModelChange)="onFiltrosChange()" class="select-input">
+      <option [value]="null">Todos los tipos</option>
+      <option *ngFor="let tipo of tipoOpciones" [value]="tipo.value">{{ tipo.label }}</option>
+    </select>
+
+    <select [(ngModel)]="estadoFiltro" (ngModelChange)="onFiltrosChange()" class="select-input">
+      <option [value]="null">Todos los estados</option>
+      <option *ngFor="let estado of estadoOpciones" [value]="estado.value">{{ estado.label }}</option>
+    </select>
+
+    <input
+      [(ngModel)]="searchFiltro"
+      (keyup.enter)="onFiltrosChange()"
+      type="text"
+      class="select-input"
+      placeholder="Buscar por intento o referencia"
+    />
+  </div>
+
+  <div class="content-card">
+    <div *ngIf="loading" class="loading-state">Cargando transacciones checkout...</div>
+
+    <ng-container *ngIf="!loading">
+      <div *ngIf="transacciones.length === 0" class="empty-state">
+        No hay transacciones checkout registradas con los filtros actuales.
+      </div>
+
+      <div *ngIf="transacciones.length > 0" class="table-scroll" tabindex="0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Intento</th>
+              <th>Tipo</th>
+              <th>Cliente</th>
+              <th>Evento</th>
+              <th>Qué se compró</th>
+              <th>Total</th>
+              <th>Estado</th>
+              <th>Fecha</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let tx of transacciones">
+              <td>{{ tx.id }}</td>
+              <td>{{ tx.numero_intento }}</td>
+              <td>
+                <span [class]="tipoClass(tx.tipo)">{{ tx.tipo }}</span>
+              </td>
+              <td>{{ getClienteLabel(tx) }}</td>
+              <td>{{ getEventoLabel(tx) }}</td>
+              <td class="cell-compra" [attr.title]="getQueSeCompro(tx)">
+                <span class="cell-compra__text">{{ getQueSeCompro(tx) }}</span>
+              </td>
+              <td><strong>{{ formatCurrency(tx.total, tx.moneda) }}</strong></td>
+              <td>
+                <span [class]="estadoClass(tx.estado)">{{ tx.estado }}</span>
+              </td>
+              <td>{{ tx.fecha_creacion | dateFormat:'short' }}</td>
+              <td>
+                <button type="button" class="btn-show" (click)="openTxModal(tx)">Show transacción</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </ng-container>
+
+    <div *ngIf="total > limit" class="pagination">
+      <div class="pagination-info">
+        <span>Mostrando {{ (page - 1) * limit + 1 }} - {{ Math.min(page * limit, total) }} de {{ total }} resultados</span>
+      </div>
+      <div class="pagination-controls">
+        <button class="pagination-btn" (click)="goToPage(1)" [disabled]="page === 1" title="Primera página">
+          <span class="material-icons">first_page</span>
+        </button>
+        <button class="pagination-btn" (click)="goToPage(page - 1)" [disabled]="page === 1" title="Página anterior">
+          <span class="material-icons">chevron_left</span>
+        </button>
+
+        <div class="pagination-numbers">
+          <button
+            *ngFor="let pageNum of getPageNumbers()"
+            class="pagination-number"
+            [class.active]="pageNum === page"
+            (click)="goToPage(pageNum)"
+          >
+            {{ pageNum }}
+          </button>
+        </div>
+
+        <button
+          class="pagination-btn"
+          (click)="goToPage(page + 1)"
+          [disabled]="page >= getTotalPages()"
+          title="Página siguiente"
+        >
+          <span class="material-icons">chevron_right</span>
+        </button>
+        <button
+          class="pagination-btn"
+          (click)="goToPage(getTotalPages())"
+          [disabled]="page >= getTotalPages()"
+          title="Última página"
+        >
+          <span class="material-icons">last_page</span>
+        </button>
+      </div>
+      <div class="pagination-page-info">
+        <span>Página {{ page }} de {{ getTotalPages() }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="showTxModal && selectedTx" class="modal-overlay" (click)="closeTxModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Transacción #{{ selectedTx.id }}</h2>
+        <button class="btn-close" (click)="closeTxModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="tx-grid">
+          <p><strong>Intento:</strong> {{ selectedTx.numero_intento }}</p>
+          <p><strong>Tipo:</strong> {{ selectedTx.tipo }}</p>
+          <p><strong>Cliente:</strong> {{ getClienteLabel(selectedTx) }}</p>
+          <p><strong>Evento:</strong> {{ getEventoLabel(selectedTx) }}</p>
+          <p><strong>Total:</strong> {{ formatCurrency(selectedTx.total, selectedTx.moneda) }}</p>
+          <p><strong>Estado:</strong> {{ selectedTx.estado }}</p>
+          <p><strong>Wompi status:</strong> {{ selectedTx.wompi_status || '—' }}</p>
+          <p><strong>Referencia:</strong> {{ selectedTx.wompi_reference || '—' }}</p>
+          <p><strong>Wompi Tx:</strong> {{ selectedTx.wompi_transaction_id || '—' }}</p>
+          <p><strong>Compra boletas:</strong> {{ selectedTx.compra_id || '—' }}</p>
+          <p><strong>Compra productos:</strong> {{ selectedTx.compra_producto_id || '—' }}</p>
+          <p><strong>Activa:</strong> {{ selectedTx.es_activa ? 'Sí' : 'No' }}</p>
+          <p><strong>Materializada:</strong> {{ selectedTx.materializado ? 'Sí' : 'No' }}</p>
+          <p><strong>Fecha creación:</strong> {{ selectedTx.fecha_creacion | dateFormat:'short' }}</p>
+          <p><strong>Fecha confirmación:</strong> {{ selectedTx.fecha_confirmacion ? (selectedTx.fecha_confirmacion | dateFormat:'short') : '—' }}</p>
+          <p><strong>Fecha cancelación:</strong> {{ selectedTx.fecha_cancelacion ? (selectedTx.fecha_cancelacion | dateFormat:'short') : '—' }}</p>
+        </div>
+
+        <div class="tx-detail-block">
+          <h3>Qué se compró</h3>
+          <ul class="detalle-list">
+            <li *ngFor="let item of getDetalleLista(selectedTx)">{{ item }}</li>
+          </ul>
+        </div>
+
+        <div class="tx-detail-block">
+          <h3>Request payload</h3>
+          <pre>{{ formatJson(selectedTx.request_payload) }}</pre>
+        </div>
+
+        <div class="tx-detail-block">
+          <h3>Metadata</h3>
+          <pre>{{ formatJson(selectedTx.metadata) }}</pre>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeTxModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
