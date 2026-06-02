@@ -430,6 +430,18 @@
   border-bottom: none;
 }
 
+.modal-row--stack {
+  align-items: flex-start;
+}
+
+.modal-row-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  text-align: right;
+}
+
 .modal-row code {
   font-size: 12px;
   word-break: break-all;

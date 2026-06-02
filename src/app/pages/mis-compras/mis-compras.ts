@@ -54,6 +54,11 @@ interface ProductoConCompra {
   item: CompraProductoItem;
 }
 
+interface CompraProductosDetalle {
+  compra: CompraProducto;
+  items: CompraProductoItem[];
+}
+
 interface EventoBoletasGrupo {
   key: string;
   titulo: string;
@@ -395,6 +400,57 @@ export class MisCompras implements OnInit, OnDestroy {
     return filas;
   }
 
+  itemsCompraPorTab(compra: CompraProducto, grupo: EventoBoletasGrupo): CompraProductoItem[] {
+    const filas = this.productosDetallePorTab(grupo).filter((f) => f.compra.id === compra.id);
+    return filas.map((f) => f.item);
+  }
+
+  comprasProductosDetallePorTab(grupo: EventoBoletasGrupo): CompraProductosDetalle[] {
+    const filas = this.productosDetallePorTab(grupo);
+    const map = new Map<number, CompraProductosDetalle>();
+
+    for (const fila of filas) {
+      let entry = map.get(fila.compra.id);
+      if (!entry) {
+        entry = { compra: fila.compra, items: [] };
+        map.set(fila.compra.id, entry);
+      }
+      entry.items.push(fila.item);
+    }
+
+    return Array.from(map.values());
+  }
+
+  totalItemsCompraProductos(items: CompraProductoItem[]): number {
+    return (items || []).reduce(
+      (sum, item) => sum + Number(item.subtotal_linea ?? (item.cantidad || 0) * (item.precio_unitario || 0)),
+      0
+    );
+  }
+
+  totalUnidadesCompraProductos(items: CompraProductoItem[]): number {
+    return (items || []).reduce((sum, item) => sum + Number(item.cantidad || 0), 0);
+  }
+
+  detalleProductosCompra(compra: CompraProducto | null | undefined): Array<{ nombre: string; cantidad: number }> {
+    if (!compra) return [];
+    const items = compra.compras_productos_items || [];
+    const map = new Map<string, { nombre: string; cantidad: number }>();
+
+    for (const item of items) {
+      const nombre = (item.productos?.nombre || 'Producto').trim();
+      const key = String(item.producto_id ?? nombre).trim();
+      const actual = map.get(key);
+      if (actual) {
+        actual.cantidad += Number(item.cantidad || 0);
+      } else {
+        map.set(key, { nombre, cantidad: Number(item.cantidad || 0) });
+      }
+    }
+
+    return Array.from(map.values());
+  }
+
   referenciaPedidoCorta(numeroPedido?: string): string {
     const numero = (numeroPedido || '').trim();
     if (!numero) {
@@ -562,6 +618,34 @@ export class MisCompras implements OnInit, OnDestroy {
     const filas = this.productosDetallePorTab(grupo);
     const primeraFila = filas.find((x) => x.compra.id === fila.compra.id);
     return !!primeraFila && primeraFila.item.id === fila.item.id;
+  }
+
+  private filaRepresentativaCompra(compra: CompraProducto, grupo: EventoBoletasGrupo): ProductoConCompra | null {
+    const fila = this.productosDetallePorTab(grupo).find((x) => x.compra.id === compra.id);
+    if (!fila) return null;
+    return fila;
+  }
+
+  compraTieneCodigoQR(compra: CompraProducto): boolean {
+    return this.getCodigoQrCompraProducto(compra) !== null;
+  }
+
+  puedeMostrarQrCompraProducto(compra: CompraProducto, grupo: EventoBoletasGrupo): boolean {
+    const fila = this.filaRepresentativaCompra(compra, grupo);
+    if (!fila) return false;
+    return this.puedeMostrarQrProducto(fila, grupo);
+  }
+
+  mensajeEstadoQrCompraProducto(compra: CompraProducto, grupo: EventoBoletasGrupo): string {
+    const fila = this.filaRepresentativaCompra(compra, grupo);
+    if (!fila) return 'No hay items de este pedido en el estado actual.';
+    return this.mensajeEstadoQrProducto(fila, grupo);
+  }
+
+  async verQrCompraProducto(compra: CompraProducto, grupo: EventoBoletasGrupo): Promise<void> {
+    const fila = this.filaRepresentativaCompra(compra, grupo);
+    if (!fila) return;
+    await this.verQrProducto(fila, grupo);
   }
 
   getPrecioPreventaProductoDetalle(fila: ProductoConCompra): number {

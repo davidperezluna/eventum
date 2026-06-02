@@ -563,6 +563,23 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     return estadoObj?.label || estado || 'Sin estado';
   }
 
+  resumenEntregaProducto(item: ItemProductoEscaneo | null | undefined): string[] {
+    if (!item) return [];
+
+    const resumen = (item.productos_resumen || [])
+      .map((linea) => String(linea || '').trim())
+      .filter((linea) => linea.length > 0);
+    if (resumen.length > 0) {
+      return resumen;
+    }
+
+    if (item.producto?.nombre) {
+      return [`${item.producto.nombre} x${item.cantidad || 0}`];
+    }
+
+    return [];
+  }
+
   nombreValidador(boleta: BoletaComprada | null | undefined): string {
     if (!boleta) return '—';
     const v = boleta.validado_por;

@@ -522,76 +522,89 @@
         </div>
 
         <ng-container *ngIf="!loadingComprasProductos">
-          <div class="productos-list" *ngIf="productosDetallePorTab(detalle).length > 0; else detalleSinProductos">
+          <div class="productos-list" *ngIf="comprasProductosDetallePorTab(detalle).length > 0; else detalleSinProductos">
             <article
-              *ngFor="let fila of productosDetallePorTab(detalle)"
+              *ngFor="let compraDetalle of comprasProductosDetallePorTab(detalle)"
               class="producto-item-card"
             >
-              <div class="producto-item-card__row">
-                <div class="producto-item-card__media" aria-hidden="true">
-                  <img
-                    *ngIf="fila.item.productos?.imagen_url; else productoSinImagenCard"
-                    [src]="fila.item.productos!.imagen_url"
-                    [alt]=""
-                    loading="lazy"
-                  />
-                  <ng-template #productoSinImagenCard>
-                    <span class="material-icons">inventory_2</span>
-                  </ng-template>
+              <div class="producto-item-card__top producto-item-card__top--compra">
+                <div>
+                  <p class="producto-item-card__compra-label">Compra confirmada</p>
+                  <p class="producto-item-card__pedido-meta">
+                    {{ totalUnidadesCompraProductos(compraDetalle.items) }} unidad{{ totalUnidadesCompraProductos(compraDetalle.items) === 1 ? '' : 'es' }} en este pedido ·
+                    {{ referenciaPedidoCorta(compraDetalle.compra.numero_pedido) }}
+                  </p>
                 </div>
+                <span class="badge badge-info-soft">
+                  {{ compraDetalle.items.length }} producto{{ compraDetalle.items.length === 1 ? '' : 's' }}
+                </span>
+              </div>
 
-                <div class="producto-item-card__body">
-                  <div class="producto-item-card__top">
-                    <h4 class="producto-item-card__name">
-                      {{ fila.item.productos?.nombre || 'Producto' }}
-                      <span class="mc-producto-licor-tag" *ngIf="fila.item.productos?.es_licor">+18</span>
-                    </h4>
-                    <span class="badge producto-item-card__badge" [class]="getEstadoProductoClass(fila.item)">
-                      {{ getEstadoProductoLabel(fila.item) }}
-                    </span>
+              <div class="producto-item-list">
+                <div class="producto-item-card__row producto-item-card__row--nested" *ngFor="let item of compraDetalle.items">
+                  <div class="producto-item-card__media" aria-hidden="true">
+                    <img
+                      *ngIf="item.productos?.imagen_url; else productoSinImagenCard"
+                      [src]="item.productos!.imagen_url"
+                      [alt]=""
+                      loading="lazy"
+                    />
+                    <ng-template #productoSinImagenCard>
+                      <span class="material-icons">inventory_2</span>
+                    </ng-template>
                   </div>
-                  <p class="producto-item-card__meta">
-                    {{ fila.item.cantidad }} × {{ formatCurrency(fila.item.precio_unitario) }}
-                  </p>
-                  <div class="producto-item-card__pricing" *ngIf="tienePrecioDiferenciadoProductoDetalle(fila)">
-                    <p class="producto-item-card__pricing-status">{{ getEstadoPrecioProductoDetalleLabel(fila) }}</p>
-                    <p class="producto-item-card__pricing-row">
-                      <span class="producto-item-card__pricing-current">{{ formatCurrency(fila.item.precio_unitario) }}</span>
-                      <span class="producto-item-card__pricing-ref">
-                        {{ formatCurrency(getPrecioReferenciaProductoDetalle(fila)) }}
+
+                  <div class="producto-item-card__body">
+                    <div class="producto-item-card__top">
+                      <h5 class="producto-item-card__name">
+                        {{ item.productos?.nombre || 'Producto' }}
+                        <span class="mc-producto-licor-tag" *ngIf="item.productos?.es_licor">+18</span>
+                      </h5>
+                      <span class="badge producto-item-card__badge" [class]="getEstadoProductoClass(item)">
+                        {{ getEstadoProductoLabel(item) }}
                       </span>
-                    </p>
-                    <p class="producto-item-card__pricing-saving" *ngIf="getAhorroProductoDetalle(fila) > 0">
-                      Ahorro por unidad: {{ formatCurrency(getAhorroProductoDetalle(fila)) }}
-                    </p>
-                  </div>
-                  <p class="producto-item-card__pedido" [title]="fila.compra.numero_pedido">
-                    Pedido {{ referenciaPedidoCorta(fila.compra.numero_pedido) }}
-                  </p>
-                  <div class="producto-item-card__qr" *ngIf="esProductoComprado(fila.item) && esPrimerItemPedidoEnTab(fila, detalle)">
-                    <div class="boleta-palco-pendiente-pago" *ngIf="!productoTieneCodigoQR(fila) || !puedeMostrarQrProducto(fila, detalle)">
-                      <p class="help-text">
-                        {{ mensajeEstadoQrProducto(fila, detalle) }}
-                      </p>
                     </div>
-                    <div class="producto-item-card__qr-action-row" *ngIf="productoTieneCodigoQR(fila) && puedeMostrarQrProducto(fila, detalle)">
-                      <p class="help-text">QR único del pedido</p>
-                      <button
-                        type="button"
-                        class="producto-item-card__qr-action"
-                        (click)="verQrProducto(fila, detalle)"
-                      >
-                        <span class="material-icons" aria-hidden="true">qr_code_2</span>
-                        <span>Ver QR del pedido</span>
-                      </button>
+                    <p class="producto-item-card__meta">
+                      {{ item.cantidad }} × {{ formatCurrency(item.precio_unitario) }}
+                    </p>
+                    <div class="producto-item-card__pricing" *ngIf="tienePrecioDiferenciadoProductoDetalle({ compra: compraDetalle.compra, item: item })">
+                      <p class="producto-item-card__pricing-status">{{ getEstadoPrecioProductoDetalleLabel({ compra: compraDetalle.compra, item: item }) }}</p>
+                      <p class="producto-item-card__pricing-row">
+                        <span class="producto-item-card__pricing-current">{{ formatCurrency(item.precio_unitario) }}</span>
+                        <span class="producto-item-card__pricing-ref">
+                          {{ formatCurrency(getPrecioReferenciaProductoDetalle({ compra: compraDetalle.compra, item: item })) }}
+                        </span>
+                      </p>
+                      <p class="producto-item-card__pricing-saving" *ngIf="getAhorroProductoDetalle({ compra: compraDetalle.compra, item: item }) > 0">
+                        Ahorro por unidad: {{ formatCurrency(getAhorroProductoDetalle({ compra: compraDetalle.compra, item: item })) }}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
 
+              <div class="producto-item-card__qr" *ngIf="tabProductosDetalle === 'compradas'">
+                <div class="boleta-palco-pendiente-pago" *ngIf="!compraTieneCodigoQR(compraDetalle.compra) || !puedeMostrarQrCompraProducto(compraDetalle.compra, detalle)">
+                  <p class="help-text">
+                    {{ mensajeEstadoQrCompraProducto(compraDetalle.compra, detalle) }}
+                  </p>
+                </div>
+                <div class="producto-item-card__qr-action-row" *ngIf="compraTieneCodigoQR(compraDetalle.compra) && puedeMostrarQrCompraProducto(compraDetalle.compra, detalle)">
+                  <p class="help-text">QR único del pedido</p>
+                  <button
+                    type="button"
+                    class="producto-item-card__qr-action"
+                    (click)="verQrCompraProducto(compraDetalle.compra, detalle)"
+                  >
+                    <span class="material-icons" aria-hidden="true">qr_code_2</span>
+                    <span>Ver QR del pedido</span>
+                  </button>
+                </div>
+              </div>
+
               <div class="producto-item-card__footer">
-                <span>Total</span>
-                <strong>{{ formatCurrency(fila.item.subtotal_linea ?? fila.item.cantidad * fila.item.precio_unitario) }}</strong>
+                <span>Total pedido</span>
+                <strong>{{ formatCurrency(totalItemsCompraProductos(compraDetalle.items)) }}</strong>
               </div>
             </article>
           </div>
@@ -909,9 +922,13 @@
       </div>
 
       <div class="boleta-info-preview">
-        <div class="info-row">
-          <span class="info-label">Producto base</span>
-          <span class="info-value">{{ productoFilaSeleccionada.item.productos?.nombre || 'Pedido de productos' }}</span>
+        <div class="info-row info-row--stack" *ngIf="detalleProductosCompra(productoFilaSeleccionada.compra).length > 0">
+          <span class="info-label">Productos</span>
+          <div class="info-value info-value--list">
+            <span *ngFor="let p of detalleProductosCompra(productoFilaSeleccionada.compra)">
+              {{ p.nombre }} x{{ p.cantidad }}
+            </span>
+          </div>
         </div>
         <div class="info-row">
           <span class="info-label">Pedido</span>

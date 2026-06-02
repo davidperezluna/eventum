@@ -170,6 +170,14 @@
               <strong>{{ productoItem.scope === 'compra' ? 'Compra de productos' : (productoItem.producto?.nombre || 'Producto') }}</strong>
             </div>
             <div class="modal-row"><span>Cantidad total</span><strong>{{ productoItem.cantidad }}</strong></div>
+            <div class="modal-row modal-row--stack" *ngIf="resumenEntregaProducto(productoItem).length > 0">
+              <span>Entrega</span>
+              <strong class="modal-row-list">
+                <span *ngFor="let linea of resumenEntregaProducto(productoItem)">
+                  {{ linea }}
+                </span>
+              </strong>
+            </div>
             <div class="modal-row"><span>Pedido</span><strong>{{ productoItem.compra?.numero_pedido || '—' }}</strong></div>
             <div class="modal-row"><span>QR</span><code>{{ productoItem.codigo_qr }}</code></div>
           </div>
