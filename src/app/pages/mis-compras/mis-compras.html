@@ -371,8 +371,13 @@
             <h4>{{ tipo.nombre }} ({{ tipo.boletas.length }})</h4>
             <div class="boletas-grid">
               <ng-container *ngFor="let item of tipo.boletas">
-                <div class="boleta-card" *ngIf="item.boleta as boleta">
+                <ng-container *ngIf="item.boleta as boleta">
                   <ng-container *ngIf="item.compra as compra">
+                    <div
+                      class="boleta-card"
+                      [class.boleta-card--clickable]="boletaTarjetaAbreModal(boleta, compra)"
+                      (click)="onClickTarjetaBoleta(boleta, compra, $event)"
+                    >
                     <div class="boleta-header">
                       <div class="boleta-info">
                         <div class="boleta-info-row">
@@ -396,7 +401,7 @@
                         type="button"
                         class="btn-cancelar-traslado"
                         *ngIf="trasladoSalientePorBoletaId.get(boleta.id)?.estado === 'enviado'"
-                        (click)="cancelarTraslado(trasladoSalientePorBoletaId.get(boleta.id)!)"
+                        (click)="cancelarTraslado(trasladoSalientePorBoletaId.get(boleta.id)!); $event.stopPropagation()"
                       >
                         <span class="material-icons">undo</span>
                         Cancelar envío
@@ -429,13 +434,21 @@
                       </button>
                     </div>
                     <div class="boleta-asignar-palco" *ngIf="puedeAsignarEntradaPorCorreoPalco(boleta, compra)">
-                      <details class="asignar-palco-details">
-                        <summary class="asignar-palco-summary">
+                      <div
+                        class="asignar-palco-details"
+                        [class.asignar-palco-details--open]="isAsignarPanelAbierto(boleta.id)"
+                      >
+                        <button
+                          type="button"
+                          class="asignar-palco-summary"
+                          (click)="toggleAsignarPanel(boleta.id, $event)"
+                          [attr.aria-expanded]="isAsignarPanelAbierto(boleta.id)"
+                        >
                           <span class="material-icons asignar-palco-summary-lead">playlist_add</span>
                           <span>Asignar esta entrada</span>
                           <span class="material-icons asignar-palco-chev">expand_more</span>
-                        </summary>
-                        <div class="asignar-palco-panel">
+                        </button>
+                        <div class="asignar-palco-panel" *ngIf="isAsignarPanelAbierto(boleta.id)">
                           <p class="help-text boleta-asignar-hint" *ngIf="boleta.numero_palco != null && !otraBoletaMismoEventoTitularYaConAsistente(boleta, compra)">
                             Palco <strong>{{ boleta.numero_palco }}</strong> · correo a otra persona o «Yo asisto» para asignar varias boletas a tu nombre (acompañantes).
                           </p>
@@ -487,10 +500,11 @@
                             >Ir a Mi perfil</a>
                           </p>
                         </div>
-                      </details>
+                      </div>
+                    </div>
                     </div>
                   </ng-container>
-                </div>
+                </ng-container>
               </ng-container>
             </div>
           </div>
@@ -526,6 +540,8 @@
             <article
               *ngFor="let compraDetalle of comprasProductosDetallePorTab(detalle)"
               class="producto-item-card"
+              [class.producto-item-card--clickable]="productoCompraTarjetaAbreModal(compraDetalle.compra, detalle)"
+              (click)="onClickTarjetaProducto(compraDetalle.compra, detalle, $event)"
             >
               <div class="producto-item-card__top producto-item-card__top--compra">
                 <div>
@@ -705,8 +721,13 @@
           </p>
           <div class="boletas-grid">
             <ng-container *ngFor="let item of tipo.boletas">
-              <div class="boleta-card" *ngIf="item.boleta as boleta">
+              <ng-container *ngIf="item.boleta as boleta">
                 <ng-container *ngIf="item.compra as compra">
+                  <div
+                    class="boleta-card"
+                    [class.boleta-card--clickable]="boletaTarjetaAbreModal(boleta, compra)"
+                    (click)="onClickTarjetaBoleta(boleta, compra, $event)"
+                  >
                   <div class="boleta-header">
                     <div class="boleta-info">
                       <div class="boleta-info-row">
@@ -730,7 +751,7 @@
                       type="button"
                       class="btn-cancelar-traslado"
                       *ngIf="trasladoSalientePorBoletaId.get(boleta.id)?.estado === 'enviado'"
-                      (click)="cancelarTraslado(trasladoSalientePorBoletaId.get(boleta.id)!)"
+                      (click)="cancelarTraslado(trasladoSalientePorBoletaId.get(boleta.id)!); $event.stopPropagation()"
                     >
                       <span class="material-icons">undo</span>
                       Cancelar envío
@@ -774,13 +795,21 @@
                     </button>
                   </div>
                   <div class="boleta-asignar-palco" *ngIf="puedeAsignarEntradaPorCorreoPalco(boleta, compra)">
-                    <details class="asignar-palco-details">
-                      <summary class="asignar-palco-summary">
+                    <div
+                      class="asignar-palco-details"
+                      [class.asignar-palco-details--open]="isAsignarPanelAbierto(boleta.id)"
+                    >
+                      <button
+                        type="button"
+                        class="asignar-palco-summary"
+                        (click)="toggleAsignarPanel(boleta.id, $event)"
+                        [attr.aria-expanded]="isAsignarPanelAbierto(boleta.id)"
+                      >
                         <span class="material-icons asignar-palco-summary-lead">playlist_add</span>
                         <span>Asignar esta entrada</span>
                         <span class="material-icons asignar-palco-chev">expand_more</span>
-                      </summary>
-                      <div class="asignar-palco-panel">
+                      </button>
+                      <div class="asignar-palco-panel" *ngIf="isAsignarPanelAbierto(boleta.id)">
                         <p class="help-text boleta-asignar-hint" *ngIf="boleta.numero_palco != null && !otraBoletaMismoEventoTitularYaConAsistente(boleta, compra)">
                           Palco <strong>{{ boleta.numero_palco }}</strong> · correo a otra persona o «Yo asisto» para asignar varias boletas a tu nombre (acompañantes).
                         </p>
@@ -832,10 +861,11 @@
                           >Ir a Mi perfil</a>
                         </p>
                       </div>
-                    </details>
+                    </div>
+                  </div>
                   </div>
                 </ng-container>
-              </div>
+              </ng-container>
             </ng-container>
           </div>
         </div>
@@ -940,28 +970,42 @@
 </div>
 
 <!-- Modal de bienvenida/agradecimiento después de validar QR -->
-<div class="modal-overlay modal-overlay--mensaje-ingreso" *ngIf="showMensajeIngresoModal">
-  <div class="modal-content boleta-modal mensaje-ingreso-modal" (click)="$event.stopPropagation()">
-    <button class="modal-close" (click)="cerrarMensajeIngresoModal()">
+<div class="modal-overlay modal-overlay--mensaje-ingreso" *ngIf="showMensajeIngresoModal" (click)="cerrarMensajeIngresoModal()">
+  <div class="modal-sheet mensaje-ingreso-sheet" (click)="$event.stopPropagation()">
+    <button type="button" class="modal-close" (click)="cerrarMensajeIngresoModal()" aria-label="Cerrar">
       <span class="material-icons">close</span>
     </button>
 
-    <div class="mensaje-ingreso-card" [class.mensaje-ingreso-card--producto]="mensajeIngresoTipo === 'producto'">
-      <div class="mensaje-ingreso-icon-wrap">
-        <span class="material-icons">
-          {{ mensajeIngresoTipo === 'producto' ? 'celebration' : 'verified' }}
-        </span>
-      </div>
-      <p class="mensaje-ingreso-kicker">
-        {{ mensajeIngresoTipo === 'producto' ? 'PEDIDO ENTREGADO' : 'ACCESO CONFIRMADO' }}
-      </p>
-      <h2>{{ mensajeIngresoTitulo }}</h2>
-      <p>{{ mensajeIngresoDetalle }}</p>
-
-      <button type="button" class="btn-primary" (click)="accionMensajeIngresoModal()">
-        {{ textoBotonMensajeIngresoModal() }}
-      </button>
+    <p class="modal-kicker">
+      {{ mensajeIngresoTipo === 'producto' ? 'ENTREGA OK' : 'INGRESO OK' }}
+    </p>
+    <h2 class="modal-title">{{ mensajeIngresoTitulo }}</h2>
+    <p class="mensaje-ingreso-nota">{{ mensajeIngresoDetalle }}</p>
+    <div class="modal-info" *ngIf="mensajeIngresoTipo === 'producto' && mensajeIngresoProductos.length > 0">
+      <span class="mensaje-ingreso-label">Productos entregados</span>
+      <ul class="mensaje-ingreso-productos">
+        <li class="mensaje-ingreso-producto" *ngFor="let producto of mensajeIngresoProductos">
+          <span class="mensaje-ingreso-producto-nombre">{{ producto.nombre }}</span>
+          <span class="mensaje-ingreso-producto-cantidad">
+            {{ producto.cantidad }} {{ producto.cantidad === 1 ? 'unidad' : 'unidades' }}
+          </span>
+        </li>
+      </ul>
     </div>
+    <div class="modal-info" *ngIf="mensajeIngresoTipo === 'entrada' && (mensajeIngresoEvento || mensajeIngresoReferencia)">
+      <div class="mensaje-ingreso-bloque" *ngIf="mensajeIngresoEvento">
+        <span class="mensaje-ingreso-label">Evento</span>
+        <strong class="mensaje-ingreso-value">{{ mensajeIngresoEvento }}</strong>
+      </div>
+      <div class="mensaje-ingreso-bloque" *ngIf="mensajeIngresoReferencia">
+        <span class="mensaje-ingreso-label">Entrada</span>
+        <strong class="mensaje-ingreso-value mensaje-ingreso-value--code">{{ mensajeIngresoReferencia }}</strong>
+      </div>
+    </div>
+    <button type="button" class="btn-validate" (click)="accionMensajeIngresoModal()">
+      <span class="material-icons">{{ mensajeIngresoTipo === 'producto' ? 'inventory' : 'verified' }}</span>
+      {{ textoBotonMensajeIngresoModal() }}
+    </button>
   </div>
 </div>
 

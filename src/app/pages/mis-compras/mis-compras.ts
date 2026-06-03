@@ -165,6 +165,9 @@ export class MisCompras implements OnInit, OnDestroy {
   showMensajeIngresoModal = false;
   mensajeIngresoTitulo = '';
   mensajeIngresoDetalle = '';
+  mensajeIngresoReferencia = '';
+  mensajeIngresoEvento = '';
+  mensajeIngresoProductos: Array<{ nombre: string; cantidad: number }> = [];
   mensajeIngresoTipo: 'entrada' | 'producto' = 'entrada';
   siguienteBoletaSugerida: BoletaConCompra | null = null;
 
@@ -183,6 +186,7 @@ export class MisCompras implements OnInit, OnDestroy {
   rellenarPerfilBoletaId: number | null = null;
   /** Error visible junto al panel de asignación (además del modal SweetAlert). */
   asignacionError: { boletaId: number; mensaje: string } | null = null;
+  asignarPanelAbiertoBoletaId: number | null = null;
 
   /** Ruta `/mis-compras/actividad`: solo trazabilidad de traslados. */
   vistaActividad = false;
@@ -216,6 +220,7 @@ export class MisCompras implements OnInit, OnDestroy {
     if (cachedState) {
       this.applyCachedState(cachedState);
       this.loading = false;
+      this.sincronizarRealtimeNotificaciones();
     }
 
     // Configurar debounce para búsqueda
@@ -238,6 +243,7 @@ export class MisCompras implements OnInit, OnDestroy {
         this.loading = false;
         this.endSilentRefreshCycle();
         this.persistState(Date.now());
+        this.sincronizarRealtimeNotificaciones();
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -252,13 +258,13 @@ export class MisCompras implements OnInit, OnDestroy {
         this.loading = false;
         this.loadingBoletasDetalle = false;
         this.endSilentRefreshCycle();
+        this.detenerRealtimeNotificaciones();
         this.cdr.detectChanges();
       }
     });
 
     this.loadEventosDisponibles(); // Cargar eventos disponibles
     this.loadCompras({ background: !!cachedState }); // Carga inicial
-    this.iniciarRealtimeNotificaciones();
     this.suscribirReinicioRealtimePorAuth();
   }
 
@@ -623,20 +629,104 @@ export class MisCompras implements OnInit, OnDestroy {
     tipo: 'entrada' | 'producto',
     titulo: string,
     detalle: string,
-    siguienteBoleta?: BoletaConCompra | null
+    siguienteBoleta?: BoletaConCompra | null,
+    referencia?: string,
+    evento?: string,
+    productos?: Array<{ nombre: string; cantidad: number }>
   ): void {
     this.mensajeIngresoTipo = tipo;
     this.mensajeIngresoTitulo = titulo;
     this.mensajeIngresoDetalle = detalle;
+    this.mensajeIngresoReferencia = (referencia || '').trim();
+    this.mensajeIngresoEvento = (evento || '').trim();
+    this.mensajeIngresoProductos = productos || [];
     this.siguienteBoletaSugerida = siguienteBoleta || null;
     this.showMensajeIngresoModal = true;
     this.cdr.detectChanges();
+  }
+
+  private productosRedimidosParaModal(
+    metadata: Record<string, unknown>,
+    compraCapturada?: CompraProducto | null
+  ): Array<{ nombre: string; cantidad: number }> {
+    if (compraCapturada) {
+      return this.detalleProductosCompra(compraCapturada);
+    }
+
+    const compraProductoId = Number(metadata['compra_producto_id'] ?? 0);
+    if (!Number.isFinite(compraProductoId) || compraProductoId <= 0) {
+      return [];
+    }
+
+    const compra = this.comprasProductos.find((c) => c.id === compraProductoId);
+    return this.detalleProductosCompra(compra);
+  }
+
+  private tituloEventoDesdeMetadata(metadata: Record<string, unknown>): string {
+    const eventoId = Number(metadata['evento_id'] ?? 0);
+    if (!Number.isFinite(eventoId) || eventoId <= 0) {
+      return '';
+    }
+
+    const grupo = this.eventosConBoletas.find((g) => g.key === String(eventoId));
+    if (grupo?.titulo) {
+      return grupo.titulo.trim();
+    }
+
+    const compraProducto = this.comprasProductos.find((c) => c.evento_id === eventoId);
+    if (compraProducto?.eventos?.titulo) {
+      return String(compraProducto.eventos.titulo).trim();
+    }
+
+    const compra = this.compras.find((c) => c.evento_id === eventoId);
+    if (compra?.evento?.titulo) {
+      return String(compra.evento.titulo).trim();
+    }
+
+    return '';
+  }
+
+  private abrirMensajeIngresoDesdeNotificacion(
+    tipo: 'entrada' | 'producto',
+    metadata: Record<string, unknown> | null | undefined,
+    siguienteBoleta?: BoletaConCompra | null,
+    compraProductoCapturada?: CompraProducto | null
+  ): void {
+    const meta = metadata ?? {};
+
+    if (tipo === 'producto') {
+      const productos = this.productosRedimidosParaModal(meta, compraProductoCapturada);
+      this.abrirMensajeIngreso(
+        'producto',
+        'Gracias por tu compra',
+        'Tu pedido fue entregado en el punto de retiro.',
+        null,
+        undefined,
+        undefined,
+        productos
+      );
+      return;
+    }
+
+    const evento = this.tituloEventoDesdeMetadata(meta);
+    const qr = String(meta['codigo_qr'] || '').trim();
+    this.abrirMensajeIngreso(
+      'entrada',
+      'Bienvenido al evento',
+      'Tu entrada fue validada en puerta.',
+      siguienteBoleta ?? null,
+      qr || undefined,
+      evento || undefined
+    );
   }
 
   cerrarMensajeIngresoModal(): void {
     this.showMensajeIngresoModal = false;
     this.mensajeIngresoTitulo = '';
     this.mensajeIngresoDetalle = '';
+    this.mensajeIngresoReferencia = '';
+    this.mensajeIngresoEvento = '';
+    this.mensajeIngresoProductos = [];
     this.siguienteBoletaSugerida = null;
     this.cdr.detectChanges();
   }
@@ -729,6 +819,49 @@ export class MisCompras implements OnInit, OnDestroy {
     const fila = this.filaRepresentativaCompra(compra, grupo);
     if (!fila) return;
     await this.verQrProducto(fila, grupo);
+  }
+
+  boletaTarjetaAbreModal(boleta: BoletaComprada, compra: Compra): boolean {
+    if (this.esBoletaUsada(boleta) || this.esBoletaCancelada(boleta)) return false;
+    if (!this.tieneAsistenteRegistrado(boleta)) return false;
+    return this.puedeAbrirVistaBoleta(boleta, compra);
+  }
+
+  productoCompraTarjetaAbreModal(compra: CompraProducto, grupo: EventoBoletasGrupo): boolean {
+    if (this.tabProductosDetalle !== 'compradas') return false;
+    const fila = this.filaRepresentativaCompra(compra, grupo);
+    if (!fila) return false;
+    return this.puedeAbrirQrProducto(fila, grupo);
+  }
+
+  private esTargetInteractivoTarjeta(target: EventTarget | null): boolean {
+    const el = target as HTMLElement | null;
+    return !!el?.closest(
+      'button, a, input, select, textarea, label, .boleta-asignar-palco, .boleta-actions, .boleta-traslado-saliente'
+    );
+  }
+
+  isAsignarPanelAbierto(boletaId: number): boolean {
+    return this.asignarPanelAbiertoBoletaId === boletaId;
+  }
+
+  toggleAsignarPanel(boletaId: number, event: Event): void {
+    event.stopPropagation();
+    this.asignarPanelAbiertoBoletaId =
+      this.asignarPanelAbiertoBoletaId === boletaId ? null : boletaId;
+    this.cdr.detectChanges();
+  }
+
+  onClickTarjetaBoleta(boleta: BoletaComprada, compra: Compra, event: Event): void {
+    if (this.esTargetInteractivoTarjeta(event.target)) return;
+    if (!this.boletaTarjetaAbreModal(boleta, compra)) return;
+    void this.verBoleta(boleta, compra);
+  }
+
+  onClickTarjetaProducto(compra: CompraProducto, grupo: EventoBoletasGrupo, event: Event): void {
+    if (!this.productoCompraTarjetaAbreModal(compra, grupo)) return;
+    if (this.esTargetInteractivoTarjeta(event.target)) return;
+    void this.verQrCompraProducto(compra, grupo);
   }
 
   getPrecioPreventaProductoDetalle(fila: ProductoConCompra): number {
@@ -1138,6 +1271,7 @@ export class MisCompras implements OnInit, OnDestroy {
       this.reconstruirEventosConBoletas();
     } finally {
       this.loadingBoletasDetalle = false;
+      this.sincronizarRealtimeNotificaciones();
       this.cdr.detectChanges();
     }
   }
@@ -1487,10 +1621,6 @@ export class MisCompras implements OnInit, OnDestroy {
       }
 
       this.limpiarErrorAsignacion(boleta.id);
-      await this.alertService.success(
-        'Listo',
-        'Se aplicaron los datos de tu perfil. El código QR solo aparecerá el día del evento.'
-      );
       try {
         await this.recargarBoletasYTraslados();
       } catch (e) {
@@ -1499,10 +1629,16 @@ export class MisCompras implements OnInit, OnDestroy {
           'Aviso',
           'Se aplicaron los datos, pero no se pudo recargar la pantalla automáticamente.'
         );
+        return;
       }
+      void this.alertService.snackbar(
+        'Listo. Se aplicaron los datos de tu perfil. El QR aparecerá el día del evento.'
+      );
     } finally {
       this.rellenarPerfilBoletaId = null;
-      this.cdr.detectChanges();
+      this.ngZone.run(() => {
+        this.cdr.detectChanges();
+      });
     }
   }
 
@@ -1599,12 +1735,25 @@ export class MisCompras implements OnInit, OnDestroy {
         );
         return;
       }
-      this.alertService.success('Enviado', 'El destinatario debe aceptar el traslado en Mis Boletas. Tú verás el estado como enviado y no podrás usar el QR hasta que canceles o él rechace.');
       this.cerrarModalTraslado();
-      await this.recargarBoletasYTraslados();
+      try {
+        await this.recargarBoletasYTraslados();
+      } catch (e) {
+        console.error(e);
+        await this.alertService.warning(
+          'Aviso',
+          'Se envió la solicitud, pero no se pudo recargar la pantalla automáticamente.'
+        );
+        return;
+      }
+      void this.alertService.snackbar(
+        'Enviado. El destinatario debe aceptar el traslado en Mis Boletas.'
+      );
     } finally {
       this.enviandoTraslado = false;
-      this.cdr.detectChanges();
+      this.ngZone.run(() => {
+        this.cdr.detectChanges();
+      });
     }
   }
 
@@ -1679,8 +1828,13 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   private async recargarBoletasYTraslados(): Promise<void> {
-    await this.loadBoletasPorCompra();
-    this.cdr.detectChanges();
+    this.asignarPanelAbiertoBoletaId = null;
+    await this.loadBoletasPorCompra({ background: true });
+    this.syncTabEventoDetalle();
+    this.persistState(Date.now());
+    this.ngZone.run(() => {
+      this.cdr.detectChanges();
+    });
   }
 
   /** Compra mínima para lógica de QR en entradas recibidas por traslado. */
@@ -1717,9 +1871,241 @@ export class MisCompras implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  private tieneItemsPendientesRedencion(): boolean {
+    for (const item of this.comprasConBoletas) {
+      for (const boleta of item.boletas) {
+        if (this.esBoletaCancelada(boleta)) continue;
+        if (this.puedeAbrirVistaBoleta(boleta, item.compra) && !this.esBoletaUsada(boleta)) {
+          return true;
+        }
+      }
+    }
+
+    for (const boleta of this.entradasCedidas) {
+      if (this.esBoletaCancelada(boleta)) continue;
+      const compra = this.compraVistaParaBoletaCedida(boleta);
+      if (this.puedeAbrirVistaBoleta(boleta, compra) && !this.esBoletaUsada(boleta)) {
+        return true;
+      }
+    }
+
+    for (const compra of this.comprasProductos) {
+      if ((compra.estado_pago || '').toLowerCase() !== TipoEstadoPago.COMPLETADO) continue;
+      for (const item of compra.compras_productos_items || []) {
+        if (this.esProductoComprado(item)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  private patchBoletaEnEstadoLocal(
+    boletaId: number,
+    patch: Pick<BoletaComprada, 'estado' | 'fecha_uso'>
+  ): boolean {
+    let found = false;
+
+    for (const item of this.comprasConBoletas) {
+      for (const boleta of item.boletas) {
+        if (boleta.id === boletaId) {
+          Object.assign(boleta, patch);
+          found = true;
+        }
+      }
+    }
+
+    for (const boleta of this.entradasCedidas) {
+      if (boleta.id === boletaId) {
+        Object.assign(boleta, patch);
+        found = true;
+      }
+    }
+
+    if (this.boletaSeleccionada?.id === boletaId) {
+      Object.assign(this.boletaSeleccionada, patch);
+    }
+
+    return found;
+  }
+
+  private patchCompraProductoRedimidaEnEstadoLocal(
+    compraProductoId: number,
+    estado: string,
+    fechaRedencion?: Date | string
+  ): boolean {
+    const compra = this.comprasProductos.find((c) => c.id === compraProductoId);
+    if (!compra) {
+      return false;
+    }
+
+    for (const item of compra.compras_productos_items || []) {
+      item.estado = estado;
+      if (fechaRedencion) {
+        item.fecha_redencion = fechaRedencion;
+      }
+    }
+
+    if (
+      this.productoFilaSeleccionada?.compra.id === compraProductoId &&
+      this.productoFilaSeleccionada.item
+    ) {
+      this.productoFilaSeleccionada.item.estado = estado;
+      if (fechaRedencion) {
+        this.productoFilaSeleccionada.item.fecha_redencion = fechaRedencion;
+      }
+    }
+
+    return true;
+  }
+
+  private async aplicarEntradaValidadaDesdeNotificacion(
+    metadata: Record<string, unknown>
+  ): Promise<void> {
+    const boletaId = Number(metadata['boleta_id'] ?? 0);
+    if (!Number.isFinite(boletaId) || boletaId <= 0) {
+      return;
+    }
+
+    const patch: Pick<BoletaComprada, 'estado' | 'fecha_uso'> = {
+      estado: String(metadata['estado'] || 'usada').toLowerCase() as BoletaComprada['estado'],
+      fecha_uso: metadata['fecha_uso'] as Date | string | undefined,
+    };
+
+    if (this.patchBoletaEnEstadoLocal(boletaId, patch)) {
+      return;
+    }
+
+    try {
+      const [fresh] = await this.boletasService.getBoletasByIds([boletaId]);
+      if (!fresh) {
+        return;
+      }
+
+      Object.assign(fresh, patch);
+      const compraId = Number(metadata['compra_id'] ?? fresh.compra_id ?? 0);
+      const compra = this.compras.find((c) => c.id === compraId);
+
+      if (compra) {
+        let entry = this.comprasConBoletas.find((x) => x.compra.id === compraId);
+        if (!entry) {
+          entry = { compra, boletas: [] };
+          this.comprasConBoletas.push(entry);
+        }
+        const index = entry.boletas.findIndex((b) => b.id === fresh.id);
+        if (index >= 0) {
+          entry.boletas[index] = { ...entry.boletas[index], ...patch };
+        } else {
+          entry.boletas.push(fresh);
+        }
+        return;
+      }
+
+      const uid = this.authService.getUsuarioId();
+      if (uid && fresh.titular_cliente_id === uid) {
+        const cedidaIndex = this.entradasCedidas.findIndex((b) => b.id === fresh.id);
+        if (cedidaIndex >= 0) {
+          this.entradasCedidas[cedidaIndex] = { ...this.entradasCedidas[cedidaIndex], ...patch };
+        } else {
+          this.entradasCedidas.push(fresh);
+        }
+      }
+    } catch (err) {
+      console.error('[MisCompras] Error refrescando boleta desde notificacion:', err);
+    }
+  }
+
+  private async aplicarProductosRedimidosDesdeNotificacion(
+    metadata: Record<string, unknown>
+  ): Promise<void> {
+    const compraProductoId = Number(metadata['compra_producto_id'] ?? 0);
+    if (!Number.isFinite(compraProductoId) || compraProductoId <= 0) {
+      return;
+    }
+
+    const estado = String(metadata['estado'] || TipoEstadoItemProducto.ENTREGADO).toLowerCase();
+    const fechaRedencion = metadata['fecha_redencion'] as Date | string | undefined;
+
+    if (this.patchCompraProductoRedimidaEnEstadoLocal(compraProductoId, estado, fechaRedencion)) {
+      return;
+    }
+
+    try {
+      const fresh = await this.comprasProductoService.getCompraById(compraProductoId);
+      if ((fresh.estado_pago || '').toLowerCase() !== TipoEstadoPago.COMPLETADO) {
+        return;
+      }
+
+      for (const item of fresh.compras_productos_items || []) {
+        item.estado = estado;
+        if (fechaRedencion) {
+          item.fecha_redencion = fechaRedencion;
+        }
+      }
+
+      const index = this.comprasProductos.findIndex((c) => c.id === compraProductoId);
+      if (index >= 0) {
+        this.comprasProductos[index] = fresh;
+      } else {
+        this.comprasProductos.push(fresh);
+      }
+    } catch (err) {
+      console.error('[MisCompras] Error refrescando compra de productos desde notificacion:', err);
+    }
+  }
+
+  private reconstruirVistaTrasNotificacion(): void {
+    this.reconstruirEventosConBoletas();
+    this.fusionarProductosEnEventos();
+    this.syncTabEventoDetalle();
+    this.persistState(Date.now());
+    this.sincronizarRealtimeNotificaciones();
+  }
+
+  private async refrescarDesdeNotificacion(
+    tipo: string,
+    metadata: Record<string, unknown> | null | undefined
+  ): Promise<void> {
+    const meta = metadata ?? {};
+
+    if (tipo === 'entrada_validada') {
+      await this.aplicarEntradaValidadaDesdeNotificacion(meta);
+      this.reconstruirVistaTrasNotificacion();
+      return;
+    }
+
+    if (tipo === 'productos_redimidos') {
+      await this.aplicarProductosRedimidosDesdeNotificacion(meta);
+      this.reconstruirVistaTrasNotificacion();
+      return;
+    }
+
+    this.loadCompras({ background: true, resetPage: false });
+  }
+
+  private sincronizarRealtimeNotificaciones(): void {
+    const usuarioId = this.authService.getUsuario()?.id || null;
+    if (!usuarioId) {
+      this.detenerRealtimeNotificaciones();
+      return;
+    }
+
+    if (!this.tieneItemsPendientesRedencion()) {
+      if (this.notificacionesChannel) {
+        this.detenerRealtimeNotificaciones();
+      }
+      return;
+    }
+
+    if (!this.notificacionesChannel || this.realtimeUsuarioIdActual !== usuarioId) {
+      this.iniciarRealtimeNotificaciones();
+    }
+  }
+
   private iniciarRealtimeNotificaciones(): void {
     const usuarioId = this.authService.getUsuario()?.id || null;
-    if (!usuarioId) return;
+    if (!usuarioId || !this.tieneItemsPendientesRedencion()) return;
 
     this.detenerRealtimeNotificaciones();
     this.realtimeUsuarioIdActual = usuarioId;
@@ -1730,7 +2116,7 @@ export class MisCompras implements OnInit, OnDestroy {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'notificaciones_usuario',
         },
@@ -1741,6 +2127,7 @@ export class MisCompras implements OnInit, OnDestroy {
               titulo?: string | null;
               mensaje?: string | null;
               tipo?: string | null;
+              metadata?: Record<string, unknown> | null;
             };
             const rowUsuarioId = Number(row?.usuario_id ?? 0);
             if (!Number.isFinite(rowUsuarioId) || rowUsuarioId !== usuarioId) {
@@ -1751,36 +2138,49 @@ export class MisCompras implements OnInit, OnDestroy {
             const tipo = String(row?.tipo || '').toLowerCase();
             const esEntradaValidada = tipo === 'entrada_validada';
             const esProductoRedimido = tipo === 'productos_redimidos';
-            const teniaQrAbierto =
-              (esEntradaValidada && this.showBoletaModal) ||
-              (esProductoRedimido && this.showProductoQrModal);
+            const metadataBoletaId = Number(row?.metadata?.['boleta_id'] ?? 0);
+            const metadataCompraProductoId = Number(row?.metadata?.['compra_producto_id'] ?? 0);
+            const qrBoletaCoincide =
+              esEntradaValidada &&
+              this.showBoletaModal &&
+              Number.isFinite(metadataBoletaId) &&
+              metadataBoletaId > 0 &&
+              this.boletaSeleccionada?.id === metadataBoletaId;
+            const qrProductoCoincide =
+              esProductoRedimido &&
+              this.showProductoQrModal &&
+              Number.isFinite(metadataCompraProductoId) &&
+              metadataCompraProductoId > 0 &&
+              this.productoFilaSeleccionada?.compra.id === metadataCompraProductoId;
+            const teniaQrAbierto = qrBoletaCoincide || qrProductoCoincide;
 
             const boletaActual = this.boletaSeleccionada;
             const compraActual = this.compraSeleccionada;
             const siguienteBoleta =
-              esEntradaValidada && teniaQrAbierto && boletaActual
+              qrBoletaCoincide && boletaActual
                 ? this.buscarSiguienteBoleta(boletaActual, compraActual)
                 : null;
 
-            if (esEntradaValidada && this.showBoletaModal) {
+            const compraProductoRedimida =
+              esProductoRedimido && this.productoFilaSeleccionada?.compra
+                ? this.productoFilaSeleccionada.compra
+                : null;
+
+            if (qrBoletaCoincide) {
               this.cerrarBoletaModal();
             }
-            if (esProductoRedimido && this.showProductoQrModal) {
+            if (qrProductoCoincide) {
               this.cerrarProductoQrModal();
             }
             if (teniaQrAbierto) {
               if (esEntradaValidada) {
-                this.abrirMensajeIngreso(
-                  'entrada',
-                  'Bienvenido al evento',
-                  mensaje || 'Tu entrada fue validada correctamente. Disfruta la experiencia.',
-                  siguienteBoleta
-                );
+                this.abrirMensajeIngresoDesdeNotificacion('entrada', row.metadata, siguienteBoleta);
               } else if (esProductoRedimido) {
-                this.abrirMensajeIngreso(
+                this.abrirMensajeIngresoDesdeNotificacion(
                   'producto',
-                  'Gracias por tu compra',
-                  mensaje || 'Tu pedido fue redimido correctamente. Esperamos que lo disfrutes.'
+                  row.metadata,
+                  null,
+                  compraProductoRedimida
                 );
               }
             }
@@ -1789,7 +2189,10 @@ export class MisCompras implements OnInit, OnDestroy {
             if (!esEntradaValidada && !esProductoRedimido) {
               void this.alertService.snackbar(`${titulo}. ${mensaje}`);
             }
-            this.loadCompras({ background: true, resetPage: false });
+
+            void this.refrescarDesdeNotificacion(tipo, row.metadata).finally(() => {
+              this.cdr.detectChanges();
+            });
           });
         }
       )
@@ -1806,9 +2209,7 @@ export class MisCompras implements OnInit, OnDestroy {
         return;
       }
 
-      if (!this.notificacionesChannel || this.realtimeUsuarioIdActual !== usuarioId) {
-        this.iniciarRealtimeNotificaciones();
-      }
+      this.sincronizarRealtimeNotificaciones();
     };
     this.unsubscribeAuthState = this.authService.onAuthStateChange(callback);
   }
