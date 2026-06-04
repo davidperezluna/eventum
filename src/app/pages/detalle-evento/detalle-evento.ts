@@ -11,7 +11,6 @@ import { AuthService } from '../../services/auth.service';
 import { UsuariosService } from '../../services/usuarios.service';
 import { LugaresService } from '../../services/lugares.service';
 import { CategoriasService } from '../../services/categorias.service';
-import { WompiService } from '../../services/wompi.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { AlertService } from '../../services/alert.service';
 import { DetalleEventoStateService } from '../../services/detalle-evento-state.service';
@@ -134,7 +133,6 @@ export class DetalleEvento implements OnInit, OnDestroy {
     private productosService: ProductosService,
     private lugaresService: LugaresService,
     private categoriasService: CategoriasService,
-    private wompiService: WompiService,
     private supabaseService: SupabaseService,
     private cdr: ChangeDetectorRef
   ) { }
@@ -859,112 +857,100 @@ export class DetalleEvento implements OnInit, OnDestroy {
         return;
       }
 
-      // Procesar compra
       if (!this.evento) {
         this.alertService.error('Error', 'Error: evento no disponible');
         this.comprando = false;
         return;
       }
 
-      // Crear la compra primero
-      const resultado = await this.comprasClienteService.procesarCompra({
+      const pedidoBoletas = {
         evento_id: this.evento.id,
         cliente_id: clienteId,
         items,
-        cupon_id: this.cuponAplicado?.id,
+        cupon_id: this.cuponAplicado?.id ?? null,
         descuento_total: this.getDescuento(),
-        subtotal: this.getSubtotal(),
+        subtotal: this.getSubtotalBoletas(),
         porcentaje_servicio: this.getPorcentajeServicio(),
         valor_servicio: this.getValorServicio(),
         total: this.getTotal()
+      };
+
+      const totalPago = this.getTotal();
+
+      if (totalPago === 0) {
+        const resultado = await this.comprasClienteService.procesarCompra({
+          evento_id: this.evento.id,
+          cliente_id: clienteId,
+          items,
+          cupon_id: this.cuponAplicado?.id,
+          descuento_total: this.getDescuento(),
+          subtotal: this.getSubtotalBoletas(),
+          porcentaje_servicio: this.getPorcentajeServicio(),
+          valor_servicio: this.getValorServicio(),
+          total: totalPago
+        });
+
+        await this.comprasClienteService.confirmarPago(resultado.compra.id);
+        this.alertService.success('¡Compra Exitosa!', 'Tu reserva se ha completado correctamente de forma gratuita.');
+        this.router.navigate(['/pago-resultado'], {
+          queryParams: {
+            compra_id: resultado.compra.id,
+            status: 'APPROVED'
+          }
+        });
+        return;
+      }
+
+      const supabaseUrl = supabaseConfig.url;
+      const { data: { session } } = await this.supabaseService.auth.getSession();
+      const accessToken = session?.access_token;
+
+      if (!accessToken) {
+        throw new Error('No se pudo obtener el token de autenticación');
+      }
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/wompi-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+          apikey: supabaseConfig.anonKey
+        },
+        body: JSON.stringify({
+          tipo: 'boletas',
+          pedido_boletas: pedidoBoletas,
+          amount_in_cents: Math.round(totalPago * 100),
+          redirect_url: getPagoResultadoUrl(),
+          customer_email: this.usuario?.email || ''
+        })
       });
 
-      console.log('Compra creada:', resultado.compra.id);
+      const responseData = await response.json();
 
-      // CASO ESPECIAL: 100% DESCUENTO (Total $0)
-      if (resultado.compra.total === 0) {
-        console.log('Compra gratuita detectada, confirmando directamente...');
-        try {
-          // Confirmar el pago directamente en la base de datos (omitiendo pasarela)
-          await this.comprasClienteService.confirmarPago(resultado.compra.id);
-          
-          // También debemos actualizar los estados de las boletas a 'activo'
-          // El trigger de la base de datos se encarga de esto al detectar el cambio en la compra
-          
-          this.alertService.success('¡Compra Exitosa!', 'Tu reserva se ha completado correctamente de forma gratuita.');
-          this.router.navigate(['/pago-resultado'], { 
-            queryParams: { 
-              compra_id: resultado.compra.id,
-              status: 'APPROVED'
-            } 
-          });
-          return;
-        } catch (confirmError) {
-          console.error('Error confirmando compra gratuita:', confirmError);
-          this.alertService.error('Error', 'Hubo un problema al procesar tu cupón del 100%');
-          this.comprando = false;
-          return;
+      if (!response.ok || !responseData.success) {
+        throw new Error(responseData.error || 'Error al crear transacción en Wompi');
+      }
+
+      const checkoutUrl = responseData.checkout_url || responseData.transaction?.checkout_url;
+
+      if (!checkoutUrl) {
+        throw new Error('No se obtuvo URL de checkout');
+      }
+
+      if (typeof sessionStorage !== 'undefined') {
+        const pending: Record<string, number> = {};
+        if (responseData.transaccion_checkout_id) {
+          pending['transaccion_checkout_id'] = Number(responseData.transaccion_checkout_id);
+        }
+        if (responseData.transaccion_producto_id) {
+          pending['transaccion_producto_id'] = Number(responseData.transaccion_producto_id);
+        }
+        if (Object.keys(pending).length > 0) {
+          sessionStorage.setItem('eventum_pago_pendiente', JSON.stringify(pending));
         }
       }
 
-      // Crear transacción en Wompi usando fetch directo (SOLO SI EL TOTAL > 0)
-      const redirectUrl = getPagoResultadoUrl(`compra_id=${resultado.compra.id}`);
-
-      try {
-        // Obtener URL de Supabase y token de autenticación
-        const supabaseUrl = supabaseConfig.url;
-        const { data: { session } } = await this.supabaseService.auth.getSession();
-        const accessToken = session?.access_token;
-
-        if (!accessToken) {
-          throw new Error('No se pudo obtener el token de autenticación');
-        }
-
-        // Obtener email del cliente
-        const customerEmail = this.usuario?.email || items[0]?.email_asistente || '';
-
-        // Llamar a la Edge Function con fetch directo
-        const response = await fetch(
-          `${supabaseUrl}/functions/v1/wompi-payment`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${accessToken}`,
-              'apikey': supabaseConfig.anonKey
-            },
-            body: JSON.stringify({
-              compra_id: resultado.compra.id,
-              amount_in_cents: Math.round(resultado.compra.total * 100),
-              redirect_url: redirectUrl,
-              customer_email: customerEmail
-            })
-          }
-        );
-
-        const responseData = await response.json();
-
-        // Verificar si hay error en la respuesta
-        if (!response.ok || !responseData.success) {
-          throw new Error(responseData.error || 'Error al crear transacción en Wompi');
-        }
-
-        // La respuesta tiene checkout_url directamente o dentro de transaction
-        const checkoutUrl = responseData.checkout_url || responseData.transaction?.checkout_url;
-
-        if (checkoutUrl) {
-          console.log('Redirigiendo a checkout de Wompi:', checkoutUrl);
-          window.location.href = checkoutUrl;
-        } else {
-          console.error('Respuesta de Wompi:', responseData);
-          this.alertService.error('Error de pago', 'Error: No se obtuvo la URL de pago de Wompi');
-          this.comprando = false;
-        }
-      } catch (err: any) {
-        console.error('Error creando transacción Wompi:', err);
-        this.alertService.error('Error de pago', 'Error al crear transacción en Wompi: ' + (err.message || 'Error desconocido'));
-        this.comprando = false;
-      }
+      window.location.href = checkoutUrl;
     } catch (err: any) {
       console.error('Error procesando compra:', err);
       if (this.authService.isAuthOrRlsError(err?.message)) {

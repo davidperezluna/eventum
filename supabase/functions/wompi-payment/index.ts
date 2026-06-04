@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 /** Versión desplegada — debe coincidir en logs de Supabase al probar checkout de productos. */
-const WOMPI_PAYMENT_VERSION = '2.4.4-checkout-only-productos'
+const WOMPI_PAYMENT_VERSION = '2.5.0-checkout-unificado-only'
 // Secret opcional en Supabase (Edge Functions → Secrets): PUBLIC_APP_URL=https://dev.eventumcol.com
 
 const corsHeaders = {
@@ -20,11 +20,6 @@ function resolveCheckoutLinkTtlMinutes(): number {
   )
   if (!Number.isFinite(raw)) return 30
   return Math.min(1440, Math.max(5, Math.floor(raw)))
-}
-
-function isUnifiedCheckoutEnabled(): boolean {
-  const raw = String(Deno.env.get('CHECKOUT_UNIFICADO_ENABLED') || '').trim().toLowerCase()
-  return raw === 'true' || raw === '1' || raw === 'yes' || raw === 'on'
 }
 
 function generarNumeroIntentoCheckout(): string {
@@ -75,34 +70,15 @@ function inferirTipoPago(body: Record<string, unknown>): TipoPago {
   if (tipo === 'productos' || tipo === 'mixto' || tipo === 'boletas') {
     return tipo as TipoPago
   }
-  const compraId = body.compra_id
   const pedidoProductos = body.pedido_productos
   const pedidoBoletas = body.pedido_boletas
-  if ((compraId || pedidoBoletas) && pedidoProductos) return 'mixto'
+  if (pedidoBoletas && pedidoProductos) return 'mixto'
   if (pedidoProductos) return 'productos'
   return 'boletas'
 }
 
-function buildReference(
-  tipo: TipoPago,
-  compraId: number | null,
-  transaccionProductoId: number | null,
-  transaccionCheckoutId?: number | null,
-): string {
-  const ts = Date.now()
-  if (transaccionCheckoutId) {
-    return `EVENTUM-CHK-TXN-${transaccionCheckoutId}-${ts}`
-  }
-  if (tipo === 'mixto' && compraId && transaccionProductoId) {
-    return `EVENTUM-MIX-${compraId}-TXN-${transaccionProductoId}-${ts}`
-  }
-  if (tipo === 'productos' && transaccionProductoId) {
-    return `EVENTUM-PROD-TXN-${transaccionProductoId}-${ts}`
-  }
-  if (compraId) {
-    return `EVENTUM-${compraId}-${ts}`
-  }
-  return `EVENTUM-CHK-${tipo.toUpperCase()}-${ts}`
+function buildReference(transaccionCheckoutId: number): string {
+  return `EVENTUM-CHK-TXN-${transaccionCheckoutId}-${Date.now()}`
 }
 
 interface PedidoProductosPayload {
@@ -354,28 +330,24 @@ serve(async (req) => {
     }
 
     const tipo = inferirTipoPago(requestBody)
-    const unifiedCheckoutEnabled = isUnifiedCheckoutEnabled()
-    const compraId = requestBody.compra_id ? Number(requestBody.compra_id) : null
     const pedidoBoletasRaw = requestBody.pedido_boletas
     const pedidoProductosRaw = requestBody.pedido_productos
     const amountInCents = requestBody.amount_in_cents ? Number(requestBody.amount_in_cents) : null
     const redirectUrl = typeof requestBody.redirect_url === 'string' ? requestBody.redirect_url : undefined
     const customerEmail = typeof requestBody.customer_email === 'string' ? requestBody.customer_email : undefined
 
-    if (tipo === 'boletas' && !compraId && !unifiedCheckoutEnabled) {
-      throw new Error('compra_id es requerido para pagos de boletas cuando CHECKOUT_UNIFICADO_ENABLED=false')
+    if (requestBody.compra_id) {
+      throw new Error('compra_id ya no es soportado; envíe pedido_boletas y/o pedido_productos')
     }
-    if (tipo === 'boletas' && !compraId && unifiedCheckoutEnabled && !pedidoBoletasRaw) {
-      throw new Error('pedido_boletas es requerido para pagos de boletas unificados')
+
+    if (tipo === 'boletas' && !pedidoBoletasRaw) {
+      throw new Error('pedido_boletas es requerido para pagos de boletas')
     }
     if ((tipo === 'productos' || tipo === 'mixto') && !pedidoProductosRaw) {
       throw new Error('pedido_productos es requerido para pagos de productos')
     }
-    if (tipo === 'mixto' && !compraId && !unifiedCheckoutEnabled) {
-      throw new Error('compra_id es requerido para pagos mixtos cuando CHECKOUT_UNIFICADO_ENABLED=false')
-    }
-    if (tipo === 'mixto' && !compraId && unifiedCheckoutEnabled && !pedidoBoletasRaw) {
-      throw new Error('pedido_boletas es requerido para pagos mixtos unificados')
+    if (tipo === 'mixto' && !pedidoBoletasRaw) {
+      throw new Error('pedido_boletas es requerido para pagos mixtos')
     }
 
     let pedidoProductos: PedidoProductosPayload | null = null
@@ -387,44 +359,16 @@ serve(async (req) => {
       pedidoProductos = parsePedidoProductos(pedidoProductosRaw)
     }
 
-    let compra: Record<string, unknown> | null = null
     let eventoTitulo = 'Evento'
     let eventoId: number | null = null
     let clienteId: number | null = null
     let wompiCuentaHint: number | null = null
     let totalEsperado = 0
 
-    if (compraId) {
-      const { data, error } = await supabaseClient
-        .from('compras')
-        .select('*, eventos!inner(id, titulo, wompi_cuenta_id)')
-        .eq('id', compraId)
-        .single()
-
-      if (error || !data) {
-        throw new Error('Error al obtener la compra de boletas: ' + (error?.message || 'no encontrada'))
-      }
-      compra = data
-      const evento = toObject<{ id?: number; titulo?: string; wompi_cuenta_id?: number | null }>(data.eventos)
-      eventoTitulo = evento?.titulo || eventoTitulo
-      eventoId = evento?.id ?? Number(data.evento_id)
-      clienteId = Number(data.cliente_id)
-      wompiCuentaHint = (data.wompi_cuenta_id as number | null) ?? evento?.wompi_cuenta_id ?? null
-      totalEsperado += Number(data.total || 0)
-    }
-
     if (pedidoBoletas) {
-      eventoId = eventoId ?? pedidoBoletas.evento_id
-      clienteId = clienteId ?? pedidoBoletas.cliente_id
-      if (!compraId) {
-        totalEsperado += pedidoBoletas.total
-      }
-      if (eventoId !== pedidoBoletas.evento_id) {
-        throw new Error('Las compras mixtas deben pertenecer al mismo evento')
-      }
-      if (clienteId && clienteId !== pedidoBoletas.cliente_id) {
-        throw new Error('Las compras mixtas deben pertenecer al mismo cliente')
-      }
+      eventoId = pedidoBoletas.evento_id
+      clienteId = pedidoBoletas.cliente_id
+      totalEsperado += pedidoBoletas.total
 
       const { data: eventoBoletas } = await supabaseClient
         .from('eventos')
@@ -436,7 +380,7 @@ serve(async (req) => {
         throw new Error('Evento de boletas no encontrado')
       }
       eventoTitulo = eventoBoletas.titulo || eventoTitulo
-      wompiCuentaHint = wompiCuentaHint ?? eventoBoletas.wompi_cuenta_id ?? null
+      wompiCuentaHint = eventoBoletas.wompi_cuenta_id ?? null
     }
 
     if (pedidoProductos) {
@@ -514,7 +458,7 @@ serve(async (req) => {
       }
     }
 
-    const shouldPersistCheckout = !!(clienteId && eventoId && (pedidoProductos || unifiedCheckoutEnabled))
+    const shouldPersistCheckout = !!(clienteId && eventoId)
 
     let transaccionCheckoutId: number | null = null
     if (shouldPersistCheckout) {
@@ -525,7 +469,7 @@ serve(async (req) => {
           cliente_id: clienteId,
           evento_id: eventoId,
           wompi_cuenta_id: wompiCuentaId,
-          compra_id: compraId,
+          compra_id: null,
           compra_producto_id: null,
           numero_intento: generarNumeroIntentoCheckout(),
           subtotal: totalEsperado,
@@ -543,7 +487,6 @@ serve(async (req) => {
             pedido_productos: pedidoProductos,
           },
           metadata: {
-            compra_id: compraId,
             transaccion_producto_id: transaccionProductoId,
           },
           flow_version: 'v1-unificado',
@@ -552,17 +495,16 @@ serve(async (req) => {
         .single()
 
       if (checkoutDraftError) {
-        console.warn('No se pudo crear borrador transaccion_checkout:', checkoutDraftError.message)
-      } else {
-        transaccionCheckoutId = Number(checkoutDraft?.id)
+        throw new Error(`No se pudo crear borrador transaccion_checkout: ${checkoutDraftError.message}`)
       }
+      transaccionCheckoutId = Number(checkoutDraft?.id)
     }
 
     if (pedidoProductos && !transaccionCheckoutId && !transaccionProductoId) {
       throw new Error('No se pudo persistir el intento de productos en checkout')
     }
 
-    if (transaccionCheckoutId && unifiedCheckoutEnabled && pedidoBoletas) {
+    if (transaccionCheckoutId && pedidoBoletas) {
       const palcoIdsCheckout = extractPalcoIdsFromPedidoBoletas(pedidoBoletas)
       if (palcoIdsCheckout.length > 0) {
         const { error: reservarCheckoutError } = await supabaseClient.rpc('reservar_palcos_checkout', {
@@ -575,10 +517,13 @@ serve(async (req) => {
       }
     }
 
-    const reference = buildReference(tipo, compraId, transaccionProductoId, transaccionCheckoutId)
+    if (!transaccionCheckoutId) {
+      throw new Error('No se pudo crear transaccion_checkout para el pago')
+    }
+
+    const reference = buildReference(transaccionCheckoutId)
 
     const query = new URLSearchParams()
-    if (compraId) query.set('compra_id', String(compraId))
     if (transaccionProductoId) query.set('transaccion_producto_id', String(transaccionProductoId))
     if (transaccionCheckoutId) query.set('transaccion_checkout_id', String(transaccionCheckoutId))
     query.set('reference', reference)
@@ -588,19 +533,21 @@ serve(async (req) => {
     const redirectUrlFinal = resolveRedirectUrl(redirectUrl, fallbackRedirectUrl)
 
     const paymentName = (() => {
-      if (tipo === 'mixto') return `Compra mixta ${compraId ?? 'CHK'}/TXN-${transaccionProductoId ?? 'CHK'} - ${eventoTitulo}`
+      if (tipo === 'mixto') {
+        return `Compra mixta CHK-${transaccionCheckoutId ?? 'NEW'}/TXN-${transaccionProductoId ?? 'NEW'} - ${eventoTitulo}`
+      }
       if (tipo === 'productos') return `Pedido productos TXN-${transaccionProductoId ?? 'CHK'} - ${eventoTitulo}`
-      return `Compra ${compraId ?? 'CHK'} - ${eventoTitulo}`
+      return `Compra boletas CHK-${transaccionCheckoutId ?? 'NEW'} - ${eventoTitulo}`
     })()
 
     const paymentDescription = (() => {
       if (tipo === 'mixto') {
-        return `Pago combinado boletas #${compraId ?? 'CHK'} + productos (TXN ${transaccionProductoId ?? 'CHK'})`
+        return `Pago combinado boletas + productos (CHK ${transaccionCheckoutId ?? 'NEW'})`
       }
       if (tipo === 'productos') {
         return `Pago pedido productos (TXN ${transaccionProductoId ?? 'CHK'})`
       }
-      return `Pago para compra #${compraId ?? 'CHK'}`
+      return `Pago boletas (CHK ${transaccionCheckoutId ?? 'NEW'})`
     })()
 
     const paymentLinkRequest: Record<string, unknown> = {
@@ -614,7 +561,7 @@ serve(async (req) => {
       reference,
     }
 
-    // Aplicar expiración a todos los links (legacy y unificado) evita pendientes eternos.
+    // Expiración del link de checkout para evitar pendientes eternos.
     const ttlMinutes = resolveCheckoutLinkTtlMinutes()
     paymentLinkRequest.expires_at = new Date(Date.now() + ttlMinutes * 60_000).toISOString()
 
@@ -652,25 +599,6 @@ serve(async (req) => {
     }
 
     const paymentLinkId = wompiData.data?.payment_link_id || wompiData.data?.id
-
-    if (compraId && compra) {
-      const { error: updateError } = await supabaseClient
-        .from('compras')
-        .update({
-          wompi_transaction_id: paymentLinkId,
-          wompi_reference: reference,
-          wompi_cuenta_id: wompiCuentaId,
-          wompi_payment_method: null,
-          wompi_payment_method_type: null,
-          wompi_status: wompiData.data?.status || 'PENDING',
-          wompi_response: wompiData,
-        })
-        .eq('id', compraId)
-
-      if (updateError) {
-        console.error('Error actualizando compra de boletas:', updateError)
-      }
-    }
 
     if (transaccionProductoId && pedidoProductos) {
       const { error: updateTransaccionError } = await supabaseClient
@@ -730,7 +658,7 @@ serve(async (req) => {
             cliente_id: clienteId,
             evento_id: eventoId,
             wompi_cuenta_id: wompiCuentaId,
-            compra_id: compraId,
+            compra_id: null,
             compra_producto_id: null,
             numero_intento: generarNumeroIntentoCheckout(),
             wompi_transaction_id: paymentLinkId,
@@ -755,7 +683,6 @@ serve(async (req) => {
             },
             response_payload: wompiData,
             metadata: {
-              compra_id: compraId,
               transaccion_producto_id: transaccionProductoId,
             },
             expires_at: expiresAt,
@@ -765,14 +692,13 @@ serve(async (req) => {
           .single()
 
         if (checkoutError) {
-          console.warn('No se pudo crear transaccion_checkout (continuando en legacy):', checkoutError.message)
-        } else {
-          transaccionCheckoutId = Number(checkout?.id)
+          throw new Error(`No se pudo crear transaccion_checkout: ${checkoutError.message}`)
         }
+        transaccionCheckoutId = Number(checkout?.id)
       }
     }
 
-    console.log('Pago creado:', { tipo, compraId, transaccionProductoId, reference, paymentLinkId, clienteEmail })
+    console.log('Pago creado:', { tipo, transaccionCheckoutId, transaccionProductoId, reference, paymentLinkId, clienteEmail })
 
     return new Response(
       JSON.stringify({

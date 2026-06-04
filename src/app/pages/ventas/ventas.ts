@@ -230,7 +230,7 @@ export class Ventas implements OnInit, OnDestroy {
     this.cdr.detectChanges();
     try {
       const tipos = await this.boletasService.getTiposBoleta(this.ventaManualEventoId);
-      this.ventaManualTipos = (tipos || []).filter((tipo) => Number(tipo.cantidad_disponibles ?? 0) > 0);
+      this.ventaManualTipos = await this.prepararTiposVentaManual(tipos || []);
       if (!this.ventaManualTipos.length) {
         await this.alertService.warning('Sin boletas', 'El evento seleccionado no tiene tipos de boleta disponibles.');
       }
@@ -488,6 +488,38 @@ export class Ventas implements OnInit, OnDestroy {
 
   private esTipoPalcoMultipersona(tipo: TipoBoleta): boolean {
     return Boolean(tipo.es_palco) || Number(tipo.personas_por_unidad ?? 1) > 1;
+  }
+
+  private async prepararTiposVentaManual(tipos: TipoBoleta[]): Promise<TipoBoleta[]> {
+    const preparados: TipoBoleta[] = [];
+
+    for (const raw of tipos) {
+      let disponibles = this.disponiblesTipoBoleta(raw);
+
+      if (this.esTipoPalcoMultipersona(raw)) {
+        await this.cargarPalcosDisponiblesTipo(raw.id);
+        const palcosLibres = this.palcosDisponiblesPorTipoId.get(raw.id)?.length ?? 0;
+        if (raw.es_palco || palcosLibres > 0) {
+          disponibles = palcosLibres;
+        }
+      }
+
+      if (disponibles > 0) {
+        preparados.push({ ...raw, cantidad_disponibles: disponibles });
+      }
+    }
+
+    return preparados.sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || '')));
+  }
+
+  private disponiblesTipoBoleta(tipo: TipoBoleta): number {
+    const vendidas = Number(tipo.cantidad_vendidas ?? 0);
+    const total = Number(tipo.cantidad_total ?? 0);
+    const calculados = Math.max(0, total - vendidas);
+    if (tipo.cantidad_disponibles === null || tipo.cantidad_disponibles === undefined) {
+      return calculados;
+    }
+    return Math.max(0, Number(tipo.cantidad_disponibles));
   }
 
   private nuevaLineaVentaManual(): LineaVentaManual {

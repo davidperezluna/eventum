@@ -21,7 +21,6 @@ export const environment = {
     serviceWorkerScope: '/push/onesignal/',
   },
   maintenanceMode: false,
-  checkoutUnificadoEnabled: true,
   maintenanceMessage: 'Estamos en mantenimiento. Volvemos pronto.',
   googleTagId: 'GT-5TJZWP3P',
   /** Supabase local vía IP LAN (no usar 127.0.0.1 en el celular). */

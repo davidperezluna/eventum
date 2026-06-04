@@ -16,7 +16,6 @@ import { EventosService } from '../../services/eventos.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { supabaseConfig } from '../../config/supabase.config';
 import { getPagoResultadoUrl } from '../../config/app-url';
-import { environment } from '../../../environments/environment';
 import { TERMINOS_LICOR_TEXTO, TERMINOS_LICOR_TITULO } from '../../constants/productos.constants';
 import {
   CuponDescuento,
@@ -55,7 +54,6 @@ export class Carrito implements OnInit, OnDestroy {
   private palcoFocoSlotPorTipo = new Map<number, number>();
   private palcosLoadingTipo = new Set<number>();
   private refreshPalcosSeq = 0;
-  private readonly checkoutUnificadoEnabled = !!environment.checkoutUnificadoEnabled;
   checkoutPendienteEnCurso: {
     transaccionCheckoutId: number;
     checkoutUrl: string | null;
@@ -350,7 +348,6 @@ export class Carrito implements OnInit, OnDestroy {
         expiro: !!candidato.expiro,
       };
     } catch {
-      // Ambientes sin tabla unificada no deben bloquear el checkout legacy.
       return null;
     }
   }
@@ -966,21 +963,6 @@ export class Carrito implements OnInit, OnDestroy {
         }
       }
 
-      if (this.itemsCompra.length > 0 && !this.checkoutUnificadoEnabled) {
-        const resultadoBoletas = await this.comprasClienteService.procesarCompra({
-          evento_id: this.evento.id,
-          cliente_id: clienteId,
-          items: itemsBoletas,
-          cupon_id: this.cuponAplicado?.id,
-          descuento_total: this.getDescuento(),
-          subtotal: this.getSubtotalBoletas(),
-          porcentaje_servicio: this.getPorcentajeServicio(),
-          valor_servicio: this.getTotalBoletas() - this.getBaseNetaBoletas(),
-          total: this.getTotalBoletas()
-        });
-        compraBoletasId = resultadoBoletas.compra.id;
-      }
-
       const totalPago = this.getTotal();
 
       // Compra gratuita: sí se crean registros porque no hay pasarela (éxito inmediato).
@@ -1027,34 +1009,29 @@ export class Carrito implements OnInit, OnDestroy {
 
       const wompiBody: Record<string, unknown> = {
         amount_in_cents: Math.round(totalPago * 100),
-        customer_email: this.usuario?.email || ''
+        customer_email: this.usuario?.email || '',
+        redirect_url: getPagoResultadoUrl(),
       };
 
-      // Origen real del navegador; wompi-payment añade transaccion_producto_id / compra_id.
-      wompiBody['redirect_url'] = getPagoResultadoUrl();
+      if (pedidoBoletas && pedidoProductos) {
+        wompiBody['tipo'] = 'mixto';
+        wompiBody['pedido_boletas'] = pedidoBoletas;
+        wompiBody['pedido_productos'] = pedidoProductos;
+      } else if (pedidoBoletas) {
+        wompiBody['tipo'] = 'boletas';
+        wompiBody['pedido_boletas'] = pedidoBoletas;
+      } else if (pedidoProductos) {
+        wompiBody['tipo'] = 'productos';
+        wompiBody['pedido_productos'] = pedidoProductos;
+      } else {
+        throw new Error('No hay items para procesar');
+      }
 
       const supabaseUrl = supabaseConfig.url;
       const { data: { session } } = await this.supabaseService.auth.getSession();
       const accessToken = session?.access_token;
       if (!accessToken) {
         throw new Error('No se pudo obtener token de autenticación');
-      }
-      if (this.checkoutUnificadoEnabled && pedidoBoletas && pedidoProductos) {
-        wompiBody['tipo'] = 'mixto';
-        wompiBody['pedido_boletas'] = pedidoBoletas;
-        wompiBody['pedido_productos'] = pedidoProductos;
-      } else if (this.checkoutUnificadoEnabled && pedidoBoletas) {
-        wompiBody['tipo'] = 'boletas';
-        wompiBody['pedido_boletas'] = pedidoBoletas;
-      } else if (compraBoletasId && pedidoProductos) {
-        wompiBody['tipo'] = 'mixto';
-        wompiBody['compra_id'] = compraBoletasId;
-        wompiBody['pedido_productos'] = pedidoProductos;
-      } else if (pedidoProductos) {
-        wompiBody['tipo'] = 'productos';
-        wompiBody['pedido_productos'] = pedidoProductos;
-      } else if (compraBoletasId) {
-        wompiBody['compra_id'] = compraBoletasId;
       }
 
       const response = await fetch(`${supabaseUrl}/functions/v1/wompi-payment`, {
@@ -1069,9 +1046,6 @@ export class Carrito implements OnInit, OnDestroy {
 
       const responseData = await response.json();
       if (!response.ok || !responseData.success) {
-        if (compraBoletasId && !this.checkoutUnificadoEnabled) {
-          await this.supabaseService.from('compras').delete().eq('id', compraBoletasId);
-        }
         throw new Error(responseData.error || 'Error creando transacción en Wompi');
       }
 
@@ -1082,7 +1056,6 @@ export class Carrito implements OnInit, OnDestroy {
 
       if (typeof sessionStorage !== 'undefined') {
         const pending: Record<string, number> = {};
-        if (compraBoletasId) pending['compra_id'] = compraBoletasId;
         if (responseData.transaccion_producto_id) {
           pending['transaccion_producto_id'] = Number(responseData.transaccion_producto_id);
         }

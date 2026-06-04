@@ -58,11 +58,6 @@ function resolveBatchLimit(): number {
   return Math.min(1000, Math.max(10, Math.floor(raw)))
 }
 
-function isUnifiedCheckoutEnabled(): boolean {
-  const raw = String(Deno.env.get('CHECKOUT_UNIFICADO_ENABLED') || '').trim().toLowerCase()
-  return raw === 'true' || raw === '1' || raw === 'yes' || raw === 'on'
-}
-
 function mapFinalStatusToEstado(status: string): string {
   switch (status) {
     case 'DECLINED':
@@ -309,38 +304,6 @@ async function closeTransaccionCheckout(
   }
 }
 
-async function closeCompraLegacy(
-  supabaseClient: ReturnType<typeof createClient>,
-  compraId: number,
-  wompiStatus: string,
-  motivo: string,
-): Promise<void> {
-  const now = new Date().toISOString()
-  const estadoPago = wompiStatus === 'APPROVED' ? 'completado' : 'fallido'
-  const estadoCompra = wompiStatus === 'APPROVED' ? 'confirmada' : 'cancelada'
-
-  const { error: compraError } = await supabaseClient
-    .from('compras')
-    .update({
-      wompi_status: wompiStatus,
-      estado_pago: estadoPago,
-      estado_compra: estadoCompra,
-      fecha_confirmacion: wompiStatus === 'APPROVED' ? now : null,
-      fecha_cancelacion: wompiStatus === 'APPROVED' ? null : now,
-      motivo_cancelacion: wompiStatus === 'APPROVED' ? null : motivo,
-    })
-    .eq('id', compraId)
-
-  if (compraError) throw compraError
-
-  if (wompiStatus !== 'APPROVED') {
-    const { error: liberarError } = await supabaseClient.rpc('cancelar_reserva_palcos_compra', {
-      p_compra_id: compraId,
-    })
-    if (liberarError && !isMissingRpcError(liberarError)) throw liberarError
-  }
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -420,11 +383,6 @@ serve(async (req) => {
       checkout_expired: 0,
       checkout_rejected_or_voided: 0,
       checkout_approved_skipped: 0,
-      compras_legacy_found: 0,
-      compras_legacy_processed: 0,
-      compras_legacy_expired: 0,
-      compras_legacy_rejected_or_voided: 0,
-      compras_legacy_approved_skipped: 0,
     }
 
     const credentialCache = new Map<string, WompiAccountCache>()
@@ -598,95 +556,6 @@ serve(async (req) => {
           } catch (err) {
             summary.errors += 1
             summary.error_details.push(`checkout:${row.id} -> ${err instanceof Error ? err.message : String(err)}`)
-          }
-        }
-      }
-    }
-
-    {
-      const { data: comprasLegacy, error: comprasLegacyError } = await supabaseClient
-        .from('compras')
-        .select(
-          'id, evento_id, wompi_cuenta_id, wompi_transaction_id, wompi_reference, wompi_response, wompi_webhook_data, estado_pago, estado_compra, fecha_compra',
-        )
-        .eq('estado_pago', 'pendiente')
-        .eq('estado_compra', 'pendiente')
-        .lte('fecha_compra', cutoffIso)
-        .order('fecha_compra', { ascending: true })
-        .limit(batchLimit)
-
-      if (comprasLegacyError) {
-        summary.errors += 1
-        summary.error_details.push(`compras_legacy_query -> ${comprasLegacyError.message}`)
-      } else {
-        summary.compras_legacy_found = comprasLegacy?.length || 0
-
-        for (const compra of comprasLegacy || []) {
-          summary.compras_legacy_processed += 1
-          try {
-            const eventoId = compra.evento_id ? Number(compra.evento_id) : null
-            const wompiCuentaId = compra.wompi_cuenta_id ? Number(compra.wompi_cuenta_id) : null
-            const compraId = Number(compra.id)
-            const wompiReference = compra.wompi_reference ? String(compra.wompi_reference) : null
-
-            const credentials = await resolveWompiCredentials(
-              supabaseClient,
-              eventoId,
-              wompiCuentaId,
-              credentialCache,
-            )
-            const wompiBaseUrl = credentials.environment === 'production'
-              ? 'https://production.wompi.co/v1'
-              : 'https://sandbox.wompi.co/v1'
-
-            const idsToTry = new Set<string>()
-            if (compra.wompi_transaction_id) idsToTry.add(String(compra.wompi_transaction_id))
-            for (const id of extractTransactionIds(compra.wompi_response)) idsToTry.add(id)
-            for (const id of extractTransactionIds(compra.wompi_webhook_data)) idsToTry.add(id)
-
-            let transaction: Record<string, unknown> | null = null
-            for (const id of idsToTry) {
-              const found = await fetchTransactionById(wompiBaseUrl, credentials.privateKey, id)
-              if (found) {
-                transaction = found
-                break
-              }
-            }
-            if (!transaction && wompiReference) {
-              transaction = await fetchTransactionByReference(
-                wompiBaseUrl,
-                credentials.privateKey,
-                wompiReference,
-              )
-            }
-
-            const wompiStatus = String(transaction?.status || '').toUpperCase()
-            if (wompiStatus === 'APPROVED') {
-              summary.compras_legacy_approved_skipped += 1
-              continue
-            }
-
-            if (wompiStatus === 'DECLINED' || wompiStatus === 'VOIDED' || wompiStatus === 'ERROR') {
-              await closeCompraLegacy(
-                supabaseClient,
-                compraId,
-                wompiStatus,
-                `Compra legacy finalizada sin aprobación (${wompiStatus})`,
-              )
-              summary.compras_legacy_rejected_or_voided += 1
-              continue
-            }
-
-            await closeCompraLegacy(
-              supabaseClient,
-              compraId,
-              'EXPIRED',
-              'Compra legacy no completada: checkout abandonado o link expirado',
-            )
-            summary.compras_legacy_expired += 1
-          } catch (err) {
-            summary.errors += 1
-            summary.error_details.push(`compra_legacy:${compra.id} -> ${err instanceof Error ? err.message : String(err)}`)
           }
         }
       }

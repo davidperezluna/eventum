@@ -15,6 +15,8 @@ export interface WompiTransactionResponse {
     checkout_url?: string;
     permalink?: string;
   };
+  transaccion_checkout_id?: number;
+  transaccion_producto_id?: number;
   error?: string;
 }
 
@@ -27,41 +29,18 @@ export class WompiService {
   ) {}
 
   /**
-   * Crea una transacción en Wompi para una compra
+   * Consulta el estado de un checkout Wompi por payment link id.
    */
-  async crearTransaccion(compraId: number, datosPago: WompiPaymentData): Promise<WompiTransactionResponse> {
-    try {
-      const { data, error } = await this.supabase.functions.invoke('wompi-payment', {
-        body: {
-          compra_id: compraId,
-          datos_pago: datosPago
-        }
-      });
-
-      if (error) {
-        console.error('Error en función Wompi:', error);
-        throw error;
-      }
-
-      return data as WompiTransactionResponse;
-    } catch (error) {
-      console.error('Error creando transacción Wompi:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Obtiene el estado de una transacción de Wompi
-   */
-  async obtenerEstadoTransaccion(transactionId: string): Promise<any> {
-    // Esta función puede llamar a la API de Wompi directamente si es necesario
-    // Por ahora, el webhook se encarga de actualizar el estado
+  async obtenerEstadoTransaccion(transactionId: string): Promise<{
+    wompi_status?: string;
+    estado?: string;
+  } | null> {
     try {
       const { data, error } = await this.supabase
-        .from('compras')
-        .select('wompi_status, estado_pago, estado_compra')
+        .from('transacciones_checkout')
+        .select('wompi_status, estado')
         .eq('wompi_transaction_id', transactionId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         throw error;
@@ -74,4 +53,3 @@ export class WompiService {
     }
   }
 }
-

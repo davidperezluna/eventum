@@ -31,23 +31,17 @@ type CheckoutIntent = {
 }
 
 function parseReference(reference: string | null | undefined): {
-  tipo: TipoPago | null
-  compraId: number | null
-  compraProductoId: number | null
   transaccionProductoId: number | null
   transaccionCheckoutId: number | null
 } {
   const ref = String(reference || '').trim()
   if (!ref) {
-    return { tipo: null, compraId: null, compraProductoId: null, transaccionProductoId: null, transaccionCheckoutId: null }
+    return { transaccionProductoId: null, transaccionCheckoutId: null }
   }
 
   const checkoutMatch = ref.match(/^EVENTUM-CHK-TXN-(\d+)-/i)
   if (checkoutMatch) {
     return {
-      tipo: null,
-      compraId: null,
-      compraProductoId: null,
       transaccionProductoId: null,
       transaccionCheckoutId: Number(checkoutMatch[1]),
     }
@@ -56,21 +50,7 @@ function parseReference(reference: string | null | undefined): {
   const mixMatch = ref.match(/^EVENTUM-MIX-(\d+)-TXN-(\d+)-/i)
   if (mixMatch) {
     return {
-      tipo: 'mixto',
-      compraId: Number(mixMatch[1]),
-      compraProductoId: null,
       transaccionProductoId: Number(mixMatch[2]),
-      transaccionCheckoutId: null,
-    }
-  }
-
-  const mixLegacyMatch = ref.match(/^EVENTUM-MIX-(\d+)-(\d+)-/i)
-  if (mixLegacyMatch) {
-    return {
-      tipo: 'mixto',
-      compraId: Number(mixLegacyMatch[1]),
-      compraProductoId: Number(mixLegacyMatch[2]),
-      transaccionProductoId: null,
       transaccionCheckoutId: null,
     }
   }
@@ -78,37 +58,12 @@ function parseReference(reference: string | null | undefined): {
   const prodTxnMatch = ref.match(/^EVENTUM-PROD-TXN-(\d+)-/i)
   if (prodTxnMatch) {
     return {
-      tipo: 'productos',
-      compraId: null,
-      compraProductoId: null,
       transaccionProductoId: Number(prodTxnMatch[1]),
       transaccionCheckoutId: null,
     }
   }
 
-  const prodMatch = ref.match(/^EVENTUM-PROD-(\d+)-/i)
-  if (prodMatch) {
-    return {
-      tipo: 'productos',
-      compraId: null,
-      compraProductoId: Number(prodMatch[1]),
-      transaccionProductoId: null,
-      transaccionCheckoutId: null,
-    }
-  }
-
-  const boletaMatch = ref.match(/^EVENTUM-(\d+)-/i)
-  if (boletaMatch) {
-    return {
-      tipo: 'boletas',
-      compraId: Number(boletaMatch[1]),
-      compraProductoId: null,
-      transaccionProductoId: null,
-      transaccionCheckoutId: null,
-    }
-  }
-
-  return { tipo: null, compraId: null, compraProductoId: null, transaccionProductoId: null, transaccionCheckoutId: null }
+  return { transaccionProductoId: null, transaccionCheckoutId: null }
 }
 
 function mapEstadosWompi(wompiStatus: string | undefined): {
@@ -778,7 +733,7 @@ async function findTransaccionCheckout(
       if (data) return data as CheckoutIntent
     }
   } catch (e) {
-    console.warn('No se pudo resolver transacciones_checkout (continuando legacy):', (e as Error).message)
+    console.warn('No se pudo resolver transacciones_checkout:', (e as Error).message)
   }
   return null
 }
@@ -878,7 +833,6 @@ serve(async (req) => {
       )
     }
 
-    let compraBoletas: Record<string, unknown> | null = null
     let transaccionProducto: Record<string, unknown> | null = null
     let transaccionCheckout = await findTransaccionCheckout(
       supabaseClient,
@@ -888,13 +842,6 @@ serve(async (req) => {
     )
 
     if (paymentLinkId) {
-      const { data: compraData } = await supabaseClient
-        .from('compras')
-        .select('id, evento_id, wompi_cuenta_id, wompi_reference, wompi_transaction_id, estado_pago, estado_compra')
-        .eq('wompi_transaction_id', paymentLinkId)
-        .maybeSingle()
-      compraBoletas = compraData
-
       const { data: transaccionData } = await supabaseClient
         .from('transacciones_producto')
         .select('id, compra_producto_id, wompi_cuenta_id, wompi_reference, wompi_transaction_id, estado')
@@ -928,16 +875,15 @@ serve(async (req) => {
 
     let compraProductoId = transaccionProducto?.compra_producto_id
       ? Number(transaccionProducto.compra_producto_id)
-      : parsedRef.compraProductoId
+      : null
     if (!compraProductoId && transaccionCheckout?.compra_producto_id) {
       compraProductoId = Number(transaccionCheckout.compra_producto_id)
     }
 
-    const compraBoletasId = compraBoletas?.id
-      ? Number(compraBoletas.id)
-      : (transaccionCheckout?.compra_id ? Number(transaccionCheckout.compra_id) : parsedRef.compraId)
+    let compraBoletas: Record<string, unknown> | null = null
+    const compraBoletasId = transaccionCheckout?.compra_id ? Number(transaccionCheckout.compra_id) : null
 
-    if (!compraBoletas && compraBoletasId) {
+    if (compraBoletasId) {
       const { data } = await supabaseClient
         .from('compras')
         .select('id, evento_id, wompi_cuenta_id, wompi_reference, wompi_transaction_id, estado_pago, estado_compra')
@@ -946,12 +892,12 @@ serve(async (req) => {
       compraBoletas = data
     }
 
-    if (!compraBoletas && !transaccionProducto && !transaccionCheckout) {
-      console.error('No se encontró compra de boletas ni de productos para el webhook')
+    if (!transaccionCheckout && !transaccionProducto) {
+      console.error('No se encontró transacción checkout ni de productos para el webhook')
       return new Response(
         JSON.stringify({
           received: true,
-          message: 'Compra no encontrada',
+          message: 'Transacción no encontrada',
           searched_payment_link_id: paymentLinkId,
           searched_reference: reference,
         }),
@@ -959,19 +905,19 @@ serve(async (req) => {
       )
     }
 
-    let wompiCuentaId =
-      (compraBoletas?.wompi_cuenta_id as number | null) ??
-      (transaccionProducto?.wompi_cuenta_id as number | null) ??
-      (transaccionCheckout?.wompi_cuenta_id as number | null) ??
-      null
-
-    const eventoId = compraBoletas?.evento_id
-      ? Number(compraBoletas.evento_id)
+    const eventoId = transaccionCheckout?.evento_id
+      ? Number(transaccionCheckout.evento_id)
       : transaccionProducto?.evento_id
         ? Number(transaccionProducto.evento_id)
-        : transaccionCheckout?.evento_id
-          ? Number(transaccionCheckout.evento_id)
+        : compraBoletas?.evento_id
+          ? Number(compraBoletas.evento_id)
           : null
+    let wompiCuentaId =
+      (transaccionCheckout?.wompi_cuenta_id as number | null) ??
+      (transaccionProducto?.wompi_cuenta_id as number | null) ??
+      (compraBoletas?.wompi_cuenta_id as number | null) ??
+      null
+
     if (!wompiCuentaId && eventoId) {
       const { data: eventoData } = await supabaseClient
         .from('eventos')
@@ -1128,7 +1074,7 @@ serve(async (req) => {
         compra_id: compraBoletas?.id ?? null,
         compra_producto_id: compraProductoId,
         transaccion_producto_id: transaccionProductoId,
-        tipo: parsedRef.tipo || (compraBoletas && transaccionProductoId ? 'mixto' : transaccionProductoId ? 'productos' : 'boletas'),
+        tipo: checkoutTipo || (compraBoletas && transaccionProductoId ? 'mixto' : transaccionProductoId ? 'productos' : 'boletas'),
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

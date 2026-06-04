@@ -272,7 +272,6 @@ serve(async (req) => {
     const body = await req.json() as {
       transaccion_producto_id?: number
       transaccion_checkout_id?: number
-      compra_id?: number
       wompi_transaction_id?: string
       force_cancel?: boolean
     }
@@ -280,15 +279,14 @@ serve(async (req) => {
     const transaccionProductoId = body.transaccion_producto_id
       ? Number(body.transaccion_producto_id)
       : null
-    let compraId = body.compra_id ? Number(body.compra_id) : null
     const transaccionCheckoutId = body.transaccion_checkout_id
       ? Number(body.transaccion_checkout_id)
       : null
     const wompiTransactionId = body.wompi_transaction_id?.trim() || null
     const forceCancel = !!body.force_cancel
 
-    if (!transaccionProductoId && !compraId && !transaccionCheckoutId && !wompiTransactionId) {
-      throw new Error('wompi_transaction_id, transaccion_producto_id, transaccion_checkout_id o compra_id es requerido')
+    if (!transaccionProductoId && !transaccionCheckoutId && !wompiTransactionId) {
+      throw new Error('wompi_transaction_id, transaccion_producto_id o transaccion_checkout_id es requerido')
     }
 
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey)
@@ -333,7 +331,6 @@ serve(async (req) => {
         )
       }
 
-      if (!compraId && checkout.compra_id) compraId = Number(checkout.compra_id)
       if (!compraProductoId && checkout.compra_producto_id) compraProductoId = Number(checkout.compra_producto_id)
       eventoId = checkout.evento_id ? Number(checkout.evento_id) : eventoId
       wompiCuentaId = checkout.wompi_cuenta_id ? Number(checkout.wompi_cuenta_id) : wompiCuentaId
@@ -397,28 +394,6 @@ serve(async (req) => {
       wompiStatusTxn = txn.wompi_status ? String(txn.wompi_status) : null
       esActivaTxn = txn.es_activa == null ? null : !!txn.es_activa
       wompiTransactionStored = txn.wompi_transaction_id ? String(txn.wompi_transaction_id) : null
-    }
-
-    if (compraId) {
-      const { data: compra } = await supabaseClient
-        .from('compras')
-        .select('id, evento_id, wompi_cuenta_id, estado_pago, wompi_status')
-        .eq('id', compraId)
-        .maybeSingle()
-
-      if (!compra) {
-        throw new Error(`Compra ${compraId} no encontrada`)
-      }
-
-      if (compra.estado_pago === 'completado' || compra.wompi_status === 'APPROVED') {
-        return new Response(
-          JSON.stringify({ success: true, already_synced: true, status: 'APPROVED' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
-        )
-      }
-
-      eventoId = eventoId ?? (compra.evento_id ? Number(compra.evento_id) : null)
-      wompiCuentaId = wompiCuentaId ?? (compra.wompi_cuenta_id ? Number(compra.wompi_cuenta_id) : null)
     }
 
     const { privateKey, environment } = await resolveWompiPrivateKey(

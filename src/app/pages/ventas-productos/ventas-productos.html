@@ -66,20 +66,17 @@
                 <tr *ngFor="let compra of compras">
                   <td>{{ compra.id }}</td>
                   <td>
-                    <ng-container *ngIf="tieneCheckout(compra); else transaccionLegacyProductosDesktop">
-                      <a
-                        class="btn-link"
-                        [routerLink]="['/transacciones-checkout']"
-                        [queryParams]="{ compra_producto_id: compra.id }"
-                        title="Ver transacción completa"
-                      >
-                        {{ compra.numero_pedido || ('#' + compra.id) }}
-                      </a>
-                    </ng-container>
-                    <ng-template #transaccionLegacyProductosDesktop>
-                      <span class="text-muted" title="Compra sin checkout unificado">
-                        {{ compra.numero_pedido || ('#' + compra.id) }}
-                      </span>
+                    <a
+                      *ngIf="tieneCheckout(compra); else transaccionSinCheckoutProductosDesktop"
+                      class="btn-link"
+                      [routerLink]="['/transacciones-checkout']"
+                      [queryParams]="{ compra_producto_id: compra.id }"
+                      title="Ver transacción completa"
+                    >
+                      {{ compra.numero_pedido || ('#' + compra.id) }}
+                    </a>
+                    <ng-template #transaccionSinCheckoutProductosDesktop>
+                      <span>{{ compra.numero_pedido || ('#' + compra.id) }}</span>
                     </ng-template>
                   </td>
                   <td>{{ getClienteNombre(compra) }}</td>
@@ -114,20 +111,17 @@
                 <div class="venta-header">
                   <div class="venta-header__start">
                     <span class="venta-transaccion">
-                      <ng-container *ngIf="tieneCheckout(compra); else transaccionLegacyProductosMobile">
-                        <a
-                          class="btn-link"
-                          [routerLink]="['/transacciones-checkout']"
-                          [queryParams]="{ compra_producto_id: compra.id }"
-                          title="Ver transacción completa"
-                        >
-                          {{ compra.numero_pedido || ('#' + compra.id) }}
-                        </a>
-                      </ng-container>
-                      <ng-template #transaccionLegacyProductosMobile>
-                        <span class="text-muted" title="Compra sin checkout unificado">
-                          {{ compra.numero_pedido || ('#' + compra.id) }}
-                        </span>
+                      <a
+                        *ngIf="tieneCheckout(compra); else transaccionSinCheckoutProductosMobile"
+                        class="btn-link"
+                        [routerLink]="['/transacciones-checkout']"
+                        [queryParams]="{ compra_producto_id: compra.id }"
+                        title="Ver transacción completa"
+                      >
+                        {{ compra.numero_pedido || ('#' + compra.id) }}
+                      </a>
+                      <ng-template #transaccionSinCheckoutProductosMobile>
+                        <span>{{ compra.numero_pedido || ('#' + compra.id) }}</span>
                       </ng-template>
                     </span>
                     <span class="venta-fecha">{{ compra.fecha_compra | dateFormat:'short' }}</span>

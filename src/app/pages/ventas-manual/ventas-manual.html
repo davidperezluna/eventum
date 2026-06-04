@@ -82,7 +82,7 @@
             <select [(ngModel)]="linea.tipo_boleta_id" (ngModelChange)="onLineaTipoChange(linea)">
               <option [ngValue]="null">Selecciona un tipo</option>
               <option *ngFor="let tipo of ventaManualTipos" [ngValue]="tipo.id">
-                {{ tipo.nombre }} · ${{ tipo.precio | number:'1.0-0' }} · Disp: {{ tipo.cantidad_disponibles }}
+                {{ tipo.nombre }} · ${{ tipo.precio | number:'1.0-0' }} · Disp: {{ tipo.cantidad_disponibles }}{{ tipo.es_palco ? ' palco(s)' : '' }}
               </option>
             </select>
           </div>

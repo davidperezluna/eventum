@@ -70,6 +70,25 @@ export interface ItemProductoEscaneo {
   productos_resumen?: string[];
 }
 
+export interface IniciarCheckoutParams {
+  tipo?: 'boletas' | 'productos' | 'mixto';
+  amount_in_cents?: number;
+  customer_email?: string;
+  redirect_url?: string;
+  pedido_boletas?: Record<string, unknown>;
+  pedido_productos?: Record<string, unknown>;
+}
+
+export interface IniciarCheckoutResult {
+  success: boolean;
+  error?: string;
+  checkout_url?: string;
+  transaccion_checkout_id?: number | null;
+  transaccion_producto_id?: number | null;
+  compra_id?: number | null;
+  compra_producto_id?: number | null;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -102,6 +121,72 @@ export class ComprasProductoService {
     const timestamp = Date.now();
     const random = Math.floor(Math.random() * 10000);
     return `WPROD-${timestamp}-${random}`;
+  }
+
+  /**
+   * Inicia el checkout unificado (boletas/productos/mixto) vía Edge Function.
+   * Se mantiene para compatibilidad con flujos legacy como ventas-manual.
+   */
+  async iniciarCheckout(params: IniciarCheckoutParams): Promise<IniciarCheckoutResult> {
+    try {
+      const {
+        data: { session }
+      } = await this.supabase.getClient().auth.getSession();
+      const accessToken = session?.access_token;
+
+      if (!accessToken) {
+        return { success: false, error: 'No se pudo obtener token de autenticación' };
+      }
+
+      const response = await fetch(`${supabaseConfig.url}/functions/v1/wompi-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+          apikey: supabaseConfig.anonKey
+        },
+        body: JSON.stringify(params)
+      });
+
+      const payload = (await response.json()) as Record<string, unknown>;
+      const success = response.ok && payload?.['success'] === true;
+      if (!success) {
+        return {
+          success: false,
+          error: String(payload?.['error'] || 'No se pudo iniciar el checkout')
+        };
+      }
+
+      const transaccionCheckoutId = payload?.['transaccion_checkout_id']
+        ? Number(payload['transaccion_checkout_id'])
+        : null;
+      const transaccionProductoId = payload?.['transaccion_producto_id']
+        ? Number(payload['transaccion_producto_id'])
+        : null;
+
+      let compraId: number | null = null;
+      let compraProductoId: number | null = null;
+
+      if (transaccionCheckoutId) {
+        const resolved = await this.resolverPorCheckoutId(transaccionCheckoutId);
+        compraId = resolved.compraId;
+        compraProductoId = resolved.compraProductoId;
+      }
+
+      return {
+        success: true,
+        checkout_url: String(payload?.['checkout_url'] || ''),
+        transaccion_checkout_id: transaccionCheckoutId,
+        transaccion_producto_id: transaccionProductoId,
+        compra_id: compraId,
+        compra_producto_id: compraProductoId
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error?.message || 'Error iniciando checkout'
+      };
+    }
   }
 
   async validarDisponibilidad(items: ItemCompraProducto[]): Promise<{ valido: boolean; errores: string[] }> {
@@ -866,7 +951,6 @@ export class ComprasProductoService {
     wompi_transaction_id?: string;
     transaccion_checkout_id?: number;
     transaccion_producto_id?: number;
-    compra_id?: number;
     force_cancel?: boolean;
   }): Promise<{ success: boolean; wompi_status?: string }> {
     const wompiTransactionId = params.wompi_transaction_id?.trim();
@@ -897,7 +981,6 @@ export class ComprasProductoService {
           wompi_transaction_id: wompiTransactionId,
           transaccion_checkout_id: transaccionCheckoutId ?? undefined,
           transaccion_producto_id: params.transaccion_producto_id,
-          compra_id: params.compra_id,
           force_cancel: !!params.force_cancel,
         }),
         signal: controller.signal,

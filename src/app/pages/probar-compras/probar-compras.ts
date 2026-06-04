@@ -21,6 +21,7 @@ export class ProbarCompras implements OnInit, OnDestroy {
   eventosFiltrados: Evento[] = [];
   categorias: CategoriaEvento[] = [];
   loading = false;
+  loadError: string | null = null;
   searchTerm = '';
   categoriaFiltro: number | null = null;
   totalItemsCarrito = 0;
@@ -72,25 +73,62 @@ export class ProbarCompras implements OnInit, OnDestroy {
   }
 
   private async loadEventos(): Promise<void> {
+    this.loadError = null;
     try {
-      const response = await this.eventosService.getEventos({
-        limit: 200,
-        sortBy: 'fecha_inicio',
-        sortOrder: 'desc',
-      });
-
-      const ahora = new Date();
-      this.eventos = (response.data || []).filter((evento) => {
-        if (evento.estado === TipoEstadoEvento.FINALIZADO) return false;
-        if (evento.fecha_fin && new Date(evento.fecha_fin) < ahora) return false;
-        return true;
-      });
+      const crudos = await this.fetchEventosParaPrueba();
+      this.eventos = crudos.filter((evento) => this.esEventoProbableCompra(evento));
       await this.cargarResumenProductosEventos();
+      if (this.eventos.length === 0) {
+        this.loadError = crudos.length === 0
+          ? 'No se encontraron eventos en la base de datos para este usuario.'
+          : 'Los eventos visibles están finalizados o cancelados.';
+      }
     } catch (err) {
       console.error('Error cargando eventos:', err);
       this.eventos = [];
       this.resumenProductosPorEvento = new Map();
+      this.loadError = 'No se pudieron cargar los eventos. Revisa la consola o intenta recargar.';
     }
+  }
+
+  /** Admin: incluye inactivos/ocultos; excluye solo finalizados/cancelados. */
+  private esEventoProbableCompra(evento: Evento): boolean {
+    const estado = String(evento.estado || '').toLowerCase();
+    return estado !== TipoEstadoEvento.FINALIZADO && estado !== TipoEstadoEvento.CANCELADO;
+  }
+
+  private async fetchEventosParaPrueba(): Promise<Evento[]> {
+    const base = {
+      limit: 100,
+      sortBy: 'fecha_inicio' as const,
+      sortOrder: 'desc' as const,
+    };
+
+    const intentos: Array<Record<string, unknown>> = [
+      {},
+      { activo: true, estado: TipoEstadoEvento.PUBLICADO },
+      { activo: true },
+      { activo: false },
+    ];
+
+    const porId = new Map<number, Evento>();
+
+    for (const extra of intentos) {
+      try {
+        const response = await this.eventosService.getEventos({ ...base, ...extra });
+        for (const evento of response.data || []) {
+          porId.set(evento.id, evento);
+        }
+      } catch (err) {
+        console.warn('probar-compras: intento de carga de eventos falló', extra, err);
+      }
+    }
+
+    return [...porId.values()].sort((a, b) => {
+      const fa = a.fecha_inicio ? new Date(a.fecha_inicio).getTime() : 0;
+      const fb = b.fecha_inicio ? new Date(b.fecha_inicio).getTime() : 0;
+      return fb - fa;
+    });
   }
 
   onFiltrosChange(): void {

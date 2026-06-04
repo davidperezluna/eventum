@@ -101,7 +101,8 @@
     <div *ngIf="!loading && eventosFiltrados.length === 0" class="empty-state">
       <span class="material-icons">event_busy</span>
       <h3>No hay eventos disponibles</h3>
-      <p>No se encontraron eventos para probar compras.</p>
+      <p *ngIf="loadError">{{ loadError }}</p>
+      <p *ngIf="!loadError">No se encontraron eventos para probar compras.</p>
     </div>
   </div>
 </div>
