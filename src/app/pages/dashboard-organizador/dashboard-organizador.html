@@ -76,7 +76,7 @@
                   venta.tipo_venta === 'productos' ? 'badge-productos' :
                   (venta.tipo_venta === 'mixta' ? 'badge-mixta' : 'badge-ventas')
                 ">
-                  {{ venta.tipo_venta === 'productos' ? 'Productos' : (venta.tipo_venta === 'mixta' ? 'Mixta' : 'Ventas') }}
+                  {{ venta.tipo_venta === 'productos' ? 'Productos' : (venta.tipo_venta === 'mixta' ? 'Mixta' : 'Boletas') }}
                 </span>
                 <span class="venta-estado" [class]="venta.estado_pago === 'completado' ? 'badge-success' : 'badge-warning'">
                   {{ venta.estado_pago || 'Pendiente' }}
