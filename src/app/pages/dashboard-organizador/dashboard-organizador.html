@@ -25,7 +25,7 @@
       <h2>Resumen ejecutivo</h2>
       <p>Indicadores clave de tu operación como organizador.</p>
     </div>
-    <app-dashboard-kpis [stats]="stats" eventosLabel="Mis eventos activos"></app-dashboard-kpis>
+    <app-dashboard-kpis [stats]="stats" eventosLabel="Mis eventos activos" [mostrarProductos]="!!stats.tiene_productos"></app-dashboard-kpis>
   </section>
 
   <!-- Ingresos por mes / día -->
@@ -39,6 +39,7 @@
     </div>
     <app-finanzas-desglose
       [stats]="stats"
+      [mostrarProductos]="!!stats.tiene_productos"
       clienteSubtext="Tu lado como organizador: ventas de boletas y neto tras Wompi sobre ese rubro."
     ></app-finanzas-desglose>
   </section>
@@ -70,9 +71,17 @@
             </div>
             <div class="venta-details">
               <span class="venta-total">{{ formatCurrency(venta.total || 0) }}</span>
-              <span class="venta-estado" [class]="venta.estado_pago === 'completado' ? 'badge-success' : 'badge-warning'">
-                {{ venta.estado_pago || 'Pendiente' }}
-              </span>
+              <div class="venta-badges">
+                <span class="venta-tipo-badge" [class]="
+                  venta.tipo_venta === 'productos' ? 'badge-productos' :
+                  (venta.tipo_venta === 'mixta' ? 'badge-mixta' : 'badge-ventas')
+                ">
+                  {{ venta.tipo_venta === 'productos' ? 'Productos' : (venta.tipo_venta === 'mixta' ? 'Mixta' : 'Ventas') }}
+                </span>
+                <span class="venta-estado" [class]="venta.estado_pago === 'completado' ? 'badge-success' : 'badge-warning'">
+                  {{ venta.estado_pago || 'Pendiente' }}
+                </span>
+              </div>
             </div>
           </div>
         </div>

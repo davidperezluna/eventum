@@ -74,6 +74,39 @@ export class LectorEventoTipoBoletaService {
     }
   }
 
+  /**
+   * Crea (si no existe) el permiso de productos por evento usando la misma tabla
+   * con `tipo_boleta_id = null`.
+   */
+  async crearAsignacionProductos(usuarioId: number, eventoId: number): Promise<void> {
+    const { data: existente, error: errSel } = await this.supabase
+      .from(this.table)
+      .select('id')
+      .eq('usuario_id', usuarioId)
+      .eq('evento_id', eventoId)
+      .is('tipo_boleta_id', null)
+      .maybeSingle();
+
+    if (errSel) {
+      console.error('Error comprobando asignación de productos existente:', errSel);
+      throw errSel;
+    }
+    if (existente) {
+      return;
+    }
+
+    const { error } = await this.supabase.from(this.table).insert({
+      usuario_id: usuarioId,
+      evento_id: eventoId,
+      tipo_boleta_id: null,
+    });
+
+    if (error) {
+      console.error('Error creando asignación lector (productos):', error);
+      throw error;
+    }
+  }
+
   async eliminar(id: number): Promise<void> {
     const { error } = await this.supabase.from(this.table).delete().eq('id', id);
     if (error) {

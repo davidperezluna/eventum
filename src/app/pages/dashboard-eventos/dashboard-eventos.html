@@ -124,13 +124,13 @@
     <!-- Tab General -->
     <div *ngIf="tabActivo === 'general'" class="tab-content">
       <!-- Stats Grid Principal -->
-      <app-dashboard-kpis [stats]="stats" [showIngresosVariacion]="false"></app-dashboard-kpis>
+      <app-dashboard-kpis [stats]="stats" [showIngresosVariacion]="false" [mostrarProductos]="!!stats.tiene_productos"></app-dashboard-kpis>
 
       <!-- Ingresos mensuales y diarios -->
       <app-ingresos-resumen [stats]="stats"></app-ingresos-resumen>
 
       <!-- Desglose ingresos: empresario vs Eventum -->
-      <app-finanzas-desglose *ngIf="!loading && !error" [stats]="stats"></app-finanzas-desglose>
+      <app-finanzas-desglose *ngIf="!loading && !error" [stats]="stats" [mostrarProductos]="!!stats.tiene_productos"></app-finanzas-desglose>
 
       <!-- Boletas por Estado -->
       <div class="report-card">

@@ -109,7 +109,12 @@ export interface CompraProductoFilters extends BaseFilters {
 export interface DashboardStats {
   eventos_activos: number;
   boletas_vendidas: number;
+  productos_vendidos?: number;
+  pedidos_productos?: number;
+  /** Indica si existen productos configurados para el alcance actual del dashboard. */
+  tiene_productos?: boolean;
   ingresos_totales: number;
+  ingresos_productos_totales?: number;
   clientes: number;
   ventas_recientes?: any[];
   eventos_proximos?: any[];
@@ -126,14 +131,24 @@ export interface DashboardStats {
   valor_servicio_total?: number;
   /** Suma de max(0, total − valor_servicio) por compra completada (parte boletas/ventas). */
   ingresos_ventas_bruto_total?: number;
+  /** Suma de max(0, total − valor_servicio) por compras de productos completadas. */
+  ingresos_productos_bruto_total?: number;
   /** Estimación comisión Wompi (no extracto oficial). */
   wompi_total_estimado?: number;
+  wompi_productos_total_estimado?: number;
   wompi_ventas_total?: number;
+  wompi_productos_ventas_total?: number;
   wompi_servicio_total?: number;
+  wompi_productos_servicio_total?: number;
   neto_ventas_post_wompi_total?: number;
+  neto_productos_ventas_post_wompi_total?: number;
   neto_servicio_post_wompi_total?: number;
+  neto_productos_servicio_post_wompi_total?: number;
   /** Después de Wompi: ∑(T − W) = ingresos_totales − wompi_total_estimado (salvo redondeos). */
   neto_total_post_wompi_total?: number;
+  neto_productos_total_post_wompi_total?: number;
+  porcentaje_servicio_productos_promedio?: number;
+  valor_servicio_productos_total?: number;
   boletas_por_estado?: { estado: string; cantidad: number }[];
   eventos_por_categoria?: { categoria: string; cantidad: number }[];
   top_eventos?: any[];

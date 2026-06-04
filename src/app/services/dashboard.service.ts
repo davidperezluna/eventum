@@ -80,6 +80,49 @@ export class DashboardService {
       return response.count || 0;
     }, 0);
 
+    // Unidades de productos vendidas (solo pago completado)
+    const productosVendidos = safeExecute(async () => {
+      const response = await withEventFilter(this.supabase
+        .from('compras_productos_items')
+        .select('cantidad, compra:compras_productos!inner(estado_pago, evento_id)')
+        .eq('compra.estado_pago', 'completado'), 'compra.evento_id');
+
+      if (response.error) {
+        console.error('Error en productos vendidos:', response.error);
+        return 0;
+      }
+      if (!Array.isArray(response.data)) return 0;
+      return response.data.reduce((sum: number, item: any) => sum + Number(item.cantidad || 0), 0);
+    }, 0);
+
+    // Pedidos de productos completados
+    const pedidosProductos = safeExecute(async () => {
+      const response = await withEventFilter(this.supabase
+        .from('compras_productos')
+        .select('id', { count: 'exact', head: true })
+        .eq('estado_pago', 'completado'));
+
+      if (response.error) {
+        console.error('Error en pedidos de productos:', response.error);
+        return 0;
+      }
+      return response.count || 0;
+    }, 0);
+
+    // Disponibilidad de productos configurados en el alcance actual
+    const tieneProductos = safeExecute(async () => {
+      const response = await withEventFilter(this.supabase
+        .from('productos')
+        .select('id', { count: 'exact', head: true })
+        .eq('activo', true));
+
+      if (response.error) {
+        console.error('Error validando productos configurados:', response.error);
+        return false;
+      }
+      return (response.count || 0) > 0;
+    }, false);
+
     // Ingresos y servicio totales
     const ingresosYServicioTotalesPromise = safeExecute(async () => {
       const response = await withEventFilter(this.supabase
@@ -139,6 +182,64 @@ export class DashboardService {
       ingresosVentasBrutoTotal: 0,
     });
 
+    // Ingresos y servicio de compras de productos
+    const ingresosYServicioProductosPromise = safeExecute(async () => {
+      const response = await withEventFilter(this.supabase
+        .from('compras_productos')
+        .select('total, porcentaje_servicio, valor_servicio')
+        .eq('estado_pago', 'completado'));
+
+      if (response.error) {
+        console.error('Error en ingresos de productos:', response.error);
+        return {
+          ingresos: 0,
+          valorServicioTotal: 0,
+          porcentajeServicioPromedio: 0,
+          wompiTotalEstimado: 0,
+          wompiVentasTotal: 0,
+          wompiServicioTotal: 0,
+          netoVentasPostWompiTotal: 0,
+          netoServicioPostWompiTotal: 0,
+          ingresosVentasBrutoTotal: 0,
+        };
+      }
+      if (Array.isArray(response.data)) {
+        const a = agregarFinanzasDesdeComprasCompletadas(response.data as any[]);
+        return {
+          ingresos: a.ingresos,
+          valorServicioTotal: a.valorServicioTotal,
+          porcentajeServicioPromedio: a.porcentajeServicioPromedio,
+          wompiTotalEstimado: a.wompi_total_estimado,
+          wompiVentasTotal: a.wompi_ventas_total,
+          wompiServicioTotal: a.wompi_servicio_total,
+          netoVentasPostWompiTotal: a.neto_ventas_post_wompi_total,
+          netoServicioPostWompiTotal: a.neto_servicio_post_wompi_total,
+          ingresosVentasBrutoTotal: a.ingresos_ventas_bruto_total,
+        };
+      }
+      return {
+        ingresos: 0,
+        valorServicioTotal: 0,
+        porcentajeServicioPromedio: 0,
+        wompiTotalEstimado: 0,
+        wompiVentasTotal: 0,
+        wompiServicioTotal: 0,
+        netoVentasPostWompiTotal: 0,
+        netoServicioPostWompiTotal: 0,
+        ingresosVentasBrutoTotal: 0,
+      };
+    }, {
+      ingresos: 0,
+      valorServicioTotal: 0,
+      porcentajeServicioPromedio: 0,
+      wompiTotalEstimado: 0,
+      wompiVentasTotal: 0,
+      wompiServicioTotal: 0,
+      netoVentasPostWompiTotal: 0,
+      netoServicioPostWompiTotal: 0,
+      ingresosVentasBrutoTotal: 0,
+    });
+
     // Clientes únicos (solo con pago completado)
     const clientes = safeExecute(async () => {
       const response = await withEventFilter(this.supabase
@@ -157,20 +258,125 @@ export class DashboardService {
       return 0;
     }, 0);
 
-    // Ventas recientes (últimas 5, solo con pago completado)
+    // Ventas recientes (boletas + productos, solo pago completado)
     const ventasRecientes = safeExecute(async () => {
-      const response = await withEventFilter(this.supabase
-        .from('compras')
-        .select('*, evento:eventos(id, titulo)')
-        .eq('estado_pago', 'completado')
-        .order('fecha_compra', { ascending: false })
-        .limit(5));
-      
-      if (response.error) {
-        console.error('Error en ventas recientes:', response.error);
-        return [];
+      const [comprasRes, comprasProductosRes] = await Promise.all([
+        withEventFilter(this.supabase
+          .from('compras')
+          .select('id, cliente_id, evento_id, numero_transaccion, total, estado_pago, fecha_compra, evento:eventos(id, titulo)')
+          .eq('estado_pago', 'completado')
+          .order('fecha_compra', { ascending: false })
+          .limit(20)),
+        withEventFilter(this.supabase
+          .from('compras_productos')
+          .select('id, cliente_id, evento_id, numero_pedido, total, estado_pago, fecha_compra, evento:eventos(id, titulo)')
+          .eq('estado_pago', 'completado')
+          .order('fecha_compra', { ascending: false })
+          .limit(20))
+      ]);
+
+      if (comprasRes.error) {
+        console.error('Error en ventas recientes (boletas):', comprasRes.error);
       }
-      return response.data || [];
+      if (comprasProductosRes.error) {
+        console.error('Error en ventas recientes (productos):', comprasProductosRes.error);
+      }
+
+      const boletas = Array.isArray(comprasRes.data) ? comprasRes.data : [];
+      const productos = Array.isArray(comprasProductosRes.data) ? comprasProductosRes.data : [];
+
+      const normalizarFecha = (v: any): number => {
+        const t = new Date(v || 0).getTime();
+        return Number.isFinite(t) ? t : 0;
+      };
+      const extractSeed = (value: unknown): number => {
+        const raw = String(value || '');
+        const m = raw.match(/(\d{10,})/);
+        if (!m) return 0;
+        const n = Number(m[1]);
+        return Number.isFinite(n) ? n : 0;
+      };
+      const pickEvent = (raw: any): any => Array.isArray(raw) ? (raw[0] || null) : raw;
+
+      const rows = [
+        ...boletas.map((c: any) => ({
+          source: 'ventas' as const,
+          id: c.id,
+          cliente_id: c.cliente_id,
+          evento_id: c.evento_id,
+          fecha_compra: c.fecha_compra,
+          total: Number(c.total || 0),
+          estado_pago: c.estado_pago || 'completado',
+          numero_transaccion: String(c.numero_transaccion || `COMP-${c.id}`),
+          seed: extractSeed(c.numero_transaccion),
+          evento: pickEvent(c.evento)
+        })),
+        ...productos.map((c: any) => ({
+          source: 'productos' as const,
+          id: c.id,
+          cliente_id: c.cliente_id,
+          evento_id: c.evento_id,
+          fecha_compra: c.fecha_compra,
+          total: Number(c.total || 0),
+          estado_pago: c.estado_pago || 'completado',
+          numero_transaccion: String(c.numero_pedido || `PROD-${c.id}`),
+          seed: extractSeed(c.numero_pedido),
+          evento: pickEvent(c.evento)
+        }))
+      ];
+
+      const merged: any[] = [];
+      const sorted = [...rows].sort((a, b) => normalizarFecha(b.fecha_compra) - normalizarFecha(a.fecha_compra));
+      const used = new Array(sorted.length).fill(false);
+      const mergeWindowMs = 2 * 60 * 1000; // 2 minutos
+
+      for (let i = 0; i < sorted.length; i++) {
+        if (used[i]) continue;
+        used[i] = true;
+        const base = sorted[i];
+        const arr = [base];
+        const baseTs = normalizarFecha(base.fecha_compra);
+        const baseCliente = Number(base.cliente_id || 0);
+        const baseEvento = Number(base.evento_id || 0);
+
+        for (let j = i + 1; j < sorted.length; j++) {
+          if (used[j]) continue;
+          const cand = sorted[j];
+          if (Number(cand.evento_id || 0) !== baseEvento) continue;
+          const candTs = normalizarFecha(cand.fecha_compra);
+          const sameCliente = baseCliente > 0 && Number(cand.cliente_id || 0) === baseCliente;
+          const sameTimeWindow = Math.abs(baseTs - candTs) <= mergeWindowMs;
+          const sameSeedWindow =
+            Number(base.seed || 0) > 0 &&
+            Number(cand.seed || 0) > 0 &&
+            Math.abs(Number(base.seed || 0) - Number(cand.seed || 0)) <= mergeWindowMs;
+          if (!((sameCliente && sameTimeWindow) || sameSeedWindow)) continue;
+          used[j] = true;
+          arr.push(cand);
+        }
+
+        const hasVentas = arr.some((r) => r.source === 'ventas');
+        const hasProductos = arr.some((r) => r.source === 'productos');
+        const latest = [...arr].sort((a, b) => normalizarFecha(b.fecha_compra) - normalizarFecha(a.fecha_compra))[0];
+        if (hasVentas && hasProductos) {
+          const ventaBase = arr.find((r) => r.source === 'ventas') || latest;
+          merged.push({
+            ...latest,
+            numero_transaccion: ventaBase.numero_transaccion || latest.numero_transaccion,
+            total: arr.reduce((sum, r) => sum + Number(r.total || 0), 0),
+            tipo_venta: 'mixta'
+          });
+        } else {
+          merged.push({
+            ...latest,
+            tipo_venta: hasProductos ? 'productos' : 'ventas'
+          });
+        }
+      }
+
+      return merged
+        .sort((a, b) => normalizarFecha(b.fecha_compra) - normalizarFecha(a.fecha_compra))
+        .slice(0, 5);
     }, []);
 
     // Eventos próximos (próximos 5)
@@ -391,7 +597,11 @@ export class DashboardService {
     const [
       eventos_activos,
       boletas_vendidas,
+      productos_vendidos,
+      pedidos_productos,
+      tiene_productos,
       ingresosYServicioTotales,
+      ingresosYServicioProductos,
       clientes_count,
       ventas_recientes,
       eventos_proximos,
@@ -407,7 +617,11 @@ export class DashboardService {
     ] = await Promise.all([
       eventosActivos,
       boletasVendidas,
+      productosVendidos,
+      pedidosProductos,
+      tieneProductos,
       ingresosYServicioTotalesPromise,
+      ingresosYServicioProductosPromise,
       clientes,
       ventasRecientes,
       eventosProximos,
@@ -425,7 +639,11 @@ export class DashboardService {
     return {
       eventos_activos,
       boletas_vendidas,
+      productos_vendidos,
+      pedidos_productos,
+      tiene_productos,
       ingresos_totales: ingresosYServicioTotales.ingresos,
+      ingresos_productos_totales: ingresosYServicioProductos.ingresos,
       clientes: clientes_count,
       ventas_recientes: ventas_recientes as any[],
       eventos_proximos: eventos_proximos as any[],
@@ -438,14 +656,24 @@ export class DashboardService {
       ingresos_dia_anterior,
       porcentaje_servicio_promedio: ingresosYServicioTotales.porcentajeServicioPromedio,
       valor_servicio_total: ingresosYServicioTotales.valorServicioTotal,
+      porcentaje_servicio_productos_promedio: ingresosYServicioProductos.porcentajeServicioPromedio,
+      valor_servicio_productos_total: ingresosYServicioProductos.valorServicioTotal,
       ingresos_ventas_bruto_total: ingresosYServicioTotales.ingresosVentasBrutoTotal,
+      ingresos_productos_bruto_total: ingresosYServicioProductos.ingresosVentasBrutoTotal,
       wompi_total_estimado: ingresosYServicioTotales.wompiTotalEstimado,
+      wompi_productos_total_estimado: ingresosYServicioProductos.wompiTotalEstimado,
       wompi_ventas_total: ingresosYServicioTotales.wompiVentasTotal,
+      wompi_productos_ventas_total: ingresosYServicioProductos.wompiVentasTotal,
       wompi_servicio_total: ingresosYServicioTotales.wompiServicioTotal,
+      wompi_productos_servicio_total: ingresosYServicioProductos.wompiServicioTotal,
       neto_ventas_post_wompi_total: ingresosYServicioTotales.netoVentasPostWompiTotal,
+      neto_productos_ventas_post_wompi_total: ingresosYServicioProductos.netoVentasPostWompiTotal,
       neto_servicio_post_wompi_total: ingresosYServicioTotales.netoServicioPostWompiTotal,
+      neto_productos_servicio_post_wompi_total: ingresosYServicioProductos.netoServicioPostWompiTotal,
       neto_total_post_wompi_total:
         ingresosYServicioTotales.ingresos - ingresosYServicioTotales.wompiTotalEstimado,
+      neto_productos_total_post_wompi_total:
+        ingresosYServicioProductos.ingresos - ingresosYServicioProductos.wompiTotalEstimado,
       boletas_por_estado: boletas_por_estado as any[],
       top_eventos: top_eventos as any[]
     };

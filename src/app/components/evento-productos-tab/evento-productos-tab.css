@@ -1,1 +1,162 @@
 @import url('../../styles/compra-catalogo.shared.css');
+
+.preventa-hint {
+  margin: 0.45rem 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+  border-radius: 999px;
+  padding: 0.28rem 0.68rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.preventa-hint .material-icons {
+  font-size: 0.95rem;
+}
+
+.preventa-hint--urgent {
+  border-color: #fdba74;
+  background: #fff7ed;
+  color: #9a3412;
+  box-shadow: 0 4px 12px -10px rgba(154, 52, 18, 0.5);
+}
+
+.preventa-hint--evento {
+  border-color: #c7d2fe;
+  background: #eef2ff;
+  color: #3730a3;
+  box-shadow: none;
+}
+
+.producto-precio-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.18rem;
+  min-width: 132px;
+}
+
+.producto-precio-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 0.16rem 0.52rem;
+  white-space: nowrap;
+}
+
+.producto-precio-badge--evento {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.producto-precio-contexto {
+  font-size: 0.78rem;
+  color: #475569;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.producto-precio-contexto--tachado {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  opacity: 0.95;
+}
+
+.producto-precio-ahorro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  border: 1px solid #86efac;
+  background: #f0fdf4;
+  border-radius: 999px;
+  padding: 0.12rem 0.48rem;
+  font-size: 0.74rem;
+  color: #15803d;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+:host .tipo-boleta-header .precio {
+  font-size: 1.45rem;
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1.05;
+}
+
+@media (max-width: 480px) {
+  :host .tipo-boleta-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.45rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .producto-precio-stack {
+    min-width: 0;
+    width: 100%;
+    align-items: flex-start;
+    gap: 0.26rem;
+  }
+
+  :host .tipo-boleta-header .precio {
+    font-size: 1.34rem;
+  }
+
+  .preventa-hint {
+    margin-top: 0.6rem;
+    margin-bottom: 0.3rem;
+    padding: 0.32rem 0.72rem;
+    font-size: 0.8rem;
+  }
+
+  :host .tipo-boleta-card {
+    padding: 1rem;
+    border-radius: 1rem;
+  }
+
+  :host .tipo-descripcion {
+    margin-bottom: 0.75rem;
+    line-height: 1.45;
+  }
+
+  :host .tipo-info {
+    gap: 0.55rem;
+    margin-bottom: 0.95rem;
+  }
+
+  :host .tipo-info-metricas {
+    row-gap: 0.45rem;
+  }
+
+  .producto-precio-badge {
+    font-size: 0.68rem;
+  }
+
+  .producto-precio-contexto,
+  .producto-precio-ahorro {
+    font-size: 0.76rem;
+  }
+
+  :host .tipo-actions {
+    margin-top: 0.35rem;
+  }
+
+  :host .btn-add {
+    min-height: 44px;
+    border-radius: 12px;
+  }
+}

@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink, ActivatedRoute } from '@angular/router';
 import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
 import { BoletasService } from '../../services/boletas.service';
+import { ComprasProductoService, ItemProductoEscaneo } from '../../services/compras-producto.service';
 import { AlertService } from '../../services/alert.service';
 import { AuthService, RolesPermitidos } from '../../services/auth.service';
 import {
@@ -19,6 +20,7 @@ import {
   buildPermisoKey,
   PermisoEscaneo,
 } from '../../services/lector-permisos.service';
+import { LectorStateService } from '../../services/lector-state.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { BoletaComprada, TipoEstadoBoleta } from '../../types';
 @Component({
@@ -35,6 +37,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
   buscando = false;
   validando = false;
   boleta: BoletaComprada | null = null;
+  productoItem: ItemProductoEscaneo | null = null;
   boletasEncontradas: BoletaComprada[] = [];
   modalVisible = false;
   nombreTipoBoleta = '';
@@ -50,6 +53,8 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
 
   permisos: PermisoEscaneo[] = [];
   permisoKeys = new Set<string>();
+  permisoEventoIds = new Set<number>();
+  permisoEventoProductoIds = new Set<number>();
   esLector = false;
   cargandoPermisos = true;
 
@@ -61,6 +66,14 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
   private permisosReady = false;
   private cameraDomRetries = 0;
   private readonly maxCameraDomRetries = 8;
+  private visibilityHandler = () => {
+    void this.onVisibilityChange();
+  };
+  private focusHandler = () => {
+    this.programarReinicioCamara(250);
+  };
+  private restartTimer: ReturnType<typeof setTimeout> | null = null;
+  private autoAdvanceTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly readerId = 'eventum-qr-reader';
 
@@ -73,9 +86,11 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(
     private boletasService: BoletasService,
+    private comprasProductoService: ComprasProductoService,
     private alertService: AlertService,
     private authService: AuthService,
     private lectorPermisos: LectorPermisosService,
+    private lectorStateService: LectorStateService,
     private supabase: SupabaseService,
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
@@ -93,25 +108,67 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
 
     const usuario = this.authService.getUsuario();
     this.esLector = usuario?.tipo_usuario_id === RolesPermitidos.LECTOR;
+    const userId = this.authService.getUsuarioId();
 
     if (this.requierePermisosLector) {
-      try {
-        this.permisos = await this.lectorPermisos.fetchMisPermisosEscaneo();
-        this.permisoKeys = new Set(
-          this.permisos.map((p) => buildPermisoKey(p.evento_id, p.tipo_boleta_id))
-        );
-      } catch {
+      const cachedPermisos = userId ? this.lectorStateService.getPermisos(userId) : null;
+      if (cachedPermisos) {
+        this.aplicarPermisos(cachedPermisos);
+        this.cargandoPermisos = false;
+        this.permisosReady = true;
+        this.cdr.detectChanges();
+        this.scheduleIniciarCamaraTrasRender();
+        void this.cargarPermisosLector({ background: true, userId });
+      } else {
+        await this.cargarPermisosLector({ background: false, userId });
+        this.cargandoPermisos = false;
+        this.permisosReady = true;
+        this.cdr.detectChanges();
+        this.scheduleIniciarCamaraTrasRender();
+      }
+    } else {
+      this.cargandoPermisos = false;
+      this.permisosReady = true;
+      this.cdr.detectChanges();
+      this.scheduleIniciarCamaraTrasRender();
+    }
+    this.cdr.markForCheck();
+    this.registrarEventosCicloVida();
+  }
+
+  private aplicarPermisos(permisos: PermisoEscaneo[]): void {
+    this.permisos = [...(permisos || [])];
+    this.permisoKeys = new Set(
+      this.permisos
+        .filter((p) => p.tipo_boleta_id != null)
+        .map((p) => buildPermisoKey(p.evento_id, p.tipo_boleta_id as number))
+    );
+    this.permisoEventoIds = new Set(this.permisos.map((p) => p.evento_id));
+    this.permisoEventoProductoIds = new Set(
+      this.permisos
+        .filter((p) => p.categoria === 'producto')
+        .map((p) => p.evento_id)
+    );
+  }
+
+  private async cargarPermisosLector(options: { background: boolean; userId: number | null }): Promise<void> {
+    try {
+      const permisos = await this.lectorPermisos.fetchMisPermisosEscaneo();
+      this.aplicarPermisos(permisos);
+      if (options.userId) {
+        this.lectorStateService.savePermisos(options.userId, permisos);
+      }
+    } catch {
+      if (!options.background) {
         this.permisos = [];
+        this.permisoKeys = new Set<string>();
+        this.permisoEventoIds = new Set<number>();
+        this.permisoEventoProductoIds = new Set<number>();
         await this.alertService.error(
           'No se pudieron cargar tus permisos de escaneo.'
         );
       }
     }
-    this.cargandoPermisos = false;
-    this.permisosReady = true;
-    this.cdr.detectChanges();
-    this.scheduleIniciarCamaraTrasRender();
-    this.cdr.markForCheck();
   }
 
   ngAfterViewInit(): void {
@@ -136,12 +193,82 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.removerEventosCicloVida();
+    if (this.restartTimer) {
+      clearTimeout(this.restartTimer);
+      this.restartTimer = null;
+    }
+    this.limpiarAutoAvance();
     void this.detenerCamara();
+  }
+
+  private registrarEventosCicloVida(): void {
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', this.visibilityHandler);
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', this.focusHandler);
+      window.addEventListener('pageshow', this.focusHandler);
+    }
+  }
+
+  private removerEventosCicloVida(): void {
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+    }
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('focus', this.focusHandler);
+      window.removeEventListener('pageshow', this.focusHandler);
+    }
+  }
+
+  private async onVisibilityChange(): Promise<void> {
+    if (typeof document === 'undefined') return;
+    if (document.hidden) {
+      // Al bloquear o enviar a segundo plano, liberamos stream para evitar cámara congelada al volver.
+      await this.detenerCamara();
+      this.cdr.markForCheck();
+      return;
+    }
+    this.programarReinicioCamara(300);
+  }
+
+  private programarReinicioCamara(delayMs = 200): void {
+    if (this.modoBusqueda !== 'scanner' || this.cargandoPermisos || this.modalVisible) {
+      return;
+    }
+    if (this.requierePermisosLector && this.permisos.length === 0) {
+      return;
+    }
+    if (this.restartTimer) {
+      clearTimeout(this.restartTimer);
+    }
+    this.restartTimer = setTimeout(() => {
+      this.restartTimer = null;
+      void this.forzarReinicioCamara();
+    }, Math.max(0, delayMs));
+  }
+
+  async forzarReinicioCamara(): Promise<void> {
+    if (this.modoBusqueda !== 'scanner' || this.cargandoPermisos || this.iniciandoCamara) {
+      return;
+    }
+    if (this.requierePermisosLector && this.permisos.length === 0) {
+      return;
+    }
+    this.cameraError = null;
+    this.escaneoPausado = false;
+    this.ultimoCodigo = '';
+    this.cameraDomRetries = 0;
+    this.cdr.markForCheck();
+    await this.detenerCamara();
+    await this.iniciarCamara();
   }
 
   async cambiarModo(modo: 'scanner' | 'manual'): Promise<void> {
     if (this.modoBusqueda === modo) return;
     this.modoBusqueda = modo;
+    this.limpiarAutoAvance();
     this.cerrarModal();
     if (modo === 'scanner') {
       this.cameraDomRetries = 0;
@@ -275,6 +402,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
 
     this.buscando = true;
     this.boleta = null;
+    this.productoItem = null;
     this.boletasEncontradas = [];
     this.modalVisible = false;
     this.cdr.markForCheck();
@@ -323,16 +451,23 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
 
     try {
       const encontrada = await this.boletasService.buscarBoletaPorCodigoQR(codigo.trim());
-      if (!encontrada) {
+      if (encontrada) {
+        await this.mostrarBoletaEnModal(encontrada);
+        return;
+      }
+
+      const producto = await this.comprasProductoService.buscarItemPorCodigoQR(codigo.trim());
+      const productoPedido = producto || await this.comprasProductoService.buscarCompraPorCodigoQR(codigo.trim());
+      if (!productoPedido) {
         await this.alertService.info(
           'No encontrado',
-          'No hay ninguna boleta con ese código QR.'
+          'No hay ninguna boleta o producto con ese código QR.'
         );
         await this.reiniciarEscaneo();
         return;
       }
 
-      await this.mostrarBoletaEnModal(encontrada);
+      await this.mostrarProductoEnModal(productoPedido);
     } catch (err: unknown) {
       console.error(err);
       const msg = err instanceof Error ? err.message : 'Error desconocido';
@@ -365,19 +500,46 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     this.tituloEvento =
       eventoTitulo || boleta.evento?.titulo || `Evento #${tipoBoleta?.evento_id ?? ''}`;
     this.boleta = boleta;
+    this.productoItem = null;
     this.modalVisible = true;
+    this.programarAutoAvanceModalSiAplica();
+    this.cdr.markForCheck();
+  }
+
+  private async mostrarProductoEnModal(item: ItemProductoEscaneo): Promise<void> {
+    if (this.requierePermisosLector) {
+      const eventoId = item.compra?.evento_id;
+      if (!eventoId || !this.permisoEventoProductoIds.has(eventoId)) {
+        this.errorPermiso = 'Este producto no corresponde a un evento asignado para escanear.';
+        await this.alertService.warning('Sin permiso', this.errorPermiso);
+        await this.reiniciarEscaneo();
+        return;
+      }
+    }
+    this.boleta = null;
+    this.productoItem = item;
+    this.modalVisible = true;
+    this.programarAutoAvanceModalSiAplica();
     this.cdr.markForCheck();
   }
 
   cerrarModal(mantenerLista = false): void {
+    this.limpiarAutoAvance();
     this.modalVisible = false;
     this.boleta = null;
+    this.productoItem = null;
     this.nombreTipoBoleta = '';
     this.tituloEvento = '';
     if (!mantenerLista) {
       this.boletasEncontradas = [];
     }
     this.cdr.markForCheck();
+
+    // Si el usuario cierra la modal manualmente en modo scanner,
+    // reactivar lectura para evitar que la cámara quede pausada.
+    if (this.modoBusqueda === 'scanner' && this.escaneoPausado) {
+      void this.reanudarCamara();
+    }
   }
 
   private async verificarPermisoLector(boleta: BoletaComprada): Promise<boolean> {
@@ -431,17 +593,74 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const ok = await this.alertService.confirm(
-      'Validar boleta',
-      `¿Validar la boleta ${this.boleta.codigo_qr}?`
-    );
-    if (!ok) return;
+    if (!this.esFlujoRapidoLector()) {
+      const ok = await this.alertService.confirm(
+        'Validar boleta',
+        `¿Validar la boleta ${this.boleta.codigo_qr}?`
+      );
+      if (!ok) return;
+    }
 
     this.validando = true;
     this.cdr.markForCheck();
     try {
       await this.boletasService.validarBoleta(this.boleta.id);
-      await this.alertService.success('¡Boleta validada!', 'Entrada validada correctamente.');
+      if (this.esFlujoRapidoLector()) {
+        void this.alertService.snackbar('Entrada validada', { timerMs: 1600 });
+      } else {
+        await this.alertService.success('¡Boleta validada!', 'Entrada validada correctamente.');
+      }
+      this.cerrarModal();
+      await this.reiniciarEscaneo();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error desconocido';
+      await this.alertService.error('Error al validar', msg);
+    } finally {
+      this.validando = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  puedeValidarProducto(item: ItemProductoEscaneo): boolean {
+    return (
+      (item.estado || '').toLowerCase() !== 'entregado' &&
+      (item.compra?.estado_pago || '').toLowerCase() === 'completado'
+    );
+  }
+
+  async validarProducto(): Promise<void> {
+    if (!this.productoItem) return;
+    if (!this.puedeValidarProducto(this.productoItem)) {
+      await this.alertService.warning('No se puede validar', 'Este producto ya fue redimido o no tiene pago completado.');
+      return;
+    }
+
+    if (!this.esFlujoRapidoLector()) {
+      const ok = await this.alertService.confirm(
+        'Validar producto',
+        `¿Marcar como entregado el QR ${this.productoItem.codigo_qr}?`
+      );
+      if (!ok) return;
+    }
+
+    this.validando = true;
+    this.cdr.markForCheck();
+    try {
+      if (this.productoItem.scope === 'compra') {
+        await this.comprasProductoService.validarCompraProductos(this.productoItem.id);
+        if (this.esFlujoRapidoLector()) {
+          void this.alertService.snackbar('Pedido redimido', { timerMs: 1600 });
+        } else {
+          await this.alertService.success('Pedido validado', 'Todos los productos del pedido quedaron marcados como redimidos.');
+        }
+      } else {
+        await this.comprasProductoService.validarItemProducto(this.productoItem.id);
+        if (this.esFlujoRapidoLector()) {
+          void this.alertService.snackbar('Producto redimido', { timerMs: 1600 });
+        } else {
+          await this.alertService.success('Producto validado', 'El producto quedó marcado como redimido.');
+        }
+      }
       this.cerrarModal();
       await this.reiniciarEscaneo();
     } catch (err: unknown) {
@@ -454,6 +673,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async reiniciarEscaneo(): Promise<void> {
+    this.limpiarAutoAvance();
     this.cerrarModal();
     this.errorPermiso = null;
     this.documento = '';
@@ -481,6 +701,23 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     return estadoObj?.label || estado || 'Sin estado';
   }
 
+  resumenEntregaProducto(item: ItemProductoEscaneo | null | undefined): string[] {
+    if (!item) return [];
+
+    const resumen = (item.productos_resumen || [])
+      .map((linea) => String(linea || '').trim())
+      .filter((linea) => linea.length > 0);
+    if (resumen.length > 0) {
+      return resumen;
+    }
+
+    if (item.producto?.nombre) {
+      return [`${item.producto.nombre} x${item.cantidad || 0}`];
+    }
+
+    return [];
+  }
+
   nombreValidador(boleta: BoletaComprada | null | undefined): string {
     if (!boleta) return '—';
     const v = boleta.validado_por;
@@ -493,5 +730,42 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     if (nombre) return nombre;
     if (v.email) return v.email;
     return `Usuario #${v.id}`;
+  }
+
+  private esFlujoRapidoLector(): boolean {
+    return this.modoBusqueda === 'scanner' && this.requierePermisosLector;
+  }
+
+  private limpiarAutoAvance(): void {
+    if (this.autoAdvanceTimer) {
+      clearTimeout(this.autoAdvanceTimer);
+      this.autoAdvanceTimer = null;
+    }
+  }
+
+  private programarAutoAvanceModalSiAplica(): void {
+    this.limpiarAutoAvance();
+    if (!this.esFlujoRapidoLector()) return;
+
+    let debeAutoAvanzar = false;
+    if (this.boleta) {
+      const estado = String(this.boleta.estado || '').toLowerCase();
+      debeAutoAvanzar =
+        estado === 'usada' ||
+        estado === 'cancelada' ||
+        estado === 'reembolsada' ||
+        (estado === 'pendiente' && !this.puedeValidar(this.boleta));
+    } else if (this.productoItem) {
+      const estadoProducto = String(this.productoItem.estado || '').toLowerCase();
+      debeAutoAvanzar = estadoProducto === 'entregado' || !this.puedeValidarProducto(this.productoItem);
+    }
+
+    if (!debeAutoAvanzar) return;
+
+    this.autoAdvanceTimer = setTimeout(() => {
+      this.autoAdvanceTimer = null;
+      if (this.validando || !this.modalVisible) return;
+      void this.reiniciarEscaneo();
+    }, 1400);
   }
 }

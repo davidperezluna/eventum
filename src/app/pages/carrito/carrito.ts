@@ -7,6 +7,7 @@ import { BoletasService } from '../../services/boletas.service';
 import { CarritoCompraService, ItemCarritoEvento, ItemCarritoProducto } from '../../services/carrito-compra.service';
 import { ComprasClienteService, ItemCompra } from '../../services/compras-cliente.service';
 import { ComprasProductoService } from '../../services/compras-producto.service';
+import { ProductosService } from '../../services/productos.service';
 import { CuponesService } from '../../services/cupones.service';
 import { AuthService } from '../../services/auth.service';
 import { UsuariosService } from '../../services/usuarios.service';
@@ -64,6 +65,9 @@ export class Carrito implements OnInit, OnDestroy {
   private cancelacionCheckoutSeq = 0;
   mapaAmpliado: { url: string; titulo: string } | null = null;
   private subscriptions = new Subscription();
+  eventoTieneProductosDisponibles = false;
+  nowMs = Date.now();
+  private countdownTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     public router: Router,
@@ -71,6 +75,7 @@ export class Carrito implements OnInit, OnDestroy {
     private carritoCompraService: CarritoCompraService,
     private comprasClienteService: ComprasClienteService,
     private comprasProductoService: ComprasProductoService,
+    private productosService: ProductosService,
     private cuponesService: CuponesService,
     private authService: AuthService,
     private usuariosService: UsuariosService,
@@ -82,6 +87,7 @@ export class Carrito implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.startCountdownTicker();
     this.subscriptions.add(
       this.carritoCompraService.items$.subscribe((items) => {
         this.itemsCompra = items.map((item) => ({
@@ -104,6 +110,7 @@ export class Carrito implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.carritoCompraService.evento$.subscribe((evento) => {
         this.evento = evento;
+        void this.cargarDisponibilidadProductosUpsell(evento?.id ?? null);
         if (evento?.id) {
           void this.refrescarEvento(evento.id);
         }
@@ -115,11 +122,19 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.stopCountdownTicker();
     this.subscriptions.unsubscribe();
   }
 
   get carritoVacio(): boolean {
     return !this.evento || this.carritoCompraService.estaVacio();
+  }
+
+  get mostrarInvitacionProductos(): boolean {
+    return !!this.evento &&
+      this.itemsCompra.length > 0 &&
+      this.itemsProductos.length === 0 &&
+      this.eventoTieneProductosDisponibles;
   }
 
   tieneLicor(): boolean {
@@ -128,6 +143,70 @@ export class Carrito implements OnInit, OnDestroy {
 
   getDisponiblesProducto(producto: Producto): number {
     return producto.cantidad_disponibles ?? Math.max(0, producto.cantidad_total - (producto.cantidad_vendidas ?? 0));
+  }
+
+  precioEventoVigenteProducto(): boolean {
+    if (!this.evento?.fecha_inicio) return false;
+    return new Date(this.evento.fecha_inicio).getTime() <= Date.now();
+  }
+
+  getPrecioPreventaProducto(producto: Producto): number {
+    const ref = Number(producto.precio_preventa ?? producto.precio ?? 0);
+    return Number.isFinite(ref) && ref >= 0 ? ref : 0;
+  }
+
+  getPrecioEventoProducto(producto: Producto): number {
+    const ref = Number(producto.precio_evento ?? producto.precio ?? 0);
+    return Number.isFinite(ref) && ref >= 0 ? ref : this.getPrecioPreventaProducto(producto);
+  }
+
+  tienePrecioDiferenciadoProducto(producto: Producto): boolean {
+    return this.getPrecioEventoProducto(producto) !== this.getPrecioPreventaProducto(producto);
+  }
+
+  getPrecioReferenciaProducto(producto: Producto): number {
+    return this.precioEventoVigenteProducto()
+      ? this.getPrecioPreventaProducto(producto)
+      : this.getPrecioEventoProducto(producto);
+  }
+
+  getAhorroUnitarioProducto(producto: Producto): number {
+    if (this.precioEventoVigenteProducto()) return 0;
+    return Math.max(0, this.getPrecioEventoProducto(producto) - this.getPrecioPreventaProducto(producto));
+  }
+
+  getEstadoPrecioProductoLabel(): 'Preventa' | 'En evento' {
+    return this.precioEventoVigenteProducto() ? 'En evento' : 'Preventa';
+  }
+
+  preventaActivaProducto(): boolean {
+    if (!this.evento?.fecha_inicio) return false;
+    return new Date(this.evento.fecha_inicio).getTime() > this.nowMs;
+  }
+
+  shouldShowPreventaHintProducto(): boolean {
+    if (!this.preventaUrgenteProducto()) return false;
+    return this.itemsProductos.some((item) => this.getAhorroUnitarioProducto(item.producto) > 0);
+  }
+
+  getPreventaCountdownLabelProducto(): string {
+    if (!this.preventaActivaProducto() || !this.evento?.fecha_inicio) return '';
+    const targetMs = new Date(this.evento.fecha_inicio).getTime();
+    const remainingMs = Math.max(0, targetMs - this.nowMs);
+    const totalMinutes = Math.floor(remainingMs / 60000);
+    const dias = Math.floor(totalMinutes / (60 * 24));
+    const horas = Math.floor((totalMinutes % (60 * 24)) / 60);
+    const minutos = totalMinutes % 60;
+
+    if (dias > 0) return `Termina en ${dias}d ${horas}h`;
+    if (horas > 0) return `Termina en ${horas}h ${minutos}m`;
+    return `Termina en ${Math.max(1, minutos)}m`;
+  }
+
+  preventaUrgenteProducto(): boolean {
+    if (!this.preventaActivaProducto() || !this.evento?.fecha_inicio) return false;
+    const targetMs = new Date(this.evento.fecha_inicio).getTime();
+    return targetMs - this.nowMs <= 24 * 60 * 60 * 1000;
   }
 
   agregarProducto(item: ItemCarritoProducto): void {
@@ -145,7 +224,7 @@ export class Carrito implements OnInit, OnDestroy {
   aceptarTerminosLicor(): void {
     this.terminosAceptados = true;
     this.cerrarModalTerminosLicor();
-    void this.procesarCompra();
+    this.alertService.snackbarSuccess('Términos aceptados', 'Ahora puedes finalizar la compra cuando quieras.');
   }
 
   abrirModalTerminosLicor(): void {
@@ -501,6 +580,37 @@ export class Carrito implements OnInit, OnDestroy {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(value);
+  }
+
+  private startCountdownTicker(): void {
+    this.stopCountdownTicker();
+    this.countdownTimer = setInterval(() => {
+      this.nowMs = Date.now();
+      this.cdr.detectChanges();
+    }, 30000);
+  }
+
+  private stopCountdownTicker(): void {
+    if (this.countdownTimer) {
+      clearInterval(this.countdownTimer);
+      this.countdownTimer = null;
+    }
+  }
+
+  private async cargarDisponibilidadProductosUpsell(eventoId: number | null): Promise<void> {
+    if (!eventoId) {
+      this.eventoTieneProductosDisponibles = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    try {
+      this.eventoTieneProductosDisponibles = await this.productosService.eventoTieneProductos(eventoId);
+    } catch {
+      this.eventoTieneProductosDisponibles = false;
+    } finally {
+      this.cdr.detectChanges();
+    }
   }
 
   async aplicarCupon(): Promise<void> {

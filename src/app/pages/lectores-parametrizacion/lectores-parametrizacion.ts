@@ -35,6 +35,7 @@ export class LectoresParametrizacion implements OnInit {
   formEventoId: number | null = null;
   /** IDs de tipos de boleta seleccionados para la asignación actual */
   tiposSeleccionados: Set<number> = new Set();
+  formPermitirProductos = false;
 
   constructor(
     private authService: AuthService,
@@ -70,6 +71,7 @@ export class LectoresParametrizacion implements OnInit {
     this.formEventoId = null;
     this.tiposBoletaEvento = [];
     this.tiposSeleccionados = new Set();
+    this.formPermitirProductos = false;
     this.showModal = true;
 
     try {
@@ -141,16 +143,31 @@ export class LectoresParametrizacion implements OnInit {
       return;
     }
     const ids = [...this.tiposSeleccionados];
-    if (!ids.length) {
-      await this.alertService.warning('Selecciona al menos un tipo de boleta del evento.');
+    if (!ids.length && !this.formPermitirProductos) {
+      await this.alertService.warning('Selecciona al menos un tipo de boleta o habilita productos para el evento.');
       return;
     }
     try {
-      await this.lectorEvtService.crearAsignaciones(
-        this.formUsuarioId,
-        this.formEventoId,
-        ids
-      );
+      const operaciones: Promise<void>[] = [];
+      if (ids.length) {
+        operaciones.push(
+          this.lectorEvtService.crearAsignaciones(
+            this.formUsuarioId,
+            this.formEventoId,
+            ids
+          )
+        );
+      }
+      if (this.formPermitirProductos) {
+        operaciones.push(
+          this.lectorEvtService.crearAsignacionProductos(
+            this.formUsuarioId,
+            this.formEventoId
+          )
+        );
+      }
+
+      await Promise.all(operaciones);
       await this.alertService.success('Asignación guardada correctamente.');
       this.cerrarModal();
       await this.cargarTabla();
@@ -165,9 +182,12 @@ export class LectoresParametrizacion implements OnInit {
   }
 
   async eliminarFila(fila: LectorEventoTipoBoleta): Promise<void> {
+    const esPermisoProducto = fila.tipo_boleta_id == null;
     const ok = await this.alertService.confirm(
-      '¿Eliminar esta asignación?',
-      'Se quitará el permiso de escaneo para ese tipo de boleta.'
+      esPermisoProducto ? '¿Eliminar permiso de productos?' : '¿Eliminar esta asignación?',
+      esPermisoProducto
+        ? 'Se quitará el permiso de escaneo de productos para este evento.'
+        : 'Se quitará el permiso de escaneo para ese tipo de boleta.'
     );
     if (!ok) {
       return;
@@ -194,7 +214,18 @@ export class LectoresParametrizacion implements OnInit {
   }
 
   nombreTipoBoleta(f: LectorEventoTipoBoleta): string {
+    if (f.tipo_boleta_id == null) {
+      return 'Productos del evento';
+    }
     return f.tipos_boleta?.nombre || `#${f.tipo_boleta_id}`;
+  }
+
+  get filasBoletas(): LectorEventoTipoBoleta[] {
+    return this.filas.filter((f) => f.tipo_boleta_id != null);
+  }
+
+  get filasProductos(): LectorEventoTipoBoleta[] {
+    return this.filas.filter((f) => f.tipo_boleta_id == null);
   }
 
   etiquetaLectorEnLista(u: Usuario): string {

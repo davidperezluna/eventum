@@ -6,8 +6,8 @@
         Lectores (escaneo)
       </h1>
       <p>
-        Asigna a usuarios con rol <strong>Lector</strong> el evento y los tipos de boleta que pueden validar al
-        escanear.
+        Asigna a usuarios con rol <strong>Lector</strong> el evento, tipos de boleta y permisos para redimir
+        productos al escanear.
       </p>
     </div>
     <div class="header-actions">
@@ -34,7 +34,9 @@
   <div class="content-card">
     <div *ngIf="loading" class="loading-state">Cargando parametrización...</div>
 
-    <div *ngIf="!loading && filas.length > 0" class="table-wrap">
+    <div *ngIf="!loading && (filasBoletas.length > 0 || filasProductos.length > 0)" class="table-block">
+      <h3 class="table-title">Permisos de boletas</h3>
+      <div class="table-wrap" *ngIf="filasBoletas.length > 0">
       <table class="data-table">
         <thead>
           <tr>
@@ -47,7 +49,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let f of filas">
+          <tr *ngFor="let f of filasBoletas">
             <td>{{ nombreLector(f) }}</td>
             <td>{{ f.usuarios?.email || '—' }}</td>
             <td>{{ tituloEvento(f) }}</td>
@@ -61,12 +63,49 @@
           </tr>
         </tbody>
       </table>
+      </div>
+      <p class="hint warn" *ngIf="filasBoletas.length === 0">
+        No hay permisos de boletas configurados.
+      </p>
+
+      <h3 class="table-title table-title--secondary">Permisos de productos por evento</h3>
+      <div class="table-wrap" *ngIf="filasProductos.length > 0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Lector</th>
+              <th>Email</th>
+              <th>Evento</th>
+              <th>Permiso</th>
+              <th>Fecha</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let f of filasProductos">
+              <td>{{ nombreLector(f) }}</td>
+              <td>{{ f.usuarios?.email || '—' }}</td>
+              <td>{{ tituloEvento(f) }}</td>
+              <td>Productos del evento</td>
+              <td>{{ f.fecha_creacion | date : 'short' }}</td>
+              <td>
+                <button type="button" class="btn-icon danger" (click)="eliminarFila(f)" title="Eliminar">
+                  <span class="material-icons">delete</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="hint warn" *ngIf="filasProductos.length === 0">
+        No hay permisos de productos configurados.
+      </p>
     </div>
 
-    <div *ngIf="!loading && filas.length === 0" class="empty-state">
+    <div *ngIf="!loading && filasBoletas.length === 0 && filasProductos.length === 0" class="empty-state">
       <span class="material-icons empty-icon">qr_code_scanner</span>
       <h3>Sin asignaciones</h3>
-      <p>Crea usuarios con rol Lector en Usuarios y luego agrégalos aquí con evento y tipos de boleta.</p>
+      <p>Crea usuarios con rol Lector en Usuarios y luego agrégalos aquí con permisos de boletas o productos.</p>
       <button type="button" class="btn-primary" (click)="abrirModal()">Nueva asignación</button>
     </div>
   </div>
@@ -107,7 +146,7 @@
         </div>
 
         <div class="form-group" *ngIf="formEventoId">
-          <label>Tipos de boleta del evento *</label>
+          <label>Tipos de boleta del evento</label>
           <p class="hint">Solo se listan tipos activos del evento seleccionado. Puedes marcar varios.</p>
           <ul class="tipo-list" *ngIf="tiposBoletaEvento.length > 0">
             <li *ngFor="let tb of tiposBoletaEvento">
@@ -122,6 +161,22 @@
             </li>
           </ul>
           <p class="hint warn" *ngIf="tiposBoletaEvento.length === 0">Este evento no tiene tipos de boleta activos.</p>
+        </div>
+
+        <div class="form-group" *ngIf="formEventoId">
+          <label class="tipo-row permiso-productos-row">
+            <input
+              type="checkbox"
+              [checked]="formPermitirProductos"
+              (change)="formPermitirProductos = !formPermitirProductos"
+            />
+            <span>
+              Permitir escaneo/redención de <strong>productos</strong> para este evento
+            </span>
+          </label>
+          <p class="hint">
+            Este permiso habilita que el lector valide QR de productos del evento desde el módulo de escaneo.
+          </p>
         </div>
       </div>
       <div class="modal-footer">

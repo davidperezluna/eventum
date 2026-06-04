@@ -13,7 +13,17 @@ import { filter } from 'rxjs';
   styleUrl: './layout.css',
 })
 export class Layout implements OnInit, OnDestroy {
-  menuItems: any[] = [];
+  menuItems: Array<{
+    path?: string;
+    label: string;
+    icon: string;
+    expanded?: boolean;
+    children?: Array<{
+      path: string;
+      label: string;
+      icon: string;
+    }>;
+  }> = [];
 
   currentUser: User | null = null;
   usuario: any = null;
@@ -141,9 +151,19 @@ export class Layout implements OnInit, OnDestroy {
       { path: '/productos', label: 'Productos', icon: 'local_mall' },
       { path: '/lectores-parametrizacion', label: 'Lectores', icon: 'qr_code_scanner' },
       { path: '/palcos', label: 'Palcos', icon: 'event_seat' },
-      { path: '/ventas', label: 'Ventas', icon: 'attach_money' },
+      {
+        label: 'Ventas',
+        icon: 'attach_money',
+        expanded: true,
+        children: [
+          { path: '/ventas', label: 'Ventas boletas', icon: 'confirmation_number' },
+          { path: '/ventas-productos', label: 'Ventas productos', icon: 'inventory_2' },
+          { path: '/ventas-palcos', label: 'Ventas palcos', icon: 'weekend' },
+          { path: '/transacciones-checkout', label: 'Transacciones', icon: 'receipt_long' },
+        ]
+      },
+      { path: '/probar-compras', label: 'Probar compras', icon: 'storefront' },
       { path: '/ventas-manual', label: 'Venta manual', icon: 'point_of_sale' },
-      { path: '/probar-compras', label: 'Probar compras', icon: 'shopping_cart_checkout' },
       { path: '/calificaciones', label: 'Calificaciones', icon: 'star' },
       { path: '/notificaciones', label: 'Notificaciones', icon: 'notifications' },
       { path: '/reportes', label: 'Reportes', icon: 'assessment' },
@@ -189,6 +209,29 @@ export class Layout implements OnInit, OnDestroy {
 
   closeClientMenu() {
     this.clientMenuOpen = false;
+  }
+
+  toggleMenuGroup(item: { expanded?: boolean; children?: unknown[] }): void {
+    if (!item.children?.length) return;
+    item.expanded = !item.expanded;
+  }
+
+  isMenuItemActive(item: { path?: string; children?: Array<{ path: string }> }): boolean {
+    if (item.path) {
+      return this.isPathActive(item.path);
+    }
+    if (item.children?.length) {
+      return item.children.some((child) => this.isPathActive(child.path));
+    }
+    return false;
+  }
+
+  private isPathActive(path: string): boolean {
+    const currentPath = this.router.url.split('?')[0];
+    if (path === '/ventas') {
+      return currentPath === '/ventas';
+    }
+    return currentPath === path || currentPath.startsWith(`${path}/`);
   }
 
   async logout() {

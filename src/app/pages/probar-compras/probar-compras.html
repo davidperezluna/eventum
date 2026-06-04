@@ -73,6 +73,10 @@
         </div>
         <div class="evento-body">
           <h3>{{ evento.titulo }}</h3>
+          <div class="evento-products-chip" [class.evento-products-chip--evento]="precioEventoActivo(evento)" *ngIf="tieneProductosEvento(evento.id)">
+            <span class="material-icons">{{ precioEventoActivo(evento) ? 'sell' : 'local_offer' }}</span>
+            {{ getProductosChipLabel(evento) }}
+          </div>
           <div class="evento-meta">
             <span>
               <span class="material-icons">place</span>

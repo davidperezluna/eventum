@@ -13,13 +13,14 @@ export class AlertService {
   /**
    * Muestra un snackbar/toast no bloqueante
    */
-  snackbar(message: string): Promise<SweetAlertResult> {
+  snackbar(message: string, options?: { timerMs?: number }): Promise<SweetAlertResult> {
+    const timerMs = Math.max(1500, Number(options?.timerMs || 2200));
     return Swal.fire({
       toast: true,
       title: message,
       position: 'bottom-start',
       showConfirmButton: false,
-      timer: 2200,
+      timer: timerMs,
       timerProgressBar: false,
       allowOutsideClick: true,
       allowEscapeKey: true,

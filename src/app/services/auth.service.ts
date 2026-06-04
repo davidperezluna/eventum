@@ -327,6 +327,10 @@ export class AuthService {
     console.log('Iniciando login para:', credentials.email);
     
     try {
+      // Si quedó un flag de logout previo en esta misma sesión de app,
+      // evitar que el próximo SIGNED_IN dispare un signOut inmediato.
+      this.clearForcedLogoutFlag();
+
       const authResponse = await this.supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password
@@ -445,6 +449,8 @@ export class AuthService {
 
     this.clearPersistedAuthStorage();
     this.clearInMemoryAuthState();
+    // Logout completado en esta ejecución: ya no hace falta forzar en el próximo arranque.
+    this.clearForcedLogoutFlag();
     this.oneSignalIdentity.logoutFromOneSignal();
 
     await this.router.navigateByUrl(redirectTo, { replaceUrl: true });
@@ -468,6 +474,9 @@ export class AuthService {
   }
 
   private setForcedLogoutFlag(): void {
+    if (this.shouldSkipForcedLogoutFlow()) {
+      return;
+    }
     try {
       localStorage.setItem(FORCE_LOGOUT_STORAGE_KEY, '1');
     } catch {
@@ -476,6 +485,9 @@ export class AuthService {
   }
 
   private hasForcedLogoutFlag(): boolean {
+    if (this.shouldSkipForcedLogoutFlow()) {
+      return false;
+    }
     try {
       return localStorage.getItem(FORCE_LOGOUT_STORAGE_KEY) === '1';
     } catch {
@@ -488,6 +500,19 @@ export class AuthService {
       localStorage.removeItem(FORCE_LOGOUT_STORAGE_KEY);
     } catch {
       /* noop */
+    }
+  }
+
+  /**
+   * En flujo lector (operación en puerta) evitamos auto-logout por bandera local
+   * para no cortar validaciones durante alto tráfico.
+   */
+  private shouldSkipForcedLogoutFlow(): boolean {
+    try {
+      const path = globalThis?.location?.pathname || '';
+      return path.startsWith('/lector');
+    } catch {
+      return false;
     }
   }
 

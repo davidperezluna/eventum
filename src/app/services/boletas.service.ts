@@ -14,7 +14,7 @@ import { BoletaComprada, TipoBoleta, BoletaFilters, PaginatedResponse, Palco, Es
 export class BoletasService {
   /** Join estándar para listados y búsqueda de boletas (incluye meta del tipo para palcos). */
   private readonly selectBoletaConRelaciones =
-    '*, validado_por:usuarios!boletas_compradas_validado_por_usuario_id_fkey(id, nombre, apellido, email), palcos(numero), compras(estado_pago, estado_compra, evento_id, cliente_id, eventos(id, titulo, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais))), tipos_boleta(evento_id, nombre, personas_por_unidad, es_palco, eventos(id, titulo, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais)))';
+    '*, validado_por:usuarios!boletas_compradas_validado_por_usuario_id_fkey(id, nombre, apellido, email), palcos(numero), compras(estado_pago, estado_compra, evento_id, cliente_id, numero_transaccion, eventos(id, titulo, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais))), tipos_boleta(evento_id, nombre, personas_por_unidad, es_palco, eventos(id, titulo, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais)))';
 
   constructor(
     private supabase: SupabaseService,
@@ -586,6 +586,7 @@ export class BoletasService {
       boletaNormalizada.compra = {
         id: boleta.compra_id,
         cliente_id: compra.cliente_id,
+        numero_transaccion: compra.numero_transaccion,
         estado_pago: compra.estado_pago,
         estado_compra: compra.estado_compra
       };
@@ -601,6 +602,7 @@ export class BoletasService {
       boletaNormalizada.compra = {
         id: boleta.compra_id,
         cliente_id: compra.cliente_id,
+        numero_transaccion: compra.numero_transaccion,
         estado_pago: compra.estado_pago,
         estado_compra: compra.estado_compra
       };

@@ -1,10 +1,13 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { TimezoneService } from './timezone.service';
+import { AuthService } from './auth.service';
 import { supabaseConfig } from '../config/supabase.config';
 import {
   CompraProducto,
+  CompraProductoFilters,
   CompraProductoItem,
+  PaginatedResponse,
   TipoEstadoCompra,
   TipoEstadoItemProducto,
   TipoEstadoPago,
@@ -43,6 +46,30 @@ export interface PedidoProductosPendiente {
   terminos_licor_aceptados: boolean;
 }
 
+export interface ItemProductoEscaneo {
+  id: number;
+  codigo_qr: string;
+  estado: string;
+  cantidad: number;
+  scope?: 'item' | 'compra';
+  precio_unitario: number;
+  fecha_redencion?: string;
+  validado_por_usuario_id?: number;
+  compra: {
+    id: number;
+    evento_id: number;
+    estado_pago: string;
+    numero_pedido: string;
+    evento_titulo?: string;
+    documento_cliente?: string;
+  } | null;
+  producto: {
+    id: number;
+    nombre: string;
+  } | null;
+  productos_resumen?: string[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -51,7 +78,8 @@ export class ComprasProductoService {
 
   constructor(
     private supabase: SupabaseService,
-    private timezoneService: TimezoneService
+    private timezoneService: TimezoneService,
+    private authService: AuthService
   ) {}
 
   private esErrorTablaNoExiste(error: unknown): boolean {
@@ -232,10 +260,11 @@ export class ComprasProductoService {
         eventos(id, titulo, imagen_principal, fecha_inicio, fecha_fin, lugar:lugares(id, nombre)),
         compras_productos_items(
           *,
-          productos(id, nombre, imagen_url, es_licor)
+          productos(id, nombre, imagen_url, es_licor, precio, precio_evento)
         )
       `)
       .eq('cliente_id', clienteId)
+      .eq('estado_pago', TipoEstadoPago.COMPLETADO)
       .neq('estado_compra', TipoEstadoCompra.CANCELADA)
       .order('fecha_compra', { ascending: false });
 
@@ -243,6 +272,68 @@ export class ComprasProductoService {
       throw error;
     }
     return (data as CompraProducto[]) ?? [];
+  }
+
+  async getComprasAdmin(filters?: CompraProductoFilters): Promise<PaginatedResponse<CompraProducto>> {
+    let query = this.supabase
+      .from('compras_productos')
+      .select(
+        `
+        *,
+        cliente:usuarios(id, nombre, apellido, email, telefono, documento_identidad),
+        eventos(id, titulo, fecha_inicio),
+        compras_productos_items(
+          id,
+          compra_producto_id,
+          producto_id,
+          cantidad,
+          precio_unitario,
+          estado,
+          productos(id, nombre)
+        )
+      `,
+        { count: 'exact' }
+      );
+
+    if (filters?.cliente_id) {
+      query = query.eq('cliente_id', filters.cliente_id);
+    }
+    if (filters?.evento_id) {
+      query = query.eq('evento_id', filters.evento_id);
+    }
+    if (filters?.estado_pago) {
+      query = query.eq('estado_pago', filters.estado_pago);
+    }
+    if (filters?.estado_compra) {
+      query = query.eq('estado_compra', filters.estado_compra);
+    }
+    if (filters?.search?.trim()) {
+      query = query.ilike('numero_pedido', `%${filters.search.trim()}%`);
+    }
+
+    const sortBy = filters?.sortBy || 'fecha_compra';
+    const sortOrder = filters?.sortOrder || 'desc';
+    query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 10;
+    const fromIndex = (page - 1) * limit;
+    const toIndex = fromIndex + limit - 1;
+    query = query.range(fromIndex, toIndex);
+
+    const { data, error, count } = await query;
+    if (error) {
+      throw error;
+    }
+
+    const total = count || 0;
+    return {
+      data: (data as CompraProducto[]) || [],
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async getCompraById(id: number): Promise<CompraProducto> {
@@ -253,7 +344,7 @@ export class ComprasProductoService {
         eventos(id, titulo, imagen_principal),
         compras_productos_items(
           *,
-          productos(id, nombre, imagen_url, es_licor)
+          productos(id, nombre, imagen_url, es_licor, precio, precio_evento)
         )
       `)
       .eq('id', id)
@@ -263,6 +354,246 @@ export class ComprasProductoService {
       throw error;
     }
     return data as CompraProducto;
+  }
+
+  async updateCompraAdmin(id: number, compra: Partial<CompraProducto>): Promise<CompraProducto> {
+    const { data: existingData, error: checkError } = await this.supabase
+      .from('compras_productos')
+      .select('id')
+      .eq('id', id)
+      .single();
+
+    if (checkError || !existingData) {
+      throw new Error(`No se encontró la compra de productos con ID ${id}`);
+    }
+
+    const { data, error } = await this.supabase
+      .from('compras_productos')
+      .update(compra)
+      .eq('id', id)
+      .select('*')
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        const { data: retryData, error: retryError } = await this.supabase
+          .from('compras_productos')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (retryError) {
+          throw retryError;
+        }
+        return retryData as CompraProducto;
+      }
+      throw error;
+    }
+
+    return data as CompraProducto;
+  }
+
+  async buscarItemPorCodigoQR(codigoQR: string): Promise<ItemProductoEscaneo | null> {
+    const { data, error } = await this.supabase
+      .from('compras_productos_items')
+      .select(`
+        id,
+        codigo_qr,
+        estado,
+        cantidad,
+        precio_unitario,
+        fecha_redencion,
+        validado_por_usuario_id,
+        compra:compras_productos(
+          id,
+          evento_id,
+          estado_pago,
+          numero_pedido,
+          eventos(titulo),
+          cliente:usuarios(documento_identidad)
+        ),
+        producto:productos(id, nombre)
+      `)
+      .eq('codigo_qr', codigoQR)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+    if (!data) return null;
+
+    const compraRaw = Array.isArray(data.compra) ? data.compra[0] : data.compra;
+    const eventoRel = Array.isArray(compraRaw?.eventos) ? compraRaw?.eventos[0] : compraRaw?.eventos;
+    const clienteRel = Array.isArray(compraRaw?.cliente) ? compraRaw?.cliente[0] : compraRaw?.cliente;
+
+    return {
+      id: data.id,
+      codigo_qr: data.codigo_qr,
+      estado: data.estado || TipoEstadoItemProducto.PENDIENTE,
+      scope: 'item',
+      cantidad: data.cantidad || 0,
+      precio_unitario: Number(data.precio_unitario || 0),
+      fecha_redencion: data.fecha_redencion || undefined,
+      validado_por_usuario_id: data.validado_por_usuario_id || undefined,
+      compra: compraRaw ? {
+        id: Number(compraRaw.id),
+        evento_id: Number(compraRaw.evento_id),
+        estado_pago: String(compraRaw.estado_pago || ''),
+        numero_pedido: String(compraRaw.numero_pedido || ''),
+        evento_titulo: String(eventoRel?.titulo || ''),
+        documento_cliente: String(clienteRel?.documento_identidad || ''),
+      } : null,
+      producto: Array.isArray(data.producto) ? (data.producto[0] as ItemProductoEscaneo['producto']) : (data.producto as ItemProductoEscaneo['producto']),
+    };
+  }
+
+  private extraerNumeroPedidoDesdeCodigoQR(codigoQR: string): string | null {
+    const value = String(codigoQR || '').trim();
+    if (!value) return null;
+    const prefix = 'PROD-ORD-';
+    if (!value.startsWith(prefix)) return null;
+    const numeroPedido = value.slice(prefix.length).trim();
+    return numeroPedido || null;
+  }
+
+  async buscarCompraPorCodigoQR(codigoQR: string): Promise<ItemProductoEscaneo | null> {
+    const numeroPedido = this.extraerNumeroPedidoDesdeCodigoQR(codigoQR);
+    if (!numeroPedido) return null;
+
+    const { data, error } = await this.supabase
+      .from('compras_productos')
+      .select(`
+        id,
+        evento_id,
+        estado_pago,
+        numero_pedido,
+        eventos(titulo),
+        cliente:usuarios(documento_identidad),
+        compras_productos_items(
+          id,
+          estado,
+          cantidad,
+          precio_unitario,
+          fecha_redencion,
+          validado_por_usuario_id,
+          producto:productos(id, nombre)
+        )
+      `)
+      .eq('numero_pedido', numeroPedido)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+    if (!data) return null;
+
+    const items = ((data.compras_productos_items || []) as Array<{
+      id: number;
+      estado?: string;
+      cantidad?: number;
+      precio_unitario?: number;
+      fecha_redencion?: string;
+      validado_por_usuario_id?: number;
+      producto?: { id?: number; nombre?: string } | Array<{ id?: number; nombre?: string }> | null;
+    }>).filter(Boolean);
+
+    if (items.length === 0) {
+      return null;
+    }
+
+    const totalCantidad = items.reduce((acc, item) => acc + Number(item.cantidad || 0), 0);
+    const totalValor = items.reduce(
+      (acc, item) => acc + Number(item.precio_unitario || 0) * Number(item.cantidad || 0),
+      0
+    );
+    const todosEntregados = items.every(
+      (item) => String(item.estado || '').toLowerCase() === TipoEstadoItemProducto.ENTREGADO
+    );
+    const resumenPorProducto = new Map<string, { nombre: string; cantidad: number }>();
+    for (const item of items) {
+      const productoObj = Array.isArray(item.producto) ? item.producto[0] : item.producto;
+      const nombre = String(productoObj?.nombre || 'Producto').trim();
+      const key = String(productoObj?.id ?? nombre);
+      const actual = resumenPorProducto.get(key);
+      if (actual) {
+        actual.cantidad += Number(item.cantidad || 0);
+      } else {
+        resumenPorProducto.set(key, {
+          nombre,
+          cantidad: Number(item.cantidad || 0),
+        });
+      }
+    }
+    const resumenEntrega = Array.from(resumenPorProducto.values()).map(
+      (r) => `${r.nombre} x${r.cantidad}`
+    );
+
+    const primerItem = items[0];
+
+    return {
+      id: Number(data.id),
+      codigo_qr: codigoQR,
+      estado: todosEntregados ? TipoEstadoItemProducto.ENTREGADO : TipoEstadoItemProducto.CONFIRMADO,
+      scope: 'compra',
+      cantidad: totalCantidad,
+      precio_unitario: totalCantidad > 0 ? totalValor / totalCantidad : 0,
+      fecha_redencion: primerItem?.fecha_redencion || undefined,
+      validado_por_usuario_id: primerItem?.validado_por_usuario_id || undefined,
+      compra: {
+        id: Number(data.id),
+        evento_id: Number(data.evento_id),
+        estado_pago: String(data.estado_pago || ''),
+        numero_pedido: String(data.numero_pedido || numeroPedido),
+        evento_titulo: String((Array.isArray((data as any).eventos) ? (data as any).eventos[0]?.titulo : (data as any).eventos?.titulo) || ''),
+        documento_cliente: String((Array.isArray((data as any).cliente) ? (data as any).cliente[0]?.documento_identidad : (data as any).cliente?.documento_identidad) || ''),
+      },
+      producto: {
+        id: 0,
+        nombre: 'Pedido de productos',
+      },
+      productos_resumen: resumenEntrega,
+    };
+  }
+
+  async validarItemProducto(itemId: number): Promise<void> {
+    const validadorId = this.authService.getUsuarioId();
+    const payload: Record<string, unknown> = {
+      estado: TipoEstadoItemProducto.ENTREGADO,
+      fecha_redencion: this.timezoneService.getCurrentDateISO(),
+    };
+    if (validadorId != null) {
+      payload['validado_por_usuario_id'] = validadorId;
+    }
+
+    const { error } = await this.supabase
+      .from('compras_productos_items')
+      .update(payload)
+      .eq('id', itemId);
+
+    if (error) {
+      throw error;
+    }
+  }
+
+  async validarCompraProductos(compraId: number): Promise<void> {
+    const validadorId = this.authService.getUsuarioId();
+    const payload: Record<string, unknown> = {
+      estado: TipoEstadoItemProducto.ENTREGADO,
+      fecha_redencion: this.timezoneService.getCurrentDateISO(),
+    };
+    if (validadorId != null) {
+      payload['validado_por_usuario_id'] = validadorId;
+    }
+
+    const { error } = await this.supabase
+      .from('compras_productos_items')
+      .update(payload)
+      .eq('compra_producto_id', compraId)
+      .neq('estado', TipoEstadoItemProducto.ENTREGADO);
+
+    if (error) {
+      throw error;
+    }
   }
 
   async getTransaccionById(id: number): Promise<TransaccionProducto> {

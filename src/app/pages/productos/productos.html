@@ -32,7 +32,7 @@
           <tr>
             <th>Evento</th>
             <th>Producto</th>
-            <th>Precio</th>
+            <th>Precio (Preventa / Evento)</th>
             <th>Stock</th>
             <th>Licor</th>
             <th>Estado</th>
@@ -46,7 +46,12 @@
               <strong>{{ p.nombre }}</strong>
               <span *ngIf="p.es_licor" class="badge-licor">+18</span>
             </td>
-            <td>{{ formatCurrency(p.precio) }}</td>
+            <td>
+              <div>{{ formatCurrency(p.precio) }}</div>
+              <small *ngIf="p.precio_evento !== undefined && p.precio_evento !== null && p.precio_evento !== p.precio">
+                Evento: {{ formatCurrency(p.precio_evento) }}
+              </small>
+            </td>
             <td>{{ p.cantidad_disponibles ?? (p.cantidad_total - (p.cantidad_vendidas ?? 0)) }} / {{ p.cantidad_total }}</td>
             <td>{{ p.es_licor ? 'Sí' : 'No' }}</td>
             <td>
@@ -109,9 +114,31 @@
 
           <div class="form-row">
             <div class="form-group">
-              <label for="prod-precio">Precio (COP)</label>
-              <input id="prod-precio" type="number" [(ngModel)]="formData.precio" name="precio" min="0" />
+              <label for="prod-precio">Precio preventa (COP)</label>
+              <input
+                id="prod-precio"
+                type="text"
+                inputmode="numeric"
+                [ngModel]="precioPreventaInput"
+                (ngModelChange)="onPrecioInputChange('preventa', $event)"
+                name="precio"
+                required
+              />
             </div>
+            <div class="form-group">
+              <label for="prod-precio-evento">Precio en evento (COP)</label>
+              <input
+                id="prod-precio-evento"
+                type="text"
+                inputmode="numeric"
+                [ngModel]="precioEventoInput"
+                (ngModelChange)="onPrecioInputChange('evento', $event)"
+                name="precio_evento"
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
             <div class="form-group">
               <label for="prod-orden">Orden</label>
               <input id="prod-orden" type="number" [(ngModel)]="formData.orden" name="orden" />

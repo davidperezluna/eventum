@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ComprasService } from '../../services/compras.service';
@@ -9,6 +10,7 @@ import { ComprasClienteService, ItemCompra } from '../../services/compras-client
 import { UsuariosService } from '../../services/usuarios.service';
 import { EventosService } from '../../services/eventos.service';
 import { BoletasService } from '../../services/boletas.service';
+import { TransaccionesCheckoutService } from '../../services/transacciones-checkout.service';
 import {
   Compra,
   Evento,
@@ -30,7 +32,7 @@ interface LineaVentaManual {
 
 @Component({
   selector: 'app-ventas',
-  imports: [CommonModule, FormsModule, DateFormatPipe],
+  imports: [CommonModule, FormsModule, RouterModule, DateFormatPipe],
   templateUrl: './ventas.html',
   styleUrl: './ventas.css',
 })
@@ -38,6 +40,7 @@ export class Ventas implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   compras: Compra[] = [];
+  comprasConCheckout = new Set<number>();
   deletingCompraId: number | null = null;
   loading = false;
   total = 0;
@@ -98,6 +101,7 @@ export class Ventas implements OnInit, OnDestroy {
     private usuariosService: UsuariosService,
     private eventosService: EventosService,
     private boletasService: BoletasService,
+    private transaccionesCheckoutService: TransaccionesCheckoutService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -552,15 +556,31 @@ export class Ventas implements OnInit, OnDestroy {
       console.log('Response recibida en ventas:', response);
       this.compras = response.data || [];
       this.total = response.total || 0;
+      await this.cargarDisponibilidadCheckout(this.compras);
       this.loading = false;
       this.cdr.detectChanges();
     } catch (err) {
       console.error('Error cargando compras:', err);
       this.compras = [];
       this.total = 0;
+      this.comprasConCheckout = new Set<number>();
       this.loading = false;
       this.cdr.detectChanges();
     }
+  }
+
+  private async cargarDisponibilidadCheckout(compras: Compra[]): Promise<void> {
+    try {
+      const ids = compras.map((c) => c.id);
+      this.comprasConCheckout = await this.transaccionesCheckoutService.getCompraIdsConCheckout(ids);
+    } catch (error) {
+      console.warn('No se pudo cargar disponibilidad de checkout para ventas boletas:', error);
+      this.comprasConCheckout = new Set<number>();
+    }
+  }
+
+  tieneCheckout(compra: Compra): boolean {
+    return this.comprasConCheckout.has(compra.id);
   }
 
   openModal(compra: Compra) {

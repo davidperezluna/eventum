@@ -5,23 +5,17 @@ import { BoletaComprada } from '../types';
 export type PermisoEscaneo = {
   id: number;
   evento_id: number;
-  tipo_boleta_id: number;
+  tipo_boleta_id: number | null;
   titulo_evento: string;
   nombre_tipo_boleta: string;
+  categoria: 'boleta' | 'producto';
 };
 
 type RowDb = {
   id: number;
   evento_id: number;
-  tipo_boleta_id: number;
-  eventos: { titulo?: string } | { titulo?: string }[] | null;
-  tipos_boleta: { nombre?: string } | { nombre?: string }[] | null;
+  tipo_boleta_id: number | string | null;
 };
-
-function unwrapRel<T>(v: T | T[] | null | undefined): T | null {
-  if (v == null) return null;
-  return Array.isArray(v) ? (v[0] ?? null) : v;
-}
 
 export function buildPermisoKey(eventoId: number, tipoBoletaId: number): string {
   return `${eventoId}:${tipoBoletaId}`;
@@ -31,11 +25,28 @@ export function buildPermisoKey(eventoId: number, tipoBoletaId: number): string 
 export class LectorPermisosService {
   constructor(private supabase: SupabaseService) {}
 
+  private normalizarTipoBoletaId(raw: number | string | null | undefined): number | null {
+    if (raw == null) {
+      return null;
+    }
+    if (typeof raw === 'string') {
+      const clean = raw.trim().toLowerCase();
+      if (!clean || clean === 'null' || clean === 'undefined') {
+        return null;
+      }
+    }
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return null;
+    }
+    return parsed;
+  }
+
   /** Permisos del lector autenticado (RLS: solo filas propias). */
   async fetchMisPermisosEscaneo(): Promise<PermisoEscaneo[]> {
     const { data, error } = await this.supabase
       .from('lector_evento_tipo_boleta')
-      .select('id, evento_id, tipo_boleta_id, eventos(titulo), tipos_boleta(nombre)')
+      .select('id, evento_id, tipo_boleta_id')
       .order('evento_id', { ascending: true });
 
     if (error) {
@@ -44,17 +55,77 @@ export class LectorPermisosService {
     }
 
     const rows = (data as RowDb[]) || [];
-    return rows.map((r) => {
-      const ev = unwrapRel(r.eventos);
-      const tb = unwrapRel(r.tipos_boleta);
-      return {
-        id: r.id,
-        evento_id: r.evento_id,
-        tipo_boleta_id: r.tipo_boleta_id,
-        titulo_evento: ev?.titulo || `Evento #${r.evento_id}`,
-        nombre_tipo_boleta: tb?.nombre || `Tipo #${r.tipo_boleta_id}`,
-      };
-    });
+    const eventoIds = [...new Set(rows.map((r) => r.evento_id).filter((id) => id != null))];
+    const filasNormalizadas = rows.map((r) => ({
+      id: Number(r.id || 0),
+      evento_id: Number(r.evento_id),
+      tipo_boleta_id: this.normalizarTipoBoletaId(r.tipo_boleta_id),
+    }));
+
+    const tipoIds = [
+      ...new Set(
+        filasNormalizadas
+          .map((r) => r.tipo_boleta_id)
+          .filter((id): id is number => typeof id === 'number')
+      ),
+    ];
+
+    const nombresEvento = new Map<number, string>();
+    const nombresTipo = new Map<number, string>();
+
+    // Enriquecimiento opcional: si RLS no permite leer estos catálogos,
+    // seguimos con fallback por ID sin romper la pantalla del lector.
+    if (eventoIds.length > 0) {
+      const { data: eventosData, error: eventosError } = await this.supabase
+        .from('eventos')
+        .select('id, titulo')
+        .in('id', eventoIds);
+      if (!eventosError && Array.isArray(eventosData)) {
+        for (const ev of eventosData as Array<{ id: number; titulo?: string }>) {
+          if (typeof ev.id === 'number' && ev.titulo) {
+            nombresEvento.set(ev.id, ev.titulo);
+          }
+        }
+      }
+    }
+
+    if (tipoIds.length > 0) {
+      const { data: tiposData, error: tiposError } = await this.supabase
+        .from('tipos_boleta')
+        .select('id, nombre')
+        .in('id', tipoIds);
+      if (!tiposError && Array.isArray(tiposData)) {
+        for (const tb of tiposData as Array<{ id: number; nombre?: string }>) {
+          if (typeof tb.id === 'number' && tb.nombre) {
+            nombresTipo.set(tb.id, tb.nombre);
+          }
+        }
+      }
+    }
+
+    return filasNormalizadas
+      .map((r) => {
+        const eventoId = Number(r.evento_id);
+        if (!Number.isFinite(eventoId) || eventoId <= 0) {
+          return null;
+        }
+
+        const esProducto = r.tipo_boleta_id == null;
+        const tipoId = esProducto ? null : r.tipo_boleta_id;
+        const tipoValido = typeof tipoId === 'number' && Number.isFinite(tipoId) && tipoId > 0;
+
+        return {
+          id: r.id,
+          evento_id: eventoId,
+          tipo_boleta_id: esProducto ? null : (tipoValido ? tipoId : null),
+          titulo_evento: nombresEvento.get(eventoId) || `Evento ${eventoId}`,
+          nombre_tipo_boleta: esProducto
+            ? 'Productos del evento'
+            : (tipoValido ? (nombresTipo.get(tipoId!) || `Tipo ${tipoId}`) : 'Tipo de boleta'),
+          categoria: esProducto ? ('producto' as const) : ('boleta' as const),
+        };
+      })
+      .filter((p): p is PermisoEscaneo => p !== null);
   }
 
   /** Filtra boletas según evento + tipo asignados al lector. */

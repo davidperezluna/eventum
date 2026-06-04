@@ -25,13 +25,14 @@
       <span class="material-icons">event</span>
       Tu alcance de escaneo
     </h2>
-    <p class="hint">Asignado desde el panel web. No editable desde aquí.</p>
+      <p class="hint">Asignado desde el panel web. No editable desde aquí.</p>
+      <p class="hint hint-refresh" *ngIf="refreshing && !loading">Actualizando permisos en segundo plano…</p>
 
     <div *ngIf="loading" class="loading-state loading-state--compact">Cargando permisos...</div>
 
     <div *ngIf="!loading && grupos.length === 0" class="empty-state">
       <span class="material-icons empty-icon">event_busy</span>
-      <p>No tienes eventos ni tipos de boleta asignados. Contacta al administrador.</p>
+      <p>No tienes permisos de boletas o productos asignados. Contacta al administrador.</p>
     </div>
 
     <div *ngFor="let g of grupos" class="grupo-card">
@@ -40,10 +41,10 @@
         <span class="material-icons">event</span>
         {{ g.titulo }}
       </div>
-      <p class="grupo-label tipos-label">Tipos de boleta que puedes validar</p>
+      <p class="grupo-label tipos-label">Permisos de validación en este evento</p>
       <div class="tags-wrap">
         <span *ngFor="let t of g.tipos" class="tag tag-tipo">
-          <span class="material-icons">confirmation_number</span>
+          <span class="material-icons">{{ t.tipo_boleta_id == null ? 'inventory_2' : 'confirmation_number' }}</span>
           {{ t.nombre }}
         </span>
       </div>
@@ -59,7 +60,7 @@
       (click)="permisos.length === 0 && $event.preventDefault()"
     >
       <span class="material-icons">qr_code_scanner</span>
-      Validar boleta
+      Validar QR
     </a>
   </div>
 </div>
