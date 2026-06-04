@@ -21,7 +21,8 @@ export const appConfig: ApplicationConfig = {
     ),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
-      registrationStrategy: 'registerWhenStable:30000',
+      // Registro más temprano para detectar builds nuevos antes en PWAs instaladas.
+      registrationStrategy: 'registerWhenStable:5000',
     }),
     // GoogleAnalyticsService se inicializa automáticamente cuando se inyecta por primera vez
   ]

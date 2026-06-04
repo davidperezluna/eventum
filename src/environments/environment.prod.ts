@@ -30,6 +30,16 @@ export const environment = {
   },
   publicAppUrl: 'https://www.eventumcol.com',
 
+  /** Comprobación de nueva versión PWA (ngsw) en apps instaladas iOS/Android. */
+  pwa: {
+    /** Cada cuánto preguntar al servidor si hay build nuevo (ms). */
+    updateCheckIntervalMs: 5 * 60 * 1000,
+    /** Al volver de segundo plano, recargar sin modal si hay build nuevo (ideal iOS PWA). */
+    autoReloadOnResume: true,
+    /** Ventana tras reabrir la app en la que aplica recarga silenciosa (ms). */
+    resumeAutoReloadWindowMs: 60_000,
+  },
+
   /**
    * Rutas de iconos Web Push (servidos desde `public/` → raíz del sitio).
    * En OneSignal: Settings → Web → Default Notification Icon URL = `{origen}/icons/push/chrome-notification-256.png`

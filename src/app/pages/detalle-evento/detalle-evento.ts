@@ -5,13 +5,11 @@ import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { EventosService } from '../../services/eventos.service';
 import { BoletasService } from '../../services/boletas.service';
-import { ComprasClienteService, ItemCompra } from '../../services/compras-cliente.service';
 import { CuponesService } from '../../services/cupones.service';
 import { AuthService } from '../../services/auth.service';
 import { UsuariosService } from '../../services/usuarios.service';
 import { LugaresService } from '../../services/lugares.service';
 import { CategoriasService } from '../../services/categorias.service';
-import { SupabaseService } from '../../services/supabase.service';
 import { AlertService } from '../../services/alert.service';
 import { DetalleEventoStateService } from '../../services/detalle-evento-state.service';
 import { CarritoCompraService, ItemCarritoEvento } from '../../services/carrito-compra.service';
@@ -29,8 +27,6 @@ import {
   EstadoPalco,
   Producto
 } from '../../types';
-import { supabaseConfig } from '../../config/supabase.config';
-import { getPagoResultadoUrl } from '../../config/app-url';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { SafePipe } from '../../pipes/safe.pipe';
 
@@ -55,7 +51,6 @@ export class DetalleEvento implements OnInit, OnDestroy {
   tabCompra: 'entradas' | 'productos' = 'entradas';
   loadingLugar = false;
   loadingCategoria = false;
-  comprando = false;
   usuario: Usuario | null = null;
 
   // Cupones
@@ -75,9 +70,6 @@ export class DetalleEvento implements OnInit, OnDestroy {
 
   /** Visor a pantalla completa del plano de palcos. */
   mapaAmpliado: { url: string; titulo: string } | null = null;
-
-  // Método de pago será determinado por Wompi
-  metodoPagoSeleccionado: 'CARD' | 'PSE' | 'NEQUI' | 'BANCOLOMBIA_TRANSFER' | 'BANCOLOMBIA_COLLECT' | 'DAVIPLATA' = 'CARD';
 
   // Modal de imagen
   imagenModalAbierta = false;
@@ -124,7 +116,6 @@ export class DetalleEvento implements OnInit, OnDestroy {
     private eventosService: EventosService,
     private boletasService: BoletasService,
     private cuponesService: CuponesService,
-    private comprasClienteService: ComprasClienteService,
     private authService: AuthService,
     private usuariosService: UsuariosService,
     private alertService: AlertService,
@@ -133,7 +124,6 @@ export class DetalleEvento implements OnInit, OnDestroy {
     private productosService: ProductosService,
     private lugaresService: LugaresService,
     private categoriasService: CategoriasService,
-    private supabaseService: SupabaseService,
     private cdr: ChangeDetectorRef
   ) { }
 
@@ -148,13 +138,6 @@ export class DetalleEvento implements OnInit, OnDestroy {
 
   get rutaVolverEventos(): string[] {
     return this.modoPruebaCompraAdmin ? ['/probar-compras'] : ['/eventos-cliente'];
-  }
-
-  get rutaDetalleEventoActual(): string {
-    if (!this.evento) return '/eventos-cliente';
-    return this.modoPruebaCompraAdmin
-      ? `/probar-compras/evento/${this.evento.id}`
-      : `/detalle-evento/${this.evento.id}`;
   }
 
   tieneExistencias(tipo: TipoBoleta): boolean {
@@ -743,229 +726,6 @@ export class DetalleEvento implements OnInit, OnDestroy {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(value);
-  }
-
-  async procesarCompra() {
-    if (!this.evento || this.itemsCompra.length === 0) {
-      this.alertService.warning('Carrito vacío', 'Debes agregar al menos una boleta al carrito');
-      return;
-    }
-
-    // Validar que el evento no haya finalizado (solo para clientes - versión pública)
-    const ahora = new Date();
-    const fechaFin = new Date(this.evento.fecha_fin);
-    
-    if (fechaFin < ahora) {
-      // El evento ya finalizó, actualizar estado solo si es cliente y no permitir compra
-      const esCliente = this.authService.isCliente();
-      
-      if (esCliente) {
-        try {
-          await this.eventosService.updateEvento(this.evento.id, {
-            estado: TipoEstadoEvento.FINALIZADO,
-            activo: false
-          });
-          this.alertService.error(
-            'Evento finalizado', 
-            'Este evento ya finalizó. No se pueden comprar más boletas.'
-          );
-          // Recargar el evento para reflejar el cambio de estado
-          await this.loadEvento(this.evento.id);
-        } catch (err) {
-          console.error('Error actualizando estado del evento:', err);
-          this.alertService.error(
-            'Evento finalizado', 
-            'Este evento ya finalizó. No se pueden comprar más boletas.'
-          );
-        }
-      } else {
-        // Si no es cliente, solo mostrar el error sin actualizar
-        this.alertService.error(
-          'Evento finalizado', 
-          'Este evento ya finalizó. No se pueden comprar más boletas.'
-        );
-      }
-      return;
-    }
-
-    // Verificar autenticación y sesión activa antes de comprar
-    const sesionValida = await this.authService.ensureActiveSession();
-    if (!sesionValida) {
-      this.alertService.warning(
-        'Sesión expirada',
-        'Tu sesión terminó por inactividad. Inicia sesión de nuevo para completar la compra.'
-      );
-      this.router.navigate(['/login'], { queryParams: { returnUrl: this.rutaDetalleEventoActual } });
-      return;
-    }
-
-    const clienteId = this.authService.getUsuarioId();
-    if (!clienteId) {
-      this.alertService.warning('Inicia sesión para continuar', 'Debes iniciar sesión para comprar boletas');
-      const loginRoute = this.authService.isAdministrador() || this.authService.isOrganizador()
-        ? '/login-admin'
-        : '/login';
-      this.router.navigate([loginRoute], { queryParams: { returnUrl: this.rutaDetalleEventoActual } });
-      return;
-    }
-
-    for (const item of this.itemsCompra) {
-      if (this.esLineaPalcoMultipersona(item.tipo)) {
-        const pids = item.palco_ids || [];
-        if (pids.length !== item.cantidad || pids.some((x) => x == null)) {
-          this.alertService.warning(
-            'Palcos sin elegir',
-            `Selecciona el número de palco para cada unidad de "${item.tipo.nombre}".`
-          );
-          return;
-        }
-      }
-    }
-
-    const items: ItemCompra[] = this.itemsCompra.map((item) => {
-      const base = {
-        tipo_boleta_id: item.tipo.id,
-        cantidad: item.cantidad,
-        precio_unitario: item.tipo.precio
-      };
-      if (this.esLineaPalcoMultipersona(item.tipo)) {
-        return {
-          ...base,
-          palco_ids: item.palco_ids!.map((id) => id as number)
-        };
-      }
-      return {
-        ...base,
-        // Boleta normal: ya no se asigna en checkout.
-        // La asignación se hace después en Mis Boletas (correo o "Yo asisto").
-        nombre_asistente: undefined,
-        documento_asistente: undefined,
-        email_asistente: undefined,
-        telefono_asistente: undefined
-      };
-    });
-
-    // Validar disponibilidad
-    this.comprando = true;
-    try {
-      await this.refrescarPalcosDisponibles();
-      const validacion = await this.comprasClienteService.validarDisponibilidad(items);
-
-      if (!validacion.valido) {
-        this.alertService.error('Error de disponibilidad', validacion.errores.join('\n'));
-        this.comprando = false;
-        return;
-      }
-
-      if (!this.evento) {
-        this.alertService.error('Error', 'Error: evento no disponible');
-        this.comprando = false;
-        return;
-      }
-
-      const pedidoBoletas = {
-        evento_id: this.evento.id,
-        cliente_id: clienteId,
-        items,
-        cupon_id: this.cuponAplicado?.id ?? null,
-        descuento_total: this.getDescuento(),
-        subtotal: this.getSubtotalBoletas(),
-        porcentaje_servicio: this.getPorcentajeServicio(),
-        valor_servicio: this.getValorServicio(),
-        total: this.getTotal()
-      };
-
-      const totalPago = this.getTotal();
-
-      if (totalPago === 0) {
-        const resultado = await this.comprasClienteService.procesarCompra({
-          evento_id: this.evento.id,
-          cliente_id: clienteId,
-          items,
-          cupon_id: this.cuponAplicado?.id,
-          descuento_total: this.getDescuento(),
-          subtotal: this.getSubtotalBoletas(),
-          porcentaje_servicio: this.getPorcentajeServicio(),
-          valor_servicio: this.getValorServicio(),
-          total: totalPago
-        });
-
-        await this.comprasClienteService.confirmarPago(resultado.compra.id);
-        this.alertService.success('¡Compra Exitosa!', 'Tu reserva se ha completado correctamente de forma gratuita.');
-        this.router.navigate(['/pago-resultado'], {
-          queryParams: {
-            compra_id: resultado.compra.id,
-            status: 'APPROVED'
-          }
-        });
-        return;
-      }
-
-      const supabaseUrl = supabaseConfig.url;
-      const { data: { session } } = await this.supabaseService.auth.getSession();
-      const accessToken = session?.access_token;
-
-      if (!accessToken) {
-        throw new Error('No se pudo obtener el token de autenticación');
-      }
-
-      const response = await fetch(`${supabaseUrl}/functions/v1/wompi-payment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-          apikey: supabaseConfig.anonKey
-        },
-        body: JSON.stringify({
-          tipo: 'boletas',
-          pedido_boletas: pedidoBoletas,
-          amount_in_cents: Math.round(totalPago * 100),
-          redirect_url: getPagoResultadoUrl(),
-          customer_email: this.usuario?.email || ''
-        })
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok || !responseData.success) {
-        throw new Error(responseData.error || 'Error al crear transacción en Wompi');
-      }
-
-      const checkoutUrl = responseData.checkout_url || responseData.transaction?.checkout_url;
-
-      if (!checkoutUrl) {
-        throw new Error('No se obtuvo URL de checkout');
-      }
-
-      if (typeof sessionStorage !== 'undefined') {
-        const pending: Record<string, number> = {};
-        if (responseData.transaccion_checkout_id) {
-          pending['transaccion_checkout_id'] = Number(responseData.transaccion_checkout_id);
-        }
-        if (responseData.transaccion_producto_id) {
-          pending['transaccion_producto_id'] = Number(responseData.transaccion_producto_id);
-        }
-        if (Object.keys(pending).length > 0) {
-          sessionStorage.setItem('eventum_pago_pendiente', JSON.stringify(pending));
-        }
-      }
-
-      window.location.href = checkoutUrl;
-    } catch (err: any) {
-      console.error('Error procesando compra:', err);
-      if (this.authService.isAuthOrRlsError(err?.message)) {
-        await this.authService.ensureActiveSession();
-        this.alertService.warning(
-          'Sesión expirada',
-          'Tu sesión terminó por inactividad. Inicia sesión de nuevo para completar la compra.'
-        );
-        this.router.navigate(['/login'], { queryParams: { returnUrl: this.rutaDetalleEventoActual } });
-        this.comprando = false;
-        return;
-      }
-      this.alertService.error('Error al procesar compra', 'Error al procesar la compra: ' + (err.message || 'Error desconocido'));
-      this.comprando = false;
-    }
   }
 
   getImageUrl(evento: Evento): string {

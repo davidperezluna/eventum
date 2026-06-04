@@ -40,4 +40,10 @@ export const environment = {
     chromeWebIcon: '/icons/push/chrome-notification-256.png',
     chromeWebBadge: '/icons/push/badge-monochrome-96.png',
   },
+
+  pwa: {
+    updateCheckIntervalMs: 5 * 60 * 1000,
+    autoReloadOnResume: true,
+    resumeAutoReloadWindowMs: 60_000,
+  },
 };
