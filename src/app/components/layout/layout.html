@@ -137,7 +137,14 @@
           <span class="nav-label">Carrito</span>
           <span *ngIf="totalItemsCarrito > 0" class="menu-badge">{{ totalItemsCarrito }}</span>
         </a>
-        <a routerLink="/cupos" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item" (click)="closeClientMenu()">
+        <a
+          *ngIf="cuposEventumEnabled"
+          routerLink="/cupos"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="nav-item"
+          (click)="closeClientMenu()"
+        >
           <span class="material-icons nav-icon">public</span>
           <span class="nav-label">Explorar cupos</span>
         </a>
@@ -205,7 +212,13 @@
             <span *ngIf="totalItemsCarrito > 0" class="menu-badge">{{ totalItemsCarrito }}</span>
           </a>
           
-          <a routerLink="/cupos" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="client-nav-item">
+          <a
+            *ngIf="cuposEventumEnabled"
+            routerLink="/cupos"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="client-nav-item"
+          >
             Explorar cupos
           </a>
           <a routerLink="/mis-compras" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="client-nav-item">
@@ -240,7 +253,13 @@
             Carrito
             <span *ngIf="totalItemsCarrito > 0" class="menu-badge">{{ totalItemsCarrito }}</span>
           </a>
-          <a routerLink="/cupos" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="client-nav-item">
+          <a
+            *ngIf="cuposEventumEnabled"
+            routerLink="/cupos"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="client-nav-item"
+          >
             Cupos
           </a>
           <a routerLink="/conocenos" routerLinkActive="active" class="client-nav-item">

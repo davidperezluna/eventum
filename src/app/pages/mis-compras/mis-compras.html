@@ -94,11 +94,21 @@
           <span class="material-icons" aria-hidden="true">history</span>
           <span>Actividad</span>
         </a>
-        <a routerLink="/cupos" class="guia-resumen-link guia-resumen-link--ghost" aria-label="Explorar cupos">
+        <a
+          *ngIf="cuposEventumEnabled"
+          routerLink="/cupos"
+          class="guia-resumen-link guia-resumen-link--ghost"
+          aria-label="Explorar cupos"
+        >
           <span class="material-icons" aria-hidden="true">public</span>
           <span>Explorar cupos</span>
         </a>
-        <a routerLink="/mis-cupos" class="guia-resumen-link guia-resumen-link--ghost" aria-label="Mis publicaciones de cupo">
+        <a
+          *ngIf="cuposEventumEnabled"
+          routerLink="/mis-cupos"
+          class="guia-resumen-link guia-resumen-link--ghost"
+          aria-label="Mis publicaciones de cupo"
+        >
           <span class="material-icons" aria-hidden="true">campaign</span>
           <span>Mis publicaciones</span>
         </a>

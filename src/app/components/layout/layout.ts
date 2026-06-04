@@ -5,6 +5,7 @@ import { AuthService } from '../../services/auth.service';
 import { CarritoCompraService } from '../../services/carrito-compra.service';
 import { User } from '@supabase/supabase-js';
 import { filter } from 'rxjs';
+import { cuposEventumEnabled } from '../../core/cupos-feature';
 
 @Component({
   selector: 'app-layout',
@@ -33,6 +34,7 @@ export class Layout implements OnInit, OnDestroy {
   clientMenuOpen: boolean = false;
   totalItemsCarrito = 0;
 
+  readonly cuposEventumEnabled = cuposEventumEnabled;
   readonly currentYear = new Date().getFullYear();
   private routerSubscription?: any;
   private carritoSubscription?: any;
@@ -188,7 +190,9 @@ export class Layout implements OnInit, OnDestroy {
   loadMenuCliente() {
     this.menuItems = [
       { path: '/eventos-cliente', label: 'Eventos', icon: 'event' },
-      { path: '/cupos', label: 'Explorar cupos', icon: 'public' },
+      ...(this.cuposEventumEnabled
+        ? [{ path: '/cupos', label: 'Explorar cupos', icon: 'public' }]
+        : []),
       { path: '/mis-compras', label: 'Mis Compras', icon: 'shopping_bag' },
       { path: '/perfil', label: 'Mi Perfil', icon: 'person' },
     ];

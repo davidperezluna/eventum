@@ -16,9 +16,9 @@ function segmentosDesdeUrl(router: Router, url: string): string[] {
 /**
  * Rutas protegidas que el rol Cliente puede usar.
  * El resto (dashboard, eventos admin, usuarios, etc.) queda bloqueado.
- * Públicas (sin este guard): eventos-cliente, conocenos, detalle-evento/:id, cupos-evento/:id.
- * Cliente en rutas protegidas: mis-compras, mis-cupos, perfil, pago-resultado.
- * Cupos explorar (/cupos) es ruta pública; no requiere este guard.
+ * Públicas (sin este guard): eventos-cliente, conocenos, detalle-evento/:id.
+ * Rutas cupos (/cupos, /cupos-evento, /mis-cupos) solo si `environment.cuposEventumEnabled`.
+ * Cliente en rutas protegidas: mis-compras, perfil, pago-resultado.
  */
 function clienteTienePermisoParaRuta(router: Router, url: string): boolean {
   const segments = segmentosDesdeUrl(router, url);

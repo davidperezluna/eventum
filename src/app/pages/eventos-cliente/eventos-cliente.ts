@@ -13,6 +13,7 @@ import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+import { cuposEventumEnabled } from '../../core/cupos-feature';
 
 @Component({
   selector: 'app-eventos-cliente',
@@ -44,6 +45,7 @@ export class EventosCliente implements OnInit, OnDestroy {
   private readonly maxProductosDestacados = 4;
   currentYear = new Date().getFullYear();
   readonly appVersion = environment.appVersion;
+  readonly cuposEventumEnabled = cuposEventumEnabled;
   respuestasCupos = 0;
 
   constructor(
@@ -82,7 +84,7 @@ export class EventosCliente implements OnInit, OnDestroy {
       void this.loadEventos(term, { background: this.eventosFiltrados.length > 0 });
     });
 
-    if (this.clienteLogueado) {
+    if (this.cuposEventumEnabled && this.clienteLogueado) {
       void this.cargarResumenCupos();
     }
   }

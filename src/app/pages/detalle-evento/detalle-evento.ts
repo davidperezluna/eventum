@@ -29,6 +29,7 @@ import {
 } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { SafePipe } from '../../pipes/safe.pipe';
+import { cuposEventumEnabled } from '../../core/cupos-feature';
 
 @Component({
   selector: 'app-detalle-evento',
@@ -38,6 +39,7 @@ import { SafePipe } from '../../pipes/safe.pipe';
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class DetalleEvento implements OnInit, OnDestroy {
+  readonly cuposEventumEnabled = cuposEventumEnabled;
   evento: Evento | null = null;
   tiposBoleta: TipoBoleta[] = [];
   lugar: Lugar | null = null;

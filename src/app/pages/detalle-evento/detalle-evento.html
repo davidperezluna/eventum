@@ -67,50 +67,25 @@
           </div>
         </div>
         <p *ngIf="evento.descripcion_corta" class="evento-subtitle">{{ evento.descripcion_corta }}</p>
-        <div *ngIf="usuario; else cuposBannerInvitado" class="evento-cupos-banners">
-          <a routerLink="/cupos" class="evento-cupos-banner evento-cupos-banner--primary">
-            <span class="evento-cupos-banner-icon material-icons" aria-hidden="true">public</span>
-            <span class="evento-cupos-banner-copy">
-              <strong>Explorar todos los avisos</strong>
-              <span>Publicaciones de cupo en todos los eventos</span>
-            </span>
-            <span class="material-icons evento-cupos-banner-arrow" aria-hidden="true">arrow_forward</span>
-          </a>
-          <a routerLink="/mis-cupos" class="evento-cupos-banner evento-cupos-banner--secondary">
-            <span class="evento-cupos-banner-icon material-icons" aria-hidden="true">campaign</span>
-            <span class="evento-cupos-banner-copy">
-              <strong>Mis publicaciones</strong>
-              <span>Tus avisos y respuestas en un solo lugar</span>
-            </span>
-            <span class="material-icons evento-cupos-banner-arrow" aria-hidden="true">arrow_forward</span>
-          </a>
-          <a [routerLink]="['/cupos-evento', evento.id]" class="evento-cupos-banner evento-cupos-banner--secondary">
-            <span class="evento-cupos-banner-icon material-icons" aria-hidden="true">forum</span>
-            <span class="evento-cupos-banner-copy">
-              <strong>Tablón de este evento</strong>
-              <span>Publicar o ver avisos solo de este evento</span>
-            </span>
-            <span class="material-icons evento-cupos-banner-arrow" aria-hidden="true">arrow_forward</span>
-          </a>
-        </div>
-        <ng-template #cuposBannerInvitado>
-          <a routerLink="/cupos" class="evento-cupos-banner evento-cupos-banner--primary">
-            <span class="evento-cupos-banner-icon material-icons" aria-hidden="true">public</span>
-            <span class="evento-cupos-banner-copy">
-              <strong>Explorar avisos de cupo</strong>
-              <span>Ver publicaciones de todos los eventos</span>
-            </span>
-            <span class="material-icons evento-cupos-banner-arrow" aria-hidden="true">arrow_forward</span>
-          </a>
-          <a [routerLink]="['/cupos-evento', evento.id]" class="evento-cupos-banner evento-cupos-banner--secondary">
-            <span class="evento-cupos-banner-icon material-icons" aria-hidden="true">forum</span>
-            <span class="evento-cupos-banner-copy">
-              <strong>Tablón de este evento</strong>
-              <span>Busca cupo, ofrece el tuyo o arma grupo</span>
-            </span>
-            <span class="material-icons evento-cupos-banner-arrow" aria-hidden="true">arrow_forward</span>
-          </a>
-        </ng-template>
+        <section
+          *ngIf="cuposEventumEnabled"
+          class="cupos-hub cupos-hub--detalle"
+          aria-labelledby="cupos-hub-detalle-title"
+        >
+          <div class="cupos-hub-inner">
+            <div class="cupos-hub-copy">
+              <span class="material-icons cupos-hub-icon" aria-hidden="true">forum</span>
+              <div>
+                <h2 id="cupos-hub-detalle-title" class="cupos-hub-title">Cupos Eventum</h2>
+                <p class="cupos-hub-text">Busca u ofrece cupo en el tablón de este evento.</p>
+              </div>
+            </div>
+            <div class="cupos-hub-actions">
+              <a [routerLink]="['/cupos-evento', evento.id]" class="cupos-hub-link">Tablón</a>
+              <a routerLink="/cupos" class="cupos-hub-link">Explorar</a>
+            </div>
+          </div>
+        </section>
         <div class="evento-header-tags" *ngIf="getTags().length > 0" role="group" aria-label="Etiquetas del evento">
           <span *ngFor="let tag of getTags()" class="tag">{{ tag }}</span>
         </div>

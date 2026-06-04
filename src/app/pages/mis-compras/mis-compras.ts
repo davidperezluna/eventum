@@ -33,6 +33,7 @@ import html2canvas from 'html2canvas';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import type { AuthStateCallback } from '../../services/auth.service';
+import { cuposEventumEnabled } from '../../core/cupos-feature';
 
 interface BoletaConCompra {
   compra: Compra;
@@ -91,6 +92,7 @@ interface EventoBoletasGrupo {
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
 export class MisCompras implements OnInit, OnDestroy {
+  readonly cuposEventumEnabled = cuposEventumEnabled;
   private destroy$ = new Subject<void>();
   private loadComprasSubject = new Subject<void>();
   private refreshIndicatorTimer: ReturnType<typeof setTimeout> | null = null;

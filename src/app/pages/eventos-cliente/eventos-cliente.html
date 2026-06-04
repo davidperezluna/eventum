@@ -16,7 +16,7 @@
   </section>
 
   <section
-    *ngIf="!initialBootstrapLoading"
+    *ngIf="cuposEventumEnabled && !initialBootstrapLoading"
     class="cupos-hub"
     aria-labelledby="cupos-hub-title"
   >
@@ -129,6 +129,7 @@
               </span>
             </div>
             <a
+              *ngIf="cuposEventumEnabled"
               class="event-cupos-chip"
               [routerLink]="['/cupos-evento', evento.id]"
               (click)="$event.stopPropagation()"
@@ -180,6 +181,7 @@
               </span>
             </div>
             <a
+              *ngIf="cuposEventumEnabled"
               class="event-cupos-chip"
               [routerLink]="['/cupos-evento', evento.id]"
               (click)="$event.stopPropagation()"

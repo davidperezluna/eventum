@@ -45,8 +45,21 @@ import { LoginAdmin } from './pages/login-admin/login-admin';
 import { Register } from './pages/register/register';
 import { AuthCallback } from './pages/auth-callback/auth-callback';
 import { authGuard } from './guards/auth.guard';
+import { cuposFeatureGuard } from './guards/cupos-feature.guard';
 import { Mantenimiento } from './pages/mantenimiento/mantenimiento';
 import { environment } from '../environments/environment';
+import { cuposEventumEnabled } from './core/cupos-feature';
+
+const cuposPublicRoutes: Routes = cuposEventumEnabled
+  ? [
+      { path: 'cupos', component: CuposExplorar, canActivate: [cuposFeatureGuard] },
+      { path: 'cupos-evento/:eventoId', component: CuposEvento, canActivate: [cuposFeatureGuard] },
+    ]
+  : [];
+
+const cuposProtectedRoutes: Routes = cuposEventumEnabled
+  ? [{ path: 'mis-cupos', component: MisCupos, canActivate: [cuposFeatureGuard] }]
+  : [];
 
 const appRoutes: Routes = [
   {
@@ -115,7 +128,7 @@ const appRoutes: Routes = [
       { path: 'dashboard-eventos', component: DashboardEventos }, // Dashboard completo de eventos
       { path: 'usuarios', component: Usuarios },
       { path: 'eventos', component: Eventos },
-      { path: 'mis-cupos', component: MisCupos }, // Cliente: avisos de cupo en todos los eventos
+      ...cuposProtectedRoutes,
       { path: 'mis-compras/actividad', component: MisCompras }, // Cliente: traslados / actividad
       { path: 'mis-compras/guia', component: MisComprasGuia }, // Cliente: guía de uso de entradas
       { path: 'mis-compras/evento/:id', component: MisCompras }, // Cliente: detalle de boletas por evento
