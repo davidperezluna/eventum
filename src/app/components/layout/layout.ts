@@ -78,16 +78,14 @@ export class Layout implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     });
 
-    // Cerrar sidebar y menú móvil cuando cambia la ruta (solo en móviles)
+    // Cerrar sidebar / menú móvil al cambiar de ruta
     this.routerSubscription = this.router.events
-      .pipe(filter(event => event instanceof NavigationEnd))
+      .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe(() => {
         if (window.innerWidth <= 768) {
           this.closeSidebar();
           this.closeClientMenu();
         }
-        
-        // Scroll top on route change
         window.scrollTo(0, 0);
       });
 
@@ -190,6 +188,7 @@ export class Layout implements OnInit, OnDestroy {
   loadMenuCliente() {
     this.menuItems = [
       { path: '/eventos-cliente', label: 'Eventos', icon: 'event' },
+      { path: '/cupos', label: 'Explorar cupos', icon: 'public' },
       { path: '/mis-compras', label: 'Mis Compras', icon: 'shopping_bag' },
       { path: '/perfil', label: 'Mi Perfil', icon: 'person' },
     ];

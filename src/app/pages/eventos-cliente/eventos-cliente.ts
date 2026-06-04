@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { EventosService } from '../../services/eventos.service';
+import { AuthService } from '../../services/auth.service';
+import { CuposEventoService } from '../../services/cupos-evento.service';
 import { CategoriasService } from '../../services/categorias.service';
 import { EventosClienteStateService } from '../../services/eventos-cliente-state.service';
 import { ProductosService } from '../../services/productos.service';
@@ -42,14 +44,21 @@ export class EventosCliente implements OnInit, OnDestroy {
   private readonly maxProductosDestacados = 4;
   currentYear = new Date().getFullYear();
   readonly appVersion = environment.appVersion;
+  respuestasCupos = 0;
 
   constructor(
     private eventosService: EventosService,
     private categoriasService: CategoriasService,
     private eventosClienteStateService: EventosClienteStateService,
     private productosService: ProductosService,
+    private authService: AuthService,
+    private cuposEventoService: CuposEventoService,
     private cdr: ChangeDetectorRef
   ) { }
+
+  get clienteLogueado(): boolean {
+    return !!this.authService.getCurrentUser();
+  }
 
   ngOnInit() {
     const cachedState = this.eventosClienteStateService.getState();
@@ -72,6 +81,20 @@ export class EventosCliente implements OnInit, OnDestroy {
     ).subscribe(term => {
       void this.loadEventos(term, { background: this.eventosFiltrados.length > 0 });
     });
+
+    if (this.clienteLogueado) {
+      void this.cargarResumenCupos();
+    }
+  }
+
+  private async cargarResumenCupos(): Promise<void> {
+    try {
+      const r = await this.cuposEventoService.resumenMisCupos();
+      this.respuestasCupos = r.total_respuestas;
+      this.cdr.detectChanges();
+    } catch {
+      this.respuestasCupos = 0;
+    }
   }
 
   ngOnDestroy() {

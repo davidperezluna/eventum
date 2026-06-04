@@ -15,6 +15,34 @@
     </div>
   </section>
 
+  <section
+    *ngIf="!initialBootstrapLoading"
+    class="cupos-hub"
+    aria-labelledby="cupos-hub-title"
+  >
+    <div class="cupos-hub-inner">
+      <div class="cupos-hub-copy">
+        <span class="material-icons cupos-hub-icon" aria-hidden="true">forum</span>
+        <div>
+          <h2 id="cupos-hub-title" class="cupos-hub-title">Cupos Eventum</h2>
+          <p class="cupos-hub-text">Busca u ofrece cupo en el tablón de cada evento.</p>
+        </div>
+      </div>
+      <div class="cupos-hub-actions">
+        <a routerLink="/cupos" class="cupos-hub-link">Explorar</a>
+        <a *ngIf="clienteLogueado" routerLink="/mis-cupos" class="cupos-hub-link">
+          Mis avisos
+          <span
+            *ngIf="respuestasCupos > 0"
+            class="cupos-hub-badge"
+            [attr.aria-label]="respuestasCupos + ' respuestas'"
+          >{{ respuestasCupos }}</span>
+        </a>
+        <a *ngIf="!clienteLogueado" routerLink="/login" class="cupos-hub-link">Entrar</a>
+      </div>
+    </div>
+  </section>
+
   <!-- Main Content -->
   <div class="content-wrapper">
     <!-- Categories Carousel (tras primera carga: categorías + eventos + finalizados) -->
@@ -100,6 +128,15 @@
                 <ion-icon name="arrow-forward-outline"></ion-icon>
               </span>
             </div>
+            <a
+              class="event-cupos-chip"
+              [routerLink]="['/cupos-evento', evento.id]"
+              (click)="$event.stopPropagation()"
+              aria-label="Tablón de cupos del evento"
+            >
+              <span class="material-icons" aria-hidden="true">forum</span>
+              Tablón cupos
+            </a>
           </div>
         </article>
       </div>
@@ -142,6 +179,15 @@
                 <ion-icon name="arrow-forward-outline"></ion-icon>
               </span>
             </div>
+            <a
+              class="event-cupos-chip"
+              [routerLink]="['/cupos-evento', evento.id]"
+              (click)="$event.stopPropagation()"
+              aria-label="Tablón de cupos del evento"
+            >
+              <span class="material-icons" aria-hidden="true">forum</span>
+              Tablón cupos
+            </a>
           </div>
         </article>
 

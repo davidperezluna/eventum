@@ -189,7 +189,28 @@ export class EventosService {
   }
 
   /**
-   * Obtiene eventos próximos incluyendo información del lugar
+   * Eventos que aún no han terminado (fecha_fin vigente). Sirve para tablón de cupos y publicar avisos.
+   */
+  async getEventosAbiertosParaCupos(limit: number = 50): Promise<Evento[]> {
+    try {
+      const now = this.timezoneService.getCurrentDateISO();
+      const { data, error } = await this.supabase
+        .from(this.tableName)
+        .select('*, lugares(*)')
+        .eq('activo', true)
+        .gte('fecha_fin', now)
+        .order('fecha_inicio', { ascending: true })
+        .limit(limit);
+
+      if (error) throw error;
+      return this.mapEventosConLugar(data || []);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene eventos cuya fecha de inicio aún no ha pasado (próximos en calendario).
    */
   async getEventosProximos(limit: number = 5): Promise<Evento[]> {
     try {
@@ -203,19 +224,22 @@ export class EventosService {
         .limit(limit);
 
       if (error) throw error;
-      const rawData = data || [];
-      
-      return rawData.map((ev: any) => {
-        const evento = { ...ev };
-        if (evento.lugares) {
-          evento.lugar = evento.lugares;
-          delete evento.lugares;
-        }
-        return evento;
-      }) as Evento[];
+      return this.mapEventosConLugar(data || []);
     } catch (error) {
       throw error;
     }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private mapEventosConLugar(rawData: any[]): Evento[] {
+    return rawData.map((ev: any) => {
+      const evento = { ...ev };
+      if (evento.lugares) {
+        evento.lugar = evento.lugares;
+        delete evento.lugares;
+      }
+      return evento as Evento;
+    });
   }
 
   /**

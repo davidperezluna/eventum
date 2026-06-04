@@ -137,6 +137,10 @@
           <span class="nav-label">Carrito</span>
           <span *ngIf="totalItemsCarrito > 0" class="menu-badge">{{ totalItemsCarrito }}</span>
         </a>
+        <a routerLink="/cupos" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item" (click)="closeClientMenu()">
+          <span class="material-icons nav-icon">public</span>
+          <span class="nav-label">Explorar cupos</span>
+        </a>
         <a
           routerLink="/mis-compras"
           routerLinkActive="active"
@@ -201,6 +205,9 @@
             <span *ngIf="totalItemsCarrito > 0" class="menu-badge">{{ totalItemsCarrito }}</span>
           </a>
           
+          <a routerLink="/cupos" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="client-nav-item">
+            Explorar cupos
+          </a>
           <a routerLink="/mis-compras" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="client-nav-item">
             Mis Boletas
           </a>
@@ -232,6 +239,9 @@
           <a routerLink="/carrito" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="client-nav-item client-nav-item--with-badge">
             Carrito
             <span *ngIf="totalItemsCarrito > 0" class="menu-badge">{{ totalItemsCarrito }}</span>
+          </a>
+          <a routerLink="/cupos" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="client-nav-item">
+            Cupos
           </a>
           <a routerLink="/conocenos" routerLinkActive="active" class="client-nav-item">
             Conócenos

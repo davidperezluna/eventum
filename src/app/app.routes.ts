@@ -6,6 +6,9 @@ import { Eventos } from './pages/eventos/eventos';
 import { EventosCliente } from './pages/eventos-cliente/eventos-cliente';
 import { ConocenosContacto } from './pages/conocenos-contacto/conocenos-contacto';
 import { DetalleEvento } from './pages/detalle-evento/detalle-evento';
+import { CuposEvento } from './pages/cupos-evento/cupos-evento';
+import { CuposExplorar } from './pages/cupos-explorar/cupos-explorar';
+import { MisCupos } from './pages/mis-cupos/mis-cupos';
 import { Carrito } from './pages/carrito/carrito';
 import { MisCompras } from './pages/mis-compras/mis-compras';
 import { MisComprasGuia } from './pages/mis-compras-guia/mis-compras-guia';
@@ -93,6 +96,8 @@ const appRoutes: Routes = [
       { path: 'eventos-cliente', component: EventosCliente }, // Página principal pública
       { path: 'conocenos', component: ConocenosContacto }, // Conócenos y contacto (público)
       { path: 'detalle-evento/:id', component: DetalleEvento }, // Público: detalle de evento
+      { path: 'cupos', component: CuposExplorar },
+      { path: 'cupos-evento/:eventoId', component: CuposEvento },
       { path: 'carrito', component: Carrito },
       { path: 'carrito-productos', redirectTo: 'carrito', pathMatch: 'full' },
       { path: 'pago-resultado', component: PagoResultado },
@@ -110,6 +115,7 @@ const appRoutes: Routes = [
       { path: 'dashboard-eventos', component: DashboardEventos }, // Dashboard completo de eventos
       { path: 'usuarios', component: Usuarios },
       { path: 'eventos', component: Eventos },
+      { path: 'mis-cupos', component: MisCupos }, // Cliente: avisos de cupo en todos los eventos
       { path: 'mis-compras/actividad', component: MisCompras }, // Cliente: traslados / actividad
       { path: 'mis-compras/guia', component: MisComprasGuia }, // Cliente: guía de uso de entradas
       { path: 'mis-compras/evento/:id', component: MisCompras }, // Cliente: detalle de boletas por evento

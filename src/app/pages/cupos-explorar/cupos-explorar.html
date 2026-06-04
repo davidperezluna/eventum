@@ -1,0 +1,144 @@
+<div class="cupos-page">
+  <header class="cupos-hero">
+    <div class="cupos-hero-inner">
+      <a routerLink="/eventos-cliente" class="cupos-back">
+        <span class="material-icons" aria-hidden="true">arrow_back</span>
+        Eventos
+      </a>
+      <p class="cupos-eyebrow">Cupos Eventum</p>
+      <h1 class="cupos-title">Explorar <span class="cupos-title-accent">publicaciones</span></h1>
+      <p class="cupos-subtitle">
+        Avisos de cupo de todos los eventos activos, ordenados por lo más reciente.
+      </p>
+    </div>
+  </header>
+
+  <app-cupos-hub-nav seccion="explorar" [respuestasCupos]="respuestasCupos" />
+
+  <div class="cupos-toolbar">
+    <div class="cupos-filters" role="tablist" aria-label="Filtrar avisos">
+      <button type="button" class="cupos-filter" [class.active]="filtro === 'todos'" (click)="setFiltro('todos')">
+        Todos
+      </button>
+      <button
+        *ngFor="let t of tipos"
+        type="button"
+        class="cupos-filter"
+        [class.active]="filtro === t"
+        (click)="setFiltro(t)"
+      >
+        <span class="material-icons" aria-hidden="true">{{ tipoIcons[t] }}</span>
+        {{ tipoLabels[t] }}
+      </button>
+    </div>
+  </div>
+
+  <details class="cupos-safety">
+    <summary class="cupos-safety-summary">
+      <span class="material-icons" aria-hidden="true">info</span>
+      Consejo de seguridad
+      <span class="material-icons cupos-safety-chevron" aria-hidden="true">expand_more</span>
+    </summary>
+    <div class="cupos-safety-body">
+      <p>Eventum no recibe pagos entre usuarios. Para publicar, usa el tablón del evento. Tus respuestas están en Mis publicaciones.</p>
+    </div>
+  </details>
+
+  <div *ngIf="loading" class="cupos-loading">
+    <div class="cupos-spinner" aria-hidden="true"></div>
+    <p>Cargando publicaciones…</p>
+  </div>
+
+  <div *ngIf="!loading && avisos.length === 0" class="cupos-empty">
+    <span class="material-icons" aria-hidden="true">forum</span>
+    <h2>Aún no hay avisos publicados</h2>
+    <p>Sé el primero: elige un evento y publica en su tablón.</p>
+    <a routerLink="/eventos-cliente" class="cupos-btn-primary">Ver eventos</a>
+  </div>
+
+  <ul *ngIf="!loading && avisos.length > 0" class="cupos-list cupos-list--global">
+    <li *ngFor="let aviso of avisos; trackBy: trackAviso" class="cupos-card cupos-card--global">
+      <a [routerLink]="['/cupos-evento', aviso.evento_id]" class="cupos-card-event-link">
+        <div class="cupos-card-event-thumb" *ngIf="aviso.evento_imagen_principal">
+          <img [src]="aviso.evento_imagen_principal" [alt]="" loading="lazy" />
+        </div>
+        <div class="cupos-card-event-copy">
+          <span class="cupos-card-event-label">Evento</span>
+          <strong>{{ aviso.evento_titulo }}</strong>
+          <span *ngIf="aviso.evento_fecha_inicio" class="cupos-card-event-date">
+            <span class="material-icons" aria-hidden="true">event</span>
+            {{ aviso.evento_fecha_inicio | dateFormat:'shortDate' }}
+          </span>
+        </div>
+        <span class="material-icons cupos-card-event-arrow" aria-hidden="true">chevron_right</span>
+      </a>
+
+      <div class="cupos-card-head">
+        <span class="cupos-badge" [attr.data-tipo]="aviso.tipo">
+          <span class="material-icons" aria-hidden="true">{{ tipoIcons[aviso.tipo] }}</span>
+          {{ tipoLabels[aviso.tipo] }}
+        </span>
+        <span class="cupos-time">{{ tiempoRelativo(aviso.fecha_creacion) }}</span>
+      </div>
+      <p class="cupos-card-desc">{{ aviso.descripcion }}</p>
+      <div class="cupos-card-meta">
+        <span *ngIf="aviso.zona_texto">
+          <span class="material-icons" aria-hidden="true">place</span>{{ aviso.zona_texto }}
+        </span>
+        <span>
+          <span class="material-icons" aria-hidden="true">confirmation_number</span>{{ aviso.cupos }} cupo(s)
+        </span>
+        <span *ngIf="aviso.precio_referencia_cop">
+          <span class="material-icons" aria-hidden="true">payments</span>Ref. {{ formatPrecio(aviso.precio_referencia_cop) }}
+        </span>
+        <span>
+          <span class="material-icons" aria-hidden="true">person</span>{{ aviso.autor_display }}
+        </span>
+      </div>
+      <div class="cupos-card-actions">
+        <ng-container *ngIf="!aviso.es_mio; else soyAutor">
+          <button type="button" class="cupos-btn-secondary" (click)="abrirInteres(aviso)">Me interesa</button>
+          <button type="button" class="cupos-btn-ghost cupos-btn-ghost--danger" (click)="reportarAviso(aviso)">
+            Reportar
+          </button>
+        </ng-container>
+        <ng-template #soyAutor>
+          <a routerLink="/mis-cupos" class="cupos-btn-secondary">Ver en Mis publicaciones</a>
+          <button type="button" class="cupos-btn-ghost" (click)="publicarEnEvento(aviso)">Tablón del evento</button>
+        </ng-template>
+      </div>
+    </li>
+  </ul>
+
+  <div *ngIf="!loading && avisos.length > 0" class="cupos-explorar-foot">
+    <p>¿Quieres publicar? Entra al <a routerLink="/eventos-cliente">evento</a> y abre <strong>Tablón cupos</strong>.</p>
+  </div>
+
+  <div *ngIf="showInteres && interesAviso" class="cupos-overlay" role="dialog" aria-modal="true">
+    <div class="cupos-modal">
+      <header class="cupos-modal-head">
+        <h2>Me interesa</h2>
+        <button type="button" class="cupos-modal-close" (click)="cerrarInteres()" aria-label="Cerrar">
+          <span class="material-icons">close</span>
+        </button>
+      </header>
+      <div class="cupos-modal-body">
+        <p class="cupos-hint cupos-hint--warn">
+          Aviso en <strong>{{ interesAviso.evento_titulo }}</strong>. No pagues por fuera hasta tener entrada oficial.
+        </p>
+        <label class="cupos-label" for="msg-global">Mensaje para {{ interesAviso.autor_display }}</label>
+        <textarea
+          id="msg-global"
+          class="cupos-textarea"
+          rows="3"
+          [(ngModel)]="interesMensaje"
+          placeholder="Hola, me interesa coordinar contigo…"
+        ></textarea>
+      </div>
+      <footer class="cupos-modal-foot">
+        <button type="button" class="cupos-btn-ghost" (click)="cerrarInteres()">Cancelar</button>
+        <button type="button" class="cupos-btn-primary" (click)="enviarInteres()">Enviar interés</button>
+      </footer>
+    </div>
+  </div>
+</div>

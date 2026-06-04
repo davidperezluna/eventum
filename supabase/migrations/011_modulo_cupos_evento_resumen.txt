@@ -1,0 +1,157 @@
+================================================================================
+Migración: 011_modulo_cupos_evento.sql (único archivo, idempotente)
+Módulo: Cupos Eventum — explorar global + tablón por evento + Mis publicaciones
+================================================================================
+
+MANTENIMIENTO
+-------------
+Si agregas o cambias funciones en 011_modulo_cupos_evento.sql, actualiza SIEMPRE
+este archivo (.txt) en el mismo commit: nombre, parámetros, retorno y GRANT.
+
+EJECUCIÓN
+---------
+- Un solo SQL: supabase/migrations/011_modulo_cupos_evento.sql
+- Re-ejecutable: tablas IF NOT EXISTS, funciones CREATE OR REPLACE, política DROP IF EXISTS
+- Sirve si nunca corriste el módulo, si solo corriste el 011 antiguo, o si corriste 011 + 012
+- Requiere: migración 010 (notificaciones_usuario) y tablas base (eventos, usuarios, etc.)
+
+TABLAS CREADAS
+--------------
+1. public.avisos_cupo
+   - Publicaciones por evento (tipo, descripción, cupos, zona, precio referencia, etc.)
+   - FK: evento_id → eventos, usuario_id → usuarios, boleta_id → boletas_compradas (opcional)
+   - estado: activo | cerrado | oculto
+
+2. public.intereses_cupo
+   - Respuestas "Me interesa" de otros usuarios a un aviso
+   - FK: aviso_id → avisos_cupo, usuario_id → usuarios
+   - UNIQUE (aviso_id, usuario_id)
+
+3. public.reportes_cupo
+   - Reportes de moderación sobre un aviso
+   - FK: aviso_id → avisos_cupo, usuario_id → usuarios
+   - UNIQUE (aviso_id, usuario_id)
+   - A partir de 3 reportes el aviso pasa a estado oculto
+
+ÍNDICES
+-------
+- idx_avisos_cupo_evento_activo (evento_id, fecha_creacion) WHERE estado = 'activo'
+- idx_avisos_cupo_usuario (usuario_id, fecha_creacion)
+- idx_avisos_cupo_usuario_activo (usuario_id, fecha_creacion) WHERE estado = 'activo'
+- idx_intereses_cupo_aviso (aviso_id, fecha_creacion)
+
+RLS
+---
+- avisos_cupo, intereses_cupo, reportes_cupo: RLS habilitado
+- Política: avisos_cupo_select_authenticated (DROP IF EXISTS + CREATE en re-ejecución)
+- Operaciones principales vía RPC (SECURITY DEFINER)
+- GRANT SELECT: avisos_cupo, intereses_cupo, reportes_cupo → authenticated
+
+TIPOS DE AVISO (columna avisos_cupo.tipo)
+-----------------------------------------
+- busco_cupo
+- ofrezco_cupo
+- busco_grupo
+
+FUNCIONES — HELPERS (internas, sin GRANT al cliente)
+----------------------------------------------------
+1. public.fn_usuario_id_actual()
+   - Retorna: BIGINT (usuarios.id del auth.uid() actual, o NULL)
+   - Uso: todas las RPC que requieren sesión
+
+2. public.fn_autor_display(p_usuario_id BIGINT)
+   - Retorna: TEXT (nombre público, sin email)
+   - Uso: avisos e intereses al listar
+
+FUNCIONES — API TABLÓN POR EVENTO
+---------------------------------
+3. public.listar_avisos_cupo_evento(p_evento_id BIGINT, p_tipo TEXT DEFAULT NULL)
+   - Retorna: JSONB (array de avisos activos del evento)
+   - Campos: id, evento_id, tipo, descripcion, cupos, zona_texto, precio_referencia_cop,
+     autor_display, fecha_creacion, intereses_count, es_mio
+   - GRANT EXECUTE: anon, authenticated
+
+4. public.crear_aviso_cupo(
+     p_evento_id BIGINT,
+     p_tipo TEXT,
+     p_descripcion TEXT,
+     p_cupos INTEGER DEFAULT 1,
+     p_zona_texto TEXT DEFAULT NULL,
+     p_precio_referencia_cop BIGINT DEFAULT NULL,
+     p_boleta_id BIGINT DEFAULT NULL
+   )
+   - Retorna: JSONB { ok, aviso_id? | error? }
+   - Requiere sesión; valida evento activo y boleta si ofrezco_cupo
+   - GRANT EXECUTE: authenticated
+
+5. public.registrar_interes_cupo(p_aviso_id BIGINT, p_mensaje TEXT)
+   - Retorna: JSONB { ok, interes_id? | error? }
+   - UPSERT por (aviso_id, usuario_id); notifica notificaciones_usuario tipo cupo_interes
+   - metadata: aviso_id, evento_id, interes_id
+   - GRANT EXECUTE: authenticated
+
+6. public.cerrar_aviso_cupo(p_aviso_id BIGINT)
+   - Retorna: JSONB { ok | error }
+   - Solo el autor del aviso
+   - GRANT EXECUTE: authenticated
+
+7. public.reportar_aviso_cupo(p_aviso_id BIGINT, p_motivo TEXT DEFAULT NULL)
+   - Retorna: JSONB { ok, reportes }
+   - Oculta aviso si reportes >= 3
+   - GRANT EXECUTE: authenticated
+
+8. public.listar_intereses_mi_aviso(p_aviso_id BIGINT)
+   - Retorna: JSONB (array de interesados; solo dueño del aviso)
+   - Campos: id, mensaje, estado, fecha_creacion, interesado_display, interesado_email
+   - GRANT EXECUTE: authenticated
+
+FUNCIONES — API EXPLORAR TODOS LOS EVENTOS
+------------------------------------------
+9. public.listar_avisos_cupo_global(
+     p_tipo TEXT DEFAULT NULL,
+     p_limite INTEGER DEFAULT 80,
+     p_offset INTEGER DEFAULT 0
+   )
+   - Retorna: JSONB (array de avisos activos en eventos activos, todos los eventos)
+   - Mismos campos que listar_mis_avisos_cupo + es_mio según sesión
+   - Orden: fecha_creacion DESC; límite 1–100 (default 80)
+   - GRANT EXECUTE: anon, authenticated
+
+FUNCIONES — API MIS PUBLICACIONES (usuario logueado)
+----------------------------------------------------
+10. public.resumen_mis_cupos()
+    - Retorna: JSONB { avisos_activos: int, total_respuestas: int }
+    - Cuenta avisos activos del usuario y suma intereses no cerrados
+    - GRANT EXECUTE: authenticated
+
+11. public.listar_mis_avisos_cupo()
+    - Retorna: JSONB (array de avisos activos del usuario en todos los eventos)
+    - Campos: id, evento_id, evento_titulo, evento_imagen_principal, evento_fecha_inicio,
+      tipo, descripcion, cupos, zona_texto, precio_referencia_cop, autor_display,
+      fecha_creacion, intereses_count, es_mio (siempre true)
+    - GRANT EXECUTE: authenticated
+
+NAVEGACIÓN FRONTEND (3 secciones — app-cupos-hub-nav)
+-----------------------------------------------------
+1. Explorar → /cupos (todos los eventos, público)
+2. Mis publicaciones → /mis-cupos (solo lo mío; auth.guard cliente)
+3. Por evento → /eventos-cliente o /cupos-evento/:eventoId (publicar en un evento)
+
+FRONTEND RELACIONADO
+--------------------
+- Rutas públicas: /cupos, /cupos-evento/:eventoId
+- Ruta protegida (cliente): /mis-cupos
+- Componente nav: src/app/components/cupos-hub-nav/
+- Servicio: src/app/services/cupos-evento.service.ts
+  - listarGlobal → listar_avisos_cupo_global
+  - listarPorEvento → listar_avisos_cupo_evento
+  - crear → crear_aviso_cupo
+  - registrarInteres → registrar_interes_cupo
+  - cerrarAviso → cerrar_aviso_cupo
+  - reportar → reportar_aviso_cupo
+  - listarInteresesMiAviso → listar_intereses_mi_aviso
+  - resumenMisCupos → resumen_mis_cupos
+  - listarMisAvisos → listar_mis_avisos_cupo
+- Páginas: cupos-explorar/, cupos-evento/, mis-cupos/
+
+================================================================================

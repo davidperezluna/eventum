@@ -1,0 +1,1132 @@
+.cupos-page {
+  --cupos-content-max: 42rem;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #0f172a;
+  background: #f1f5f9;
+  min-height: calc(100vh - 73px);
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  .cupos-page {
+    --cupos-content-max: 52rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .cupos-page {
+    --cupos-content-max: 56rem;
+  }
+}
+
+.cupos-hero {
+  background: linear-gradient(155deg, #0f0f18 0%, #1a1a2e 45%, #2d2d5a 100%);
+  color: #fff;
+  padding: 1.75rem 1.5rem 2.5rem;
+  padding-top: max(1.5rem, env(safe-area-inset-top, 0px));
+  margin-bottom: 0.25rem;
+}
+
+.cupos-hero-inner {
+  max-width: var(--cupos-content-max);
+  margin: 0 auto;
+}
+
+.cupos-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 1.25rem;
+}
+
+.cupos-back:hover {
+  color: #c4b5fd;
+}
+
+.cupos-eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a5b4fc;
+}
+
+.cupos-title {
+  margin: 0 0 0.65rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+@media (min-width: 768px) {
+  .cupos-title {
+    font-size: 1.75rem;
+  }
+}
+
+.cupos-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: rgba(226, 232, 240, 0.88);
+  max-width: 36rem;
+}
+
+.cupos-safety {
+  max-width: var(--cupos-content-max);
+  margin: -0.5rem auto 1.5rem;
+  padding: 0 1.25rem;
+  border: none;
+}
+
+.cupos-safety-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  list-style: none;
+  cursor: pointer;
+  padding: 0.65rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #64748b;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.cupos-safety-summary::-webkit-details-marker {
+  display: none;
+}
+
+.cupos-safety-summary .material-icons:first-child {
+  font-size: 1.1rem;
+  color: #6366f1;
+}
+
+.cupos-safety-chevron {
+  margin-left: auto;
+  font-size: 1.25rem;
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+}
+
+.cupos-safety[open] .cupos-safety-chevron {
+  transform: rotate(180deg);
+}
+
+.cupos-safety[open] .cupos-safety-summary {
+  border-color: #c7d2fe;
+  background: #f8fafc;
+  color: #4338ca;
+  border-radius: 12px 12px 0 0;
+  border-bottom: none;
+}
+
+.cupos-safety-body {
+  padding: 0.75rem 0.9rem 0.9rem;
+  border: 1px solid #e2e8f0;
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  background: #f8fafc;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #475569;
+}
+
+.cupos-safety[open] .cupos-safety-body {
+  border-color: #c7d2fe;
+}
+
+.cupos-safety-body p {
+  margin: 0 0 0.5rem;
+}
+
+.cupos-safety-body p:last-child {
+  margin-bottom: 0;
+}
+
+.cupos-inline-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #4f46e5;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  font-size: inherit;
+}
+
+.cupos-toolbar {
+  max-width: var(--cupos-content-max);
+  margin: 0 auto 1.25rem;
+  padding: 0 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cupos-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.cupos-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.cupos-filter .material-icons {
+  font-size: 1rem;
+}
+
+.cupos-filter.active {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: #fff;
+}
+
+.cupos-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.65rem 1.1rem;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #6366f1, #7c3aed);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+}
+
+.cupos-btn-primary:hover {
+  filter: brightness(1.05);
+}
+
+.cupos-btn-secondary {
+  padding: 0.5rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  color: #4338ca;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.cupos-btn-ghost {
+  padding: 0.5rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.cupos-btn-ghost--danger {
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.cupos-loading,
+.cupos-empty {
+  max-width: var(--cupos-content-max);
+  margin: 2.5rem auto;
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.cupos-spinner {
+  width: 36px;
+  height: 36px;
+  margin: 0 auto 0.75rem;
+  border: 3px solid #e2e8f0;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: cupos-spin 0.8s linear infinite;
+}
+
+@keyframes cupos-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.cupos-empty .material-icons {
+  font-size: 3rem;
+  color: #94a3b8;
+  margin-bottom: 0.5rem;
+}
+
+.cupos-empty h2 {
+  margin: 0 0 0.35rem;
+  color: #0f172a;
+}
+
+.cupos-empty .cupos-btn-primary,
+.cupos-empty .cupos-btn-ghost {
+  margin: 0.5rem 0.35rem 0;
+}
+
+.cupos-list {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0 1.25rem 2rem;
+  max-width: var(--cupos-content-max);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .cupos-list {
+    gap: 1.5rem;
+    padding: 0 1.5rem 2.5rem;
+  }
+}
+
+.cupos-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.2rem 1.25rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05);
+}
+
+@media (min-width: 768px) {
+  .cupos-card {
+    padding: 1.35rem 1.5rem;
+  }
+}
+
+.cupos-card--mio {
+  border-color: #a5b4fc;
+  background: linear-gradient(180deg, #fafaff 0%, #fff 100%);
+}
+
+.cupos-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.cupos-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cupos-badge[data-tipo='busco_cupo'] {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.cupos-badge[data-tipo='ofrezco_cupo'] {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.cupos-badge[data-tipo='busco_grupo'] {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.cupos-badge .material-icons {
+  font-size: 0.95rem;
+}
+
+.cupos-time {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.cupos-card-desc {
+  margin: 0 0 0.85rem;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: #1e293b;
+}
+
+.cupos-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+.cupos-card-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.cupos-card-meta .material-icons {
+  font-size: 0.95rem;
+}
+
+.cupos-intereses-count {
+  color: #7c3aed;
+  font-weight: 600;
+}
+
+.cupos-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.25rem;
+}
+
+.cupos-card-actions--chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(4.1rem, 1fr));
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.cupos-action-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-height: 3.1rem;
+  padding: 0.4rem 0.25rem;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.cupos-action-chip:active {
+  transform: scale(0.98);
+}
+
+.cupos-action-chip .material-icons {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.cupos-action-text {
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+
+.cupos-action-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  line-height: 0;
+}
+
+.cupos-action-count {
+  position: absolute;
+  top: -4px;
+  right: -7px;
+  min-width: 0.95rem;
+  height: 0.95rem;
+  padding: 0 0.2rem;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.55rem;
+  font-weight: 800;
+  line-height: 0.95rem;
+  text-align: center;
+  border: 1.5px solid #fff;
+}
+
+.cupos-action-chip--primary {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #4338ca;
+}
+
+.cupos-action-chip--primary .material-icons {
+  color: #4f46e5;
+}
+
+.cupos-action-chip--primary.cupos-action-chip--pulse {
+  animation: cupos-chip-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes cupos-chip-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0);
+  }
+}
+
+.cupos-action-chip--danger {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fff;
+}
+
+.cupos-action-chip--danger .material-icons {
+  color: #dc2626;
+}
+
+@media (max-width: 479px) {
+  .cupos-card-actions:not(.cupos-card-actions--chips) > .cupos-btn-secondary,
+  .cupos-card-actions:not(.cupos-card-actions--chips) > .cupos-btn-ghost,
+  .cupos-card-actions:not(.cupos-card-actions--chips) > .cupos-btn-feedback,
+  .cupos-card-actions:not(.cupos-card-actions--chips) > a.cupos-btn-secondary {
+    flex: 1 1 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+.cupos-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 640px) {
+  .cupos-overlay {
+    align-items: center;
+  }
+}
+
+.cupos-modal {
+  width: 100%;
+  max-width: 26rem;
+  max-height: 90vh;
+  overflow: auto;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+@media (min-width: 640px) {
+  .cupos-modal {
+    border-radius: 16px;
+  }
+}
+
+.cupos-modal--wide {
+  max-width: 32rem;
+}
+
+.cupos-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.cupos-modal-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.cupos-modal-close {
+  border: none;
+  background: #f1f5f9;
+  border-radius: 8px;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #475569;
+}
+
+.cupos-modal-body {
+  padding: 1rem 1.1rem;
+}
+
+.cupos-modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.85rem 1.1rem 1.1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.cupos-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 0.35rem;
+}
+
+.cupos-textarea,
+.cupos-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+  font-family: inherit;
+}
+
+.cupos-textarea:focus,
+.cupos-input:focus {
+  outline: 2px solid #a5b4fc;
+  border-color: #818cf8;
+}
+
+.cupos-hint {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 0 0 0.75rem;
+  line-height: 1.4;
+}
+
+.cupos-hint--warn {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  color: #9a3412;
+}
+
+.cupos-tipo-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+@media (min-width: 400px) {
+  .cupos-tipo-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.cupos-tipo-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.55rem 0.35rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.cupos-tipo-opt.active {
+  border-color: #6366f1;
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.cupos-tipo-opt .material-icons {
+  font-size: 1.35rem;
+}
+
+.cupos-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.cupos-intereses-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cupos-interes-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.cupos-interes-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-bottom: 0.25rem;
+}
+
+.cupos-interes-item p {
+  margin: 0 0 0.35rem;
+  font-size: 0.875rem;
+}
+
+.cupos-mail-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #4f46e5;
+  text-decoration: none;
+}
+
+.cupos-mail-link .material-icons {
+  font-size: 1rem;
+}
+
+/* Vista Explorar / Mis publicaciones */
+.cupos-vista-nav {
+  display: flex;
+  gap: 0.75rem;
+  max-width: var(--cupos-content-max);
+  margin: 0 auto 1.25rem;
+  padding: 0 1.25rem;
+}
+
+.cupos-vista-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.8rem 0.65rem;
+  min-height: 3rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.cupos-vista-tab.active {
+  border-color: #6366f1;
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.cupos-vista-tab .material-icons {
+  font-size: 1.1rem;
+}
+
+.cupos-link-global {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #eef2ff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.cupos-link-global:hover {
+  color: #fff;
+}
+
+.cupos-vista-badge {
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  white-space: nowrap;
+  line-height: 1.25rem;
+}
+
+.cupos-vista-badge--count {
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+}
+
+.cupos-hint-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: var(--cupos-content-max);
+  margin: 0 auto 0.85rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 10px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: #4338ca;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.cupos-hint-inline .material-icons {
+  font-size: 1rem;
+  flex-shrink: 0;
+  color: #4f46e5;
+}
+
+.cupos-hint-inline strong {
+  font-weight: 800;
+}
+
+.cupos-hint-inline--evento {
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+
+.cupos-publish-bar {
+  max-width: var(--cupos-content-max);
+  margin: 0 auto 1rem;
+  padding: 0 0.65rem;
+}
+
+.cupos-publish-bar-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.75rem 1rem;
+  border: 2px dashed #c7d2fe;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #4338ca;
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.cupos-publish-bar-btn:hover {
+  background: #eef2ff;
+  border-color: #818cf8;
+}
+
+.cupos-publish-bar-btn .material-icons {
+  font-size: 1.35rem;
+}
+
+.cupos-evento-pick-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: min(50vh, 320px);
+  overflow-y: auto;
+}
+
+.cupos-evento-pick {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.cupos-evento-pick:hover {
+  border-color: #c7d2fe;
+  background: #f8fafc;
+}
+
+.cupos-evento-pick-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #e2e8f0;
+}
+
+.cupos-evento-pick-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cupos-evento-pick-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.cupos-evento-pick-copy strong {
+  font-size: 0.875rem;
+  color: #1e293b;
+  line-height: 1.25;
+}
+
+.cupos-evento-pick-copy span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.cupos-evento-pick-copy .material-icons {
+  font-size: 0.9rem;
+}
+
+.cupos-evento-pick-arrow {
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.cupos-evento-pick-selected {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 10px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.cupos-evento-pick-selected .material-icons {
+  font-size: 1.1rem;
+}
+
+.cupos-modal-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #6366f1;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cupos-modal-back .material-icons {
+  font-size: 1.1rem;
+}
+
+.cupos-mis-hint {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  max-width: var(--cupos-content-max);
+  margin: 0 auto 1.25rem;
+  padding: 1rem 1.2rem;
+  background: #ecfdf5;
+  border: 1px solid #6ee7b7;
+  border-radius: 12px;
+  color: #065f46;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.cupos-mis-hint p {
+  margin: 0;
+}
+
+.cupos-mis-hint .material-icons {
+  color: #059669;
+  flex-shrink: 0;
+}
+
+.cupos-toolbar--mis {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cupos-toolbar-mis-text {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.cupos-fab {
+  position: fixed;
+  right: 1.25rem;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  z-index: 100;
+  width: 3.25rem;
+  height: 3.25rem;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #7c3aed);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.45);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cupos-fab .material-icons {
+  font-size: 1.75rem;
+}
+
+.cupos-card--expandido {
+  border-color: #818cf8;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.12);
+}
+
+.cupos-btn-feedback {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.9rem;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.cupos-btn-feedback--pulse {
+  animation: cupos-pulse 2s ease-in-out infinite;
+}
+
+@keyframes cupos-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(99, 102, 241, 0);
+  }
+}
+
+.cupos-respuestas-panel {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed #c7d2fe;
+  background: #f8fafc;
+  margin-left: -0.35rem;
+  margin-right: -0.35rem;
+  margin-bottom: -0.35rem;
+  padding: 1rem 1rem 1.1rem;
+  border-radius: 0 0 14px 14px;
+}
+
+.cupos-respuestas-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.cupos-spinner--sm {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-width: 2px;
+  margin: 0;
+}
+
+.cupos-intereses-list--inline {
+  margin-top: 0.5rem;
+}
+
+.cupos-interes-msg {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #334155;
+}
+
+.cupos-interes-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.cupos-btn-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+}
+
+.cupos-btn-copy .material-icons {
+  font-size: 0.95rem;
+}
+
+@media (min-width: 769px) {
+  .cupos-toolbar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .cupos-title {
+    font-size: 1.75rem;
+  }
+}

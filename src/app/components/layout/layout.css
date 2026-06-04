@@ -652,6 +652,12 @@
   padding: 0 6px;
 }
 
+.menu-badge--respuestas {
+  font-size: 0.65rem;
+  padding: 0 0.4rem;
+  white-space: nowrap;
+}
+
 .client-nav-item:hover {
   color: var(--color-primary);
 }

@@ -1,0 +1,43 @@
+<nav class="cupos-hub-nav" aria-label="Secciones de Cupos Eventum">
+  <a
+    routerLink="/cupos"
+    class="cupos-hub-nav-item"
+    [class.active]="seccion === 'explorar'"
+    [attr.aria-current]="seccion === 'explorar' ? 'page' : null"
+  >
+    <span class="material-icons" aria-hidden="true">public</span>
+    <span class="cupos-hub-nav-copy">
+      <strong>Explorar</strong>
+      <span>Todos los eventos</span>
+    </span>
+  </a>
+  <a
+    routerLink="/mis-cupos"
+    class="cupos-hub-nav-item"
+    [class.active]="seccion === 'mis'"
+    [attr.aria-current]="seccion === 'mis' ? 'page' : null"
+  >
+    <span class="material-icons" aria-hidden="true">campaign</span>
+    <span class="cupos-hub-nav-copy">
+      <strong>Mis publicaciones</strong>
+      <span>Tus avisos y respuestas</span>
+    </span>
+    <span
+      *ngIf="respuestasCupos > 0"
+      class="cupos-hub-nav-badge"
+      [attr.aria-label]="respuestasCupos + ' respuestas'"
+    >{{ respuestasCupos }} resp.</span>
+  </a>
+  <a
+    routerLink="/eventos-cliente"
+    class="cupos-hub-nav-item"
+    [class.active]="seccion === 'evento'"
+    [attr.aria-current]="seccion === 'evento' ? 'page' : null"
+  >
+    <span class="material-icons" aria-hidden="true">event</span>
+    <span class="cupos-hub-nav-copy">
+      <strong>Por evento</strong>
+      <span>{{ eventoTitulo || 'Elegir evento y publicar' }}</span>
+    </span>
+  </a>
+</nav>
