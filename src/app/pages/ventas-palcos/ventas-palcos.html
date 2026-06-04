@@ -24,102 +24,175 @@
     </select>
   </div>
 
-  <div class="content-card">
+  <div class="content-card content-card--palcos ventas-operacion-card">
     <div *ngIf="loading" class="loading-state">Cargando ventas de palcos...</div>
 
     <ng-container *ngIf="!loading">
       <div *ngIf="comprasPalcos.length === 0" class="empty-state">
-        No hay ventas de palcos registradas con los filtros actuales.
+        <span class="material-icons">weekend</span>
+        <p>No hay ventas de palcos registradas con los filtros actuales.</p>
       </div>
 
-      <section class="ventas-section" *ngIf="comprasPalcos.length > 0">
-        <h2 class="ventas-section-title">
-          <span class="material-icons ventas-section-icon">weekend</span>
-          Ventas de palcos
-        </h2>
-        <div class="table-scroll" tabindex="0">
-          <table class="data-table data-table-palcos">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Transacción</th>
-                <th>Tipo</th>
-                <th>Nombre palco</th>
-                <th>Nº palco</th>
-                <th>Cliente</th>
-                <th>Evento</th>
-                <th>Subtotal</th>
-                <th>Descuento</th>
-                <th>Total</th>
-                <th>Método Pago</th>
-                <th>Estado Pago</th>
-                <th>Estado Compra</th>
-                <th>Fecha</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let compra of comprasPalcos">
-                <td>{{ compra.id }}</td>
-                <td>{{ compra.numero_transaccion }}</td>
-                <td>
-                  <span class="tipo-compra-badge" [attr.title]="'Palco, o palco + boletas en la misma compra'">
-                    {{ tipoCompraLabel(compra) }}
-                  </span>
-                </td>
-                <td class="cell-palco-nombre" [attr.title]="palcosNombreLista(compra)">{{ palcosNombreLista(compra) }}</td>
-                <td class="cell-numero">{{ palcosNumeroLista(compra) }}</td>
-                <td>
-                  <button class="btn-link" type="button" (click)="openClienteModal(compra)" title="Ver detalles del cliente">
-                    {{ getClienteNombre(compra) }}
-                  </button>
-                </td>
-                <td>
+      <ng-container *ngIf="comprasPalcos.length > 0">
+        <div class="ventas-view ventas-view--desktop">
+          <div class="table-scroll" tabindex="0">
+            <table class="data-table data-table-palcos">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Transacción</th>
+                  <th>Tipo</th>
+                  <th>Nombre palco</th>
+                  <th>Nº palco</th>
+                  <th>Cliente</th>
+                  <th>Evento</th>
+                  <th>Subtotal</th>
+                  <th>Descuento</th>
+                  <th>Total</th>
+                  <th>Método Pago</th>
+                  <th>Estado Pago</th>
+                  <th>Estado Compra</th>
+                  <th>Fecha</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let compra of comprasPalcos">
+                  <td>{{ compra.id }}</td>
+                  <td>{{ compra.numero_transaccion }}</td>
+                  <td>
+                    <span class="tipo-compra-badge" [attr.title]="'Palco, o palco + boletas en la misma compra'">
+                      {{ tipoCompraLabel(compra) }}
+                    </span>
+                  </td>
+                  <td class="cell-palco-nombre" [attr.title]="palcosNombreLista(compra)">{{ palcosNombreLista(compra) }}</td>
+                  <td class="cell-numero">{{ palcosNumeroLista(compra) }}</td>
+                  <td>
+                    <button class="btn-link" type="button" (click)="openClienteModal(compra)" title="Ver detalles del cliente">
+                      {{ getClienteNombre(compra) }}
+                    </button>
+                  </td>
+                  <td>
+                    <button class="btn-link" type="button" (click)="openEventoModal(compra)" title="Ver detalles del evento">
+                      {{ getEventoTitulo(compra) }}
+                    </button>
+                  </td>
+                  <td>${{ (compra.subtotal || compra.total) | number:'1.2-2' }}</td>
+                  <td>
+                    <div *ngIf="compra.descuento_total && compra.descuento_total > 0" class="discount-cell">
+                      <span class="discount-amount">-${{ compra.descuento_total | number:'1.2-2' }}</span>
+                      <small class="coupon-code" *ngIf="compra.cupon">({{ compra.cupon.codigo }})</small>
+                    </div>
+                    <span *ngIf="!compra.descuento_total || compra.descuento_total === 0">-</span>
+                  </td>
+                  <td><strong>${{ compra.total | number:'1.2-2' }}</strong></td>
+                  <td>{{ compra.metodo_pago }}</td>
+                  <td>
+                    <span [class]="compra.estado_pago === 'completado' ? 'badge-success' : 'badge-warning'">
+                      {{ getEstadoPagoLabel(compra.estado_pago) }}
+                    </span>
+                  </td>
+                  <td>
+                    <span [class]="compra.estado_compra === 'confirmada' ? 'badge-success' : 'badge-warning'">
+                      {{ getEstadoCompraLabel(compra.estado_compra) }}
+                    </span>
+                  </td>
+                  <td>{{ compra.fecha_compra | dateFormat:'short' }}</td>
+                  <td class="actions">
+                    <button type="button" class="btn-venta-action" (click)="openModal(compra)" title="Editar" aria-label="Editar compra">
+                      <span class="material-icons">edit</span>
+                    </button>
+                    <button
+                      *ngIf="puedeEliminarBoletaVenta(compra)"
+                      type="button"
+                      class="btn-venta-action btn-venta-action--danger"
+                      [disabled]="deletingCompraId === compra.id"
+                      (click)="eliminarBoletasVenta(compra)"
+                      title="Eliminar"
+                      aria-label="Eliminar compra"
+                    >
+                      <span class="material-icons">{{ deletingCompraId === compra.id ? 'hourglass_empty' : 'delete_forever' }}</span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="ventas-view ventas-view--mobile">
+          <div class="card-header">
+            <h2>
+              <span class="material-icons">weekend</span>
+              Ventas de palcos
+            </h2>
+          </div>
+          <div class="ventas-list">
+            <div *ngFor="let compra of comprasPalcos" class="venta-item">
+              <div class="venta-info">
+                <div class="venta-header">
+                  <div class="venta-header__start">
+                    <span class="venta-transaccion">{{ compra.numero_transaccion || ('#' + compra.id) }}</span>
+                    <span class="venta-fecha">{{ compra.fecha_compra | dateFormat:'short' }}</span>
+                  </div>
+                  <div class="venta-toolbar">
+                    <button type="button" class="btn-venta-action" (click)="openModal(compra)" title="Editar" aria-label="Editar compra">
+                      <span class="material-icons">edit</span>
+                    </button>
+                    <button
+                      *ngIf="puedeEliminarBoletaVenta(compra)"
+                      type="button"
+                      class="btn-venta-action btn-venta-action--danger"
+                      [disabled]="deletingCompraId === compra.id"
+                      (click)="eliminarBoletasVenta(compra)"
+                      title="Eliminar"
+                      aria-label="Eliminar compra"
+                    >
+                      <span class="material-icons">{{ deletingCompraId === compra.id ? 'hourglass_empty' : 'delete_forever' }}</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="venta-evento">
                   <button class="btn-link" type="button" (click)="openEventoModal(compra)" title="Ver detalles del evento">
                     {{ getEventoTitulo(compra) }}
                   </button>
-                </td>
-                <td>${{ (compra.subtotal || compra.total) | number:'1.2-2' }}</td>
-                <td>
-                  <div *ngIf="compra.descuento_total && compra.descuento_total > 0" class="discount-cell">
-                    <span class="discount-amount">-${{ compra.descuento_total | number:'1.2-2' }}</span>
-                    <small class="coupon-code" *ngIf="compra.cupon">({{ compra.cupon.codigo }})</small>
+                </div>
+                <div class="venta-subline">
+                  <button class="btn-link" type="button" (click)="openClienteModal(compra)" title="Ver detalles del cliente">
+                    {{ getClienteNombre(compra) }}
+                  </button>
+                  <span class="venta-id">ID {{ compra.id }}</span>
+                </div>
+                <div class="venta-meta">
+                  <span class="venta-meta__item">
+                    <span class="tipo-compra-badge">{{ tipoCompraLabel(compra) }}</span>
+                  </span>
+                  <span class="venta-meta__item" [attr.title]="palcosNombreLista(compra)">
+                    Palco: <strong>{{ palcosNombreLista(compra) }}</strong>
+                  </span>
+                  <span class="venta-meta__item">Nº <strong>{{ palcosNumeroLista(compra) }}</strong></span>
+                  <span class="venta-meta__item">Subt. <strong>${{ (compra.subtotal || compra.total) | number:'1.2-2' }}</strong></span>
+                  <span class="venta-meta__item" *ngIf="compra.descuento_total && compra.descuento_total > 0">
+                    Dcto. <strong class="discount-amount">-${{ compra.descuento_total | number:'1.2-2' }}</strong>
+                  </span>
+                  <span class="venta-meta__item">{{ compra.metodo_pago }}</span>
+                </div>
+                <div class="venta-details">
+                  <span class="venta-total">${{ compra.total | number:'1.2-2' }}</span>
+                  <div class="venta-badges">
+                    <span [class]="compra.estado_pago === 'completado' ? 'badge-success' : 'badge-warning'">
+                      {{ getEstadoPagoLabel(compra.estado_pago) }}
+                    </span>
+                    <span [class]="compra.estado_compra === 'confirmada' ? 'badge-success' : 'badge-warning'">
+                      {{ getEstadoCompraLabel(compra.estado_compra) }}
+                    </span>
                   </div>
-                  <span *ngIf="!compra.descuento_total || compra.descuento_total === 0">-</span>
-                </td>
-                <td><strong>${{ compra.total | number:'1.2-2' }}</strong></td>
-                <td>{{ compra.metodo_pago }}</td>
-                <td>
-                  <span [class]="compra.estado_pago === 'completado' ? 'badge-success' : 'badge-warning'">
-                    {{ getEstadoPagoLabel(compra.estado_pago) }}
-                  </span>
-                </td>
-                <td>
-                  <span [class]="compra.estado_compra === 'confirmada' ? 'badge-success' : 'badge-warning'">
-                    {{ getEstadoCompraLabel(compra.estado_compra) }}
-                  </span>
-                </td>
-                <td>{{ compra.fecha_compra | dateFormat:'short' }}</td>
-                <td class="actions">
-                  <button type="button" class="btn-icon" (click)="openModal(compra)" title="Editar">
-                    <span class="material-icons">edit</span>
-                  </button>
-                  <button
-                    *ngIf="puedeEliminarBoletaVenta(compra)"
-                    type="button"
-                    class="btn-icon btn-icon-danger"
-                    [disabled]="deletingCompraId === compra.id"
-                    (click)="eliminarBoletasVenta(compra)"
-                    title="Eliminar boletas / compra"
-                  >
-                    <span class="material-icons">{{ deletingCompraId === compra.id ? 'hourglass_empty' : 'delete_forever' }}</span>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </section>
+      </ng-container>
     </ng-container>
 
     <div *ngIf="total > limit" class="pagination">

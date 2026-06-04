@@ -34,54 +34,104 @@
     />
   </div>
 
-  <div class="content-card">
+  <div class="content-card content-card--checkout ventas-operacion-card">
     <div *ngIf="loading" class="loading-state">Cargando transacciones checkout...</div>
 
     <ng-container *ngIf="!loading">
       <div *ngIf="transacciones.length === 0" class="empty-state">
-        No hay transacciones checkout registradas con los filtros actuales.
+        <span class="material-icons">receipt_long</span>
+        <p>No hay transacciones checkout registradas con los filtros actuales.</p>
       </div>
 
-      <div *ngIf="transacciones.length > 0" class="table-scroll" tabindex="0">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Intento</th>
-              <th>Tipo</th>
-              <th>Cliente</th>
-              <th>Evento</th>
-              <th>Qué se compró</th>
-              <th>Total</th>
-              <th>Estado</th>
-              <th>Fecha</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let tx of transacciones">
-              <td>{{ tx.id }}</td>
-              <td>{{ tx.numero_intento }}</td>
-              <td>
-                <span [class]="tipoClass(tx.tipo)">{{ tx.tipo }}</span>
-              </td>
-              <td>{{ getClienteLabel(tx) }}</td>
-              <td>{{ getEventoLabel(tx) }}</td>
-              <td class="cell-compra" [attr.title]="getQueSeCompro(tx)">
-                <span class="cell-compra__text">{{ getQueSeCompro(tx) }}</span>
-              </td>
-              <td><strong>{{ formatCurrency(tx.total, tx.moneda) }}</strong></td>
-              <td>
-                <span [class]="estadoClass(tx.estado)">{{ tx.estado }}</span>
-              </td>
-              <td>{{ tx.fecha_creacion | dateFormat:'short' }}</td>
-              <td>
-                <button type="button" class="btn-show" (click)="openTxModal(tx)">Show transacción</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <ng-container *ngIf="transacciones.length > 0">
+        <div class="ventas-view ventas-view--desktop">
+          <div class="table-scroll" tabindex="0">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Intento</th>
+                  <th>Tipo</th>
+                  <th>Cliente</th>
+                  <th>Evento</th>
+                  <th>Qué se compró</th>
+                  <th>Total</th>
+                  <th>Estado</th>
+                  <th>Fecha</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let tx of transacciones">
+                  <td>{{ tx.id }}</td>
+                  <td>{{ tx.numero_intento }}</td>
+                  <td>
+                    <span [class]="tipoClass(tx.tipo)">{{ tx.tipo }}</span>
+                  </td>
+                  <td>{{ getClienteLabel(tx) }}</td>
+                  <td>{{ getEventoLabel(tx) }}</td>
+                  <td class="cell-compra" [attr.title]="getQueSeCompro(tx)">
+                    <span class="cell-compra__text">{{ getQueSeCompro(tx) }}</span>
+                  </td>
+                  <td><strong>{{ formatCurrency(tx.total, tx.moneda) }}</strong></td>
+                  <td>
+                    <span [class]="estadoClass(tx.estado)">{{ tx.estado }}</span>
+                  </td>
+                  <td>{{ tx.fecha_creacion | dateFormat:'short' }}</td>
+                  <td class="actions">
+                    <button type="button" class="btn-venta-action btn-venta-action--text" (click)="openTxModal(tx)" title="Ver transacción">
+                      <span class="material-icons">visibility</span>
+                      Ver
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="ventas-view ventas-view--mobile">
+          <div class="card-header">
+            <h2>
+              <span class="material-icons">receipt_long</span>
+              Transacciones checkout
+            </h2>
+          </div>
+          <div class="ventas-list">
+            <div *ngFor="let tx of transacciones" class="venta-item">
+              <div class="venta-info">
+                <div class="venta-header">
+                  <div class="venta-header__start">
+                    <span class="venta-transaccion">{{ tx.numero_intento }}</span>
+                    <span class="venta-fecha">{{ tx.fecha_creacion | dateFormat:'short' }}</span>
+                  </div>
+                  <div class="venta-toolbar">
+                    <button type="button" class="btn-venta-action btn-venta-action--text" (click)="openTxModal(tx)" title="Ver transacción">
+                      <span class="material-icons">visibility</span>
+                      Ver
+                    </button>
+                  </div>
+                </div>
+                <div class="venta-evento">{{ getEventoLabel(tx) }}</div>
+                <div class="venta-subline">
+                  <span>{{ getClienteLabel(tx) }}</span>
+                  <span class="venta-id">ID {{ tx.id }}</span>
+                </div>
+                <div class="venta-meta">
+                  <span class="venta-meta__item venta-meta__item--truncate" [attr.title]="getQueSeCompro(tx)">{{ getQueSeCompro(tx) }}</span>
+                </div>
+                <div class="venta-details">
+                  <span class="venta-total">{{ formatCurrency(tx.total, tx.moneda) }}</span>
+                  <div class="venta-badges">
+                    <span [class]="tipoClass(tx.tipo)">{{ tx.tipo }}</span>
+                    <span [class]="estadoClass(tx.estado)">{{ tx.estado }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
     </ng-container>
 
     <div *ngIf="total > limit" class="pagination">

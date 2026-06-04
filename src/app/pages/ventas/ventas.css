@@ -1,3 +1,5 @@
+@import './ventas-operacion-list.css';
+
 .ventas-page {
   max-width: var(--content-max-width);
   margin: 0 auto;
@@ -202,32 +204,6 @@
   gap: var(--spacing-xs);
 }
 
-.btn-icon {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: var(--spacing-xs);
-  color: var(--color-text-secondary);
-  transition: color var(--transition-fast);
-}
-
-.btn-icon:hover {
-  color: var(--color-secondary);
-}
-
-.btn-icon-danger {
-  color: var(--color-danger, #c62828);
-}
-
-.btn-icon-danger:hover:not(:disabled) {
-  color: #b71c1c;
-}
-
-.btn-icon-danger:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
 .btn-link {
   background: none;
   border: none;
@@ -241,6 +217,10 @@
 
 .btn-link:hover {
   color: var(--color-primary);
+}
+
+.text-muted {
+  color: var(--color-text-tertiary);
 }
 
 .discount-cell {
@@ -633,6 +613,7 @@
 
   .filters-card {
     flex-direction: column;
+    padding: var(--spacing-sm);
   }
 
   .filter-group {
@@ -651,27 +632,10 @@
     flex-direction: column;
   }
 
-  .data-table-palcos {
-    min-width: 1180px;
-  }
-
-  .data-table-boletas {
-    min-width: 1020px;
-  }
-
-  .data-table {
-    font-size: var(--font-size-xs);
-  }
-
-  .data-table th,
-  .data-table td {
-    padding: var(--spacing-sm);
-  }
-
   .pagination-controls {
     gap: var(--spacing-xs);
   }
-  
+
   .pagination-btn,
   .pagination-number {
     min-width: 32px;
@@ -679,28 +643,12 @@
     padding: var(--spacing-xs);
     font-size: var(--font-size-xs);
   }
-  
+
   .pagination-btn .material-icons {
     font-size: 1rem;
   }
-  
+
   .pagination-numbers {
     gap: 2px;
-  }
-}
-
-@media (max-width: 480px) {
-  .data-table-palcos {
-    min-width: 1080px;
-  }
-
-  .data-table-boletas {
-    min-width: 980px;
-  }
-
-  .data-table th,
-  .data-table td {
-    padding: var(--spacing-xs) var(--spacing-sm);
-    font-size: 0.75rem;
   }
 }

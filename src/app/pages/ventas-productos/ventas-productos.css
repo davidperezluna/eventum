@@ -1,3 +1,5 @@
+@import '../ventas/ventas-operacion-list.css';
+
 .ventas-productos-page {
   max-width: var(--content-max-width);
   margin: 0 auto;
@@ -264,9 +266,5 @@
 @media (max-width: 768px) {
   .filters-card {
     grid-template-columns: 1fr;
-  }
-
-  .data-table {
-    min-width: 1080px;
   }
 }

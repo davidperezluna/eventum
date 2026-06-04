@@ -25,21 +25,19 @@
     </select>
   </div>
 
-  <!-- Tabla de ventas de boletas -->
-  <div class="content-card">
+  <!-- Listado de ventas de boletas -->
+  <div class="content-card content-card--ventas ventas-operacion-card">
     <div *ngIf="loading" class="loading-state">Cargando ventas...</div>
 
     <ng-container *ngIf="!loading">
       <div *ngIf="comprasBoletas.length === 0" class="empty-state">
-        No hay ventas registradas. ¡Cuando comiences a vender boletas, aparecerán aquí!
+        <span class="material-icons">shopping_cart</span>
+        <p>No hay ventas registradas. ¡Cuando comiences a vender boletas, aparecerán aquí!</p>
       </div>
 
       <ng-container *ngIf="comprasBoletas.length > 0">
-        <section class="ventas-section ventas-section--boletas">
-          <h2 class="ventas-section-title">
-            <span class="material-icons ventas-section-icon">confirmation_number</span>
-            Ventas de boletas
-          </h2>
+        <!-- Desktop: tabla -->
+        <div class="ventas-view ventas-view--desktop">
           <div class="table-scroll" tabindex="0">
             <table class="data-table data-table-boletas">
               <thead>
@@ -62,7 +60,7 @@
                 <tr *ngFor="let compra of comprasBoletas">
                   <td>{{ compra.id }}</td>
                   <td>
-                    <ng-container *ngIf="tieneCheckout(compra); else transaccionLegacyBoletas">
+                    <ng-container *ngIf="tieneCheckout(compra); else transaccionLegacyBoletasDesktop">
                       <a
                         class="btn-link"
                         [routerLink]="['/transacciones-checkout']"
@@ -72,7 +70,7 @@
                         {{ compra.numero_transaccion || ('#' + compra.id) }}
                       </a>
                     </ng-container>
-                    <ng-template #transaccionLegacyBoletas>
+                    <ng-template #transaccionLegacyBoletasDesktop>
                       <span class="text-muted" title="Compra sin checkout unificado">
                         {{ compra.numero_transaccion || ('#' + compra.id) }}
                       </span>
@@ -110,16 +108,17 @@
                   </td>
                   <td>{{ compra.fecha_compra | dateFormat:'short' }}</td>
                   <td class="actions">
-                    <button type="button" class="btn-icon" (click)="openModal(compra)" title="Editar">
+                    <button type="button" class="btn-venta-action" (click)="openModal(compra)" title="Editar" aria-label="Editar compra">
                       <span class="material-icons">edit</span>
                     </button>
                     <button
                       *ngIf="puedeEliminarBoletaVenta(compra)"
                       type="button"
-                      class="btn-icon btn-icon-danger"
+                      class="btn-venta-action btn-venta-action--danger"
                       [disabled]="deletingCompraId === compra.id"
                       (click)="eliminarBoletasVenta(compra)"
                       title="Eliminar boletas / compra"
+                      aria-label="Eliminar compra"
                     >
                       <span class="material-icons">{{ deletingCompraId === compra.id ? 'hourglass_empty' : 'delete_forever' }}</span>
                     </button>
@@ -128,7 +127,91 @@
               </tbody>
             </table>
           </div>
-        </section>
+        </div>
+
+        <!-- Móvil: tarjetas -->
+        <div class="ventas-view ventas-view--mobile">
+          <div class="card-header">
+            <h2>
+              <span class="material-icons">confirmation_number</span>
+              Ventas de boletas
+            </h2>
+          </div>
+          <div class="ventas-list">
+            <div *ngFor="let compra of comprasBoletas" class="venta-item">
+              <div class="venta-info">
+                <div class="venta-header">
+                  <div class="venta-header__start">
+                    <span class="venta-transaccion">
+                      <ng-container *ngIf="tieneCheckout(compra); else transaccionLegacyBoletasMobile">
+                        <a
+                          class="btn-link"
+                          [routerLink]="['/transacciones-checkout']"
+                          [queryParams]="{ compra_id: compra.id }"
+                          title="Ver transacción completa"
+                        >
+                          {{ compra.numero_transaccion || ('#' + compra.id) }}
+                        </a>
+                      </ng-container>
+                      <ng-template #transaccionLegacyBoletasMobile>
+                        <span class="text-muted" title="Compra sin checkout unificado">
+                          {{ compra.numero_transaccion || ('#' + compra.id) }}
+                        </span>
+                      </ng-template>
+                    </span>
+                    <span class="venta-fecha">{{ compra.fecha_compra | dateFormat:'short' }}</span>
+                  </div>
+                  <div class="venta-toolbar">
+                    <button type="button" class="btn-venta-action" (click)="openModal(compra)" title="Editar" aria-label="Editar compra">
+                      <span class="material-icons">edit</span>
+                    </button>
+                    <button
+                      *ngIf="puedeEliminarBoletaVenta(compra)"
+                      type="button"
+                      class="btn-venta-action btn-venta-action--danger"
+                      [disabled]="deletingCompraId === compra.id"
+                      (click)="eliminarBoletasVenta(compra)"
+                      title="Eliminar"
+                      aria-label="Eliminar compra"
+                    >
+                      <span class="material-icons">{{ deletingCompraId === compra.id ? 'hourglass_empty' : 'delete_forever' }}</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="venta-evento">
+                  <button class="btn-link" type="button" (click)="openEventoModal(compra)" title="Ver detalles del evento">
+                    {{ getEventoTitulo(compra) }}
+                  </button>
+                </div>
+                <div class="venta-subline">
+                  <button class="btn-link" type="button" (click)="openClienteModal(compra)" title="Ver detalles del cliente">
+                    {{ getClienteNombre(compra) }}
+                  </button>
+                  <span class="venta-id">ID {{ compra.id }}</span>
+                </div>
+                <div class="venta-meta">
+                  <span class="venta-meta__item">Subt. <strong>${{ (compra.subtotal || compra.total) | number:'1.2-2' }}</strong></span>
+                  <span class="venta-meta__item" *ngIf="compra.descuento_total && compra.descuento_total > 0">
+                    Dcto. <strong class="discount-amount">-${{ compra.descuento_total | number:'1.2-2' }}</strong>
+                    <span *ngIf="compra.cupon">({{ compra.cupon.codigo }})</span>
+                  </span>
+                  <span class="venta-meta__item">{{ compra.metodo_pago }}</span>
+                </div>
+                <div class="venta-details">
+                  <span class="venta-total">${{ compra.total | number:'1.2-2' }}</span>
+                  <div class="venta-badges">
+                    <span [class]="compra.estado_pago === 'completado' ? 'badge-success' : 'badge-warning'">
+                      {{ getEstadoPagoLabel(compra.estado_pago) }}
+                    </span>
+                    <span [class]="compra.estado_compra === 'confirmada' ? 'badge-success' : 'badge-warning'">
+                      {{ getEstadoCompraLabel(compra.estado_compra) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </ng-container>
     </ng-container>
 

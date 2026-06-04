@@ -1,3 +1,5 @@
+@import '../ventas/ventas-operacion-list.css';
+
 .tx-checkout-page {
   max-width: var(--content-max-width);
   margin: 0 auto;
@@ -319,10 +321,6 @@
 @media (max-width: 768px) {
   .filters-card {
     grid-template-columns: 1fr;
-  }
-
-  .data-table {
-    min-width: 940px;
   }
 
   .tx-grid {

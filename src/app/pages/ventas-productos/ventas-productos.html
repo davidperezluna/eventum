@@ -34,68 +34,139 @@
     />
   </div>
 
-  <div class="content-card">
+  <div class="content-card content-card--productos ventas-operacion-card">
     <div *ngIf="loading" class="loading-state">Cargando ventas de productos...</div>
 
     <ng-container *ngIf="!loading">
       <div *ngIf="compras.length === 0" class="empty-state">
-        No hay ventas de productos registradas con los filtros actuales.
+        <span class="material-icons">inventory_2</span>
+        <p>No hay ventas de productos registradas con los filtros actuales.</p>
       </div>
 
-      <div *ngIf="compras.length > 0" class="table-scroll" tabindex="0">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Transacción</th>
-              <th>Cliente</th>
-              <th>Evento</th>
-              <th>Productos</th>
-              <th>Subtotal</th>
-              <th>Servicio</th>
-              <th>Descuento</th>
-              <th>Total</th>
-              <th>Fecha</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let compra of compras">
-              <td>{{ compra.id }}</td>
-              <td>
-                <ng-container *ngIf="tieneCheckout(compra); else transaccionLegacyProductos">
-                  <a
-                    class="btn-link"
-                    [routerLink]="['/transacciones-checkout']"
-                    [queryParams]="{ compra_producto_id: compra.id }"
-                    title="Ver transacción completa"
-                  >
-                    {{ compra.numero_pedido || ('#' + compra.id) }}
-                  </a>
-                </ng-container>
-                <ng-template #transaccionLegacyProductos>
-                  <span class="text-muted" title="Compra sin checkout unificado">
-                    {{ compra.numero_pedido || ('#' + compra.id) }}
+      <ng-container *ngIf="compras.length > 0">
+        <div class="ventas-view ventas-view--desktop">
+          <div class="table-scroll" tabindex="0">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Transacción</th>
+                  <th>Cliente</th>
+                  <th>Evento</th>
+                  <th>Productos</th>
+                  <th>Subtotal</th>
+                  <th>Servicio</th>
+                  <th>Descuento</th>
+                  <th>Total</th>
+                  <th>Fecha</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let compra of compras">
+                  <td>{{ compra.id }}</td>
+                  <td>
+                    <ng-container *ngIf="tieneCheckout(compra); else transaccionLegacyProductosDesktop">
+                      <a
+                        class="btn-link"
+                        [routerLink]="['/transacciones-checkout']"
+                        [queryParams]="{ compra_producto_id: compra.id }"
+                        title="Ver transacción completa"
+                      >
+                        {{ compra.numero_pedido || ('#' + compra.id) }}
+                      </a>
+                    </ng-container>
+                    <ng-template #transaccionLegacyProductosDesktop>
+                      <span class="text-muted" title="Compra sin checkout unificado">
+                        {{ compra.numero_pedido || ('#' + compra.id) }}
+                      </span>
+                    </ng-template>
+                  </td>
+                  <td>{{ getClienteNombre(compra) }}</td>
+                  <td>{{ getEventoTitulo(compra) }}</td>
+                  <td class="cell-productos" [attr.title]="getItemsResumen(compra)">{{ getItemsResumen(compra) }}</td>
+                  <td>{{ formatCurrency(compra.subtotal) }}</td>
+                  <td>{{ formatCurrency(compra.valor_servicio) }}</td>
+                  <td>{{ formatCurrency(compra.descuento_total) }}</td>
+                  <td><strong>{{ formatCurrency(compra.total) }}</strong></td>
+                  <td>{{ compra.fecha_compra | dateFormat:'short' }}</td>
+                  <td class="actions">
+                    <button type="button" class="btn-venta-action" (click)="openModal(compra)" title="Editar" aria-label="Editar pedido">
+                      <span class="material-icons">edit</span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="ventas-view ventas-view--mobile">
+          <div class="card-header">
+            <h2>
+              <span class="material-icons">inventory_2</span>
+              Ventas de productos
+            </h2>
+          </div>
+          <div class="ventas-list">
+            <div *ngFor="let compra of compras" class="venta-item">
+              <div class="venta-info">
+                <div class="venta-header">
+                  <div class="venta-header__start">
+                    <span class="venta-transaccion">
+                      <ng-container *ngIf="tieneCheckout(compra); else transaccionLegacyProductosMobile">
+                        <a
+                          class="btn-link"
+                          [routerLink]="['/transacciones-checkout']"
+                          [queryParams]="{ compra_producto_id: compra.id }"
+                          title="Ver transacción completa"
+                        >
+                          {{ compra.numero_pedido || ('#' + compra.id) }}
+                        </a>
+                      </ng-container>
+                      <ng-template #transaccionLegacyProductosMobile>
+                        <span class="text-muted" title="Compra sin checkout unificado">
+                          {{ compra.numero_pedido || ('#' + compra.id) }}
+                        </span>
+                      </ng-template>
+                    </span>
+                    <span class="venta-fecha">{{ compra.fecha_compra | dateFormat:'short' }}</span>
+                  </div>
+                  <div class="venta-toolbar">
+                    <button type="button" class="btn-venta-action" (click)="openModal(compra)" title="Editar" aria-label="Editar pedido">
+                      <span class="material-icons">edit</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="venta-evento">{{ getEventoTitulo(compra) }}</div>
+                <div class="venta-subline">
+                  <span>{{ getClienteNombre(compra) }}</span>
+                  <span class="venta-id">ID {{ compra.id }}</span>
+                </div>
+                <div class="venta-meta">
+                  <span class="venta-meta__item venta-meta__item--truncate" [attr.title]="getItemsResumen(compra)">
+                    {{ getItemsResumen(compra) }}
                   </span>
-                </ng-template>
-              </td>
-              <td>{{ getClienteNombre(compra) }}</td>
-              <td>{{ getEventoTitulo(compra) }}</td>
-              <td class="cell-productos" [attr.title]="getItemsResumen(compra)">{{ getItemsResumen(compra) }}</td>
-              <td>{{ formatCurrency(compra.subtotal) }}</td>
-              <td>{{ formatCurrency(compra.valor_servicio) }}</td>
-              <td>{{ formatCurrency(compra.descuento_total) }}</td>
-              <td><strong>{{ formatCurrency(compra.total) }}</strong></td>
-              <td>{{ compra.fecha_compra | dateFormat:'short' }}</td>
-              <td class="actions">
-                <button type="button" class="btn-icon" (click)="openModal(compra)" title="Editar">
-                  <span class="material-icons">edit</span>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                  <span class="venta-meta__item">Subt. <strong>{{ formatCurrency(compra.subtotal) }}</strong></span>
+                  <span class="venta-meta__item">Serv. <strong>{{ formatCurrency(compra.valor_servicio) }}</strong></span>
+                  <span class="venta-meta__item" *ngIf="compra.descuento_total">Dcto. <strong class="discount-amount">{{ formatCurrency(compra.descuento_total) }}</strong></span>
+                </div>
+                <div class="venta-details">
+                  <span class="venta-total">{{ formatCurrency(compra.total) }}</span>
+                  <div class="venta-badges">
+                    <span [class]="compra.estado_pago === 'completado' ? 'badge-success' : 'badge-warning'">
+                      {{ getEstadoPagoLabel(compra.estado_pago) }}
+                    </span>
+                    <span [class]="compra.estado_compra === 'confirmada' ? 'badge-success' : 'badge-warning'">
+                      {{ getEstadoCompraLabel(compra.estado_compra) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
     </ng-container>
 
     <div *ngIf="total > limit" class="pagination">
