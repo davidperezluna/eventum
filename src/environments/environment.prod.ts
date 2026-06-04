@@ -3,6 +3,7 @@
    ============================================ */
 
 export const environment = {
+  appVersion: '1.0.0',
   production: true,
   profile: 'production' as const,
   /** En producción los clientes solo entran por `/login` (Google). */
@@ -32,12 +33,8 @@ export const environment = {
 
   /** Comprobación de nueva versión PWA (ngsw) en apps instaladas iOS/Android. */
   pwa: {
-    /** Cada cuánto preguntar al servidor si hay build nuevo (ms). */
+    /** Cada cuánto comprobar si hay build nuevo (ms). Recarga en silencio si lo hay. */
     updateCheckIntervalMs: 5 * 60 * 1000,
-    /** Al volver de segundo plano, recargar sin modal si hay build nuevo (ideal iOS PWA). */
-    autoReloadOnResume: true,
-    /** Ventana tras reabrir la app en la que aplica recarga silenciosa (ms). */
-    resumeAutoReloadWindowMs: 60_000,
   },
 
   /**

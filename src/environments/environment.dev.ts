@@ -4,6 +4,7 @@
    ============================================ */
 
 export const environment = {
+  appVersion: '1.0.0',
   production: false,
   /** Perfil: build dev en Vercel u otro hosting de pruebas */
   profile: 'dev' as const,
@@ -43,7 +44,5 @@ export const environment = {
 
   pwa: {
     updateCheckIntervalMs: 5 * 60 * 1000,
-    autoReloadOnResume: true,
-    resumeAutoReloadWindowMs: 60_000,
   },
 };

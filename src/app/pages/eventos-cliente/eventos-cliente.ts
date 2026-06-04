@@ -10,6 +10,7 @@ import { Evento, CategoriaEvento, TipoEstadoEvento } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-eventos-cliente',
@@ -40,6 +41,7 @@ export class EventosCliente implements OnInit, OnDestroy {
   private readonly refreshIndicatorDelayMs = 800;
   private readonly maxProductosDestacados = 4;
   currentYear = new Date().getFullYear();
+  readonly appVersion = environment.appVersion;
 
   constructor(
     private eventosService: EventosService,

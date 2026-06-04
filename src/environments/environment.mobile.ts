@@ -10,6 +10,7 @@
 export const LAN_HOST = '192.168.1.7';
 
 export const environment = {
+  appVersion: '1.0.0',
   production: false,
   /** Identificador del perfil (consola / depuración). */
   profile: 'mobile' as const,
@@ -41,7 +42,5 @@ export const environment = {
 
   pwa: {
     updateCheckIntervalMs: 5 * 60 * 1000,
-    autoReloadOnResume: true,
-    resumeAutoReloadWindowMs: 60_000,
   },
 };

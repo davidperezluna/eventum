@@ -3,6 +3,8 @@
    ============================================ */
 
 export const environment = {
+  /** Versión visible en footer /eventos-cliente (semver). */
+  appVersion: '1.0.0',
   production: false,
   /** Perfil: PC en localhost + Supabase local en 127.0.0.1 */
   profile: 'development' as const,
@@ -45,8 +47,6 @@ export const environment = {
   /** PWA (ngsw); en dev el service worker está deshabilitado, pero el tipo debe existir. */
   pwa: {
     updateCheckIntervalMs: 5 * 60 * 1000,
-    autoReloadOnResume: true,
-    resumeAutoReloadWindowMs: 60_000,
   },
 };
 
