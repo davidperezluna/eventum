@@ -58,6 +58,7 @@ export class Layout implements OnInit, OnDestroy {
   private routerSubscription?: any;
   private carritoSubscription?: any;
   private unsubscribeAuthState?: () => void;
+  private bodyScrollLockY = 0;
 
   constructor(
     private authService: AuthService,
@@ -290,18 +291,60 @@ export class Layout implements OnInit, OnDestroy {
 
   toggleSidebar() {
     this.sidebarOpen = !this.sidebarOpen;
+    this.syncBodyScrollLock();
   }
 
   closeSidebar() {
     this.sidebarOpen = false;
+    this.syncBodyScrollLock();
   }
 
   toggleClientMenu() {
     this.clientMenuOpen = !this.clientMenuOpen;
+    this.syncBodyScrollLock();
   }
 
   closeClientMenu() {
     this.clientMenuOpen = false;
+    this.syncBodyScrollLock();
+  }
+
+  private syncBodyScrollLock(): void {
+    if (typeof document === 'undefined') return;
+    const lock = this.clientMenuOpen || this.sidebarOpen;
+    if (lock) {
+      this.applyBodyScrollLock();
+    } else {
+      this.releaseBodyScrollLock();
+    }
+  }
+
+  private applyBodyScrollLock(): void {
+    const html = document.documentElement;
+    const body = document.body;
+    this.bodyScrollLockY = window.scrollY;
+    body.style.position = 'fixed';
+    body.style.top = `-${this.bodyScrollLockY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+    body.style.overflow = 'hidden';
+    html.style.overflow = 'hidden';
+  }
+
+  private releaseBodyScrollLock(): void {
+    if (typeof document === 'undefined') return;
+    const html = document.documentElement;
+    const body = document.body;
+    const scrollY = this.bodyScrollLockY;
+    body.style.position = '';
+    body.style.top = '';
+    body.style.left = '';
+    body.style.right = '';
+    body.style.width = '';
+    body.style.overflow = '';
+    html.style.overflow = '';
+    window.scrollTo(0, scrollY);
   }
 
   toggleMenuGroup(item: { expanded?: boolean; children?: unknown[] }): void {

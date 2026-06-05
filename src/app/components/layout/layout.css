@@ -494,6 +494,8 @@
   background: rgba(0, 0, 0, 0.5);
   z-index: 1098;
   animation: fadeIn 0.3s ease;
+  touch-action: none;
+  overscroll-behavior: none;
 }
 
 /* Cajón cliente: superficie clara alineada con header y tokens --ec-* */
@@ -504,6 +506,8 @@
   width: var(--sidebar-width);
   max-width: 85vw;
   height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   background: linear-gradient(
     180deg,
     rgba(245, 243, 255, 0.99) 0%,
@@ -520,26 +524,17 @@
   transition: transform var(--transition-normal), visibility 0s linear 0.3s;
   display: none;
   flex-direction: column;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
-.client-mobile-menu::-webkit-scrollbar {
-  width: 6px;
+.client-mobile-menu .client-mobile-nav::-webkit-scrollbar {
+  width: 4px;
 }
 
-.client-mobile-menu::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.04);
-}
-
-.client-mobile-menu::-webkit-scrollbar-thumb {
-  background: rgba(15, 23, 42, 0.14);
+.client-mobile-menu .client-mobile-nav::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.12);
   border-radius: 3px;
-}
-
-.client-mobile-menu::-webkit-scrollbar-thumb:hover {
-  background: rgba(15, 23, 42, 0.22);
 }
 
 .client-mobile-menu.open {
@@ -550,12 +545,19 @@
 }
 
 /* Menú cliente: jerarquía y espaciado */
-.client-mobile-menu .client-mobile-nav {
-  padding: 0.5rem 0 0.85rem;
+.client-mobile-menu .sidebar-header {
+  flex-shrink: 0;
+  border-bottom-color: var(--ec-border, #e2e8f0);
 }
 
-.client-mobile-menu .sidebar-header {
-  border-bottom-color: var(--ec-border, #e2e8f0);
+.client-mobile-menu .client-mobile-nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0.5rem 0 0.85rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .client-mobile-menu .sidebar-close {
@@ -677,6 +679,7 @@
 }
 
 .client-mobile-menu .client-menu-footer {
+  flex-shrink: 0;
   margin-top: auto;
   padding: 1rem 1rem calc(0.85rem + env(safe-area-inset-bottom, 0px));
   text-align: left;
