@@ -43,7 +43,9 @@ export class Carrito implements OnInit, OnDestroy {
 
   codigoCupon = '';
   cuponAplicado: CuponDescuento | null = null;
+  cuponAbierto = false;
   validandoCupon = false;
+  private cuponRestaurado = false;
   comprando = false;
   terminosAceptados = false;
   modalTerminosLicor = false;
@@ -64,7 +66,9 @@ export class Carrito implements OnInit, OnDestroy {
   private cancelacionCheckoutSeq = 0;
   mapaAmpliado: { url: string; titulo: string } | null = null;
   private subscriptions = new Subscription();
-  eventoTieneProductosDisponibles = false;
+  private unsubscribeAuth?: () => void;
+  /** null = aún sin confirmar (muestra upsell); false = sin productos; true = con productos. */
+  eventoTieneProductosDisponibles: boolean | null = null;
   nowMs = Date.now();
   private countdownTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -86,6 +90,19 @@ export class Carrito implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.usuario = this.authService.getUsuario();
+    this.unsubscribeAuth = this.authService.onAuthStateChange((_user, usuario) => {
+      this.usuario = usuario;
+      if (usuario) {
+        void this.restaurarCuponDesdeCache();
+        void this.cargarCheckoutPendienteEnCarrito();
+      } else {
+        this.cuponRestaurado = false;
+        this.checkoutPendienteEnCurso = null;
+      }
+      this.cdr.detectChanges();
+    });
+
     this.startCountdownTicker();
     this.subscriptions.add(
       this.carritoCompraService.items$.subscribe((items) => {
@@ -109,20 +126,34 @@ export class Carrito implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.carritoCompraService.evento$.subscribe((evento) => {
         this.evento = evento;
+        this.carritoCompraService.clearCuponSiEventoDistinto(evento?.id ?? null);
+        const productosCache = this.carritoCompraService.getEventoTieneProductosCache(evento?.id ?? null);
+        this.eventoTieneProductosDisponibles = productosCache;
         void this.cargarDisponibilidadProductosUpsell(evento?.id ?? null);
         if (evento?.id) {
           void this.refrescarEvento(evento.id);
         }
         void this.cargarCheckoutPendienteEnCarrito();
+        void this.restaurarCuponDesdeCache();
       })
     );
 
-    this.loadUsuario();
+    this.subscriptions.add(
+      this.carritoCompraService.cupon$.subscribe((cupon) => {
+        this.codigoCupon = cupon.codigoCupon;
+        this.cuponAplicado = cupon.cuponAplicado;
+        this.cuponAbierto = cupon.abierto;
+        this.cdr.detectChanges();
+      })
+    );
+
+    void this.validarSesionEnSegundoPlano();
   }
 
   ngOnDestroy(): void {
     this.stopCountdownTicker();
     this.subscriptions.unsubscribe();
+    this.unsubscribeAuth?.();
   }
 
   get carritoVacio(): boolean {
@@ -133,7 +164,12 @@ export class Carrito implements OnInit, OnDestroy {
     return !!this.evento &&
       this.itemsCompra.length > 0 &&
       this.itemsProductos.length === 0 &&
-      this.eventoTieneProductosDisponibles;
+      this.eventoTieneProductosDisponibles !== false;
+  }
+
+  get mostrarCupon(): boolean {
+    if (this.itemsCompra.length === 0) return false;
+    return !!this.usuario || !!this.authService.getCurrentUser();
   }
 
   tieneLicor(): boolean {
@@ -264,21 +300,18 @@ export class Carrito implements OnInit, OnDestroy {
     }
   }
 
-  loadUsuario(): void {
-    void this.syncUsuarioDesdeSesion();
-  }
-
-  private async syncUsuarioDesdeSesion(): Promise<void> {
+  private async validarSesionEnSegundoPlano(): Promise<void> {
     const sesionValida = await this.authService.ensureActiveSession();
     if (!sesionValida) {
       this.usuario = null;
-      this.limpiarCupon();
+      this.cuponRestaurado = false;
       this.checkoutPendienteEnCurso = null;
       this.cdr.detectChanges();
       return;
     }
     this.usuario = this.authService.getUsuario();
     await this.cargarCheckoutPendienteEnCarrito();
+    void this.restaurarCuponDesdeCache();
     this.cdr.detectChanges();
   }
 
@@ -286,7 +319,7 @@ export class Carrito implements OnInit, OnDestroy {
     const sesionValida = await this.authService.ensureActiveSession();
     if (!sesionValida) {
       this.usuario = null;
-      this.limpiarCupon();
+      this.cuponRestaurado = false;
       irALoginCliente(this.router, '/carrito', expirada ? 'sesion-expirada' : 'pagar');
       return null;
     }
@@ -294,7 +327,7 @@ export class Carrito implements OnInit, OnDestroy {
     const clienteId = this.authService.getUsuarioId();
     if (!clienteId) {
       this.usuario = null;
-      this.limpiarCupon();
+      this.cuponRestaurado = false;
       irALoginCliente(this.router, '/carrito', 'pagar');
       return null;
     }
@@ -305,7 +338,7 @@ export class Carrito implements OnInit, OnDestroy {
 
   private manejarErrorSesionExpirada(): void {
     this.usuario = null;
-    this.limpiarCupon();
+    this.cuponRestaurado = false;
     irALoginCliente(this.router, '/carrito', 'sesion-expirada');
   }
 
@@ -593,18 +626,67 @@ export class Carrito implements OnInit, OnDestroy {
 
   private async cargarDisponibilidadProductosUpsell(eventoId: number | null): Promise<void> {
     if (!eventoId) {
-      this.eventoTieneProductosDisponibles = false;
+      this.eventoTieneProductosDisponibles = null;
       this.cdr.detectChanges();
       return;
     }
 
     try {
-      this.eventoTieneProductosDisponibles = await this.productosService.eventoTieneProductos(eventoId);
+      const tieneProductos = await this.productosService.eventoTieneProductos(eventoId);
+      this.carritoCompraService.setEventoTieneProductosCache(eventoId, tieneProductos);
+      this.eventoTieneProductosDisponibles = tieneProductos;
     } catch {
-      this.eventoTieneProductosDisponibles = false;
+      if (this.eventoTieneProductosDisponibles === null) {
+        this.eventoTieneProductosDisponibles = false;
+      }
     } finally {
       this.cdr.detectChanges();
     }
+  }
+
+  onCodigoCuponChange(valor: string): void {
+    this.carritoCompraService.setCodigoCupon(valor);
+  }
+
+  onCuponToggle(event: Event): void {
+    const abierto = (event.target as HTMLDetailsElement).open;
+    this.carritoCompraService.setCuponAbierto(abierto);
+  }
+
+  private async restaurarCuponDesdeCache(): Promise<void> {
+    if (!this.usuario || !this.evento?.id || this.cuponRestaurado) return;
+
+    const cuponCache = this.carritoCompraService.getCuponSnapshot();
+    if (cuponCache.eventoId !== this.evento.id) return;
+
+    this.cuponRestaurado = true;
+
+    if (cuponCache.cuponAplicado) {
+      const valido = await this.cuponesService.validarCupon(
+        cuponCache.cuponAplicado.codigo,
+        this.evento.id,
+      );
+      this.ngZone.run(() => {
+        if (valido) {
+          this.carritoCompraService.setCuponAplicado(valido, this.evento!.id);
+        } else {
+          this.carritoCompraService.clearCupon();
+        }
+        this.cdr.detectChanges();
+      });
+      return;
+    }
+
+    const codigo = cuponCache.codigoCupon.trim();
+    if (!codigo) return;
+
+    const valido = await this.cuponesService.validarCupon(codigo, this.evento.id);
+    this.ngZone.run(() => {
+      if (valido) {
+        this.carritoCompraService.setCuponAplicado(valido, this.evento!.id);
+      }
+      this.cdr.detectChanges();
+    });
   }
 
   async aplicarCupon(): Promise<void> {
@@ -613,15 +695,19 @@ export class Carrito implements OnInit, OnDestroy {
     const codigoNormalizado = this.codigoCupon.trim().toUpperCase();
     if (!codigoNormalizado || !this.evento) return;
 
-    this.codigoCupon = codigoNormalizado;
+    this.carritoCompraService.setCodigoCupon(codigoNormalizado);
     this.validandoCupon = true;
     this.cdr.detectChanges();
 
     try {
       const cupon = await this.cuponesService.validarCupon(codigoNormalizado, this.evento.id);
       this.ngZone.run(() => {
-        this.cuponAplicado = cupon;
         this.validandoCupon = false;
+        if (cupon) {
+          this.carritoCompraService.setCuponAplicado(cupon, this.evento!.id);
+        } else {
+          this.carritoCompraService.setCuponAplicado(null, this.evento!.id);
+        }
         this.cdr.detectChanges();
       });
       if (!cupon) {
@@ -633,7 +719,7 @@ export class Carrito implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error aplicando cupón:', error);
       this.ngZone.run(() => {
-        this.cuponAplicado = null;
+        this.carritoCompraService.setCuponAplicado(null, this.evento!.id);
         this.validandoCupon = false;
         this.cdr.detectChanges();
       });
@@ -642,14 +728,9 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   quitarCupon(): void {
-    this.limpiarCupon();
+    this.carritoCompraService.clearCupon();
+    this.cuponRestaurado = false;
     this.cdr.detectChanges();
-  }
-
-  private limpiarCupon(): void {
-    this.cuponAplicado = null;
-    this.codigoCupon = '';
-    this.validandoCupon = false;
   }
 
   cantidadPalcosReservados(tipo: TipoBoleta): number {

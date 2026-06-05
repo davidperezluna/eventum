@@ -277,60 +277,69 @@
           </div>
         </div>
 
-        <section
-          class="cupon-section"
-          *ngIf="itemsCompra.length > 0 && usuario"
-          [class.cupon-section--applied]="!!cuponAplicado"
-          aria-label="Cupón de descuento"
+        <details
+          class="cupon-details"
+          *ngIf="mostrarCupon"
+          [open]="cuponAbierto"
+          (toggle)="onCuponToggle($event)"
+          [class.cupon-details--applied]="!!cuponAplicado"
         >
-          <header class="cupon-section__head" *ngIf="!cuponAplicado">
-            <span class="material-icons cupon-section__icon" aria-hidden="true">local_offer</span>
-            <div class="cupon-section__titles">
-              <h5 class="cupon-section__title">Cupón de descuento</h5>
-              <p class="cupon-section__hint" *ngIf="!cuponAplicado">Solo aplica sobre boletas y palcos.</p>
+          <summary class="cupon-details__summary">
+            <span class="material-icons cupon-details__icon" aria-hidden="true">local_offer</span>
+            <span class="cupon-details__title">Cupón de descuento</span>
+            <span *ngIf="cuponAplicado as cupon" class="cupon-details__badge">
+              {{ cupon.codigo }}
+              <ng-container *ngIf="getDescuento() > 0"> · −{{ formatCurrency(getDescuento()) }}</ng-container>
+            </span>
+            <span *ngIf="!cuponAplicado" class="cupon-details__hint">Toca para aplicar</span>
+            <span class="material-icons cupon-details__chevron" aria-hidden="true">expand_more</span>
+          </summary>
+
+          <div class="cupon-details__body">
+            <p class="cupon-details__note">Solo aplica sobre boletas y palcos.</p>
+
+            <div class="cupon-input-group" *ngIf="!cuponAplicado">
+              <input
+                type="text"
+                class="cupon-input"
+                [ngModel]="codigoCupon"
+                (ngModelChange)="onCodigoCuponChange($event)"
+                placeholder="Código del cupón"
+                autocomplete="off"
+                autocapitalize="characters"
+                (keyup.enter)="aplicarCupon()"
+              />
+              <button
+                type="button"
+                class="btn-aplicar-cupon"
+                (click)="aplicarCupon()"
+                [disabled]="validandoCupon || !codigoCupon"
+              >
+                {{ validandoCupon ? 'Validando…' : 'Aplicar' }}
+              </button>
             </div>
-          </header>
 
-          <div class="cupon-input-group" *ngIf="!cuponAplicado">
-            <input
-              type="text"
-              class="cupon-input"
-              [(ngModel)]="codigoCupon"
-              placeholder="Código del cupón"
-              autocomplete="off"
-              autocapitalize="characters"
-              (keyup.enter)="aplicarCupon()"
-            />
-            <button
-              type="button"
-              class="btn-aplicar-cupon"
-              (click)="aplicarCupon()"
-              [disabled]="validandoCupon || !codigoCupon"
-            >
-              {{ validandoCupon ? 'Validando…' : 'Aplicar' }}
-            </button>
-          </div>
-
-          <div class="cupon-aplicado-row" *ngIf="cuponAplicado as cupon">
-            <div class="cupon-aplicado-row__copy">
-              <span class="cupon-aplicado-chip">{{ cupon.codigo }}</span>
-              <span class="cupon-aplicado-meta">
-                {{ cupon.porcentaje_descuento }}% en boletas
-                <span *ngIf="getDescuento() > 0" class="cupon-aplicado-ahorro">
-                  · −{{ formatCurrency(getDescuento()) }}
+            <div class="cupon-aplicado-row" *ngIf="cuponAplicado as cupon">
+              <div class="cupon-aplicado-row__copy">
+                <span class="cupon-aplicado-chip">{{ cupon.codigo }}</span>
+                <span class="cupon-aplicado-meta">
+                  {{ cupon.porcentaje_descuento }}% en boletas
+                  <span *ngIf="getDescuento() > 0" class="cupon-aplicado-ahorro">
+                    · −{{ formatCurrency(getDescuento()) }}
+                  </span>
                 </span>
-              </span>
+              </div>
+              <button
+                type="button"
+                class="btn-quitar-cupon"
+                (click)="quitarCupon()"
+                aria-label="Quitar cupón"
+              >
+                <span class="material-icons">delete_outline</span>
+              </button>
             </div>
-            <button
-              type="button"
-              class="btn-quitar-cupon"
-              (click)="quitarCupon()"
-              aria-label="Quitar cupón"
-            >
-              <span class="material-icons">delete_outline</span>
-            </button>
           </div>
-        </section>
+        </details>
 
         <div class="licor-legal-card" *ngIf="tieneLicor()" [class.licor-legal-card--accepted]="terminosAceptados">
           <div class="licor-legal-card__head">

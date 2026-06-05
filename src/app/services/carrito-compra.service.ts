@@ -1,6 +1,13 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { Evento, Producto, TipoBoleta } from '../types';
+import { CuponDescuento, Evento, Producto, TipoBoleta } from '../types';
+
+export interface CuponCarritoState {
+  eventoId: number | null;
+  codigoCupon: string;
+  cuponAplicado: CuponDescuento | null;
+  abierto: boolean;
+}
 
 export interface ItemCarritoEvento {
   tipo: TipoBoleta;
@@ -23,7 +30,17 @@ interface CarritoPersistido {
   evento: Evento | null;
   items: ItemCarritoEvento[];
   itemsProductos: ItemCarritoProducto[];
+  cupon?: CuponCarritoState;
+  /** Caché por evento: si hay productos activos (evita parpadeo en carrito). */
+  eventoTieneProductos?: boolean;
 }
+
+const CUPON_CARRITO_VACIO: CuponCarritoState = {
+  eventoId: null,
+  codigoCupon: '',
+  cuponAplicado: null,
+  abierto: false,
+};
 
 @Injectable({
   providedIn: 'root'
@@ -35,11 +52,14 @@ export class CarritoCompraService {
   private readonly itemsSubject = new BehaviorSubject<ItemCarritoEvento[]>([]);
   private readonly itemsProductosSubject = new BehaviorSubject<ItemCarritoProducto[]>([]);
   private readonly totalItemsSubject = new BehaviorSubject<number>(0);
+  private readonly cuponSubject = new BehaviorSubject<CuponCarritoState>({ ...CUPON_CARRITO_VACIO });
+  private eventoTieneProductosCache: boolean | null = null;
 
   readonly evento$ = this.eventoSubject.asObservable();
   readonly items$ = this.itemsSubject.asObservable();
   readonly itemsProductos$ = this.itemsProductosSubject.asObservable();
   readonly totalItems$ = this.totalItemsSubject.asObservable();
+  readonly cupon$ = this.cuponSubject.asObservable();
 
   constructor() {
     this.hidratarDesdeStorage();
@@ -55,6 +75,67 @@ export class CarritoCompraService {
 
   getItemsProductosSnapshot(): ItemCarritoProducto[] {
     return this.itemsProductosSubject.getValue();
+  }
+
+  getCuponSnapshot(): CuponCarritoState {
+    return this.cuponSubject.getValue();
+  }
+
+  setCodigoCupon(codigo: string): void {
+    const actual = this.cuponSubject.getValue();
+    this.cuponSubject.next({
+      ...actual,
+      codigoCupon: codigo.trim().toUpperCase(),
+      eventoId: actual.eventoId ?? this.eventoSubject.getValue()?.id ?? null,
+    });
+    this.persistir();
+  }
+
+  setCuponAplicado(cupon: CuponDescuento | null, eventoId: number): void {
+    const actual = this.cuponSubject.getValue();
+    this.cuponSubject.next({
+      eventoId,
+      codigoCupon: cupon?.codigo ?? actual.codigoCupon,
+      cuponAplicado: cupon,
+      abierto: cupon ? false : actual.abierto,
+    });
+    this.persistir();
+  }
+
+  setCuponAbierto(abierto: boolean): void {
+    const actual = this.cuponSubject.getValue();
+    if (actual.abierto === abierto) return;
+    this.cuponSubject.next({ ...actual, abierto });
+    this.persistir();
+  }
+
+  clearCupon(): void {
+    this.cuponSubject.next({ ...CUPON_CARRITO_VACIO });
+    this.persistir();
+  }
+
+  clearCuponSiEventoDistinto(eventoId: number | null | undefined): void {
+    const cupon = this.cuponSubject.getValue();
+    if (!cupon.eventoId || !eventoId || cupon.eventoId === eventoId) return;
+    this.clearCupon();
+  }
+
+  getEventoTieneProductosCache(eventoId: number | null | undefined): boolean | null {
+    const evento = this.eventoSubject.getValue();
+    if (!eventoId || !evento || evento.id !== eventoId) return null;
+    return this.eventoTieneProductosCache;
+  }
+
+  setEventoTieneProductosCache(eventoId: number, tieneProductos: boolean): void {
+    const evento = this.eventoSubject.getValue();
+    if (!evento || evento.id !== eventoId) return;
+    if (this.eventoTieneProductosCache === tieneProductos) return;
+    this.eventoTieneProductosCache = tieneProductos;
+    this.persistir();
+  }
+
+  private resetEventoTieneProductosCache(): void {
+    this.eventoTieneProductosCache = null;
   }
 
   getCantidadEnCarrito(tipoBoletaId: number): number {
@@ -95,6 +176,7 @@ export class CarritoCompraService {
     if (actual && actual.id !== evento.id) {
       this.itemsSubject.next([]);
       this.itemsProductosSubject.next([]);
+      this.clearCupon();
       this.eventoSubject.next({ ...evento });
       this.persistir();
       this.actualizarTotalItems();
@@ -264,6 +346,8 @@ export class CarritoCompraService {
     this.itemsSubject.next([]);
     this.itemsProductosSubject.next([]);
     this.eventoSubject.next(null);
+    this.clearCupon();
+    this.resetEventoTieneProductosCache();
     this.persistir();
     this.actualizarTotalItems();
   }
@@ -284,12 +368,25 @@ export class CarritoCompraService {
       let evento: Evento | null = null;
       let items: ItemCarritoEvento[] = [];
       let itemsProductos: ItemCarritoProducto[] = [];
+      let cupon: CuponCarritoState = { ...CUPON_CARRITO_VACIO };
+      let eventoTieneProductos: boolean | null = null;
 
       if (raw) {
         const parsed = JSON.parse(raw) as CarritoPersistido;
         evento = parsed?.evento ?? null;
         items = Array.isArray(parsed?.items) ? parsed.items : [];
         itemsProductos = Array.isArray(parsed?.itemsProductos) ? parsed.itemsProductos : [];
+        if (parsed?.cupon) {
+          cupon = {
+            eventoId: parsed.cupon.eventoId ?? null,
+            codigoCupon: parsed.cupon.codigoCupon ?? '',
+            cuponAplicado: parsed.cupon.cuponAplicado ?? null,
+            abierto: !!parsed.cupon.abierto,
+          };
+        }
+        if (typeof parsed?.eventoTieneProductos === 'boolean' && evento) {
+          eventoTieneProductos = parsed.eventoTieneProductos;
+        }
       }
 
       const legacyRaw = localStorage.getItem(this.legacyProductosKey);
@@ -307,14 +404,22 @@ export class CarritoCompraService {
         }
       }
 
+      if (cupon.eventoId && evento && cupon.eventoId !== evento.id) {
+        cupon = { ...CUPON_CARRITO_VACIO };
+      }
+
       this.eventoSubject.next(evento);
       this.itemsSubject.next(items);
       this.itemsProductosSubject.next(itemsProductos);
+      this.cuponSubject.next(cupon);
+      this.eventoTieneProductosCache = eventoTieneProductos;
     } catch (error) {
       console.warn('No se pudo restaurar el carrito desde storage:', error);
       this.eventoSubject.next(null);
       this.itemsSubject.next([]);
       this.itemsProductosSubject.next([]);
+      this.cuponSubject.next({ ...CUPON_CARRITO_VACIO });
+      this.eventoTieneProductosCache = null;
     } finally {
       this.actualizarTotalItems();
     }
@@ -340,10 +445,19 @@ export class CarritoCompraService {
   }
 
   private persistir(): void {
+    const cupon = this.cuponSubject.getValue();
     const payload: CarritoPersistido = {
       evento: this.eventoSubject.getValue(),
       items: this.itemsSubject.getValue(),
-      itemsProductos: this.itemsProductosSubject.getValue()
+      itemsProductos: this.itemsProductosSubject.getValue(),
+      cupon:
+        cupon.codigoCupon || cupon.cuponAplicado || cupon.abierto
+          ? cupon
+          : undefined,
+      eventoTieneProductos:
+        typeof this.eventoTieneProductosCache === 'boolean'
+          ? this.eventoTieneProductosCache
+          : undefined,
     };
     localStorage.setItem(this.storageKey, JSON.stringify(payload));
   }
