@@ -125,7 +125,6 @@
     <li
       *ngFor="let aviso of listaVisible; trackBy: trackAviso"
       class="cupos-card"
-      [class.cupos-card--mio]="aviso.es_mio"
       [class.cupos-card--expandido]="estaExpandido(aviso.id)"
     >
       <div class="cupos-global-status-row">

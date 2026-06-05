@@ -1,4 +1,4 @@
-:host {
+﻿:host {
   display: block;
   --cupos-content-max: var(--ec-content-max, 72rem);
   --cupos-gutter: var(--ec-content-pad, clamp(0.75rem, 4vw, 1rem));
@@ -493,11 +493,6 @@
   .cupos-card {
     padding: 1.35rem 1.5rem;
   }
-}
-
-.cupos-card--mio {
-  border-color: var(--ec-accent-border, #ddd6fe);
-  background: var(--ec-accent-soft, #f5f3ff);
 }
 
 .cupos-card-head {
