@@ -559,13 +559,38 @@
 }
 
 .client-mobile-menu .sidebar-close {
-  background: var(--ec-surface-muted, #f1f5f9);
-  color: var(--ec-text-body, #1e293b);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--ec-text-muted, #64748b);
+  cursor: pointer;
+  transition: color 0.18s ease, opacity 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .client-mobile-menu .sidebar-close:hover {
-  background: var(--ec-chip-hover, #f1f5f9);
+  background: transparent;
   color: var(--ec-text-primary, #0f172a);
+}
+
+.client-mobile-menu .sidebar-close:active {
+  opacity: 0.85;
+}
+
+.client-mobile-menu .sidebar-close:focus-visible {
+  outline: 2px solid var(--ec-accent-border, #ddd6fe);
+  outline-offset: 2px;
+}
+
+.client-mobile-menu .sidebar-close .material-icons {
+  font-size: 1.45rem;
 }
 
 .client-mobile-menu .client-nav-divider {
