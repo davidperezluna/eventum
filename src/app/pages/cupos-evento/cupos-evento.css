@@ -26,7 +26,8 @@
 .cupos-content-shell > .cupos-list,
 .cupos-content-shell > .cupos-loading,
 .cupos-content-shell > .cupos-empty,
-.cupos-content-shell > .cupos-publish-bar {
+.cupos-content-shell > .cupos-publish-bar,
+.cupos-content-shell > .mis-cupos-stats {
   max-width: none;
   margin-left: 0;
   margin-right: 0;
