@@ -16,6 +16,7 @@ import { EventosService } from '../../services/eventos.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { supabaseConfig } from '../../config/supabase.config';
 import { getPagoResultadoUrl } from '../../config/app-url';
+import { irALoginCliente } from '../../core/login-redirect';
 import { TERMINOS_LICOR_TEXTO, TERMINOS_LICOR_TITULO } from '../../constants/productos.constants';
 import {
   CuponDescuento,
@@ -280,22 +281,18 @@ export class Carrito implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  private async requerirSesionActiva(): Promise<number | null> {
+  private async requerirSesionActiva(expirada = false): Promise<number | null> {
     const sesionValida = await this.authService.ensureActiveSession();
     if (!sesionValida) {
       this.usuario = null;
-      this.alertService.warning(
-        'Sesión expirada',
-        'Tu sesión terminó por inactividad. Inicia sesión de nuevo para completar la compra.'
-      );
-      this.router.navigate(['/login'], { queryParams: { returnUrl: '/carrito' } });
+      irALoginCliente(this.router, '/carrito', expirada ? 'sesion-expirada' : 'pagar');
       return null;
     }
 
     const clienteId = this.authService.getUsuarioId();
     if (!clienteId) {
-      this.alertService.warning('Inicia sesión para continuar', 'Debes iniciar sesión para completar la compra');
-      this.router.navigate(['/login'], { queryParams: { returnUrl: '/carrito' } });
+      this.usuario = null;
+      irALoginCliente(this.router, '/carrito', 'pagar');
       return null;
     }
 
@@ -305,11 +302,7 @@ export class Carrito implements OnInit, OnDestroy {
 
   private manejarErrorSesionExpirada(): void {
     this.usuario = null;
-    this.alertService.warning(
-      'Sesión expirada',
-      'Tu sesión terminó por inactividad. Inicia sesión de nuevo para completar la compra.'
-    );
-    this.router.navigate(['/login'], { queryParams: { returnUrl: '/carrito' } });
+    irALoginCliente(this.router, '/carrito', 'sesion-expirada');
   }
 
   private async resolverCheckoutPendiente(clienteId: number, eventoId: number | null): Promise<{

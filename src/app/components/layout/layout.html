@@ -96,14 +96,20 @@
   <ng-container *ngIf="isCliente() && currentUser && usuario">
     <!-- Overlay: detrás del header; el toggle va dentro del header en móvil -->
     <!-- Overlay para móviles -->
-    <div 
-      class="client-menu-overlay" 
-      *ngIf="clientMenuOpen"
+    <div
+      class="client-menu-overlay"
+      [class.is-open]="clientMenuOpen"
       (click)="closeClientMenu()"
+      [attr.aria-hidden]="!clientMenuOpen"
     ></div>
 
     <!-- Menú móvil: misma estructura y clases que el sidebar admin -->
-    <aside class="client-mobile-menu" [class.open]="clientMenuOpen" aria-label="Menú de navegación">
+    <aside
+      class="client-mobile-menu"
+      [class.open]="clientMenuOpen"
+      [attr.aria-hidden]="!clientMenuOpen"
+      aria-label="Menú de navegación"
+    >
       <div class="sidebar-header">
         <div class="sidebar-header-content">
           <h1 class="sidebar-logo">
@@ -152,8 +158,14 @@
 
     <header class="client-header">
       <div class="header-container">
-        <button type="button" class="client-menu-toggle" (click)="toggleClientMenu()" aria-label="Abrir menú">
-          <span class="material-icons">menu</span>
+        <button
+          type="button"
+          class="client-menu-toggle"
+          (click)="toggleClientMenu()"
+          [attr.aria-label]="clientMenuOpen ? 'Cerrar menú' : 'Abrir menú'"
+          [attr.aria-expanded]="clientMenuOpen"
+        >
+          <span class="material-icons">{{ clientMenuOpen ? 'close' : 'menu' }}</span>
         </button>
         <a routerLink="/eventos-cliente" class="brand-logo">
           <img src="logo-eventum.svg" alt="Eventum" class="brand-logo-img" />
@@ -206,9 +218,7 @@
           </a>
         </nav>
         <div class="client-user-menu">
-          <a routerLink="/login" class="btn-login-public">
-            <span>Iniciar Sesión</span>
-          </a>
+          <a routerLink="/login" class="btn-login-public">Entrar</a>
         </div>
       </div>
     </header>

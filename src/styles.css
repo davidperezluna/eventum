@@ -12,6 +12,7 @@
 html {
   color-scheme: light;
   background-color: #f8fafc;
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -24,6 +25,20 @@ body {
 html,
 body {
   height: 100%;
+}
+
+/* Menú abierto: bloquea scroll sin position:fixed en body (evita que el drawer salte arriba) */
+html.client-menu-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+  height: 100%;
+  background-color: var(--ec-page-bg, #f8fafc);
+}
+
+html.client-menu-open body {
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
 }
 
 /* ----- Estados de carga (todas las páginas): centrado consistente ----- */

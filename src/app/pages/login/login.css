@@ -877,6 +877,27 @@
   font-weight: 600;
 }
 
+.login-context {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  background: rgba(245, 243, 255, 0.95);
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  color: #4338ca;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.login-context .material-icons {
+  font-size: 1.05rem;
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+  color: #7c3aed;
+}
+
 .alert-error {
   display: flex;
   align-items: flex-start;

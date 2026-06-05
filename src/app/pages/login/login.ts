@@ -1,7 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import {
+  guardarReturnUrlLogin,
+  LOGIN_MOTIVO_TEXTO,
+} from '../../core/login-redirect';
 
 /** Acceso público para clientes (Google). Personal usa `/login-admin`. */
 @Component({
@@ -13,13 +17,24 @@ import { AuthService } from '../../services/auth.service';
 export class Login implements OnInit {
   loading = false;
   error: string | null = null;
+  contextoLogin: string | null = null;
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   async ngOnInit() {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    const motivo = this.route.snapshot.queryParamMap.get('motivo');
+    guardarReturnUrlLogin(returnUrl);
+    if (motivo && LOGIN_MOTIVO_TEXTO[motivo]) {
+      this.contextoLogin = LOGIN_MOTIVO_TEXTO[motivo];
+    } else if (returnUrl) {
+      this.contextoLogin = 'Entra para continuar donde lo dejaste.';
+    }
+
     await this.authService.waitForInitialization();
 
     if (!this.authService.isAuthenticated()) {
@@ -46,6 +61,7 @@ export class Login implements OnInit {
   async onLoginWithGoogle() {
     this.loading = true;
     this.error = null;
+    guardarReturnUrlLogin(this.route.snapshot.queryParamMap.get('returnUrl'));
 
     try {
       const response = await this.authService.signInWithGoogle();

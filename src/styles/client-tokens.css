@@ -113,3 +113,54 @@
     font-size: 0.76rem;
   }
 }
+
+/* Header público — botón login (global: no depende del encapsulado del layout) */
+.client-header.public-header .client-user-menu {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.client-header.public-header .btn-login-public {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.125rem;
+  padding: 0.42rem 0.9rem;
+  border-radius: var(--ec-radius-control, 8px);
+  background: var(--ec-accent-soft, #f5f3ff);
+  color: var(--ec-accent-strong, #7c3aed);
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.8125rem;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  box-shadow: none;
+  box-sizing: border-box;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.client-header.public-header .btn-login-public:hover {
+  background: var(--ec-accent-hover, #ede9fe);
+  border-color: var(--ec-accent-strong, #7c3aed);
+  color: var(--ec-accent-strong, #7c3aed);
+  transform: none;
+}
+
+.client-header.public-header .btn-login-public:active {
+  opacity: 0.92;
+}
+
+@media (max-width: 768px) {
+  .client-header.public-header .btn-login-public {
+    min-height: 2rem;
+    padding: 0.38rem 0.72rem;
+    font-size: 0.75rem;
+  }
+}

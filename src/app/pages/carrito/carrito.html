@@ -431,15 +431,26 @@
       {{ pendiente.expiro ? 'Revisar estado' : 'Recuperar pago' }}
     </button>
     <ng-template #pagarStickyBtn>
-      <button
-        type="button"
+      <a
+        *ngIf="!usuario; else pagarStickyLoggedBtn"
+        routerLink="/login"
+        [queryParams]="{ returnUrl: '/carrito', motivo: 'pagar' }"
         class="carrito-checkout-bar__btn"
-        (click)="procesarCompra()"
-        [disabled]="comprando"
       >
-        <span class="material-icons" aria-hidden="true">{{ comprando ? 'hourglass_empty' : 'shopping_cart' }}</span>
-        {{ comprando ? 'Procesando…' : 'Pagar' }}
-      </button>
+        <span class="material-icons" aria-hidden="true">login</span>
+        Entrar para pagar
+      </a>
+      <ng-template #pagarStickyLoggedBtn>
+        <button
+          type="button"
+          class="carrito-checkout-bar__btn"
+          (click)="procesarCompra()"
+          [disabled]="comprando"
+        >
+          <span class="material-icons" aria-hidden="true">{{ comprando ? 'hourglass_empty' : 'shopping_cart' }}</span>
+          {{ comprando ? 'Procesando…' : 'Pagar' }}
+        </button>
+      </ng-template>
     </ng-template>
   </div>
 

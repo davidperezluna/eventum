@@ -21,6 +21,7 @@ import {
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { CuposHubNav } from '../../components/cupos-hub-nav/cupos-hub-nav';
 import { CUPOS_LABELS } from '../../core/cupos-labels';
+import { irALoginCliente } from '../../core/login-redirect';
 
 @Component({
   selector: 'app-mis-cupos',
@@ -248,7 +249,7 @@ export class MisCupos implements OnInit, OnDestroy {
 
   abrirNuevoAviso(): void {
     if (!this.authService.getCurrentUser()) {
-      void this.router.navigate(['/login'], { queryParams: { returnUrl: '/mis-cupos' } });
+      irALoginCliente(this.router, '/mis-cupos', 'publicar');
       return;
     }
     this.crearPaso = 'evento';

@@ -1,14 +1,15 @@
 <div class="layout-container client-layout lector-layout-root">
   <div
     class="client-menu-overlay"
-    *ngIf="clientMenuOpen"
+    [class.is-open]="clientMenuOpen"
     (click)="closeClientMenu()"
-    aria-hidden="true"
+    [attr.aria-hidden]="!clientMenuOpen"
   ></div>
 
   <aside
     class="client-mobile-menu"
     [class.open]="clientMenuOpen"
+    [attr.aria-hidden]="!clientMenuOpen"
     aria-label="Menú lector"
   >
     <div class="sidebar-header">
@@ -66,9 +67,10 @@
         type="button"
         class="client-menu-toggle"
         (click)="toggleClientMenu()"
-        aria-label="Abrir menú"
+        [attr.aria-label]="clientMenuOpen ? 'Cerrar menú' : 'Abrir menú'"
+        [attr.aria-expanded]="clientMenuOpen"
       >
-        <span class="material-icons">menu</span>
+        <span class="material-icons">{{ clientMenuOpen ? 'close' : 'menu' }}</span>
       </button>
 
       <a routerLink="/lector/inicio" class="brand-logo" aria-label="Eventum, ir al inicio">

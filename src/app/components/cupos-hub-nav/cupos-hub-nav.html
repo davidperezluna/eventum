@@ -15,6 +15,7 @@
     [class.active]="seccion === 'mis'"
     [attr.aria-current]="seccion === 'mis' ? 'page' : null"
     [attr.aria-label]="labels.misAvisosAria"
+    (click)="onMisAvisosClick($event)"
   >
     <span class="material-icons" aria-hidden="true">campaign</span>
     <span class="cupos-hub-nav-tab-label">{{ labels.misAvisos }}</span>

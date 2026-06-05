@@ -787,7 +787,7 @@ export class AuthService {
    */
   resolvePostLoginUrl(usuario: Usuario, returnUrl?: string | null): string {
     const home = this.getHomeRouteForUsuario(usuario);
-    const target = (returnUrl || '').trim();
+    const target = (returnUrl || '').trim().split('?')[0];
     if (!target || target === '/dashboard') {
       return home;
     }
@@ -797,7 +797,7 @@ export class AuthService {
     }
 
     if (usuario.tipo_usuario_id === RolesPermitidos.CLIENTE) {
-      return home;
+      return this.esReturnUrlPermitidaCliente(target) ? target : home;
     }
 
     if (target.startsWith('/lector')) {
@@ -805,6 +805,41 @@ export class AuthService {
     }
 
     return target;
+  }
+
+  /** Rutas cliente a las que se puede volver tras login público (Google). */
+  esReturnUrlPermitidaCliente(returnUrl: string): boolean {
+    const path = (returnUrl || '').trim().split('?')[0];
+    const segments = path.split('/').filter(Boolean);
+    if (segments.length === 0) return false;
+
+    const [a, b] = segments;
+    const raiz = new Set([
+      'carrito',
+      'eventos-cliente',
+      'conocenos',
+      'cupos',
+      'mis-cupos',
+      'mis-compras',
+      'perfil',
+      'pago-resultado',
+      'detalle-evento',
+      'cupos-evento',
+    ]);
+    if (!raiz.has(a)) return false;
+
+    if (a === 'mis-compras') {
+      if (segments.length === 1) return true;
+      if (segments.length === 2 && (b === 'actividad' || b === 'guia')) return true;
+      if (segments.length === 3 && b === 'evento' && Boolean(segments[2])) return true;
+      return false;
+    }
+
+    if (a === 'cupos-evento' || a === 'detalle-evento') {
+      return segments.length === 2 && Boolean(b);
+    }
+
+    return segments.length === 1;
   }
 
   /** Panel web admin / organizador / cliente (no incluye Lector). */

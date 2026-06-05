@@ -122,13 +122,14 @@
 .sidebar-overlay {
   display: none;
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   background: rgba(0, 0, 0, 0.5);
   z-index: 999;
-  animation: fadeIn 0.3s ease;
+  touch-action: none;
+  overscroll-behavior: none;
 }
 
 @keyframes fadeIn {
@@ -149,7 +150,11 @@
   flex-direction: column;
   box-shadow: var(--shadow-lg);
   position: fixed;
+  top: 0;
+  left: 0;
   height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   overflow-y: auto;
   overflow-x: hidden;
   z-index: 1000;
@@ -487,22 +492,31 @@
 .client-menu-overlay {
   display: none;
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(15, 23, 42, 0.45);
+  inset: 0;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: rgba(15, 23, 42, 0.52);
   z-index: 1098;
-  animation: fadeIn 0.3s ease;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
   touch-action: none;
   overscroll-behavior: none;
+  transition: opacity var(--transition-normal), visibility 0s linear var(--transition-normal);
+}
+
+.client-menu-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity var(--transition-normal), visibility 0s linear 0s;
 }
 
 /* Cajón cliente: superficie clara alineada con header y tokens --ec-* */
 .client-mobile-menu {
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0 auto 0 0;
   width: var(--sidebar-width);
   max-width: 85vw;
   height: 100vh;
@@ -1086,25 +1100,7 @@
    PUBLIC HEADER STYLES (No autenticado)
    ============================================ */
 
-.btn-login-public {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-  color: white;
-  text-decoration: none;
-  padding: 0.625rem 1.25rem;
-  border-radius: var(--border-radius-md);
-  font-weight: 600;
-  font-size: 0.9375rem;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.btn-login-public:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
+/* .btn-login-public → ver client-tokens.css (estilos globales) */
 
 .public-content {
   width: 100%;
@@ -1199,6 +1195,11 @@
     display: none;
   }
 
+  .public-header .header-container {
+    align-items: center;
+    gap: 0.5rem;
+  }
+
   .client-header .brand-logo span {
     display: block;
   }
@@ -1234,12 +1235,20 @@
   }
 
 
+  /* Header siempre encima del menú (también al cerrar, durante la animación del drawer) */
+  .client-header:not(.public-header) {
+    z-index: 1100;
+  }
+
   .client-menu-overlay {
     display: block;
+    position: fixed;
+    z-index: 1080;
   }
 
   .client-mobile-menu {
     display: flex;
+    z-index: 1090;
   }
 }
 

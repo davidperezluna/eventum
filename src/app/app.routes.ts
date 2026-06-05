@@ -57,9 +57,7 @@ const cuposPublicRoutes: Routes = cuposEventumEnabled
     ]
   : [];
 
-const cuposProtectedRoutes: Routes = cuposEventumEnabled
-  ? [{ path: 'mis-cupos', component: MisCupos, canActivate: [cuposFeatureGuard] }]
-  : [];
+const cuposProtectedRoutes: Routes = [];
 
 const appRoutes: Routes = [
   {
@@ -111,6 +109,7 @@ const appRoutes: Routes = [
       { path: 'detalle-evento/:id', component: DetalleEvento }, // Público: detalle de evento
       { path: 'cupos', component: CuposExplorar },
       { path: 'cupos-evento/:eventoId', component: CuposEvento },
+      ...(cuposEventumEnabled ? [{ path: 'mis-cupos', component: MisCupos, canActivate: [cuposFeatureGuard] }] : []),
       { path: 'carrito', component: Carrito },
       { path: 'carrito-productos', redirectTo: 'carrito', pathMatch: 'full' },
       { path: 'pago-resultado', component: PagoResultado },

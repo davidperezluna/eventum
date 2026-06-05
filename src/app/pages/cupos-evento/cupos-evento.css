@@ -1260,3 +1260,151 @@
     justify-content: space-between;
   }
 }
+
+/* Aviso inline de login (tablón / explorar cupos) */
+.cupos-login-banner {
+  background: var(--ec-surface, #fff);
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
+  border-left: 3px solid var(--ec-accent, #8b5cf6);
+  border-radius: var(--ec-radius-card, 12px);
+  padding: 0.9rem 0.95rem;
+  margin-bottom: 0.85rem;
+  transition:
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.cupos-login-banner--highlight {
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.16);
+  border-color: var(--ec-accent, #8b5cf6);
+}
+
+.cupos-login-banner__head {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.45rem;
+}
+
+.cupos-login-banner__icon {
+  flex-shrink: 0;
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: var(--ec-radius-control, 8px);
+  background: var(--ec-accent-soft, #f5f3ff);
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ec-accent-strong, #7c3aed);
+  font-size: 1.15rem;
+}
+
+.cupos-login-banner__titles {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.cupos-login-banner__title {
+  margin: 0;
+  color: var(--ec-text-primary, #0f172a);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.cupos-login-banner__badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--ec-radius-badge, 6px);
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
+  background: var(--ec-accent-soft, #f5f3ff);
+  color: var(--ec-accent-strong, #7c3aed);
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.14rem 0.45rem;
+  white-space: nowrap;
+}
+
+.cupos-login-banner__text {
+  margin: 0;
+  color: var(--ec-text-muted, #64748b);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.cupos-login-banner__actions {
+  margin-top: 0.7rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.cupos-login-banner__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--ec-radius-control, 8px);
+  background: var(--color-secondary, #8b5cf6);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-decoration: none;
+  border: none;
+  transition: background-color 0.18s ease;
+}
+
+.cupos-login-banner__btn:hover {
+  background: #7c3aed;
+}
+
+.cupos-login-banner__btn-alt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--ec-radius-control, 8px);
+  border: 1px solid var(--ec-border, #e2e8f0);
+  background: var(--ec-surface, #fff);
+  color: var(--ec-text-body, #1e293b);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.cupos-login-banner__btn-alt:hover {
+  background: var(--ec-chip-hover, #f1f5f9);
+  border-color: var(--ec-border-strong, #e5e7eb);
+}
+
+@media (max-width: 768px) {
+  .cupos-login-banner {
+    padding: 0.8rem 0.85rem;
+  }
+
+  .cupos-login-banner__actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+  }
+
+  .cupos-login-banner__btn,
+  .cupos-login-banner__btn-alt {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}

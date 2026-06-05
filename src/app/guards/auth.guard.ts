@@ -5,6 +5,7 @@
 import { inject } from '@angular/core';
 import { Router, CanActivateFn, PRIMARY_OUTLET } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { guardarReturnUrlLogin } from '../core/login-redirect';
 
 /** Segmentos de ruta (sin query) para una URL de navegación. */
 function segmentosDesdeUrl(router: Router, url: string): string[] {
@@ -41,6 +42,49 @@ function clienteTienePermisoParaRuta(router: Router, url: string): boolean {
   return false;
 }
 
+/** Rutas de cliente que deben ir a `/login` (Google), no a login-admin. */
+function esRutaLoginCliente(router: Router, url: string): boolean {
+  const segments = segmentosDesdeUrl(router, url);
+  if (segments.length === 0) return false;
+
+  const [a, b] = segments;
+  const raiz = new Set([
+    'carrito',
+    'eventos-cliente',
+    'conocenos',
+    'cupos',
+    'mis-cupos',
+    'mis-compras',
+    'perfil',
+    'pago-resultado',
+    'detalle-evento',
+    'cupos-evento',
+  ]);
+  if (!raiz.has(a)) return false;
+
+  if (a === 'mis-compras') {
+    if (segments.length === 1) return true;
+    if (segments.length === 2 && (b === 'actividad' || b === 'guia')) return true;
+    if (segments.length === 3 && b === 'evento' && Boolean(segments[2])) return true;
+    return false;
+  }
+
+  if (a === 'cupos-evento' || a === 'detalle-evento') {
+    return segments.length === 2 && Boolean(b);
+  }
+
+  return segments.length === 1;
+}
+
+function redirigirSinSesion(router: Router, returnUrl: string): void {
+  if (esRutaLoginCliente(router, returnUrl)) {
+    guardarReturnUrlLogin(returnUrl);
+    void router.navigate(['/login'], { queryParams: { returnUrl } });
+    return;
+  }
+  void router.navigate(['/login-admin'], { queryParams: { returnUrl } });
+}
+
 export const authGuard: CanActivateFn = async (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
@@ -73,7 +117,7 @@ export const authGuard: CanActivateFn = async (route, state) => {
     
     if (!usuario) {
       console.log('Auth Guard - No hay usuario en tabla usuarios, redirigiendo al login');
-      router.navigate(['/login-admin'], { queryParams: { returnUrl: state.url } });
+      redirigirSinSesion(router, state.url);
       return false;
     }
 
@@ -110,7 +154,7 @@ export const authGuard: CanActivateFn = async (route, state) => {
     return true;
   } catch (error) {
     console.error('Auth Guard - Error:', error);
-    router.navigate(['/login-admin'], { queryParams: { returnUrl: state.url } });
+    redirigirSinSesion(router, state.url);
     return false;
   }
 };

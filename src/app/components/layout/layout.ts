@@ -7,6 +7,7 @@ import { User } from '@supabase/supabase-js';
 import { filter, merge } from 'rxjs';
 import { cuposEventumEnabled } from '../../core/cupos-feature';
 import { CUPOS_LABELS } from '../../core/cupos-labels';
+import { forceUnlockBodyScroll, lockBodyScroll, unlockBodyScroll } from '../../core/body-scroll-lock';
 
 type ClientNavItem = {
   path: string;
@@ -58,7 +59,6 @@ export class Layout implements OnInit, OnDestroy {
   private routerSubscription?: any;
   private carritoSubscription?: any;
   private unsubscribeAuthState?: () => void;
-  private bodyScrollLockY = 0;
 
   constructor(
     private authService: AuthService,
@@ -213,6 +213,7 @@ export class Layout implements OnInit, OnDestroy {
     if (this.unsubscribeAuthState) {
       this.unsubscribeAuthState();
     }
+    forceUnlockBodyScroll();
   }
 
   loadMenuAdministrador() {
@@ -310,41 +311,11 @@ export class Layout implements OnInit, OnDestroy {
   }
 
   private syncBodyScrollLock(): void {
-    if (typeof document === 'undefined') return;
-    const lock = this.clientMenuOpen || this.sidebarOpen;
-    if (lock) {
-      this.applyBodyScrollLock();
+    if (this.clientMenuOpen || this.sidebarOpen) {
+      lockBodyScroll();
     } else {
-      this.releaseBodyScrollLock();
+      unlockBodyScroll();
     }
-  }
-
-  private applyBodyScrollLock(): void {
-    const html = document.documentElement;
-    const body = document.body;
-    this.bodyScrollLockY = window.scrollY;
-    body.style.position = 'fixed';
-    body.style.top = `-${this.bodyScrollLockY}px`;
-    body.style.left = '0';
-    body.style.right = '0';
-    body.style.width = '100%';
-    body.style.overflow = 'hidden';
-    html.style.overflow = 'hidden';
-  }
-
-  private releaseBodyScrollLock(): void {
-    if (typeof document === 'undefined') return;
-    const html = document.documentElement;
-    const body = document.body;
-    const scrollY = this.bodyScrollLockY;
-    body.style.position = '';
-    body.style.top = '';
-    body.style.left = '';
-    body.style.right = '';
-    body.style.width = '';
-    body.style.overflow = '';
-    html.style.overflow = '';
-    window.scrollTo(0, scrollY);
   }
 
   toggleMenuGroup(item: { expanded?: boolean; children?: unknown[] }): void {

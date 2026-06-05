@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { leerReturnUrlLogin, limpiarReturnUrlLogin } from '../../core/login-redirect';
 import { Usuario } from '../../types';
 
 @Component({
@@ -105,7 +106,9 @@ export class AuthCallback implements OnInit, OnDestroy {
   }
 
   private rutaTrasOAuth(usuario: Usuario): string {
-    return this.authService.getHomeRouteForUsuario(usuario);
+    const returnUrl = leerReturnUrlLogin();
+    limpiarReturnUrlLogin();
+    return this.authService.resolvePostLoginUrl(usuario, returnUrl);
   }
 
   async ngOnInit() {

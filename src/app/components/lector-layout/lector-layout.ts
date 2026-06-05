@@ -9,6 +9,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { filter, Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+import { forceUnlockBodyScroll, lockBodyScroll, unlockBodyScroll } from '../../core/body-scroll-lock';
 
 export const LECTOR_MENU_ITEMS = [
   { path: '/lector/inicio', label: 'Inicio', icon: 'home', exact: true },
@@ -29,7 +30,6 @@ export class LectorLayout implements OnInit, OnDestroy {
   userName = '';
   readonly currentYear = new Date().getFullYear();
   private navSub?: Subscription;
-  private bodyScrollLockY = 0;
 
   constructor(
     private authService: AuthService,
@@ -45,6 +45,7 @@ export class LectorLayout implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.navSub?.unsubscribe();
+    forceUnlockBodyScroll();
   }
 
   private syncUser(): void {
@@ -70,39 +71,10 @@ export class LectorLayout implements OnInit, OnDestroy {
   }
 
   private syncBodyScrollLock(): void {
-    if (typeof document === 'undefined') return;
     if (this.clientMenuOpen) {
-      this.applyBodyScrollLock();
+      lockBodyScroll();
     } else {
-      this.releaseBodyScrollLock();
+      unlockBodyScroll();
     }
-  }
-
-  private applyBodyScrollLock(): void {
-    const html = document.documentElement;
-    const body = document.body;
-    this.bodyScrollLockY = window.scrollY;
-    body.style.position = 'fixed';
-    body.style.top = `-${this.bodyScrollLockY}px`;
-    body.style.left = '0';
-    body.style.right = '0';
-    body.style.width = '100%';
-    body.style.overflow = 'hidden';
-    html.style.overflow = 'hidden';
-  }
-
-  private releaseBodyScrollLock(): void {
-    if (typeof document === 'undefined') return;
-    const html = document.documentElement;
-    const body = document.body;
-    const scrollY = this.bodyScrollLockY;
-    body.style.position = '';
-    body.style.top = '';
-    body.style.left = '';
-    body.style.right = '';
-    body.style.width = '';
-    body.style.overflow = '';
-    html.style.overflow = '';
-    window.scrollTo(0, scrollY);
   }
 }

@@ -21,6 +21,7 @@ import {
   TipoAvisoCupo,
 } from '../../types/cupos';
 import { CUPOS_LABELS } from '../../core/cupos-labels';
+import { irALoginCliente } from '../../core/login-redirect';
 
 type FiltroCupo = 'todos' | TipoAvisoCupo;
 type VistaCupos = 'explorar' | 'mis';
@@ -253,7 +254,7 @@ export class CuposEvento implements OnInit, OnDestroy {
   }
 
   setVista(v: VistaCupos): void {
-    if (v === 'mis' && !this.requiereLogin('ver tus publicaciones')) {
+    if (v === 'mis' && !this.requiereLogin('mis-publicaciones')) {
       return;
     }
     this.vista = v;
@@ -274,17 +275,14 @@ export class CuposEvento implements OnInit, OnDestroy {
     void this.loadAvisos();
   }
 
-  requiereLogin(accion: string): boolean {
+  requiereLogin(motivo: string): boolean {
     if (this.isLoggedIn) return true;
-    void this.alertService.warning('Inicia sesión', `Debes iniciar sesión para ${accion}.`);
-    void this.router.navigate(['/login'], {
-      queryParams: { returnUrl: `/cupos-evento/${this.eventoId}` },
-    });
+    irALoginCliente(this.router, `/cupos-evento/${this.eventoId}`, motivo);
     return false;
   }
 
   abrirCrear(): void {
-    if (!this.requiereLogin('publicar un aviso')) return;
+    if (!this.requiereLogin('publicar')) return;
     this.crearTipo = 'busco_cupo';
     this.crearDescripcion = '';
     this.crearCupos = 1;

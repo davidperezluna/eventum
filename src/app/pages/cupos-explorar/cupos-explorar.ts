@@ -19,6 +19,7 @@ import {
 } from '../../types/cupos';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { CUPOS_LABELS } from '../../core/cupos-labels';
+import { irALoginCliente } from '../../core/login-redirect';
 
 type FiltroCupo = 'todos' | TipoAvisoCupo;
 
@@ -112,10 +113,9 @@ export class CuposExplorar implements OnInit {
     void this.loadAvisos();
   }
 
-  requiereLogin(accion: string): boolean {
+  requiereLogin(motivo: string): boolean {
     if (this.isLoggedIn) return true;
-    void this.alertService.warning('Inicia sesión', `Debes iniciar sesión para ${accion}.`);
-    void this.router.navigate(['/login'], { queryParams: { returnUrl: '/cupos' } });
+    irALoginCliente(this.router, '/cupos', motivo);
     return false;
   }
 
