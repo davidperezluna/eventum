@@ -279,7 +279,7 @@
 
         <section
           class="cupon-section"
-          *ngIf="itemsCompra.length > 0"
+          *ngIf="itemsCompra.length > 0 && usuario"
           [class.cupon-section--applied]="!!cuponAplicado"
           aria-label="Cupón de descuento"
         >
@@ -386,7 +386,7 @@
             <span>Valor productos:</span>
             <span>{{ formatCurrency(getSubtotalProductos()) }}</span>
           </div>
-          <div class="total-row descuento" *ngIf="cuponAplicado">
+          <div class="total-row descuento" *ngIf="usuario && cuponAplicado">
             <span>Descuento (boletas):</span>
             <span>-{{ formatCurrency(getDescuento()) }}</span>
           </div>

@@ -272,6 +272,7 @@ export class Carrito implements OnInit, OnDestroy {
     const sesionValida = await this.authService.ensureActiveSession();
     if (!sesionValida) {
       this.usuario = null;
+      this.limpiarCupon();
       this.checkoutPendienteEnCurso = null;
       this.cdr.detectChanges();
       return;
@@ -285,6 +286,7 @@ export class Carrito implements OnInit, OnDestroy {
     const sesionValida = await this.authService.ensureActiveSession();
     if (!sesionValida) {
       this.usuario = null;
+      this.limpiarCupon();
       irALoginCliente(this.router, '/carrito', expirada ? 'sesion-expirada' : 'pagar');
       return null;
     }
@@ -292,6 +294,7 @@ export class Carrito implements OnInit, OnDestroy {
     const clienteId = this.authService.getUsuarioId();
     if (!clienteId) {
       this.usuario = null;
+      this.limpiarCupon();
       irALoginCliente(this.router, '/carrito', 'pagar');
       return null;
     }
@@ -302,6 +305,7 @@ export class Carrito implements OnInit, OnDestroy {
 
   private manejarErrorSesionExpirada(): void {
     this.usuario = null;
+    this.limpiarCupon();
     irALoginCliente(this.router, '/carrito', 'sesion-expirada');
   }
 
@@ -604,6 +608,8 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   async aplicarCupon(): Promise<void> {
+    if (!this.usuario) return;
+
     const codigoNormalizado = this.codigoCupon.trim().toUpperCase();
     if (!codigoNormalizado || !this.evento) return;
 
@@ -636,9 +642,14 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   quitarCupon(): void {
+    this.limpiarCupon();
+    this.cdr.detectChanges();
+  }
+
+  private limpiarCupon(): void {
     this.cuponAplicado = null;
     this.codigoCupon = '';
-    this.cdr.detectChanges();
+    this.validandoCupon = false;
   }
 
   cantidadPalcosReservados(tipo: TipoBoleta): number {
