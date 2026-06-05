@@ -163,7 +163,7 @@
               [attr.aria-label]="getProductosChipCardLabel(evento)"
               [attr.title]="getProductosChipCardLabel(evento)"
             >
-              <span class="material-icons" aria-hidden="true">storefront</span>
+              <span class="material-icons" aria-hidden="true">{{ getProductosChipIcon(evento) }}</span>
               <span class="event-quick-action__label">{{ getProductosChipShortLabel(evento) }}</span>
             </a>
           </nav>
@@ -231,7 +231,7 @@
               [attr.aria-label]="getProductosChipCardLabel(evento)"
               [attr.title]="getProductosChipCardLabel(evento)"
             >
-              <span class="material-icons" aria-hidden="true">storefront</span>
+              <span class="material-icons" aria-hidden="true">{{ getProductosChipIcon(evento) }}</span>
               <span class="event-quick-action__label">{{ getProductosChipShortLabel(evento) }}</span>
             </a>
           </nav>
@@ -283,7 +283,7 @@
                 class="products-panel-chip"
                 [class.products-panel-chip--activo]="precioEventoActivo(evento)"
               >
-                <span class="material-icons" aria-hidden="true">storefront</span>
+                <span class="material-icons" aria-hidden="true">{{ getProductosChipIcon(evento) }}</span>
                 <span class="products-panel-chip__label">{{ getProductosChipShortLabel(evento) }}</span>
               </span>
               <span class="products-panel-chip products-panel-chip--count">

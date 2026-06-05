@@ -793,7 +793,7 @@
   line-height: 1;
 }
 
-.products-panel-chip .material-icons {
+.products-panel-chip:not(.products-panel-chip--count) .material-icons {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -802,18 +802,18 @@
   height: 1rem;
   font-size: 1rem;
   line-height: 1;
-  color: var(--ec-badge-warning-icon);
-}
-
-.products-panel-chip,
-.products-panel-chip__label {
-  color: var(--ec-badge-warning-icon);
-}
-
-.products-panel-chip--activo,
-.products-panel-chip--activo .material-icons,
-.products-panel-chip--activo .products-panel-chip__label {
   color: var(--ec-badge-success-icon);
+}
+
+.products-panel-chip:not(.products-panel-chip--count),
+.products-panel-chip:not(.products-panel-chip--count) .products-panel-chip__label {
+  color: var(--ec-badge-success-icon);
+}
+
+.products-panel-chip--activo:not(.products-panel-chip--count),
+.products-panel-chip--activo:not(.products-panel-chip--count) .material-icons,
+.products-panel-chip--activo:not(.products-panel-chip--count) .products-panel-chip__label {
+  color: var(--ec-badge-warning-icon);
 }
 
 .products-panel-chip--count,
@@ -1145,14 +1145,17 @@
   color: var(--ec-cupos-accent);
 }
 
+/* Preventa: verde en icono/texto · Día del evento (Productos): ámbar */
 .event-quick-action--productos,
-.event-quick-action--productos .material-icons {
-  color: var(--ec-badge-warning-icon);
+.event-quick-action--productos .material-icons,
+.event-quick-action--productos .event-quick-action__label {
+  color: var(--ec-badge-success-icon);
 }
 
 .event-quick-action--productos.event-quick-action--activo,
-.event-quick-action--productos.event-quick-action--activo .material-icons {
-  color: var(--ec-badge-success-icon);
+.event-quick-action--productos.event-quick-action--activo .material-icons,
+.event-quick-action--productos.event-quick-action--activo .event-quick-action__label {
+  color: var(--ec-badge-warning-icon);
 }
 
 .price {

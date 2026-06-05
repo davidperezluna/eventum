@@ -311,6 +311,10 @@ export class EventosCliente implements OnInit, OnDestroy {
     return this.precioEventoActivo(evento) ? 'Productos' : 'Preventa';
   }
 
+  getProductosChipIcon(evento: Evento): string {
+    return this.precioEventoActivo(evento) ? 'storefront' : 'local_offer';
+  }
+
   getCantidadProductosLabel(eventoId: number): string {
     const cantidad = this.getCantidadProductosEvento(eventoId);
     return `${cantidad} ${cantidad === 1 ? 'producto' : 'productos'}`;
