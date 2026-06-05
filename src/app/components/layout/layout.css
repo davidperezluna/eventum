@@ -744,15 +744,29 @@
   z-index: 1000;
   width: 100%;
   padding-top: env(safe-area-inset-top, 0px);
+  box-sizing: border-box;
   background: linear-gradient(
     180deg,
-    rgba(245, 243, 255, 0.97) 0%,
-    rgba(255, 255, 255, 0.98) 100%
+    #8b5cf6 0%,
+    #9b7cfa 0.85rem,
+    #c4b5fd 1.5rem,
+    #f5f3ff 2.35rem,
+    #ffffff 100%
   );
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(139, 92, 246, 0.14);
   box-shadow: 0 4px 14px rgba(139, 92, 246, 0.07);
+}
+
+/* Cubre el “hairline” entre status bar (theme-color) y el contenido */
+.client-header::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #8b5cf6;
+  pointer-events: none;
 }
 
 .client-header::after {
