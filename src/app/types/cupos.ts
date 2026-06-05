@@ -26,6 +26,8 @@ export interface AvisoCupo {
   fecha_creacion: string;
   intereses_count: number;
   es_mio: boolean;
+  /** El usuario actual ya envió "Me interesa" en este aviso. */
+  ya_interesado?: boolean;
 }
 
 export interface InteresCupo {

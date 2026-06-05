@@ -97,7 +97,20 @@
       </div>
       <div class="cupos-card-actions">
         <ng-container *ngIf="!aviso.es_mio; else soyAutor">
-          <button type="button" class="cupos-btn-secondary" (click)="abrirInteres(aviso)">Me interesa</button>
+          <button
+            *ngIf="!aviso.ya_interesado; else interesYaEnviado"
+            type="button"
+            class="cupos-btn-secondary"
+            (click)="abrirInteres(aviso)"
+          >
+            Me interesa
+          </button>
+          <ng-template #interesYaEnviado>
+            <span class="cupos-interes-enviado">
+              <span class="material-icons" aria-hidden="true">check_circle</span>
+              Interés enviado
+            </span>
+          </ng-template>
           <button type="button" class="cupos-btn-ghost cupos-btn-ghost--danger" (click)="reportarAviso(aviso)">
             Reportar
           </button>

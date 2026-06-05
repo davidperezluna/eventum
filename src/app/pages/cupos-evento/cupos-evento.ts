@@ -329,7 +329,7 @@ export class CuposEvento implements OnInit, OnDestroy {
 
   abrirInteres(aviso: AvisoCupo): void {
     if (!this.requiereLogin('contactar')) return;
-    if (aviso.es_mio) return;
+    if (aviso.es_mio || aviso.ya_interesado) return;
     this.interesAviso = aviso;
     this.interesMensaje = '';
     this.showInteres = true;

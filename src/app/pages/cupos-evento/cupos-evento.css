@@ -1023,6 +1023,23 @@
   font-size: 1.75rem;
 }
 
+.cupos-interes-enviado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #047857;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+}
+
+.cupos-interes-enviado .material-icons {
+  font-size: 1.125rem;
+}
+
 .cupos-card--expandido {
   border-color: #818cf8;
   box-shadow: 0 8px 24px rgba(99, 102, 241, 0.12);
