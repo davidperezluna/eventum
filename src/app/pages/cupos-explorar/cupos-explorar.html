@@ -111,9 +111,20 @@
               Interés enviado
             </span>
           </ng-template>
-          <button type="button" class="cupos-btn-ghost cupos-btn-ghost--danger" (click)="reportarAviso(aviso)">
+          <button
+            *ngIf="!aviso.ya_reportado; else reporteYaEnviado"
+            type="button"
+            class="cupos-btn-ghost cupos-btn-ghost--danger"
+            (click)="reportarAviso(aviso)"
+          >
             Reportar
           </button>
+          <ng-template #reporteYaEnviado>
+            <span class="cupos-reporte-enviado">
+              <span class="material-icons" aria-hidden="true">flag</span>
+              Reportado
+            </span>
+          </ng-template>
         </ng-container>
         <ng-template #soyAutor>
           <a routerLink="/mis-cupos" class="cupos-btn-secondary">Ver en Mis publicaciones</a>

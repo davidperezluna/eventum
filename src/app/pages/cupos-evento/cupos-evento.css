@@ -1040,6 +1040,23 @@
   font-size: 1.125rem;
 }
 
+.cupos-reporte-enviado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #9a3412;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+}
+
+.cupos-reporte-enviado .material-icons {
+  font-size: 1.125rem;
+}
+
 .cupos-card--expandido {
   border-color: #818cf8;
   box-shadow: 0 8px 24px rgba(99, 102, 241, 0.12);

@@ -10,6 +10,7 @@ import { AlertService } from '../../services/alert.service';
 import { CuposHubNav } from '../../components/cupos-hub-nav/cupos-hub-nav';
 import {
   AvisoCupoConEvento,
+  MOTIVO_REPORTE_CUPO,
   TIPO_AVISO_CUPO_HINT,
   TIPO_AVISO_CUPO_ICON,
   TIPO_AVISO_CUPO_LABELS,
@@ -145,10 +146,11 @@ export class CuposExplorar implements OnInit {
 
   async reportarAviso(aviso: AvisoCupoConEvento): Promise<void> {
     if (!this.requiereLogin('reportar')) return;
-    const ok = await this.alertService.confirm('Reportar aviso', '¿Contenido sospechoso o estafa?');
+    if (aviso.ya_reportado) return;
+    const ok = await this.alertService.confirm('Reportar aviso', `¿${MOTIVO_REPORTE_CUPO}?`);
     if (!ok) return;
     try {
-      await this.cuposService.reportar(aviso.id);
+      await this.cuposService.reportar(aviso.id, MOTIVO_REPORTE_CUPO);
       void this.alertService.snackbarSuccess('Reporte recibido');
       await this.loadAvisos();
     } catch (e: unknown) {

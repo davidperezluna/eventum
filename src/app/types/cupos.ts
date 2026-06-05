@@ -28,6 +28,8 @@ export interface AvisoCupo {
   es_mio: boolean;
   /** El usuario actual ya envió "Me interesa" en este aviso. */
   ya_interesado?: boolean;
+  /** El usuario actual ya reportó este aviso. */
+  ya_reportado?: boolean;
 }
 
 export interface InteresCupo {
@@ -50,6 +52,9 @@ export const TIPO_AVISO_CUPO_ICON: Record<TipoAvisoCupo, string> = {
   ofrezco_cupo: 'sell',
   busco_grupo: 'groups',
 };
+
+/** Motivo guardado en reportes_cupo al confirmar el modal de reporte. */
+export const MOTIVO_REPORTE_CUPO = 'Contenido sospechoso o estafa';
 
 export const TIPO_AVISO_CUPO_HINT: Record<TipoAvisoCupo, string> = {
   busco_cupo: 'Quieres unirte a un palco o entrada que alguien ya tiene.',
