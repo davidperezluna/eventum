@@ -28,7 +28,7 @@
       <p class="subtitle">Validación de entradas</p>
     </div>
 
-    <nav class="sidebar-nav">
+    <nav class="sidebar-nav client-mobile-nav" aria-label="Secciones del lector">
       <a
         *ngFor="let item of menuItems"
         [routerLink]="item.path"
@@ -42,22 +42,21 @@
       </a>
     </nav>
 
-    <div class="sidebar-footer">
-      <div *ngIf="userName" class="user-info">
-        <div class="user-email">
-          <span class="material-icons">person</span>
-          <span class="email-text">{{ userName }}</span>
+    <div class="sidebar-footer client-menu-footer">
+      <div *ngIf="userName" class="client-menu-account">
+        <div class="client-menu-account__identity" aria-label="Sesión iniciada">
+          <span class="material-icons client-menu-account__icon" aria-hidden="true">account_circle</span>
+          <div class="client-menu-account__text">
+            <span class="client-menu-account__name">{{ userName }}</span>
+            <span class="client-menu-account__email">{{ userEmail }}</span>
+          </div>
         </div>
-        <div class="user-role">
-          <span class="material-icons">badge</span>
-          <span>Lector · {{ userEmail }}</span>
-        </div>
-        <button type="button" class="btn-logout" (click)="logout()">
-          <span class="material-icons">logout</span>
+        <button type="button" class="btn-logout client-menu-logout" (click)="logout()">
+          <span class="material-icons" aria-hidden="true">logout</span>
           <span>Cerrar sesión</span>
         </button>
       </div>
-      <p>&copy; {{ currentYear }} Eventum</p>
+      <p class="client-menu-copyright">&copy; {{ currentYear }} Eventum</p>
     </div>
   </aside>
 
