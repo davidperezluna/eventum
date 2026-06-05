@@ -1,4 +1,4 @@
-/* ============================================
+﻿/* ============================================
    PAGO RESULTADO — UI cliente
    ============================================ */
 
@@ -94,9 +94,9 @@
 }
 
 .pago-estado-chip--info {
-  border-color: var(--ec-badge-info-border, rgba(102, 126, 234, 0.34));
-  background: var(--ec-badge-info-bg, #e0e7ff);
-  color: var(--ec-badge-info-text, #4338ca);
+  border-color: var(--ec-badge-info-border, rgba(139, 92, 246, 0.34));
+  background: var(--ec-badge-info-bg, #ede9fe);
+  color: var(--ec-badge-info-text, #7c3aed);
 }
 
 .pago-panel__title {
@@ -179,7 +179,7 @@
 .pago-summary-row--accent dd {
   font-size: 1.05rem;
   font-weight: 800;
-  color: var(--color-secondary, #667eea);
+  color: var(--color-secondary, #8b5cf6);
 }
 
 /* Acciones */
@@ -208,12 +208,12 @@
 
 .btn-primary {
   border: none;
-  background: var(--color-secondary, #667eea);
+  background: var(--color-secondary, #8b5cf6);
   color: #fff;
 }
 
 .btn-primary:hover {
-  background: var(--color-secondary-dark, #5a67c8);
+  background: var(--color-secondary-dark, #7c3aed);
 }
 
 .btn-secondary {

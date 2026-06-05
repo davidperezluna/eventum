@@ -8,9 +8,9 @@
   --color-primary-dark: #16213e;
   --color-primary-light: #0f3460;
   
-  /* Colores Secundarios */
-  --color-secondary: #667eea;
-  --color-secondary-dark: #764ba2;
+  /* Colores Secundarios (violeta del logo EVENTUM — inicio de la E: #a78bfa) */
+  --color-secondary: #8b5cf6;
+  --color-secondary-dark: #a855f7;
   --color-accent: #4ecdc4;
   --color-accent-hover: #ff6b6b;
   
@@ -41,7 +41,7 @@
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
   --shadow-lg: 2px 0 10px rgba(0, 0, 0, 0.1);
-  --shadow-button: 0 4px 12px rgba(102, 126, 234, 0.4);
+  --shadow-button: 0 4px 12px rgba(139, 92, 246, 0.4);
   
   /* Espaciado */
   --spacing-xs: 0.5rem;

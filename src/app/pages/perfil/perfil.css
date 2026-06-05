@@ -1,4 +1,4 @@
-/* ============================================
+﻿/* ============================================
    PERFIL — UI cliente (--ec-*)
    ============================================ */
 
@@ -88,7 +88,7 @@
   height: 2rem;
   border-radius: 50%;
   border: 3px solid rgba(100, 116, 139, 0.2);
-  border-top-color: var(--ec-accent, #4f46e5);
+  border-top-color: var(--ec-accent, #8b5cf6);
   animation: perfil-spin 0.85s linear infinite;
 }
 
@@ -181,7 +181,7 @@
   inset: 0;
   border-radius: 50%;
   overflow: hidden;
-  border: 2px solid var(--ec-accent-border, #c7d2fe);
+  border: 2px solid var(--ec-accent-border, #ddd6fe);
   background: var(--ec-surface-muted, #f1f5f9);
 }
 
@@ -198,8 +198,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--ec-accent, #4f46e5);
-  background: var(--ec-accent-soft, #eef2ff);
+  color: var(--ec-accent, #8b5cf6);
+  background: var(--ec-accent-soft, #f5f3ff);
 }
 
 .perfil-avatar-placeholder .material-icons {
@@ -244,7 +244,7 @@
   height: 2.15rem;
   border-radius: 50%;
   border: 2px solid var(--ec-surface, #fff);
-  background: var(--color-secondary, #667eea);
+  background: var(--color-secondary, #8b5cf6);
   color: #fff;
   display: inline-flex;
   align-items: center;
@@ -313,9 +313,9 @@
   margin-top: 0.2rem;
   padding: 0.18rem 0.45rem;
   border-radius: var(--ec-radius-badge, 6px);
-  border: 1px solid var(--ec-accent-border, #c7d2fe);
-  background: var(--ec-accent-soft, #eef2ff);
-  color: #4338ca;
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
+  background: var(--ec-accent-soft, #f5f3ff);
+  color: var(--ec-accent-strong, #7c3aed);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -396,8 +396,8 @@
 .perfil-field input:focus,
 .perfil-field select:focus {
   outline: none;
-  border-color: var(--ec-accent-border, #c7d2fe);
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.12);
+  border-color: var(--ec-accent-border, #ddd6fe);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.12);
 }
 
 .perfil-input--disabled {
@@ -447,7 +447,7 @@
 
 .perfil-mas-datos__summary-text .material-icons {
   font-size: 1.05rem;
-  color: var(--ec-accent, #4f46e5);
+  color: var(--ec-accent, #8b5cf6);
 }
 
 .perfil-mas-datos__chevron {
@@ -514,9 +514,9 @@
 }
 
 .perfil-btn--primary {
-  background: var(--color-secondary, #667eea);
+  background: var(--color-secondary, #8b5cf6);
   color: #fff;
-  border-color: var(--color-secondary, #667eea);
+  border-color: var(--color-secondary, #8b5cf6);
 }
 
 .perfil-btn--primary:hover:not(:disabled) {

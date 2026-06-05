@@ -1,4 +1,4 @@
-/* ============================================
+﻿/* ============================================
    MIS CUPOS — UI cliente (alineado a /cupos)
    ============================================ */
 
@@ -41,8 +41,8 @@
 }
 
 .mis-cupos-stat--highlight {
-  background: var(--ec-badge-info-bg, #e0e7ff);
-  border-color: var(--ec-badge-info-border, rgba(102, 126, 234, 0.34));
+  background: var(--ec-badge-info-bg, #ede9fe);
+  border-color: var(--ec-badge-info-border, rgba(139, 92, 246, 0.34));
 }
 
 .mis-cupos-stat-value {
@@ -81,24 +81,24 @@
 }
 
 .cupos-page--mis .cupos-publish-bar-btn .material-icons {
-  color: var(--color-secondary, #667eea);
+  color: var(--color-secondary, #8b5cf6);
 }
 
 .cupos-page--mis .cupos-btn-primary {
-  background: var(--color-secondary, #667eea);
+  background: var(--color-secondary, #8b5cf6);
 }
 
 .cupos-page--mis .cupos-btn-primary:hover {
-  background: var(--color-secondary-dark, #5a67c8);
+  background: var(--color-secondary-dark, #7c3aed);
 }
 
 .cupos-page--mis .cupos-fab--mis {
-  background: var(--color-secondary, #667eea);
-  box-shadow: 0 4px 14px rgba(102, 126, 234, 0.28);
+  background: var(--color-secondary, #8b5cf6);
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.28);
 }
 
 .cupos-page--mis .cupos-fab--mis:hover {
-  background: var(--color-secondary-dark, #5a67c8);
+  background: var(--color-secondary-dark, #7c3aed);
 }
 
 .cupos-page--mis .cupos-list--mis {
@@ -111,7 +111,7 @@
 }
 
 .cupos-page--mis .cupos-card--expandido {
-  border-color: var(--ec-accent-border, #c7d2fe);
+  border-color: var(--ec-accent-border, #ddd6fe);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 

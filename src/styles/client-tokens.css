@@ -1,4 +1,4 @@
-/* ============================================
+﻿/* ============================================
    EVENTUM — Tokens UI cliente (público)
    ============================================ */
 
@@ -21,11 +21,13 @@
   --ec-text-muted: #64748b;
   --ec-text-subtle: #94a3b8;
 
-  /* Acento */
-  --ec-accent: #4f46e5;
-  --ec-accent-soft: #eef2ff;
-  --ec-accent-border: #c7d2fe;
-  --ec-cupos-accent: var(--color-secondary, #667eea);
+  /* Acento (violeta del logo — familia #a78bfa) */
+  --ec-accent: var(--color-secondary, #8b5cf6);
+  --ec-accent-strong: #7c3aed;
+  --ec-accent-soft: #f5f3ff;
+  --ec-accent-hover: #ede9fe;
+  --ec-accent-border: #ddd6fe;
+  --ec-cupos-accent: var(--ec-accent);
 
   /* Badges semánticos */
   --ec-badge-success-bg: #dcfce7;
@@ -36,10 +38,10 @@
   --ec-badge-warning-text: #92400e;
   --ec-badge-warning-icon: #b45309;
   --ec-badge-warning-border: rgba(180, 83, 9, 0.32);
-  --ec-badge-info-bg: #e0e7ff;
-  --ec-badge-info-text: #4338ca;
-  --ec-badge-info-icon: var(--color-secondary, #667eea);
-  --ec-badge-info-border: rgba(102, 126, 234, 0.34);
+  --ec-badge-info-bg: var(--ec-accent-soft);
+  --ec-badge-info-text: var(--ec-accent-strong);
+  --ec-badge-info-icon: var(--color-secondary, #8b5cf6);
+  --ec-badge-info-border: rgba(139, 92, 246, 0.34);
   --ec-badge-danger-bg: #fee2e2;
   --ec-badge-danger-text: #b91c1c;
 

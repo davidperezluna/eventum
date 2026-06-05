@@ -1,4 +1,4 @@
-/* Complemento a ../login/login.css */
+﻿/* Complemento a ../login/login.css */
 
 .login-card--admin {
   overflow: visible;
@@ -50,7 +50,7 @@
 
 .btn-client-access .material-icons {
   font-size: 1.25rem;
-  color: #667eea;
+  color: #8b5cf6;
 }
 
 .header-text .subtitle {

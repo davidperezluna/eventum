@@ -29,7 +29,7 @@
     <div *ngIf="!loading && categorias.length > 0" class="grid-cards">
       <div *ngFor="let categoria of categorias" class="category-card">
         <div class="category-header">
-          <div class="category-icon" [style.background-color]="categoria.color || '#667eea'">
+          <div class="category-icon" [style.background-color]="categoria.color || '#8b5cf6'">
             <ion-icon *ngIf="categoria.icono" [name]="categoria.icono"></ion-icon>
             <ion-icon *ngIf="!categoria.icono" name="folder"></ion-icon>
           </div>

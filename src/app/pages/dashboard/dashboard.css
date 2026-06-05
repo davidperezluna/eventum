@@ -1,4 +1,4 @@
-.dashboard {
+﻿.dashboard {
   max-width: var(--content-max-width);
   margin: 0 auto;
   padding: clamp(0.75rem, 2.2vw, 1.5rem);
@@ -165,7 +165,7 @@
 .stat-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 14px 20px rgba(15, 23, 42, 0.08);
-  border-color: rgba(102, 126, 234, 0.25);
+  border-color: rgba(139, 92, 246, 0.25);
 }
 
 .stat-card.stat-primary {

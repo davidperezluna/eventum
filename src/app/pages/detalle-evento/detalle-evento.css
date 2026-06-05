@@ -1,4 +1,4 @@
-/* ============================================
+﻿/* ============================================
    DETALLE EVENTO - CLIENT STYLES
    ============================================ */
 
@@ -211,9 +211,9 @@
 .tab-loading-pill {
   font-size: 0.72rem;
   font-weight: 700;
-  color: #4338ca;
-  background: #eef2ff;
-  border: 1px solid #c7d2fe;
+  color: #7c3aed;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
   border-radius: 6px;
   padding: 0.12rem 0.45rem;
   text-transform: lowercase;
@@ -297,12 +297,12 @@
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 4px 12px -10px rgba(99, 102, 241, 0.45);
+  box-shadow: 0 4px 12px -10px rgba(139, 92, 246, 0.45);
 }
 
 .btn-carrito-rapido:hover {
   background: #f8fafc;
-  border-color: #c7d2fe;
+  border-color: #ddd6fe;
 }
 
 .btn-carrito-rapido .material-icons {
@@ -582,7 +582,7 @@
 
 .badge-categoria {
   /* Fondo real: inline desde categoria.color; texto blanco para leer sobre morados/azules oscuros */
-  background: #667eea;
+  background: #8b5cf6;
   color: #fff;
 }
 
@@ -634,7 +634,7 @@
 
 .cupos-hub--detalle .cupos-hub-icon {
   font-size: 1.5rem;
-  color: #6366f1;
+  color: #8b5cf6;
   flex-shrink: 0;
 }
 
@@ -674,15 +674,15 @@
   font-weight: 700;
   line-height: 1.2;
   text-align: center;
-  color: #4338ca;
+  color: #7c3aed;
   text-decoration: none;
-  background: #eef2ff;
-  border: 1px solid #c7d2fe;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
   box-sizing: border-box;
 }
 
 .cupos-hub--detalle .cupos-hub-link:hover {
-  background: #e0e7ff;
+  background: #ede9fe;
 }
 
 .cupos-hub--detalle .cupos-hub-actions .cupos-hub-link:only-child {
@@ -808,7 +808,7 @@
 
 .meta-item .material-icons {
   font-size: 1.75rem;
-  color: var(--color-primary, #6366f1);
+  color: var(--color-primary, #8b5cf6);
   background: #f1f5f9;
   padding: 0.75rem;
   border-radius: 1rem;
@@ -855,7 +855,7 @@
 }
 
 .evento-section h2 .material-icons {
-  color: var(--color-primary, #6366f1);
+  color: var(--color-primary, #8b5cf6);
 }
 
 /* =========================================
@@ -987,7 +987,7 @@
   flex-shrink: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   position: relative;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #f093fb 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1037,7 +1037,7 @@
 }
 
 .lugar-item .material-icons {
-  color: var(--color-primary, #6366f1);
+  color: var(--color-primary, #8b5cf6);
   font-size: 1.5rem;
   flex-shrink: 0;
   margin-top: 0.125rem;
@@ -1094,13 +1094,13 @@
 }
 
 .btn-google-maps {
-  background: var(--color-primary, #6366f1);
+  background: var(--color-primary, #8b5cf6);
 }
 
 .btn-google-maps:hover {
-  background: #4f46e5;
+  background: #8b5cf6;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
 .btn-sitio-web {
@@ -1150,8 +1150,8 @@
 }
 
 .btn-ir-carrito {
-  border: 1px solid #c7d2fe;
-  background: #eef2ff;
+  border: 1px solid #ddd6fe;
+  background: #f5f3ff;
   color: #3730a3;
   border-radius: 0.75rem;
   padding: 0.75rem 1rem;
@@ -1163,7 +1163,7 @@
 }
 
 .btn-ir-carrito:hover {
-  background: #e0e7ff;
+  background: #ede9fe;
 }
 
 .tipo-boleta-card {
@@ -1286,7 +1286,7 @@
 .palco-experiencia {
   margin: 0;
   background: linear-gradient(145deg, #1e1b4b 0%, #312e81 45%, #3730a3 100%);
-  color: #e0e7ff;
+  color: #ede9fe;
   border-radius: 0 0 1.5rem 1.5rem;
   overflow: hidden;
   position: relative;
@@ -1296,7 +1296,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.35), transparent 45%),
+  background: radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.35), transparent 45%),
     radial-gradient(circle at 90% 80%, rgba(14, 165, 233, 0.2), transparent 40%);
   pointer-events: none;
 }
@@ -1327,7 +1327,7 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #a5b4fc;
+  color: #b4bdf0;
 }
 
 .palco-exp-kicker-icon {
@@ -1418,13 +1418,13 @@
 
 .palco-mapa-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 14px 32px -8px rgba(99, 102, 241, 0.42);
+  box-shadow: 0 14px 32px -8px rgba(139, 92, 246, 0.42);
 }
 
 .palco-mapa-glow {
   position: absolute;
   inset: -30%;
-  background: conic-gradient(from 180deg at 50% 50%, #6366f1, #0ea5e9, #a855f7, #6366f1);
+  background: conic-gradient(from 180deg at 50% 50%, #8b5cf6, #0ea5e9, #a855f7, #8b5cf6);
   opacity: 0.15;
   filter: blur(40px);
   pointer-events: none;
@@ -1451,7 +1451,7 @@
   font-size: 0.78rem;
   font-weight: 600;
   background: rgba(15, 23, 42, 0.92);
-  color: #c7d2fe;
+  color: #ddd6fe;
 }
 
 .palco-mapa-caption .material-icons {
@@ -1528,8 +1528,8 @@
 
 .palco-slot-pill--active {
   border-color: rgba(129, 140, 248, 0.85);
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35);
-  background: rgba(99, 102, 241, 0.2);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.35);
+  background: rgba(139, 92, 246, 0.2);
 }
 
 .palco-slot-pill--done:not(.palco-slot-pill--active) {
@@ -1541,7 +1541,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #a5b4fc;
+  color: #b4bdf0;
 }
 
 .palco-slot-pill-value {
@@ -1633,8 +1633,8 @@
 .palco-cell--clic:hover:not(:disabled) {
   transform: scale(1.06);
   border-color: rgba(167, 139, 250, 0.95);
-  box-shadow: 0 8px 24px -4px rgba(99, 102, 241, 0.55);
-  background: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 8px 24px -4px rgba(139, 92, 246, 0.55);
+  background: rgba(139, 92, 246, 0.35);
 }
 
 .palco-cell--elegido {
@@ -1785,7 +1785,7 @@
   margin: 0 1rem 0.5rem;
   font-size: 0.95rem;
   font-weight: 700;
-  color: #e0e7ff;
+  color: #ede9fe;
 }
 
 .palco-mapa-dialog-img {
@@ -1869,7 +1869,7 @@
 }
 
 .btn-cantidad:focus-visible {
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.18);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.18);
 }
 
 .btn-cantidad:disabled {
@@ -1930,9 +1930,9 @@
 }
 
 .btn-add {
-  background: #eef2ff;
+  background: #f5f3ff;
   color: #3730a3;
-  border: 1px solid #c7d2fe;
+  border: 1px solid #ddd6fe;
   border-radius: 11px;
   padding: 0.6rem 0.9rem;
   font-size: 0.9rem;
@@ -1941,12 +1941,12 @@
 
 .btn-add .material-icons {
   font-size: 1.03rem;
-  color: #4f46e5;
+  color: #8b5cf6;
 }
 
 .btn-add:hover:not(:disabled) {
-  background: #e0e7ff;
-  border-color: #a5b4fc;
+  background: #ede9fe;
+  border-color: #b4bdf0;
   color: #312e81;
   transform: none;
   filter: none;
@@ -2133,7 +2133,7 @@
   outline: none;
   border-color: var(--color-primary);
   background: white;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 /* =========================================
@@ -2184,12 +2184,12 @@
 
 .cupon-input-group input:focus {
   outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .btn-aplicar-cupon {
-  background: #6366f1;
+  background: #8b5cf6;
   color: white;
   border: none;
   padding: 0 1.25rem;
@@ -2202,7 +2202,7 @@
 }
 
 .btn-aplicar-cupon:hover:not(:disabled) {
-  background: #4f46e5;
+  background: #8b5cf6;
   transform: translateY(-1px);
 }
 
@@ -2293,7 +2293,7 @@
   inset: 0 auto auto 0;
   width: 100%;
   height: 3px;
-  background: linear-gradient(90deg, #4f46e5, #6366f1, #22c55e);
+  background: linear-gradient(90deg, #8b5cf6, #8b5cf6, #22c55e);
 }
 
 .total-info h3 {
@@ -2317,7 +2317,7 @@
   height: 10px;
   border-radius: 999px;
   margin-right: 0.5rem;
-  background: #4f46e5;
+  background: #8b5cf6;
   vertical-align: middle;
 }
 
@@ -2333,7 +2333,7 @@
   width: 100%;
   margin-top: 0.9rem;
   padding: 0.88rem 1rem;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #8b5cf6 100%);
   font-size: 0.94rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -2342,14 +2342,14 @@
   border-radius: 0.7rem;
   color: white;
   cursor: pointer;
-  box-shadow: 0 10px 20px -14px rgba(79, 70, 229, 0.9);
+  box-shadow: 0 10px 20px -14px rgba(139, 92, 246, 0.9);
   transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
 
 .carrito-total .btn-comprar:hover {
   filter: brightness(1.05);
   transform: translateY(-1px);
-  box-shadow: 0 14px 24px -14px rgba(79, 70, 229, 0.95);
+  box-shadow: 0 14px 24px -14px rgba(139, 92, 246, 0.95);
 }
 
 .carrito-total .btn-comprar:disabled {
@@ -3019,7 +3019,7 @@
 .detalle-zone--info .accordion-header h2 .material-icons,
 .detalle-zone--legal .accordion-header h2 .material-icons {
   font-size: 1.15rem;
-  color: #4f46e5;
+  color: #8b5cf6;
   background: transparent;
   padding: 0;
 }
@@ -3084,9 +3084,9 @@
 }
 
 .palco-exp-chip {
-  background: #eef2ff;
+  background: #f5f3ff;
   border: 1px solid #dbe4ff;
-  color: #4338ca;
+  color: #7c3aed;
   font-size: 0.72rem;
   font-weight: 600;
   padding: 0.35rem 0.65rem;
@@ -3163,13 +3163,13 @@
 }
 
 .palco-slot-pill--active {
-  border-color: #a5b4fc;
-  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2);
-  background: #eef2ff;
+  border-color: #b4bdf0;
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.2);
+  background: #f5f3ff;
 }
 
 .palco-slot-pill-label {
-  color: #6366f1;
+  color: #8b5cf6;
 }
 
 .palco-slot-pill-value {
@@ -3199,7 +3199,7 @@
 
 .palco-picker-hint .material-icons {
   opacity: 1;
-  color: #6366f1;
+  color: #8b5cf6;
   font-size: 1rem !important;
   margin-top: 0.02rem;
 }
@@ -3226,16 +3226,16 @@
 }
 
 .palco-cell--clic {
-  border-color: #c7d2fe;
-  background: #eef2ff;
+  border-color: #ddd6fe;
+  background: #f5f3ff;
   color: #312e81;
 }
 
 .palco-cell--clic:hover:not(:disabled) {
   transform: none;
-  border-color: #818cf8;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.16);
-  background: #e0e7ff;
+  border-color: #8b9aef;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.16);
+  background: #ede9fe;
   color: #312e81;
 }
 
@@ -3253,8 +3253,8 @@
 }
 
 .palco-cell:focus-visible {
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+  border-color: #8b5cf6;
 }
 
 .palco-cell--activo:focus-visible {
@@ -3275,8 +3275,8 @@
 }
 
 .leyenda-dot--clic {
-  background: #6366f1;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  background: #8b5cf6;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
 }
 
 .leyenda-dot--ok {
@@ -3298,7 +3298,7 @@
 }
 
 .palco-exp-footer-icon {
-  color: #6366f1;
+  color: #8b5cf6;
   opacity: 1;
 }
 
@@ -3418,7 +3418,7 @@
 }
 
 .detalle-page-back:hover {
-  color: var(--ec-accent, #4f46e5);
+  color: var(--ec-accent, #8b5cf6);
 }
 
 .detalle-page-back .material-icons {
@@ -3474,9 +3474,9 @@
 }
 
 .evento-chip--categoria {
-  border: 1px solid var(--ec-accent-border, #c7d2fe);
-  background: var(--ec-accent-soft, #eef2ff);
-  color: #4338ca;
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
+  background: var(--ec-accent-soft, #f5f3ff);
+  color: #7c3aed;
 }
 
 .evento-chip--categoria ion-icon {
@@ -3517,11 +3517,11 @@
 
 .btn-carrito-rapido:hover {
   background: var(--ec-chip-hover, #f1f5f9);
-  border-color: var(--ec-accent-border, #c7d2fe);
+  border-color: var(--ec-accent-border, #ddd6fe);
 }
 
 .btn-carrito-rapido .material-icons {
-  color: var(--color-secondary, #667eea);
+  color: var(--color-secondary, #8b5cf6);
 }
 
 .tipo-boleta-card {
@@ -3532,7 +3532,7 @@
 }
 
 .tipo-boleta-card:hover {
-  border-color: var(--ec-accent-border, #c7d2fe);
+  border-color: var(--ec-accent-border, #ddd6fe);
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
 }
 
@@ -3542,9 +3542,9 @@
 
 .btn-add {
   border-radius: var(--ec-radius-control, 8px);
-  background: var(--color-secondary, #667eea);
+  background: var(--color-secondary, #8b5cf6);
   color: #fff;
-  border: 1px solid var(--color-secondary, #667eea);
+  border: 1px solid var(--color-secondary, #8b5cf6);
 }
 
 .btn-add .material-icons {
@@ -3577,7 +3577,7 @@
 }
 
 .cupos-hub--detalle .cupos-hub-icon {
-  color: var(--color-secondary, #667eea);
+  color: var(--color-secondary, #8b5cf6);
 }
 
 .section-heading-row h2 {

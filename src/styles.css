@@ -1,4 +1,4 @@
-/* Importar sistema de temas */
+﻿/* Importar sistema de temas */
 @import './styles/themes.css';
 @import './styles/client-tokens.css';
 
@@ -61,8 +61,8 @@ body {
   height: 2.875rem;
   margin: 0 !important;
   border-radius: 50%;
-  border: 3px solid rgba(102, 126, 234, 0.22);
-  border-top-color: var(--color-secondary, #667eea);
+  border: 3px solid rgba(139, 92, 246, 0.22);
+  border-top-color: var(--color-secondary, #8b5cf6);
   animation: app-loader-spin 0.72s linear infinite;
   box-sizing: border-box;
 }
@@ -74,8 +74,8 @@ body {
   width: 2.875rem;
   height: 2.875rem;
   border-radius: 50%;
-  border: 3px solid rgba(102, 126, 234, 0.22);
-  border-top-color: var(--color-secondary, #667eea);
+  border: 3px solid rgba(139, 92, 246, 0.22);
+  border-top-color: var(--color-secondary, #8b5cf6);
   animation: app-loader-spin 0.72s linear infinite;
   box-sizing: border-box;
 }
@@ -108,8 +108,8 @@ body {
   width: 1.75rem;
   height: 1.75rem;
   border-radius: 50%;
-  border: 2px solid rgba(102, 126, 234, 0.22);
-  border-top-color: var(--color-secondary, #667eea);
+  border: 2px solid rgba(139, 92, 246, 0.22);
+  border-top-color: var(--color-secondary, #8b5cf6);
   animation: app-loader-spin 0.72s linear infinite;
   box-sizing: border-box;
 }

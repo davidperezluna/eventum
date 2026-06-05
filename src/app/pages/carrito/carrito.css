@@ -1,12 +1,12 @@
-.carrito-page {
+﻿.carrito-page {
   font-family: inherit;
   min-height: calc(100vh - 73px);
   background: var(--ec-page-bg, #f8fafc);
   color: var(--ec-text-primary, #0f172a);
   --carrito-gutter: var(--ec-content-pad, clamp(0.75rem, 4vw, 1rem));
   --carrito-max: var(--ec-content-max, 72rem);
-  --carrito-pay-bg: var(--color-secondary, #667eea);
-  --carrito-pay-bg-hover: var(--color-secondary-dark, #5a67c8);
+  --carrito-pay-bg: var(--color-secondary, #8b5cf6);
+  --carrito-pay-bg-hover: var(--color-secondary-dark, #7c3aed);
   padding-bottom: 2.5rem;
 }
 
@@ -477,9 +477,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  background: var(--ec-accent-soft, #eef2ff);
-  border: 1px solid var(--ec-accent-border, #c7d2fe);
-  color: #4338ca;
+  background: var(--ec-accent-soft, #f5f3ff);
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
+  color: #7c3aed;
   border-radius: var(--ec-radius-badge, 6px);
   padding: 0.35rem 0.65rem;
   font-size: 0.72rem;
@@ -583,7 +583,7 @@
 }
 
 .carrito-segmented-tab.active .carrito-segmented-tab__label {
-  color: var(--ec-accent, #4f46e5);
+  color: var(--ec-accent, #8b5cf6);
 }
 
 .carrito-segmented-tab__value {
@@ -642,8 +642,8 @@
 }
 
 .palco-cell--clic {
-  border-color: #c7d2fe;
-  background: #eef2ff;
+  border-color: #ddd6fe;
+  background: #f5f3ff;
 }
 
 .palco-cell--elegido {
@@ -683,7 +683,7 @@
 .cupon-section__icon {
   flex-shrink: 0;
   font-size: 1.15rem;
-  color: var(--ec-accent, #4f46e5);
+  color: var(--ec-accent, #8b5cf6);
   margin-top: 0.05rem;
 }
 
@@ -729,14 +729,14 @@
 
 .cupon-input:focus {
   outline: none;
-  border-color: var(--ec-accent-border, #c7d2fe);
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.12);
+  border-color: var(--ec-accent-border, #ddd6fe);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.12);
 }
 
 .btn-aplicar-cupon {
-  border: 1px solid var(--ec-accent-border, #c7d2fe);
-  background: var(--ec-accent-soft, #eef2ff);
-  color: #4338ca;
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
+  background: var(--ec-accent-soft, #f5f3ff);
+  color: #7c3aed;
   border-radius: var(--ec-radius-control, 8px);
   padding: 0.55rem 0.95rem;
   min-height: 42px;
@@ -751,8 +751,8 @@
 }
 
 .btn-aplicar-cupon:hover:not(:disabled) {
-  background: #e0e7ff;
-  border-color: #a5b4fc;
+  background: #ede9fe;
+  border-color: #b4bdf0;
   color: #312e81;
 }
 
@@ -1016,13 +1016,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--ec-accent-soft, #eef2ff);
-  border: 1px solid var(--ec-accent-border, #c7d2fe);
+  background: var(--ec-accent-soft, #f5f3ff);
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
 }
 
 .empty-state .material-icons {
   font-size: 1.65rem;
-  color: #6366f1;
+  color: #8b5cf6;
 }
 
 .empty-state h2 {
@@ -1042,7 +1042,7 @@
 
 .btn-primary {
   border: none;
-  background: var(--ec-accent, #4f46e5);
+  background: var(--ec-accent, #8b5cf6);
   color: #fff;
   border-radius: var(--ec-radius-control, 8px);
   padding: 0.7rem 1.15rem;
@@ -1052,7 +1052,7 @@
 }
 
 .btn-primary:hover {
-  background: #4338ca;
+  background: #7c3aed;
 }
 
 .empty-state__cta {
@@ -1067,9 +1067,9 @@
   padding: 0.55rem 1rem;
   min-height: 42px;
   border-radius: var(--ec-radius-control, 8px);
-  border: 1px solid var(--ec-accent-border, #c7d2fe);
-  background: var(--ec-accent-soft, #eef2ff);
-  color: #4338ca;
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
+  background: var(--ec-accent-soft, #f5f3ff);
+  color: #7c3aed;
   font-weight: 700;
   font-size: 0.84rem;
   text-decoration: none;
@@ -1078,14 +1078,14 @@
 }
 
 .empty-state__cta:hover {
-  background: #e0e7ff;
-  border-color: #a5b4fc;
+  background: #ede9fe;
+  border-color: #b4bdf0;
   color: #3730a3;
 }
 
 .empty-state__cta .material-icons {
   font-size: 1rem;
-  color: var(--ec-accent, #4f46e5);
+  color: var(--ec-accent, #8b5cf6);
   flex-shrink: 0;
 }
 
@@ -1125,7 +1125,7 @@
 .palco-mapa-dialog-title {
   margin: 0;
   padding: 0.8rem 1rem 0.4rem;
-  color: #e0e7ff;
+  color: #ede9fe;
 }
 
 .palco-mapa-dialog-img {
@@ -1368,7 +1368,7 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: #4338ca;
+  color: #7c3aed;
   font-size: 0.84rem;
   font-weight: 600;
   cursor: pointer;
@@ -1397,7 +1397,7 @@
 
 .carrito-upsell-row:hover {
   background: var(--ec-chip-hover, #f1f5f9);
-  border-color: var(--ec-accent-border, #c7d2fe);
+  border-color: var(--ec-accent-border, #ddd6fe);
 }
 
 .carrito-upsell-row__icon-wrap {
@@ -1405,8 +1405,8 @@
   width: 2.5rem;
   height: 2.5rem;
   border-radius: var(--ec-radius-control, 8px);
-  background: var(--ec-accent-soft, #eef2ff);
-  border: 1px solid var(--ec-accent-border, #c7d2fe);
+  background: var(--ec-accent-soft, #f5f3ff);
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1414,7 +1414,7 @@
 
 .carrito-upsell-row__icon-wrap .material-icons {
   font-size: 1.2rem;
-  color: var(--ec-accent, #4f46e5);
+  color: var(--ec-accent, #8b5cf6);
 }
 
 .carrito-upsell-row__copy {
@@ -1430,7 +1430,7 @@
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--ec-accent, #4f46e5);
+  color: var(--ec-accent, #8b5cf6);
 }
 
 .carrito-upsell-row__title {
@@ -1450,7 +1450,7 @@
   flex-shrink: 0;
   font-size: 0.82rem;
   font-weight: 700;
-  color: var(--ec-accent, #4f46e5);
+  color: var(--ec-accent, #8b5cf6);
 }
 
 .licor-modal-overlay {
@@ -1583,7 +1583,7 @@
 
 .btn-primary-modal {
   border: none;
-  background: var(--ec-accent, #4f46e5);
+  background: var(--ec-accent, #8b5cf6);
   color: #fff;
   border-radius: var(--ec-radius-control, 8px);
   padding: 0.65rem 1rem;

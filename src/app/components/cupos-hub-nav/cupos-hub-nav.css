@@ -1,4 +1,4 @@
-:host.cupos-hub-nav-host {
+﻿:host.cupos-hub-nav-host {
   display: block;
   width: 100%;
   max-width: var(--cupos-content-max, var(--ec-content-max, 100%));
@@ -74,7 +74,7 @@
 }
 
 .cupos-hub-nav-tab.active .material-icons {
-  color: var(--ec-accent, #4f46e5);
+  color: var(--ec-accent, #8b5cf6);
 }
 
 @media (hover: hover) {

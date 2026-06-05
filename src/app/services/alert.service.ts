@@ -112,7 +112,7 @@ export class AlertService {
       title,
       text: message,
       confirmButtonText: 'OK',
-      confirmButtonColor: '#667eea',
+      confirmButtonColor: '#8b5cf6',
       allowOutsideClick: false,
       allowEscapeKey: false
     });
@@ -134,7 +134,7 @@ export class AlertService {
       showCancelButton: true,
       confirmButtonText: confirmText,
       cancelButtonText: cancelText,
-      confirmButtonColor: '#667eea',
+      confirmButtonColor: '#8b5cf6',
       cancelButtonColor: '#6b7280',
       reverseButtons: true,
       allowOutsideClick: false,
@@ -153,7 +153,7 @@ export class AlertService {
       showCancelButton: true,
       confirmButtonText: 'Sí, continuar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#667eea',
+      confirmButtonColor: '#8b5cf6',
       cancelButtonColor: '#6b7280',
       reverseButtons: true,
       allowOutsideClick: false,

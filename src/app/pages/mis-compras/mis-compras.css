@@ -1,4 +1,4 @@
-/* ============================================
+﻿/* ============================================
    MIS COMPRAS - CLIENT STYLES
    ============================================ */
 
@@ -113,8 +113,8 @@
   justify-content: center;
   gap: 0.3rem;
   text-decoration: none;
-  background: #eef2ff;
-  color: #4338ca;
+  background: #f5f3ff;
+  color: #7c3aed;
   border: 1px solid #dbe4ff;
   border-radius: 999px;
   padding: 0.35rem 0.6rem;
@@ -137,8 +137,8 @@
 }
 
 .guia-resumen-link:hover {
-  background: #e0e7ff;
-  border-color: #c7d2fe;
+  background: #ede9fe;
+  border-color: #ddd6fe;
 }
 
 .guia-resumen-link--ghost:hover {
@@ -191,8 +191,8 @@
   width: 2.35rem;
   height: 2.35rem;
   border-radius: var(--ec-radius-control, 8px);
-  background: var(--ec-accent-soft, #eef2ff);
-  border: 1px solid var(--ec-accent-border, #c7d2fe);
+  background: var(--ec-accent-soft, #f5f3ff);
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -200,7 +200,7 @@
 
 .mis-compras-productos-promo__icon {
   font-size: 1.15rem;
-  color: var(--ec-accent, #4f46e5);
+  color: var(--ec-accent, #8b5cf6);
 }
 
 .mis-compras-productos-promo__copy {
@@ -245,7 +245,7 @@
   gap: 0.1rem;
   font-size: 0.78rem;
   font-weight: var(--ec-font-weight-label, 600);
-  color: var(--ec-accent, #4f46e5);
+  color: var(--ec-accent, #8b5cf6);
   opacity: 0.85;
 }
 
@@ -368,7 +368,7 @@
 }
 
 .guia-entradas-summary-icon {
-  color: #6366f1;
+  color: #8b5cf6;
   font-size: 1.3rem;
   flex-shrink: 0;
 }
@@ -416,9 +416,9 @@
 .guia-entradas-reglas {
   margin: 1rem 0 1.15rem;
   padding: 1rem 1.1rem;
-  background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%);
+  background: linear-gradient(135deg, #f5f3ff 0%, #faf5ff 100%);
   border-radius: 12px;
-  border: 1px solid #c7d2fe;
+  border: 1px solid #ddd6fe;
 }
 
 .guia-entradas-reglas h3 {
@@ -445,12 +445,12 @@
   padding: 0.75rem 0.85rem;
   background: rgba(255, 255, 255, 0.65);
   border-radius: 8px;
-  border: 1px solid #a5b4fc;
+  border: 1px solid #b4bdf0;
   line-height: 1.5;
 }
 
 .guia-entradas-reglas a {
-  color: #4f46e5;
+  color: #8b5cf6;
   font-weight: 600;
   text-decoration: underline;
 }
@@ -477,13 +477,13 @@
 }
 
 .guia-tab:hover {
-  border-color: #c7d2fe;
-  color: #4338ca;
+  border-color: #ddd6fe;
+  color: #7c3aed;
 }
 
 .guia-tab.active {
-  background: #6366f1;
-  border-color: #6366f1;
+  background: #8b5cf6;
+  border-color: #8b5cf6;
   color: #fff;
 }
 
@@ -510,7 +510,7 @@
   width: 2rem;
   height: 2rem;
   border-radius: 50%;
-  background: #6366f1;
+  background: #8b5cf6;
   color: #fff;
   font-weight: 700;
   font-size: 0.95rem;
@@ -540,17 +540,17 @@
 
 .guia-entradas-nota .material-icons {
   font-size: 1.1rem;
-  color: #6366f1;
+  color: #8b5cf6;
   flex-shrink: 0;
 }
 
 .guia-entradas-nota a {
-  color: #4f46e5;
+  color: #8b5cf6;
   font-weight: 600;
 }
 
 .section-traslados-desc a {
-  color: #4f46e5;
+  color: #8b5cf6;
   font-weight: 600;
 }
 
@@ -789,9 +789,9 @@
 .select-input:focus,
 .input-field:focus {
   outline: none;
-  border-color: var(--color-primary, #6366f1);
+  border-color: var(--color-primary, #8b5cf6);
   background: white;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .btn-clear {
@@ -823,9 +823,9 @@
 }
 
 .btn-apply {
-  background: var(--color-primary, #6366f1);
+  background: var(--color-primary, #8b5cf6);
   color: #fff;
-  border: 1px solid var(--color-primary, #6366f1);
+  border: 1px solid var(--color-primary, #8b5cf6);
   padding: 0.75rem 1.5rem;
   border-radius: 0.75rem;
   font-weight: 600;
@@ -1130,7 +1130,7 @@
 }
 
 .evento-card.expanded .evento-card-chevron {
-  color: var(--color-primary, #6366f1);
+  color: var(--color-primary, #8b5cf6);
   transform: rotate(180deg);
 }
 
@@ -1165,7 +1165,7 @@
 }
 
 .mc-page-back:hover {
-  color: var(--ec-accent, #4f46e5);
+  color: var(--ec-accent, #8b5cf6);
 }
 
 .mc-page-back .material-icons {
@@ -1187,7 +1187,7 @@
   margin: 0.35rem 0 0;
   font-size: 0.8rem;
   font-weight: var(--ec-font-weight-label, 600);
-  color: var(--ec-accent, #4f46e5);
+  color: var(--ec-accent, #8b5cf6);
   line-height: 1.4;
 }
 
@@ -1209,9 +1209,9 @@
 }
 
 .mc-evento-detalle-chip--info {
-  background: var(--ec-badge-info-bg, #e0e7ff);
-  color: var(--ec-badge-info-text, #4338ca);
-  border: 1px solid var(--ec-badge-info-border, rgba(102, 126, 234, 0.34));
+  background: var(--ec-badge-info-bg, #ede9fe);
+  color: var(--ec-badge-info-text, #7c3aed);
+  border: 1px solid var(--ec-badge-info-border, rgba(139, 92, 246, 0.34));
 }
 
 .mc-evento-detalle-chip--success {
@@ -1268,7 +1268,7 @@
 }
 
 .mis-compras-page .mc-segmented-tab.active .material-icons {
-  color: var(--ec-accent, #4f46e5);
+  color: var(--ec-accent, #8b5cf6);
 }
 
 .mis-compras-page .mc-segmented-badge {
@@ -1286,8 +1286,8 @@
 }
 
 .mis-compras-page .mc-segmented-tab.active .mc-segmented-badge {
-  background: var(--ec-accent-soft, #eef2ff);
-  color: var(--ec-accent, #4f46e5);
+  background: var(--ec-accent-soft, #f5f3ff);
+  color: var(--ec-accent, #8b5cf6);
 }
 
 @media (hover: hover) {
@@ -1349,7 +1349,7 @@
 
 .badge-tab:not(.badge-tab--selected):hover {
   opacity: 1;
-  background: #eef2ff;
+  background: #f5f3ff;
   color: #27364b;
 }
 
@@ -1381,8 +1381,8 @@
 
 .badge-tab.badge-info-soft.badge-tab--selected {
   border-color: #b8b4ff;
-  color: #4338ca;
-  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  color: #7c3aed;
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
 }
 
 .badge-tab__icon {
@@ -1451,14 +1451,14 @@
 }
 
 .boletas-tab.active {
-  background: #eef2ff;
-  color: #4338ca;
-  box-shadow: inset 0 0 0 1px #c7d2fe;
+  background: #f5f3ff;
+  color: #7c3aed;
+  box-shadow: inset 0 0 0 1px #ddd6fe;
 }
 
 .boletas-tab.active span {
   background: #dbeafe;
-  color: #4338ca;
+  color: #7c3aed;
 }
 
 .compra-header {
@@ -1546,7 +1546,7 @@
 .total-value {
   font-size: 1.5rem;
   font-weight: 800;
-  color: var(--color-primary, #6366f1);
+  color: var(--color-primary, #8b5cf6);
 }
 
 /* Boletas Grid within Card */
@@ -1571,7 +1571,7 @@
   color: #334155;
   margin-bottom: 1.5rem;
   padding-left: 0.5rem;
-  border-left: 3px solid var(--color-primary, #6366f1);
+  border-left: 3px solid var(--color-primary, #8b5cf6);
 }
 
 .boletas-section-hint {
@@ -1607,8 +1607,8 @@
 }
 
 .boleta-card--clickable:hover {
-  border-color: #a5b4fc;
-  box-shadow: 0 8px 20px -12px rgba(99, 102, 241, 0.45);
+  border-color: #b4bdf0;
+  box-shadow: 0 8px 20px -12px rgba(139, 92, 246, 0.45);
 }
 
 .boleta-card--clickable:active {
@@ -1691,7 +1691,7 @@
   line-height: inherit;
   border: none;
   background: transparent;
-  color: var(--color-primary, #4338ca);
+  color: var(--color-primary, #7c3aed);
   padding: 0.1rem 0;
   font-size: 0.82rem;
   font-weight: 700;
@@ -1723,7 +1723,7 @@
   font-size: 0.875rem;
   border: none;
   cursor: pointer;
-  background: var(--color-primary, #6366f1);
+  background: var(--color-primary, #8b5cf6);
   color: white;
   transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
 }
@@ -1791,7 +1791,7 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1px;
-  color: #667eea;
+  color: #8b5cf6;
   margin: 0 0 8px;
 }
 
@@ -1957,7 +1957,7 @@
 .boleta-tipo {
   display: inline-block;
   background: #eff6ff;
-  color: var(--color-primary, #6366f1);
+  color: var(--color-primary, #8b5cf6);
   padding: 0.35rem 1rem;
   border-radius: 100px;
   font-weight: 700;
@@ -2050,7 +2050,7 @@
 
 .btn-primary {
   width: 100%;
-  background: var(--color-primary, #6366f1);
+  background: var(--color-primary, #8b5cf6);
   color: white;
   border: none;
   padding: 1rem;
@@ -2073,7 +2073,7 @@
   height: 40px;
   margin: 0 auto;
   border: 4px solid rgba(0, 0, 0, 0.1);
-  border-left-color: var(--color-primary, #6366f1);
+  border-left-color: var(--color-primary, #8b5cf6);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -2103,11 +2103,11 @@
   border-radius: 16px;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, #eef2ff 0%, #ede9fe 100%);
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
   border: 1px solid #dbe4ff;
   font-size: 1.9rem;
   line-height: 1;
-  color: #6366f1;
+  color: #8b5cf6;
   margin: 0 auto 0.95rem;
 }
 
@@ -2139,9 +2139,9 @@
   padding: 0.55rem 1rem;
   min-height: 42px;
   border-radius: var(--ec-radius-control, 8px);
-  border: 1px solid var(--ec-accent-border, #c7d2fe);
-  background: var(--ec-accent-soft, #eef2ff);
-  color: #4338ca;
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
+  background: var(--ec-accent-soft, #f5f3ff);
+  color: #7c3aed;
   font-weight: 700;
   font-size: 0.84rem;
   text-decoration: none;
@@ -2151,8 +2151,8 @@
 
 .empty-state__cta.btn-primary:hover {
   transform: none;
-  background: #e0e7ff;
-  border-color: #a5b4fc;
+  background: #ede9fe;
+  border-color: #b4bdf0;
   color: #3730a3;
   filter: none;
 }
@@ -2419,9 +2419,9 @@
   display: inline-block;
   font-size: 0.875rem;
   font-weight: 700;
-  color: #4f46e5;
+  color: #8b5cf6;
   padding: 0.15rem 0.55rem;
-  background: #eef2ff;
+  background: #f5f3ff;
   border-radius: 999px;
 }
 
@@ -2488,7 +2488,7 @@
 }
 
 .section-traslados-title .material-icons {
-  color: #6366f1;
+  color: #8b5cf6;
 }
 
 .section-traslados-desc {
@@ -2546,8 +2546,8 @@
 }
 
 .producto-item-card--clickable:hover {
-  border-color: #a5b4fc;
-  box-shadow: 0 10px 24px -14px rgba(99, 102, 241, 0.45);
+  border-color: #b4bdf0;
+  box-shadow: 0 10px 24px -14px rgba(139, 92, 246, 0.45);
 }
 
 .producto-item-card--clickable:active {
@@ -2566,7 +2566,7 @@
   height: 3.5rem;
   border-radius: 12px;
   overflow: hidden;
-  background: #eef2ff;
+  background: #f5f3ff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2579,7 +2579,7 @@
 }
 
 .producto-item-card__media .material-icons {
-  color: #6366f1;
+  color: #8b5cf6;
   font-size: 1.45rem;
 }
 
@@ -2727,7 +2727,7 @@
   gap: 0.28rem;
   border: none;
   background: transparent;
-  color: var(--color-primary, #4338ca);
+  color: var(--color-primary, #7c3aed);
   font-family: inherit;
   font-size: 0.82rem;
   font-weight: 700;
@@ -2837,11 +2837,11 @@
 }
 
 .traslado-pendiente-card {
-  background: linear-gradient(135deg, #eef2ff 0%, #fff 100%);
-  border: 1px solid #c7d2fe;
+  background: linear-gradient(135deg, #f5f3ff 0%, #fff 100%);
+  border: 1px solid #ddd6fe;
   border-radius: 16px;
   padding: 1.25rem 1.5rem;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.12);
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.12);
 }
 
 .traslado-pendiente-head {
@@ -2854,7 +2854,7 @@
 
 .traslado-email {
   font-size: 0.85rem;
-  color: #4338ca;
+  color: #7c3aed;
   font-weight: 600;
 }
 
@@ -2904,7 +2904,7 @@
 }
 
 .traslado-pendiente-actions .btn-primary {
-  background: #6366f1;
+  background: #8b5cf6;
   color: #fff;
 }
 
@@ -3053,7 +3053,7 @@
 
 .asignar-palco-summary-lead {
   font-size: 1.15rem !important;
-  color: #6366f1;
+  color: #8b5cf6;
 }
 
 .asignar-palco-chev {
@@ -3110,7 +3110,7 @@
 }
 
 .asignar-option--correo .material-icons:first-of-type {
-  color: #4f46e5;
+  color: #8b5cf6;
 }
 
 .asignar-option--yo .material-icons:first-of-type {
@@ -3118,13 +3118,13 @@
 }
 
 .asignar-option:hover:not(:disabled) {
-  border-color: #a5b4fc;
+  border-color: #b4bdf0;
   background: #fff;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.08);
 }
 
 .asignar-option:focus-visible {
-  outline: 2px solid #6366f1;
+  outline: 2px solid #8b5cf6;
   outline-offset: 2px;
 }
 
@@ -3269,9 +3269,9 @@
 
 .traslado-modal-field input:focus {
   outline: none;
-  border-color: #818cf8;
+  border-color: #8b9aef;
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.22);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.22);
 }
 
 .traslado-modal-actions {
@@ -3307,12 +3307,12 @@
   padding: 0.65rem 1.35rem;
   border-radius: 12px;
   border: none;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #8b5cf6 100%);
   color: #fff;
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
   transition: filter 0.2s, transform 0.15s, box-shadow 0.2s;
 }
 

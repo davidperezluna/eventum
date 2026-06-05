@@ -73,7 +73,7 @@ import { Usuario } from '../../types';
 
     .spinner {
       border: 4px solid #f3f3f3;
-      border-top: 4px solid #667eea;
+      border-top: 4px solid #8b5cf6;
       border-radius: 50%;
       width: 50px;
       height: 50px;

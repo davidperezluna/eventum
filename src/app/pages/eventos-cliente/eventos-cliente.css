@@ -1,4 +1,4 @@
-/* ============================================
+﻿/* ============================================
    EVENTOS CLIENTE — UI cliente (--ec-*)
    ============================================ */
 
@@ -58,8 +58,8 @@
 }
 
 .eventos-search:focus-within {
-  border-color: var(--ec-accent-border, #c7d2fe);
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+  border-color: var(--ec-accent-border, #ddd6fe);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
 }
 
 .eventos-search__icon {
@@ -102,9 +102,10 @@
   --cat-surface: var(--ec-surface, #fff);
   --cat-surface-hover: var(--ec-chip-hover, #f1f5f9);
   --cat-surface-active: var(--cat-surface);
-  --cat-icon-bg: var(--color-secondary, #667eea);
-  --cat-active-border: var(--ec-accent-border, #c7d2fe);
-  --cat-active-ring: rgba(79, 70, 229, 0.08);
+  --cat-icon-bg: var(--ec-accent-soft, #f5f3ff);
+  --cat-icon-color: var(--color-secondary, #8b5cf6);
+  --cat-active-border: var(--ec-accent-border, #ddd6fe);
+  --cat-active-ring: rgba(139, 92, 246, 0.08);
   --cat-gap: 0.65rem;
   --cat-min-w: 12.5rem;
   --cat-pad-block: 0.7rem;
@@ -181,9 +182,9 @@
   height: 3.25rem;
   margin-bottom: 0.85rem;
   border-radius: var(--ec-radius-control, 8px);
-  background: var(--ec-accent-soft, #eef2ff);
-  color: var(--ec-accent, #4f46e5);
-  border: 1px solid var(--ec-accent-border, #c7d2fe);
+  background: var(--ec-accent-soft, #f5f3ff);
+  color: var(--ec-accent, #8b5cf6);
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
 }
 
 .events-empty-icon-box ion-icon {
@@ -220,7 +221,7 @@
   border: 1px solid var(--ec-border, #e2e8f0);
   border-radius: var(--ec-radius-control, 8px);
   background: var(--ec-surface, #fff);
-  color: var(--ec-accent, #4f46e5);
+  color: var(--ec-accent, #8b5cf6);
   font-family: inherit;
   font-size: 0.875rem;
   font-weight: 600;
@@ -314,7 +315,7 @@
 
 .categories-section .nav-btn:hover {
   transform: translateY(-1px);
-  color: var(--cat-icon-bg);
+  color: var(--cat-icon-color);
   border-color: color-mix(in srgb, var(--color-primary-light) 28%, transparent);
   background: #fafafa;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
@@ -366,7 +367,7 @@
 }
 
 .categories-section .cat-nav:hover {
-  color: var(--cat-icon-bg);
+  color: var(--cat-icon-color);
   border-color: color-mix(in srgb, var(--color-primary-light) 30%, transparent);
   background: #fafafa;
 }
@@ -522,26 +523,27 @@
   flex-shrink: 0;
   border-radius: var(--ec-radius-badge, 6px);
   background: var(--cat-icon-bg);
-  color: #fff;
-  border: none;
+  color: var(--cat-icon-color);
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
   box-shadow: none;
   transition:
     transform 0.2s ease,
     background 0.2s ease,
-    filter 0.2s ease;
+    border-color 0.2s ease;
 }
 
 .categories-section .cat-card ion-icon {
   font-size: 1.5rem;
   width: 1.5rem;
   height: 1.5rem;
-  color: #fff;
-  opacity: 0.95;
-  transition: transform 0.2s ease;
+  color: var(--cat-icon-color);
+  opacity: 1;
+  transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .categories-section .cat-card:hover .icon-contain {
-  filter: brightness(1.05);
+  background: var(--ec-accent-hover, #ede9fe);
+  border-color: color-mix(in srgb, var(--cat-icon-color) 28%, transparent);
 }
 
 .categories-section .cat-card:hover ion-icon {
@@ -549,9 +551,9 @@
 }
 
 .categories-section .cat-card.active .icon-contain {
-  background: var(--cat-icon-bg);
-  filter: brightness(1.06);
-  transform: scale(1.04);
+  background: var(--ec-accent-hover, #ede9fe);
+  border-color: color-mix(in srgb, var(--cat-icon-color) 35%, transparent);
+  transform: scale(1.02);
 }
 
 .categories-section .cat-card.active:hover ion-icon {
@@ -696,17 +698,17 @@
 
 .event-card:hover {
   transform: translateY(-1px);
-  border-color: var(--ec-accent-border, #c7d2fe);
+  border-color: var(--ec-accent-border, #ddd6fe);
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
 }
 
 .event-card.featured-card {
-  border-color: var(--ec-accent-border, #c7d2fe);
+  border-color: var(--ec-accent-border, #ddd6fe);
   background: var(--ec-surface, #fff);
 }
 
 .event-card.featured-card:hover {
-  border-color: #a5b4fc;
+  border-color: var(--ec-accent-border, #ddd6fe);
 }
 
 .event-thumb {
@@ -847,7 +849,7 @@
 
 .products-panel .section-header h2 .material-icons {
   font-size: 1.1rem;
-  color: var(--color-secondary, #667eea);
+  color: var(--color-secondary, #8b5cf6);
 }
 
 .products-panel-subtitle {
@@ -1132,7 +1134,7 @@
   background: none;
   border: none;
   border-radius: 0;
-  color: var(--color-secondary, #667eea);
+  color: var(--color-secondary, #8b5cf6);
   font-family: inherit;
   font-size: 0.8125rem;
   font-weight: 600;
@@ -1483,7 +1485,7 @@
 
 .cupos-hub-icon {
   font-size: 1.35rem;
-  color: var(--color-secondary, #667eea);
+  color: var(--color-secondary, #8b5cf6);
   flex-shrink: 0;
 }
 
@@ -1523,15 +1525,15 @@
   font-weight: 700;
   line-height: 1.2;
   text-align: center;
-  color: #4338ca;
+  color: var(--ec-accent-strong, #7c3aed);
   text-decoration: none;
-  background: #eef2ff;
-  border: 1px solid #c7d2fe;
+  background: var(--ec-accent-soft, #f5f3ff);
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
   box-sizing: border-box;
 }
 
 .cupos-hub-link:hover {
-  background: #e0e7ff;
+  background: var(--ec-accent-hover, #ede9fe);
 }
 
 .cupos-hub-actions .cupos-hub-link:only-child {
@@ -1656,11 +1658,11 @@
 }
 
 .eventos-footer__link:hover {
-  color: var(--ec-accent, #4f46e5);
+  color: var(--ec-accent, #8b5cf6);
 }
 
 .eventos-footer__link:focus-visible {
-  outline: 2px solid var(--ec-accent-border, #c7d2fe);
+  outline: 2px solid var(--ec-accent-border, #ddd6fe);
   outline-offset: 2px;
   border-radius: 2px;
 }

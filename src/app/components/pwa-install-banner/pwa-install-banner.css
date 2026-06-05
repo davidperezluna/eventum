@@ -1,4 +1,4 @@
-.pwa-banner {
+﻿.pwa-banner {
   position: fixed;
   top: 0;
   left: 0;
@@ -21,7 +21,7 @@
   gap: 0.75rem 1rem;
   padding: 0.65rem 1rem;
   border-radius: var(--border-radius-md, 12px);
-  background: linear-gradient(135deg, var(--color-secondary, #667eea) 0%, var(--color-secondary-dark, #764ba2) 100%);
+  background: linear-gradient(135deg, var(--color-secondary, #8b5cf6) 0%, var(--color-secondary-dark, #a855f7) 100%);
   color: var(--color-text-inverse, #fff);
   box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.18));
 }
@@ -123,7 +123,7 @@
 .pwa-banner--ios .pwa-banner-inner {
   background: var(
     --gradient-button,
-    linear-gradient(135deg, var(--color-secondary, #667eea) 0%, var(--color-secondary-dark, #764ba2) 100%)
+    linear-gradient(135deg, var(--color-secondary, #8b5cf6) 0%, var(--color-secondary-dark, #a855f7) 100%)
   );
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
