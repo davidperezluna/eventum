@@ -112,22 +112,22 @@
       <div class="events-grid featured">
         <article *ngFor="let evento of eventosDestacados; trackBy: trackByEventoId" class="event-card featured-card"
           [routerLink]="['/detalle-evento', evento.id]">
-          <div class="event-thumb">
-            <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
-          </div>
-          <div class="event-body">
-            <h3 class="event-title">{{ evento.titulo }}</h3>
-            <div class="event-meta">
-              <span class="event-meta-line">
-                <span class="material-icons">place</span>
-                {{ evento.lugar?.nombre || 'Ubicación' }}
-              </span>
-              <span class="event-meta-line" *ngIf="evento.fecha_inicio">
-                <span class="material-icons">calendar_today</span>
-                {{ evento.fecha_inicio | dateFormat:'shortDate' }}
-              </span>
+          <div class="event-card__main">
+            <div class="event-thumb">
+              <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
             </div>
-            <div class="event-footer">
+            <div class="event-body">
+              <h3 class="event-title">{{ evento.titulo }}</h3>
+              <div class="event-meta">
+                <span class="event-meta-line">
+                  <span class="material-icons">place</span>
+                  {{ evento.lugar?.nombre || 'Ubicación' }}
+                </span>
+                <span class="event-meta-line" *ngIf="evento.fecha_inicio">
+                  <span class="material-icons">calendar_today</span>
+                  {{ evento.fecha_inicio | dateFormat:'shortDate' }}
+                </span>
+              </div>
               <div class="event-footer-main">
                 <span class="price">{{ formatCurrency(evento.precio_minimo) }}</span>
                 <span class="event-cta" aria-hidden="true">
@@ -135,38 +135,38 @@
                   <ion-icon name="arrow-forward-outline"></ion-icon>
                 </span>
               </div>
-              <nav
-                *ngIf="cuposEventumEnabled || tieneProductosEvento(evento.id)"
-                class="event-quick-actions"
-                aria-label="Accesos rápidos del evento"
-              >
-                <a
-                  *ngIf="cuposEventumEnabled"
-                  class="event-quick-action event-quick-action--cupos"
-                  [routerLink]="['/cupos-evento', evento.id]"
-                  (click)="$event.stopPropagation()"
-                  [attr.aria-label]="cuposLabels.tablonAria"
-                  [attr.title]="cuposLabels.tablon"
-                >
-                  <span class="material-icons" aria-hidden="true">forum</span>
-                  <span class="event-quick-action__label">{{ cuposLabels.tablon }}</span>
-                </a>
-                <a
-                  *ngIf="tieneProductosEvento(evento.id)"
-                  class="event-quick-action event-quick-action--productos"
-                  [class.event-quick-action--activo]="precioEventoActivo(evento)"
-                  [routerLink]="['/detalle-evento', evento.id]"
-                  [queryParams]="{ tab: 'productos' }"
-                  (click)="$event.stopPropagation()"
-                  [attr.aria-label]="getProductosChipCardLabel(evento)"
-                  [attr.title]="getProductosChipCardLabel(evento)"
-                >
-                  <span class="material-icons" aria-hidden="true">storefront</span>
-                  <span class="event-quick-action__label">{{ getProductosChipShortLabel(evento) }}</span>
-                </a>
-              </nav>
             </div>
           </div>
+          <nav
+            *ngIf="cuposEventumEnabled || tieneProductosEvento(evento.id)"
+            class="event-quick-actions"
+            aria-label="Accesos rápidos del evento"
+          >
+            <a
+              *ngIf="cuposEventumEnabled"
+              class="event-quick-action event-quick-action--cupos"
+              [routerLink]="['/cupos-evento', evento.id]"
+              (click)="$event.stopPropagation()"
+              [attr.aria-label]="cuposLabels.tablonAria"
+              [attr.title]="cuposLabels.tablon"
+            >
+              <span class="material-icons" aria-hidden="true">forum</span>
+              <span class="event-quick-action__label">{{ cuposLabels.tablon }}</span>
+            </a>
+            <a
+              *ngIf="tieneProductosEvento(evento.id)"
+              class="event-quick-action event-quick-action--productos"
+              [class.event-quick-action--activo]="precioEventoActivo(evento)"
+              [routerLink]="['/detalle-evento', evento.id]"
+              [queryParams]="{ tab: 'productos' }"
+              (click)="$event.stopPropagation()"
+              [attr.aria-label]="getProductosChipCardLabel(evento)"
+              [attr.title]="getProductosChipCardLabel(evento)"
+            >
+              <span class="material-icons" aria-hidden="true">storefront</span>
+              <span class="event-quick-action__label">{{ getProductosChipShortLabel(evento) }}</span>
+            </a>
+          </nav>
         </article>
       </div>
     </section>
@@ -180,22 +180,22 @@
       <div class="events-grid">
         <article *ngFor="let evento of eventosRegulares; trackBy: trackByEventoId" class="event-card"
           [routerLink]="['/detalle-evento', evento.id]">
-          <div class="event-thumb">
-            <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
-          </div>
-          <div class="event-body">
-            <h3 class="event-title">{{ evento.titulo }}</h3>
-            <div class="event-meta">
-              <span class="event-meta-line">
-                <span class="material-icons">place</span>
-                {{ evento.lugar?.nombre || 'Ubicación' }}
-              </span>
-              <span class="event-meta-line">
-                <span class="material-icons">calendar_today</span>
-                {{ evento.fecha_inicio | dateFormat:'shortDate' }}
-              </span>
+          <div class="event-card__main">
+            <div class="event-thumb">
+              <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
             </div>
-            <div class="event-footer">
+            <div class="event-body">
+              <h3 class="event-title">{{ evento.titulo }}</h3>
+              <div class="event-meta">
+                <span class="event-meta-line">
+                  <span class="material-icons">place</span>
+                  {{ evento.lugar?.nombre || 'Ubicación' }}
+                </span>
+                <span class="event-meta-line">
+                  <span class="material-icons">calendar_today</span>
+                  {{ evento.fecha_inicio | dateFormat:'shortDate' }}
+                </span>
+              </div>
               <div class="event-footer-main">
                 <span class="price">{{ formatCurrency(evento.precio_minimo) }}</span>
                 <span class="event-cta" aria-hidden="true">
@@ -203,38 +203,38 @@
                   <ion-icon name="arrow-forward-outline"></ion-icon>
                 </span>
               </div>
-              <nav
-                *ngIf="cuposEventumEnabled || tieneProductosEvento(evento.id)"
-                class="event-quick-actions"
-                aria-label="Accesos rápidos del evento"
-              >
-                <a
-                  *ngIf="cuposEventumEnabled"
-                  class="event-quick-action event-quick-action--cupos"
-                  [routerLink]="['/cupos-evento', evento.id]"
-                  (click)="$event.stopPropagation()"
-                  [attr.aria-label]="cuposLabels.tablonAria"
-                  [attr.title]="cuposLabels.tablon"
-                >
-                  <span class="material-icons" aria-hidden="true">forum</span>
-                  <span class="event-quick-action__label">{{ cuposLabels.tablon }}</span>
-                </a>
-                <a
-                  *ngIf="tieneProductosEvento(evento.id)"
-                  class="event-quick-action event-quick-action--productos"
-                  [class.event-quick-action--activo]="precioEventoActivo(evento)"
-                  [routerLink]="['/detalle-evento', evento.id]"
-                  [queryParams]="{ tab: 'productos' }"
-                  (click)="$event.stopPropagation()"
-                  [attr.aria-label]="getProductosChipCardLabel(evento)"
-                  [attr.title]="getProductosChipCardLabel(evento)"
-                >
-                  <span class="material-icons" aria-hidden="true">storefront</span>
-                  <span class="event-quick-action__label">{{ getProductosChipShortLabel(evento) }}</span>
-                </a>
-              </nav>
             </div>
           </div>
+          <nav
+            *ngIf="cuposEventumEnabled || tieneProductosEvento(evento.id)"
+            class="event-quick-actions"
+            aria-label="Accesos rápidos del evento"
+          >
+            <a
+              *ngIf="cuposEventumEnabled"
+              class="event-quick-action event-quick-action--cupos"
+              [routerLink]="['/cupos-evento', evento.id]"
+              (click)="$event.stopPropagation()"
+              [attr.aria-label]="cuposLabels.tablonAria"
+              [attr.title]="cuposLabels.tablon"
+            >
+              <span class="material-icons" aria-hidden="true">forum</span>
+              <span class="event-quick-action__label">{{ cuposLabels.tablon }}</span>
+            </a>
+            <a
+              *ngIf="tieneProductosEvento(evento.id)"
+              class="event-quick-action event-quick-action--productos"
+              [class.event-quick-action--activo]="precioEventoActivo(evento)"
+              [routerLink]="['/detalle-evento', evento.id]"
+              [queryParams]="{ tab: 'productos' }"
+              (click)="$event.stopPropagation()"
+              [attr.aria-label]="getProductosChipCardLabel(evento)"
+              [attr.title]="getProductosChipCardLabel(evento)"
+            >
+              <span class="material-icons" aria-hidden="true">storefront</span>
+              <span class="event-quick-action__label">{{ getProductosChipShortLabel(evento) }}</span>
+            </a>
+          </nav>
         </article>
 
         <!-- Empty State -->
