@@ -747,26 +747,11 @@
   box-sizing: border-box;
   background: linear-gradient(
     180deg,
-    #8b5cf6 0%,
-    #9b7cfa 0.85rem,
-    #c4b5fd 1.5rem,
-    #f5f3ff 2.35rem,
+    #f5f3ff 0%,
     #ffffff 100%
   );
   border-bottom: 1px solid rgba(139, 92, 246, 0.14);
   box-shadow: 0 4px 14px rgba(139, 92, 246, 0.07);
-}
-
-/* Cubre el “hairline” entre status bar (theme-color) y el contenido */
-.client-header::before {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: #8b5cf6;
-  pointer-events: none;
 }
 
 .client-header::after {
