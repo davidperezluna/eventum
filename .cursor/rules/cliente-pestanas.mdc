@@ -1,0 +1,160 @@
+---
+description: Estructura y estilos para nuevas pestañas y páginas del área cliente (Eventum)
+globs: src/app/pages/**/*.html,src/app/pages/**/*.ts,src/app/pages/**/*.css,src/app/components/**/*.html,src/app/components/**/*.css
+alwaysApply: false
+---
+
+# Pestañas y páginas cliente — Eventum
+
+Referencia canónica: módulo **Cupos** (`cupos-explorar`, `cupos-evento`, `mis-cupos`). Reutiliza estas clases y patrones; no inventes otro sistema de tabs.
+
+## Tokens y estilos base
+
+- Tokens globales: `src/styles/client-tokens.css` (`--ec-*`, violeta `#8b5cf6`).
+- Estilos compartidos de pestañas y layout: `src/app/pages/cupos-evento/cupos-evento.css`.
+- Estilos extra por página: CSS propio mínimo; importar el base antes del específico.
+- Iconos: **Material Icons** (`material-icons`), nunca emojis en UI.
+
+```typescript
+// styleUrls típico
+styleUrls: ['./mi-pagina.css', '../cupos-evento/cupos-evento.css']
+```
+
+## Jerarquía de navegación (3 niveles)
+
+| Nivel | Componente / clase | Uso |
+|-------|-------------------|-----|
+| 1 — Hub módulo | `app-cupos-hub-nav` | Tabs entre secciones del módulo (Explorar / Mis avisos / Eventos). |
+| 2 — Vista local | `.cupos-segmented.cupos-segmented--vista` | Sub-pestañas dentro de una página (ej. Avisos del evento / Mis avisos aquí). |
+| 3 — Filtros | `.cupos-toolbar` > `.cupos-segmented.cupos-segmented--filters` | Chips de filtro opcionales bajo la vista. |
+
+**Espaciado obligatorio:** todo el contenido bajo `.cupos-content-shell` (flex column + `gap`). En móvil, páginas con varias filas de menú usan `gap: 1rem`. No uses márgenes negativos entre filas de menú.
+
+## Plantilla HTML — página con pestañas
+
+```html
+<div class="cupos-page cupos-page--evento">
+  <!-- Subpágina con contexto (evento, detalle): --subpage + enlace atrás -->
+  <header class="client-page-header client-page-header--compact client-page-header--subpage cupos-page-header">
+    <a routerLink="/ruta-padre" class="cupos-page-back">
+      <span class="material-icons" aria-hidden="true">arrow_back</span>
+      Volver
+    </a>
+    <h1 class="client-page-header__title">Título</h1>
+    <p class="client-page-header__subtitle client-page-header__subtitle--full">Subtítulo largo.</p>
+    <p class="client-page-header__subtitle client-page-header__subtitle--short">Subtítulo corto móvil.</p>
+  </header>
+
+  <div class="cupos-content-shell">
+    <app-cupos-hub-nav seccion="evento" [respuestasCupos]="0" />
+
+    <!-- Nivel 2: vista local (botones, no routerLink) -->
+    <nav class="cupos-segmented cupos-segmented--vista" aria-label="Vista">
+      <button type="button" class="cupos-segmented-tab" [class.active]="vista === 'a'" (click)="setVista('a')">
+        <span class="material-icons" aria-hidden="true">forum</span>
+        Pestaña A
+      </button>
+      <button type="button" class="cupos-segmented-tab" [class.active]="vista === 'b'" (click)="setVista('b')">
+        <span class="material-icons" aria-hidden="true">campaign</span>
+        Pestaña B
+      </button>
+    </nav>
+
+    <!-- Nivel 3: filtros (opcional) -->
+    <div class="cupos-toolbar" *ngIf="vista === 'a'">
+      <div class="cupos-segmented cupos-segmented--filters" role="tablist" aria-label="Filtrar">
+        <button type="button" class="cupos-segmented-tab" [class.active]="filtro === 'todos'" (click)="setFiltro('todos')">
+          Todos
+        </button>
+        <!-- En filtros: label corto + largo para responsive -->
+        <button type="button" class="cupos-segmented-tab" [class.active]="filtro === 'x'" (click)="setFiltro('x')">
+          <span class="material-icons" aria-hidden="true">icon</span>
+          <span class="cupos-segmented-tab-label cupos-segmented-tab-label--short">Corto</span>
+          <span class="cupos-segmented-tab-label cupos-segmented-tab-label--full">Etiqueta completa</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Contenido: loading / empty / lista -->
+    <div *ngIf="loading" class="cupos-loading">…</div>
+    <div *ngIf="!loading && vacio" class="cupos-empty">…</div>
+    <div class="cupos-list" *ngIf="!loading && !vacio">…</div>
+  </div>
+</div>
+```
+
+### Variante — hub principal (sin subpágina)
+
+- Header: `client-page-header--in-nav` (sin enlace atrás).
+- Hub nav: `seccion="explorar"` o `seccion="mis"`.
+- Ejemplo: `cupos-explorar.html`, `mis-cupos.html`.
+
+## Plantilla TS — página standalone
+
+```typescript
+@Component({
+  selector: 'app-mi-pagina',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule, CuposHubNav],
+  templateUrl: './mi-pagina.html',
+  styleUrls: ['./mi-pagina.css', '../cupos-evento/cupos-evento.css'],
+})
+export class MiPagina implements OnInit {
+  readonly labels = MI_LABELS; // textos en archivo *-labels.ts del módulo
+
+  requiereLogin(motivo: string): boolean {
+    if (this.authService.getCurrentUser()) return true;
+    irALoginCliente(this.router, '/mi-ruta', motivo);
+    return false;
+  }
+
+  setVista(v: Vista): void {
+    if (v === 'protegida' && !this.requiereLogin('mi-motivo')) return;
+    this.vista = v;
+  }
+}
+```
+
+## Login y sesión (obligatorio)
+
+- **Nunca** popup SweetAlert ni banner inline para pedir login.
+- **Siempre** `irALoginCliente(router, returnUrl, motivo)` desde `src/app/core/login-redirect.ts`.
+- Añadir textos nuevos en `LOGIN_MOTIVO_TEXTO` y rutas permitidas en `auth.service.ts` → `esReturnUrlPermitidaCliente`.
+- Páginas cliente van en rutas **públicas** del `Layout` (sin `authGuard`). La sesión se valida en la acción, no en el guard.
+- Hub nav “Mis avisos” sin sesión: `onMisAvisosClick` en `cupos-hub-nav` (no dejar que `authGuard` mande a `/login-admin`).
+
+## Rutas (`app.routes.ts`)
+
+```typescript
+// Bloque público Layout — cliente sin authGuard
+{ path: 'mi-modulo', component: MiPagina },
+{ path: 'mi-modulo/:id', component: MiDetalle },
+```
+
+- Feature flags: guard propio (`canActivate: [miFeatureGuard]`) que redirige a `/eventos-cliente`, no `authGuard`.
+- Registrar `returnUrl` en `esReturnUrlPermitidaCliente` si es nueva raíz.
+
+## Textos y accesibilidad
+
+- Centralizar copy en `src/app/core/*-labels.ts` (ver `cupos-labels.ts`).
+- Subtítulo largo + corto (`--full` / `--short`); en móvil se intercambian por CSS.
+- Cada `nav`/`tablist` lleva `aria-label`. Tab activa: `[class.active]` + `aria-current="page"` en links del hub.
+- Badges de contador: clase `cupos-segmented-badge` o `cupos-hub-nav-badge`.
+
+## Checklist al crear pestañas nuevas
+
+1. ¿Reutiliza `.cupos-page` + `.cupos-content-shell` + `.cupos-segmented-*`?
+2. ¿Header con `--full` y `--short`?
+3. ¿Hub nav con `seccion` correcta si aplica al módulo cupos?
+4. ¿`gap` entre filas de menú (sin márgenes negativos)?
+5. ¿Acciones protegidas usan `requiereLogin` + `irALoginCliente`?
+6. ¿Ruta pública + `returnUrl` permitida post-OAuth?
+7. ¿Solo tokens `--ec-*` y CSS existente antes de añadir estilos nuevos?
+
+## No hacer
+
+- Tabs con Bootstrap, PrimeNG o estilos admin del panel.
+- Duplicar clases `.cupos-segmented-tab` con otro nombre.
+- Poner páginas cliente detrás de `authGuard` (redirige a `/login-admin`).
+- `alertService.warning` para “inicia sesión”.
+- Omitir estados `cupos-loading` / `cupos-empty`.
