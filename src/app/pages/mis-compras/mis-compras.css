@@ -3,78 +3,63 @@
    ============================================ */
 
 .mis-compras-page {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  color: var(--color-text-primary);
-  background: linear-gradient(180deg, #f1f5f9 0%, #f8fafc 22%, #f8fafc 100%);
+  font-family: inherit;
+  color: var(--ec-text-primary, var(--color-text-primary));
+  background: var(--ec-page-bg);
   min-height: 100vh;
   padding-bottom: 4rem;
+  --mc-gutter: var(--ec-content-pad);
+  --mc-block-max: var(--ec-content-max);
 }
 
-/* Hero Section (copied & adapted from EventosCliente) */
-.hero-section {
-  position: relative;
-  background: linear-gradient(135deg, #1f2340 0%, #262b52 58%, #30266c 100%);
-  color: white;
-  padding: 3rem 1rem;
-  text-align: center;
-  overflow: hidden;
-  margin-bottom: 2rem;
-  border-bottom-right-radius: 2rem;
-  border-bottom-left-radius: 2rem;
-  box-shadow: 0 10px 30px -10px rgba(30, 30, 47, 0.5);
+.mis-compras-page .client-page-header {
+  max-width: var(--mc-block-max);
+  padding-left: var(--mc-gutter);
+  padding-right: var(--mc-gutter);
 }
 
-.hero-section::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -20%;
-  width: 140%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.2) 0%, rgba(0, 0, 0, 0) 60%);
-  pointer-events: none;
+.mis-compras-page .client-page-header--compact {
+  padding-top: 0.9rem;
+  padding-bottom: 0.55rem;
 }
 
-.hero-content {
-  position: relative;
-  z-index: 2;
-  max-width: 800px;
-  margin: 0 auto;
+.mis-compras-page .client-page-header--compact + .guia-entradas-section,
+.mis-compras-page .client-page-header--compact + .mis-compras-productos-promo,
+.mis-compras-page .client-page-header--compact + .filters-toolbar,
+.mis-compras-page .client-page-header--subpage + .actividad-page-section {
+  margin-top: 0.4rem;
 }
 
-.hero-title {
-  font-size: 2.5rem;
-  font-weight: 800;
-  margin-bottom: 0.5rem;
-  letter-spacing: -1px;
-}
+@media (min-width: 769px) {
+  .mis-compras-page .client-page-header--in-nav {
+    display: none;
+  }
 
-.gradient-text {
-  background: linear-gradient(to right, #818cf8, #c084fc);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
+  .mis-compras-page .client-page-header--in-nav + * {
+    margin-top: 1.15rem;
+  }
 
-.hero-subtitle {
-  font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 0;
-}
+  .mis-compras-page .client-page-header--subpage {
+    padding-top: 1.1rem;
+    padding-bottom: 0.6rem;
+  }
 
-.hero-section.mini-hero {
-  padding: 1.35rem 1rem;
-  margin: 0 auto 1rem;
-  max-width: 1200px;
-  border-radius: 0 0 1.15rem 1.15rem;
-  box-shadow: 0 10px 24px -14px rgba(30, 30, 47, 0.5);
+  .mis-compras-page .client-page-header--subpage + .actividad-page-section {
+    margin-top: 0.55rem;
+  }
+
+  .mis-compras-page .mc-evento-detalle-header {
+    padding-top: 1rem;
+    padding-bottom: 0.55rem;
+  }
 }
 
 /* Guía de asignación y traslado de entradas */
 .guia-entradas-section {
-  max-width: 1200px;
-  margin: 0 auto 1rem;
-  padding: 0 1rem;
+  max-width: var(--mc-block-max);
+  margin: 0 auto 0.85rem;
+  padding: 0 var(--mc-gutter);
+  box-sizing: border-box;
 }
 
 .guia-resumen-card {
@@ -162,6 +147,204 @@
   color: #334155;
 }
 
+/* Promo productos — fila táctil alineada con tarjetas de evento */
+.mis-compras-productos-promo {
+  max-width: var(--mc-block-max);
+  margin: 0 auto 0.85rem;
+  padding: 0 var(--mc-gutter);
+  box-sizing: border-box;
+}
+
+.mis-compras-productos-promo__row,
+.mis-compras-productos-promo__skeleton {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 3.35rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: var(--ec-radius-card, 12px);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: var(--ec-surface, #fff);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-sizing: border-box;
+}
+
+.mis-compras-productos-promo__row {
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mis-compras-productos-promo__row:hover {
+  background: var(--ec-chip-hover, #f1f5f9);
+  border-color: rgba(15, 23, 42, 0.12);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.mis-compras-productos-promo__row:active {
+  background: var(--ec-surface-muted, #f1f5f9);
+}
+
+.mis-compras-productos-promo__icon-wrap {
+  flex-shrink: 0;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: var(--ec-radius-control, 8px);
+  background: var(--ec-accent-soft, #eef2ff);
+  border: 1px solid var(--ec-accent-border, #c7d2fe);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mis-compras-productos-promo__icon {
+  font-size: 1.15rem;
+  color: var(--ec-accent, #4f46e5);
+}
+
+.mis-compras-productos-promo__copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.mis-compras-productos-promo__kicker {
+  font-size: 0.68rem;
+  font-weight: var(--ec-font-weight-label, 600);
+  color: var(--ec-text-subtle, #94a3b8);
+  line-height: 1.2;
+}
+
+.mis-compras-productos-promo__title {
+  display: block;
+  font-size: 0.84rem;
+  font-weight: var(--ec-font-weight-title, 800);
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--ec-text-primary, #0f172a);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mis-compras-productos-promo__meta {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: var(--ec-font-weight-body, 500);
+  line-height: 1.3;
+  color: var(--ec-text-muted, #64748b);
+}
+
+.mis-compras-productos-promo__cta {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  font-size: 0.78rem;
+  font-weight: var(--ec-font-weight-label, 600);
+  color: var(--ec-accent, #4f46e5);
+  opacity: 0.85;
+}
+
+.mis-compras-productos-promo__cta .material-icons {
+  font-size: 1rem;
+}
+
+.mis-compras-productos-promo__row:hover .mis-compras-productos-promo__cta {
+  opacity: 1;
+}
+
+.mis-compras-productos-promo__skeleton {
+  pointer-events: none;
+}
+
+.mis-compras-productos-promo__skeleton-icon {
+  flex-shrink: 0;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: var(--ec-radius-control, 8px);
+  background: var(--ec-surface-muted, #f1f5f9);
+}
+
+.mis-compras-productos-promo__skeleton-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.mis-compras-productos-promo__skeleton-line {
+  display: block;
+  height: 0.62rem;
+  border-radius: var(--ec-radius-badge, 6px);
+  background: var(--ec-surface-muted, #f1f5f9);
+}
+
+.mis-compras-productos-promo__skeleton-line--short {
+  width: 55%;
+  height: 0.5rem;
+}
+
+@keyframes mc-promo-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.mis-compras-productos-promo__skeleton-icon,
+.mis-compras-productos-promo__skeleton-line {
+  animation: mc-promo-skeleton-pulse 1.2s ease-in-out infinite;
+}
+
+/* Separador antes del listado de eventos */
+.mis-compras-eventos-section {
+  margin-top: 0.35rem;
+}
+
+.mis-compras-eventos-section::before {
+  content: '';
+  display: block;
+  width: calc(100% - (2 * var(--mc-gutter)));
+  max-width: calc(var(--mc-block-max) - (2 * var(--mc-gutter)));
+  margin: 0.25rem auto 0.75rem;
+  border-top: 1px solid var(--ec-border);
+}
+
+.mis-compras-eventos-heading {
+  max-width: var(--mc-block-max);
+  margin: 0 auto 0.75rem;
+  padding: 0 var(--mc-gutter);
+  box-sizing: border-box;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.mis-compras-eventos-heading h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  color: var(--ec-text-primary);
+}
+
+.mis-compras-eventos-heading p {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--ec-text-subtle);
+  font-weight: 600;
+}
+
 .guia-entradas-details {
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -201,7 +384,7 @@
 .guia-entradas-summary-text strong {
   font-size: 0.96rem;
   color: #1e293b;
-  font-weight: 650;
+  font-weight: 700;
 }
 
 .guia-entradas-summary-text small {
@@ -221,8 +404,13 @@
 }
 
 .guia-entradas-body {
-  padding: 0 1.15rem 1.25rem;
+  padding: 0 0.95rem 0.95rem;
   border-top: 1px solid #f1f5f9;
+}
+
+.guia-entradas-body .guia-resumen-list {
+  margin-top: 0.75rem;
+  margin-bottom: 0.65rem;
 }
 
 .guia-entradas-reglas {
@@ -368,9 +556,10 @@
 
 /* Vista Actividad (ruta /mis-compras/actividad) */
 .actividad-page-section {
-  max-width: 1100px;
-  margin: 0 auto 2.5rem;
-  padding: 0 1rem;
+  max-width: var(--mc-block-max);
+  margin: 0 auto 2rem;
+  padding: 0 var(--mc-gutter);
+  box-sizing: border-box;
 }
 
 .actividad-page-section .traslados-table-wrap {
@@ -384,9 +573,9 @@
 }
 
 .actividad-card {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 1rem;
+  background: var(--ec-surface);
+  border: 1px solid var(--ec-border-strong);
+  border-radius: var(--ec-radius-card);
   padding: 0.9rem 0.95rem;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   display: flex;
@@ -405,9 +594,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  border-radius: 999px;
-  padding: 0.28rem 0.58rem;
-  font-size: 0.74rem;
+  border-radius: var(--ec-radius-badge);
+  padding: 0.24rem 0.52rem;
+  font-size: 0.72rem;
   font-weight: 700;
   border: 1px solid transparent;
   line-height: 1.15;
@@ -461,7 +650,7 @@
 }
 
 .actividad-card-meta {
-  border-top: 1px dashed #e2e8f0;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
   padding-top: 0.65rem;
   display: grid;
   grid-template-columns: 1fr;
@@ -475,11 +664,11 @@
 }
 
 .actividad-meta-label {
-  font-size: 0.68rem;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 700;
+  font-size: 0.72rem;
+  color: var(--ec-text-subtle, #94a3b8);
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: var(--ec-font-weight-label, 600);
 }
 
 .actividad-meta-item strong {
@@ -490,13 +679,14 @@
 
 .actividad-page-vacio {
   margin: 0;
-  padding: 1.5rem 1.25rem;
+  padding: 1.25rem 1rem;
   text-align: center;
-  font-size: 0.95rem;
-  color: #64748b;
-  background: #fff;
-  border-radius: 12px;
-  border: 1px dashed #e2e8f0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--ec-text-muted);
+  background: var(--ec-surface);
+  border-radius: var(--ec-radius-card);
+  border: 1px solid var(--ec-border-strong);
 }
 
 /* Base Wrapper for Content */
@@ -541,6 +731,13 @@
   background: #f8fafc;
 }
 
+.mis-compras-page .compras-list.eventos-list {
+  max-width: var(--mc-block-max);
+  margin: 0 auto;
+  padding: 0 var(--mc-gutter);
+  box-sizing: border-box;
+}
+
 .compras-list {
   max-width: 1200px;
   margin: 0 auto;
@@ -568,12 +765,12 @@
 
 .filter-group label {
   display: block;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: var(--ec-font-weight-label, 600);
+  color: var(--ec-text-muted, #64748b);
   margin-bottom: 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .select-input,
@@ -720,11 +917,11 @@
 
 .mis-compras-page .mc-event-card .event-title {
   margin: 0;
-  font-size: clamp(1.0625rem, 0.35vw + 1rem, 1.2rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.22;
-  color: #0f172a;
+  font-size: 1rem;
+  font-weight: var(--ec-font-weight-title, 800);
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--ec-text-primary, #0f172a);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -789,17 +986,17 @@
 .mis-compras-page .mc-event-card .mc-event-boletas-stat .total-label {
   display: block;
   margin-bottom: 0.15rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  color: #64748b;
-  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-weight: var(--ec-font-weight-label, 600);
+  letter-spacing: normal;
+  color: var(--ec-text-muted, #64748b);
+  text-transform: none;
 }
 
 .mis-compras-page .mc-event-card .mc-event-boletas-stat .total-value {
-  font-size: clamp(1rem, 0.2vw + 0.95rem, 1.125rem);
-  font-weight: 800;
-  color: var(--color-primary);
+  font-size: 1rem;
+  font-weight: var(--ec-font-weight-title, 800);
+  color: var(--ec-accent, var(--color-primary, #4f46e5));
   letter-spacing: -0.02em;
   line-height: 1.2;
 }
@@ -938,114 +1135,178 @@
 }
 
 .evento-detalle-page {
-  max-width: 1200px;
+  max-width: var(--mc-block-max);
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 var(--mc-gutter);
+  box-sizing: border-box;
 }
 
-.evento-detalle-card {
-  margin-bottom: 1rem;
+.mis-compras-page .mc-evento-detalle-header {
+  max-width: none;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 0.75rem;
+  padding-bottom: 0.45rem;
 }
 
-.evento-detalle-hero {
-  margin-bottom: 0.85rem;
-  padding: 1rem 1.05rem;
-  border-radius: 1.15rem;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
-}
-
-.evento-detalle-hero__header {
-  margin-bottom: 0.75rem;
-}
-
-.evento-detalle-hero__title {
-  margin: 0 0 0.45rem;
-  font-size: clamp(1.05rem, 0.35vw + 1rem, 1.2rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.25;
-  color: #0f172a;
-}
-
-.evento-detalle-hero__meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.evento-detalle-hero__meta-line {
+.mc-page-back {
   display: inline-flex;
-  align-items: flex-start;
+  align-items: center;
+  gap: 0.2rem;
+  margin-bottom: 0.35rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--ec-text-muted, #64748b);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.mc-page-back:hover {
+  color: var(--ec-accent, #4f46e5);
+}
+
+.mc-page-back .material-icons {
+  font-size: 1.05rem;
+}
+
+.mc-evento-detalle-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.35rem;
-  font-size: 0.82rem;
-  color: #64748b;
+}
+
+.mc-evento-detalle-meta-sep {
+  color: var(--ec-text-subtle, #94a3b8);
+}
+
+.mc-evento-detalle-resumen {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  font-weight: var(--ec-font-weight-label, 600);
+  color: var(--ec-accent, #4f46e5);
   line-height: 1.4;
 }
 
-.evento-detalle-hero__meta-line .material-icons {
-  font-size: 1rem;
-  width: 1rem;
-  height: 1rem;
-  margin-top: 0.1rem;
-  color: #94a3b8;
-  flex-shrink: 0;
-}
-
-.evento-detalle-hero__resumen {
-  margin: 0.55rem 0 0;
-  font-size: 0.84rem;
-  font-weight: 600;
-  color: #4338ca;
-}
-
-.evento-detalle-hero__tipos {
+.mc-evento-detalle-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   margin-bottom: 0.75rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid #eef2f7;
 }
 
-.evento-detalle-hero__nav {
+.mc-evento-detalle-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.55rem;
+  border-radius: var(--ec-radius-badge, 6px);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.mc-evento-detalle-chip--info {
+  background: var(--ec-badge-info-bg, #e0e7ff);
+  color: var(--ec-badge-info-text, #4338ca);
+  border: 1px solid var(--ec-badge-info-border, rgba(102, 126, 234, 0.34));
+}
+
+.mc-evento-detalle-chip--success {
+  background: var(--ec-badge-success-bg, #dcfce7);
+  color: var(--ec-badge-success-text, #15803d);
+  border: 1px solid var(--ec-badge-success-border, rgba(22, 163, 74, 0.38));
+}
+
+.mis-compras-page .mc-segmented {
   display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.15rem;
+  border: 1px solid var(--ec-border, #e2e8f0);
+  background: var(--ec-surface-muted, #f1f5f9);
+  border-radius: var(--ec-radius-control, 8px);
+  padding: 0.18rem;
+  width: 100%;
+  margin-bottom: 0.75rem;
+  box-sizing: border-box;
 }
 
-.evento-detalle-hero__nav .badge-tabs {
-  margin-bottom: 0;
+.mis-compras-page .mc-segmented--status {
+  margin-bottom: 0.85rem;
+}
+
+.mis-compras-page .mc-segmented-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.28rem;
+  padding: 0.55rem 0.35rem;
+  min-height: 42px;
+  border: none;
+  border-radius: var(--ec-radius-badge, 6px);
+  background: transparent;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ec-text-muted, #64748b);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mis-compras-page .mc-segmented-tab .material-icons {
+  font-size: 1rem;
+  color: var(--ec-text-subtle, #94a3b8);
+  flex-shrink: 0;
+}
+
+.mis-compras-page .mc-segmented-tab.active {
+  color: var(--ec-text-body, #1e293b);
+  background: var(--ec-surface, #fff);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.mis-compras-page .mc-segmented-tab.active .material-icons {
+  color: var(--ec-accent, #4f46e5);
+}
+
+.mis-compras-page .mc-segmented-badge {
+  flex-shrink: 0;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.28rem;
+  border-radius: var(--ec-radius-badge, 6px);
+  background: rgba(15, 23, 42, 0.08);
+  color: inherit;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.1rem;
+  text-align: center;
+}
+
+.mis-compras-page .mc-segmented-tab.active .mc-segmented-badge {
+  background: var(--ec-accent-soft, #eef2ff);
+  color: var(--ec-accent, #4f46e5);
+}
+
+@media (hover: hover) {
+  .mis-compras-page .mc-segmented-tab:not(.active):hover {
+    background: rgba(255, 255, 255, 0.55);
+    color: #475569;
+  }
+}
+
+@media (min-width: 640px) {
+  .mis-compras-page .mc-segmented-tab {
+    font-size: 0.78rem;
+    padding: 0.62rem 0.55rem;
+    gap: 0.35rem;
+  }
 }
 
 .evento-detalle-content {
   margin-bottom: 0.85rem;
-}
-
-.btn-back-eventos {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-bottom: 1rem;
-  padding: 0;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  color: #475569;
-  font-weight: 700;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: color 0.2s ease, transform 0.15s ease;
-}
-
-.btn-back-eventos:hover {
-  color: #1e293b;
-  transform: translateX(-2px);
-}
-
-.btn-back-eventos .material-icons {
-  font-size: 1.1rem;
 }
 
 /* Pestañas seleccionables con estilo badge */
@@ -1853,7 +2114,7 @@
 .empty-state__title {
   margin: 0 0 0.5rem;
   font-size: 1.07rem;
-  font-weight: 650;
+  font-weight: 700;
   color: #1e293b;
   line-height: 1.3;
 }
@@ -1870,26 +2131,29 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
   width: fit-content;
   max-width: 100%;
   box-sizing: border-box;
-  margin-top: 1.1rem;
-  padding: 0.44rem 0.72rem;
-  border-radius: 999px;
-  border: 1px solid #dbe4ff;
-  background: #eef2ff;
+  margin-top: 1rem;
+  padding: 0.55rem 1rem;
+  min-height: 42px;
+  border-radius: var(--ec-radius-control, 8px);
+  border: 1px solid var(--ec-accent-border, #c7d2fe);
+  background: var(--ec-accent-soft, #eef2ff);
   color: #4338ca;
-  font-weight: 600;
-  font-size: 0.76rem;
+  font-weight: 700;
+  font-size: 0.84rem;
   text-decoration: none;
   box-shadow: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .empty-state__cta.btn-primary:hover {
   transform: none;
   background: #e0e7ff;
-  border-color: #c7d2fe;
+  border-color: #a5b4fc;
+  color: #3730a3;
   filter: none;
 }
 
@@ -1936,7 +2200,7 @@
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   overflow: hidden;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: inherit;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
@@ -3082,42 +3346,189 @@
     padding: 0 0 2rem;
   }
 
-  .hero-section.mini-hero {
-    padding: 0.95rem 0.9rem;
-    margin-bottom: 0.85rem;
-    border-bottom-right-radius: 0.9rem;
-    border-bottom-left-radius: 0.9rem;
+  .mis-compras-page {
+    --mc-gutter: 0.75rem;
   }
 
-  .hero-title {
-    font-size: 1.28rem;
-    margin-bottom: 0.35rem;
-    letter-spacing: -0.02em;
+  .mis-compras-page .client-page-header--compact {
+    padding-top: 0.8rem;
+    padding-bottom: 0.5rem;
   }
 
-  .hero-subtitle {
-    font-size: 0.79rem;
-    line-height: 1.42;
-    padding: 0 0.35rem;
+  .mis-compras-page .client-page-header--compact + .guia-entradas-section,
+  .mis-compras-page .client-page-header--compact + .mis-compras-productos-promo {
+    margin-top: 0.45rem;
   }
 
   .guia-entradas-section {
-    margin-bottom: 0.85rem;
-    padding: 0 0.75rem;
+    margin-bottom: 0.9rem;
   }
 
-  .actividad-page-section {
-    padding: 0 0.75rem;
+  .guia-entradas-summary {
+    padding: 0.9rem 0.85rem;
+  }
+
+  .mis-compras-productos-promo {
+    margin-bottom: 0.9rem;
+  }
+
+  .mis-compras-productos-promo__row,
+  .mis-compras-productos-promo__skeleton {
+    min-height: 3.5rem;
+    padding: 0.88rem 0.85rem;
+    gap: 0.55rem;
+  }
+
+  .mis-compras-productos-promo__icon-wrap {
+    width: 2.2rem;
+    height: 2.2rem;
+  }
+
+  .mis-compras-productos-promo__icon {
+    font-size: 1.05rem;
+  }
+
+  .mis-compras-productos-promo__title {
+    font-size: 0.8rem;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .mis-compras-productos-promo__cta {
+    font-size: 0.74rem;
+  }
+
+  .mis-compras-eventos-section {
+    margin-top: 0.4rem;
+  }
+
+  .mis-compras-eventos-section::before {
+    margin: 0.35rem auto 0.8rem;
+  }
+
+  .mis-compras-eventos-heading {
+    margin-bottom: 0.6rem;
+  }
+
+  .mis-compras-eventos-heading h2 {
+    font-size: 0.9rem;
+  }
+
+  .mis-compras-page .compras-list.eventos-list {
+    gap: 0.75rem;
+  }
+
+  .mis-compras-page .mc-event-card.compra-card {
+    border-radius: 1rem;
+  }
+
+  .mis-compras-page .mc-event-card.compra-card:hover {
+    transform: none;
+  }
+
+  .mis-compras-page .mc-event-card-toggle.evento-card-toggle {
+    padding: 0.88rem 0.85rem 0.82rem;
+  }
+
+  .mis-compras-page .mc-event-card .event-body {
+    gap: 0.32rem;
+  }
+
+  .mis-compras-page .mc-event-card .event-title {
+    font-size: 1rem;
+    -webkit-line-clamp: 2;
+  }
+
+  .mis-compras-page .mc-event-card .event-meta {
+    gap: 0.28rem;
+  }
+
+  .mis-compras-page .mc-event-card .event-meta-line {
+    white-space: normal;
+    align-items: flex-start;
+    line-height: 1.38;
+    font-size: 0.72rem;
+  }
+
+  .mis-compras-page .mc-event-card .event-meta-line .material-icons {
+    margin-top: 0.05rem;
+    font-size: 0.9rem;
+    width: 0.9rem;
+    height: 0.9rem;
+  }
+
+  .mis-compras-page .mc-event-card .compra-estados--event-card {
+    gap: 0.28rem 0.35rem;
+    margin-top: 0.35rem;
+  }
+
+  .mis-compras-page .mc-event-card .compra-estados--event-card .badge {
+    padding: 0.22rem 0.5rem;
+    font-size: 0.68rem;
+    border-radius: 6px;
+    font-weight: 600;
+    letter-spacing: 0;
+  }
+
+  .mis-compras-page .mc-event-card .event-footer {
+    margin-top: 0.35rem;
+    padding-top: 0.55rem;
+    align-items: center;
+  }
+
+  .mis-compras-page .mc-event-card .mc-event-boletas-stat .total-label {
+    font-size: 0.64rem;
+    margin-bottom: 0.1rem;
+  }
+
+  .mis-compras-page .mc-event-card .mc-event-boletas-stat .total-value {
+    font-size: 1.05rem;
+  }
+
+  .mis-compras-page .mc-event-card .event-cta {
+    opacity: 1;
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    gap: 0.2rem;
+  }
+
+  .mis-compras-page .mc-event-card .event-cta ion-icon {
+    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .mis-compras-page .client-page-header--subpage {
+    padding-top: 0.8rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .mis-compras-page .client-page-header--subpage + .actividad-page-section {
+    margin-top: 0.45rem;
   }
 
   .actividad-feed {
     grid-template-columns: 1fr;
-    gap: 0.7rem;
+    gap: 0.75rem;
   }
 
   .actividad-card {
-    padding: 0.82rem 0.82rem 0.85rem;
-    border-radius: 0.9rem;
+    padding: 0.88rem 0.85rem 0.9rem;
+    border-radius: var(--ec-radius-card);
+  }
+
+  .actividad-card-head .badge {
+    padding: 0.22rem 0.5rem;
+    font-size: 0.68rem;
+    border-radius: var(--ec-radius-badge);
+    letter-spacing: 0;
   }
 
   .actividad-evento {
@@ -3220,14 +3631,14 @@
     margin-top: 1.1rem;
   }
 
-  .compras-list,
+  .compras-list:not(.eventos-list),
   .evento-detalle-page,
   .filters-toolbar,
   .filters-card {
     width: 100%;
     box-sizing: border-box;
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
   }
 
   .filters-row {
@@ -3252,7 +3663,7 @@
     flex-wrap: nowrap;
     align-items: flex-start;
     gap: 0;
-    padding: 1rem 1.05rem 0.95rem;
+    padding: 0.88rem 0.85rem 0.82rem;
     position: relative;
   }
 
@@ -3269,28 +3680,19 @@
     gap: 0.45rem;
   }
 
-  .badge-tabs {
-    padding: 0.32rem;
-    gap: 0.35rem;
+  .mis-compras-page .mc-segmented-tab {
+    font-size: 0.68rem;
+    padding: 0.5rem 0.25rem;
+    gap: 0.2rem;
   }
 
-  .badge-tab {
-    min-height: 2rem;
-    padding: 0.34rem 0.52rem;
-    font-size: 0.72rem;
-    gap: 0.28rem;
+  .mis-compras-page .mc-segmented-tab .material-icons {
+    font-size: 0.9rem;
   }
 
-  .badge-tab__icon {
-    font-size: 0.86rem;
-    width: 0.86rem;
-    height: 0.86rem;
-  }
-
-  .badge-tab__count {
-    font-size: 0.62rem;
-    min-width: 1rem;
-    padding: 0.05rem 0.28rem;
+  .mis-compras-page .mc-evento-detalle-header {
+    padding-top: 0.55rem;
+    padding-bottom: 0.35rem;
   }
 
   .badge {

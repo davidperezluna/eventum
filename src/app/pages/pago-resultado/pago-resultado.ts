@@ -368,16 +368,16 @@ export class PagoResultado implements OnInit {
     }
   }
 
-  getEstadoPagoEyebrow(): string {
+  getEstadoChipLabel(): string {
     switch (this.getEstadoPagoReferencia()) {
       case 'completado':
-        return 'Estado · Compra registrada';
+        return 'Confirmado';
       case 'pendiente':
-        return 'Estado · En validación';
+        return 'En validación';
       case 'fallido':
-        return 'Estado · Sin cobro aplicado';
+        return 'No realizado';
       default:
-        return 'Estado';
+        return 'En revisión';
     }
   }
 

@@ -17,8 +17,10 @@ import {
   TIPO_AVISO_CUPO_HINT,
   TIPO_AVISO_CUPO_ICON,
   TIPO_AVISO_CUPO_LABELS,
+  TIPO_AVISO_CUPO_LABELS_SHORT,
   TipoAvisoCupo,
 } from '../../types/cupos';
+import { CUPOS_LABELS } from '../../core/cupos-labels';
 
 type FiltroCupo = 'todos' | TipoAvisoCupo;
 type VistaCupos = 'explorar' | 'mis';
@@ -28,9 +30,11 @@ type VistaCupos = 'explorar' | 'mis';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule, CuposHubNav],
   templateUrl: './cupos-evento.html',
-  styleUrl: './cupos-evento.css',
+  styleUrls: ['./cupos-evento.css', '../cupos-explorar/cupos-explorar.css'],
 })
 export class CuposEvento implements OnInit, OnDestroy {
+  readonly cuposLabels = CUPOS_LABELS;
+
   evento: Evento | null = null;
   eventoId = 0;
   loadingEvento = true;
@@ -59,6 +63,7 @@ export class CuposEvento implements OnInit, OnDestroy {
 
   readonly tipos: TipoAvisoCupo[] = ['busco_cupo', 'ofrezco_cupo', 'busco_grupo'];
   readonly tipoLabels = TIPO_AVISO_CUPO_LABELS;
+  readonly tipoLabelsShort = TIPO_AVISO_CUPO_LABELS_SHORT;
   readonly tipoIcons = TIPO_AVISO_CUPO_ICON;
   readonly tipoHints = TIPO_AVISO_CUPO_HINT;
 

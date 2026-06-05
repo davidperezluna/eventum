@@ -47,6 +47,13 @@ export const TIPO_AVISO_CUPO_LABELS: Record<TipoAvisoCupo, string> = {
   busco_grupo: 'Busco grupo',
 };
 
+/** Etiquetas cortas para filtros segmentados en móvil. */
+export const TIPO_AVISO_CUPO_LABELS_SHORT: Record<TipoAvisoCupo, string> = {
+  busco_cupo: 'Busco',
+  ofrezco_cupo: 'Ofrezco',
+  busco_grupo: 'Grupo',
+};
+
 export const TIPO_AVISO_CUPO_ICON: Record<TipoAvisoCupo, string> = {
   busco_cupo: 'person_search',
   ofrezco_cupo: 'sell',

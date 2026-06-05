@@ -1,0 +1,113 @@
+/* ============================================
+   EVENTUM — Tokens UI cliente (público)
+   ============================================ */
+
+:root {
+  /* Superficies */
+  --ec-page-bg: #f8fafc;
+  --ec-surface: #ffffff;
+  --ec-surface-muted: #f1f5f9;
+  --ec-chip-surface: #fafbfc;
+  --ec-chip-hover: #f1f5f9;
+
+  /* Bordes */
+  --ec-border: #e2e8f0;
+  --ec-border-strong: #e5e7eb;
+  --ec-chip-border: #e2e8f0;
+
+  /* Texto */
+  --ec-text-primary: #0f172a;
+  --ec-text-body: #1e293b;
+  --ec-text-muted: #64748b;
+  --ec-text-subtle: #94a3b8;
+
+  /* Acento */
+  --ec-accent: #4f46e5;
+  --ec-accent-soft: #eef2ff;
+  --ec-accent-border: #c7d2fe;
+  --ec-cupos-accent: var(--color-secondary, #667eea);
+
+  /* Badges semánticos */
+  --ec-badge-success-bg: #dcfce7;
+  --ec-badge-success-text: #15803d;
+  --ec-badge-success-icon: #16a34a;
+  --ec-badge-success-border: rgba(22, 163, 74, 0.38);
+  --ec-badge-warning-bg: #fef3c7;
+  --ec-badge-warning-text: #92400e;
+  --ec-badge-warning-icon: #b45309;
+  --ec-badge-warning-border: rgba(180, 83, 9, 0.32);
+  --ec-badge-info-bg: #e0e7ff;
+  --ec-badge-info-text: #4338ca;
+  --ec-badge-info-icon: var(--color-secondary, #667eea);
+  --ec-badge-info-border: rgba(102, 126, 234, 0.34);
+  --ec-badge-danger-bg: #fee2e2;
+  --ec-badge-danger-text: #b91c1c;
+
+  /* Radios */
+  --ec-radius-chip: 8px;
+  --ec-radius-badge: 6px;
+  --ec-radius-card: 12px;
+  --ec-radius-control: 8px;
+
+  /* Layout */
+  --ec-content-max: 72rem;
+  --ec-content-pad: clamp(0.75rem, 4vw, 1rem);
+
+  /* Tipografía cliente (misma pila que body — sin Inter hasta cargarla) */
+  --ec-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --ec-font-weight-title: 800;
+  --ec-font-weight-label: 600;
+  --ec-font-weight-body: 500;
+}
+
+/* Contenido logueado del cliente */
+.client-content {
+  font-family: var(--ec-font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Encabezado compacto (páginas internas — sin mini-hero) */
+.client-page-header {
+  max-width: var(--ec-content-max);
+  margin: 0 auto;
+  padding: 1rem var(--ec-content-pad) 0.7rem;
+}
+
+.client-page-header__title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ec-text-primary);
+  line-height: 1.2;
+}
+
+.client-page-header__subtitle {
+  margin: 0.28rem 0 0;
+  font-size: 0.8rem;
+  color: var(--ec-text-muted);
+  line-height: 1.45;
+}
+
+.client-page-header--compact {
+  padding-bottom: 0.35rem;
+}
+
+@media (max-width: 768px) {
+  .client-page-header {
+    padding: 0.75rem 0.75rem 0.5rem;
+  }
+
+  .client-page-header--compact {
+    padding-bottom: 0.25rem;
+  }
+
+  .client-page-header__title {
+    font-size: 1.18rem;
+  }
+
+  .client-page-header__subtitle {
+    font-size: 0.76rem;
+  }
+}

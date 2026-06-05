@@ -1,14 +1,12 @@
 <div class="cupos-page cupos-page--mis">
-  <header class="cupos-hero">
-    <div class="cupos-hero-inner">
-      <a routerLink="/cupos" class="cupos-back">
-        <span class="material-icons" aria-hidden="true">arrow_back</span>
-        Explorar cupos
-      </a>
-      <p class="cupos-eyebrow">Cupos Eventum</p>
-      <h1 class="cupos-title">Mis <span class="cupos-title-accent">publicaciones</span></h1>
-      <p class="cupos-subtitle">Tus avisos en todos los eventos y las respuestas que recibiste.</p>
-    </div>
+  <header class="client-page-header client-page-header--compact client-page-header--subpage cupos-page-header">
+    <a routerLink="/cupos" class="cupos-page-back">
+      <span class="material-icons" aria-hidden="true">arrow_back</span>
+      {{ cuposLabels.explorar }}
+    </a>
+    <h1 class="client-page-header__title">{{ cuposLabels.misPublicaciones }}</h1>
+    <p class="client-page-header__subtitle client-page-header__subtitle--full">{{ cuposLabels.misPublicacionesSubtitle }}</p>
+    <p class="client-page-header__subtitle client-page-header__subtitle--short">{{ cuposLabels.misPublicacionesSubtitleShort }}</p>
   </header>
 
   <app-cupos-hub-nav seccion="mis" [respuestasCupos]="resumen.total_respuestas" />
@@ -42,7 +40,7 @@
       <h2>Aún no publicas cupos</h2>
       <p>Publica si buscas cupo, te sobra uno o quieres armar grupo. Elige el evento al crear el aviso.</p>
       <button type="button" class="cupos-btn-primary" (click)="abrirNuevoAviso()">Publicar aviso</button>
-      <a routerLink="/cupos" class="cupos-btn-ghost">Explorar avisos de otros</a>
+      <a routerLink="/cupos" class="cupos-btn-ghost">{{ cuposLabels.explorar }}</a>
     </div>
 
     <ul *ngIf="avisos.length > 0" class="cupos-list">
@@ -112,7 +110,7 @@
             (click)="irEventoCupos(aviso)"
           >
             <span class="material-icons" aria-hidden="true">forum</span>
-            <span class="cupos-action-text">Tablón</span>
+            <span class="cupos-action-text">{{ cuposLabels.tablon }}</span>
           </button>
           <button
             type="button"

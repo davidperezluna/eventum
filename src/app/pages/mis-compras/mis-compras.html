@@ -5,12 +5,10 @@
   </div>
 
   <ng-container *ngIf="!loading && vistaActividad">
-    <section class="hero-section mini-hero">
-      <div class="hero-content">
-        <h1 class="hero-title"><span class="gradient-text">Actividad</span></h1>
-        <p class="hero-subtitle">Trazabilidad de traslados de entradas de boletas (envíos y recepciones).</p>
-      </div>
-    </section>
+    <header class="client-page-header client-page-header--compact client-page-header--subpage">
+      <h1 class="client-page-header__title">Historial de traslados</h1>
+      <p class="client-page-header__subtitle">Envíos y recepciones de entradas entre cuentas.</p>
+    </header>
     <section class="actividad-page-section">
       <div class="actividad-feed" *ngIf="trasladosHistorial.length > 0">
         <article class="actividad-card" *ngFor="let t of trasladosHistorial">
@@ -62,58 +60,108 @@
   </ng-container>
 
   <ng-container *ngIf="!loading && !vistaActividad">
-  <!-- Hero Section (Mini) -->
-  <section class="hero-section mini-hero">
-    <div class="hero-content">
-      <h1 class="hero-title">Mis <span class="gradient-text">Compras</span></h1>
-      <p class="hero-subtitle">Boletas y productos agrupados por evento</p>
-    </div>
-  </section>
+  <header class="client-page-header client-page-header--compact client-page-header--in-nav">
+    <h1 class="client-page-header__title">Mis Compras</h1>
+    <p
+      *ngIf="!eventoDetalleKey && eventosConBoletas.length === 0"
+      class="client-page-header__subtitle"
+    >
+      Aquí verás tus boletas y productos por evento.
+    </p>
+  </header>
 
-  <!-- Guía resumida -->
+  <!-- Guía resumida (colapsada si ya hay compras) -->
   <section class="guia-entradas-section" *ngIf="!eventoDetalleKey" aria-labelledby="guia-entradas-titulo">
-    <article class="guia-resumen-card">
-      <div class="guia-resumen-head">
+    <details
+      class="guia-entradas-details"
+      [open]="guiaEntradasAbierta"
+      (toggle)="guiaEntradasAbierta = $any($event.target).open"
+    >
+      <summary class="guia-entradas-summary">
         <span class="material-icons guia-entradas-summary-icon" aria-hidden="true">help_outline</span>
-        <div>
-          <h2 id="guia-entradas-titulo">¿Cómo uso, asigno o envío mis entradas?</h2>
-          <p>Resumen rápido para empezar sin errores.</p>
+        <span class="guia-entradas-summary-text">
+          <strong id="guia-entradas-titulo">¿Cómo uso, asigno o envío mis entradas?</strong>
+          <small>Resumen rápido para empezar sin errores.</small>
+        </span>
+        <span class="material-icons guia-entradas-chevron" aria-hidden="true">expand_more</span>
+      </summary>
+      <div class="guia-entradas-body">
+        <ul class="guia-resumen-list">
+          <li>Solo puedes asignar o enviar entradas con pago confirmado.</li>
+          <li>Si envías por correo, el destinatario debe tener cuenta y documento registrado.</li>
+          <li>El QR solo se habilita el día del evento.</li>
+        </ul>
+        <div class="guia-resumen-actions">
+          <a routerLink="/mis-compras/guia" class="guia-resumen-link" aria-label="Ir a guía completa">
+            <span class="material-icons" aria-hidden="true">menu_book</span>
+            <span>Guía</span>
+          </a>
+          <a routerLink="/mis-compras/actividad" class="guia-resumen-link guia-resumen-link--ghost" aria-label="Ir a actividad">
+            <span class="material-icons" aria-hidden="true">history</span>
+            <span>Actividad</span>
+          </a>
         </div>
       </div>
-      <ul class="guia-resumen-list">
-        <li>Solo puedes asignar o enviar entradas con pago confirmado.</li>
-        <li>Si envías por correo, el destinatario debe tener cuenta y documento registrado.</li>
-        <li>El QR solo se habilita el día del evento.</li>
-      </ul>
-      <div class="guia-resumen-actions">
-        <a routerLink="/mis-compras/guia" class="guia-resumen-link" aria-label="Ir a guía completa">
-          <span class="material-icons" aria-hidden="true">menu_book</span>
-          <span>Guía</span>
-        </a>
-        <a routerLink="/mis-compras/actividad" class="guia-resumen-link guia-resumen-link--ghost" aria-label="Ir a actividad">
-          <span class="material-icons" aria-hidden="true">history</span>
-          <span>Actividad</span>
-        </a>
-        <a
-          *ngIf="cuposEventumEnabled"
-          routerLink="/cupos"
-          class="guia-resumen-link guia-resumen-link--ghost"
-          aria-label="Explorar cupos"
-        >
-          <span class="material-icons" aria-hidden="true">public</span>
-          <span>Explorar cupos</span>
-        </a>
-        <a
-          *ngIf="cuposEventumEnabled"
-          routerLink="/mis-cupos"
-          class="guia-resumen-link guia-resumen-link--ghost"
-          aria-label="Mis publicaciones de cupo"
-        >
-          <span class="material-icons" aria-hidden="true">campaign</span>
-          <span>Mis publicaciones</span>
-        </a>
-      </div>
-    </article>
+    </details>
+  </section>
+
+  <section
+    *ngIf="!eventoDetalleKey && (loadingPromoProductos || promoProductos)"
+    class="mis-compras-productos-promo"
+    aria-label="Productos disponibles en tus eventos"
+  >
+    <div
+      *ngIf="loadingPromoProductos && !promoProductos"
+      class="mis-compras-productos-promo__skeleton"
+      aria-busy="true"
+      aria-label="Cargando productos de tus eventos"
+    >
+      <span class="mis-compras-productos-promo__skeleton-icon" aria-hidden="true"></span>
+      <span class="mis-compras-productos-promo__skeleton-copy" aria-hidden="true">
+        <span class="mis-compras-productos-promo__skeleton-line"></span>
+        <span class="mis-compras-productos-promo__skeleton-line mis-compras-productos-promo__skeleton-line--short"></span>
+      </span>
+    </div>
+
+    <a
+      *ngIf="promoProductos"
+      class="mis-compras-productos-promo__row"
+      [routerLink]="['/detalle-evento', promoProductos.eventoId]"
+      [queryParams]="{ tab: 'productos' }"
+      [attr.aria-label]="'Ver productos en ' + promoProductos.titulo"
+    >
+      <span class="mis-compras-productos-promo__icon-wrap" aria-hidden="true">
+        <span class="material-icons mis-compras-productos-promo__icon">storefront</span>
+      </span>
+      <span class="mis-compras-productos-promo__copy">
+        <span class="mis-compras-productos-promo__kicker">Productos</span>
+        <span class="mis-compras-productos-promo__title">
+          <ng-container *ngIf="promoProductos.sinComprasProducto">
+            {{ promoProductos.cantidad }}
+            {{ promoProductos.cantidad === 1 ? 'producto' : 'productos' }} · {{ promoProductos.titulo }}
+          </ng-container>
+          <ng-container *ngIf="!promoProductos.sinComprasProducto">
+            Más productos · {{ promoProductos.titulo }}
+          </ng-container>
+        </span>
+        <span class="mis-compras-productos-promo__meta">
+          <ng-container *ngIf="promoProductos.sinComprasProducto">
+            Desde {{ formatCurrency(promoProductos.precioMinimo) }}
+          </ng-container>
+          <ng-container *ngIf="!promoProductos.sinComprasProducto">
+            {{ promoProductos.cantidad }} disponibles
+          </ng-container>
+          <ng-container *ngIf="promoProductos.totalEventosConProductos > 1">
+            · +{{ promoProductos.totalEventosConProductos - 1 }}
+            {{ promoProductos.totalEventosConProductos - 1 === 1 ? 'evento' : 'eventos' }}
+          </ng-container>
+        </span>
+      </span>
+      <span class="mis-compras-productos-promo__cta" aria-hidden="true">
+        Ver
+        <span class="material-icons">chevron_right</span>
+      </span>
+    </a>
   </section>
 
   <div class="filters-toolbar" *ngIf="mostrarToolbarFiltrosMisCompras && !eventoDetalleKey">
@@ -227,156 +275,146 @@
 
   <!-- Lista agrupada por evento -->
   <div *ngIf="!loading && eventoDetalleBoletas() as detalle" class="evento-detalle-page">
-    <button type="button" class="btn-back-eventos" (click)="volverAMisCompras()">
-      <span class="material-icons">arrow_back</span>
-      Volver a mis compras
-    </button>
-
-    <article class="evento-detalle-hero">
-      <header class="evento-detalle-hero__header">
-        <h3 class="evento-detalle-hero__title">{{ detalle.titulo }}</h3>
-        <div class="evento-detalle-hero__meta">
-          <span class="evento-detalle-hero__meta-line" *ngIf="detalle.lugar?.nombre">
-            <span class="material-icons" aria-hidden="true">place</span>
-            {{ detalle.lugar.nombre }}
-          </span>
-          <span class="evento-detalle-hero__meta-line" *ngIf="detalle.fechaInicio">
-            <span class="material-icons" aria-hidden="true">calendar_today</span>
-            {{ detalle.fechaInicio | dateFormat:'short' }}
-            <ng-container *ngIf="detalle.fechaFin"> — {{ detalle.fechaFin | dateFormat:'short' }}</ng-container>
-          </span>
-        </div>
-        <p class="evento-detalle-hero__resumen" *ngIf="resumenDetalleEvento(detalle) as resumen">
-          {{ resumen }}
-        </p>
-      </header>
-
-      <div class="evento-detalle-hero__tipos" *ngIf="tiposResumenParaBadges(detalle).length > 0">
-        <span *ngFor="let tipo of tiposResumenParaBadges(detalle)" class="badge badge-info-soft">
-          {{ tipo.totalBoletas }} {{ tipo.nombre }}
+    <header class="client-page-header client-page-header--compact client-page-header--subpage mc-evento-detalle-header">
+      <button type="button" class="mc-page-back" (click)="volverAMisCompras()">
+        <span class="material-icons" aria-hidden="true">arrow_back</span>
+        Mis compras
+      </button>
+      <h1 class="client-page-header__title">{{ detalle.titulo }}</h1>
+      <p class="client-page-header__subtitle mc-evento-detalle-meta" *ngIf="detalle.lugar?.nombre || detalle.fechaInicio">
+        <span *ngIf="detalle.lugar?.nombre">{{ detalle.lugar.nombre }}</span>
+        <span class="mc-evento-detalle-meta-sep" *ngIf="detalle.lugar?.nombre && detalle.fechaInicio">·</span>
+        <span *ngIf="detalle.fechaInicio">
+          {{ detalle.fechaInicio | dateFormat:'short' }}
+          <ng-container *ngIf="detalle.fechaFin"> — {{ detalle.fechaFin | dateFormat:'short' }}</ng-container>
         </span>
-        <span class="badge badge-success" *ngIf="detalle.totalCedidas > 0">
-          {{ detalle.totalCedidas }} {{ detalle.totalCedidas === 1 ? 'recibida' : 'recibidas' }}
-        </span>
-      </div>
+      </p>
+      <p class="mc-evento-detalle-resumen" *ngIf="resumenDetalleEvento(detalle) as resumen">{{ resumen }}</p>
+    </header>
 
-      <div class="evento-detalle-hero__nav">
-        <div
-          class="badge-tabs"
-          role="tablist"
-          aria-label="Contenido del evento"
-          *ngIf="eventoTieneEntradas(detalle) || eventoTieneProductos(detalle)"
-        >
-          <button
-            type="button"
-            class="badge badge-tab badge-info-soft"
-            role="tab"
-            *ngIf="eventoTieneEntradas(detalle)"
-            [class.badge-tab--selected]="tabEventoDetalle === 'entradas'"
-            [attr.aria-selected]="tabEventoDetalle === 'entradas'"
-            (click)="tabEventoDetalle = 'entradas'"
-          >
-            <span class="material-icons badge-tab__icon" aria-hidden="true">confirmation_number</span>
-            <span class="badge-tab__label">Entradas</span>
-            <span class="badge-tab__count">{{ detalle.totalBoletas }}</span>
-          </button>
-          <button
-            type="button"
-            class="badge badge-tab badge-info-soft"
-            role="tab"
-            *ngIf="eventoTieneProductos(detalle)"
-            [class.badge-tab--selected]="tabEventoDetalle === 'productos'"
-            [attr.aria-selected]="tabEventoDetalle === 'productos'"
-            (click)="tabEventoDetalle = 'productos'"
-          >
-            <span class="material-icons badge-tab__icon" aria-hidden="true">inventory_2</span>
-            <span class="badge-tab__label">Productos</span>
-            <span class="badge-tab__count">{{ detalle.totalItemsProducto }}</span>
-          </button>
-        </div>
+    <div class="mc-evento-detalle-chips" *ngIf="tiposResumenParaBadges(detalle).length > 0 || detalle.totalCedidas > 0">
+      <span *ngFor="let tipo of tiposResumenParaBadges(detalle)" class="mc-evento-detalle-chip mc-evento-detalle-chip--info">
+        {{ tipo.totalBoletas }} {{ tipo.nombre }}
+      </span>
+      <span class="mc-evento-detalle-chip mc-evento-detalle-chip--success" *ngIf="detalle.totalCedidas > 0">
+        {{ detalle.totalCedidas }} {{ detalle.totalCedidas === 1 ? 'recibida' : 'recibidas' }}
+      </span>
+    </div>
 
-        <div
-          class="badge-tabs"
-          role="tablist"
-          aria-label="Estado de boletas"
-          *ngIf="tabEventoDetalle === 'entradas' && eventoTieneEntradas(detalle)"
-        >
-          <button
-            type="button"
-            class="badge badge-tab badge-success"
-            role="tab"
-            *ngIf="mostrarTabBoletas(detalle, 'sin-usar')"
-            [class.badge-tab--selected]="tabBoletasDetalle === 'sin-usar'"
-            [attr.aria-selected]="tabBoletasDetalle === 'sin-usar'"
-            (click)="tabBoletasDetalle = 'sin-usar'"
-          >
-            <span class="material-icons badge-tab__icon" aria-hidden="true">check_circle</span>
-            <span class="badge-tab__label">Sin usar</span>
-            <span class="badge-tab__count">{{ detalle.totalSinUsar }}</span>
-          </button>
-          <button
-            type="button"
-            class="badge badge-tab badge-info"
-            role="tab"
-            *ngIf="mostrarTabBoletas(detalle, 'sin-asignar')"
-            [class.badge-tab--selected]="tabBoletasDetalle === 'sin-asignar'"
-            [attr.aria-selected]="tabBoletasDetalle === 'sin-asignar'"
-            (click)="tabBoletasDetalle = 'sin-asignar'"
-          >
-            <span class="material-icons badge-tab__icon" aria-hidden="true">person_add</span>
-            <span class="badge-tab__label">Sin asignar</span>
-            <span class="badge-tab__count">{{ detalle.totalSinAsignar }}</span>
-          </button>
-          <button
-            type="button"
-            class="badge badge-tab badge-warning"
-            role="tab"
-            *ngIf="mostrarTabBoletas(detalle, 'usadas')"
-            [class.badge-tab--selected]="tabBoletasDetalle === 'usadas'"
-            [attr.aria-selected]="tabBoletasDetalle === 'usadas'"
-            (click)="tabBoletasDetalle = 'usadas'"
-          >
-            <span class="material-icons badge-tab__icon" aria-hidden="true">task_alt</span>
-            <span class="badge-tab__label">Usadas</span>
-            <span class="badge-tab__count">{{ detalle.totalUsadas }}</span>
-          </button>
-        </div>
+    <nav
+      class="mc-segmented"
+      role="tablist"
+      aria-label="Contenido del evento"
+      *ngIf="eventoTieneEntradas(detalle) || eventoTieneProductos(detalle)"
+    >
+      <button
+        type="button"
+        class="mc-segmented-tab"
+        role="tab"
+        *ngIf="eventoTieneEntradas(detalle)"
+        [class.active]="tabEventoDetalle === 'entradas'"
+        [attr.aria-selected]="tabEventoDetalle === 'entradas'"
+        (click)="tabEventoDetalle = 'entradas'"
+      >
+        <span class="material-icons" aria-hidden="true">confirmation_number</span>
+        Entradas
+        <span class="mc-segmented-badge">{{ detalle.totalBoletas }}</span>
+      </button>
+      <button
+        type="button"
+        class="mc-segmented-tab"
+        role="tab"
+        *ngIf="eventoTieneProductos(detalle)"
+        [class.active]="tabEventoDetalle === 'productos'"
+        [attr.aria-selected]="tabEventoDetalle === 'productos'"
+        (click)="tabEventoDetalle = 'productos'"
+      >
+        <span class="material-icons" aria-hidden="true">inventory_2</span>
+        Productos
+        <span class="mc-segmented-badge">{{ detalle.totalItemsProducto }}</span>
+      </button>
+    </nav>
 
-        <div
-          class="badge-tabs"
-          role="tablist"
-          aria-label="Estado de productos"
-          *ngIf="tabEventoDetalle === 'productos' && eventoTieneProductos(detalle)"
-        >
-          <button
-            type="button"
-            class="badge badge-tab badge-success"
-            role="tab"
-            *ngIf="mostrarTabProductos(detalle, 'compradas')"
-            [class.badge-tab--selected]="tabProductosDetalle === 'compradas'"
-            [attr.aria-selected]="tabProductosDetalle === 'compradas'"
-            (click)="tabProductosDetalle = 'compradas'"
-          >
-            <span class="material-icons badge-tab__icon" aria-hidden="true">shopping_bag</span>
-            <span class="badge-tab__label">Por retirar</span>
-            <span class="badge-tab__count">{{ detalle.totalProductosComprados }}</span>
-          </button>
-          <button
-            type="button"
-            class="badge badge-tab badge-warning"
-            role="tab"
-            *ngIf="mostrarTabProductos(detalle, 'redimidas')"
-            [class.badge-tab--selected]="tabProductosDetalle === 'redimidas'"
-            [attr.aria-selected]="tabProductosDetalle === 'redimidas'"
-            (click)="tabProductosDetalle = 'redimidas'"
-          >
-            <span class="material-icons badge-tab__icon" aria-hidden="true">inventory</span>
-            <span class="badge-tab__label">Redimidas</span>
-            <span class="badge-tab__count">{{ detalle.totalProductosRedimidos }}</span>
-          </button>
-        </div>
-      </div>
-    </article>
+    <nav
+      class="mc-segmented mc-segmented--status"
+      role="tablist"
+      aria-label="Estado de boletas"
+      *ngIf="tabEventoDetalle === 'entradas' && eventoTieneEntradas(detalle)"
+    >
+      <button
+        type="button"
+        class="mc-segmented-tab"
+        role="tab"
+        *ngIf="mostrarTabBoletas(detalle, 'sin-usar')"
+        [class.active]="tabBoletasDetalle === 'sin-usar'"
+        [attr.aria-selected]="tabBoletasDetalle === 'sin-usar'"
+        (click)="tabBoletasDetalle = 'sin-usar'"
+      >
+        <span class="material-icons" aria-hidden="true">check_circle</span>
+        Sin usar
+        <span class="mc-segmented-badge">{{ detalle.totalSinUsar }}</span>
+      </button>
+      <button
+        type="button"
+        class="mc-segmented-tab"
+        role="tab"
+        *ngIf="mostrarTabBoletas(detalle, 'sin-asignar')"
+        [class.active]="tabBoletasDetalle === 'sin-asignar'"
+        [attr.aria-selected]="tabBoletasDetalle === 'sin-asignar'"
+        (click)="tabBoletasDetalle = 'sin-asignar'"
+      >
+        <span class="material-icons" aria-hidden="true">person_add</span>
+        Sin asignar
+        <span class="mc-segmented-badge">{{ detalle.totalSinAsignar }}</span>
+      </button>
+      <button
+        type="button"
+        class="mc-segmented-tab"
+        role="tab"
+        *ngIf="mostrarTabBoletas(detalle, 'usadas')"
+        [class.active]="tabBoletasDetalle === 'usadas'"
+        [attr.aria-selected]="tabBoletasDetalle === 'usadas'"
+        (click)="tabBoletasDetalle = 'usadas'"
+      >
+        <span class="material-icons" aria-hidden="true">task_alt</span>
+        Usadas
+        <span class="mc-segmented-badge">{{ detalle.totalUsadas }}</span>
+      </button>
+    </nav>
+
+    <nav
+      class="mc-segmented mc-segmented--status"
+      role="tablist"
+      aria-label="Estado de productos"
+      *ngIf="tabEventoDetalle === 'productos' && eventoTieneProductos(detalle)"
+    >
+      <button
+        type="button"
+        class="mc-segmented-tab"
+        role="tab"
+        *ngIf="mostrarTabProductos(detalle, 'compradas')"
+        [class.active]="tabProductosDetalle === 'compradas'"
+        [attr.aria-selected]="tabProductosDetalle === 'compradas'"
+        (click)="tabProductosDetalle = 'compradas'"
+      >
+        <span class="material-icons" aria-hidden="true">shopping_bag</span>
+        Por retirar
+        <span class="mc-segmented-badge">{{ detalle.totalProductosComprados }}</span>
+      </button>
+      <button
+        type="button"
+        class="mc-segmented-tab"
+        role="tab"
+        *ngIf="mostrarTabProductos(detalle, 'redimidas')"
+        [class.active]="tabProductosDetalle === 'redimidas'"
+        [attr.aria-selected]="tabProductosDetalle === 'redimidas'"
+        (click)="tabProductosDetalle = 'redimidas'"
+      >
+        <span class="material-icons" aria-hidden="true">inventory</span>
+        Redimidas
+        <span class="mc-segmented-badge">{{ detalle.totalProductosRedimidos }}</span>
+      </button>
+    </nav>
 
     <ng-container *ngIf="tabEventoDetalle === 'entradas' && eventoTieneEntradas(detalle)">
       <div class="compra-card evento-detalle-content">
@@ -658,7 +696,11 @@
     </section>
   </div>
 
-  <section *ngIf="!loading && !eventoDetalleKey && eventosConBoletas.length > 0">
+  <section *ngIf="!loading && !eventoDetalleKey && eventosConBoletas.length > 0" class="mis-compras-eventos-section">
+    <header class="mis-compras-eventos-heading">
+      <h2>Tus eventos</h2>
+      <p>{{ eventosConBoletas.length }} {{ eventosConBoletas.length === 1 ? 'evento' : 'eventos' }}</p>
+    </header>
     <div class="compras-list eventos-list">
     <div *ngFor="let grupo of eventosConBoletas" class="compra-card evento-card mc-event-card" [class.expanded]="isEventoBoletasExpandido(grupo.key)">
       <button

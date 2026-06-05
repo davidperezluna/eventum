@@ -2,6 +2,7 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { CUPOS_LABELS } from '../../core/cupos-labels';
 
 export type CuposHubSeccion = 'explorar' | 'mis' | 'evento';
 
@@ -14,6 +15,8 @@ export type CuposHubSeccion = 'explorar' | 'mis' | 'evento';
   host: { class: 'cupos-hub-nav-host' },
 })
 export class CuposHubNav {
+  readonly labels = CUPOS_LABELS;
+
   @Input() seccion: CuposHubSeccion = 'explorar';
   @Input() respuestasCupos = 0;
   @Input() eventoTitulo: string | null = null;

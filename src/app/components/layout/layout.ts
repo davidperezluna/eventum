@@ -4,8 +4,21 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { CarritoCompraService } from '../../services/carrito-compra.service';
 import { User } from '@supabase/supabase-js';
-import { filter } from 'rxjs';
+import { filter, merge } from 'rxjs';
 import { cuposEventumEnabled } from '../../core/cupos-feature';
+import { CUPOS_LABELS } from '../../core/cupos-labels';
+
+type ClientNavItem = {
+  path: string;
+  label: string;
+  icon: string;
+  exact?: boolean;
+  badge?: 'carrito';
+  /** Separador visual antes del ítem (p. ej. acciones de compra). */
+  dividerBefore?: boolean;
+  mobile?: boolean;
+  desktop?: boolean;
+};
 
 @Component({
   selector: 'app-layout',
@@ -26,6 +39,9 @@ export class Layout implements OnInit, OnDestroy {
     }>;
   }> = [];
 
+  /** Navegación cliente (drawer móvil + barra desktop) — orden único. */
+  clientNavItems: ClientNavItem[] = [];
+
   currentUser: User | null = null;
   usuario: any = null;
   userEmail: string = '';
@@ -33,8 +49,11 @@ export class Layout implements OnInit, OnDestroy {
   sidebarOpen: boolean = false;
   clientMenuOpen: boolean = false;
   totalItemsCarrito = 0;
+  subtotalCarrito = 0;
+  enRutaCarrito = false;
 
   readonly cuposEventumEnabled = cuposEventumEnabled;
+  readonly cuposLabels = CUPOS_LABELS;
   readonly currentYear = new Date().getFullYear();
   private routerSubscription?: any;
   private carritoSubscription?: any;
@@ -58,9 +77,11 @@ export class Layout implements OnInit, OnDestroy {
         // Determinar el nombre del rol
         if (usuario.tipo_usuario_id === 3) {
           this.userRole = 'Administrador';
+          this.clientNavItems = [];
           this.loadMenuAdministrador();
         } else if (usuario.tipo_usuario_id === 2) {
           this.userRole = 'Organizador';
+          this.clientNavItems = [];
           this.loadMenuOrganizador();
         } else if (usuario.tipo_usuario_id === 1) {
           this.userRole = 'Cliente';
@@ -68,33 +89,87 @@ export class Layout implements OnInit, OnDestroy {
         } else if (this.authService.isLector()) {
           this.userRole = 'Lector';
           this.menuItems = [];
+          this.clientNavItems = [];
           this.redirectLectorFueraDeApp();
         } else {
           this.userRole = 'Usuario';
+          this.clientNavItems = [];
         }
       } else {
         // Si no hay usuario, limpiar menú
         this.menuItems = [];
+        this.clientNavItems = [];
         this.userRole = '';
       }
       this.cdr.detectChanges();
     });
 
     // Cerrar sidebar / menú móvil al cambiar de ruta
+    this.syncRutaCarrito(this.router.url);
     this.routerSubscription = this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
-      .subscribe(() => {
+      .subscribe((event) => {
+        if (event instanceof NavigationEnd) {
+          this.syncRutaCarrito(event.urlAfterRedirects);
+        }
         if (window.innerWidth <= 768) {
           this.closeSidebar();
           this.closeClientMenu();
         }
         window.scrollTo(0, 0);
+        this.cdr.detectChanges();
       });
 
-    this.carritoSubscription = this.carritoCompraService.totalItems$.subscribe((total) => {
-      this.totalItemsCarrito = total;
-      this.cdr.detectChanges();
-    });
+    this.refreshCarritoFabState();
+    this.carritoSubscription = merge(
+      this.carritoCompraService.totalItems$,
+      this.carritoCompraService.items$,
+      this.carritoCompraService.itemsProductos$
+    ).subscribe(() => this.refreshCarritoFabState());
+  }
+
+  get mostrarCarritoFab(): boolean {
+    if (this.totalItemsCarrito <= 0 || this.enRutaCarrito) {
+      return false;
+    }
+    if (this.isLector()) {
+      return false;
+    }
+    const tipo = this.usuario?.tipo_usuario_id;
+    if (tipo === 2 || tipo === 3) {
+      return false;
+    }
+    return true;
+  }
+
+  irACarrito(): void {
+    void this.router.navigate(['/carrito']);
+  }
+
+  formatCurrencyCarrito(value: number): string {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  }
+
+  private syncRutaCarrito(url: string): void {
+    const path = (url || '').split('?')[0];
+    this.enRutaCarrito = path === '/carrito' || path.startsWith('/carrito/');
+  }
+
+  private refreshCarritoFabState(): void {
+    this.subtotalCarrito = this.carritoCompraService.getSubtotalCombinado();
+    this.totalItemsCarrito = this.carritoCompraService.getItemsSnapshot().reduce(
+      (acc, item) => acc + item.cantidad,
+      0
+    ) + this.carritoCompraService.getItemsProductosSnapshot().reduce(
+      (acc, item) => acc + item.cantidad,
+      0
+    );
+    this.cdr.detectChanges();
   }
 
   isCliente(): boolean {
@@ -188,14 +263,29 @@ export class Layout implements OnInit, OnDestroy {
   }
 
   loadMenuCliente() {
-    this.menuItems = [
-      { path: '/eventos-cliente', label: 'Eventos', icon: 'event' },
+    this.clientNavItems = [
+      { path: '/eventos-cliente', label: 'Eventos', icon: 'event', exact: true },
+      { path: '/mis-compras', label: 'Mis compras', icon: 'confirmation_number', exact: true },
+      {
+        path: '/carrito',
+        label: 'Carrito',
+        icon: 'shopping_cart',
+        exact: true,
+        badge: 'carrito',
+        dividerBefore: true,
+      },
       ...(this.cuposEventumEnabled
-        ? [{ path: '/cupos', label: 'Explorar cupos', icon: 'public' }]
+        ? [{ path: '/cupos', label: CUPOS_LABELS.explorar, icon: 'forum', exact: true }]
         : []),
-      { path: '/mis-compras', label: 'Mis Compras', icon: 'shopping_bag' },
-      { path: '/perfil', label: 'Mi Perfil', icon: 'person' },
+      { path: '/perfil', label: 'Mi perfil', icon: 'person', exact: false, dividerBefore: true },
     ];
+    this.menuItems = [];
+  }
+
+  clientNavFor(surface: 'mobile' | 'desktop'): ClientNavItem[] {
+    return this.clientNavItems.filter((item) =>
+      surface === 'mobile' ? item.mobile !== false : item.desktop !== false
+    );
   }
 
   toggleSidebar() {

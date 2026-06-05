@@ -10,7 +10,10 @@ import { TrasladosBoletaService } from '../../services/traslados-boleta.service'
 import { EventosService } from '../../services/eventos.service';
 import { AuthService } from '../../services/auth.service';
 import { AlertService } from '../../services/alert.service';
-import { MisComprasStateService } from '../../services/mis-compras-state.service';
+import {
+  MisComprasStateService,
+  PromoProductosMisCompras,
+} from '../../services/mis-compras-state.service';
 import { ComprasProductoService } from '../../services/compras-producto.service';
 import { SupabaseService } from '../../services/supabase.service';
 import {
@@ -33,7 +36,7 @@ import html2canvas from 'html2canvas';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import type { AuthStateCallback } from '../../services/auth.service';
-import { cuposEventumEnabled } from '../../core/cupos-feature';
+import { ProductosService } from '../../services/productos.service';
 
 interface BoletaConCompra {
   compra: Compra;
@@ -92,7 +95,9 @@ interface EventoBoletasGrupo {
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
 export class MisCompras implements OnInit, OnDestroy {
-  readonly cuposEventumEnabled = cuposEventumEnabled;
+  promoProductos: PromoProductosMisCompras | null = null;
+  loadingPromoProductos = false;
+  guiaEntradasAbierta = false;
   private destroy$ = new Subject<void>();
   private loadComprasSubject = new Subject<void>();
   private refreshIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
@@ -196,6 +201,7 @@ export class MisCompras implements OnInit, OnDestroy {
   constructor(
     private comprasService: ComprasService,
     private comprasProductoService: ComprasProductoService,
+    private productosService: ProductosService,
     private boletasService: BoletasService,
     private trasladosBoletaService: TrasladosBoletaService,
     private eventosService: EventosService,
@@ -321,6 +327,73 @@ export class MisCompras implements OnInit, OnDestroy {
       this.loadingComprasProductos = false;
       this.fusionarProductosEnEventos();
       this.syncTabEventoDetalle();
+      await this.actualizarPromoProductos();
+      this.cdr.detectChanges();
+    }
+  }
+
+  private async actualizarPromoProductos(): Promise<void> {
+    const ids = this.eventosConBoletas
+      .map((grupo) => Number(grupo.key))
+      .filter((id) => Number.isFinite(id) && id > 0);
+
+    if (ids.length === 0) {
+      this.promoProductos = null;
+      this.loadingPromoProductos = false;
+      return;
+    }
+
+    const mostrarSkeleton = !this.promoProductos;
+    if (mostrarSkeleton) {
+      this.loadingPromoProductos = true;
+      this.cdr.detectChanges();
+    }
+
+    try {
+      const resumen = await this.productosService.getResumenProductosPorEvento(ids);
+      const candidatos = this.eventosConBoletas
+        .map((grupo) => {
+          const eventoId = Number(grupo.key);
+          const info = resumen.get(eventoId);
+          if (!info?.cantidad) {
+            return null;
+          }
+          return {
+            grupo,
+            eventoId,
+            info,
+            sinComprasProducto: (grupo.totalItemsProducto ?? 0) === 0,
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null)
+        .sort((a, b) => {
+          if (a.sinComprasProducto !== b.sinComprasProducto) {
+            return a.sinComprasProducto ? -1 : 1;
+          }
+          const fechaA = a.grupo.fechaInicio ? new Date(a.grupo.fechaInicio).getTime() : 0;
+          const fechaB = b.grupo.fechaInicio ? new Date(b.grupo.fechaInicio).getTime() : 0;
+          return fechaA - fechaB;
+        });
+
+      const mejor = candidatos[0];
+      if (!mejor) {
+        this.promoProductos = null;
+        return;
+      }
+
+      this.promoProductos = {
+        eventoId: mejor.eventoId,
+        titulo: mejor.grupo.titulo,
+        cantidad: mejor.info.cantidad,
+        precioMinimo: mejor.info.precioMinimo,
+        sinComprasProducto: mejor.sinComprasProducto,
+        totalEventosConProductos: candidatos.length,
+      };
+    } catch (err) {
+      console.error('Error cargando promo de productos:', err);
+      this.promoProductos = null;
+    } finally {
+      this.loadingPromoProductos = false;
       this.cdr.detectChanges();
     }
   }
@@ -1397,6 +1470,8 @@ export class MisCompras implements OnInit, OnDestroy {
       });
 
     this.fusionarProductosEnEventos();
+    this.guiaEntradasAbierta = this.eventosConBoletas.length === 0;
+    void this.actualizarPromoProductos();
   }
 
   esTitularBoleta(b: BoletaComprada, compra: Compra): boolean {
@@ -2286,6 +2361,10 @@ export class MisCompras implements OnInit, OnDestroy {
     this.tabBoletasDetalle = state.tabBoletasDetalle || 'sin-usar';
     this.eventoExpandidoKey = state.eventoExpandidoKey ?? null;
     this.loadingBoletasDetalle = this.eventosConBoletas.length > 0;
+    this.guiaEntradasAbierta = this.eventosConBoletas.length === 0;
+    this.promoProductos = state.promoProductos ?? null;
+    this.loadingPromoProductos = false;
+    void this.actualizarPromoProductos();
   }
 
   private persistState(lastUpdated: number): void {
@@ -2311,6 +2390,7 @@ export class MisCompras implements OnInit, OnDestroy {
       tabBoletasDetalle: this.tabBoletasDetalle,
       eventoExpandidoKey: this.eventoExpandidoKey,
       eventoDetalleKey: this.eventoDetalleKey,
+      promoProductos: this.promoProductos,
       lastUpdated
     });
   }

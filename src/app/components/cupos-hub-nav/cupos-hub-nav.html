@@ -1,43 +1,37 @@
 <nav class="cupos-hub-nav" aria-label="Secciones de Cupos Eventum">
   <a
     routerLink="/cupos"
-    class="cupos-hub-nav-item"
+    class="cupos-hub-nav-tab"
     [class.active]="seccion === 'explorar'"
     [attr.aria-current]="seccion === 'explorar' ? 'page' : null"
+    [attr.aria-label]="labels.explorarAria"
   >
     <span class="material-icons" aria-hidden="true">public</span>
-    <span class="cupos-hub-nav-copy">
-      <strong>Explorar</strong>
-      <span>Todos los eventos</span>
-    </span>
+    <span class="cupos-hub-nav-tab-label">{{ labels.explorarShort }}</span>
   </a>
   <a
     routerLink="/mis-cupos"
-    class="cupos-hub-nav-item"
+    class="cupos-hub-nav-tab"
     [class.active]="seccion === 'mis'"
     [attr.aria-current]="seccion === 'mis' ? 'page' : null"
+    [attr.aria-label]="labels.misAvisosAria"
   >
     <span class="material-icons" aria-hidden="true">campaign</span>
-    <span class="cupos-hub-nav-copy">
-      <strong>Mis publicaciones</strong>
-      <span>Tus avisos y respuestas</span>
-    </span>
+    <span class="cupos-hub-nav-tab-label">{{ labels.misAvisos }}</span>
     <span
       *ngIf="respuestasCupos > 0"
       class="cupos-hub-nav-badge"
       [attr.aria-label]="respuestasCupos + ' respuestas'"
-    >{{ respuestasCupos }} resp.</span>
+    >{{ respuestasCupos }}</span>
   </a>
   <a
     routerLink="/eventos-cliente"
-    class="cupos-hub-nav-item"
+    class="cupos-hub-nav-tab"
     [class.active]="seccion === 'evento'"
     [attr.aria-current]="seccion === 'evento' ? 'page' : null"
+    [attr.aria-label]="labels.hubEventosAria"
   >
     <span class="material-icons" aria-hidden="true">event</span>
-    <span class="cupos-hub-nav-copy">
-      <strong>Por evento</strong>
-      <span>{{ eventoTitulo || 'Elegir evento y publicar' }}</span>
-    </span>
+    <span class="cupos-hub-nav-tab-label">{{ labels.hubEventos }}</span>
   </a>
 </nav>

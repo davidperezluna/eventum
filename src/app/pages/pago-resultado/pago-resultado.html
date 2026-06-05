@@ -1,93 +1,106 @@
 <div class="pago-resultado-page">
-  <div *ngIf="loading" class="loading-state">
-    <div class="spinner"></div>
-    <p class="loading-line-primary">Confirmando tu pago…</p>
-    <p class="loading-line-secondary">
-      Hablamos con el medio de pago para ver el resultado. Suele tardar solo unos segundos.
-    </p>
-  </div>
+  <section class="pago-resultado-shell">
+    <article *ngIf="loading" class="pago-panel pago-panel--loading">
+      <div class="loading-state loading-state--embedded">
+        <div class="spinner"></div>
+      </div>
+      <h1 class="pago-panel__title">Confirmando tu pago…</h1>
+      <p class="pago-panel__lead">
+        Hablamos con el medio de pago para ver el resultado. Suele tardar solo unos segundos.
+      </p>
+    </article>
 
-  <!-- Error previo a tener compra (HTTP, sin fila, enlace incompleto) -->
-  <article *ngIf="!loading && error" class="feedback-card feedback-card--error" aria-live="polite">
-    <div class="feedback-icon-wrap" aria-hidden="true">
-      <span class="material-icons feedback-icon">cancel</span>
-    </div>
-    <h1 class="feedback-title">{{ errorTitulo }}</h1>
-    <p class="feedback-body">{{ error }}</p>
-    <div class="feedback-actions">
-      <button type="button" class="btn btn-primary" (click)="router.navigate(['/mis-compras'])">
-        Ir a Mis compras
-      </button>
-      <button type="button" class="btn btn-secondary" (click)="router.navigate(['/eventos-cliente'])">
-        Volver a Eventos
-      </button>
-    </div>
-  </article>
+    <article *ngIf="!loading && error" class="pago-panel pago-panel--error" aria-live="polite">
+      <div class="pago-panel__icon" aria-hidden="true">
+        <span class="material-icons">cancel</span>
+      </div>
+      <span class="pago-estado-chip pago-estado-chip--error">Sin resultado</span>
+      <h1 class="pago-panel__title">{{ errorTitulo }}</h1>
+      <p class="pago-panel__lead">{{ error }}</p>
+      <div class="pago-panel__actions">
+        <button type="button" class="btn btn-primary" (click)="router.navigate(['/mis-compras'])">
+          Ir a Mis compras
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="router.navigate(['/eventos-cliente'])">
+          Volver a Eventos
+        </button>
+      </div>
+    </article>
 
-  <div *ngIf="!loading && !error && (compra || compraProducto || transaccionProducto || transaccionCheckout)" class="resultado-wrapper">
     <article
-      class="resultado-card"
-      [class.resultado-card--success]="getEstadoPagoReferencia() === 'completado'"
-      [class.resultado-card--warning]="getEstadoPagoReferencia() === 'pendiente'"
-      [class.resultado-card--error]="getEstadoPagoReferencia() === 'fallido'"
+      *ngIf="!loading && !error && (compra || compraProducto || transaccionProducto || transaccionCheckout)"
+      class="pago-panel"
+      [class.pago-panel--success]="getEstadoPagoReferencia() === 'completado'"
+      [class.pago-panel--warning]="getEstadoPagoReferencia() === 'pendiente'"
+      [class.pago-panel--error]="getEstadoPagoReferencia() === 'fallido'"
     >
-      <div class="resultado-card__icon" aria-hidden="true">
+      <div class="pago-panel__icon" aria-hidden="true">
         <span class="material-icons" *ngIf="getEstadoPagoReferencia() === 'completado'">check_circle</span>
         <span class="material-icons" *ngIf="getEstadoPagoReferencia() === 'pendiente'">schedule</span>
         <span class="material-icons" *ngIf="getEstadoPagoReferencia() === 'fallido'">error</span>
+        <span class="material-icons" *ngIf="getEstadoPagoReferencia() === 'otro'">info</span>
       </div>
 
-      <p class="resultado-eyebrow">{{ getEstadoPagoEyebrow() }}</p>
-      <h1 class="resultado-title">{{ getEstadoPagoLabel() }}</h1>
-      <p class="resultado-lead">{{ getEstadoPagoLead() }}</p>
+      <span
+        class="pago-estado-chip"
+        [class.pago-estado-chip--success]="getEstadoPagoReferencia() === 'completado'"
+        [class.pago-estado-chip--warning]="getEstadoPagoReferencia() === 'pendiente'"
+        [class.pago-estado-chip--error]="getEstadoPagoReferencia() === 'fallido'"
+        [class.pago-estado-chip--info]="getEstadoPagoReferencia() === 'otro'"
+      >
+        {{ getEstadoChipLabel() }}
+      </span>
 
-      <section class="compra-summary" aria-labelledby="summary-heading">
-        <h2 id="summary-heading" class="compra-summary__heading">Resumen de la operación</h2>
-        <dl class="compra-summary__grid">
-          <div class="summary-row" *ngIf="compra">
+      <h1 class="pago-panel__title">{{ getEstadoPagoLabel() }}</h1>
+      <p class="pago-panel__lead">{{ getEstadoPagoLead() }}</p>
+
+      <section class="pago-summary" aria-labelledby="pago-summary-heading">
+        <h3 id="pago-summary-heading" class="pago-summary__heading">Resumen de la operación</h3>
+        <dl class="pago-summary__grid">
+          <div class="pago-summary-row" *ngIf="compra">
             <dt>Transacción boletas</dt>
             <dd>{{ compra.numero_transaccion }}</dd>
           </div>
-          <div class="summary-row" *ngIf="compraProducto">
+          <div class="pago-summary-row" *ngIf="compraProducto">
             <dt>Pedido productos</dt>
             <dd>{{ compraProducto.numero_pedido }}</dd>
           </div>
-          <div class="summary-row" *ngIf="!compraProducto && transaccionProducto">
+          <div class="pago-summary-row" *ngIf="!compraProducto && transaccionProducto">
             <dt>Referencia productos</dt>
             <dd>{{ transaccionProducto.numero_transaccion }}</dd>
           </div>
-          <div class="summary-row" *ngIf="!compra && !compraProducto && transaccionCheckout?.numero_intento">
+          <div class="pago-summary-row" *ngIf="!compra && !compraProducto && transaccionCheckout?.numero_intento">
             <dt>Intento checkout</dt>
             <dd>{{ transaccionCheckout!.numero_intento }}</dd>
           </div>
-          <div class="summary-row" *ngIf="compra?.wompi_reference">
+          <div class="pago-summary-row" *ngIf="compra?.wompi_reference">
             <dt>Referencia Wompi</dt>
             <dd>{{ compra!.wompi_reference }}</dd>
           </div>
-          <div class="summary-row" *ngIf="!compra?.wompi_reference && transaccionCheckout?.wompi_reference">
+          <div class="pago-summary-row" *ngIf="!compra?.wompi_reference && transaccionCheckout?.wompi_reference">
             <dt>Referencia Wompi</dt>
             <dd>{{ transaccionCheckout!.wompi_reference }}</dd>
           </div>
-          <div class="summary-row summary-row--accent">
+          <div class="pago-summary-row pago-summary-row--accent">
             <dt>Total cobrado</dt>
             <dd>{{ formatCurrency(getTotalMostrado()) }}</dd>
           </div>
-          <div class="summary-row" *ngIf="compra?.wompi_payment_method">
+          <div class="pago-summary-row" *ngIf="compra?.wompi_payment_method">
             <dt>Método de pago</dt>
             <dd>{{ compra!.wompi_payment_method }}</dd>
           </div>
-          <div class="summary-row" *ngIf="compra?.fecha_compra || compraProducto?.fecha_compra">
+          <div class="pago-summary-row" *ngIf="compra?.fecha_compra || compraProducto?.fecha_compra">
             <dt>Fecha</dt>
             <dd>{{ (compra?.fecha_compra || compraProducto?.fecha_compra) | dateFormat:'medium' }}</dd>
           </div>
-          <div class="summary-row" *ngIf="!compra?.fecha_compra && !compraProducto?.fecha_compra && transaccionCheckout?.fecha_creacion">
+          <div class="pago-summary-row" *ngIf="!compra?.fecha_compra && !compraProducto?.fecha_compra && transaccionCheckout?.fecha_creacion">
             <dt>Fecha</dt>
             <dd>{{ transaccionCheckout!.fecha_creacion | dateFormat:'medium' }}</dd>
           </div>
         </dl>
       </section>
 
-      <div class="resultado-actions">
+      <div class="pago-panel__actions">
         <ng-container *ngIf="getEstadoPagoReferencia() === 'completado'">
           <button type="button" class="btn btn-primary" (click)="router.navigate(['/mis-compras'])">
             Ver mis boletas
@@ -112,7 +125,15 @@
             Ir a Mis compras
           </button>
         </ng-container>
+        <ng-container *ngIf="getEstadoPagoReferencia() === 'otro'">
+          <button type="button" class="btn btn-primary" (click)="router.navigate(['/mis-compras'])">
+            Ir a Mis compras
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="router.navigate(['/eventos-cliente'])">
+            Volver a Eventos
+          </button>
+        </ng-container>
       </div>
     </article>
-  </div>
+  </section>
 </div>

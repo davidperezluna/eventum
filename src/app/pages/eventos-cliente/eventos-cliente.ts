@@ -14,6 +14,7 @@ import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { cuposEventumEnabled } from '../../core/cupos-feature';
+import { CUPOS_LABELS } from '../../core/cupos-labels';
 
 @Component({
   selector: 'app-eventos-cliente',
@@ -46,6 +47,7 @@ export class EventosCliente implements OnInit, OnDestroy {
   currentYear = new Date().getFullYear();
   readonly appVersion = environment.appVersion;
   readonly cuposEventumEnabled = cuposEventumEnabled;
+  readonly cuposLabels = CUPOS_LABELS;
   respuestasCupos = 0;
 
   constructor(
@@ -299,6 +301,14 @@ export class EventosCliente implements OnInit, OnDestroy {
 
   getProductosBadgeShortLabel(evento: Evento): string {
     return this.precioEventoActivo(evento) ? 'Precio en evento activo' : 'Preventa en productos';
+  }
+
+  getProductosChipCardLabel(evento: Evento): string {
+    return this.precioEventoActivo(evento) ? 'Productos preventa' : 'Preventa productos';
+  }
+
+  getProductosChipShortLabel(evento: Evento): string {
+    return this.precioEventoActivo(evento) ? 'Productos' : 'Preventa';
   }
 
   getCantidadProductosLabel(eventoId: number): string {

@@ -616,33 +616,36 @@ export class Carrito implements OnInit, OnDestroy {
 
     this.codigoCupon = codigoNormalizado;
     this.validandoCupon = true;
+    this.cdr.detectChanges();
+
     try {
       const cupon = await this.cuponesService.validarCupon(codigoNormalizado, this.evento.id);
       this.ngZone.run(() => {
-        if (cupon) {
-          this.cuponAplicado = cupon;
-          this.alertService.success('¡Cupón aplicado!', `Se aplicó un descuento del ${cupon.porcentaje_descuento}%`);
-        } else {
-          this.alertService.error('Cupón inválido', 'El código no existe, expiró o alcanzó su límite de usos');
-          this.cuponAplicado = null;
-        }
-      });
-    } catch (error) {
-      console.error('Error aplicando cupón:', error);
-      this.ngZone.run(() => {
-        this.alertService.error('Error', 'No se pudo validar el cupón');
-      });
-    } finally {
-      this.ngZone.run(() => {
+        this.cuponAplicado = cupon;
         this.validandoCupon = false;
         this.cdr.detectChanges();
       });
+      if (!cupon) {
+        void this.alertService.snackbarError(
+          'Cupón inválido',
+          'El código no existe, expiró o alcanzó su límite de usos'
+        );
+      }
+    } catch (error) {
+      console.error('Error aplicando cupón:', error);
+      this.ngZone.run(() => {
+        this.cuponAplicado = null;
+        this.validandoCupon = false;
+        this.cdr.detectChanges();
+      });
+      void this.alertService.snackbarError('Error', 'No se pudo validar el cupón');
     }
   }
 
   quitarCupon(): void {
     this.cuponAplicado = null;
     this.codigoCupon = '';
+    this.cdr.detectChanges();
   }
 
   cantidadPalcosReservados(tipo: TipoBoleta): number {

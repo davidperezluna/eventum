@@ -1,109 +1,121 @@
 :host.cupos-hub-nav-host {
   display: block;
-  max-width: 42rem;
-  margin: 1.5rem auto 1.75rem;
-  padding: 0 1.25rem;
+  width: 100%;
+  max-width: var(--cupos-content-max, var(--ec-content-max, 100%));
+  margin: 0.5rem auto 0.75rem;
+  padding: 0 var(--cupos-gutter, var(--ec-content-pad, 1rem));
+  box-sizing: border-box;
+}
+
+:host-context(.cupos-content-shell) {
+  max-width: none;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+@media (max-width: 768px) {
+  :host.cupos-hub-nav-host {
+    margin-top: 0.35rem;
+    margin-bottom: 0.65rem;
+  }
+
+  :host-context(.cupos-content-shell) {
+    margin-top: 0.35rem;
+    margin-bottom: 0.65rem;
+  }
 }
 
 .cupos-hub-nav {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.875rem;
-}
-
-@media (min-width: 640px) {
-  :host.cupos-hub-nav-host {
-    max-width: 52rem;
-    margin: 1.75rem auto 2rem;
-    padding: 0 1.5rem;
-  }
-
-  .cupos-hub-nav {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  :host.cupos-hub-nav-host {
-    max-width: 56rem;
-    margin: 2rem auto 2.25rem;
-  }
-
-  .cupos-hub-nav {
-    gap: 1.125rem;
-  }
-}
-
-.cupos-hub-nav-item {
   display: flex;
-  align-items: flex-start;
-  gap: 0.65rem;
-  padding: 0.9rem 1rem;
-  min-height: 4.25rem;
-  border-radius: 14px;
-  border: 2px solid #e2e8f0;
-  background: #fff;
-  color: #475569;
-  text-decoration: none;
-  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  gap: 0.15rem;
+  border: 1px solid var(--ec-border, #e2e8f0);
+  background: var(--ec-surface-muted, #f1f5f9);
+  border-radius: var(--ec-radius-control, 8px);
+  padding: 0.18rem;
+  width: 100%;
 }
 
-.cupos-hub-nav-item:hover {
-  border-color: #c7d2fe;
-  background: #f8fafc;
-}
-
-.cupos-hub-nav-item.active {
-  border-color: #6366f1;
-  background: #eef2ff;
-  color: #4338ca;
-  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.14);
-}
-
-.cupos-hub-nav-item .material-icons {
-  font-size: 1.4rem;
-  flex-shrink: 0;
-  margin-top: 0.15rem;
-}
-
-.cupos-hub-nav-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
+.cupos-hub-nav-tab {
+  flex: 1 1 0;
   min-width: 0;
-  flex: 1;
-}
-
-.cupos-hub-nav-copy strong {
-  font-size: 0.85rem;
-  font-weight: 800;
-  line-height: 1.25;
-}
-
-.cupos-hub-nav-copy span:last-child {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.55rem 0.4rem;
+  min-height: 40px;
+  border: none;
+  border-radius: var(--ec-radius-badge, 6px);
+  background: transparent;
+  color: var(--ec-text-muted, #64748b);
+  text-decoration: none;
   font-size: 0.72rem;
-  font-weight: 500;
-  line-height: 1.35;
-  color: #64748b;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-weight: 700;
+  line-height: 1.2;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cupos-hub-nav-tab .material-icons {
+  font-size: 1rem;
+  flex-shrink: 0;
+  color: var(--ec-text-subtle, #94a3b8);
+}
+
+.cupos-hub-nav-tab-label {
   white-space: nowrap;
 }
 
-.cupos-hub-nav-item.active .cupos-hub-nav-copy span:last-child {
-  color: #6366f1;
+.cupos-hub-nav-tab.active {
+  background: var(--ec-surface, #fff);
+  color: var(--ec-text-body, #1e293b);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.cupos-hub-nav-tab.active .material-icons {
+  color: var(--ec-accent, #4f46e5);
+}
+
+@media (hover: hover) {
+  .cupos-hub-nav-tab:not(.active):hover {
+    background: rgba(255, 255, 255, 0.55);
+    color: #475569;
+  }
+
+  .cupos-hub-nav-tab:not(.active):hover .material-icons {
+    color: #64748b;
+  }
 }
 
 .cupos-hub-nav-badge {
   flex-shrink: 0;
-  align-self: flex-start;
-  margin-top: 0.15rem;
-  padding: 0.18rem 0.5rem;
-  border-radius: 999px;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.28rem;
+  border-radius: var(--ec-radius-badge, 6px);
   background: #ef4444;
   color: #fff;
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   font-weight: 800;
-  white-space: nowrap;
+  line-height: 1.1rem;
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  .cupos-hub-nav-tab {
+    gap: 0.4rem;
+    padding: 0.62rem 0.65rem;
+    font-size: 0.78rem;
+  }
+
+  .cupos-hub-nav-tab .material-icons {
+    font-size: 1.05rem;
+  }
+}
+
+@media (min-width: 769px) {
+  :host.cupos-hub-nav-host {
+    margin: 0.75rem auto 1rem;
+  }
 }

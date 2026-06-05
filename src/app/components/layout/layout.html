@@ -115,82 +115,38 @@
         </div>
         <p class="subtitle">Área de cliente</p>
       </div>
-      <nav class="sidebar-nav">
-        <a
-          routerLink="/eventos-cliente"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
-          class="nav-item"
-          (click)="closeClientMenu()"
-        >
-          <span class="material-icons nav-icon">event</span>
-          <span class="nav-label">Eventos</span>
-        </a>
-        <a
-          routerLink="/carrito"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
-          class="nav-item nav-item--with-badge"
-          (click)="closeClientMenu()"
-        >
-          <span class="material-icons nav-icon">shopping_cart</span>
-          <span class="nav-label">Carrito</span>
-          <span *ngIf="totalItemsCarrito > 0" class="menu-badge">{{ totalItemsCarrito }}</span>
-        </a>
-        <a
-          *ngIf="cuposEventumEnabled"
-          routerLink="/cupos"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
-          class="nav-item"
-          (click)="closeClientMenu()"
-        >
-          <span class="material-icons nav-icon">public</span>
-          <span class="nav-label">Explorar cupos</span>
-        </a>
-        <a
-          routerLink="/mis-compras"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
-          class="nav-item"
-          (click)="closeClientMenu()"
-        >
-          <span class="material-icons nav-icon">confirmation_number</span>
-          <span class="nav-label">Mis Boletas</span>
-        </a>
-        <a routerLink="/mis-compras/actividad" routerLinkActive="active" class="nav-item" (click)="closeClientMenu()">
-          <span class="material-icons nav-icon">timeline</span>
-          <span class="nav-label">Actividad</span>
-        </a>
-        <a routerLink="/conocenos" routerLinkActive="active" class="nav-item" (click)="closeClientMenu()">
-          <span class="material-icons nav-icon">groups</span>
-          <span class="nav-label">Conócenos</span>
-        </a>
-      </nav>
-      <div class="sidebar-footer">
-        <div *ngIf="currentUser && usuario" class="user-info">
+      <nav class="sidebar-nav client-mobile-nav" aria-label="Secciones del cliente">
+        <ng-container *ngFor="let item of clientNavFor('mobile')">
+          <div *ngIf="item.dividerBefore" class="client-nav-divider" role="separator" aria-hidden="true"></div>
           <a
-            routerLink="/perfil"
-            class="user-email user-email--link-profile"
+            [routerLink]="item.path"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: item.exact !== false }"
+            class="nav-item"
+            [class.nav-item--with-badge]="item.badge === 'carrito'"
             (click)="closeClientMenu()"
-            aria-label="Ir a Mi perfil"
           >
-            <span class="material-icons">person</span>
-            <span class="user-email-text">
-              <span *ngIf="nombreCliente() as nombre" class="user-display-name">{{ nombre }}</span>
-              <span class="email-text">{{ userEmail }}</span>
-            </span>
+            <span class="material-icons nav-icon">{{ item.icon }}</span>
+            <span class="nav-label">{{ item.label }}</span>
+            <span *ngIf="item.badge === 'carrito' && totalItemsCarrito > 0" class="menu-badge">{{ totalItemsCarrito }}</span>
           </a>
-          <div class="user-role" *ngIf="userRole">
-            <span class="material-icons">badge</span>
-            <span>{{ userRole }}</span>
+        </ng-container>
+      </nav>
+      <div class="sidebar-footer client-menu-footer">
+        <div *ngIf="currentUser && usuario" class="client-menu-account">
+          <div class="client-menu-account__identity" aria-label="Sesión iniciada">
+            <span class="material-icons client-menu-account__icon" aria-hidden="true">account_circle</span>
+            <div class="client-menu-account__text">
+              <span *ngIf="nombreCliente() as nombre" class="client-menu-account__name">{{ nombre }}</span>
+              <span class="client-menu-account__email">{{ userEmail }}</span>
+            </div>
           </div>
-          <button type="button" class="btn-logout" (click)="logout()">
-            <span class="material-icons">logout</span>
-            <span>Cerrar Sesión</span>
+          <button type="button" class="btn-logout client-menu-logout" (click)="logout()">
+            <span class="material-icons" aria-hidden="true">logout</span>
+            <span>Cerrar sesión</span>
           </button>
         </div>
-        <p>&copy; {{ currentYear }} Eventum</p>
+        <p class="client-menu-copyright">&copy; {{ currentYear }} Eventum</p>
       </div>
     </aside>
 
@@ -203,36 +159,19 @@
           <img src="logo-eventum.svg" alt="Eventum" class="brand-logo-img" />
         </a>
 
-        <nav class="client-nav">
-          <a routerLink="/eventos-cliente" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="client-nav-item">
-            Eventos
-          </a>
-          <a routerLink="/carrito" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="client-nav-item client-nav-item--with-badge">
-            Carrito
-            <span *ngIf="totalItemsCarrito > 0" class="menu-badge">{{ totalItemsCarrito }}</span>
-          </a>
-          
-          <a
-            *ngIf="cuposEventumEnabled"
-            routerLink="/cupos"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            class="client-nav-item"
-          >
-            Explorar cupos
-          </a>
-          <a routerLink="/mis-compras" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="client-nav-item">
-            Mis Boletas
-          </a>
-          <a routerLink="/mis-compras/actividad" routerLinkActive="active" class="client-nav-item">
-            Actividad
-          </a>
-          <a routerLink="/perfil" routerLinkActive="active" class="client-nav-item">
-            Mi perfil
-          </a>
-          <a routerLink="/conocenos" routerLinkActive="active" class="client-nav-item">
-            Conócenos
-          </a>
+        <nav class="client-nav" aria-label="Secciones del cliente">
+          <ng-container *ngFor="let item of clientNavFor('desktop')">
+            <a
+              [routerLink]="item.path"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: item.exact !== false }"
+              class="client-nav-item"
+              [class.client-nav-item--with-badge]="item.badge === 'carrito'"
+            >
+              {{ item.label }}
+              <span *ngIf="item.badge === 'carrito' && totalItemsCarrito > 0" class="menu-badge">{{ totalItemsCarrito }}</span>
+            </a>
+          </ng-container>
         </nav>
       </div>
     </header>
@@ -260,7 +199,7 @@
             [routerLinkActiveOptions]="{ exact: true }"
             class="client-nav-item"
           >
-            Cupos
+            {{ cuposLabels.explorar }}
           </a>
           <a routerLink="/conocenos" routerLinkActive="active" class="client-nav-item">
             Conócenos
@@ -275,7 +214,28 @@
     </header>
   </ng-container>
 
-  <main [class.main-content]="!isCliente() && !isLector() && currentUser && usuario" [class.client-content]="isCliente() && currentUser && usuario" [class.public-content]="!currentUser || !usuario || isLector()">
+  <main
+    [class.main-content]="!isCliente() && !isLector() && currentUser && usuario"
+    [class.client-content]="isCliente() && currentUser && usuario"
+    [class.public-content]="!currentUser || !usuario || isLector()"
+    [class.layout-content--cart-fab]="mostrarCarritoFab"
+  >
     <router-outlet />
   </main>
+
+  <a
+    *ngIf="mostrarCarritoFab"
+    routerLink="/carrito"
+    class="carrito-fab"
+    aria-label="Ver carrito"
+  >
+    <span class="carrito-fab__left">
+      <span class="material-icons" aria-hidden="true">shopping_cart</span>
+      <span class="carrito-fab__label">Ver carrito</span>
+    </span>
+    <span class="carrito-fab__right">
+      <span class="carrito-fab__badge">{{ totalItemsCarrito }}</span>
+      <span class="carrito-fab__total">{{ formatCurrencyCarrito(subtotalCarrito) }}</span>
+    </span>
+  </a>
 </div>

@@ -1,50 +1,62 @@
-<div class="home-container">
-
-  <!-- Hero Section -->
-  <section class="hero-section">
-    <div class="hero-content">
-      <h1 class="hero-title">Vive momentos <span class="gradient-text">inolvidables</span></h1>
-      <p class="hero-subtitle">Descubre y asegura tu lugar en los mejores conciertos, festivales y eventos culturales.
-      </p>
-
-      <div class="hero-search-container">
-        <span class="material-icons search-icon">search</span>
-        <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()"
-          placeholder="Buscar eventos, conciertos..." class="hero-search-input" />
-      </div>
-    </div>
-  </section>
-
-  <section
-    *ngIf="cuposEventumEnabled && !initialBootstrapLoading"
-    class="cupos-hub"
-    aria-labelledby="cupos-hub-title"
+<div class="eventos-cliente-page">
+  <header
+    class="client-page-header client-page-header--compact client-page-header--in-nav eventos-page-header"
   >
-    <div class="cupos-hub-inner">
-      <div class="cupos-hub-copy">
-        <span class="material-icons cupos-hub-icon" aria-hidden="true">forum</span>
-        <div>
-          <h2 id="cupos-hub-title" class="cupos-hub-title">Cupos Eventum</h2>
-          <p class="cupos-hub-text">Busca u ofrece cupo en el tablón de cada evento.</p>
+    <h1 class="client-page-header__title">Eventos</h1>
+    <p class="client-page-header__subtitle client-page-header__subtitle--full">
+      Descubre conciertos, festivales y experiencias culturales cerca de ti.
+    </p>
+    <p class="client-page-header__subtitle client-page-header__subtitle--short">
+      Conciertos, festivales y cultura.
+    </p>
+  </header>
+
+  <div class="eventos-shell">
+    <div class="eventos-toolbar">
+      <label class="eventos-search" for="eventos-search-input">
+        <span class="material-icons eventos-search__icon" aria-hidden="true">search</span>
+        <input
+          id="eventos-search-input"
+          type="search"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="onSearchChange()"
+          placeholder="Buscar eventos, conciertos…"
+          class="eventos-search__input"
+          autocomplete="off"
+        />
+      </label>
+      <p class="eventos-desktop-lead" aria-hidden="true">
+        Descubre y asegura tu lugar en los mejores eventos.
+      </p>
+    </div>
+    <section
+      *ngIf="cuposEventumEnabled && !initialBootstrapLoading"
+      class="cupos-hub"
+      aria-labelledby="cupos-hub-title"
+    >
+      <div class="cupos-hub-inner">
+        <div class="cupos-hub-copy">
+          <span class="material-icons cupos-hub-icon" aria-hidden="true">forum</span>
+          <div>
+            <h2 id="cupos-hub-title" class="cupos-hub-title">{{ cuposLabels.module }}</h2>
+            <p class="cupos-hub-text">{{ cuposLabels.hubText }}</p>
+          </div>
+        </div>
+        <div class="cupos-hub-actions">
+          <a routerLink="/cupos" class="cupos-hub-link">{{ cuposLabels.explorar }}</a>
+          <a *ngIf="clienteLogueado" routerLink="/mis-cupos" class="cupos-hub-link">
+            {{ cuposLabels.misPublicaciones }}
+            <span
+              *ngIf="respuestasCupos > 0"
+              class="cupos-hub-badge"
+              [attr.aria-label]="respuestasCupos + ' respuestas'"
+            >{{ respuestasCupos }}</span>
+          </a>
+          <a *ngIf="!clienteLogueado" routerLink="/login" class="cupos-hub-link">Entrar</a>
         </div>
       </div>
-      <div class="cupos-hub-actions">
-        <a routerLink="/cupos" class="cupos-hub-link">Explorar</a>
-        <a *ngIf="clienteLogueado" routerLink="/mis-cupos" class="cupos-hub-link">
-          Mis avisos
-          <span
-            *ngIf="respuestasCupos > 0"
-            class="cupos-hub-badge"
-            [attr.aria-label]="respuestasCupos + ' respuestas'"
-          >{{ respuestasCupos }}</span>
-        </a>
-        <a *ngIf="!clienteLogueado" routerLink="/login" class="cupos-hub-link">Entrar</a>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Main Content -->
-  <div class="content-wrapper">
     <!-- Categories Carousel (tras primera carga: categorías + eventos + finalizados) -->
     <section class="categories-section" *ngIf="!initialBootstrapLoading">
       <div class="cat-carousel-wrap">
@@ -94,7 +106,7 @@
     <!-- Featured Events -->
     <section class="events-section" *ngIf="!loading && !searchTerm && !categoriaFiltro && eventosDestacados.length > 0">
       <div class="section-header">
-        <h2>Destacados 🔥</h2>
+        <h2>Destacados</h2>
       </div>
 
       <div class="events-grid featured">
@@ -115,29 +127,45 @@
                 {{ evento.fecha_inicio | dateFormat:'shortDate' }}
               </span>
             </div>
-            <div class="event-products-badge-row" *ngIf="tieneProductosEvento(evento.id)">
-              <span class="event-products-badge" [class.event-products-badge--evento]="precioEventoActivo(evento)">
-                <span class="material-icons">{{ precioEventoActivo(evento) ? 'sell' : 'local_offer' }}</span>
-                {{ getProductosBadgeShortLabel(evento) }}
-              </span>
-            </div>
             <div class="event-footer">
-              <span class="price">{{ formatCurrency(evento.precio_minimo) }}</span>
-              <span class="event-cta" aria-hidden="true">
-                <span class="event-cta-text">Ver</span>
-                <ion-icon name="arrow-forward-outline"></ion-icon>
-              </span>
+              <div class="event-footer-main">
+                <span class="price">{{ formatCurrency(evento.precio_minimo) }}</span>
+                <span class="event-cta" aria-hidden="true">
+                  <span class="event-cta-text">Ver</span>
+                  <ion-icon name="arrow-forward-outline"></ion-icon>
+                </span>
+              </div>
+              <nav
+                *ngIf="cuposEventumEnabled || tieneProductosEvento(evento.id)"
+                class="event-quick-actions"
+                aria-label="Accesos rápidos del evento"
+              >
+                <a
+                  *ngIf="cuposEventumEnabled"
+                  class="event-quick-action event-quick-action--cupos"
+                  [routerLink]="['/cupos-evento', evento.id]"
+                  (click)="$event.stopPropagation()"
+                  [attr.aria-label]="cuposLabels.tablonAria"
+                  [attr.title]="cuposLabels.tablon"
+                >
+                  <span class="material-icons" aria-hidden="true">forum</span>
+                  <span class="event-quick-action__label">{{ cuposLabels.tablon }}</span>
+                </a>
+                <a
+                  *ngIf="tieneProductosEvento(evento.id)"
+                  class="event-quick-action event-quick-action--productos"
+                  [class.event-quick-action--activo]="precioEventoActivo(evento)"
+                  [routerLink]="['/detalle-evento', evento.id]"
+                  [queryParams]="{ tab: 'productos' }"
+                  (click)="$event.stopPropagation()"
+                  [attr.aria-label]="getProductosChipCardLabel(evento)"
+                  [attr.title]="getProductosChipCardLabel(evento)"
+                >
+                  <span class="material-icons" aria-hidden="true">storefront</span>
+                  <span class="event-quick-action__label">{{ getProductosChipShortLabel(evento) }}</span>
+                </a>
+              </nav>
             </div>
-            <a
-              *ngIf="cuposEventumEnabled"
-              class="event-cupos-chip"
-              [routerLink]="['/cupos-evento', evento.id]"
-              (click)="$event.stopPropagation()"
-              aria-label="Tablón de cupos del evento"
-            >
-              <span class="material-icons" aria-hidden="true">forum</span>
-              Tablón cupos
-            </a>
           </div>
         </article>
       </div>
@@ -167,29 +195,45 @@
                 {{ evento.fecha_inicio | dateFormat:'shortDate' }}
               </span>
             </div>
-            <div class="event-products-badge-row" *ngIf="tieneProductosEvento(evento.id)">
-              <span class="event-products-badge" [class.event-products-badge--evento]="precioEventoActivo(evento)">
-                <span class="material-icons">{{ precioEventoActivo(evento) ? 'sell' : 'local_offer' }}</span>
-                {{ getProductosBadgeShortLabel(evento) }}
-              </span>
-            </div>
             <div class="event-footer">
-              <span class="price">{{ formatCurrency(evento.precio_minimo) }}</span>
-              <span class="event-cta" aria-hidden="true">
-                <span class="event-cta-text">Ver</span>
-                <ion-icon name="arrow-forward-outline"></ion-icon>
-              </span>
+              <div class="event-footer-main">
+                <span class="price">{{ formatCurrency(evento.precio_minimo) }}</span>
+                <span class="event-cta" aria-hidden="true">
+                  <span class="event-cta-text">Ver</span>
+                  <ion-icon name="arrow-forward-outline"></ion-icon>
+                </span>
+              </div>
+              <nav
+                *ngIf="cuposEventumEnabled || tieneProductosEvento(evento.id)"
+                class="event-quick-actions"
+                aria-label="Accesos rápidos del evento"
+              >
+                <a
+                  *ngIf="cuposEventumEnabled"
+                  class="event-quick-action event-quick-action--cupos"
+                  [routerLink]="['/cupos-evento', evento.id]"
+                  (click)="$event.stopPropagation()"
+                  [attr.aria-label]="cuposLabels.tablonAria"
+                  [attr.title]="cuposLabels.tablon"
+                >
+                  <span class="material-icons" aria-hidden="true">forum</span>
+                  <span class="event-quick-action__label">{{ cuposLabels.tablon }}</span>
+                </a>
+                <a
+                  *ngIf="tieneProductosEvento(evento.id)"
+                  class="event-quick-action event-quick-action--productos"
+                  [class.event-quick-action--activo]="precioEventoActivo(evento)"
+                  [routerLink]="['/detalle-evento', evento.id]"
+                  [queryParams]="{ tab: 'productos' }"
+                  (click)="$event.stopPropagation()"
+                  [attr.aria-label]="getProductosChipCardLabel(evento)"
+                  [attr.title]="getProductosChipCardLabel(evento)"
+                >
+                  <span class="material-icons" aria-hidden="true">storefront</span>
+                  <span class="event-quick-action__label">{{ getProductosChipShortLabel(evento) }}</span>
+                </a>
+              </nav>
             </div>
-            <a
-              *ngIf="cuposEventumEnabled"
-              class="event-cupos-chip"
-              [routerLink]="['/cupos-evento', evento.id]"
-              (click)="$event.stopPropagation()"
-              aria-label="Tablón de cupos del evento"
-            >
-              <span class="material-icons" aria-hidden="true">forum</span>
-              Tablón cupos
-            </a>
           </div>
         </article>
 
@@ -209,6 +253,7 @@
     </section>
 
     <section
+      id="productos-destacados"
       class="events-section products-panel"
       *ngIf="!loading && !searchTerm && !categoriaFiltro && eventosConProductosPreview.length > 0"
     >
@@ -226,6 +271,7 @@
           class="products-panel-item"
           *ngFor="let evento of eventosConProductosPreview; trackBy: trackByEventoId"
           [routerLink]="['/detalle-evento', evento.id]"
+          [queryParams]="{ tab: 'productos' }"
         >
           <div class="products-panel-item__thumb" aria-hidden="true">
             <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
@@ -233,13 +279,16 @@
           <div class="products-panel-item__main">
             <div class="products-panel-item__title">{{ evento.titulo }}</div>
             <div class="products-panel-item__chips">
-              <span class="products-panel-chip" [class.products-panel-chip--evento]="precioEventoActivo(evento)">
-                <span class="material-icons">{{ precioEventoActivo(evento) ? 'sell' : 'local_offer' }}</span>
-                {{ getProductosBadgeShortLabel(evento) }}
+              <span
+                class="products-panel-chip"
+                [class.products-panel-chip--activo]="precioEventoActivo(evento)"
+              >
+                <span class="material-icons" aria-hidden="true">storefront</span>
+                <span class="products-panel-chip__label">{{ getProductosChipShortLabel(evento) }}</span>
               </span>
               <span class="products-panel-chip products-panel-chip--count">
-                <span class="material-icons">inventory_2</span>
-                {{ getCantidadProductosLabel(evento.id) }}
+                <span class="material-icons" aria-hidden="true">inventory_2</span>
+                <span class="products-panel-chip__label">{{ getCantidadProductosLabel(evento.id) }}</span>
               </span>
             </div>
             <div class="products-panel-item__meta">
@@ -265,13 +314,12 @@
           [routerLink]="['/detalle-evento', evento.id]">
           <div class="event-thumb">
             <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
-            <div class="finalizado-badge">
-              <span class="material-icons">check_circle</span>
-              <span>Finalizado</span>
-            </div>
           </div>
           <div class="event-body">
-            <h3 class="event-title">{{ evento.titulo }}</h3>
+            <div class="event-card-head">
+              <h3 class="event-title">{{ evento.titulo }}</h3>
+              <span class="event-past-chip">Finalizado</span>
+            </div>
             <div class="event-meta">
               <span class="event-meta-line">
                 <span class="material-icons">place</span>
@@ -296,21 +344,17 @@
 
   </div>
 
-  <footer class="footer footer--compact" role="contentinfo">
-    <div class="footer-bottom">
-      <p>&copy; {{ currentYear }} Eventum. Todos los derechos reservados.</p>
-      <p class="footer-version" aria-label="Versión de la aplicación">Versión {{ appVersion }}</p>
-      <div class="footer-links">
-        <a routerLink="/conocenos" class="footer-link">Conócenos</a>
-        <span class="separator">•</span>
-        <a routerLink="/conocenos" fragment="pagos-wompi" class="footer-link">Pagos con Wompi</a>
-        <span class="separator">•</span>
-        <a href="#" class="footer-link">Términos y Condiciones</a>
-        <span class="separator">•</span>
-        <a href="#" class="footer-link">Política de Privacidad</a>
-        <span class="separator">•</span>
-        <a href="#" class="footer-link">Ayuda</a>
-      </div>
+  <footer class="eventos-footer" role="contentinfo">
+    <div class="eventos-footer__inner">
+      <p class="eventos-footer__copy">&copy; {{ currentYear }} Eventum</p>
+      <p class="eventos-footer__version" aria-label="Versión de la aplicación">v{{ appVersion }}</p>
+      <nav class="eventos-footer__links" aria-label="Enlaces legales">
+        <a routerLink="/conocenos" class="eventos-footer__link">Conócenos</a>
+        <a routerLink="/conocenos" fragment="pagos-wompi" class="eventos-footer__link">Pagos Wompi</a>
+        <a href="#" class="eventos-footer__link">Términos</a>
+        <a href="#" class="eventos-footer__link">Privacidad</a>
+        <a href="#" class="eventos-footer__link">Ayuda</a>
+      </nav>
     </div>
   </footer>
 </div>

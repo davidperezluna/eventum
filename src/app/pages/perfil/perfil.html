@@ -1,76 +1,74 @@
 <div class="perfil-page">
-  <!-- Hero Section (Mini) -->
-  <section class="hero-section mini-hero">
-    <div class="hero-content">
-      <h1 class="hero-title">Mi <span class="gradient-text">Perfil</span></h1>
-      <p class="hero-subtitle">Gestiona tu información personal y seguridad</p>
+  <header
+    class="client-page-header client-page-header--compact client-page-header--in-nav perfil-page-header"
+  >
+    <h1 class="client-page-header__title">Mi perfil</h1>
+    <p class="client-page-header__subtitle client-page-header__subtitle--full">
+      Gestiona tu información personal y los datos de tu cuenta.
+    </p>
+    <p class="client-page-header__subtitle client-page-header__subtitle--short">
+      Tu información y cuenta.
+    </p>
+  </header>
+
+  <div class="perfil-shell">
+    <div
+      class="perfil-refresh"
+      *ngIf="isRefreshing && !loading"
+      aria-live="polite"
+      aria-label="Actualizando perfil"
+    >
+      <span class="perfil-refresh__spinner" aria-hidden="true"></span>
+      <span>Actualizando…</span>
     </div>
-  </section>
 
-  <div class="silent-refresh-indicator" *ngIf="isRefreshing && !loading" aria-live="polite" aria-label="Actualizando perfil">
-    <span class="silent-refresh-spinner" aria-hidden="true"></span>
-  </div>
+    <div *ngIf="loading" class="perfil-loading">
+      <div class="perfil-spinner" aria-hidden="true"></div>
+      <p>Cargando información del perfil…</p>
+    </div>
 
-  <!-- Loading state -->
-  <div *ngIf="loading" class="loading-state">
-    <div class="spinner"></div>
-    <p>Cargando información del perfil...</p>
-  </div>
+    <div *ngIf="error && !loading" class="perfil-alert perfil-alert--error" role="alert">
+      <span class="material-icons" aria-hidden="true">error_outline</span>
+      <p>{{ error }}</p>
+    </div>
 
-  <!-- Error message -->
-  <div *ngIf="error && !loading" class="error-message">
-    <span class="material-icons">error</span>
-    <p>{{ error }}</p>
-  </div>
+    <div *ngIf="success && !loading" class="perfil-alert perfil-alert--success" role="status">
+      <span class="material-icons" aria-hidden="true">check_circle</span>
+      <p>{{ success }}</p>
+    </div>
 
-  <!-- Success message -->
-  <div *ngIf="success && !loading" class="success-message">
-    <span class="material-icons">check_circle</span>
-    <p>{{ success }}</p>
-  </div>
-
-  <!-- Perfil content -->
-  <div *ngIf="!loading && usuario" class="perfil-content">
-    <!-- Información del usuario -->
-    <div class="content-card">
-      <div class="card-header">
-        <h2>
-          <span class="material-icons">info</span>
-          Información Personal
-        </h2>
-      </div>
-
-      <div class="perfil-header">
-        <div class="foto-perfil-container">
-          <div class="foto-perfil-wrapper">
-            <div class="foto-perfil-ring">
+    <ng-container *ngIf="!loading && usuario">
+      <section class="perfil-identity" aria-label="Resumen de cuenta">
+        <div class="perfil-identity__photo">
+          <div class="perfil-avatar-wrap">
+            <div class="perfil-avatar-ring">
               <img
                 *ngIf="tieneFotoVisible()"
                 [src]="previewUrl!"
                 [alt]="'Foto de ' + getNombreCompleto()"
-                class="foto-perfil"
+                class="perfil-avatar-img"
               />
-              <div *ngIf="!tieneFotoVisible()" class="foto-perfil-placeholder" aria-hidden="true">
+              <div *ngIf="!tieneFotoVisible()" class="perfil-avatar-placeholder" aria-hidden="true">
                 <span class="material-icons">person</span>
               </div>
               <div
                 *ngIf="tieneFotoVisible() && selectedFile"
-                class="foto-overlay foto-overlay--pending"
+                class="perfil-avatar-overlay"
               >
                 <button
                   type="button"
-                  class="btn-icon btn-danger"
+                  class="perfil-avatar-discard"
                   title="Descartar la nueva foto"
                   aria-label="Descartar la nueva foto y volver a la anterior"
                   (click)="removeImage(); $event.stopPropagation()"
                 >
-                  <span class="material-icons" aria-hidden="true">delete</span>
+                  <span class="material-icons" aria-hidden="true">delete_outline</span>
                 </button>
               </div>
             </div>
             <button
               type="button"
-              class="foto-camera-fab"
+              class="perfil-avatar-camera"
               (click)="selectImage()"
               [disabled]="uploadingImage"
               aria-label="Cambiar foto de perfil"
@@ -78,161 +76,246 @@
               <span class="material-icons" aria-hidden="true">{{ uploadingImage ? 'hourglass_empty' : 'photo_camera' }}</span>
             </button>
           </div>
-          <p class="foto-help">Toca el botón en la esquina para cambiar tu foto.</p>
-        </div>
-        <div class="usuario-info">
-          <h3>{{ getNombreCompleto() }}</h3>
-          <p class="usuario-email">{{ usuario.email }}</p>
-          <span class="badge badge-primary">{{ getRolNombre() }}</span>
-        </div>
-      </div>
-
-      <form (ngSubmit)="savePerfil()" class="perfil-form">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Nombre *</label>
-            <input type="text" [(ngModel)]="formData.nombre" name="nombre" placeholder="Tu nombre" />
-          </div>
-          <div class="form-group">
-            <label>Apellido *</label>
-            <input type="text" [(ngModel)]="formData.apellido" name="apellido" placeholder="Tu apellido" />
-          </div>
+          <p class="perfil-avatar-hint">Toca el botón para cambiar tu foto.</p>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>Email</label>
-            <input type="email" [value]="usuario.email" disabled class="disabled-input" />
-            <small class="form-help">El email no se puede cambiar</small>
-          </div>
-          <div class="form-group">
-            <label>Teléfono</label>
-            <input type="tel" [(ngModel)]="formData.telefono" name="telefono" placeholder="+57 300 123 4567" />
-          </div>
+        <div class="perfil-identity__copy">
+          <h2 class="perfil-identity__name">{{ getNombreCompleto() }}</h2>
+          <p class="perfil-identity__email">{{ usuario.email }}</p>
+          <span class="perfil-role-chip">{{ getRolNombre() }}</span>
         </div>
+      </section>
 
-        <details
-          class="perfil-mas-datos"
-          [open]="masDatosPerfilAbierto"
-          (toggle)="onMasDatosPerfilToggle($event)"
-        >
-          <summary class="perfil-mas-datos-summary">
-            <span class="perfil-mas-datos-summary-text">
-              <span class="material-icons perfil-mas-datos-summary-icon" aria-hidden="true">badge</span>
-              Más datos
-            </span>
-            <span class="material-icons perfil-mas-datos-chevron" aria-hidden="true">expand_more</span>
-          </summary>
-          <div class="perfil-mas-datos-body">
-            <p class="perfil-mas-datos-hint">Fecha de nacimiento, género, documento y dirección.</p>
-            <div class="loading-small loading-small--mas-datos" *ngIf="loadingDatosCriticos && !loading">
-              <p>Cargando datos completos del perfil...</p>
+      <section class="perfil-card" aria-labelledby="perfil-datos-title">
+        <h2 id="perfil-datos-title" class="perfil-card__title">Datos personales</h2>
+
+        <form (ngSubmit)="savePerfil()" class="perfil-form">
+          <div class="perfil-form-row">
+            <div class="perfil-field">
+              <label for="perfil-nombre">Nombre *</label>
+              <input
+                id="perfil-nombre"
+                type="text"
+                [(ngModel)]="formData.nombre"
+                name="nombre"
+                placeholder="Tu nombre"
+                autocomplete="given-name"
+              />
             </div>
-
-            <div class="form-row" *ngIf="!loadingDatosCriticos">
-              <div class="form-group">
-                <label>Fecha de Nacimiento</label>
-                <input type="date" [(ngModel)]="formData.fecha_nacimiento" name="fecha_nacimiento" />
-              </div>
-              <div class="form-group">
-                <label>Género</label>
-                <select [(ngModel)]="formData.genero" name="genero">
-                  <option *ngFor="let genero of generos" [value]="genero.value">
-                    {{ genero.label }}
-                  </option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-group" *ngIf="!loadingDatosCriticos">
-              <label>Documento de Identidad</label>
-              <input type="text" [(ngModel)]="formData.documento_identidad" name="documento_identidad"
-                placeholder="Número de documento" />
-            </div>
-
-            <div class="form-group" *ngIf="!loadingDatosCriticos">
-              <label>Dirección</label>
-              <input type="text" [(ngModel)]="formData.direccion" name="direccion" placeholder="Dirección completa" />
-            </div>
-
-            <div class="form-row" *ngIf="!loadingDatosCriticos">
-              <div class="form-group">
-                <label>Ciudad</label>
-                <input type="text" [(ngModel)]="formData.ciudad" name="ciudad" placeholder="Ciudad" />
-              </div>
-              <div class="form-group">
-                <label>País</label>
-                <input type="text" [(ngModel)]="formData.pais" name="pais" placeholder="País" />
-              </div>
+            <div class="perfil-field">
+              <label for="perfil-apellido">Apellido *</label>
+              <input
+                id="perfil-apellido"
+                type="text"
+                [(ngModel)]="formData.apellido"
+                name="apellido"
+                placeholder="Tu apellido"
+                autocomplete="family-name"
+              />
             </div>
           </div>
-        </details>
 
-        <div class="form-actions">
-          <button type="submit" class="btn-primary" [disabled]="saving || uploadingImage">
-            <span class="material-icons" *ngIf="!saving">save</span>
-            <span class="spinner-small" *ngIf="saving"></span>
-            {{ saving ? 'Guardando...' : 'Guardar Cambios' }}
-          </button>
-          <button
-            type="button"
-            class="btn-cerrar-sesion"
-            (click)="cerrarSesion()"
-            [disabled]="cerrandoSesion"
-            aria-label="Cerrar sesión"
+          <div class="perfil-form-row">
+            <div class="perfil-field">
+              <label for="perfil-email">Email</label>
+              <input
+                id="perfil-email"
+                type="email"
+                [value]="usuario.email"
+                disabled
+                class="perfil-input--disabled"
+              />
+              <small class="perfil-field-hint">El email no se puede cambiar.</small>
+            </div>
+            <div class="perfil-field">
+              <label for="perfil-telefono">Teléfono</label>
+              <input
+                id="perfil-telefono"
+                type="tel"
+                [(ngModel)]="formData.telefono"
+                name="telefono"
+                placeholder="+57 300 123 4567"
+                autocomplete="tel"
+              />
+            </div>
+          </div>
+
+          <details
+            class="perfil-mas-datos"
+            [open]="masDatosPerfilAbierto"
+            (toggle)="onMasDatosPerfilToggle($event)"
           >
-            <span class="material-icons" *ngIf="!cerrandoSesion">logout</span>
-            <span class="spinner-small" *ngIf="cerrandoSesion"></span>
-            {{ cerrandoSesion ? 'Cerrando sesión...' : 'Cerrar sesión' }}
+            <summary class="perfil-mas-datos__summary">
+              <span class="perfil-mas-datos__summary-text">
+                <span class="material-icons" aria-hidden="true">badge</span>
+                Más datos
+              </span>
+              <span class="material-icons perfil-mas-datos__chevron" aria-hidden="true">expand_more</span>
+            </summary>
+            <div class="perfil-mas-datos__body">
+              <p class="perfil-mas-datos__hint">Fecha de nacimiento, género, documento y dirección.</p>
+
+              <div class="perfil-loading perfil-loading--inline" *ngIf="loadingDatosCriticos && !loading">
+                <div class="perfil-spinner perfil-spinner--sm" aria-hidden="true"></div>
+                <p>Cargando datos completos…</p>
+              </div>
+
+              <ng-container *ngIf="!loadingDatosCriticos">
+                <div class="perfil-form-row">
+                  <div class="perfil-field">
+                    <label for="perfil-fecha">Fecha de nacimiento</label>
+                    <input
+                      id="perfil-fecha"
+                      type="date"
+                      [(ngModel)]="formData.fecha_nacimiento"
+                      name="fecha_nacimiento"
+                    />
+                  </div>
+                  <div class="perfil-field">
+                    <label for="perfil-genero">Género</label>
+                    <select id="perfil-genero" [(ngModel)]="formData.genero" name="genero">
+                      <option *ngFor="let genero of generos" [value]="genero.value">
+                        {{ genero.label }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="perfil-field">
+                  <label for="perfil-documento">Documento de identidad</label>
+                  <input
+                    id="perfil-documento"
+                    type="text"
+                    [(ngModel)]="formData.documento_identidad"
+                    name="documento_identidad"
+                    placeholder="Número de documento"
+                  />
+                </div>
+
+                <div class="perfil-field">
+                  <label for="perfil-direccion">Dirección</label>
+                  <input
+                    id="perfil-direccion"
+                    type="text"
+                    [(ngModel)]="formData.direccion"
+                    name="direccion"
+                    placeholder="Dirección completa"
+                    autocomplete="street-address"
+                  />
+                </div>
+
+                <div class="perfil-form-row">
+                  <div class="perfil-field">
+                    <label for="perfil-ciudad">Ciudad</label>
+                    <input
+                      id="perfil-ciudad"
+                      type="text"
+                      [(ngModel)]="formData.ciudad"
+                      name="ciudad"
+                      placeholder="Ciudad"
+                      autocomplete="address-level2"
+                    />
+                  </div>
+                  <div class="perfil-field">
+                    <label for="perfil-pais">País</label>
+                    <input
+                      id="perfil-pais"
+                      type="text"
+                      [(ngModel)]="formData.pais"
+                      name="pais"
+                      placeholder="País"
+                      autocomplete="country-name"
+                    />
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </details>
+
+          <div class="perfil-form-actions">
+            <button type="submit" class="perfil-btn perfil-btn--primary" [disabled]="saving || uploadingImage">
+              <span class="material-icons" *ngIf="!saving" aria-hidden="true">save</span>
+              <span class="perfil-spinner perfil-spinner--btn" *ngIf="saving" aria-hidden="true"></span>
+              {{ saving ? 'Guardando…' : 'Guardar cambios' }}
+            </button>
+            <button
+              type="button"
+              class="perfil-btn perfil-btn--logout"
+              (click)="cerrarSesion()"
+              [disabled]="cerrandoSesion"
+              aria-label="Cerrar sesión"
+            >
+              <span class="material-icons" *ngIf="!cerrandoSesion" aria-hidden="true">logout</span>
+              <span class="perfil-spinner perfil-spinner--btn perfil-spinner--logout" *ngIf="cerrandoSesion" aria-hidden="true"></span>
+              {{ cerrandoSesion ? 'Cerrando sesión…' : 'Cerrar sesión' }}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="perfil-card" *ngIf="mostrarCambiarContrasena" aria-labelledby="perfil-password-title">
+        <div class="perfil-card__head">
+          <h2 id="perfil-password-title" class="perfil-card__title">Cambiar contraseña</h2>
+          <button type="button" class="perfil-btn perfil-btn--ghost" (click)="cambiarPassword = !cambiarPassword">
+            <span class="material-icons" aria-hidden="true">{{ cambiarPassword ? 'expand_less' : 'expand_more' }}</span>
+            {{ cambiarPassword ? 'Ocultar' : 'Mostrar' }}
           </button>
         </div>
-      </form>
-    </div>
 
-    <!-- Cambio de contraseña (oculto temporalmente — ver mostrarCambiarContrasena en perfil.ts) -->
-    <div class="content-card" *ngIf="mostrarCambiarContrasena">
-      <div class="card-header">
-        <h2>
-          <span class="material-icons">lock</span>
-          Cambiar Contraseña
-        </h2>
-        <button type="button" class="btn-secondary" (click)="cambiarPassword = !cambiarPassword">
-          <span class="material-icons">{{ cambiarPassword ? 'expand_less' : 'expand_more' }}</span>
-          {{ cambiarPassword ? 'Ocultar' : 'Cambiar Contraseña' }}
-        </button>
-      </div>
+        <div *ngIf="cambiarPassword" class="perfil-password-form">
+          <div class="perfil-field">
+            <label for="perfil-pass-actual">Contraseña actual *</label>
+            <input
+              id="perfil-pass-actual"
+              type="password"
+              [(ngModel)]="passwordActual"
+              name="passwordActual"
+              placeholder="Ingresa tu contraseña actual"
+              autocomplete="current-password"
+            />
+          </div>
 
-      <div *ngIf="cambiarPassword" class="password-form">
-        <div class="form-group">
-          <label>Contraseña Actual *</label>
-          <input type="password" [(ngModel)]="passwordActual" name="passwordActual"
-            placeholder="Ingresa tu contraseña actual" />
+          <div class="perfil-field">
+            <label for="perfil-pass-nueva">Nueva contraseña *</label>
+            <input
+              id="perfil-pass-nueva"
+              type="password"
+              [(ngModel)]="passwordNueva"
+              name="passwordNueva"
+              placeholder="Mínimo 6 caracteres"
+              autocomplete="new-password"
+            />
+            <small class="perfil-field-hint">La contraseña debe tener al menos 6 caracteres.</small>
+          </div>
+
+          <div class="perfil-field">
+            <label for="perfil-pass-confirmar">Confirmar nueva contraseña *</label>
+            <input
+              id="perfil-pass-confirmar"
+              type="password"
+              [(ngModel)]="passwordConfirmar"
+              name="passwordConfirmar"
+              placeholder="Confirma tu nueva contraseña"
+              autocomplete="new-password"
+            />
+          </div>
+
+          <div class="perfil-form-actions perfil-form-actions--password">
+            <button type="button" class="perfil-btn perfil-btn--primary" (click)="cambiarContrasena()" [disabled]="saving">
+              <span class="material-icons" *ngIf="!saving" aria-hidden="true">lock_reset</span>
+              <span class="perfil-spinner perfil-spinner--btn" *ngIf="saving" aria-hidden="true"></span>
+              {{ saving ? 'Cambiando…' : 'Cambiar contraseña' }}
+            </button>
+            <button
+              type="button"
+              class="perfil-btn perfil-btn--ghost"
+              (click)="cambiarPassword = false; passwordActual = ''; passwordNueva = ''; passwordConfirmar = ''"
+            >
+              Cancelar
+            </button>
+          </div>
         </div>
-
-        <div class="form-group">
-          <label>Nueva Contraseña *</label>
-          <input type="password" [(ngModel)]="passwordNueva" name="passwordNueva" placeholder="Mínimo 6 caracteres" />
-          <small class="form-help">La contraseña debe tener al menos 6 caracteres</small>
-        </div>
-
-        <div class="form-group">
-          <label>Confirmar Nueva Contraseña *</label>
-          <input type="password" [(ngModel)]="passwordConfirmar" name="passwordConfirmar"
-            placeholder="Confirma tu nueva contraseña" />
-        </div>
-
-        <div class="form-actions">
-          <button type="button" class="btn-primary" (click)="cambiarContrasena()" [disabled]="saving">
-            <span class="material-icons" *ngIf="!saving">lock_reset</span>
-            <span class="spinner-small" *ngIf="saving"></span>
-            {{ saving ? 'Cambiando...' : 'Cambiar Contraseña' }}
-          </button>
-          <button type="button" class="btn-secondary"
-            (click)="cambiarPassword = false; passwordActual = ''; passwordNueva = ''; passwordConfirmar = ''">
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </div>
+      </section>
+    </ng-container>
   </div>
 </div>

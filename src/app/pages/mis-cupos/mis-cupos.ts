@@ -20,6 +20,7 @@ import {
 } from '../../types/cupos';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { CuposHubNav } from '../../components/cupos-hub-nav/cupos-hub-nav';
+import { CUPOS_LABELS } from '../../core/cupos-labels';
 
 @Component({
   selector: 'app-mis-cupos',
@@ -29,6 +30,8 @@ import { CuposHubNav } from '../../components/cupos-hub-nav/cupos-hub-nav';
   styleUrls: ['../cupos-evento/cupos-evento.css', '../cupos-explorar/cupos-explorar.css', './mis-cupos.css'],
 })
 export class MisCupos implements OnInit, OnDestroy {
+  readonly cuposLabels = CUPOS_LABELS;
+
   loading = true;
   avisos: AvisoCupoMio[] = [];
   resumen: ResumenMisCupos = { avisos_activos: 0, total_respuestas: 0 };

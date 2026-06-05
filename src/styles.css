@@ -1,5 +1,6 @@
 /* Importar sistema de temas */
 @import './styles/themes.css';
+@import './styles/client-tokens.css';
 
 /* Global Styles */
 * {

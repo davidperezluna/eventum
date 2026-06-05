@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, CUSTOM_ELEMENTS_SCHEMA, HostListener } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -30,6 +30,7 @@ import {
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { SafePipe } from '../../pipes/safe.pipe';
 import { cuposEventumEnabled } from '../../core/cupos-feature';
+import { CUPOS_LABELS } from '../../core/cupos-labels';
 
 @Component({
   selector: 'app-detalle-evento',
@@ -40,6 +41,7 @@ import { cuposEventumEnabled } from '../../core/cupos-feature';
 })
 export class DetalleEvento implements OnInit, OnDestroy {
   readonly cuposEventumEnabled = cuposEventumEnabled;
+  readonly cuposLabels = CUPOS_LABELS;
   evento: Evento | null = null;
   tiposBoleta: TipoBoleta[] = [];
   lugar: Lugar | null = null;
@@ -75,6 +77,8 @@ export class DetalleEvento implements OnInit, OnDestroy {
 
   // Modal de imagen
   imagenModalAbierta = false;
+  private imagenModalHistorialActivo = false;
+  private mapaModalHistorialActivo = false;
   private currentEventoId: number | null = null;
   private refreshIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly refreshIndicatorDelayMs = 800;
@@ -142,6 +146,11 @@ export class DetalleEvento implements OnInit, OnDestroy {
     return this.modoPruebaCompraAdmin ? ['/probar-compras'] : ['/eventos-cliente'];
   }
 
+  volverAEventos(): void {
+    this.cerrarCapasSuperpuestas({ sincronizarHistorial: false });
+    void this.router.navigate(this.rutaVolverEventos);
+  }
+
   tieneExistencias(tipo: TipoBoleta): boolean {
     const disponibles = Number(tipo.cantidad_disponibles ?? 0);
     const soldOut = disponibles <= 0;
@@ -179,8 +188,31 @@ export class DetalleEvento implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.carritoSubscription?.unsubscribe();
+    this.cerrarCapasSuperpuestas({ sincronizarHistorial: false });
     this.persistState(Date.now());
     this.stopSilentRefreshIndicator();
+  }
+
+  @HostListener('window:popstate')
+  onWindowPopState(): void {
+    if (this.imagenModalAbierta) {
+      this.cerrarImagenModal({ sincronizarHistorial: false });
+      return;
+    }
+    if (this.mapaAmpliado) {
+      this.cerrarMapaAmpliado({ sincronizarHistorial: false });
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.imagenModalAbierta) {
+      this.cerrarImagenModal();
+      return;
+    }
+    if (this.mapaAmpliado) {
+      this.cerrarMapaAmpliado();
+    }
   }
 
   loadUsuario() {
@@ -355,12 +387,29 @@ export class DetalleEvento implements OnInit, OnDestroy {
   }
 
   abrirMapaAmpliado(url: string, titulo: string): void {
+    if (this.mapaAmpliado) return;
     this.mapaAmpliado = { url, titulo };
+    this.setScrollDocumentoBloqueado(true);
+    if (!this.mapaModalHistorialActivo) {
+      history.pushState({ detalleEventoMapa: true }, '');
+      this.mapaModalHistorialActivo = true;
+    }
     this.cdr.detectChanges();
   }
 
-  cerrarMapaAmpliado(): void {
+  cerrarMapaAmpliado(opciones?: { sincronizarHistorial?: boolean }): void {
+    if (!this.mapaAmpliado) return;
+    const sincronizarHistorial = opciones?.sincronizarHistorial !== false;
     this.mapaAmpliado = null;
+    if (!this.imagenModalAbierta) {
+      this.setScrollDocumentoBloqueado(false);
+    }
+    if (this.mapaModalHistorialActivo && sincronizarHistorial) {
+      this.mapaModalHistorialActivo = false;
+      history.back();
+    } else {
+      this.mapaModalHistorialActivo = false;
+    }
     this.cdr.detectChanges();
   }
 
@@ -786,16 +835,48 @@ export class DetalleEvento implements OnInit, OnDestroy {
     window.open(sitioWeb, '_blank', 'noopener,noreferrer');
   }
 
-  abrirImagenModal() {
+  abrirImagenModal(): void {
+    if (this.imagenModalAbierta) return;
     this.imagenModalAbierta = true;
-    // Prevenir scroll del body cuando el modal está abierto
-    document.body.style.overflow = 'hidden';
+    this.setScrollDocumentoBloqueado(true);
+    if (!this.imagenModalHistorialActivo) {
+      history.pushState({ detalleEventoImagen: true }, '');
+      this.imagenModalHistorialActivo = true;
+    }
+    this.cdr.detectChanges();
   }
 
-  cerrarImagenModal() {
+  cerrarImagenModal(opciones?: { sincronizarHistorial?: boolean }): void {
+    if (!this.imagenModalAbierta) return;
+    const sincronizarHistorial = opciones?.sincronizarHistorial !== false;
     this.imagenModalAbierta = false;
-    // Restaurar scroll del body
-    document.body.style.overflow = '';
+    if (!this.mapaAmpliado) {
+      this.setScrollDocumentoBloqueado(false);
+    }
+    if (this.imagenModalHistorialActivo && sincronizarHistorial) {
+      this.imagenModalHistorialActivo = false;
+      history.back();
+    } else {
+      this.imagenModalHistorialActivo = false;
+    }
+    this.cdr.detectChanges();
+  }
+
+  private cerrarCapasSuperpuestas(opciones?: { sincronizarHistorial?: boolean }): void {
+    if (this.imagenModalAbierta) {
+      this.cerrarImagenModal(opciones);
+    }
+    if (this.mapaAmpliado) {
+      this.cerrarMapaAmpliado(opciones);
+    }
+    this.setScrollDocumentoBloqueado(false);
+  }
+
+  private setScrollDocumentoBloqueado(bloquear: boolean): void {
+    if (typeof document === 'undefined') return;
+    const valor = bloquear ? 'hidden' : '';
+    document.documentElement.style.overflow = valor;
+    document.body.style.overflow = valor;
   }
 
   private applyCachedState(state: {

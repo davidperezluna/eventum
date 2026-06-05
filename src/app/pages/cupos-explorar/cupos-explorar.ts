@@ -14,9 +14,11 @@ import {
   TIPO_AVISO_CUPO_HINT,
   TIPO_AVISO_CUPO_ICON,
   TIPO_AVISO_CUPO_LABELS,
+  TIPO_AVISO_CUPO_LABELS_SHORT,
   TipoAvisoCupo,
 } from '../../types/cupos';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
+import { CUPOS_LABELS } from '../../core/cupos-labels';
 
 type FiltroCupo = 'todos' | TipoAvisoCupo;
 
@@ -28,6 +30,8 @@ type FiltroCupo = 'todos' | TipoAvisoCupo;
   styleUrls: ['../cupos-evento/cupos-evento.css', './cupos-explorar.css'],
 })
 export class CuposExplorar implements OnInit {
+  readonly cuposLabels = CUPOS_LABELS;
+
   loading = true;
   avisos: AvisoCupoConEvento[] = [];
   filtro: FiltroCupo = 'todos';
@@ -50,6 +54,7 @@ export class CuposExplorar implements OnInit {
 
   readonly tipos: TipoAvisoCupo[] = ['busco_cupo', 'ofrezco_cupo', 'busco_grupo'];
   readonly tipoLabels = TIPO_AVISO_CUPO_LABELS;
+  readonly tipoLabelsShort = TIPO_AVISO_CUPO_LABELS_SHORT;
   readonly tipoIcons = TIPO_AVISO_CUPO_ICON;
   readonly tipoHints = TIPO_AVISO_CUPO_HINT;
 

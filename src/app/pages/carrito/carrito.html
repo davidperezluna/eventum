@@ -1,50 +1,69 @@
 <div class="carrito-page">
-  <section class="hero-section mini-hero">
-    <div class="hero-content">
-      <h1 class="hero-title">Mi <span class="gradient-text">Carrito</span></h1>
-      <p class="hero-subtitle">Confirma tus boletas, productos y finaliza tu compra de forma segura.</p>
-    </div>
-  </section>
+  <header
+    class="client-page-header client-page-header--compact client-page-header--in-nav carrito-page-header"
+    [class.carrito-page-header--has-items]="!carritoVacio"
+  >
+    <h1 class="client-page-header__title">Mi carrito</h1>
+    <p class="client-page-header__subtitle client-page-header__subtitle--full">
+      Confirma tus boletas, productos y finaliza tu compra de forma segura.
+    </p>
+    <p class="client-page-header__subtitle client-page-header__subtitle--short">Confirma y paga de forma segura.</p>
+  </header>
 
   <section class="carrito-shell">
-    <div class="checkout-pendiente-alert" *ngIf="checkoutPendienteEnCurso as pendiente">
-      <div class="checkout-pendiente-alert__icon" aria-hidden="true">
-        <span class="material-icons">pending_actions</span>
-      </div>
-      <div class="checkout-pendiente-alert__content">
-        <div class="checkout-pendiente-alert__header">
-          <h4>Pago pendiente detectado</h4>
-          <span class="checkout-pendiente-alert__badge" [class.checkout-pendiente-alert__badge--expired]="pendiente.expiro">
+    <a
+      *ngIf="!carritoVacio && evento?.id as eventoId"
+      [routerLink]="['/detalle-evento', eventoId]"
+      class="carrito-back-evento carrito-back-evento--shell"
+    >
+      <span class="material-icons" aria-hidden="true">arrow_back</span>
+      Volver al evento
+    </a>
+
+    <section
+      class="checkout-pendiente-alert"
+      *ngIf="checkoutPendienteEnCurso as pendiente"
+      [class.checkout-pendiente-alert--expired]="pendiente.expiro"
+      aria-label="Pago pendiente"
+    >
+      <header class="checkout-pendiente-alert__head">
+        <span class="material-icons checkout-pendiente-alert__icon" aria-hidden="true">pending_actions</span>
+        <div class="checkout-pendiente-alert__titles">
+          <h4 class="checkout-pendiente-alert__title">Pago pendiente</h4>
+          <span
+            class="checkout-pendiente-alert__badge"
+            [class.checkout-pendiente-alert__badge--expired]="pendiente.expiro"
+          >
             {{ pendiente.expiro ? 'Vencido' : 'En curso' }}
           </span>
         </div>
-        <p>
-          {{
-            pendiente.expiro
-              ? 'Encontramos un checkout pendiente vencido. Puedes revisar su estado o cancelarlo para crear una compra nueva.'
-              : 'Encontramos una compra pendiente de confirmación. Reanúdala para evitar duplicados y completar tu pedido.'
-          }}
-        </p>
-        <div class="checkout-pendiente-alert__actions">
-          <button
-            type="button"
-            class="checkout-pendiente-alert__btn"
-            (click)="recuperarCheckoutPendiente()"
-            [disabled]="cancelandoCheckoutPendiente"
-          >
-            {{ pendiente.expiro ? 'Revisar estado pendiente' : 'Recuperar pago pendiente' }}
-          </button>
-          <button
-            type="button"
-            class="checkout-pendiente-alert__btn-alt"
-            (click)="cancelarCheckoutPendiente()"
-            [disabled]="cancelandoCheckoutPendiente"
-          >
-            {{ cancelandoCheckoutPendiente ? 'Cancelando...' : 'Cancelar intento y seguir' }}
-          </button>
-        </div>
+      </header>
+      <p class="checkout-pendiente-alert__text">
+        {{
+          pendiente.expiro
+            ? 'Hay un checkout vencido. Revisa su estado o cancélalo para crear una compra nueva.'
+            : 'Tienes una compra sin confirmar. Reanúdala para evitar duplicados.'
+        }}
+      </p>
+      <div class="checkout-pendiente-alert__actions">
+        <button
+          type="button"
+          class="checkout-pendiente-alert__btn"
+          (click)="recuperarCheckoutPendiente()"
+          [disabled]="cancelandoCheckoutPendiente"
+        >
+          {{ pendiente.expiro ? 'Revisar estado' : 'Recuperar pago' }}
+        </button>
+        <button
+          type="button"
+          class="checkout-pendiente-alert__btn-alt"
+          (click)="cancelarCheckoutPendiente()"
+          [disabled]="cancelandoCheckoutPendiente"
+        >
+          {{ cancelandoCheckoutPendiente ? 'Cancelando…' : 'Cancelar y seguir' }}
+        </button>
       </div>
-    </div>
+    </section>
 
     <div class="empty-state" *ngIf="carritoVacio">
       <div class="empty-state-icon-box">
@@ -52,41 +71,52 @@
       </div>
       <h2>Tu carrito está vacío</h2>
       <p>Agrega boletas, palcos o productos desde el detalle del evento.</p>
-      <button type="button" class="btn-primary empty-state__cta" (click)="irAEventos()">
+      <a routerLink="/eventos-cliente" class="empty-state__cta">
+        <span class="material-icons" aria-hidden="true">event</span>
         Ver eventos
-      </button>
+      </a>
     </div>
 
     <ng-container *ngIf="!carritoVacio">
-      <section class="evento-section">
-        <h2>{{ evento?.titulo }}</h2>
-        <p class="section-subtitle">Revisa tus boletas, productos, selecciona palcos y finaliza el pago.</p>
-        <p *ngIf="shouldShowPreventaHintProducto()" class="preventa-hint preventa-hint--urgent">
-          <span class="material-icons">local_offer</span>
-          Preventa por tiempo limitado · {{ getPreventaCountdownLabelProducto() }}
-        </p>
+      <section class="carrito-evento-block">
+        <header class="carrito-evento-header">
+          <h2 class="carrito-evento-title">{{ evento?.titulo }}</h2>
+          <p *ngIf="shouldShowPreventaHintProducto()" class="carrito-preventa-chip carrito-preventa-chip--urgent">
+            <span class="material-icons" aria-hidden="true">local_offer</span>
+            Preventa · {{ getPreventaCountdownLabelProducto() }}
+          </p>
+        </header>
 
         <div class="carrito-items">
           <div *ngFor="let item of itemsCompra" class="carrito-item">
             <div class="carrito-item-info">
-              <div class="info-main">
-                <h4>{{ item.tipo.nombre }}</h4>
-                <p class="carrito-precio">{{ formatCurrency(item.tipo.precio) }} x {{ item.cantidad }}</p>
+              <div class="carrito-item-top">
+                <h4 class="carrito-item-title">{{ item.tipo.nombre }}</h4>
+                <div class="carrito-item-top__end">
+                  <p class="carrito-subtotal">{{ formatCurrency(item.tipo.precio * item.cantidad) }}</p>
+                  <button
+                    type="button"
+                    class="btn-remove-item-static"
+                    (click)="eliminarDelCarrito(item.tipo)"
+                    title="Quitar item"
+                    aria-label="Quitar item"
+                  >
+                    <span class="material-icons">delete_outline</span>
+                  </button>
+                </div>
               </div>
-              <div class="info-side">
+              <p class="carrito-item-unit">{{ formatCurrency(item.tipo.precio) }} x {{ item.cantidad }}</p>
+              <div class="carrito-item-actions">
                 <div class="cantidad-controls">
-                  <button class="btn-cantidad" (click)="quitarDelCarrito(item.tipo)">-</button>
+                  <button type="button" class="btn-cantidad" (click)="quitarDelCarrito(item.tipo)">-</button>
                   <span class="cantidad">{{ item.cantidad }}</span>
                   <button
+                    type="button"
                     class="btn-cantidad"
                     (click)="agregarAlCarrito(item.tipo)"
                     [disabled]="item.cantidad >= item.tipo.cantidad_disponibles"
                   >+</button>
                 </div>
-                <p class="carrito-subtotal">{{ formatCurrency(item.tipo.precio * item.cantidad) }}</p>
-                <button class="btn-remove-item-static" (click)="eliminarDelCarrito(item.tipo)" title="Quitar item">
-                  <span class="material-icons">delete</span>
-                </button>
               </div>
             </div>
 
@@ -133,26 +163,38 @@
                 </div>
 
                 <div class="palco-exp-picker">
-                  <div class="palco-slot-rail" role="tablist" [attr.aria-label]="'Unidades de ' + item.tipo.nombre">
+                  <div
+                    class="carrito-segmented carrito-segmented--palcos"
+                    role="tablist"
+                    [attr.aria-label]="'Unidades de ' + item.tipo.nombre"
+                  >
                     <div
-                      class="palco-slot-pill"
+                      class="carrito-segmented-tab"
+                      role="tab"
+                      tabindex="0"
                       *ngFor="let ui of getIndicesUnidadesPalco(item); trackBy: trackBySlotIndex"
-                      [class.palco-slot-pill--active]="getFocoSlotPalco(item) === ui"
-                      [class.palco-slot-pill--done]="item.palco_ids?.[ui] != null"
+                      [class.active]="getFocoSlotPalco(item) === ui"
+                      [class.carrito-segmented-tab--done]="item.palco_ids?.[ui] != null"
+                      [attr.aria-selected]="getFocoSlotPalco(item) === ui"
                       (click)="setFocoSlotPalco(item, ui)"
+                      (keydown.enter)="setFocoSlotPalco(item, ui)"
                     >
-                      <span class="palco-slot-pill-label">Palco {{ ui + 1 }} de {{ item.cantidad }}</span>
-                      <span class="palco-slot-pill-value" *ngIf="item.palco_ids?.[ui] as pid">
+                      <span class="carrito-segmented-tab__label">Palco {{ ui + 1 }}/{{ item.cantidad }}</span>
+                      <span class="carrito-segmented-tab__value" *ngIf="item.palco_ids?.[ui] as pid">
                         N.° {{ numeroPalcoPorId(item, pid) }}
                       </span>
-                      <span class="palco-slot-pill-value palco-slot-pill-value--pending" *ngIf="item.palco_ids?.[ui] == null">
+                      <span
+                        class="carrito-segmented-tab__value carrito-segmented-tab__value--pending"
+                        *ngIf="item.palco_ids?.[ui] == null"
+                      >
                         Sin elegir
                       </span>
                       <button
                         type="button"
-                        class="palco-slot-clear"
+                        class="carrito-segmented-tab__clear"
                         *ngIf="item.palco_ids?.[ui] != null"
                         (click)="limpiarPalcoSlot(item, ui); $event.stopPropagation()"
+                        [attr.aria-label]="'Quitar palco ' + (ui + 1)"
                       >
                         <span class="material-icons">close</span>
                       </button>
@@ -179,32 +221,47 @@
 
           <div *ngFor="let item of itemsProductos" class="carrito-item carrito-item--producto">
             <div class="carrito-item-info">
-              <div class="info-main">
-                <h4>{{ item.producto.nombre }}</h4>
-                <div class="carrito-producto-pricing">
-                  <p class="carrito-precio-badge-wrap">
-                    <span
-                      class="carrito-precio-badge"
-                      [class.carrito-precio-badge--evento]="precioEventoVigenteProducto()"
-                    >
-                      {{ getEstadoPrecioProductoLabel() }}
-                    </span>
-                  </p>
-                  <p class="carrito-precio">{{ formatCurrency(item.producto.precio) }} x {{ item.cantidad }}</p>
-                  <p
-                    *ngIf="tienePrecioDiferenciadoProducto(item.producto)"
-                    class="carrito-precio-referencia"
+              <div class="carrito-item-top">
+                <h4 class="carrito-item-title">{{ item.producto.nombre }}</h4>
+                <div class="carrito-item-top__end">
+                  <p class="carrito-subtotal">{{ formatCurrency(item.producto.precio * item.cantidad) }}</p>
+                  <button
+                    type="button"
+                    class="btn-remove-item-static"
+                    (click)="eliminarProducto(item)"
+                    title="Quitar producto"
+                    aria-label="Quitar producto"
                   >
-                    {{ precioEventoVigenteProducto() ? 'Preventa' : 'En evento' }}:
-                    {{ formatCurrency(getPrecioReferenciaProducto(item.producto)) }}
-                  </p>
-                  <p *ngIf="getAhorroUnitarioProducto(item.producto) > 0" class="carrito-precio-ahorro">
-                    Ahorras {{ formatCurrency(getAhorroUnitarioProducto(item.producto) * item.cantidad) }} en este item
-                  </p>
+                    <span class="material-icons">delete_outline</span>
+                  </button>
                 </div>
-                <p *ngIf="item.producto.es_licor" class="licor-tag">Bebida alcohólica (+18)</p>
               </div>
-              <div class="info-side">
+              <p class="carrito-producto-meta">
+                <span
+                  class="carrito-precio-badge"
+                  [class.carrito-precio-badge--evento]="precioEventoVigenteProducto()"
+                >
+                  {{ getEstadoPrecioProductoLabel() }}
+                </span>
+                <span
+                  *ngIf="tienePrecioDiferenciadoProducto(item.producto)"
+                  class="carrito-producto-meta__sep"
+                >·</span>
+                <span
+                  *ngIf="tienePrecioDiferenciadoProducto(item.producto)"
+                  class="carrito-producto-meta__ref"
+                >
+                  {{ precioEventoVigenteProducto() ? 'Preventa' : 'En evento' }}
+                  {{ formatCurrency(getPrecioReferenciaProducto(item.producto)) }}
+                </span>
+                <span *ngIf="item.producto.es_licor" class="carrito-producto-meta__sep">·</span>
+                <span *ngIf="item.producto.es_licor" class="carrito-producto-meta__licor">+18</span>
+              </p>
+              <p class="carrito-item-unit">{{ formatCurrency(item.producto.precio) }} x {{ item.cantidad }}</p>
+              <p *ngIf="getAhorroUnitarioProducto(item.producto) > 0" class="carrito-precio-ahorro">
+                Ahorras {{ formatCurrency(getAhorroUnitarioProducto(item.producto) * item.cantidad) }}
+              </p>
+              <div class="carrito-item-actions">
                 <div class="cantidad-controls">
                   <button type="button" class="btn-cantidad" (click)="quitarProducto(item)">-</button>
                   <span class="cantidad">{{ item.cantidad }}</span>
@@ -215,30 +272,65 @@
                     [disabled]="item.cantidad >= getDisponiblesProducto(item.producto)"
                   >+</button>
                 </div>
-                <p class="carrito-subtotal">{{ formatCurrency(item.producto.precio * item.cantidad) }}</p>
-                <button type="button" class="btn-remove-item-static" (click)="eliminarProducto(item)" title="Quitar producto">
-                  <span class="material-icons">delete</span>
-                </button>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="cupon-section" *ngIf="itemsCompra.length > 0">
-          <h5>¿Tienes cupón?</h5>
+        <section
+          class="cupon-section"
+          *ngIf="itemsCompra.length > 0"
+          [class.cupon-section--applied]="!!cuponAplicado"
+          aria-label="Cupón de descuento"
+        >
+          <header class="cupon-section__head" *ngIf="!cuponAplicado">
+            <span class="material-icons cupon-section__icon" aria-hidden="true">local_offer</span>
+            <div class="cupon-section__titles">
+              <h5 class="cupon-section__title">Cupón de descuento</h5>
+              <p class="cupon-section__hint" *ngIf="!cuponAplicado">Solo aplica sobre boletas y palcos.</p>
+            </div>
+          </header>
+
           <div class="cupon-input-group" *ngIf="!cuponAplicado">
-            <input type="text" [(ngModel)]="codigoCupon" placeholder="Ingresa el código" (keyup.enter)="aplicarCupon()" />
-            <button class="btn-aplicar-cupon" (click)="aplicarCupon()" [disabled]="validandoCupon || !codigoCupon">
-              {{ validandoCupon ? 'Validando...' : 'Aplicar' }}
+            <input
+              type="text"
+              class="cupon-input"
+              [(ngModel)]="codigoCupon"
+              placeholder="Código del cupón"
+              autocomplete="off"
+              autocapitalize="characters"
+              (keyup.enter)="aplicarCupon()"
+            />
+            <button
+              type="button"
+              class="btn-aplicar-cupon"
+              (click)="aplicarCupon()"
+              [disabled]="validandoCupon || !codigoCupon"
+            >
+              {{ validandoCupon ? 'Validando…' : 'Aplicar' }}
             </button>
           </div>
-          <div class="cupon-aplicado" *ngIf="cuponAplicado">
-            <span>Cupón <strong>{{ cuponAplicado.codigo }}</strong> aplicado ({{ cuponAplicado.porcentaje_descuento }}%)</span>
-            <button class="btn-quitar-cupon" (click)="quitarCupon()">
-              <span class="material-icons">close</span>
+
+          <div class="cupon-aplicado-row" *ngIf="cuponAplicado as cupon">
+            <div class="cupon-aplicado-row__copy">
+              <span class="cupon-aplicado-chip">{{ cupon.codigo }}</span>
+              <span class="cupon-aplicado-meta">
+                {{ cupon.porcentaje_descuento }}% en boletas
+                <span *ngIf="getDescuento() > 0" class="cupon-aplicado-ahorro">
+                  · −{{ formatCurrency(getDescuento()) }}
+                </span>
+              </span>
+            </div>
+            <button
+              type="button"
+              class="btn-quitar-cupon"
+              (click)="quitarCupon()"
+              aria-label="Quitar cupón"
+            >
+              <span class="material-icons">delete_outline</span>
             </button>
           </div>
-        </div>
+        </section>
 
         <div class="licor-legal-card" *ngIf="tieneLicor()" [class.licor-legal-card--accepted]="terminosAceptados">
           <div class="licor-legal-card__head">
@@ -268,17 +360,22 @@
 </button>
         </div>
 
-        <div class="upsell-productos-card" *ngIf="mostrarInvitacionProductos">
-          <div class="upsell-productos-card__copy">
-            <p class="upsell-productos-card__kicker">Completa tu experiencia</p>
-            <h5>¿Quieres agregar productos antes de pagar?</h5>
-            <p>Vimos que este evento tiene productos disponibles. Agrégalos ahora y cierras todo en una sola compra.</p>
-          </div>
-          <button type="button" class="upsell-productos-card__cta" (click)="volverAlEvento()">
+        <button
+          type="button"
+          class="carrito-upsell-row"
+          *ngIf="mostrarInvitacionProductos"
+          (click)="volverAlEvento()"
+        >
+          <span class="carrito-upsell-row__icon-wrap" aria-hidden="true">
             <span class="material-icons">storefront</span>
-            Ver productos del evento
-          </button>
-        </div>
+          </span>
+          <span class="carrito-upsell-row__copy">
+            <span class="carrito-upsell-row__kicker">Productos</span>
+            <span class="carrito-upsell-row__title">Agrega productos antes de pagar</span>
+            <span class="carrito-upsell-row__meta">Cierra boletas y productos en una sola compra</span>
+          </span>
+          <span class="carrito-upsell-row__action">Ver →</span>
+        </button>
 
         <div class="carrito-total">
           <div class="total-row" *ngIf="itemsCompra.length > 0">
@@ -304,7 +401,12 @@
           <div class="total-row main">
             <h3>Total: {{ formatCurrency(getTotal()) }}</h3>
           </div>
-          <button class="btn-comprar" (click)="procesarCompra()" [disabled]="comprando || !!checkoutPendienteEnCurso">
+          <button
+            type="button"
+            class="btn-comprar btn-comprar--inline"
+            (click)="procesarCompra()"
+            [disabled]="comprando || !!checkoutPendienteEnCurso"
+          >
             <span class="material-icons">{{ comprando ? 'hourglass_empty' : 'shopping_cart' }}</span>
             {{ comprando ? 'Procesando...' : (checkoutPendienteEnCurso ? 'Pago en curso: recupéralo o cancélalo' : 'Finalizar compra') }}
           </button>
@@ -312,6 +414,34 @@
       </section>
     </ng-container>
   </section>
+
+  <div class="carrito-checkout-bar" *ngIf="!carritoVacio" aria-label="Resumen de pago">
+    <div class="carrito-checkout-bar__total">
+      <span class="carrito-checkout-bar__label">Total</span>
+      <span class="carrito-checkout-bar__amount">{{ formatCurrency(getTotal()) }}</span>
+    </div>
+    <button
+      *ngIf="checkoutPendienteEnCurso as pendiente; else pagarStickyBtn"
+      type="button"
+      class="carrito-checkout-bar__btn carrito-checkout-bar__btn--recover"
+      (click)="recuperarCheckoutPendiente()"
+      [disabled]="cancelandoCheckoutPendiente"
+    >
+      <span class="material-icons" aria-hidden="true">restore</span>
+      {{ pendiente.expiro ? 'Revisar estado' : 'Recuperar pago' }}
+    </button>
+    <ng-template #pagarStickyBtn>
+      <button
+        type="button"
+        class="carrito-checkout-bar__btn"
+        (click)="procesarCompra()"
+        [disabled]="comprando"
+      >
+        <span class="material-icons" aria-hidden="true">{{ comprando ? 'hourglass_empty' : 'shopping_cart' }}</span>
+        {{ comprando ? 'Procesando…' : 'Pagar' }}
+      </button>
+    </ng-template>
+  </div>
 
   <div class="palco-mapa-overlay" *ngIf="mapaAmpliado as mapa" (click)="cerrarMapaAmpliado()">
     <div class="palco-mapa-dialog" (click)="$event.stopPropagation()">

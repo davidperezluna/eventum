@@ -2,6 +2,15 @@ import { Injectable } from '@angular/core';
 import { BoletaComprada, Compra, Evento, TrasladoBoleta } from '../types';
 import { AppCacheService } from './app-cache.service';
 
+export interface PromoProductosMisCompras {
+  eventoId: number;
+  titulo: string;
+  cantidad: number;
+  precioMinimo: number;
+  sinComprasProducto: boolean;
+  totalEventosConProductos: number;
+}
+
 export interface MisComprasState {
   compras: Compra[];
   comprasConBoletas: Array<{ compra: Compra; boletas: BoletaComprada[] }>;
@@ -22,6 +31,7 @@ export interface MisComprasState {
   tabBoletasDetalle: 'sin-usar' | 'usadas' | 'sin-asignar';
   eventoExpandidoKey: string | null;
   eventoDetalleKey: string | null;
+  promoProductos: PromoProductosMisCompras | null;
   lastUpdated: number;
 }
 
@@ -41,6 +51,7 @@ interface MisComprasPublicState {
   tabBoletasDetalle: 'sin-usar' | 'usadas' | 'sin-asignar';
   eventoExpandidoKey: string | null;
   eventoDetalleKey: string | null;
+  promoProductos: PromoProductosMisCompras | null;
   lastUpdated: number;
 }
 
@@ -93,6 +104,7 @@ export class MisComprasStateService {
       tabBoletasDetalle: safeState.tabBoletasDetalle,
       eventoExpandidoKey: safeState.eventoExpandidoKey,
       eventoDetalleKey: safeState.eventoDetalleKey,
+      promoProductos: safeState.promoProductos ? { ...safeState.promoProductos } : null,
       lastUpdated: safeState.lastUpdated
     };
 
@@ -132,6 +144,7 @@ export class MisComprasStateService {
       compras: [...state.compras],
       comprasConBoletas: state.comprasConBoletas.map((i) => ({ compra: i.compra, boletas: [...i.boletas] })),
       eventosConBoletas: [...state.eventosConBoletas],
+      promoProductos: state.promoProductos ? { ...state.promoProductos } : null,
       eventosDisponibles: [...state.eventosDisponibles],
       trasladosHistorial: [...state.trasladosHistorial],
       trasladosPendientesRecibir: [...state.trasladosPendientesRecibir],
