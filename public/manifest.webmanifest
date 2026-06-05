@@ -2,7 +2,7 @@
   "name": "eventum - Experiencias Únicas",
   "short_name": "eventum",
   "description": "Tu plataforma integral para eventos. Eventum conecta a organizadores y asistentes en un ecosistema completo de gestión de eventos.",
-  "theme_color": "#f5f3ff",
+  "theme_color": "#8b5cf6",
   "background_color": "#f8fafc",
   "display": "standalone",
   "scope": "./",
