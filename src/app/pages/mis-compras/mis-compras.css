@@ -996,7 +996,7 @@
 .mis-compras-page .mc-event-card .mc-event-boletas-stat .total-value {
   font-size: 1rem;
   font-weight: var(--ec-font-weight-title, 800);
-  color: var(--ec-accent, var(--color-primary, #4f46e5));
+  color: var(--ec-text-primary, #0f172a);
   letter-spacing: -0.02em;
   line-height: 1.2;
 }
