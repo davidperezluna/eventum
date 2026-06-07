@@ -1,6 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+/** Webhook Wompi — boletas, productos, mixto y cover independiente (pedido_covers). */
+const WOMPI_WEBHOOK_VERSION = '3.1.0-covers-independiente'
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, signature',
@@ -18,13 +21,111 @@ function resolveSecretByEnvName(envVarName: string | null | undefined): string |
   return value && value.trim().length > 0 ? value.trim() : null
 }
 
-type TipoPago = 'boletas' | 'productos' | 'mixto'
+type TipoPago = 'boletas' | 'productos' | 'mixto' | 'cover' | 'cover_mixto'
+
+function checkoutTipoTieneBoletas(checkoutTipo: string): boolean {
+  return checkoutTipo === 'boletas' || checkoutTipo === 'mixto'
+}
+
+function checkoutTipoTieneCovers(checkoutTipo: string): boolean {
+  return checkoutTipo === 'cover' || checkoutTipo === 'cover_mixto'
+}
+
+function checkoutTipoTieneProductos(checkoutTipo: string): boolean {
+  return checkoutTipo === 'productos' || checkoutTipo === 'mixto' || checkoutTipo === 'cover_mixto'
+}
+
+function getPedidoCoversFromCheckout(checkout: CheckoutIntent): Record<string, unknown> | null {
+  const payload = (checkout.request_payload || {}) as Record<string, unknown>
+  const requestBody = (payload.request_body || {}) as Record<string, unknown>
+  const nested = requestBody.pedido_covers
+  if (nested && typeof nested === 'object') return nested as Record<string, unknown>
+  const direct = payload.pedido_covers
+  if (direct && typeof direct === 'object') return direct as Record<string, unknown>
+  return null
+}
+
+function hasPedidoCovers(checkout: CheckoutIntent): boolean {
+  const pedido = getPedidoCoversFromCheckout(checkout)
+  if (!pedido) return false
+  return Array.isArray(pedido.items) && (pedido.items as unknown[]).length > 0
+}
+
+function resolveCheckoutTipo(checkout: CheckoutIntent | null): string {
+  if (!checkout) return ''
+  const fromRow = String((checkout as Record<string, unknown>).tipo ?? '').trim().toLowerCase()
+  if (fromRow) return fromRow
+  const fromMeta = (checkout.metadata as Record<string, unknown> | null)?.tipo
+  if (fromMeta != null && String(fromMeta).trim()) {
+    return String(fromMeta).trim().toLowerCase()
+  }
+  const payload = (checkout.request_payload || {}) as Record<string, unknown>
+  const requestBody = (payload.request_body || {}) as Record<string, unknown>
+  const fromBody = String(requestBody.tipo ?? '').trim().toLowerCase()
+  if (fromBody) return fromBody
+  if (hasPedidoCovers(checkout)) {
+    return hasPedidoProductos(checkout) ? 'cover_mixto' : 'cover'
+  }
+  if (hasPedidoBoletas(checkout)) {
+    return hasPedidoProductos(checkout) ? 'mixto' : 'boletas'
+  }
+  if (hasPedidoProductos(checkout)) {
+    return 'productos'
+  }
+  return ''
+}
+
+function normalizeWebhookPayload(raw: Record<string, unknown>): {
+  event: string
+  data: Record<string, unknown>
+  transaction: Record<string, unknown>
+} {
+  const eventRaw = raw.event
+  const event = eventRaw != null && String(eventRaw).trim()
+    ? String(eventRaw).trim()
+    : 'transaction.updated'
+
+  let data = (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data))
+    ? raw.data as Record<string, unknown>
+    : null
+
+  if (!data) {
+    const looksLikeTxn =
+      raw.status != null &&
+      (raw.reference != null || raw.id != null || raw.payment_link_id != null)
+    if (looksLikeTxn) {
+      const transaction = raw
+      return { event, data: { transaction }, transaction }
+    }
+    throw new Error('Datos de webhook inválidos: falta data.transaction')
+  }
+
+  const transaction = (data.transaction && typeof data.transaction === 'object'
+    ? data.transaction
+    : data) as Record<string, unknown>
+
+  if (!transaction || typeof transaction !== 'object') {
+    throw new Error('Datos de webhook inválidos: transacción vacía')
+  }
+
+  return { event, data, transaction }
+}
+
+function jsonWebhookResponse(body: Record<string, unknown>, status = 200): Response {
+  return new Response(
+    JSON.stringify({ version: WOMPI_WEBHOOK_VERSION, ...body }),
+    { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+  )
+}
+
 type CheckoutIntent = {
   id: number
   evento_id?: number | null
+  lugar_id?: number | null
   cliente_id?: number | null
   wompi_cuenta_id?: number | null
   compra_id?: number | null
+  compra_cover_id?: number | null
   compra_producto_id?: number | null
   request_payload?: Record<string, unknown> | null
   metadata?: Record<string, unknown> | null
@@ -613,6 +714,126 @@ async function crearCompraBoletasDesdeCheckout(
   }
 }
 
+async function crearCompraCoverDesdeCheckout(
+  supabaseClient: ReturnType<typeof createClient>,
+  checkout: CheckoutIntent,
+  wompiCuentaId: number | null,
+  confirmada: boolean,
+): Promise<number> {
+  const compraCoverIdExistente = Number((checkout as Record<string, unknown>).compra_cover_id ?? 0)
+  if (compraCoverIdExistente > 0) {
+    return compraCoverIdExistente
+  }
+
+  const pedido = getPedidoCoversFromCheckout(checkout)
+  if (!pedido) {
+    throw new Error('El checkout no contiene pedido_covers para materializar compra cover')
+  }
+
+  const items = Array.isArray(pedido.items) ? pedido.items : []
+  if (items.length === 0) {
+    throw new Error('pedido_covers.items está vacío')
+  }
+
+  const { data, error } = await supabaseClient.rpc('crear_compra_cover_desde_pedido', {
+    p_cliente_id: Number(pedido.cliente_id),
+    p_lugar_id: Number(pedido.lugar_id),
+    p_items: items,
+    p_subtotal: Number(pedido.subtotal ?? 0),
+    p_descuento_total: Number(pedido.descuento_total ?? 0),
+    p_porcentaje_servicio: Number(pedido.porcentaje_servicio ?? 0),
+    p_valor_servicio: Number(pedido.valor_servicio ?? 0),
+    p_total: Number(pedido.total ?? 0),
+    p_cupon_id: pedido.cupon_id != null ? Number(pedido.cupon_id) : null,
+    p_wompi_cuenta_id: wompiCuentaId,
+    p_transaccion_checkout_id: checkout.id,
+    p_confirmada: confirmada,
+  })
+
+  if (error) {
+    throw error
+  }
+
+  const compraCoverId = Number((data as Record<string, unknown>)?.compra_cover_id ?? 0)
+  if (!Number.isFinite(compraCoverId) || compraCoverId <= 0) {
+    throw new Error('No se pudo materializar compra_cover desde checkout')
+  }
+  return compraCoverId
+}
+
+async function actualizarCompraCover(
+  supabaseClient: ReturnType<typeof createClient>,
+  compraCoverId: number,
+  transaction: Record<string, unknown>,
+  wompiCuentaId: number | null,
+): Promise<void> {
+  const estados = mapEstadosWompi(String(transaction.status || ''))
+  const updateData: Record<string, unknown> = {
+    wompi_status: transaction.status,
+    wompi_cuenta_id: wompiCuentaId,
+    estado_pago: estados.estadoPago,
+    estado_compra: estados.estadoCompra,
+    fecha_actualizacion: new Date().toISOString(),
+  }
+
+  const metodoPago = mapMetodoPago(transaction)
+  if (metodoPago) updateData.metodo_pago = metodoPago
+  if (transaction.id) updateData.wompi_transaction_id = transaction.id
+  if (transaction.reference) updateData.wompi_reference = transaction.reference
+
+  if (transaction.status === 'APPROVED') {
+    updateData.fecha_confirmacion = new Date().toISOString()
+    updateData.fecha_cancelacion = null
+    updateData.motivo_cancelacion = null
+  } else if (isFailedWompiStatus(transaction.status)) {
+    updateData.fecha_cancelacion = new Date().toISOString()
+    updateData.motivo_cancelacion =
+      (transaction.status_text as string) ||
+      ((transaction.error as { message?: string } | undefined)?.message) ||
+      'Pago rechazado por Wompi'
+  }
+
+  const { error } = await supabaseClient
+    .from('compras_cover')
+    .update(updateData)
+    .eq('id', compraCoverId)
+
+  if (error) throw error
+
+  if (transaction.status === 'APPROVED') {
+    await supabaseClient
+      .from('boletas_cover')
+      .update({ estado: 'activa', fecha_actualizacion: new Date().toISOString() })
+      .eq('compra_cover_id', compraCoverId)
+  }
+}
+
+async function resolveWompiCuentaCoverDesdeCheckout(
+  supabaseClient: ReturnType<typeof createClient>,
+  checkout: CheckoutIntent,
+): Promise<number | null> {
+  const fromCheckout = checkout.wompi_cuenta_id != null ? Number(checkout.wompi_cuenta_id) : null
+  if (fromCheckout) return fromCheckout
+
+  const pedido = getPedidoCoversFromCheckout(checkout)
+  if (!pedido) return null
+
+  const fromPedido = pedido.wompi_cuenta_id != null ? Number(pedido.wompi_cuenta_id) : null
+  if (fromPedido) return fromPedido
+
+  const items = Array.isArray(pedido.items) ? (pedido.items as Array<Record<string, unknown>>) : []
+  const tipoCoverId = items.length ? Number(items[0].tipo_cover_id) : 0
+  if (!Number.isFinite(tipoCoverId) || tipoCoverId <= 0) return null
+
+  const { data: tipoCover } = await supabaseClient
+    .from('tipos_cover')
+    .select('wompi_cuenta_id')
+    .eq('id', tipoCoverId)
+    .maybeSingle()
+
+  return tipoCover?.wompi_cuenta_id != null ? Number(tipoCover.wompi_cuenta_id) : null
+}
+
 async function procesarTransaccionProducto(
   supabaseClient: ReturnType<typeof createClient>,
   transaccionProductoId: number,
@@ -747,12 +968,13 @@ async function actualizarTransaccionCheckout(
   reference: string | undefined,
   compraBoletasId: number | null,
   compraProductoId: number | null,
+  compraCoverId: number | null,
   transaccionProductoId: number | null,
 ) {
   const now = new Date().toISOString()
   const wompiStatus = String(transaction.status || '').toUpperCase()
   const estado = mapEstadoCheckout(wompiStatus)
-  const materializado = wompiStatus === 'APPROVED' && (!!compraBoletasId || !!compraProductoId)
+  const materializado = wompiStatus === 'APPROVED' && (!!compraBoletasId || !!compraProductoId || !!compraCoverId)
 
   const nextMetadata: Record<string, unknown> = { ...((checkout.metadata || {}) as Record<string, unknown>) }
   if (transaccionProductoId) nextMetadata.transaccion_producto_id = transaccionProductoId
@@ -779,6 +1001,7 @@ async function actualizarTransaccionCheckout(
   if (reference) updateData.wompi_reference = reference
   if (compraBoletasId) updateData.compra_id = compraBoletasId
   if (compraProductoId) updateData.compra_producto_id = compraProductoId
+  if (compraCoverId) updateData.compra_cover_id = compraCoverId
 
   await supabaseClient
     .from('transacciones_checkout')
@@ -792,8 +1015,6 @@ serve(async (req) => {
   }
 
   try {
-    console.log('=== Webhook recibido de Wompi ===')
-
     const bodyText = await req.text()
     let webhookData: Record<string, unknown>
     try {
@@ -807,19 +1028,20 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
-    if (!webhookData.event || !webhookData.data) {
-      throw new Error('Datos de webhook inválidos')
-    }
+    const normalized = normalizeWebhookPayload(webhookData)
+    const transaction = normalized.transaction
 
-    const data = webhookData.data as Record<string, unknown>
-    const transaction = (data.transaction || data) as Record<string, unknown>
+    console.log('=== Webhook recibido de Wompi ===', WOMPI_WEBHOOK_VERSION, {
+      event: normalized.event,
+      source: webhookData.source ?? null,
+    })
     const paymentLinkId = (transaction.payment_link_id ||
       (transaction.payment_link as { id?: string } | undefined)?.id) as string | undefined
     const reference = transaction.reference as string | undefined
     const parsedRef = parseReference(reference)
 
     console.log('Webhook resumen:', {
-      event: webhookData.event,
+      event: normalized.event,
       paymentLinkId,
       reference,
       parsedRef,
@@ -827,10 +1049,7 @@ serve(async (req) => {
     })
 
     if (!paymentLinkId && !reference) {
-      return new Response(
-        JSON.stringify({ received: true, message: 'Sin payment_link_id ni reference' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
-      )
+      return jsonWebhookResponse({ received: true, message: 'Sin payment_link_id ni reference' })
     }
 
     let transaccionProducto: Record<string, unknown> | null = null
@@ -927,6 +1146,10 @@ serve(async (req) => {
       wompiCuentaId = eventoData?.wompi_cuenta_id ?? null
     }
 
+    if (!wompiCuentaId && transaccionCheckout && hasPedidoCovers(transaccionCheckout)) {
+      wompiCuentaId = await resolveWompiCuentaCoverDesdeCheckout(supabaseClient, transaccionCheckout)
+    }
+
     if (!wompiCuentaId && transaccionProductoId && !compraProductoId) {
       const eventoTxnId = transaccionProducto?.evento_id ? Number(transaccionProducto.evento_id) : eventoId
       if (eventoTxnId) {
@@ -975,11 +1198,35 @@ serve(async (req) => {
       }
     }
 
-    const checkoutTipo = String((transaccionCheckout?.metadata as Record<string, unknown> | null)?.tipo || (transaccionCheckout as Record<string, unknown> | null)?.tipo || '')
-      .trim()
-      .toLowerCase()
-    const checkoutTieneBoletas = !!transaccionCheckout && (checkoutTipo === 'boletas' || checkoutTipo === 'mixto' || hasPedidoBoletas(transaccionCheckout))
-    const checkoutTieneProductos = !!transaccionCheckout && (checkoutTipo === 'productos' || checkoutTipo === 'mixto' || hasPedidoProductos(transaccionCheckout))
+    const checkoutTipo = resolveCheckoutTipo(transaccionCheckout)
+    const checkoutTieneCovers = !!transaccionCheckout && (checkoutTipoTieneCovers(checkoutTipo) || hasPedidoCovers(transaccionCheckout))
+    const checkoutTieneBoletas = !!transaccionCheckout && !checkoutTieneCovers &&
+      (checkoutTipoTieneBoletas(checkoutTipo) || hasPedidoBoletas(transaccionCheckout))
+    const checkoutTieneProductos = !!transaccionCheckout && (checkoutTipoTieneProductos(checkoutTipo) || hasPedidoProductos(transaccionCheckout))
+
+    let compraCoverId: number | null = transaccionCheckout?.compra_cover_id
+      ? Number((transaccionCheckout as Record<string, unknown>).compra_cover_id)
+      : null
+
+    if (
+      !compraCoverId &&
+      transaccionCheckout &&
+      checkoutTieneCovers &&
+      String(transaction.status || '').toUpperCase() === 'APPROVED'
+    ) {
+      compraCoverId = await crearCompraCoverDesdeCheckout(
+        supabaseClient,
+        transaccionCheckout,
+        wompiCuentaId,
+        true,
+      )
+      console.log(`✅ Compra cover materializada desde checkout ${transaccionCheckout.id} -> ${compraCoverId}`)
+    }
+
+    if (compraCoverId) {
+      await actualizarCompraCover(supabaseClient, compraCoverId, transaction, wompiCuentaId)
+      console.log(`✅ Compra cover ${compraCoverId} actualizada`)
+    }
 
     if (
       !compraBoletas?.id &&
@@ -1062,34 +1309,25 @@ serve(async (req) => {
         reference,
         compraBoletas?.id ? Number(compraBoletas.id) : null,
         compraProductoId,
+        compraCoverId,
         transaccionProductoId,
       )
       console.log(`✅ Transacción checkout ${transaccionCheckout.id} actualizada`)
     }
 
-    return new Response(
-      JSON.stringify({
-        received: true,
-        transaccion_checkout_id: transaccionCheckout?.id ? Number(transaccionCheckout.id) : null,
-        compra_id: compraBoletas?.id ?? null,
-        compra_producto_id: compraProductoId,
-        transaccion_producto_id: transaccionProductoId,
-        tipo: checkoutTipo || (compraBoletas && transaccionProductoId ? 'mixto' : transaccionProductoId ? 'productos' : 'boletas'),
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      },
-    )
+    return jsonWebhookResponse({
+      received: true,
+      success: true,
+      transaccion_checkout_id: transaccionCheckout?.id ? Number(transaccionCheckout.id) : null,
+      compra_id: compraBoletas?.id ?? null,
+      compra_cover_id: compraCoverId,
+      compra_producto_id: compraProductoId,
+      transaccion_producto_id: transaccionProductoId,
+      tipo: checkoutTipo || (compraCoverId ? 'cover' : compraBoletas && transaccionProductoId ? 'mixto' : transaccionProductoId ? 'productos' : 'boletas'),
+    })
   } catch (error) {
     console.error('=== Error procesando webhook ===', error)
     const errorMessage = error instanceof Error ? error.message : String(error)
-    return new Response(
-      JSON.stringify({ received: true, error: errorMessage }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      },
-    )
+    return jsonWebhookResponse({ received: true, success: false, error: errorMessage })
   }
 })

@@ -83,6 +83,11 @@ export interface Lugar {
   descripcion?: string;
   imagen_principal?: string;
   activo?: boolean;
+  /** Módulo Covers: ficha pública del club. */
+  covers_habilitado?: boolean;
+  covers_descripcion?: string | null;
+  /** % servicio Eventum en venta online de covers (como eventos.porcentaje_servicio). */
+  covers_porcentaje_servicio?: number;
   fecha_creacion?: Date | string;
 }
 
@@ -321,10 +326,11 @@ export interface BoletaComprada {
   };
 }
 
-/** Registro de traslado de una boleta de palco (trazabilidad). */
+/** Registro de traslado de entrada evento o cover (trazabilidad). */
 export interface TrasladoBoleta {
   id: number;
-  boleta_id: number;
+  boleta_id?: number | null;
+  boleta_cover_id?: number | null;
   usuario_origen_id: number;
   usuario_destino_id: number;
   email_destino: string;
@@ -334,6 +340,9 @@ export interface TrasladoBoleta {
   fecha_aceptacion?: string | null;
   fecha_rechazo?: string | null;
   fecha_cancelacion?: string | null;
+  /** Contexto del RPC listar_traslados_boleta_* (filtro en detalle evento/club). */
+  evento_id?: number | null;
+  lugar_id?: number | null;
   /** Join opcional desde API */
   usuario_origen?: Pick<Usuario, 'id' | 'nombre' | 'apellido' | 'email'>;
   usuario_destino?: Pick<Usuario, 'id' | 'nombre' | 'apellido' | 'email'>;
@@ -354,6 +363,20 @@ export interface TrasladoBoleta {
       }>;
     }>;
   });
+  coverDetail?: { id: number; tipo_cover_nombre?: string; lugar_nombre?: string };
+  boleta_cover?: {
+    id: number;
+    codigo_qr?: string | null;
+    tipo_cover_id?: number;
+    tipos_cover?: { nombre?: string } | Array<{ nombre?: string }>;
+    sesiones_cover?: {
+      fecha?: string;
+      lugares?: { nombre?: string } | Array<{ nombre?: string }>;
+    } | Array<{
+      fecha?: string;
+      lugares?: { nombre?: string } | Array<{ nombre?: string }>;
+    }>;
+  };
 }
 
 /**

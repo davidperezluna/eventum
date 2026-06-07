@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ComprasClienteService } from '../../services/compras-cliente.service';
 import { ComprasProductoService } from '../../services/compras-producto.service';
+import { CarritoCompraService } from '../../services/carrito-compra.service';
 import { Compra, CompraProducto, TransaccionProducto } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
@@ -16,6 +17,7 @@ const PAGO_PENDIENTE_STORAGE_KEY = 'eventum_pago_pendiente';
 })
 export class PagoResultado implements OnInit {
   compraId: number | null = null;
+  compraCoverId: number | null = null;
   compraProductoId: number | null = null;
   transaccionProductoId: number | null = null;
   transaccionCheckoutId: number | null = null;
@@ -46,12 +48,14 @@ export class PagoResultado implements OnInit {
     public router: Router,
     private comprasClienteService: ComprasClienteService,
     private comprasProductoService: ComprasProductoService,
+    private carritoCompraService: CarritoCompraService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
     this.route.queryParams.subscribe((params) => {
       this.compraId = params['compra_id'] ? Number(params['compra_id']) : null;
+      this.compraCoverId = params['compra_cover_id'] ? Number(params['compra_cover_id']) : null;
       this.compraProductoId = params['compra_producto_id'] ? Number(params['compra_producto_id']) : null;
       this.transaccionProductoId = params['transaccion_producto_id']
         ? Number(params['transaccion_producto_id'])
@@ -75,7 +79,7 @@ export class PagoResultado implements OnInit {
 
       this.restaurarReferenciasPendientes();
 
-      if (this.compraId || this.compraProductoId || this.transaccionProductoId || this.transaccionCheckoutId || this.wompiTxnId) {
+      if (this.compraId || this.compraCoverId || this.compraProductoId || this.transaccionProductoId || this.transaccionCheckoutId || this.wompiTxnId) {
         void this.verificarEstadoCompra();
       } else {
         this.mostrarErrorSinReferencia();
@@ -121,6 +125,16 @@ export class PagoResultado implements OnInit {
   private limpiarReferenciasPendientes(): void {
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.removeItem(PAGO_PENDIENTE_STORAGE_KEY);
+    }
+  }
+
+  private vaciarCarritoTrasCompraExitosa(): void {
+    if (this.compraCoverId) {
+      this.carritoCompraService.vaciarCarrito();
+      return;
+    }
+    if (this.getEstadoPagoReferencia() === 'completado') {
+      this.carritoCompraService.vaciarCarrito();
     }
   }
 
@@ -272,9 +286,19 @@ export class PagoResultado implements OnInit {
           this.compraProducto = await this.comprasProductoService.getCompraById(this.compraProductoId);
         }
 
+        if (this.compraCoverId && !this.compraId) {
+          this.loading = false;
+          this.error = null;
+          this.limpiarReferenciasPendientes();
+          this.vaciarCarritoTrasCompraExitosa();
+          this.cdr.detectChanges();
+          return;
+        }
+
         this.loading = false;
         this.error = null;
         this.limpiarReferenciasPendientes();
+        this.vaciarCarritoTrasCompraExitosa();
         this.cdr.detectChanges();
         return;
       } catch (err: unknown) {

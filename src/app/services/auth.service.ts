@@ -825,6 +825,8 @@ export class AuthService {
       'pago-resultado',
       'detalle-evento',
       'cupos-evento',
+      'clubes',
+      'club',
     ]);
     if (!raiz.has(a)) return false;
 
@@ -835,7 +837,7 @@ export class AuthService {
       return false;
     }
 
-    if (a === 'cupos-evento' || a === 'detalle-evento') {
+    if (a === 'cupos-evento' || a === 'detalle-evento' || a === 'club') {
       return segments.length === 2 && Boolean(b);
     }
 

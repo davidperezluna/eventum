@@ -12,6 +12,8 @@ export const environment = {
   allowClienteLoginAdmin: true,
   /** `true`: tablón de cupos, /cupos, /mis-cupos y enlaces en la app. `false`: oculta todo el módulo. */
   cuposEventumEnabled: true,
+  /** `true`: módulo Covers (clubes por lugar, sesiones, aforo, reingreso). `false`: oculta rutas y UI. */
+  coversEventumEnabled: true,
   /** Mantener alineado con `index.html` (OneSignal se inicializa allí antes del bundle). */
   oneSignal: {
     appId: 'cb3f9dcf-6085-43d5-99ae-6c76db8abf57',

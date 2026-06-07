@@ -49,6 +49,12 @@ import { cuposFeatureGuard } from './guards/cupos-feature.guard';
 import { Mantenimiento } from './pages/mantenimiento/mantenimiento';
 import { environment } from '../environments/environment';
 import { cuposEventumEnabled } from './core/cupos-feature';
+import { coversEventumEnabled } from './core/covers-feature';
+import { coversFeatureGuard } from './guards/covers-feature.guard';
+import { CoversConfig } from './pages/covers-config/covers-config';
+import { CoversConfigDetalle } from './pages/covers-config-detalle/covers-config-detalle';
+import { ClubesExplorar } from './pages/clubes-explorar/clubes-explorar';
+import { ClubDetalle } from './pages/club-detalle/club-detalle';
 
 const cuposPublicRoutes: Routes = cuposEventumEnabled
   ? [
@@ -58,6 +64,20 @@ const cuposPublicRoutes: Routes = cuposEventumEnabled
   : [];
 
 const cuposProtectedRoutes: Routes = [];
+
+const coversProtectedRoutes: Routes = coversEventumEnabled
+  ? [
+      { path: 'covers-config', component: CoversConfig, canActivate: [coversFeatureGuard] },
+      { path: 'covers-config/:lugarId', component: CoversConfigDetalle, canActivate: [coversFeatureGuard] },
+    ]
+  : [];
+
+const coversPublicRoutes: Routes = coversEventumEnabled
+  ? [
+      { path: 'clubes', component: ClubesExplorar, canActivate: [coversFeatureGuard] },
+      { path: 'club/:lugarId', component: ClubDetalle, canActivate: [coversFeatureGuard] },
+    ]
+  : [];
 
 const appRoutes: Routes = [
   {
@@ -109,6 +129,7 @@ const appRoutes: Routes = [
       { path: 'detalle-evento/:id', component: DetalleEvento }, // Público: detalle de evento
       { path: 'cupos', component: CuposExplorar },
       { path: 'cupos-evento/:eventoId', component: CuposEvento },
+      ...coversPublicRoutes,
       ...(cuposEventumEnabled ? [{ path: 'mis-cupos', component: MisCupos, canActivate: [cuposFeatureGuard] }] : []),
       { path: 'carrito', component: Carrito },
       { path: 'carrito-productos', redirectTo: 'carrito', pathMatch: 'full' },
@@ -131,9 +152,11 @@ const appRoutes: Routes = [
       { path: 'mis-compras/actividad', component: MisCompras }, // Cliente: traslados / actividad
       { path: 'mis-compras/guia', component: MisComprasGuia }, // Cliente: guía de uso de entradas
       { path: 'mis-compras/evento/:id', component: MisCompras }, // Cliente: detalle de boletas por evento
+      { path: 'mis-compras/club/:id', component: MisCompras }, // Cliente: detalle de covers por club
       { path: 'mis-compras', component: MisCompras }, // Cliente: ver compras
       { path: 'categorias', component: Categorias },
       { path: 'lugares', component: Lugares },
+      ...coversProtectedRoutes,
       { path: 'boletas', component: Boletas, data: { vistaBoletas: 'pendientes' } },
       { path: 'boletas-usadas', component: Boletas, data: { vistaBoletas: 'usadas' } },
       { path: 'productos', component: Productos, data: { adminOnly: true } },

@@ -1,6 +1,7 @@
-﻿/* Importar sistema de temas */
+/* Importar sistema de temas */
 @import './styles/themes.css';
 @import './styles/client-tokens.css';
+@import './styles/legal-modal.css';
 
 /* Global Styles */
 * {

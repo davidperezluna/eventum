@@ -1,0 +1,82 @@
+<div class="club-detalle-page">
+  <div *ngIf="loading" class="club-detalle-loading">
+    <div class="clubes-spinner" aria-hidden="true"></div>
+    <p>Cargando club…</p>
+  </div>
+
+  <ng-container *ngIf="!loading && lugar">
+    <header class="club-hero">
+      <a routerLink="/clubes" class="club-back">
+        <span class="material-icons" aria-hidden="true">arrow_back</span>
+        Clubs
+      </a>
+      <div class="club-hero-media" *ngIf="lugar.imagen_principal">
+        <img [src]="lugar.imagen_principal" [alt]="lugar.nombre" loading="lazy" />
+      </div>
+      <div class="club-hero-copy">
+        <h1>{{ lugar.nombre }}</h1>
+        <p *ngIf="lugar.ciudad || lugar.direccion" class="club-hero-meta">
+          <span class="material-icons" aria-hidden="true">place</span>
+          {{ lugar.ciudad }}<span *ngIf="lugar.ciudad && lugar.direccion"> · </span>{{ lugar.direccion }}
+        </p>
+        <p *ngIf="lugar.covers_descripcion" class="club-hero-desc">{{ lugar.covers_descripcion }}</p>
+        <p *ngIf="lugar.descripcion && lugar.descripcion !== lugar.covers_descripcion" class="club-hero-desc club-hero-desc--muted">
+          {{ lugar.descripcion }}
+        </p>
+      </div>
+    </header>
+
+    <section class="club-sesiones">
+      <h2>Noches disponibles</h2>
+      <p class="club-sesiones-hint">{{ coversLabels.detalleSubtitle }}</p>
+
+      <div *ngIf="sesiones.length === 0" class="club-sesiones-empty">
+        <span class="material-icons" aria-hidden="true">event_busy</span>
+        <p>{{ coversLabels.sinSesiones }}</p>
+      </div>
+
+      <ul *ngIf="sesiones.length > 0" class="club-sesiones-list">
+        <li *ngFor="let sesion of sesiones; trackBy: trackSesion" class="club-sesion-card">
+          <div class="club-sesion-info">
+            <p class="club-sesion-fecha">{{ sesion.fecha | dateFormat:'shortDate' }}</p>
+            <p class="club-sesion-horario">{{ horarioSesion(sesion) }}</p>
+            <p class="club-sesion-tipo">{{ sesion.tipo_cover_nombre }}</p>
+            <p class="club-sesion-meta">
+              <span *ngIf="tipoPorSesion(sesion)?.permite_reingreso">{{ coversLabels.reingresoSi }}</span>
+              <span *ngIf="tipoPorSesion(sesion) && !tipoPorSesion(sesion)!.permite_reingreso">{{ coversLabels.reingresoNo }}</span>
+              <span *ngIf="!sesionAgotada(sesion)"> · {{ cuposDisponibles(sesion) }} cupo(s)</span>
+            </p>
+          </div>
+          <div class="club-sesion-action">
+            <p class="club-sesion-precio">{{ formatCurrency(sesion.precio_cop) }}</p>
+            <div class="club-sesion-actions">
+              <div class="cantidad-controls" *ngIf="getCantidadEnCarrito(sesion) > 0">
+                <button type="button" class="btn-cantidad" (click)="quitarCoverDelCarrito(sesion)">-</button>
+                <span class="cantidad">{{ getCantidadEnCarrito(sesion) }}</span>
+                <button
+                  type="button"
+                  class="btn-cantidad"
+                  (click)="agregarCoverAlCarrito(sesion)"
+                  [disabled]="!puedeAgregarMasCover(sesion)"
+                >+</button>
+                <button type="button" class="btn-remove" (click)="eliminarCoverDelCarrito(sesion)">
+                  <span class="material-icons">delete</span>
+                </button>
+              </div>
+              <button
+                *ngIf="getCantidadEnCarrito(sesion) === 0"
+                type="button"
+                class="btn-add"
+                (click)="agregarCoverAlCarrito(sesion)"
+                [disabled]="!coverDisponibleParaVenta(sesion)"
+              >
+                <span class="material-icons">add_shopping_cart</span>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </section>
+  </ng-container>
+</div>

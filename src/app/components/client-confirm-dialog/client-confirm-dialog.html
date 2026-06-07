@@ -1,0 +1,41 @@
+<div
+  class="client-confirm-overlay"
+  *ngIf="openState as dialog"
+  (click)="cancel()"
+  role="presentation"
+>
+  <div
+    class="client-confirm-sheet"
+    (click)="$event.stopPropagation()"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="'client-confirm-title'"
+  >
+    <header class="client-confirm-sheet__header">
+      <div class="client-confirm-sheet__icon-wrap" aria-hidden="true">
+        <span class="material-icons">{{ dialog.icon }}</span>
+      </div>
+      <div class="client-confirm-sheet__copy">
+        <h2 id="client-confirm-title">{{ dialog.title }}</h2>
+        <p>{{ dialog.message }}</p>
+      </div>
+      <button
+        type="button"
+        class="client-confirm-sheet__close"
+        (click)="cancel()"
+        aria-label="Cerrar"
+      >
+        <span class="material-icons">close</span>
+      </button>
+    </header>
+
+    <footer class="client-confirm-sheet__footer">
+      <button type="button" class="client-confirm-sheet__btn client-confirm-sheet__btn--ghost" (click)="cancel()">
+        {{ dialog.cancelText }}
+      </button>
+      <button type="button" class="client-confirm-sheet__btn client-confirm-sheet__btn--primary" (click)="confirm()">
+        {{ dialog.confirmText }}
+      </button>
+    </footer>
+  </div>
+</div>

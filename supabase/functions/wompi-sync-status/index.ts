@@ -1,6 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+/** Versión desplegada — sync Wompi (boletas, productos, mixto, cover independiente). */
+const WOMPI_SYNC_STATUS_VERSION = '2.7.0-covers-independiente'
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -144,11 +147,13 @@ async function runSyntheticWebhook(
 
   const webhookResult = await webhookResponse.json()
   if (!webhookResponse.ok) {
-    throw new Error(webhookResult?.error || 'El webhook interno no procesó la sincronización')
+    console.error('wompi-webhook respondió HTTP', webhookResponse.status, webhookResult)
+    throw new Error(webhookResult?.error || `El webhook interno respondió ${webhookResponse.status}`)
   }
-  if (webhookResult?.error) {
-    throw new Error(String(webhookResult.error))
+  if (webhookResult?.success === false || webhookResult?.error) {
+    throw new Error(String(webhookResult.error || 'El webhook interno no procesó la sincronización'))
   }
+
   return webhookResult
 }
 
@@ -202,6 +207,32 @@ async function expirarTransaccionProductoPendiente(
   }
 }
 
+async function cancelarCompraCoverSiExiste(
+  supabaseClient: ReturnType<typeof createClient>,
+  compraCoverId: number,
+  motivo: string,
+): Promise<void> {
+  const now = new Date().toISOString()
+  const { error: compraError } = await supabaseClient
+    .from('compras_cover')
+    .update({
+      estado_pago: 'fallido',
+      estado_compra: 'cancelada',
+      fecha_cancelacion: now,
+      motivo_cancelacion: motivo,
+    })
+    .eq('id', compraCoverId)
+    .neq('estado_compra', 'confirmada')
+
+  if (compraError) throw compraError
+
+  await supabaseClient
+    .from('boletas_cover')
+    .update({ estado: 'cancelada', fecha_actualizacion: now })
+    .eq('compra_cover_id', compraCoverId)
+    .in('estado', ['pendiente', 'activa'])
+}
+
 async function expirarTransaccionCheckoutPendiente(
   supabaseClient: ReturnType<typeof createClient>,
   transaccionCheckoutId: number,
@@ -211,7 +242,7 @@ async function expirarTransaccionCheckoutPendiente(
 
   const { data: checkout } = await supabaseClient
     .from('transacciones_checkout')
-    .select('id, compra_id')
+    .select('id, compra_id, compra_cover_id')
     .eq('id', transaccionCheckoutId)
     .maybeSingle()
 
@@ -254,6 +285,11 @@ async function expirarTransaccionCheckoutPendiente(
     if (liberarCompraError && !isMissingRpcError(liberarCompraError)) {
       throw liberarCompraError
     }
+  }
+
+  const compraCoverId = checkout?.compra_cover_id ? Number(checkout.compra_cover_id) : null
+  if (compraCoverId) {
+    await cancelarCompraCoverSiExiste(supabaseClient, compraCoverId, motivo)
   }
 }
 
@@ -311,7 +347,7 @@ serve(async (req) => {
         const { data } = await supabaseClient
           .from('transacciones_checkout')
           .select(
-            'id, evento_id, wompi_cuenta_id, compra_id, compra_producto_id, estado, wompi_status, wompi_reference, wompi_transaction_id, fecha_creacion, es_activa, metadata',
+            'id, evento_id, lugar_id, wompi_cuenta_id, compra_id, compra_producto_id, compra_cover_id, estado, wompi_status, wompi_reference, wompi_transaction_id, fecha_creacion, es_activa, metadata',
           )
           .eq('id', transaccionCheckoutId)
           .maybeSingle()
@@ -326,7 +362,7 @@ serve(async (req) => {
 
       if (checkout.estado === 'aprobada' || checkout.wompi_status === 'APPROVED') {
         return new Response(
-          JSON.stringify({ success: true, already_synced: true, status: 'APPROVED' }),
+          JSON.stringify({ success: true, version: WOMPI_SYNC_STATUS_VERSION, already_synced: true, status: 'APPROVED' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
         )
       }
@@ -380,7 +416,7 @@ serve(async (req) => {
 
       if (txn.estado === 'aprobada' || txn.wompi_status === 'APPROVED') {
         return new Response(
-          JSON.stringify({ success: true, already_synced: true, status: 'APPROVED' }),
+          JSON.stringify({ success: true, version: WOMPI_SYNC_STATUS_VERSION, already_synced: true, status: 'APPROVED' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
         )
       }

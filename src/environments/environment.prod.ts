@@ -10,6 +10,8 @@ export const environment = {
   allowClienteLoginAdmin: false,
   /** Cambiar a `true` cuando publiques el módulo Cupos Eventum en producción. */
   cuposEventumEnabled: true,
+  /** Cambiar a `true` cuando publiques el módulo Covers Eventum en producción. */
+  coversEventumEnabled: false,
   /** Mantener alineado con `index.html` (OneSignal se inicializa allí antes del bundle). */
   oneSignal: {
     appId: 'cb3f9dcf-6085-43d5-99ae-6c76db8abf57',

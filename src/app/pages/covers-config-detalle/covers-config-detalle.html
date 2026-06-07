@@ -1,0 +1,339 @@
+<div class="covers-admin-page" *ngIf="!loading && config">
+  <header class="page-header">
+    <a routerLink="/covers-config" class="back-link">
+      <span class="material-icons">arrow_back</span>
+      Lugares
+    </a>
+    <div class="page-header__row">
+      <div>
+        <h1>{{ config.lugar.nombre }}</h1>
+        <p>{{ config.lugar.direccion }}, {{ config.lugar.ciudad }}</p>
+      </div>
+      <button type="button" class="btn-secondary" (click)="openWizard()" [disabled]="saving">
+        <span class="material-icons">auto_fix_high</span>
+        Asistente rápido
+      </button>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Secciones de configuración">
+    <button type="button" class="tab" [class.active]="vista === 'lugar'" (click)="setVista('lugar')">Lugar</button>
+    <button type="button" class="tab" [class.active]="vista === 'tipos'" (click)="setVista('tipos')">Tipos</button>
+    <button type="button" class="tab" [class.active]="vista === 'plantillas'" (click)="setVista('plantillas')">Plantillas</button>
+    <button type="button" class="tab" [class.active]="vista === 'sesiones'" (click)="setVista('sesiones')">Sesiones</button>
+  </nav>
+
+  <!-- Lugar -->
+  <section class="panel" *ngIf="vista === 'lugar'">
+    <h2>Visita 360 y publicación</h2>
+    <label class="toggle-row">
+      <input type="checkbox" [(ngModel)]="lugarForm.covers_habilitado" />
+      <span>Covers habilitados en este lugar</span>
+    </label>
+    <label class="field">
+      <span>Descripción pública (club / cover)</span>
+      <textarea rows="4" [(ngModel)]="lugarForm.covers_descripcion" placeholder="Horarios, dress code, etc."></textarea>
+    </label>
+    <label class="field">
+      <span>% servicio Eventum (venta online de covers)</span>
+      <input
+        type="number"
+        min="0"
+        max="100"
+        step="0.01"
+        [(ngModel)]="lugarForm.covers_porcentaje_servicio"
+        placeholder="Ej. 10"
+      />
+      <small class="field-hint">Mismo concepto que el % de servicio en eventos; se aplica al subtotal de covers en el carrito.</small>
+    </label>
+    <button type="button" class="btn-primary" (click)="guardarLugar()" [disabled]="saving">Guardar</button>
+  </section>
+
+  <!-- Tipos -->
+  <section class="panel" *ngIf="vista === 'tipos'">
+    <div class="panel__toolbar">
+      <h2>Tipos de cover</h2>
+      <button type="button" class="btn-primary" (click)="openTipoModal()">
+        <span class="material-icons">add</span>
+        Nuevo tipo
+      </button>
+    </div>
+    <div *ngIf="!config.tipos_cover.length" class="empty-inline">Aún no hay tipos. Crea uno o usa el asistente rápido.</div>
+    <div class="table-wrap" *ngIf="config.tipos_cover.length">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Precio</th>
+            <th>Reingreso</th>
+            <th>Venta online</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let t of config.tipos_cover">
+            <td>{{ t.nombre }}</td>
+            <td>{{ formatCurrency(t.precio_cop) }}</td>
+            <td>{{ t.permite_reingreso ? 'Sí' : 'No' }}</td>
+            <td>
+              <span *ngIf="t.wompi_cuenta_id" class="ok-chip">Wompi OK</span>
+              <span *ngIf="!t.wompi_cuenta_id" class="warn-chip">Sin Wompi</span>
+            </td>
+            <td>{{ t.activo ? 'Activo' : 'Inactivo' }}</td>
+            <td class="actions-cell">
+              <button type="button" class="btn-icon" (click)="openTipoModal(t)" title="Editar">
+                <span class="material-icons">edit</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Plantillas -->
+  <section class="panel" *ngIf="vista === 'plantillas'">
+    <div class="panel__toolbar">
+      <h2>Recurrencia</h2>
+      <button type="button" class="btn-primary" (click)="openPlantillaModal()" [disabled]="!config.tipos_cover.length">
+        <span class="material-icons">add</span>
+        Nueva plantilla
+      </button>
+    </div>
+    <div *ngIf="!config.plantillas_cover.length" class="empty-inline">Sin plantillas. Define día y horario recurrente.</div>
+    <div class="table-wrap" *ngIf="config.plantillas_cover.length">
+      <table>
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Día</th>
+            <th>Horario</th>
+            <th>Aforo</th>
+            <th>Venta máx.</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of config.plantillas_cover">
+            <td>{{ p.tipo_cover_nombre }}</td>
+            <td>{{ labelDia(p.dia_semana) }}</td>
+            <td>{{ horaDesdeTime(p.hora_apertura) }} – {{ horaDesdeTime(p.hora_cierre) }}</td>
+            <td>{{ p.aforo_maximo ?? '—' }}</td>
+            <td>{{ p.cantidad_maxima_venta ?? '—' }}</td>
+            <td>
+              <button type="button" class="btn-icon" (click)="openPlantillaModal(p)">
+                <span class="material-icons">edit</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Sesiones -->
+  <section class="panel" *ngIf="vista === 'sesiones'">
+    <div class="panel__toolbar">
+      <h2>Sesiones (noches)</h2>
+      <div class="toolbar-actions">
+        <button type="button" class="btn-secondary" (click)="generarSesiones()" [disabled]="saving">
+          <span class="material-icons">date_range</span>
+          Generar desde plantillas
+        </button>
+        <button type="button" class="btn-primary" (click)="openSesionModal()" [disabled]="!config.tipos_cover.length">
+          <span class="material-icons">add</span>
+          Sesión manual
+        </button>
+      </div>
+    </div>
+    <div *ngIf="!config.sesiones_cover.length" class="empty-inline">Sin sesiones próximas.</div>
+    <div class="table-wrap" *ngIf="config.sesiones_cover.length">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Horario</th>
+            <th>Aforo</th>
+            <th>Dentro</th>
+            <th>Vendidos</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of config.sesiones_cover">
+            <td>{{ formatFecha(s.fecha) }}</td>
+            <td>{{ s.tipo_cover_nombre }}</td>
+            <td>{{ formatHora(s.hora_apertura) }} – {{ formatHora(s.hora_cierre) }}</td>
+            <td>{{ s.aforo_maximo }}</td>
+            <td>{{ s.personas_dentro }}</td>
+            <td>{{ s.cantidad_vendida }}</td>
+            <td><span class="estado-chip" [attr.data-estado]="s.estado">{{ estadoLabels[s.estado] }}</span></td>
+            <td class="actions-cell">
+              <button
+                *ngIf="s.estado === 'programada'"
+                type="button"
+                class="btn-text"
+                (click)="cambiarEstadoSesion(s, 'abierta')"
+                [disabled]="saving"
+              >Abrir</button>
+              <button
+                *ngIf="s.estado === 'abierta'"
+                type="button"
+                class="btn-text"
+                (click)="cambiarEstadoSesion(s, 'cerrada')"
+                [disabled]="saving"
+              >Cerrar</button>
+              <button
+                *ngIf="s.estado === 'programada'"
+                type="button"
+                class="btn-text danger"
+                (click)="cambiarEstadoSesion(s, 'cancelada')"
+                [disabled]="saving"
+              >Cancelar</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<div *ngIf="loading" class="loading-full">Cargando configuración…</div>
+
+<!-- Modal tipo -->
+<div class="modal-overlay" *ngIf="showTipoModal" (click)="closeTipoModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3>{{ editingTipo ? 'Editar tipo' : 'Nuevo tipo de cover' }}</h3>
+    <label class="field"><span>Nombre</span><input [(ngModel)]="tipoForm.nombre" /></label>
+    <label class="field"><span>Descripción</span><textarea rows="2" [(ngModel)]="tipoForm.descripcion"></textarea></label>
+    <label class="field"><span>Precio (COP)</span><input type="number" min="0" [(ngModel)]="tipoForm.precio_cop" /></label>
+    <label class="field" *ngIf="categorias.length">
+      <span>Categoría (venta online / carrito)</span>
+      <select [(ngModel)]="tipoForm.categoria_id">
+        <option [ngValue]="null" disabled>Seleccionar…</option>
+        <option *ngFor="let c of categorias" [ngValue]="c.id">{{ c.nombre }}</option>
+      </select>
+      <small class="field-hint">Al guardar se crea o actualiza el evento espejo y el tipo de boleta.</small>
+    </label>
+    <p *ngIf="!categorias.length" class="field-hint warn">No hay categorías activas. Créalas en Categorías antes de guardar.</p>
+    <label class="field" *ngIf="wompiCuentas.length">
+      <span>Cuenta Wompi</span>
+      <select [(ngModel)]="tipoForm.wompi_cuenta_id">
+        <option [ngValue]="null" disabled>Seleccionar cuenta…</option>
+        <option *ngFor="let cuenta of wompiCuentas" [ngValue]="cuenta.id">
+          {{ cuenta.nombre }} (ID {{ cuenta.id }})
+        </option>
+      </select>
+      <small class="field-hint">Define a qué cuenta entra el dinero de este cover al pagar con Wompi.</small>
+    </label>
+    <p *ngIf="!wompiCuentas.length" class="field-hint warn">No hay cuentas Wompi activas. Configúralas en el panel antes de vender online.</p>
+    <label class="toggle-row"><input type="checkbox" [(ngModel)]="tipoForm.permite_reingreso" /><span>Permite reingreso</span></label>
+    <label class="field"><span>Límite por persona</span><input type="number" min="1" [(ngModel)]="tipoForm.limite_por_persona" /></label>
+    <label class="toggle-row" *ngIf="editingTipo"><input type="checkbox" [(ngModel)]="tipoForm.activo" /><span>Activo</span></label>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" (click)="closeTipoModal()">Cancelar</button>
+      <button type="button" class="btn-primary" (click)="guardarTipo()" [disabled]="saving">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal plantilla -->
+<div class="modal-overlay" *ngIf="showPlantillaModal" (click)="closePlantillaModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3>{{ editingPlantilla ? 'Editar plantilla' : 'Nueva plantilla' }}</h3>
+    <label class="field">
+      <span>Tipo de cover</span>
+      <select [(ngModel)]="plantillaForm.tipo_cover_id">
+        <option [ngValue]="0" disabled>Seleccionar…</option>
+        <option *ngFor="let t of config?.tipos_cover" [ngValue]="t.id">{{ t.nombre }}</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>Día de la semana</span>
+      <select [(ngModel)]="plantillaForm.dia_semana">
+        <option *ngFor="let d of diasSemana" [ngValue]="d.value">{{ d.label }}</option>
+      </select>
+    </label>
+    <div class="field-row">
+      <label class="field"><span>Apertura</span><input type="time" [(ngModel)]="plantillaForm.hora_apertura" /></label>
+      <label class="field"><span>Cierre</span><input type="time" [(ngModel)]="plantillaForm.hora_cierre" /></label>
+    </div>
+    <p class="field-hint">Si cierra después de medianoche (ej. 22:00 → 03:00), indica la hora de cierre tal cual; se asume el día siguiente.</p>
+    <label class="field"><span>Aforo máximo</span><input type="number" min="1" [(ngModel)]="plantillaForm.aforo_maximo" /></label>
+    <label class="field"><span>Cantidad máx. venta</span><input type="number" min="0" [(ngModel)]="plantillaForm.cantidad_maxima_venta" /></label>
+    <label class="toggle-row" *ngIf="editingPlantilla"><input type="checkbox" [(ngModel)]="plantillaForm.activo" /><span>Activa</span></label>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" (click)="closePlantillaModal()">Cancelar</button>
+      <button type="button" class="btn-primary" (click)="guardarPlantilla()" [disabled]="saving">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal sesión -->
+<div class="modal-overlay" *ngIf="showSesionModal" (click)="closeSesionModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3>Sesión manual</h3>
+    <label class="field">
+      <span>Tipo</span>
+      <select [(ngModel)]="sesionForm.tipo_cover_id">
+        <option *ngFor="let t of config?.tipos_cover" [ngValue]="t.id">{{ t.nombre }}</option>
+      </select>
+    </label>
+    <label class="field"><span>Fecha</span><input type="date" [(ngModel)]="sesionForm.fecha" /></label>
+    <div class="field-row">
+      <label class="field"><span>Apertura</span><input type="time" [(ngModel)]="sesionForm.hora_apertura" /></label>
+      <label class="field"><span>Cierre</span><input type="time" [(ngModel)]="sesionForm.hora_cierre" /></label>
+    </div>
+    <label class="field"><span>Precio (opcional)</span><input type="number" [(ngModel)]="sesionForm.precio_cop" /></label>
+    <label class="field"><span>Aforo</span><input type="number" [(ngModel)]="sesionForm.aforo_maximo" /></label>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" (click)="closeSesionModal()">Cancelar</button>
+      <button type="button" class="btn-primary" (click)="guardarSesion()" [disabled]="saving">Crear</button>
+    </div>
+  </div>
+</div>
+
+<!-- Wizard -->
+<div class="modal-overlay" *ngIf="showWizardModal" (click)="closeWizard()">
+  <div class="modal modal--wide" (click)="$event.stopPropagation()">
+    <h3>Asistente — primer cover en este lugar</h3>
+    <p class="modal-hint">Crea tipo, plantilla, sincroniza checkout y genera sesiones en un paso.</p>
+    <label class="field"><span>Nombre del cover</span><input [(ngModel)]="wizardForm.nombre_tipo" /></label>
+    <label class="field"><span>Precio COP</span><input type="number" [(ngModel)]="wizardForm.precio_cop" /></label>
+    <label class="field">
+      <span>Categoría evento (checkout)</span>
+      <select [(ngModel)]="wizardForm.categoria_id">
+        <option *ngFor="let c of categorias" [ngValue]="c.id">{{ c.nombre }}</option>
+      </select>
+    </label>
+    <label class="field" *ngIf="wompiCuentas.length">
+      <span>Cuenta Wompi</span>
+      <select [(ngModel)]="wizardForm.wompi_cuenta_id">
+        <option [ngValue]="null" disabled>Seleccionar cuenta…</option>
+        <option *ngFor="let cuenta of wompiCuentas" [ngValue]="cuenta.id">
+          {{ cuenta.nombre }} (ID {{ cuenta.id }})
+        </option>
+      </select>
+    </label>
+    <label class="field">
+      <span>Día recurrente</span>
+      <select [(ngModel)]="wizardForm.dia_semana">
+        <option *ngFor="let d of diasSemana" [ngValue]="d.value">{{ d.label }}</option>
+      </select>
+    </label>
+    <div class="field-row">
+      <label class="field"><span>Apertura</span><input type="time" [(ngModel)]="wizardForm.hora_apertura" /></label>
+      <label class="field"><span>Cierre</span><input type="time" [(ngModel)]="wizardForm.hora_cierre" /></label>
+    </div>
+    <label class="field"><span>Descripción pública</span><textarea rows="2" [(ngModel)]="wizardForm.covers_descripcion"></textarea></label>
+    <label class="field"><span>Aforo / venta máx.</span><input type="number" [(ngModel)]="wizardForm.aforo_maximo" /></label>
+    <label class="toggle-row"><input type="checkbox" [(ngModel)]="wizardForm.permite_reingreso" /><span>Reingreso</span></label>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" (click)="closeWizard()">Cancelar</button>
+      <button type="button" class="btn-primary" (click)="ejecutarWizard()" [disabled]="saving">Inicializar</button>
+    </div>
+  </div>
+</div>

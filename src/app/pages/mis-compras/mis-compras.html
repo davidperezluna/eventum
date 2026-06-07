@@ -60,18 +60,32 @@
   </ng-container>
 
   <ng-container *ngIf="!loading && !vistaActividad">
-  <header class="client-page-header client-page-header--compact client-page-header--in-nav">
+  <header
+    class="client-page-header client-page-header--compact client-page-header--in-nav"
+    *ngIf="!eventoDetalleKey && !lugarCoverDetalleKey"
+  >
     <h1 class="client-page-header__title">Mis Compras</h1>
     <p
-      *ngIf="!eventoDetalleKey && eventosConBoletas.length === 0"
+      *ngIf="totalTrasladosPendientesRecibir() > 0"
+      class="mc-compras-recibir-alerta"
+      role="status"
+    >
+      <span class="mc-compras-recibir-alerta__badge">{{ totalTrasladosPendientesRecibir() }}</span>
+      <span>
+        {{ totalTrasladosPendientesRecibir() === 1 ? 'Alguien te envió una entrada' : 'Alguien te envió entradas' }}
+        — revisa la sección <strong>por aceptar</strong> más abajo.
+      </span>
+    </p>
+    <p
+      *ngIf="!eventoDetalleKey && !lugarCoverDetalleKey && eventosConBoletas.length === 0 && (!coversEventumEnabled || lugaresConCovers.length === 0) && totalTrasladosPendientesRecibir() === 0"
       class="client-page-header__subtitle"
     >
-      Aquí verás tus boletas y productos por evento.
+      Aquí verás tus boletas, productos y covers por evento o club.
     </p>
   </header>
 
   <!-- Guía resumida (colapsada si ya hay compras) -->
-  <section class="guia-entradas-section" *ngIf="!eventoDetalleKey" aria-labelledby="guia-entradas-titulo">
+  <section class="guia-entradas-section" *ngIf="!eventoDetalleKey && !lugarCoverDetalleKey" aria-labelledby="guia-entradas-titulo">
     <details
       class="guia-entradas-details"
       [open]="guiaEntradasAbierta"
@@ -105,8 +119,83 @@
     </details>
   </section>
 
+  <nav
+    *ngIf="mostrarTabsMisComprasPrincipal()"
+    class="mc-segmented mc-segmented--principal"
+    role="tablist"
+    aria-label="Mis compras"
+  >
+    <button
+      type="button"
+      class="mc-segmented-tab"
+      role="tab"
+      [class.active]="tabMisComprasPrincipal === 'eventos'"
+      (click)="setTabMisComprasPrincipal('eventos')"
+    >
+      <span class="material-icons" aria-hidden="true">event</span>
+      Eventos
+      <span
+        class="mc-segmented-badge mc-segmented-badge--alert"
+        *ngIf="badgeEventosTabPendientes() > 0"
+        [attr.title]="badgeEventosTabPendientes() + ' por aceptar'"
+      >{{ badgeEventosTabPendientes() }}</span>
+      <span class="mc-segmented-badge" *ngIf="badgeEventosTab() > 0 && badgeEventosTabPendientes() === 0">{{ badgeEventosTab() }}</span>
+    </button>
+    <button
+      type="button"
+      class="mc-segmented-tab"
+      role="tab"
+      [class.active]="tabMisComprasPrincipal === 'covers'"
+      (click)="setTabMisComprasPrincipal('covers')"
+    >
+      <span class="material-icons" aria-hidden="true">nightlife</span>
+      Covers
+      <span class="mc-segmented-badge" *ngIf="badgeCoversTab() > 0">{{ badgeCoversTab() }}</span>
+    </button>
+  </nav>
+
+  <!-- Covers por aceptar (siempre visible, encima del contenido) -->
+  <div
+    *ngIf="coversEventumEnabled && !loading && !eventoDetalleKey && !lugarCoverDetalleKey && trasladosPendientesRecibirCover.length > 0"
+    class="traslados-pendientes-section traslados-pendientes-section--cover"
+  >
+    <h3 class="section-traslados-title">
+      <span class="material-icons">swap_horiz</span>
+      Covers por aceptar
+    </h3>
+    <p class="section-traslados-desc">
+      Alguien te transfirió un cover a tu cuenta de Eventum. <strong>No llega ningún mensaje al correo</strong>:
+      aparece aquí en Mis Compras. Pulsa <strong>Aceptar cover</strong> para que quede a tu nombre.
+      Necesitas <strong>documento</strong> en <a routerLink="/perfil">Mi perfil</a>.
+    </p>
+    <div class="traslados-pendientes-grid">
+      <div *ngFor="let t of trasladosPendientesRecibirCover" class="traslado-pendiente-card traslado-pendiente-card--cover">
+        <div class="traslado-pendiente-head">
+          <span class="legal-modal__badge legal-modal__badge--cover">
+            <span class="material-icons" aria-hidden="true">swap_horiz</span>
+            Pendiente
+          </span>
+          <span class="traslado-email" *ngIf="t.usuario_origen?.email as origenEmail">De {{ origenEmail }}</span>
+        </div>
+        <p class="traslado-meta">
+          <strong>{{ tituloEventoTraslado(t) }}</strong>
+          <span> · {{ nombreTipoCoverTraslado(t) }}</span>
+        </p>
+        <p class="traslado-aviso-qr">El código QR solo estará disponible después de <strong>aceptar</strong>.</p>
+        <div class="traslado-pendiente-actions">
+          <button type="button" class="legal-modal__btn legal-modal__btn-secondary" (click)="rechazarTraslado(t)">
+            Rechazar
+          </button>
+          <button type="button" class="legal-modal__btn legal-modal__btn-primary" (click)="aceptarTraslado(t)">
+            Aceptar cover
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <section
-    *ngIf="!eventoDetalleKey && (loadingPromoProductos || promoProductos)"
+    *ngIf="!eventoDetalleKey && !lugarCoverDetalleKey && (tabMisComprasPrincipal === 'eventos' || !coversEventumEnabled) && (loadingPromoProductos || promoProductos)"
     class="mis-compras-productos-promo"
     aria-label="Productos disponibles en tus eventos"
   >
@@ -164,7 +253,7 @@
     </a>
   </section>
 
-  <div class="filters-toolbar" *ngIf="mostrarToolbarFiltrosMisCompras && !eventoDetalleKey">
+  <div class="filters-toolbar" *ngIf="mostrarToolbarFiltrosMisCompras && !eventoDetalleKey && !lugarCoverDetalleKey && (tabMisComprasPrincipal === 'eventos' || !coversEventumEnabled)">
     <button
       type="button"
       class="btn-toggle-filters"
@@ -179,7 +268,7 @@
   </div>
 
   <!-- Filtros -->
-  <div id="filtros-panel" class="filters-card" *ngIf="mostrarToolbarFiltrosMisCompras && mostrarFiltros && !eventoDetalleKey">
+  <div id="filtros-panel" class="filters-card" *ngIf="mostrarToolbarFiltrosMisCompras && mostrarFiltros && !eventoDetalleKey && !lugarCoverDetalleKey && (tabMisComprasPrincipal === 'eventos' || !coversEventumEnabled)">
     <div class="filters-row">
       <div class="filter-group">
         <label>Estado de Pago</label>
@@ -238,7 +327,7 @@
   </div>
 
   <!-- Traslados pendientes de aceptar (recibidos) -->
-  <div *ngIf="!loading && trasladosPendientesRecibir.length > 0" class="traslados-pendientes-section">
+  <div *ngIf="!loading && !eventoDetalleKey && !lugarCoverDetalleKey && trasladosPendientesRecibir.length > 0" class="traslados-pendientes-section">
     <h3 class="section-traslados-title">
       <span class="material-icons">mark_email_unread</span>
       Entradas por aceptar
@@ -260,13 +349,11 @@
         </p>
         <p class="traslado-aviso-qr">El código QR solo estará disponible después de <strong>aceptar</strong>.</p>
         <div class="traslado-pendiente-actions">
-          <button type="button" class="btn-primary" (click)="aceptarTraslado(t)">
-            <span class="material-icons">check_circle</span>
-            Aceptar entrada
-          </button>
-          <button type="button" class="btn-danger-outline" (click)="rechazarTraslado(t)">
-            <span class="material-icons">cancel</span>
+          <button type="button" class="legal-modal__btn legal-modal__btn-secondary" (click)="rechazarTraslado(t)">
             Rechazar
+          </button>
+          <button type="button" class="legal-modal__btn legal-modal__btn-primary" (click)="aceptarTraslado(t)">
+            Aceptar entrada
           </button>
         </div>
       </div>
@@ -299,6 +386,41 @@
       <span class="mc-evento-detalle-chip mc-evento-detalle-chip--success" *ngIf="detalle.totalCedidas > 0">
         {{ detalle.totalCedidas }} {{ detalle.totalCedidas === 1 ? 'recibida' : 'recibidas' }}
       </span>
+    </div>
+
+    <div
+      *ngIf="trasladosPendientesRecibirEnEvento(detalle).length > 0"
+      class="traslados-pendientes-section traslados-pendientes-section--detalle"
+    >
+      <h3 class="section-traslados-title">
+        <span class="material-icons">mark_email_unread</span>
+        Entradas por aceptar
+      </h3>
+      <p class="section-traslados-desc">
+        Te las envió otra persona a tu cuenta de Eventum. Pulsa <strong>Aceptar entrada</strong> para que queden a tu nombre.
+        Necesitas <strong>documento</strong> en <a routerLink="/perfil">Mi perfil</a>.
+      </p>
+      <div class="traslados-pendientes-grid">
+        <div *ngFor="let t of trasladosPendientesRecibirEnEvento(detalle)" class="traslado-pendiente-card">
+          <div class="traslado-pendiente-head">
+            <span class="badge" [class]="getEstadoTrasladoClass(t.estado)">Estado: {{ getEstadoTrasladoLabel(t.estado) }}</span>
+            <span class="traslado-email" *ngIf="t.usuario_origen?.email as origenEmail">De {{ origenEmail }}</span>
+          </div>
+          <p class="traslado-meta" *ngIf="t.boletaDetail">
+            <strong>{{ t.boletaDetail.evento?.titulo || detalle.titulo }}</strong>
+            <span *ngIf="t.boletaDetail.numero_palco != null"> · Palco {{ t.boletaDetail.numero_palco }}</span>
+          </p>
+          <p class="traslado-aviso-qr">El código QR solo estará disponible después de <strong>aceptar</strong>.</p>
+          <div class="traslado-pendiente-actions">
+            <button type="button" class="legal-modal__btn legal-modal__btn-secondary" (click)="rechazarTraslado(t)">
+              Rechazar
+            </button>
+            <button type="button" class="legal-modal__btn legal-modal__btn-primary" (click)="aceptarTraslado(t)">
+              Aceptar entrada
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <nav
@@ -447,19 +569,22 @@
                         {{ getEstadoBoletaLabel(boleta.estado) }}
                       </span>
                     </div>
-                    <div class="boleta-traslado-saliente" *ngIf="tieneTrasladoSalienteActivo(boleta.id)">
-                      <span class="badge badge-traslado-enviado">Traslado enviado</span>
-                      <p class="help-text">
-                        Destino: <strong>{{ trasladoSalientePorBoletaId.get(boleta.id)?.email_destino }}</strong>.
+                    <div class="boleta-traslado-saliente" *ngIf="trasladoSalienteParaBoleta(boleta.id) as trasladoSaliente">
+                      <span class="legal-modal__badge legal-modal__badge--entrada">
+                        <span class="material-icons" aria-hidden="true">confirmation_number</span>
+                        Traslado enviado
+                      </span>
+                      <p class="boleta-traslado-saliente__text">
+                        Destino: <strong>{{ trasladoSaliente.email_destino }}</strong>.
                         No puedes usar el QR hasta que acepten, rechacen o canceles el envío.
                       </p>
                       <button
                         type="button"
-                        class="btn-cancelar-traslado"
-                        *ngIf="trasladoSalientePorBoletaId.get(boleta.id)?.estado === 'enviado'"
-                        (click)="cancelarTraslado(trasladoSalientePorBoletaId.get(boleta.id)!); $event.stopPropagation()"
+                        class="boleta-traslado-saliente__btn"
+                        *ngIf="trasladoSaliente.estado === 'enviado'"
+                        (click)="abrirModalCancelarTraslado(trasladoSaliente); $event.stopPropagation()"
                       >
-                        <span class="material-icons">undo</span>
+                        <span class="material-icons" aria-hidden="true">undo</span>
                         Cancelar envío
                       </button>
                     </div>
@@ -696,7 +821,7 @@
     </section>
   </div>
 
-  <section *ngIf="!loading && !eventoDetalleKey && eventosConBoletas.length > 0" class="mis-compras-eventos-section">
+  <section *ngIf="!loading && !eventoDetalleKey && !lugarCoverDetalleKey && (tabMisComprasPrincipal === 'eventos' || !coversEventumEnabled) && eventosConBoletas.length > 0" class="mis-compras-eventos-section">
     <header class="mis-compras-eventos-heading">
       <h2>Tus eventos</h2>
       <p>{{ eventosConBoletas.length }} {{ eventosConBoletas.length === 1 ? 'evento' : 'eventos' }}</p>
@@ -727,6 +852,9 @@
               {{ tipo.totalBoletas }} {{ tipo.nombre }}
             </span>
             <span class="badge badge-success" *ngIf="grupo.totalCedidas > 0">{{ grupo.totalCedidas }} {{ grupo.totalCedidas === 1 ? 'recibida' : 'recibidas' }}</span>
+            <span class="badge mc-badge-por-aceptar" *ngIf="badgePendientesRecibirEnEvento(grupo) > 0">
+              {{ badgePendientesRecibirEnEvento(grupo) }} por aceptar
+            </span>
             <span class="badge badge-info" *ngIf="grupo.totalSinAsignar > 0">{{ grupo.totalSinAsignar }} sin asignar</span>
             <span class="badge badge-warning" *ngIf="grupo.totalUsadas > 0">{{ grupo.totalUsadas }} usadas</span>
             <span class="badge badge-info-soft" *ngIf="grupo.totalProductosComprados > 0">
@@ -801,19 +929,22 @@
                       {{ getEstadoBoletaLabel(boleta.estado) }}
                     </span>
                   </div>
-                  <div class="boleta-traslado-saliente" *ngIf="tieneTrasladoSalienteActivo(boleta.id)">
-                    <span class="badge badge-traslado-enviado">Traslado enviado</span>
-                    <p class="help-text">
-                      Destino: <strong>{{ trasladoSalientePorBoletaId.get(boleta.id)?.email_destino }}</strong>.
+                  <div class="boleta-traslado-saliente" *ngIf="trasladoSalienteParaBoleta(boleta.id) as trasladoSaliente">
+                    <span class="legal-modal__badge legal-modal__badge--entrada">
+                      <span class="material-icons" aria-hidden="true">confirmation_number</span>
+                      Traslado enviado
+                    </span>
+                    <p class="boleta-traslado-saliente__text">
+                      Destino: <strong>{{ trasladoSaliente.email_destino }}</strong>.
                       No puedes usar el QR hasta que acepten, rechacen o canceles el envío.
                     </p>
                     <button
                       type="button"
-                      class="btn-cancelar-traslado"
-                      *ngIf="trasladoSalientePorBoletaId.get(boleta.id)?.estado === 'enviado'"
-                      (click)="cancelarTraslado(trasladoSalientePorBoletaId.get(boleta.id)!); $event.stopPropagation()"
+                      class="boleta-traslado-saliente__btn"
+                      *ngIf="trasladoSaliente.estado === 'enviado'"
+                      (click)="abrirModalCancelarTraslado(trasladoSaliente); $event.stopPropagation()"
                     >
-                      <span class="material-icons">undo</span>
+                      <span class="material-icons" aria-hidden="true">undo</span>
                       Cancelar envío
                     </button>
                   </div>
@@ -935,11 +1066,256 @@
     </div>
   </section>
 
+  <!-- Tab Covers: listado clubes -->
+  <ng-container *ngIf="coversEventumEnabled && !eventoDetalleKey && !lugarCoverDetalleKey && tabMisComprasPrincipal === 'covers'">
+    <section *ngIf="!loading && (loadingCovers || lugaresConCovers.length > 0)" class="mis-compras-covers-section mis-compras-eventos-section">
+      <header class="mis-compras-eventos-heading">
+        <h2>Tus clubes</h2>
+        <p *ngIf="!loadingCovers">{{ lugaresConCovers.length }} {{ lugaresConCovers.length === 1 ? 'club' : 'clubes' }}</p>
+      </header>
+      <div class="compras-list eventos-list">
+        <div *ngFor="let grupo of lugaresConCovers" class="compra-card evento-card mc-event-card mc-cover-card">
+          <button type="button" class="evento-card-toggle mc-event-card-toggle" (click)="abrirDetalleClubCover(grupo.key)">
+            <div class="event-body">
+              <h3 class="event-title">{{ grupo.lugarNombre }}</h3>
+              <div class="event-meta">
+                <span class="event-meta-line">
+                  <span class="material-icons">nightlife</span>
+                  {{ grupo.totalDisponibles }} {{ grupo.totalDisponibles === 1 ? 'entrada' : 'entradas' }}
+                  <ng-container *ngIf="grupo.totalTrasladoSaliente > 0">
+                    · {{ grupo.totalTrasladoSaliente }} en envío
+                  </ng-container>
+                </span>
+              </div>
+              <div class="compra-estados compra-estados--event-card" *ngIf="badgePendientesRecibirEnClub(grupo) > 0">
+                <span class="badge mc-badge-por-aceptar">
+                  {{ badgePendientesRecibirEnClub(grupo) }} por aceptar
+                </span>
+              </div>
+              <div class="event-footer mc-event-footer--dual">
+                <div class="mc-event-boletas-stat">
+                  <span class="total-label">Covers</span>
+                  <span class="total-value">{{ grupo.totalDisponibles }}</span>
+                  <span class="evento-total-caption" *ngIf="grupo.totalTrasladoSaliente > 0">
+                    {{ grupo.totalTrasladoSaliente }} con envío pendiente
+                  </span>
+                </div>
+                <span class="event-cta" aria-hidden="true">
+                  <span class="event-cta-text">Ver</span>
+                  <ion-icon name="arrow-forward-outline"></ion-icon>
+                </span>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+    </section>
+  </ng-container>
+
+  <!-- Detalle club cover -->
+  <div *ngIf="!loading && lugarCoverDetalle() as clubDetalle" class="evento-detalle-page mc-cover-detalle-page">
+    <header class="client-page-header client-page-header--compact client-page-header--subpage mc-evento-detalle-header">
+      <button type="button" class="mc-page-back" (click)="volverAMisCompras()">
+        <span class="material-icons" aria-hidden="true">arrow_back</span>
+        Mis compras
+      </button>
+      <h1 class="client-page-header__title">{{ clubDetalle.lugarNombre }}</h1>
+      <p class="client-page-header__subtitle mc-evento-detalle-meta mc-cover-detalle-meta">
+        <span class="mc-cover-detalle-meta-item">
+          <span class="material-icons" aria-hidden="true">nightlife</span>
+          {{ clubDetalle.totalDisponibles }} {{ clubDetalle.totalDisponibles === 1 ? 'cover' : 'covers' }}
+          <ng-container *ngIf="clubDetalle.totalTrasladoSaliente > 0">
+            · {{ clubDetalle.totalTrasladoSaliente }} en envío
+          </ng-container>
+        </span>
+      </p>
+      <p class="mc-evento-detalle-resumen" *ngIf="resumenDetalleClubCover(clubDetalle) as resumen">{{ resumen }}</p>
+    </header>
+
+    <div
+      class="mc-evento-detalle-chips"
+      *ngIf="tiposCoverResumenParaBadges(clubDetalle).length > 0 || coversCedidasEnClub(clubDetalle) > 0"
+    >
+      <span
+        *ngFor="let tipo of tiposCoverResumenParaBadges(clubDetalle)"
+        class="mc-evento-detalle-chip mc-evento-detalle-chip--info"
+      >
+        {{ tipo.total }} {{ tipo.nombre }}
+      </span>
+      <span
+        class="mc-evento-detalle-chip mc-evento-detalle-chip--success"
+        *ngIf="coversCedidasEnClub(clubDetalle) > 0"
+      >
+        {{ coversCedidasEnClub(clubDetalle) }}
+        {{ coversCedidasEnClub(clubDetalle) === 1 ? 'recibida' : 'recibidas' }}
+      </span>
+    </div>
+
+    <div
+      *ngIf="coversEventumEnabled && trasladosPendientesRecibirCoverEnClub(clubDetalle).length > 0"
+      class="traslados-pendientes-section traslados-pendientes-section--cover traslados-pendientes-section--detalle"
+    >
+      <h3 class="section-traslados-title">
+        <span class="material-icons">swap_horiz</span>
+        Covers por aceptar
+      </h3>
+      <p class="section-traslados-desc">
+        Alguien te transfirió un cover a tu cuenta de Eventum. Pulsa <strong>Aceptar cover</strong> para que quede a tu nombre.
+        Necesitas <strong>documento</strong> en <a routerLink="/perfil">Mi perfil</a>.
+      </p>
+      <div class="traslados-pendientes-grid">
+        <div
+          *ngFor="let t of trasladosPendientesRecibirCoverEnClub(clubDetalle)"
+          class="traslado-pendiente-card traslado-pendiente-card--cover"
+        >
+          <div class="traslado-pendiente-head">
+            <span class="legal-modal__badge legal-modal__badge--cover">
+              <span class="material-icons" aria-hidden="true">swap_horiz</span>
+              Pendiente
+            </span>
+            <span class="traslado-email" *ngIf="t.usuario_origen?.email as origenEmail">De {{ origenEmail }}</span>
+          </div>
+          <p class="traslado-meta">
+            <strong>{{ tituloEventoTraslado(t) }}</strong>
+            <span> · {{ nombreTipoCoverTraslado(t) }}</span>
+          </p>
+          <p class="traslado-aviso-qr">El código QR solo estará disponible después de <strong>aceptar</strong>.</p>
+          <div class="traslado-pendiente-actions">
+            <button type="button" class="legal-modal__btn legal-modal__btn-secondary" (click)="rechazarTraslado(t)">
+              Rechazar
+            </button>
+            <button type="button" class="legal-modal__btn legal-modal__btn-primary" (click)="aceptarTraslado(t)">
+              Aceptar cover
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <nav
+      class="mc-segmented mc-segmented--status"
+      role="tablist"
+      aria-label="Estado de covers"
+      *ngIf="mostrarTabCoversDetalle(clubDetalle, 'sin-usar') || mostrarTabCoversDetalle(clubDetalle, 'usadas')"
+    >
+      <button
+        type="button"
+        class="mc-segmented-tab"
+        role="tab"
+        *ngIf="mostrarTabCoversDetalle(clubDetalle, 'sin-usar')"
+        [class.active]="tabCoversDetalle === 'sin-usar'"
+        [attr.aria-selected]="tabCoversDetalle === 'sin-usar'"
+        (click)="tabCoversDetalle = 'sin-usar'"
+      >
+        <span class="material-icons" aria-hidden="true">check_circle</span>
+        Sin usar
+        <span class="mc-segmented-badge">{{ clubDetalle.totalDisponibles }}</span>
+      </button>
+      <button
+        type="button"
+        class="mc-segmented-tab"
+        role="tab"
+        *ngIf="mostrarTabCoversDetalle(clubDetalle, 'usadas')"
+        [class.active]="tabCoversDetalle === 'usadas'"
+        [attr.aria-selected]="tabCoversDetalle === 'usadas'"
+        (click)="tabCoversDetalle = 'usadas'"
+      >
+        <span class="material-icons" aria-hidden="true">task_alt</span>
+        Usadas
+        <span class="mc-segmented-badge">{{ clubDetalle.totalUsadas }}</span>
+      </button>
+    </nav>
+
+    <div class="compra-card evento-detalle-content mc-cover-detalle-card">
+      <section class="boletas-section evento-boletas-section mc-cover-detalle-section">
+        <div class="boletas-grid boletas-grid--covers-detalle" *ngIf="coversDetallePorTab(clubDetalle).length > 0">
+          <div
+            *ngFor="let item of coversDetallePorTab(clubDetalle)"
+            class="boleta-card boleta-card--cover"
+            [class.boleta-card--clickable]="puedeAbrirQrCover(item)"
+            (click)="puedeAbrirQrCover(item) && verQrCover(item)"
+          >
+            <div class="boleta-header">
+              <div class="boleta-info">
+                <span class="boleta-palco-num">{{ item.boleta.tipo_cover_nombre }}</span>
+                <span class="boleta-compra-ref" *ngIf="!item.esCedida">Compra {{ item.compra.numero_transaccion }}</span>
+                <span class="boleta-compra-ref boleta-compra-ref--cedida" *ngIf="item.esCedida">Cover recibido</span>
+              </div>
+              <span class="badge" [class]="getEstadoCoverClass(item.boleta)">{{ getEstadoCoverLabel(item.boleta) }}</span>
+            </div>
+
+            <div class="boleta-fechas boleta-fechas--cover">
+              <span class="boleta-fecha-noche">{{ fechaSesionCoverBoleta(item.boleta) }}</span>
+              <span class="boleta-fecha-hora">{{ horarioSesionCoverBoleta(item.boleta) }}</span>
+            </div>
+
+            <div class="boleta-traslado-saliente" *ngIf="trasladoSalienteParaCover(item.boleta.id) as trasladoSaliente">
+              <span class="legal-modal__badge legal-modal__badge--cover">
+                <span class="material-icons" aria-hidden="true">swap_horiz</span>
+                Traslado enviado
+              </span>
+              <p class="boleta-traslado-saliente__text">
+                Cuenta destino: <strong>{{ trasladoSaliente.email_destino }}</strong>.
+                La transferencia queda pendiente en su Mis Compras → Covers. No verás el QR hasta que acepte, rechace o canceles.
+              </p>
+              <button
+                type="button"
+                class="boleta-traslado-saliente__btn"
+                *ngIf="trasladoSaliente.estado === 'enviado'"
+                (click)="abrirModalCancelarTraslado(trasladoSaliente); $event.stopPropagation()"
+              >
+                <span class="material-icons" aria-hidden="true">undo</span>
+                Cancelar envío
+              </button>
+            </div>
+
+            <div
+              class="boleta-palco-pendiente-pago"
+              *ngIf="!esBoletaCoverUsada(item.boleta) && !puedeMostrarQrCover(item) && !tieneTrasladoSalienteCoverActivo(item.boleta.id)"
+            >
+              <p class="help-text">{{ mensajeHabilitacionQrCover(item.boleta) }}</p>
+            </div>
+
+            <div class="boleta-actions" *ngIf="puedeMostrarQrCover(item)">
+              <button type="button" class="guia-resumen-link boleta-action-btn" (click)="verQrCover(item); $event.stopPropagation()">
+                <span class="material-icons">qr_code_2</span>
+                Ver QR
+              </button>
+            </div>
+
+            <div class="boleta-asignar-palco" *ngIf="puedeAsignarCoverPorCorreo(item)">
+              <button
+                type="button"
+                class="asignar-palco-summary asignar-palco-summary--inline"
+                (click)="abrirModalTrasladoCover(item); $event.stopPropagation()"
+              >
+                <span class="material-icons">swap_horiz</span>
+                Transferir cover
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <p class="mc-cover-detalle-empty" *ngIf="coversDetallePorTab(clubDetalle).length === 0">
+          No hay covers en esta pestaña.
+        </p>
+      </section>
+    </div>
+
+    <aside class="mc-cover-detalle-footer">
+      <p class="mc-cover-detalle-footer-text">¿Quieres otra noche en este club?</p>
+      <a [routerLink]="['/club', clubDetalle.lugarId]" class="mc-cover-detalle-cta">
+        <span class="material-icons" aria-hidden="true">add_circle_outline</span>
+        Reservar más cover
+      </a>
+    </aside>
+  </div>
+
   <!-- Empty state -->
   <div *ngIf="!loading && !vistaActividad && !tieneContenidoMisBoletas()" class="empty-state">
     <span class="material-icons empty-state__lead-icon" aria-hidden="true">shopping_bag</span>
     <p class="empty-state__title">Aún no tienes compras</p>
-    <p class="empty-subtitle">Explora eventos y adquiere boletas o productos para tu experiencia</p>
+    <p class="empty-subtitle">Explora eventos o clubes y adquiere boletas, productos o cover</p>
     <a routerLink="/eventos-cliente" class="btn-primary empty-state__cta">
       <span class="material-icons" aria-hidden="true">event</span>
       Ver Eventos
@@ -978,6 +1354,48 @@
     </div>
   </div>
   </ng-container>
+</div>
+
+<!-- Modal QR cover -->
+<div class="modal-overlay" *ngIf="showCoverQrModal && coverBoletaSeleccionada">
+  <div class="modal-content boleta-modal" (click)="$event.stopPropagation()">
+    <button class="modal-close" (click)="cerrarCoverQrModal()"><span class="material-icons">close</span></button>
+    <div class="boleta-preview">
+      <div class="boleta-header-preview">
+        <h2>{{ coverBoletaSeleccionada.boleta.lugar_nombre }}</h2>
+        <p class="boleta-tipo">{{ coverBoletaSeleccionada.boleta.tipo_cover_nombre }}</p>
+      </div>
+      <div class="boleta-qr-preview" *ngIf="loadingCoverQR">
+        <div class="qr-loading">
+          <div class="spinner"></div>
+          <p>Generando código QR…</p>
+        </div>
+      </div>
+      <div class="boleta-qr-preview" *ngIf="!loadingCoverQR && coverQrCodeUrl">
+        <img [src]="coverQrCodeUrl" alt="QR cover" class="qr-image">
+      </div>
+      <div class="boleta-qr-preview" *ngIf="!loadingCoverQR && !coverQrCodeUrl">
+        <div class="qr-pending">
+          <span class="material-icons">schedule</span>
+          <p>{{ mensajeHabilitacionQrCover(coverBoletaSeleccionada.boleta) }}</p>
+        </div>
+      </div>
+      <div class="boleta-info-preview">
+        <div class="info-row info-row--stack">
+          <span class="info-label">Noche</span>
+          <span class="info-value">{{ fechaSesionCoverBoleta(coverBoletaSeleccionada.boleta) }}</span>
+        </div>
+        <div class="info-row info-row--stack">
+          <span class="info-label">Horario</span>
+          <span class="info-value">{{ horarioSesionCoverBoleta(coverBoletaSeleccionada.boleta) }}</span>
+        </div>
+        <div class="info-row info-row--stack">
+          <span class="info-label">Compra</span>
+          <span class="info-value info-value--code">{{ coverBoletaSeleccionada.compra.numero_transaccion }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Modal QR de producto -->
@@ -1069,49 +1487,137 @@
   </div>
 </div>
 
-<!-- Modal enviar entrada (traslado palco) -->
-<div class="modal-overlay modal-overlay--traslado" *ngIf="showTrasladoModal" (click)="cerrarModalTraslado()">
-  <div class="modal-content boleta-modal traslado-modal" (click)="$event.stopPropagation()">
-    <button class="modal-close" type="button" (click)="cerrarModalTraslado()" aria-label="Cerrar">
-      <span class="material-icons">close</span>
-    </button>
-    <div class="traslado-modal-body">
-      <h3 class="traslado-modal-title">Asignar entrada de palco</h3>
-      <p class="traslado-modal-desc">
-        Escribe el <strong>correo exacto</strong> con el que la otra persona creó su cuenta en Eventum.
-        Si no está registrada, no podrá recibir la entrada. Debe tener documento en <strong>Mi perfil</strong> y aceptar en esta misma página (Mis Boletas).
-        Cuando acepte, la entrada queda a su nombre y <strong>no podrá enviarla a nadie más</strong>.
-        Mientras esperas, tú <strong>no verás el código QR</strong> (puedes cancelar el envío si aún no aceptó).
-      </p>
-      <div class="traslado-modal-field">
-        <label for="email-traslado-destino">Email del destinatario *</label>
+<!-- Modal transferir cover / asignar entrada (legal-modal) -->
+<div
+  class="legal-modal-overlay modal-overlay--traslado"
+  *ngIf="showTrasladoModal"
+  (click)="cerrarModalTraslado()"
+  role="presentation"
+>
+  <div
+    class="legal-modal"
+    (click)="$event.stopPropagation()"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="'traslado-modal-title'"
+  >
+    <header class="legal-modal__header">
+      <div class="legal-modal__header-text">
+        <span
+          class="legal-modal__badge"
+          [class.legal-modal__badge--cover]="esTrasladoModalCover"
+          [class.legal-modal__badge--entrada]="!esTrasladoModalCover"
+        >
+          <span class="material-icons" aria-hidden="true">{{ esTrasladoModalCover ? 'swap_horiz' : 'confirmation_number' }}</span>
+          {{ esTrasladoModalCover ? 'Transferencia' : 'Asignación' }}
+        </span>
+        <h2 id="traslado-modal-title">{{ resumenTrasladoTitulo }}</h2>
+        <p>{{ resumenTrasladoSubtitulo }}</p>
+      </div>
+      <button type="button" class="legal-modal__close" (click)="cerrarModalTraslado()" aria-label="Cerrar">
+        <span class="material-icons">close</span>
+      </button>
+    </header>
+
+    <div class="legal-modal__body">
+      <ul class="legal-modal__summary-list">
+        <li *ngFor="let punto of resumenTrasladoPuntos">{{ punto }}</li>
+      </ul>
+
+      <div class="legal-modal__field">
+        <label for="email-traslado-destino">Email de la cuenta Eventum del destinatario *</label>
         <input
           id="email-traslado-destino"
           type="email"
           [(ngModel)]="emailTrasladoDestino"
-          placeholder="correo@ejemplo.com"
+          [placeholder]="esTrasladoModalCover ? 'misma cuenta con la que inició sesión' : 'correo@ejemplo.com'"
           autocomplete="email"
         />
       </div>
+
       <p
-        class="asignacion-error"
+        class="legal-modal__error"
         *ngIf="trasladoBoleta && asignacionError?.boletaId === trasladoBoleta.id"
         role="alert"
       >
         {{ asignacionError!.mensaje }}
       </p>
-      <div class="traslado-modal-actions">
-        <button type="button" class="traslado-btn-secondary" (click)="cerrarModalTraslado()">Cerrar</button>
-        <button
-          type="button"
-          class="traslado-btn-primary"
-          (click)="confirmarEnvioTraslado()"
-          [disabled]="enviandoTraslado"
-        >
-          {{ enviandoTraslado ? 'Enviando…' : 'Enviar solicitud' }}
-        </button>
-      </div>
     </div>
+
+    <footer class="legal-modal__footer">
+      <button type="button" class="legal-modal__btn legal-modal__btn-secondary" (click)="cerrarModalTraslado()">
+        Cerrar
+      </button>
+      <button
+        type="button"
+        class="legal-modal__btn legal-modal__btn-primary"
+        (click)="confirmarEnvioTraslado()"
+        [disabled]="enviandoTraslado || !emailTrasladoDestino.trim()"
+      >
+        {{
+          enviandoTraslado
+            ? (esTrasladoModalCover ? 'Transferiendo…' : 'Enviando…')
+            : (esTrasladoModalCover ? 'Transferir cover' : 'Enviar solicitud')
+        }}
+      </button>
+    </footer>
+  </div>
+</div>
+
+<!-- Modal cancelar transferencia / envío (legal-modal) -->
+<div
+  class="legal-modal-overlay modal-overlay--traslado"
+  *ngIf="showCancelarTrasladoModal"
+  (click)="cerrarModalCancelarTraslado()"
+  role="presentation"
+>
+  <div
+    class="legal-modal"
+    (click)="$event.stopPropagation()"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="'cancelar-traslado-modal-title'"
+  >
+    <header class="legal-modal__header">
+      <div class="legal-modal__header-text">
+        <span
+          class="legal-modal__badge"
+          [class.legal-modal__badge--cover]="esCancelarTrasladoCover"
+          [class.legal-modal__badge--entrada]="!esCancelarTrasladoCover"
+        >
+          <span class="material-icons" aria-hidden="true">{{ esCancelarTrasladoCover ? 'swap_horiz' : 'confirmation_number' }}</span>
+          {{ esCancelarTrasladoCover ? 'Transferencia' : 'Asignación' }}
+        </span>
+        <h2 id="cancelar-traslado-modal-title">{{ resumenCancelarTrasladoTitulo }}</h2>
+        <p>{{ resumenCancelarTrasladoSubtitulo }}</p>
+      </div>
+      <button type="button" class="legal-modal__close" (click)="cerrarModalCancelarTraslado()" aria-label="Cerrar">
+        <span class="material-icons">close</span>
+      </button>
+    </header>
+
+    <div class="legal-modal__body">
+      <ul class="legal-modal__summary-list">
+        <li *ngFor="let punto of resumenCancelarTrasladoPuntos">{{ punto }}</li>
+      </ul>
+      <p class="legal-modal__hint" *ngIf="trasladoACancelar?.email_destino as emailDestino">
+        Cuenta destino: <strong>{{ emailDestino }}</strong>
+      </p>
+    </div>
+
+    <footer class="legal-modal__footer">
+      <button type="button" class="legal-modal__btn legal-modal__btn-secondary" (click)="cerrarModalCancelarTraslado()">
+        Volver
+      </button>
+      <button
+        type="button"
+        class="legal-modal__btn legal-modal__btn-primary"
+        (click)="confirmarCancelarTraslado()"
+        [disabled]="cancelandoTraslado"
+      >
+        {{ cancelandoTraslado ? 'Cancelando…' : (esCancelarTrasladoCover ? 'Sí, cancelar transferencia' : 'Sí, cancelar envío') }}
+      </button>
+    </footer>
   </div>
 </div>
 

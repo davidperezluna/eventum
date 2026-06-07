@@ -3,18 +3,23 @@ import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } fro
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { CarritoCompraService } from '../../services/carrito-compra.service';
+import { MisComprasStateService } from '../../services/mis-compras-state.service';
+import { TrasladosBoletaService } from '../../services/traslados-boleta.service';
 import { User } from '@supabase/supabase-js';
 import { filter, merge } from 'rxjs';
 import { cuposEventumEnabled } from '../../core/cupos-feature';
+import { coversEventumEnabled } from '../../core/covers-feature';
 import { CUPOS_LABELS } from '../../core/cupos-labels';
+import { COVERS_LABELS } from '../../core/covers-labels';
 import { forceUnlockBodyScroll, lockBodyScroll, unlockBodyScroll } from '../../core/body-scroll-lock';
+import { ClientConfirmDialog } from '../client-confirm-dialog/client-confirm-dialog';
 
 type ClientNavItem = {
   path: string;
   label: string;
   icon: string;
   exact?: boolean;
-  badge?: 'carrito';
+  badge?: 'carrito' | 'traslados-pendientes';
   /** Separador visual antes del ítem (p. ej. acciones de compra). */
   dividerBefore?: boolean;
   mobile?: boolean;
@@ -23,7 +28,7 @@ type ClientNavItem = {
 
 @Component({
   selector: 'app-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, ClientConfirmDialog],
   templateUrl: './layout.html',
   styleUrl: './layout.css',
 })
@@ -50,19 +55,25 @@ export class Layout implements OnInit, OnDestroy {
   sidebarOpen: boolean = false;
   clientMenuOpen: boolean = false;
   totalItemsCarrito = 0;
+  totalTrasladosPendientes = 0;
   subtotalCarrito = 0;
   enRutaCarrito = false;
 
   readonly cuposEventumEnabled = cuposEventumEnabled;
+  readonly coversEventumEnabled = coversEventumEnabled;
   readonly cuposLabels = CUPOS_LABELS;
+  readonly coversLabels = COVERS_LABELS;
   readonly currentYear = new Date().getFullYear();
   private routerSubscription?: any;
   private carritoSubscription?: any;
+  private trasladosPendientesSubscription?: any;
   private unsubscribeAuthState?: () => void;
 
   constructor(
     private authService: AuthService,
     private carritoCompraService: CarritoCompraService,
+    private misComprasStateService: MisComprasStateService,
+    private trasladosBoletaService: TrasladosBoletaService,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
@@ -87,6 +98,8 @@ export class Layout implements OnInit, OnDestroy {
         } else if (usuario.tipo_usuario_id === 1) {
           this.userRole = 'Cliente';
           this.loadMenuCliente();
+          this.misComprasStateService.hydrateTrasladosPendientesCountFromState(usuario.id);
+          void this.refreshTrasladosPendientesNavBadge(usuario.id);
         } else if (this.authService.isLector()) {
           this.userRole = 'Lector';
           this.menuItems = [];
@@ -122,10 +135,17 @@ export class Layout implements OnInit, OnDestroy {
       });
 
     this.refreshCarritoFabState();
+    this.trasladosPendientesSubscription = this.misComprasStateService.trasladosPendientesCount$.subscribe(
+      (count) => {
+        this.totalTrasladosPendientes = count;
+        this.cdr.detectChanges();
+      }
+    );
     this.carritoSubscription = merge(
       this.carritoCompraService.totalItems$,
       this.carritoCompraService.items$,
-      this.carritoCompraService.itemsProductos$
+      this.carritoCompraService.itemsProductos$,
+      this.carritoCompraService.itemsCover$,
     ).subscribe(() => this.refreshCarritoFabState());
   }
 
@@ -163,13 +183,10 @@ export class Layout implements OnInit, OnDestroy {
 
   private refreshCarritoFabState(): void {
     this.subtotalCarrito = this.carritoCompraService.getSubtotalCombinado();
-    this.totalItemsCarrito = this.carritoCompraService.getItemsSnapshot().reduce(
-      (acc, item) => acc + item.cantidad,
-      0
-    ) + this.carritoCompraService.getItemsProductosSnapshot().reduce(
-      (acc, item) => acc + item.cantidad,
-      0
-    );
+    this.totalItemsCarrito =
+      this.carritoCompraService.getItemsSnapshot().reduce((acc, item) => acc + item.cantidad, 0) +
+      this.carritoCompraService.getItemsProductosSnapshot().reduce((acc, item) => acc + item.cantidad, 0) +
+      this.carritoCompraService.getItemsCoverSnapshot().reduce((acc, item) => acc + item.cantidad, 0);
     this.cdr.detectChanges();
   }
 
@@ -210,6 +227,9 @@ export class Layout implements OnInit, OnDestroy {
     if (this.carritoSubscription) {
       this.carritoSubscription.unsubscribe();
     }
+    if (this.trasladosPendientesSubscription) {
+      this.trasladosPendientesSubscription.unsubscribe();
+    }
     if (this.unsubscribeAuthState) {
       this.unsubscribeAuthState();
     }
@@ -223,6 +243,9 @@ export class Layout implements OnInit, OnDestroy {
       { path: '/eventos', label: 'Eventos', icon: 'event' },
       { path: '/categorias', label: 'Categorías', icon: 'category' },
       { path: '/lugares', label: 'Lugares', icon: 'place' },
+      ...(this.coversEventumEnabled
+        ? [{ path: '/covers-config', label: 'Covers', icon: 'nightlife' }]
+        : []),
       { path: '/boletas', label: 'Boletas sin usar', icon: 'confirmation_number' },
       { path: '/boletas-usadas', label: 'Boletas usadas', icon: 'how_to_reg' },
       { path: '/productos', label: 'Productos', icon: 'local_mall' },
@@ -252,6 +275,9 @@ export class Layout implements OnInit, OnDestroy {
     // Temporal: sólo entrada al panel organizador en el menú lateral.
     this.menuItems = [
       { path: '/dashboard-organizador', label: 'Dashboard', icon: 'dashboard' },
+      ...(this.coversEventumEnabled
+        ? [{ path: '/covers-config', label: 'Covers', icon: 'nightlife' }]
+        : []),
     ];
     /*
     Ocultos de momento — restaurar al activar rutas desde el sidebar:
@@ -267,7 +293,13 @@ export class Layout implements OnInit, OnDestroy {
   loadMenuCliente() {
     this.clientNavItems = [
       { path: '/eventos-cliente', label: 'Eventos', icon: 'event', exact: true },
-      { path: '/mis-compras', label: 'Mis compras', icon: 'confirmation_number', exact: true },
+      {
+        path: '/mis-compras',
+        label: 'Mis compras',
+        icon: 'confirmation_number',
+        exact: true,
+        badge: 'traslados-pendientes',
+      },
       {
         path: '/carrito',
         label: 'Carrito',
@@ -279,6 +311,9 @@ export class Layout implements OnInit, OnDestroy {
       ...(this.cuposEventumEnabled
         ? [{ path: '/cupos', label: CUPOS_LABELS.explorar, icon: 'forum', exact: true }]
         : []),
+      ...(this.coversEventumEnabled
+        ? [{ path: '/clubes', label: COVERS_LABELS.explorar, icon: 'nightlife', exact: true }]
+        : []),
       { path: '/perfil', label: 'Mi perfil', icon: 'person', exact: false, dividerBefore: true },
     ];
     this.menuItems = [];
@@ -288,6 +323,25 @@ export class Layout implements OnInit, OnDestroy {
     return this.clientNavItems.filter((item) =>
       surface === 'mobile' ? item.mobile !== false : item.desktop !== false
     );
+  }
+
+  navItemHasBadge(item: ClientNavItem): boolean {
+    return item.badge === 'carrito' || item.badge === 'traslados-pendientes';
+  }
+
+  navItemBadgeCount(item: ClientNavItem): number {
+    if (item.badge === 'carrito') return this.totalItemsCarrito;
+    if (item.badge === 'traslados-pendientes') return this.totalTrasladosPendientes;
+    return 0;
+  }
+
+  private async refreshTrasladosPendientesNavBadge(userId: number): Promise<void> {
+    try {
+      const pend = await this.trasladosBoletaService.listarPendientesRecibir(userId);
+      this.misComprasStateService.setTrasladosPendientesCount(pend.length);
+    } catch (e) {
+      console.error('Error cargando badge traslados pendientes:', e);
+    }
   }
 
   toggleSidebar() {

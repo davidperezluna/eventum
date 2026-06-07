@@ -11,6 +11,8 @@ export const environment = {
   /** Solo dev/pruebas: clientes pueden usar email/contraseña en `/login-admin`. */
   allowClienteLoginAdmin: true,
   cuposEventumEnabled: true,
+  /** Staging/dev desplegado: activar mientras se prueba el módulo Covers. */
+  coversEventumEnabled: true,
   /** Mantener alineado con `index.html` (OneSignal se inicializa allí antes del bundle). */
   oneSignal: {
     appId: 'cb3f9dcf-6085-43d5-99ae-6c76db8abf57',

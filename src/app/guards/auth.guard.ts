@@ -59,6 +59,8 @@ function esRutaLoginCliente(router: Router, url: string): boolean {
     'pago-resultado',
     'detalle-evento',
     'cupos-evento',
+    'clubes',
+    'club',
   ]);
   if (!raiz.has(a)) return false;
 
@@ -69,7 +71,7 @@ function esRutaLoginCliente(router: Router, url: string): boolean {
     return false;
   }
 
-  if (a === 'cupos-evento' || a === 'detalle-evento') {
+  if (a === 'cupos-evento' || a === 'detalle-evento' || a === 'club') {
     return segments.length === 2 && Boolean(b);
   }
 

@@ -31,6 +31,8 @@ import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { SafePipe } from '../../pipes/safe.pipe';
 import { cuposEventumEnabled } from '../../core/cupos-feature';
 import { CUPOS_LABELS } from '../../core/cupos-labels';
+import { resolverConflictoEventoAntesDeAgregar } from '../../core/carrito-conflicto';
+import { ClientConfirmDialogService } from '../../services/client-confirm-dialog.service';
 
 @Component({
   selector: 'app-detalle-evento',
@@ -125,6 +127,7 @@ export class DetalleEvento implements OnInit, OnDestroy {
     private authService: AuthService,
     private usuariosService: UsuariosService,
     private alertService: AlertService,
+    private clientConfirmDialog: ClientConfirmDialogService,
     private detalleEventoStateService: DetalleEventoStateService,
     private carritoCompraService: CarritoCompraService,
     private productosService: ProductosService,
@@ -666,9 +669,17 @@ export class DetalleEvento implements OnInit, OnDestroy {
            fechaFin < ahora;
   }
 
-  agregarAlCarrito(tipo: TipoBoleta) {
+  async agregarAlCarrito(tipo: TipoBoleta) {
     if (!this.tieneExistencias(tipo)) {
       this.alertService.warning('Sold Out', `El tipo "${tipo.nombre}" ya no tiene existencias disponibles`);
+      return;
+    }
+    const puedeContinuar = await resolverConflictoEventoAntesDeAgregar(
+      this.clientConfirmDialog,
+      this.carritoCompraService,
+      this.evento?.titulo ?? 'este evento',
+    );
+    if (!puedeContinuar) {
       return;
     }
     if (this.evento) {

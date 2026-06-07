@@ -7,6 +7,8 @@ import { CarritoCompraService, ItemCarritoProducto } from '../../services/carrit
 import { AlertService } from '../../services/alert.service';
 import { Evento, Producto } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
+import { resolverConflictoEventoAntesDeAgregar } from '../../core/carrito-conflicto';
+import { ClientConfirmDialogService } from '../../services/client-confirm-dialog.service';
 
 @Component({
   selector: 'app-evento-productos-tab',
@@ -34,6 +36,7 @@ export class EventoProductosTab implements OnInit, OnDestroy {
     private productosService: ProductosService,
     private carritoCompraService: CarritoCompraService,
     private alertService: AlertService,
+    private clientConfirmDialog: ClientConfirmDialogService,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
@@ -174,10 +177,21 @@ export class EventoProductosTab implements OnInit, OnDestroy {
     return targetMs - this.nowMs <= 24 * 60 * 60 * 1000;
   }
 
-  agregarAlCarrito(producto: Producto): void {
+  async agregarAlCarrito(producto: Producto): Promise<void> {
     if (this.eventoFinalizado) {
       this.alertService.warning('Evento finalizado', 'No se pueden comprar productos en un evento finalizado.');
       return;
+    }
+    const puedeContinuar = await resolverConflictoEventoAntesDeAgregar(
+      this.clientConfirmDialog,
+      this.carritoCompraService,
+      this.evento?.titulo ?? 'este evento',
+    );
+    if (!puedeContinuar) {
+      return;
+    }
+    if (this.evento) {
+      this.carritoCompraService.syncEvento(this.evento);
     }
     const productoConPrecioVigente: Producto = {
       ...producto,

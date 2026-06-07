@@ -58,6 +58,61 @@ export function parseRpcTrasladoResult(data: unknown): RpcTrasladoResult {
   return { ok: false, error: errorText || 'Respuesta inválida del servidor' };
 }
 
+/** Normaliza el JSONB[] devuelto por RPCs listar_traslados_boleta_* */
+export function parseTrasladosJsonArray(data: unknown): TrasladoBoleta[] {
+  let raw: unknown = data;
+  if (typeof raw === 'string') {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+  return raw.map((row) => {
+    const t = row as TrasladoBoleta & {
+      usuario_origen_email?: string;
+      usuario_origen_nombre?: string;
+      usuario_origen_apellido?: string;
+    };
+    if (t.usuario_origen_email && !t.usuario_origen) {
+      t.usuario_origen = {
+        id: Number(t.usuario_origen_id),
+        email: t.usuario_origen_email,
+        nombre: t.usuario_origen_nombre,
+        apellido: t.usuario_origen_apellido,
+      };
+    }
+    return t;
+  });
+}
+
+const TRASLADO_BOLETA_SELECT = `
+  *,
+  usuario_origen:usuarios!usuario_origen_id(id,email,nombre,apellido),
+  usuario_destino:usuarios!usuario_destino_id(id,email,nombre,apellido),
+  boleta:boletas_compradas!boleta_id(
+    id,
+    tipo_boleta_id,
+    tipos_boleta(
+      nombre,
+      eventos(titulo)
+    )
+  ),
+  boleta_cover:boletas_cover!boleta_cover_id(
+    id,
+    codigo_qr,
+    tipo_cover_id,
+    tipos_cover(nombre),
+    sesiones_cover(
+      fecha,
+      lugares(nombre)
+    )
+  )
+`;
+
 @Injectable({ providedIn: 'root' })
 export class TrasladosBoletaService {
   constructor(private supabase: SupabaseService) {}
@@ -65,31 +120,42 @@ export class TrasladosBoletaService {
   /**
    * Trazabilidad: traslados donde el usuario es origen o destino.
    */
-  async listarMiTrazabilidad(): Promise<TrasladoBoleta[]> {
-    const { data, error } = await this.supabase
-      .from('traslados_boleta')
-      .select(
-        `
-        *,
-        usuario_origen:usuarios!usuario_origen_id(id,email,nombre,apellido),
-        usuario_destino:usuarios!usuario_destino_id(id,email,nombre,apellido),
-        boleta:boletas_compradas!boleta_id(
-          id,
-          tipo_boleta_id,
-          tipos_boleta(
-            nombre,
-            eventos(titulo)
-          )
-        )
-      `
-      )
-      .order('fecha_creacion', { ascending: false });
+  async listarMiTrazabilidad(usuarioId?: number): Promise<TrasladoBoleta[]> {
+    const { data, error } = await this.supabase.getClient().rpc('listar_traslados_boleta_trazabilidad', {
+      p_cliente_id: usuarioId != null && usuarioId > 0 ? usuarioId : null,
+    });
 
     if (error) {
       console.error('listarMiTrazabilidad:', error);
       throw error;
     }
-    return (data as TrasladoBoleta[]) || [];
+    return parseTrasladosJsonArray(data);
+  }
+
+  /** Traslados enviados por el usuario que siguen pendientes (enviado/recibido). */
+  async listarTrasladosSalientes(usuarioId: number): Promise<TrasladoBoleta[]> {
+    const { data, error } = await this.supabase.getClient().rpc('listar_traslados_boleta_salientes', {
+      p_cliente_id: usuarioId,
+    });
+
+    if (error) {
+      console.error('listarTrasladosSalientes:', error);
+      throw error;
+    }
+    return parseTrasladosJsonArray(data);
+  }
+
+  /** Traslados pendientes de aceptar/rechazar para el destinatario. */
+  async listarPendientesRecibir(usuarioId: number): Promise<TrasladoBoleta[]> {
+    const { data, error } = await this.supabase.getClient().rpc('listar_traslados_boleta_pendientes_recibir', {
+      p_cliente_id: usuarioId,
+    });
+
+    if (error) {
+      console.error('listarPendientesRecibir:', error);
+      throw error;
+    }
+    return parseTrasladosJsonArray(data);
   }
 
   async rellenarAsistentePalcoDesdePerfil(boletaId: number): Promise<RpcTrasladoResult> {
@@ -146,6 +212,57 @@ export class TrasladosBoletaService {
   async cancelar(trasladoId: number): Promise<RpcTrasladoResult> {
     const { data, error } = await this.supabase.getClient().rpc('cancelar_traslado_boleta_palco', {
       p_traslado_id: trasladoId
+    });
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+    return parseRpcTrasladoResult(data);
+  }
+
+  async iniciarTrasladoCover(boletaCoverId: number, emailDestino: string): Promise<RpcTrasladoResult> {
+    const { data, error } = await this.supabase.getClient().rpc('iniciar_traslado_boleta_cover', {
+      p_boleta_cover_id: boletaCoverId,
+      p_email_destino: emailDestino.trim(),
+    });
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+    return parseRpcTrasladoResult(data);
+  }
+
+  async marcarRecibidoCover(trasladoId: number): Promise<RpcTrasladoResult> {
+    const { data, error } = await this.supabase.getClient().rpc('marcar_traslado_boleta_cover_recibido', {
+      p_traslado_id: trasladoId,
+    });
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+    return parseRpcTrasladoResult(data);
+  }
+
+  async aceptarCover(trasladoId: number): Promise<RpcTrasladoResult> {
+    const { data, error } = await this.supabase.getClient().rpc('aceptar_traslado_boleta_cover', {
+      p_traslado_id: trasladoId,
+    });
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+    return parseRpcTrasladoResult(data);
+  }
+
+  async rechazarCover(trasladoId: number): Promise<RpcTrasladoResult> {
+    const { data, error } = await this.supabase.getClient().rpc('rechazar_traslado_boleta_cover', {
+      p_traslado_id: trasladoId,
+    });
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+    return parseRpcTrasladoResult(data);
+  }
+
+  async cancelarCover(trasladoId: number): Promise<RpcTrasladoResult> {
+    const { data, error } = await this.supabase.getClient().rpc('cancelar_traslado_boleta_cover', {
+      p_traslado_id: trasladoId,
     });
     if (error) {
       return { ok: false, error: error.message };

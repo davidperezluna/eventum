@@ -129,12 +129,12 @@
             routerLinkActive="active"
             [routerLinkActiveOptions]="{ exact: item.exact !== false }"
             class="nav-item"
-            [class.nav-item--with-badge]="item.badge === 'carrito'"
+            [class.nav-item--with-badge]="navItemHasBadge(item)"
             (click)="closeClientMenu()"
           >
             <span class="material-icons nav-icon">{{ item.icon }}</span>
             <span class="nav-label">{{ item.label }}</span>
-            <span *ngIf="item.badge === 'carrito' && totalItemsCarrito > 0" class="menu-badge">{{ totalItemsCarrito }}</span>
+            <span *ngIf="navItemBadgeCount(item) > 0" class="menu-badge">{{ navItemBadgeCount(item) }}</span>
           </a>
         </ng-container>
       </nav>
@@ -178,10 +178,10 @@
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: item.exact !== false }"
               class="client-nav-item"
-              [class.client-nav-item--with-badge]="item.badge === 'carrito'"
+              [class.client-nav-item--with-badge]="navItemHasBadge(item)"
             >
               {{ item.label }}
-              <span *ngIf="item.badge === 'carrito' && totalItemsCarrito > 0" class="menu-badge">{{ totalItemsCarrito }}</span>
+              <span *ngIf="navItemBadgeCount(item) > 0" class="menu-badge">{{ navItemBadgeCount(item) }}</span>
             </a>
           </ng-container>
         </nav>
@@ -212,6 +212,15 @@
             class="client-nav-item"
           >
             {{ cuposLabels.explorar }}
+          </a>
+          <a
+            *ngIf="coversEventumEnabled"
+            routerLink="/clubes"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="client-nav-item"
+          >
+            {{ coversLabels.explorar }}
           </a>
           <a routerLink="/conocenos" routerLinkActive="active" class="client-nav-item">
             Conócenos
@@ -248,4 +257,6 @@
       <span class="carrito-fab__total">{{ formatCurrencyCarrito(subtotalCarrito) }}</span>
     </span>
   </a>
+
+  <app-client-confirm-dialog />
 </div>

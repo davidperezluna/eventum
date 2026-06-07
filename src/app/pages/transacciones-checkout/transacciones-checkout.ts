@@ -40,8 +40,10 @@ export class TransaccionesCheckout implements OnInit {
 
   readonly tipoOpciones = [
     { value: 'boletas', label: 'Boletas' },
+    { value: 'cover', label: 'Cover' },
     { value: 'productos', label: 'Productos' },
     { value: 'mixto', label: 'Mixto' },
+    { value: 'cover_mixto', label: 'Cover + productos' },
   ];
 
   readonly estadoOpciones = [
@@ -170,6 +172,9 @@ export class TransaccionesCheckout implements OnInit {
       return resumenPartes.join(' | ');
     }
 
+    if (tx.tipo === 'cover') {
+      return `Compra cover #${tx.compra_id || 'pendiente'}`;
+    }
     if (tx.tipo === 'boletas' || tx.compra_id) {
       return `Compra boletas #${tx.compra_id || 'pendiente'}`;
     }
@@ -396,7 +401,9 @@ export class TransaccionesCheckout implements OnInit {
 
   tipoClass(tipo: string): string {
     if (tipo === 'boletas') return 'tipo-badge tipo-badge--boletas';
+    if (tipo === 'cover') return 'tipo-badge tipo-badge--cover';
     if (tipo === 'productos') return 'tipo-badge tipo-badge--productos';
+    if (tipo === 'cover_mixto') return 'tipo-badge tipo-badge--cover-mixto';
     return 'tipo-badge tipo-badge--mixto';
   }
 

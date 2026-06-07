@@ -151,6 +151,106 @@ export class MiPagina implements OnInit {
 6. ¿Ruta pública + `returnUrl` permitida post-OAuth?
 7. ¿Solo tokens `--ec-*` y CSS existente antes de añadir estilos nuevos?
 
+## Modal de acción cliente (`legal-modal`)
+
+Hoja inferior en móvil / centrada en desktop. Usar para acciones con contexto breve (transferir cover, asignar entrada, confirmar datos). **No** incluir términos legales ni checkbox de aceptación.
+
+| Caso | Clases | Contenido |
+|------|--------|-----------|
+| Acción con resumen corto | `legal-modal-overlay` + `legal-modal` | Título + subtítulo + 3–5 viñetas + formulario |
+| Términos legales (+18, licor) | `licor-modal-overlay` + `licor-modal` | Texto largo + checkbox “Aceptar términos” (solo carrito) |
+
+**Estilos:** `src/styles/legal-modal.css` (global en `src/styles.css`).
+
+**Estructura visual:**
+
+- Overlay: `rgba(15,23,42,0.55)`, `z-index` alto; en móvil alinea abajo (`align-items: flex-end`).
+- Tarjeta: `max-width: 560px`, `border-radius` redondeado arriba (móvil) / completo (desktop).
+- Cabecera: badge (`legal-modal__badge--cover` violeta o `--entrada` azul) + `material-icons` + `h2` + subtítulo una línea.
+- Cuerpo: `legal-modal__summary-list` (viñetas en caja gris) + `legal-modal__field` para inputs.
+- Pie: `legal-modal__footer` con Cerrar (secundario) + acción principal (violeta `--ec-accent`).
+
+**Plantilla HTML:**
+
+```html
+<div class="legal-modal-overlay" *ngIf="modalAbierto" (click)="cerrar()" role="presentation">
+  <div class="legal-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <header class="legal-modal__header">
+      <div class="legal-modal__header-text">
+        <span class="legal-modal__badge legal-modal__badge--cover">
+          <span class="material-icons" aria-hidden="true">swap_horiz</span>
+          Transferencia
+        </span>
+        <h2 id="modal-title">{{ resumenTitulo }}</h2>
+        <p>{{ resumenSubtitulo }}</p>
+      </div>
+      <button type="button" class="legal-modal__close" (click)="cerrar()" aria-label="Cerrar">
+        <span class="material-icons">close</span>
+      </button>
+    </header>
+
+    <div class="legal-modal__body">
+      <ul class="legal-modal__summary-list">
+        <li *ngFor="let punto of resumenPuntos">{{ punto }}</li>
+      </ul>
+      <div class="legal-modal__field">
+        <label for="campo-id">Etiqueta del campo *</label>
+        <input id="campo-id" type="text" [(ngModel)]="valor" />
+      </div>
+    </div>
+
+    <footer class="legal-modal__footer">
+      <button type="button" class="legal-modal__btn legal-modal__btn-secondary" (click)="cerrar()">Cerrar</button>
+      <button type="button" class="legal-modal__btn legal-modal__btn-primary"
+        [disabled]="!formularioValido || procesando" (click)="confirmar()">
+        Acción principal
+      </button>
+    </footer>
+  </div>
+</div>
+```
+
+**Textos:** `src/app/constants/*.constants.ts` — `RESUMEN_*_TITULO`, `RESUMEN_*_SUBTITULO`, `RESUMEN_*_PUNTOS: string[]`.
+
+**Referencia:** `mis-compras` → modal transferir cover / asignar entrada.
+
+## Estado en tarjeta: traslado pendiente (`boleta-traslado-saliente`)
+
+Cuando el usuario ya envió una transferencia y espera respuesta, mostrar un bloque **dentro de la tarjeta** (no modal), alineado con `legal-modal`:
+
+- Contenedor: `.boleta-traslado-saliente` — fondo `#f8fafc`, borde `#e8edf3`, `border-radius: 10px` (igual que fechas cover / `legal-modal__summary-list`).
+- Badge: reutilizar `.legal-modal__badge--cover` (violeta + `swap_horiz`) o `--entrada` (azul + `confirmation_number`).
+- Texto: `.boleta-traslado-saliente__text` — gris `#475569`, 0.86rem.
+- Acción secundaria: `.boleta-traslado-saliente__btn` — borde gris, fondo blanco (no amarillo/naranja).
+
+```html
+<div class="boleta-traslado-saliente" *ngIf="trasladoPendiente">
+  <span class="legal-modal__badge legal-modal__badge--cover">
+    <span class="material-icons" aria-hidden="true">swap_horiz</span>
+    Traslado enviado
+  </span>
+  <p class="boleta-traslado-saliente__text">Cuenta destino: <strong>{{ email }}</strong>. …</p>
+  <button type="button" class="boleta-traslado-saliente__btn" (click)="cancelar()">
+    <span class="material-icons" aria-hidden="true">undo</span>
+    Cancelar envío
+  </button>
+</div>
+```
+
+**Referencia:** `mis-compras` → tarjeta cover / entrada con traslado saliente activo.
+
+**Confirmar cancelación:** mismo `legal-modal` (viñetas + Volver / acción primaria). No usar SweetAlert `confirm` ni `success` bloqueante; snackbar tras confirmar.
+
+**Referencia cancelar:** `mis-compras` → `showCancelarTrasladoModal` + `confirmarCancelarTraslado()`.
+
+**Checklist:**
+
+1. ¿Solo viñetas cortas (máx. 5), sin párrafos legales numerados?
+2. ¿Sin checkbox de términos?
+3. ¿Botón principal deshabilitado solo por campos obligatorios / `procesando`?
+4. ¿Badge + icono Material en cabecera?
+5. ¿Copy en `constants`, no en el template?
+
 ## No hacer
 
 - Tabs con Bootstrap, PrimeNG o estilos admin del panel.
@@ -158,3 +258,5 @@ export class MiPagina implements OnInit {
 - Poner páginas cliente detrás de `authGuard` (redirige a `/login-admin`).
 - `alertService.warning` para “inicia sesión”.
 - Omitir estados `cupos-loading` / `cupos-empty`.
+- Usar `legal-modal` para términos legales extensos o checkbox de aceptación (usar `licor-modal` en carrito).
+- Poner términos y condiciones largos en modales de acción (transferir, asignar, etc.).

@@ -4,7 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { BoletasService } from '../../services/boletas.service';
-import { CarritoCompraService, ItemCarritoEvento, ItemCarritoProducto } from '../../services/carrito-compra.service';
+import {
+  CarritoCompraService,
+  ItemCarritoCover,
+  ItemCarritoEvento,
+  ItemCarritoProducto,
+  LugarCoverCarrito,
+} from '../../services/carrito-compra.service';
 import { ComprasClienteService, ItemCompra } from '../../services/compras-cliente.service';
 import { ComprasProductoService } from '../../services/compras-producto.service';
 import { ProductosService } from '../../services/productos.service';
@@ -17,6 +23,8 @@ import { SupabaseService } from '../../services/supabase.service';
 import { supabaseConfig } from '../../config/supabase.config';
 import { getPagoResultadoUrl } from '../../config/app-url';
 import { irALoginCliente } from '../../core/login-redirect';
+import { CoversService } from '../../services/covers.service';
+import { labelSesionCover } from '../../core/covers-labels';
 import { TERMINOS_LICOR_TEXTO, TERMINOS_LICOR_TITULO } from '../../constants/productos.constants';
 import {
   CuponDescuento,
@@ -37,8 +45,10 @@ import {
 })
 export class Carrito implements OnInit, OnDestroy {
   evento: Evento | null = null;
+  lugarCover: LugarCoverCarrito | null = null;
   usuario: Usuario | null = null;
   itemsCompra: ItemCarritoEvento[] = [];
+  itemsCover: ItemCarritoCover[] = [];
   itemsProductos: ItemCarritoProducto[] = [];
 
   codigoCupon = '';
@@ -85,6 +95,7 @@ export class Carrito implements OnInit, OnDestroy {
     private alertService: AlertService,
     private eventosService: EventosService,
     private supabaseService: SupabaseService,
+    private coversService: CoversService,
     private ngZone: NgZone,
     private cdr: ChangeDetectorRef
   ) {}
@@ -111,6 +122,20 @@ export class Carrito implements OnInit, OnDestroy {
           palco_ids: item.palco_ids ? [...item.palco_ids] : undefined
         }));
         void this.refrescarPalcosDisponibles();
+      })
+    );
+
+    this.subscriptions.add(
+      this.carritoCompraService.itemsCover$.subscribe((items) => {
+        this.itemsCover = items.map((item) => ({ ...item }));
+        this.cdr.detectChanges();
+      })
+    );
+
+    this.subscriptions.add(
+      this.carritoCompraService.lugarCover$.subscribe((lugar) => {
+        this.lugarCover = lugar;
+        this.cdr.detectChanges();
       })
     );
 
@@ -157,7 +182,7 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   get carritoVacio(): boolean {
-    return !this.evento || this.carritoCompraService.estaVacio();
+    return this.carritoCompraService.estaVacio();
   }
 
   get mostrarInvitacionProductos(): boolean {
@@ -526,23 +551,81 @@ export class Carrito implements OnInit, OnDestroy {
     return this.cuposPorPalco(tipo) > 1;
   }
 
+  /** Carrito con al menos una línea vinculada a sesión cover. */
+  esCarritoCover(): boolean {
+    return this.carritoCompraService.esCarritoSoloCover();
+  }
+
+  getSubtotalCovers(): number {
+    return this.carritoCompraService.getSubtotalCovers();
+  }
+
+  labelCoverSesion(item: ItemCarritoCover): string {
+    if (item.sesion_fecha && item.hora_apertura && item.hora_cierre) {
+      return labelSesionCover({
+        fecha: item.sesion_fecha,
+        hora_apertura: item.hora_apertura,
+        hora_cierre: item.hora_cierre,
+      });
+    }
+
+    const label = item.sesion_cover_label?.trim() ?? '';
+    if (!label) return '';
+
+    const suffix = ` · ${item.tipo_cover_nombre}`;
+    if (label.endsWith(suffix)) {
+      return label.slice(0, -suffix.length);
+    }
+
+    return label;
+  }
+
+  quitarCoverDelCarrito(item: ItemCarritoCover): void {
+    this.carritoCompraService.quitarCoverDelCarrito(item.sesion_cover_id);
+  }
+
+  agregarCoverAlCarrito(item: ItemCarritoCover): void {
+    const lugar = this.lugarCover;
+    if (!lugar) return;
+    this.carritoCompraService.agregarCoverIndependiente({
+      lugar,
+      tipoCoverId: item.tipo_cover_id,
+      tipoCoverNombre: item.tipo_cover_nombre,
+      sesionCoverId: item.sesion_cover_id,
+      sesionCoverLabel: item.sesion_cover_label,
+      sesionFecha: item.sesion_fecha,
+      horaApertura: item.hora_apertura,
+      horaCierre: item.hora_cierre,
+      precioSesion: item.precio,
+      wompiCuentaId: item.wompi_cuenta_id,
+    });
+  }
+
+  eliminarCoverDelCarrito(item: ItemCarritoCover): void {
+    this.carritoCompraService.eliminarCoverDelCarrito(item.sesion_cover_id);
+  }
+
   getCantidadEnCarrito(tipo: TipoBoleta): number {
     return this.carritoCompraService.getCantidadEnCarrito(tipo.id);
   }
 
-  agregarAlCarrito(tipo: TipoBoleta): void {
-    const agregado = this.carritoCompraService.agregarAlCarrito(tipo);
+  agregarAlCarrito(item: ItemCarritoEvento): void {
+    const agregado = this.carritoCompraService.agregarAlCarrito(item.tipo, item.sesion_cover_id);
     if (!agregado) {
-      this.alertService.warning('Stock limitado', `Solo hay ${tipo.cantidad_disponibles} boletas disponibles`);
+      this.alertService.warning('Stock limitado', `Solo hay ${item.tipo.cantidad_disponibles} boletas disponibles`);
     }
   }
 
-  quitarDelCarrito(tipo: TipoBoleta): void {
-    this.carritoCompraService.quitarDelCarrito(tipo.id);
+  quitarDelCarrito(item: ItemCarritoEvento): void {
+    this.carritoCompraService.quitarDelCarrito(item.tipo.id, item.sesion_cover_id);
   }
 
-  eliminarDelCarrito(tipo: TipoBoleta): void {
-    this.carritoCompraService.eliminarDelCarrito(tipo.id);
+  eliminarDelCarrito(item: ItemCarritoEvento): void {
+    this.carritoCompraService.eliminarDelCarrito(item.tipo.id, item.sesion_cover_id);
+  }
+
+  maxCantidadLinea(item: ItemCarritoEvento): number {
+    return item.tipo.cantidad_disponibles ?? 1;
   }
 
   getSubtotalBoletas(): number {
@@ -554,7 +637,7 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   getSubtotal(): number {
-    return this.getSubtotalBoletas() + this.getSubtotalProductos();
+    return this.getSubtotalBoletas() + this.getSubtotalCovers() + this.getSubtotalProductos();
   }
 
   getDescuento(): number {
@@ -563,7 +646,9 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   getPorcentajeServicio(): number {
-    const raw = Number(this.evento?.porcentaje_servicio ?? 0);
+    const raw = this.esCarritoCover() && !this.evento
+      ? Number(this.lugarCover?.covers_porcentaje_servicio ?? 0)
+      : Number(this.evento?.porcentaje_servicio ?? 0);
     if (!Number.isFinite(raw)) return 0;
     return Math.min(100, Math.max(0, raw));
   }
@@ -572,10 +657,13 @@ export class Carrito implements OnInit, OnDestroy {
     return Math.max(0, this.getSubtotalBoletas() - this.getDescuento());
   }
 
+  /** Subtotal antes del % de servicio (boletas netas + covers + productos). */
+  getSubtotalNeta(): number {
+    return this.getBaseNetaBoletas() + this.getSubtotalCovers() + this.getSubtotalProductos();
+  }
+
   getValorServicio(): number {
-    const base = this.getBaseNetaBoletas() + this.getSubtotalProductos();
-    const porcentaje = this.getPorcentajeServicio();
-    return (base * porcentaje) / 100;
+    return (this.getSubtotalNeta() * this.getPorcentajeServicio()) / 100;
   }
 
   getTotalBoletas(): number {
@@ -597,7 +685,7 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   getTotal(): number {
-    return this.getBaseNetaBoletas() + this.getSubtotalProductos() + this.getValorServicio();
+    return this.getSubtotalNeta() + this.getValorServicio();
   }
 
   formatCurrency(value: number): string {
@@ -940,7 +1028,44 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   async procesarCompra(): Promise<void> {
-    if (!this.evento || this.carritoCompraService.estaVacio()) {
+    if (this.carritoCompraService.estaVacio()) {
+      this.alertService.warning('Carrito vacío', 'Debes agregar al menos un item');
+      return;
+    }
+
+    const carritoMixto =
+      this.itemsCover.length > 0 &&
+      (this.itemsCompra.length > 0 || this.itemsProductos.length > 0 || !!this.evento);
+
+    if (carritoMixto) {
+      const pagarCovers = !!this.lugarCover || this.esCarritoCover();
+      if (pagarCovers) {
+        const vaciarEvento = await this.alertService.confirm(
+          'Carrito incompatible',
+          'No puedes pagar covers y entradas/productos juntos. ¿Vaciar entradas y productos para pagar solo covers?',
+          'Vaciar y continuar',
+          'Cancelar',
+        );
+        if (!vaciarEvento) {
+          return;
+        }
+        this.carritoCompraService.limpiarContenidoEvento();
+      } else {
+        const vaciarCovers = await this.alertService.confirm(
+          'Carrito incompatible',
+          'Tienes covers y entradas en el carrito. ¿Vaciar covers para pagar solo entradas y productos?',
+          'Vaciar covers',
+          'Cancelar',
+        );
+        if (!vaciarCovers) {
+          return;
+        }
+        this.carritoCompraService.limpiarContenidoCover();
+      }
+    }
+
+    const esSoloCover = this.esCarritoCover();
+    if (!esSoloCover && !this.evento) {
       this.alertService.warning('Carrito vacío', 'Debes agregar al menos una boleta, palco o producto');
       return;
     }
@@ -950,11 +1075,13 @@ export class Carrito implements OnInit, OnDestroy {
       return;
     }
 
-    const ahora = new Date();
-    const fechaFin = new Date(this.evento.fecha_fin);
-    if (fechaFin < ahora || this.evento.estado === TipoEstadoEvento.FINALIZADO || this.evento.estado === TipoEstadoEvento.CANCELADO) {
-      this.alertService.error('Evento finalizado', 'Este evento ya no está disponible para compra');
-      return;
+    if (!esSoloCover && this.evento) {
+      const ahora = new Date();
+      const fechaFin = new Date(this.evento.fecha_fin);
+      if (fechaFin < ahora || this.evento.estado === TipoEstadoEvento.FINALIZADO || this.evento.estado === TipoEstadoEvento.CANCELADO) {
+        this.alertService.error('Evento finalizado', 'Este evento ya no está disponible para compra');
+        return;
+      }
     }
 
     const clienteId = await this.requerirSesionActiva();
@@ -962,7 +1089,9 @@ export class Carrito implements OnInit, OnDestroy {
       return;
     }
 
-    const checkoutPendiente = await this.resolverCheckoutPendiente(clienteId, this.evento.id);
+    const checkoutPendiente = esSoloCover
+      ? null
+      : await this.resolverCheckoutPendiente(clienteId, this.evento!.id);
     if (checkoutPendiente) {
       this.guardarCheckoutPendienteEnCarrito(checkoutPendiente);
       this.alertService.snackbar(
@@ -982,16 +1111,41 @@ export class Carrito implements OnInit, OnDestroy {
       }
     }
 
+    const itemsCoverPedido = this.itemsCover.map((item) => ({
+      tipo_cover_id: item.tipo_cover_id,
+      sesion_cover_id: item.sesion_cover_id,
+      cantidad: item.cantidad,
+      precio_unitario: item.precio,
+    }));
+
+    const wompiCuentaCover = this.itemsCover.find((i) => i.wompi_cuenta_id)?.wompi_cuenta_id ?? null;
+    const pedidoCovers = esSoloCover && this.lugarCover
+      ? {
+          lugar_id: this.lugarCover.id,
+          cliente_id: clienteId,
+          items: itemsCoverPedido,
+          subtotal: this.getSubtotalCovers(),
+          descuento_total: 0,
+          porcentaje_servicio: this.getPorcentajeServicio(),
+          valor_servicio: this.getValorServicio(),
+          total: this.getTotal(),
+          wompi_cuenta_id: wompiCuentaCover,
+        }
+      : null;
+
     const itemsBoletas: ItemCompra[] = this.itemsCompra.map((item) => {
-      const base = {
+      const base: ItemCompra = {
         tipo_boleta_id: item.tipo.id,
         cantidad: item.cantidad,
-        precio_unitario: item.tipo.precio
+        precio_unitario: item.tipo.precio,
       };
+      if (item.sesion_cover_id) {
+        base.sesion_cover_id = item.sesion_cover_id;
+      }
       if (this.esLineaPalcoMultipersona(item.tipo)) {
         return {
           ...base,
-          palco_ids: item.palco_ids!.map((id) => id as number)
+          palco_ids: item.palco_ids!.map((id) => id as number),
         };
       }
       return base;
@@ -1007,7 +1161,7 @@ export class Carrito implements OnInit, OnDestroy {
     let compraBoletasId: number | null = null;
     let compraProductosId: number | null = null;
     const tieneProductosEnCarrito = this.itemsProductos.length > 0;
-    const pedidoProductos = tieneProductosEnCarrito
+    const pedidoProductos = tieneProductosEnCarrito && this.evento
       ? {
           evento_id: this.evento.id,
           cliente_id: clienteId,
@@ -1019,7 +1173,7 @@ export class Carrito implements OnInit, OnDestroy {
           terminos_licor_aceptados: this.tieneLicor() && this.terminosAceptados
         }
       : null;
-    const pedidoBoletas = this.itemsCompra.length > 0
+    const pedidoBoletas = this.itemsCompra.length > 0 && this.evento
       ? {
           evento_id: this.evento.id,
           cliente_id: clienteId,
@@ -1034,6 +1188,14 @@ export class Carrito implements OnInit, OnDestroy {
       : null;
 
     try {
+      if (pedidoCovers) {
+        const validacionCover = await this.coversService.validarDisponibilidadCover(itemsCoverPedido);
+        if (!validacionCover.valido) {
+          this.alertService.error('Error de disponibilidad', validacionCover.errores.join('\n'));
+          return;
+        }
+      }
+
       if (this.itemsCompra.length > 0) {
         await this.refrescarPalcosDisponibles();
         const validacionBoletas = await this.comprasClienteService.validarDisponibilidad(itemsBoletas);
@@ -1063,7 +1225,15 @@ export class Carrito implements OnInit, OnDestroy {
       }
 
       if (totalPago === 0) {
-        if (!compraBoletasId && this.itemsCompra.length > 0) {
+        let compraCoverId: number | null = null;
+        if (pedidoCovers) {
+          const resultadoCover = await this.coversService.procesarCompraCover({
+            ...pedidoCovers,
+            confirmada: true,
+          });
+          compraCoverId = resultadoCover.compra_cover_id;
+        }
+        if (!compraBoletasId && this.itemsCompra.length > 0 && this.evento) {
           const resultadoBoletas = await this.comprasClienteService.procesarCompra({
             evento_id: this.evento.id,
             cliente_id: clienteId,
@@ -1076,8 +1246,6 @@ export class Carrito implements OnInit, OnDestroy {
             total: this.getTotalBoletas()
           });
           compraBoletasId = resultadoBoletas.compra.id;
-        }
-        if (compraBoletasId) {
           await this.comprasClienteService.confirmarPago(compraBoletasId);
         }
         if (compraProductosId) {
@@ -1088,6 +1256,7 @@ export class Carrito implements OnInit, OnDestroy {
         this.router.navigate(['/pago-resultado'], {
           queryParams: {
             compra_id: compraBoletasId ?? undefined,
+            compra_cover_id: compraCoverId ?? undefined,
             compra_producto_id: compraProductosId ?? undefined,
             status: 'APPROVED'
           }
@@ -1101,7 +1270,15 @@ export class Carrito implements OnInit, OnDestroy {
         redirect_url: getPagoResultadoUrl(),
       };
 
-      if (pedidoBoletas && pedidoProductos) {
+      const esCover = !!pedidoCovers;
+      if (pedidoCovers && pedidoProductos) {
+        wompiBody['tipo'] = 'cover_mixto';
+        wompiBody['pedido_covers'] = pedidoCovers;
+        wompiBody['pedido_productos'] = pedidoProductos;
+      } else if (pedidoCovers) {
+        wompiBody['tipo'] = 'cover';
+        wompiBody['pedido_covers'] = pedidoCovers;
+      } else if (pedidoBoletas && pedidoProductos) {
         wompiBody['tipo'] = 'mixto';
         wompiBody['pedido_boletas'] = pedidoBoletas;
         wompiBody['pedido_productos'] = pedidoProductos;

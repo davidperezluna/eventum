@@ -1,8 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-/** Versión desplegada — debe coincidir en logs de Supabase al probar checkout de productos. */
-const WOMPI_PAYMENT_VERSION = '2.5.0-checkout-unificado-only'
+/** Versión desplegada — checkout unificado + covers independientes (pedido_covers). */
+const WOMPI_PAYMENT_VERSION = '3.1.0-covers-independiente'
 // Secret opcional en Supabase (Edge Functions → Secrets): PUBLIC_APP_URL=https://dev.eventumcol.com
 
 const corsHeaders = {
@@ -63,15 +63,27 @@ function isMissingTableError(error: unknown): boolean {
   )
 }
 
-type TipoPago = 'boletas' | 'productos' | 'mixto'
+type TipoPago = 'boletas' | 'productos' | 'mixto' | 'cover' | 'cover_mixto'
+
+function tipoEsMixto(tipo: TipoPago): boolean {
+  return tipo === 'mixto' || tipo === 'cover_mixto'
+}
+
+function tipoRequiereProductos(tipo: TipoPago): boolean {
+  return tipo === 'productos' || tipo === 'mixto' || tipo === 'cover_mixto'
+}
 
 function inferirTipoPago(body: Record<string, unknown>): TipoPago {
   const tipo = String(body.tipo || '').trim().toLowerCase()
-  if (tipo === 'productos' || tipo === 'mixto' || tipo === 'boletas') {
+  const tiposValidos: TipoPago[] = ['productos', 'mixto', 'boletas', 'cover', 'cover_mixto']
+  if (tiposValidos.includes(tipo as TipoPago)) {
     return tipo as TipoPago
   }
   const pedidoProductos = body.pedido_productos
+  const pedidoCovers = body.pedido_covers
   const pedidoBoletas = body.pedido_boletas
+  if (pedidoCovers && pedidoProductos) return 'cover_mixto'
+  if (pedidoCovers) return 'cover'
   if (pedidoBoletas && pedidoProductos) return 'mixto'
   if (pedidoProductos) return 'productos'
   return 'boletas'
@@ -107,6 +119,55 @@ interface PedidoBoletasPayload {
   valor_servicio: number
   total: number
   cupon_id?: number | null
+}
+
+interface PedidoCoversPayload {
+  lugar_id: number
+  cliente_id: number
+  items: Array<{
+    tipo_cover_id: number
+    sesion_cover_id: number
+    cantidad: number
+    precio_unitario: number
+  }>
+  subtotal: number
+  descuento_total?: number
+  porcentaje_servicio: number
+  valor_servicio: number
+  total: number
+  cupon_id?: number | null
+  wompi_cuenta_id?: number | null
+}
+
+function parsePedidoCovers(raw: unknown): PedidoCoversPayload {
+  if (!raw || typeof raw !== 'object') {
+    throw new Error('pedido_covers es requerido para pagos de cover')
+  }
+  const pedido = raw as Record<string, unknown>
+  const items = Array.isArray(pedido.items) ? pedido.items : []
+  if (items.length === 0) {
+    throw new Error('pedido_covers.items no puede estar vacío')
+  }
+  return {
+    lugar_id: Number(pedido.lugar_id),
+    cliente_id: Number(pedido.cliente_id),
+    items: items.map((item) => {
+      const row = item as Record<string, unknown>
+      return {
+        tipo_cover_id: Number(row.tipo_cover_id),
+        sesion_cover_id: Number(row.sesion_cover_id),
+        cantidad: Number(row.cantidad),
+        precio_unitario: Number(row.precio_unitario),
+      }
+    }),
+    subtotal: Number(pedido.subtotal),
+    descuento_total: Number(pedido.descuento_total ?? 0),
+    porcentaje_servicio: Number(pedido.porcentaje_servicio ?? 0),
+    valor_servicio: Number(pedido.valor_servicio ?? 0),
+    total: Number(pedido.total),
+    cupon_id: pedido.cupon_id != null ? Number(pedido.cupon_id) : null,
+    wompi_cuenta_id: pedido.wompi_cuenta_id != null ? Number(pedido.wompi_cuenta_id) : null,
+  }
 }
 
 function parsePedidoBoletas(raw: unknown): PedidoBoletasPayload {
@@ -331,6 +392,7 @@ serve(async (req) => {
 
     const tipo = inferirTipoPago(requestBody)
     const pedidoBoletasRaw = requestBody.pedido_boletas
+    const pedidoCoversRaw = requestBody.pedido_covers
     const pedidoProductosRaw = requestBody.pedido_productos
     const amountInCents = requestBody.amount_in_cents ? Number(requestBody.amount_in_cents) : null
     const redirectUrl = typeof requestBody.redirect_url === 'string' ? requestBody.redirect_url : undefined
@@ -343,17 +405,27 @@ serve(async (req) => {
     if (tipo === 'boletas' && !pedidoBoletasRaw) {
       throw new Error('pedido_boletas es requerido para pagos de boletas')
     }
-    if ((tipo === 'productos' || tipo === 'mixto') && !pedidoProductosRaw) {
+    if (tipo === 'cover' && !pedidoCoversRaw) {
+      throw new Error('pedido_covers es requerido para pagos de cover')
+    }
+    if (tipoRequiereProductos(tipo) && !pedidoProductosRaw) {
       throw new Error('pedido_productos es requerido para pagos de productos')
     }
     if (tipo === 'mixto' && !pedidoBoletasRaw) {
       throw new Error('pedido_boletas es requerido para pagos mixtos')
     }
+    if (tipo === 'cover_mixto' && (!pedidoCoversRaw || !pedidoProductosRaw)) {
+      throw new Error('pedido_covers y pedido_productos son requeridos para cover_mixto')
+    }
 
     let pedidoProductos: PedidoProductosPayload | null = null
     let pedidoBoletas: PedidoBoletasPayload | null = null
+    let pedidoCovers: PedidoCoversPayload | null = null
     if (pedidoBoletasRaw) {
       pedidoBoletas = parsePedidoBoletas(pedidoBoletasRaw)
+    }
+    if (pedidoCoversRaw) {
+      pedidoCovers = parsePedidoCovers(pedidoCoversRaw)
     }
     if (pedidoProductosRaw) {
       pedidoProductos = parsePedidoProductos(pedidoProductosRaw)
@@ -361,9 +433,37 @@ serve(async (req) => {
 
     let eventoTitulo = 'Evento'
     let eventoId: number | null = null
+    let lugarId: number | null = null
     let clienteId: number | null = null
     let wompiCuentaHint: number | null = null
     let totalEsperado = 0
+
+    if (pedidoCovers) {
+      lugarId = pedidoCovers.lugar_id
+      clienteId = pedidoCovers.cliente_id
+      totalEsperado += pedidoCovers.total
+      wompiCuentaHint = pedidoCovers.wompi_cuenta_id ?? null
+
+      const { data: lugar } = await supabaseClient
+        .from('lugares')
+        .select('id, nombre')
+        .eq('id', pedidoCovers.lugar_id)
+        .single()
+      if (!lugar) {
+        throw new Error('Lugar del cover no encontrado')
+      }
+      eventoTitulo = `Covers — ${lugar.nombre}`
+
+      if (!wompiCuentaHint && pedidoCovers.items.length > 0) {
+        const tipoCoverId = pedidoCovers.items[0].tipo_cover_id
+        const { data: tipoCover } = await supabaseClient
+          .from('tipos_cover')
+          .select('wompi_cuenta_id')
+          .eq('id', tipoCoverId)
+          .maybeSingle()
+        wompiCuentaHint = tipoCover?.wompi_cuenta_id ?? null
+      }
+    }
 
     if (pedidoBoletas) {
       eventoId = pedidoBoletas.evento_id
@@ -458,7 +558,7 @@ serve(async (req) => {
       }
     }
 
-    const shouldPersistCheckout = !!(clienteId && eventoId)
+    const shouldPersistCheckout = !!(clienteId && (eventoId || lugarId))
 
     let transaccionCheckoutId: number | null = null
     if (shouldPersistCheckout) {
@@ -468,14 +568,16 @@ serve(async (req) => {
           tipo,
           cliente_id: clienteId,
           evento_id: eventoId,
+          lugar_id: lugarId,
           wompi_cuenta_id: wompiCuentaId,
           compra_id: null,
           compra_producto_id: null,
+          compra_cover_id: null,
           numero_intento: generarNumeroIntentoCheckout(),
           subtotal: totalEsperado,
-          descuento_total: pedidoBoletas?.descuento_total ?? 0,
-          porcentaje_servicio: pedidoBoletas?.porcentaje_servicio ?? pedidoProductos?.porcentaje_servicio ?? 0,
-          valor_servicio: pedidoBoletas?.valor_servicio ?? pedidoProductos?.valor_servicio ?? 0,
+          descuento_total: pedidoBoletas?.descuento_total ?? pedidoCovers?.descuento_total ?? 0,
+          porcentaje_servicio: pedidoBoletas?.porcentaje_servicio ?? pedidoCovers?.porcentaje_servicio ?? pedidoProductos?.porcentaje_servicio ?? 0,
+          valor_servicio: pedidoBoletas?.valor_servicio ?? pedidoCovers?.valor_servicio ?? pedidoProductos?.valor_servicio ?? 0,
           total: totalEsperado,
           monto_centavos: montoCentavos,
           moneda: 'COP',
@@ -484,6 +586,7 @@ serve(async (req) => {
           request_payload: {
             request_body: requestBody,
             pedido_boletas: pedidoBoletas,
+            pedido_covers: pedidoCovers,
             pedido_productos: pedidoProductos,
           },
           metadata: {
@@ -533,19 +636,25 @@ serve(async (req) => {
     const redirectUrlFinal = resolveRedirectUrl(redirectUrl, fallbackRedirectUrl)
 
     const paymentName = (() => {
-      if (tipo === 'mixto') {
-        return `Compra mixta CHK-${transaccionCheckoutId ?? 'NEW'}/TXN-${transaccionProductoId ?? 'NEW'} - ${eventoTitulo}`
+      if (tipoEsMixto(tipo)) {
+        const etiqueta = tipo === 'cover_mixto' ? 'mixta cover + productos' : 'mixta'
+        return `Compra ${etiqueta} CHK-${transaccionCheckoutId ?? 'NEW'}/TXN-${transaccionProductoId ?? 'NEW'} - ${eventoTitulo}`
       }
       if (tipo === 'productos') return `Pedido productos TXN-${transaccionProductoId ?? 'CHK'} - ${eventoTitulo}`
+      if (tipo === 'cover') return `Compra cover CHK-${transaccionCheckoutId ?? 'NEW'} - ${eventoTitulo}`
       return `Compra boletas CHK-${transaccionCheckoutId ?? 'NEW'} - ${eventoTitulo}`
     })()
 
     const paymentDescription = (() => {
-      if (tipo === 'mixto') {
-        return `Pago combinado boletas + productos (CHK ${transaccionCheckoutId ?? 'NEW'})`
+      if (tipoEsMixto(tipo)) {
+        const etiqueta = tipo === 'cover_mixto' ? 'cover + productos' : 'boletas + productos'
+        return `Pago combinado ${etiqueta} (CHK ${transaccionCheckoutId ?? 'NEW'})`
       }
       if (tipo === 'productos') {
         return `Pago pedido productos (TXN ${transaccionProductoId ?? 'CHK'})`
+      }
+      if (tipo === 'cover') {
+        return `Pago cover (CHK ${transaccionCheckoutId ?? 'NEW'})`
       }
       return `Pago boletas (CHK ${transaccionCheckoutId ?? 'NEW'})`
     })()

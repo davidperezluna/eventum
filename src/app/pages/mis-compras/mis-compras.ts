@@ -11,6 +11,7 @@ import { EventosService } from '../../services/eventos.service';
 import { AuthService } from '../../services/auth.service';
 import { AlertService } from '../../services/alert.service';
 import {
+  MisComprasState,
   MisComprasStateService,
   PromoProductosMisCompras,
 } from '../../services/mis-compras-state.service';
@@ -37,6 +38,24 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import type { AuthStateCallback } from '../../services/auth.service';
 import { ProductosService } from '../../services/productos.service';
+import { CoversService } from '../../services/covers.service';
+import { coversEventumEnabled } from '../../core/covers-feature';
+import { formatHoraCover, labelSesionCover } from '../../core/covers-labels';
+import { BoletaCoverCliente, CompraCoverCliente } from '../../types/covers';
+import {
+  RESUMEN_CANCELAR_TRASLADO_COVER_PUNTOS,
+  RESUMEN_CANCELAR_TRASLADO_COVER_SUBTITULO,
+  RESUMEN_CANCELAR_TRASLADO_COVER_TITULO,
+  RESUMEN_CANCELAR_TRASLADO_ENTRADA_PUNTOS,
+  RESUMEN_CANCELAR_TRASLADO_ENTRADA_SUBTITULO,
+  RESUMEN_CANCELAR_TRASLADO_ENTRADA_TITULO,
+  RESUMEN_TRASLADO_COVER_PUNTOS,
+  RESUMEN_TRASLADO_COVER_SUBTITULO,
+  RESUMEN_TRASLADO_COVER_TITULO,
+  RESUMEN_TRASLADO_ENTRADA_PUNTOS,
+  RESUMEN_TRASLADO_ENTRADA_SUBTITULO,
+  RESUMEN_TRASLADO_ENTRADA_TITULO,
+} from '../../constants/traslados.constants';
 
 interface BoletaConCompra {
   compra: Compra;
@@ -87,6 +106,24 @@ interface EventoBoletasGrupo {
   totalProductosRedimidos: number;
 }
 
+interface BoletaCoverConCompra {
+  compra: CompraCoverCliente;
+  boleta: BoletaCoverCliente;
+  esCedida?: boolean;
+}
+
+interface LugarCoverGrupo {
+  key: string;
+  lugarId: number;
+  lugarNombre: string;
+  compras: CompraCoverCliente[];
+  boletas: BoletaCoverConCompra[];
+  totalBoletas: number;
+  totalDisponibles: number;
+  totalTrasladoSaliente: number;
+  totalUsadas: number;
+}
+
 @Component({
   selector: 'app-mis-compras',
   imports: [CommonModule, RouterModule, FormsModule, DateFormatPipe],
@@ -95,8 +132,10 @@ interface EventoBoletasGrupo {
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
 export class MisCompras implements OnInit, OnDestroy {
+  readonly coversEventumEnabled = coversEventumEnabled;
   promoProductos: PromoProductosMisCompras | null = null;
   loadingPromoProductos = false;
+  private promoProductosRefreshSeq = 0;
   guiaEntradasAbierta = false;
   private destroy$ = new Subject<void>();
   private loadComprasSubject = new Subject<void>();
@@ -111,11 +150,20 @@ export class MisCompras implements OnInit, OnDestroy {
   compras: Compra[] = [];
   comprasProductos: CompraProducto[] = [];
   loadingComprasProductos = false;
+  comprasCover: CompraCoverCliente[] = [];
+  boletasCover: BoletaCoverConCompra[] = [];
+  lugaresConCovers: LugarCoverGrupo[] = [];
+  lugarCoverExpandidoKey: string | null = null;
+  lugarCoverDetalleKey: string | null = null;
+  tabMisComprasPrincipal: 'eventos' | 'covers' = 'eventos';
+  loadingCovers = false;
+  coverCedidas: BoletaCoverConCompra[] = [];
   comprasConBoletas: { compra: Compra; boletas: BoletaComprada[] }[] = [];
   eventosConBoletas: EventoBoletasGrupo[] = [];
   eventoExpandidoKey: string | null = null;
   eventoDetalleKey: string | null = null;
   tabBoletasDetalle: 'sin-usar' | 'usadas' | 'sin-asignar' = 'sin-usar';
+  tabCoversDetalle: 'sin-usar' | 'usadas' = 'sin-usar';
   tabEventoDetalle: 'entradas' | 'productos' = 'entradas';
   tabProductosDetalle: 'compradas' | 'redimidas' = 'compradas';
   loading = false;
@@ -169,6 +217,10 @@ export class MisCompras implements OnInit, OnDestroy {
   productoFilaSeleccionada: ProductoConCompra | null = null;
   productoQrCodeUrl = '';
   loadingProductoQR = false;
+  showCoverQrModal = false;
+  coverBoletaSeleccionada: BoletaCoverConCompra | null = null;
+  coverQrCodeUrl = '';
+  loadingCoverQR = false;
   showMensajeIngresoModal = false;
   mensajeIngresoTitulo = '';
   mensajeIngresoDetalle = '';
@@ -182,14 +234,22 @@ export class MisCompras implements OnInit, OnDestroy {
   trasladosHistorial: TrasladoBoleta[] = [];
   trasladosPendientesRecibir: Array<TrasladoBoleta & { boletaDetail?: BoletaComprada }> = [];
   trasladoSalientePorBoletaId = new Map<number, TrasladoBoleta>();
+  trasladoSalientePorBoletaCoverId = new Map<number, TrasladoBoleta>();
+  trasladosPendientesRecibirCover: Array<TrasladoBoleta & { coverDetail?: BoletaCoverCliente }> = [];
   entradasCedidas: BoletaComprada[] = [];
   loadingTraslados = false;
 
   showTrasladoModal = false;
   trasladoBoleta: BoletaComprada | null = null;
   trasladoCompra: Compra | null = null;
+  trasladoCoverItem: BoletaCoverConCompra | null = null;
   emailTrasladoDestino = '';
   enviandoTraslado = false;
+
+  showCancelarTrasladoModal = false;
+  trasladoACancelar: TrasladoBoleta | null = null;
+  cancelandoTraslado = false;
+
   rellenarPerfilBoletaId: number | null = null;
   /** Error visible junto al panel de asignación (además del modal SweetAlert). */
   asignacionError: { boletaId: number; mensaje: string } | null = null;
@@ -202,6 +262,7 @@ export class MisCompras implements OnInit, OnDestroy {
     private comprasService: ComprasService,
     private comprasProductoService: ComprasProductoService,
     private productosService: ProductosService,
+    private coversService: CoversService,
     private boletasService: BoletasService,
     private trasladosBoletaService: TrasladosBoletaService,
     private eventosService: EventosService,
@@ -247,7 +308,13 @@ export class MisCompras implements OnInit, OnDestroy {
 
         await this.loadBoletasPorCompra({ background: this.currentLoadBackground });
         await this.loadComprasProductos();
+        if (coversEventumEnabled) {
+          await this.loadCoversPorTitular({ background: this.currentLoadBackground });
+        } else {
+          await this.refrescarTrasladosMaps();
+        }
 
+        this.syncTabMisComprasPrincipal();
         this.loading = false;
         this.endSilentRefreshCycle();
         this.persistState(Date.now());
@@ -258,6 +325,9 @@ export class MisCompras implements OnInit, OnDestroy {
         console.error('Error cargando compras:', err);
         this.compras = [];
         this.comprasProductos = [];
+        this.comprasCover = [];
+        this.boletasCover = [];
+        this.lugaresConCovers = [];
         this.comprasConBoletas = [];
         this.eventosConBoletas = [];
         this.eventoExpandidoKey = null;
@@ -265,6 +335,7 @@ export class MisCompras implements OnInit, OnDestroy {
         this.totalPages = 0;
         this.loading = false;
         this.loadingBoletasDetalle = false;
+        this.loadingCovers = false;
         this.endSilentRefreshCycle();
         this.detenerRealtimeNotificaciones();
         this.cdr.detectChanges();
@@ -278,11 +349,116 @@ export class MisCompras implements OnInit, OnDestroy {
 
   private syncVistaActividadDesdeUrl(url: string): void {
     const path = (url || '').split('?')[0];
+    const prevEventoKey = this.eventoDetalleKey;
+    const prevClubKey = this.lugarCoverDetalleKey;
     this.vistaActividad = path.endsWith('/mis-compras/actividad');
     const detalleMatch = path.match(/\/mis-compras\/evento\/([^/]+)$/);
     this.eventoDetalleKey = detalleMatch ? decodeURIComponent(detalleMatch[1]) : null;
+    const clubDetalleMatch = path.match(/\/mis-compras\/club\/([^/]+)$/);
+    this.lugarCoverDetalleKey = clubDetalleMatch ? decodeURIComponent(clubDetalleMatch[1]) : null;
     this.syncTabEventoDetalle();
+    this.syncTabCoversDetalle();
+    this.syncTabMisComprasPrincipal();
+
+    const entroEnDetalle =
+      (this.eventoDetalleKey != null && this.eventoDetalleKey !== prevEventoKey) ||
+      (this.lugarCoverDetalleKey != null && this.lugarCoverDetalleKey !== prevClubKey);
+    if (entroEnDetalle && this.authService.getUsuarioId()) {
+      void this.refrescarTrasladosMaps().then(() => {
+        this.reconstruirEventosConBoletas();
+        if (coversEventumEnabled) {
+          this.reconstruirLugaresConCovers();
+        }
+        this.cdr.detectChanges();
+      });
+    } else {
+      this.cdr.detectChanges();
+    }
+  }
+
+  private syncTabMisComprasPrincipal(): void {
+    if (this.lugarCoverDetalleKey) {
+      this.tabMisComprasPrincipal = 'covers';
+      return;
+    }
+    if (this.eventoDetalleKey) {
+      return;
+    }
+    if (
+      coversEventumEnabled &&
+      this.trasladosPendientesRecibirCover.length > 0 &&
+      this.trasladosPendientesRecibir.length === 0 &&
+      this.eventosConBoletas.length === 0
+    ) {
+      this.tabMisComprasPrincipal = 'covers';
+      return;
+    }
+    if (
+      this.eventosConBoletas.length === 0 &&
+      (this.lugaresConCovers.length > 0 || this.trasladosPendientesRecibirCover.length > 0)
+    ) {
+      this.tabMisComprasPrincipal = 'covers';
+    }
+  }
+
+  setTabMisComprasPrincipal(tab: 'eventos' | 'covers'): void {
+    this.tabMisComprasPrincipal = tab;
+    this.persistState(Date.now());
     this.cdr.detectChanges();
+  }
+
+  mostrarTabsMisComprasPrincipal(): boolean {
+    if (!coversEventumEnabled || this.eventoDetalleKey || this.lugarCoverDetalleKey) {
+      return false;
+    }
+    return (
+      this.eventosConBoletas.length > 0 ||
+      this.lugaresConCovers.length > 0 ||
+      this.trasladosPendientesRecibir.length > 0 ||
+      this.trasladosPendientesRecibirCover.length > 0 ||
+      this.loadingCovers ||
+      this.loading
+    );
+  }
+
+  totalEntradasMisCompras(): number {
+    return this.eventosConBoletas.reduce((sum, g) => sum + (g.totalBoletas || 0), 0);
+  }
+
+  totalCoversMisCompras(): number {
+    return this.lugaresConCovers.reduce((sum, grupo) => sum + (grupo.totalDisponibles || 0), 0);
+  }
+
+  badgeCoversTab(): number {
+    return this.totalCoversMisCompras();
+  }
+
+  badgeEventosTab(): number {
+    return this.totalEntradasMisCompras();
+  }
+
+  badgeEventosTabPendientes(): number {
+    return this.trasladosPendientesRecibir.length;
+  }
+
+  badgeCoversTabPendientes(): number {
+    return this.trasladosPendientesRecibirCover.length;
+  }
+
+  totalTrasladosPendientesRecibir(): number {
+    return this.trasladosPendientesRecibir.length + this.trasladosPendientesRecibirCover.length;
+  }
+
+  badgePendientesRecibirEnEvento(grupo: EventoBoletasGrupo): number {
+    return this.trasladosPendientesRecibirEnEvento(grupo).length;
+  }
+
+  badgePendientesRecibirEnClub(grupo: LugarCoverGrupo): number {
+    return this.trasladosPendientesRecibirCoverEnClub(grupo).length;
+  }
+
+  private syncTrasladosPendientesNavBadge(): void {
+    this.misComprasStateService.setTrasladosPendientesCount(this.totalTrasladosPendientesRecibir());
   }
 
   loadCompras(options?: { background?: boolean; resetPage?: boolean }) {
@@ -293,11 +469,15 @@ export class MisCompras implements OnInit, OnDestroy {
     const hasVisibleData =
       this.compras.length > 0 ||
       this.comprasProductos.length > 0 ||
-      this.eventosConBoletas.length > 0;
+      this.eventosConBoletas.length > 0 ||
+      this.lugaresConCovers.length > 0;
     const background = options?.background ?? hasVisibleData;
     this.currentLoadBackground = background;
     this.loading = !background && !hasVisibleData;
     this.loadingBoletasDetalle = true;
+    if (coversEventumEnabled) {
+      this.loadingCovers = !background && this.lugaresConCovers.length === 0 && this.boletasCover.length === 0;
+    }
     if (background) {
       this.startSilentRefreshCycle();
     } else {
@@ -307,6 +487,461 @@ export class MisCompras implements OnInit, OnDestroy {
     this.loadComprasSubject.next();
   }
 
+  async loadCoversPorTitular(options?: { background?: boolean }) {
+    const background = options?.background ?? false;
+    this.loadingCovers = true;
+    this.cdr.detectChanges();
+
+    if (!background) {
+      this.comprasCover = [];
+      this.boletasCover = [];
+      this.lugaresConCovers = [];
+      this.coverCedidas = [];
+    }
+
+    const uid = this.authService.getUsuarioId();
+    if (!uid) {
+      this.coverCedidas = [];
+      this.loadingCovers = false;
+      return;
+    }
+
+    if (this.isOffline() && (this.boletasCover.length > 0 || this.lugaresConCovers.length > 0)) {
+      console.info('[MisCompras] Sin conexión, usando covers cacheados');
+      this.loadingCovers = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    try {
+      const compras = await this.coversService.listarComprasCoverCliente();
+      this.comprasCover = compras.filter(
+        (compra) => (compra.estado_pago || '').toLowerCase() === TipoEstadoPago.COMPLETADO
+      );
+
+      let allBoletas: BoletaCoverCliente[] = [];
+      try {
+        allBoletas = await this.coversService.listarBoletasCoverCliente();
+      } catch (err) {
+        console.error('Error cargando boletas cover:', err);
+      }
+
+      const ownedItems: BoletaCoverConCompra[] = [];
+      for (const compra of this.comprasCover) {
+        const boletas = allBoletas.filter((boleta) => {
+          if (boleta.compra_cover_id !== compra.id) return false;
+          const titular = boleta.titular_cliente_id ?? compra.cliente_id;
+          return titular === uid && (boleta.estado || '').toLowerCase() !== 'cancelada';
+        });
+        for (const boleta of boletas) {
+          ownedItems.push({
+            compra,
+            boleta: {
+              ...boleta,
+              lugar_nombre: boleta.lugar_nombre || compra.lugar_nombre,
+            },
+            esCedida: false,
+          });
+        }
+      }
+
+      try {
+        const cedidas = await this.coversService.getCoversCedidosTitular(uid, allBoletas);
+        this.coverCedidas = cedidas
+          .filter((boleta) => (boleta.estado || '').toLowerCase() !== 'cancelada')
+          .map((boleta) => ({
+            compra: this.compraVistaParaCoverCedido(boleta),
+            boleta,
+            esCedida: true,
+          }));
+      } catch (err) {
+        console.error('Error cargando covers cedidos:', err);
+        this.coverCedidas = [];
+      }
+
+      this.boletasCover = [...ownedItems, ...this.coverCedidas];
+      await this.refrescarTrasladosMaps();
+      this.reconstruirLugaresConCovers();
+      this.syncTabCoversDetalle();
+      this.syncTabMisComprasPrincipal();
+    } finally {
+      this.loadingCovers = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  private compraVistaParaCoverCedido(boleta: BoletaCoverCliente): CompraCoverCliente {
+    return {
+      id: boleta.compra_cover_id,
+      cliente_id: boleta.compra_cliente_id ?? 0,
+      numero_transaccion: boleta.compra_numero_transaccion,
+      lugar_id: boleta.lugar_id,
+      lugar_nombre: boleta.lugar_nombre,
+      total: 0,
+      estado_pago: boleta.compra_estado_pago,
+      estado_compra: boleta.compra_estado_compra,
+      fecha_compra: boleta.compra_fecha_compra,
+      boletas_count: 1,
+    };
+  }
+
+  private reconstruirLugaresConCovers(): void {
+    const porLugar = new Map<number, LugarCoverGrupo>();
+
+    for (const compra of this.comprasCover) {
+      if (!porLugar.has(compra.lugar_id)) {
+        porLugar.set(compra.lugar_id, {
+          key: String(compra.lugar_id),
+          lugarId: compra.lugar_id,
+          lugarNombre: compra.lugar_nombre,
+          compras: [],
+          boletas: [],
+          totalBoletas: 0,
+          totalDisponibles: 0,
+          totalTrasladoSaliente: 0,
+          totalUsadas: 0,
+        });
+      }
+      porLugar.get(compra.lugar_id)!.compras.push(compra);
+    }
+
+    for (const item of this.boletasCover) {
+      let grupo = porLugar.get(item.compra.lugar_id);
+      if (!grupo) {
+        grupo = {
+          key: String(item.compra.lugar_id),
+          lugarId: item.compra.lugar_id,
+          lugarNombre: item.boleta.lugar_nombre || item.compra.lugar_nombre,
+          compras: item.esCedida ? [] : [item.compra],
+          boletas: [],
+          totalBoletas: 0,
+          totalDisponibles: 0,
+          totalTrasladoSaliente: 0,
+          totalUsadas: 0,
+        };
+        porLugar.set(item.compra.lugar_id, grupo);
+      }
+
+      const enTraslado = this.tieneTrasladoSalienteCoverActivo(item.boleta.id);
+      const usada = this.esBoletaCoverUsada(item.boleta);
+      grupo.boletas.push(item);
+      grupo.totalBoletas += 1;
+      if (usada) {
+        grupo.totalUsadas += 1;
+      } else if (enTraslado) {
+        grupo.totalTrasladoSaliente += 1;
+      } else {
+        grupo.totalDisponibles += 1;
+      }
+    }
+
+    this.lugaresConCovers = Array.from(porLugar.values()).sort((a, b) =>
+      a.lugarNombre.localeCompare(b.lugarNombre, 'es')
+    );
+  }
+
+  isLugarCoverExpandido(lugarKey: string): boolean {
+    return this.lugarCoverExpandidoKey === lugarKey;
+  }
+
+  toggleLugarCoverExpandido(lugarKey: string): void {
+    this.lugarCoverExpandidoKey = this.lugarCoverExpandidoKey === lugarKey ? null : lugarKey;
+    this.cdr.detectChanges();
+  }
+
+  esBoletaCoverUsada(boleta: BoletaCoverCliente): boolean {
+    const estado = (boleta.estado || '').toLowerCase();
+    const acceso = (boleta.estado_acceso || '').toLowerCase();
+    return estado === 'consumida' || estado === 'cancelada' || acceso === 'consumida';
+  }
+
+  esDiaSesionCover(boleta: BoletaCoverCliente): boolean {
+    if (!boleta.sesion_fecha) return true;
+    const sesion = new Date(`${boleta.sesion_fecha}T12:00:00`);
+    if (Number.isNaN(sesion.getTime())) return true;
+    const hoy = this.diaCalendarioLocal(new Date());
+    const diaSesion = this.diaCalendarioLocal(sesion);
+    return hoy === diaSesion;
+  }
+
+  labelSesionCoverBoleta(boleta: BoletaCoverCliente): string {
+    return labelSesionCover({
+      fecha: boleta.sesion_fecha,
+      hora_apertura: boleta.sesion_hora_apertura,
+      hora_cierre: boleta.sesion_hora_cierre,
+      tipo_cover_nombre: boleta.tipo_cover_nombre,
+    });
+  }
+
+  fechaSesionCoverBoleta(boleta: BoletaCoverCliente): string {
+    const fecha = new Date(`${boleta.sesion_fecha}T12:00:00`);
+    return fecha.toLocaleDateString('es-CO', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    });
+  }
+
+  horarioSesionCoverBoleta(boleta: BoletaCoverCliente): string {
+    const apertura = formatHoraCover(boleta.sesion_hora_apertura);
+    const cierre = formatHoraCover(boleta.sesion_hora_cierre);
+    return apertura && cierre ? `${apertura} – ${cierre}` : apertura || cierre || '—';
+  }
+
+  getEstadoCoverLabel(boleta: BoletaCoverCliente): string {
+    if (this.esBoletaCoverUsada(boleta)) return 'Usada';
+    if (boleta.estado_acceso === 'dentro') return 'Dentro';
+    if (boleta.estado_acceso === 'fuera' && boleta.permite_reingreso) return 'Fuera · reingreso';
+    if (boleta.estado_acceso === 'fuera') return 'Salió';
+    return 'Sin usar';
+  }
+
+  getEstadoCoverClass(boleta: BoletaCoverCliente): string {
+    if (this.esBoletaCoverUsada(boleta)) return 'badge-warning';
+    if (boleta.estado_acceso === 'dentro') return 'badge-success';
+    if (boleta.estado_acceso === 'fuera') return 'badge-info';
+    return 'badge-info-soft';
+  }
+
+  mensajeHabilitacionQrCover(boleta: BoletaCoverCliente): string {
+    if (!boleta.sesion_fecha) {
+      return 'El código QR estará disponible el día de la noche reservada.';
+    }
+    const sesion = new Date(`${boleta.sesion_fecha}T12:00:00`);
+    if (Number.isNaN(sesion.getTime())) {
+      return 'El código QR estará disponible el día de la noche reservada.';
+    }
+    return `Disponible el ${this.formatFechaHabilitacionAmigable(sesion)}`;
+  }
+
+  esTitularCover(item: BoletaCoverConCompra): boolean {
+    const uid = this.authService.getUsuarioId();
+    if (!uid) return false;
+    const titular = item.boleta.titular_cliente_id ?? item.compra.cliente_id ?? item.boleta.compra_cliente_id;
+    return titular === uid;
+  }
+
+  tieneTrasladoSalienteCoverActivo(boletaCoverId: number): boolean {
+    return this.trasladoSalientePorBoletaCoverId.has(Number(boletaCoverId));
+  }
+
+  puedeAsignarCoverPorCorreo(item: BoletaCoverConCompra): boolean {
+    if (item.compra.estado_pago !== TipoEstadoPago.COMPLETADO) return false;
+    if (!this.esTitularCover(item)) return false;
+    if (this.tieneTrasladoSalienteCoverActivo(item.boleta.id)) return false;
+    if (this.esBoletaCoverUsada(item.boleta)) return false;
+    return true;
+  }
+
+  puedeMostrarQrCover(item: BoletaCoverConCompra): boolean {
+    return (
+      this.esTitularCover(item) &&
+      item.compra.estado_pago === TipoEstadoPago.COMPLETADO &&
+      !!item.boleta.codigo_qr?.trim() &&
+      !this.esBoletaCoverUsada(item.boleta) &&
+      !this.tieneTrasladoSalienteCoverActivo(item.boleta.id) &&
+      this.esDiaSesionCover(item.boleta)
+    );
+  }
+
+  puedeAbrirQrCover(item: BoletaCoverConCompra): boolean {
+    return (
+      this.esTitularCover(item) &&
+      item.compra.estado_pago === TipoEstadoPago.COMPLETADO &&
+      !!item.boleta.codigo_qr?.trim() &&
+      !this.esBoletaCoverUsada(item.boleta) &&
+      !this.tieneTrasladoSalienteCoverActivo(item.boleta.id)
+    );
+  }
+
+  abrirDetalleClubCover(lugarKey: string): void {
+    this.tabMisComprasPrincipal = 'covers';
+    this.router.navigate(['/mis-compras/club', lugarKey]);
+  }
+
+  lugarCoverDetalle(): LugarCoverGrupo | null {
+    if (!this.lugarCoverDetalleKey) return null;
+    return this.lugaresConCovers.find((g) => g.key === this.lugarCoverDetalleKey) || null;
+  }
+
+  resumenDetalleClubCover(grupo: LugarCoverGrupo): string {
+    const partes: string[] = [];
+    if (grupo.totalDisponibles > 0) {
+      partes.push(`${grupo.totalDisponibles} sin usar`);
+    }
+    if (grupo.totalTrasladoSaliente > 0) {
+      partes.push(
+        `${grupo.totalTrasladoSaliente} con envío pendiente`
+      );
+    }
+    if (grupo.totalUsadas > 0) {
+      partes.push(`${grupo.totalUsadas} usada${grupo.totalUsadas === 1 ? '' : 's'}`);
+    }
+    const cedidas = this.coversCedidasEnClub(grupo);
+    if (cedidas > 0) {
+      partes.push(`${cedidas} recibida${cedidas === 1 ? '' : 's'}`);
+    }
+    return partes.join(' · ');
+  }
+
+  tiposCoverResumenParaBadges(grupo: LugarCoverGrupo): Array<{ nombre: string; total: number }> {
+    const map = new Map<string, number>();
+    for (const item of grupo.boletas) {
+      const nombre = (item.boleta.tipo_cover_nombre || 'Cover').trim();
+      map.set(nombre, (map.get(nombre) || 0) + 1);
+    }
+    return Array.from(map.entries())
+      .map(([nombre, total]) => ({ nombre, total }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  }
+
+  coversCedidasEnClub(grupo: LugarCoverGrupo): number {
+    return grupo.boletas.filter((item) => item.esCedida).length;
+  }
+
+  mostrarTabCoversDetalle(grupo: LugarCoverGrupo, tab: 'sin-usar' | 'usadas'): boolean {
+    if (tab === 'sin-usar') {
+      return grupo.boletas.some((item) => !this.esBoletaCoverUsada(item.boleta));
+    }
+    return grupo.boletas.some((item) => this.esBoletaCoverUsada(item.boleta));
+  }
+
+  coversDetallePorTab(grupo: LugarCoverGrupo): BoletaCoverConCompra[] {
+    return grupo.boletas.filter((item) =>
+      this.tabCoversDetalle === 'sin-usar'
+        ? !this.esBoletaCoverUsada(item.boleta)
+        : this.esBoletaCoverUsada(item.boleta)
+    );
+  }
+
+  private syncTabCoversDetalle(): void {
+    const detalle = this.lugarCoverDetalle();
+    if (!detalle) return;
+    if (this.mostrarTabCoversDetalle(detalle, this.tabCoversDetalle)) return;
+    if (this.mostrarTabCoversDetalle(detalle, 'sin-usar')) {
+      this.tabCoversDetalle = 'sin-usar';
+      return;
+    }
+    this.tabCoversDetalle = 'usadas';
+  }
+
+  abrirModalTrasladoCover(item: BoletaCoverConCompra): void {
+    if (!this.puedeAsignarCoverPorCorreo(item)) return;
+    this.trasladoCoverItem = item;
+    this.trasladoBoleta = null;
+    this.trasladoCompra = null;
+    this.emailTrasladoDestino = '';
+    this.showTrasladoModal = true;
+    this.cdr.detectChanges();
+  }
+
+  get esTrasladoModalCover(): boolean {
+    return !!this.trasladoCoverItem;
+  }
+
+  get resumenTrasladoTitulo(): string {
+    return this.esTrasladoModalCover ? RESUMEN_TRASLADO_COVER_TITULO : RESUMEN_TRASLADO_ENTRADA_TITULO;
+  }
+
+  get resumenTrasladoSubtitulo(): string {
+    return this.esTrasladoModalCover ? RESUMEN_TRASLADO_COVER_SUBTITULO : RESUMEN_TRASLADO_ENTRADA_SUBTITULO;
+  }
+
+  get resumenTrasladoPuntos(): string[] {
+    return this.esTrasladoModalCover ? RESUMEN_TRASLADO_COVER_PUNTOS : RESUMEN_TRASLADO_ENTRADA_PUNTOS;
+  }
+
+  abrirModalCancelarTraslado(t: TrasladoBoleta): void {
+    this.trasladoACancelar = t;
+    this.showCancelarTrasladoModal = true;
+    this.cdr.detectChanges();
+  }
+
+  cerrarModalCancelarTraslado(): void {
+    this.showCancelarTrasladoModal = false;
+    this.trasladoACancelar = null;
+    this.cancelandoTraslado = false;
+    this.cdr.detectChanges();
+  }
+
+  get esCancelarTrasladoCover(): boolean {
+    return !!this.trasladoACancelar && this.esTrasladoCover(this.trasladoACancelar);
+  }
+
+  get resumenCancelarTrasladoTitulo(): string {
+    return this.esCancelarTrasladoCover
+      ? RESUMEN_CANCELAR_TRASLADO_COVER_TITULO
+      : RESUMEN_CANCELAR_TRASLADO_ENTRADA_TITULO;
+  }
+
+  get resumenCancelarTrasladoSubtitulo(): string {
+    return this.esCancelarTrasladoCover
+      ? RESUMEN_CANCELAR_TRASLADO_COVER_SUBTITULO
+      : RESUMEN_CANCELAR_TRASLADO_ENTRADA_SUBTITULO;
+  }
+
+  get resumenCancelarTrasladoPuntos(): string[] {
+    return this.esCancelarTrasladoCover
+      ? RESUMEN_CANCELAR_TRASLADO_COVER_PUNTOS
+      : RESUMEN_CANCELAR_TRASLADO_ENTRADA_PUNTOS;
+  }
+
+  async verQrCover(item: BoletaCoverConCompra): Promise<void> {
+    if (!this.esTitularCover(item)) {
+      this.alertService.warning('No disponible', 'Esta entrada no está asignada a tu usuario.');
+      return;
+    }
+    if (this.tieneTrasladoSalienteCoverActivo(item.boleta.id)) {
+      this.alertService.warning(
+        'Transferencia pendiente',
+        'No puedes ver el QR mientras la otra persona no acepte o rechace en Mis Compras → Covers.'
+      );
+      return;
+    }
+    if (item.compra.estado_pago !== TipoEstadoPago.COMPLETADO) {
+      this.alertService.warning(
+        'Pago pendiente',
+        'El código QR estará disponible una vez que el pago sea completado.'
+      );
+      return;
+    }
+    if (!item.boleta.codigo_qr?.trim()) {
+      this.alertService.warning(
+        'QR en preparación',
+        'Esta entrada aún no tiene código QR. Recarga en unos segundos o vuelve a intentarlo.'
+      );
+      return;
+    }
+    this.coverBoletaSeleccionada = item;
+    this.coverQrCodeUrl = '';
+    this.showCoverQrModal = true;
+    this.loadingCoverQR = this.puedeMostrarQrCover(item);
+    this.cdr.detectChanges();
+
+    if (!this.loadingCoverQR) return;
+    try {
+      this.coverQrCodeUrl = await QRCode.toDataURL(item.boleta.codigo_qr!, {
+        width: 200,
+        margin: 2,
+        color: { dark: '#000000', light: '#FFFFFF' },
+      });
+    } catch (err) {
+      console.error('Error generando QR cover:', err);
+      this.coverQrCodeUrl = '';
+    } finally {
+      this.loadingCoverQR = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  cerrarCoverQrModal(): void {
+    this.showCoverQrModal = false;
+    this.coverBoletaSeleccionada = null;
+    this.coverQrCodeUrl = '';
+    this.loadingCoverQR = false;
+    this.cdr.detectChanges();
+  }
+
   private async loadComprasProductos(): Promise<void> {
     const clienteId = this.authService.getUsuarioId();
     if (!clienteId) {
@@ -314,7 +949,11 @@ export class MisCompras implements OnInit, OnDestroy {
       return;
     }
 
-    this.loadingComprasProductos = true;
+    const background = this.currentLoadBackground;
+    const mostrarCargaProductos = !background || this.comprasProductos.length === 0;
+    if (mostrarCargaProductos) {
+      this.loadingComprasProductos = true;
+    }
     try {
       const compras = await this.comprasProductoService.getComprasByCliente(clienteId);
       this.comprasProductos = compras.filter(
@@ -343,14 +982,19 @@ export class MisCompras implements OnInit, OnDestroy {
       return;
     }
 
-    const mostrarSkeleton = !this.promoProductos;
+    const promoActual = this.promoProductos;
+    const mostrarSkeleton = !promoActual;
     if (mostrarSkeleton) {
       this.loadingPromoProductos = true;
       this.cdr.detectChanges();
     }
 
+    const refreshSeq = ++this.promoProductosRefreshSeq;
     try {
       const resumen = await this.productosService.getResumenProductosPorEvento(ids);
+      if (refreshSeq !== this.promoProductosRefreshSeq) {
+        return;
+      }
       const candidatos = this.eventosConBoletas
         .map((grupo) => {
           const eventoId = Number(grupo.key);
@@ -381,7 +1025,7 @@ export class MisCompras implements OnInit, OnDestroy {
         return;
       }
 
-      this.promoProductos = {
+      const siguientePromo: PromoProductosMisCompras = {
         eventoId: mejor.eventoId,
         titulo: mejor.grupo.titulo,
         cantidad: mejor.info.cantidad,
@@ -389,13 +1033,35 @@ export class MisCompras implements OnInit, OnDestroy {
         sinComprasProducto: mejor.sinComprasProducto,
         totalEventosConProductos: candidatos.length,
       };
+      if (!this.esMismaPromoProductos(promoActual, siguientePromo)) {
+        this.promoProductos = siguientePromo;
+      }
     } catch (err) {
       console.error('Error cargando promo de productos:', err);
-      this.promoProductos = null;
+      if (!promoActual) {
+        this.promoProductos = null;
+      }
     } finally {
-      this.loadingPromoProductos = false;
-      this.cdr.detectChanges();
+      if (refreshSeq === this.promoProductosRefreshSeq) {
+        this.loadingPromoProductos = false;
+        this.cdr.detectChanges();
+      }
     }
+  }
+
+  private esMismaPromoProductos(
+    actual: PromoProductosMisCompras | null,
+    siguiente: PromoProductosMisCompras
+  ): boolean {
+    if (!actual) return false;
+    return (
+      actual.eventoId === siguiente.eventoId &&
+      actual.titulo === siguiente.titulo &&
+      actual.cantidad === siguiente.cantidad &&
+      actual.precioMinimo === siguiente.precioMinimo &&
+      actual.sinComprasProducto === siguiente.sinComprasProducto &&
+      actual.totalEventosConProductos === siguiente.totalEventosConProductos
+    );
   }
 
   eventoTieneEntradas(grupo: EventoBoletasGrupo | null | undefined): boolean {
@@ -1008,6 +1674,10 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   private fusionarProductosEnEventos(): void {
+    if (this.comprasProductos.length === 0) {
+      return;
+    }
+
     for (const grupo of this.eventosConBoletas) {
       grupo.comprasProductos = [];
       grupo.totalItemsProducto = 0;
@@ -1229,6 +1899,45 @@ export class MisCompras implements OnInit, OnDestroy {
     return pages;
   }
 
+  private esEstadoTrasladoSalienteActivo(estado: string | undefined): boolean {
+    const e = String(estado ?? '');
+    return e === EstadoTrasladoBoleta.ENVIADO || e === EstadoTrasladoBoleta.RECIBIDO;
+  }
+
+  private poblarMapasTrasladoSaliente(traslados: TrasladoBoleta[]): void {
+    this.trasladoSalientePorBoletaId.clear();
+    this.trasladoSalientePorBoletaCoverId.clear();
+    for (const t of traslados) {
+      if (!this.esEstadoTrasladoSalienteActivo(t.estado)) continue;
+      const coverId = Number(t.boleta_cover_id ?? 0);
+      const boletaId = Number(t.boleta_id ?? 0);
+      if (coverId > 0) {
+        this.trasladoSalientePorBoletaCoverId.set(coverId, t);
+      } else if (boletaId > 0) {
+        this.trasladoSalientePorBoletaId.set(boletaId, t);
+      }
+    }
+  }
+
+  private aplicarTrasladosDesdeHistorial(): void {
+    const uid = this.authService.getUsuarioId();
+    if (!uid) return;
+    const salientes = this.trasladosHistorial.filter(
+      (t) =>
+        Number(t.usuario_origen_id) === uid && this.esEstadoTrasladoSalienteActivo(t.estado)
+    );
+    this.poblarMapasTrasladoSaliente(salientes);
+  }
+
+  private async poblarTrasladosSalientesDesdeApi(uid: number): Promise<void> {
+    try {
+      const salientes = await this.trasladosBoletaService.listarTrasladosSalientes(uid);
+      this.poblarMapasTrasladoSaliente(salientes);
+    } catch (e) {
+      console.error('Error cargando traslados salientes:', e);
+    }
+  }
+
   private async refrescarTrasladosMaps(): Promise<void> {
     const uid = this.authService.getUsuarioId();
     if (!uid) {
@@ -1239,39 +1948,45 @@ export class MisCompras implements OnInit, OnDestroy {
     }
     this.loadingTraslados = true;
     try {
-      this.trasladosHistorial = await this.trasladosBoletaService.listarMiTrazabilidad();
-      this.trasladoSalientePorBoletaId.clear();
-      for (const t of this.trasladosHistorial) {
-        const e = String(t.estado);
-        if (
-          t.usuario_origen_id === uid &&
-          (e === EstadoTrasladoBoleta.ENVIADO || e === EstadoTrasladoBoleta.RECIBIDO)
-        ) {
-          this.trasladoSalientePorBoletaId.set(t.boleta_id, t);
-        }
-      }
-      const pend = this.trasladosHistorial.filter((t) => {
-        const e = String(t.estado);
-        return (
-          t.usuario_destino_id === uid &&
-          (e === EstadoTrasladoBoleta.ENVIADO || e === EstadoTrasladoBoleta.RECIBIDO)
-        );
-      });
-      const ids = pend.map((p) => p.boleta_id);
+      this.trasladosHistorial = await this.trasladosBoletaService.listarMiTrazabilidad(uid);
+      await this.poblarTrasladosSalientesDesdeApi(uid);
+      const pend = await this.trasladosBoletaService.listarPendientesRecibir(uid);
+      const pendEvento = pend.filter((t) => Number(t.boleta_id ?? 0) > 0 && Number(t.boleta_cover_id ?? 0) === 0);
+      const pendCover = pend.filter((t) => Number(t.boleta_cover_id ?? 0) > 0);
+      const ids = pendEvento.map((p) => p.boleta_id!).filter((id) => id > 0);
       const detMap = new Map<number, BoletaComprada>();
       if (ids.length) {
         const det = await this.boletasService.getBoletasByIds(ids);
         det.forEach((b) => detMap.set(b.id, b));
       }
-      this.trasladosPendientesRecibir = pend.map((t) => ({
+      this.trasladosPendientesRecibir = pendEvento.map((t) => ({
         ...t,
-        boletaDetail: detMap.get(t.boleta_id)
+        boletaDetail: t.boleta_id ? detMap.get(t.boleta_id) : undefined,
       }));
+      const coverIds = pendCover.map((p) => p.boleta_cover_id!).filter((id) => id > 0);
+      const coverDetMap = new Map<number, BoletaCoverCliente>();
+      for (const item of this.boletasCover) {
+        coverDetMap.set(item.boleta.id, item.boleta);
+      }
+      if (coverIds.length && coverDetMap.size === 0 && coversEventumEnabled) {
+        try {
+          const boletas = await this.coversService.listarBoletasCoverCliente();
+          boletas.forEach((b) => coverDetMap.set(b.id, b));
+        } catch {
+          // ignorar
+        }
+      }
+      this.trasladosPendientesRecibirCover = pendCover.map((t) => ({
+        ...t,
+        coverDetail: t.boleta_cover_id ? coverDetMap.get(t.boleta_cover_id) : undefined,
+      }));
+      this.syncTabMisComprasPrincipal();
+      this.syncTrasladosPendientesNavBadge();
+      if (coversEventumEnabled && this.boletasCover.length > 0) {
+        this.reconstruirLugaresConCovers();
+      }
     } catch (e) {
       console.error('Error cargando traslados:', e);
-      this.trasladosHistorial = [];
-      this.trasladosPendientesRecibir = [];
-      this.trasladoSalientePorBoletaId.clear();
     } finally {
       this.loadingTraslados = false;
     }
@@ -1352,6 +2067,8 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   private reconstruirEventosConBoletas(): void {
+    const productosSnapshot = this.capturarProductosPorEvento();
+
     const eventosMap = new Map<string, EventoBoletasGrupo>();
 
     const agregarBoleta = (compra: Compra, boleta: BoletaComprada, esCedida = false): void => {
@@ -1469,9 +2186,59 @@ export class MisCompras implements OnInit, OnDestroy {
         return a.titulo.localeCompare(b.titulo);
       });
 
+    this.restaurarProductosDesdeSnapshot(productosSnapshot);
     this.fusionarProductosEnEventos();
     this.guiaEntradasAbierta = this.eventosConBoletas.length === 0;
-    void this.actualizarPromoProductos();
+  }
+
+  private capturarProductosPorEvento(): Map<string, EventoBoletasGrupo> {
+    const snapshot = new Map<string, EventoBoletasGrupo>();
+    for (const grupo of this.eventosConBoletas) {
+      if ((grupo.totalItemsProducto ?? 0) <= 0 && (grupo.comprasProductos?.length ?? 0) === 0) {
+        continue;
+      }
+      snapshot.set(grupo.key, {
+        ...grupo,
+        comprasProductos: [...(grupo.comprasProductos || [])],
+        tipos: [...(grupo.tipos || [])],
+        compras: [...(grupo.compras || [])],
+      });
+    }
+    return snapshot;
+  }
+
+  private restaurarProductosDesdeSnapshot(snapshot: Map<string, EventoBoletasGrupo>): void {
+    if (this.comprasProductos.length > 0 || snapshot.size === 0) {
+      return;
+    }
+
+    for (const grupo of this.eventosConBoletas) {
+      const prev = snapshot.get(grupo.key);
+      if (!prev) continue;
+      grupo.comprasProductos = [...(prev.comprasProductos || [])];
+      grupo.totalItemsProducto = prev.totalItemsProducto ?? 0;
+      grupo.totalProductosComprados = prev.totalProductosComprados ?? 0;
+      grupo.totalProductosRedimidos = prev.totalProductosRedimidos ?? 0;
+    }
+
+    for (const [key, prev] of snapshot) {
+      if (this.eventosConBoletas.some((grupo) => grupo.key === key)) {
+        continue;
+      }
+      this.eventosConBoletas.push({
+        ...prev,
+        comprasProductos: [...(prev.comprasProductos || [])],
+        tipos: [...(prev.tipos || [])],
+        compras: [...(prev.compras || [])],
+      });
+    }
+
+    this.eventosConBoletas.sort((a, b) => {
+      const fechaA = a.fechaInicio ? new Date(a.fechaInicio).getTime() : 0;
+      const fechaB = b.fechaInicio ? new Date(b.fechaInicio).getTime() : 0;
+      if (fechaA !== fechaB) return fechaB - fechaA;
+      return a.titulo.localeCompare(b.titulo);
+    });
   }
 
   esTitularBoleta(b: BoletaComprada, compra: Compra): boolean {
@@ -1482,7 +2249,37 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   tieneTrasladoSalienteActivo(boletaId: number): boolean {
-    return this.trasladoSalientePorBoletaId.has(boletaId);
+    return this.trasladoSalientePorBoletaId.has(Number(boletaId));
+  }
+
+  trasladoSalienteParaBoleta(boletaId: number): TrasladoBoleta | undefined {
+    return this.trasladoSalientePorBoletaId.get(Number(boletaId));
+  }
+
+  trasladoSalienteParaCover(boletaCoverId: number): TrasladoBoleta | undefined {
+    return this.trasladoSalientePorBoletaCoverId.get(Number(boletaCoverId));
+  }
+
+  trasladosPendientesRecibirEnEvento(detalle: EventoBoletasGrupo): Array<
+    TrasladoBoleta & { boletaDetail?: BoletaComprada }
+  > {
+    const eventoId = Number(detalle.key);
+    if (!Number.isFinite(eventoId)) return [];
+    return this.trasladosPendientesRecibir.filter((t) => {
+      const eid = t.boletaDetail?.evento?.id ?? t.evento_id;
+      return Number(eid) === eventoId;
+    });
+  }
+
+  trasladosPendientesRecibirCoverEnClub(club: LugarCoverGrupo): Array<
+    TrasladoBoleta & { coverDetail?: BoletaCoverCliente }
+  > {
+    const lugarId = Number(club.key);
+    if (!Number.isFinite(lugarId)) return [];
+    return this.trasladosPendientesRecibirCover.filter((t) => {
+      const lid = t.coverDetail?.lugar_id ?? t.lugar_id;
+      return Number(lid) === lugarId;
+    });
   }
 
   /**
@@ -1527,6 +2324,9 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   volverAMisCompras(): void {
+    if (this.lugarCoverDetalleKey) {
+      this.tabMisComprasPrincipal = 'covers';
+    }
     this.router.navigate(['/mis-compras']);
   }
 
@@ -1766,6 +2566,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.limpiarErrorAsignacion(boleta.id);
     this.trasladoBoleta = boleta;
     this.trasladoCompra = compra;
+    this.trasladoCoverItem = null;
     this.emailTrasladoDestino = '';
     this.showTrasladoModal = true;
     this.cdr.detectChanges();
@@ -1775,27 +2576,20 @@ export class MisCompras implements OnInit, OnDestroy {
     this.showTrasladoModal = false;
     this.trasladoBoleta = null;
     this.trasladoCompra = null;
+    this.trasladoCoverItem = null;
     this.emailTrasladoDestino = '';
     this.cdr.detectChanges();
   }
 
   async confirmarEnvioTraslado(): Promise<void> {
+    if (this.trasladoCoverItem) {
+      await this.confirmarEnvioTrasladoCover();
+      return;
+    }
     if (!this.trasladoBoleta) return;
     const email = this.emailTrasladoDestino.trim();
     if (!email) {
-      this.alertService.warning('Email', 'Indica el email del usuario registrado que recibirá la entrada.');
-      return;
-    }
-    const b = this.trasladoBoleta;
-    const tipoNombre = b.tipo_boleta_meta?.nombre || 'esta entrada';
-    const palcoTxt = b.numero_palco != null ? ` · palco ${b.numero_palco}` : '';
-    const confirmadoEnvio = await this.alertService.confirm(
-      '¿Enviar solicitud por correo?',
-      `Se enviará a ${email} una solicitud para aceptar la entrada «${tipoNombre}»${palcoTxt}. Mientras esté pendiente no podrás usar el QR. ¿Enviar ahora?`,
-      'Sí, enviar',
-      'Cancelar'
-    );
-    if (!confirmadoEnvio) {
+      this.alertService.warning('Cuenta destino', 'Indica el email de la cuenta Eventum del destinatario.');
       return;
     }
 
@@ -1805,11 +2599,16 @@ export class MisCompras implements OnInit, OnDestroy {
     try {
       const res = await this.trasladosBoletaService.iniciarTrasladoPalco(this.trasladoBoleta.id, email);
       if (!res.ok) {
-        await this.mostrarErrorAsignacion(
-          this.trasladoBoleta.id,
-          res.error || 'Error desconocido',
-          'No se pudo enviar'
-        );
+        const msg = res.error || 'Error desconocido';
+        if (/traslado pendiente/i.test(msg)) {
+          try {
+            await this.refrescarTrasladosMaps();
+            this.reconstruirEventosConBoletas();
+          } catch (e) {
+            console.error('Error refrescando traslado pendiente:', e);
+          }
+        }
+        await this.mostrarErrorAsignacion(this.trasladoBoleta.id, msg, 'No se pudo enviar');
         return;
       }
       this.cerrarModalTraslado();
@@ -1824,13 +2623,39 @@ export class MisCompras implements OnInit, OnDestroy {
         return;
       }
       void this.alertService.snackbar(
-        'Enviado. El destinatario debe aceptar el traslado en Mis Boletas.'
+        'Traslado enviado. Aparece en trámite en tu entrada hasta que acepten o canceles.'
       );
     } finally {
       this.enviandoTraslado = false;
       this.ngZone.run(() => {
         this.cdr.detectChanges();
       });
+    }
+  }
+
+  async confirmarEnvioTrasladoCover(): Promise<void> {
+    if (!this.trasladoCoverItem) return;
+    const email = this.emailTrasladoDestino.trim();
+    if (!email) {
+      this.alertService.warning('Cuenta destino', 'Indica el email de la cuenta Eventum de quien recibirá el cover.');
+      return;
+    }
+    const item = this.trasladoCoverItem;
+
+    this.enviandoTraslado = true;
+    this.cdr.detectChanges();
+    try {
+      const res = await this.trasladosBoletaService.iniciarTrasladoCover(item.boleta.id, email);
+      if (!res.ok) {
+        await this.alertService.error('No se pudo enviar', res.error || 'Error desconocido');
+        return;
+      }
+      this.cerrarModalTraslado();
+      await this.recargarBoletasYTraslados();
+      void this.alertService.snackbar('Transferencia iniciada. La otra persona debe aceptar en Mis Compras → Covers.');
+    } finally {
+      this.enviandoTraslado = false;
+      this.ngZone.run(() => this.cdr.detectChanges());
     }
   }
 
@@ -1856,6 +2681,13 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   tituloEventoTraslado(t: TrasladoBoleta): string {
+    if (t.boleta_cover_id) {
+      const sesion = Array.isArray(t.boleta_cover?.sesiones_cover)
+        ? t.boleta_cover?.sesiones_cover[0]
+        : t.boleta_cover?.sesiones_cover;
+      const lugar = Array.isArray(sesion?.lugares) ? sesion?.lugares[0] : sesion?.lugares;
+      return lugar?.nombre || 'Cover';
+    }
     const tb = Array.isArray(t.boleta?.tipos_boleta) ? t.boleta?.tipos_boleta[0] : t.boleta?.tipos_boleta;
     const ev = tb?.eventos;
     if (Array.isArray(ev)) {
@@ -1864,50 +2696,106 @@ export class MisCompras implements OnInit, OnDestroy {
     return ev?.titulo || '—';
   }
 
+  nombreTipoCoverTraslado(t: TrasladoBoleta): string {
+    const tc = Array.isArray(t.boleta_cover?.tipos_cover)
+      ? t.boleta_cover?.tipos_cover[0]
+      : t.boleta_cover?.tipos_cover;
+    return tc?.nombre || t.coverDetail?.tipo_cover_nombre || 'Cover';
+  }
+
+  esTrasladoCover(t: TrasladoBoleta): boolean {
+    return !!t.boleta_cover_id;
+  }
+
   async marcarRecibidoTraslado(t: TrasladoBoleta): Promise<void> {
-    const res = await this.trasladosBoletaService.marcarRecibido(t.id);
+    const res = this.esTrasladoCover(t)
+      ? await this.trasladosBoletaService.marcarRecibidoCover(t.id)
+      : await this.trasladosBoletaService.marcarRecibido(t.id);
     if (!res.ok) {
       await this.alertService.error('Error', res.error || '');
       return;
     }
-    this.alertService.success('Listo', 'Marcado como recibido. Puedes aceptar o rechazar.');
     await this.recargarBoletasYTraslados();
+    void this.alertService.snackbar('Marcado como recibido. Puedes aceptar o rechazar.');
   }
 
   async aceptarTraslado(t: TrasladoBoleta): Promise<void> {
-    const res = await this.trasladosBoletaService.aceptar(t.id);
+    const esCover = this.esTrasladoCover(t);
+    const res = esCover
+      ? await this.trasladosBoletaService.aceptarCover(t.id)
+      : await this.trasladosBoletaService.aceptar(t.id);
     if (!res.ok) {
       await this.alertService.error('Error', res.error || '');
       return;
     }
-    this.alertService.success('Aceptado', 'La entrada es tuya. El código QR solo aparecerá el día del evento.');
     await this.recargarBoletasYTraslados();
+    if (esCover) {
+      this.tabMisComprasPrincipal = 'covers';
+      this.persistState(Date.now());
+    }
+    void this.alertService.snackbar(
+      esCover
+        ? 'Cover aceptado. Ya está en Mis Compras → Covers. El QR se habilita el día de la noche.'
+        : 'Entrada aceptada. Ya está en Mis Compras. El QR se habilita el día del evento.'
+    );
+    this.cdr.detectChanges();
   }
 
   async rechazarTraslado(t: TrasladoBoleta): Promise<void> {
-    const res = await this.trasladosBoletaService.rechazar(t.id);
+    const esCover = this.esTrasladoCover(t);
+    const res = esCover
+      ? await this.trasladosBoletaService.rechazarCover(t.id)
+      : await this.trasladosBoletaService.rechazar(t.id);
     if (!res.ok) {
-      this.alertService.error('Error', res.error || '');
+      await this.alertService.error('Error', res.error || '');
       return;
     }
-    this.alertService.success('Rechazado', 'El remitente recupera el uso de la entrada.');
     await this.recargarBoletasYTraslados();
+    void this.alertService.snackbar(
+      esCover
+        ? 'Transferencia rechazada. El remitente recupera el cover.'
+        : 'Entrada rechazada. El remitente recupera el uso.'
+    );
   }
 
-  async cancelarTraslado(t: TrasladoBoleta): Promise<void> {
-    const res = await this.trasladosBoletaService.cancelar(t.id);
-    if (!res.ok) {
-      this.alertService.error('Error', res.error || '');
-      return;
+  async confirmarCancelarTraslado(): Promise<void> {
+    const t = this.trasladoACancelar;
+    if (!t || this.cancelandoTraslado) return;
+
+    this.cancelandoTraslado = true;
+    this.cdr.detectChanges();
+    try {
+      const res = this.esTrasladoCover(t)
+        ? await this.trasladosBoletaService.cancelarCover(t.id)
+        : await this.trasladosBoletaService.cancelar(t.id);
+      if (!res.ok) {
+        await this.alertService.error('Error', res.error || '');
+        return;
+      }
+      this.cerrarModalCancelarTraslado();
+      await this.recargarBoletasYTraslados();
+      void this.alertService.snackbar(
+        this.esTrasladoCover(t) ? 'Transferencia cancelada.' : 'Envío cancelado.'
+      );
+    } finally {
+      this.cancelandoTraslado = false;
+      this.ngZone.run(() => this.cdr.detectChanges());
     }
-    this.alertService.success('Cancelado', 'Se anuló el envío pendiente.');
-    await this.recargarBoletasYTraslados();
   }
 
   private async recargarBoletasYTraslados(): Promise<void> {
     this.asignarPanelAbiertoBoletaId = null;
     await this.loadBoletasPorCompra({ background: true });
+    if (coversEventumEnabled) {
+      await this.loadCoversPorTitular({ background: true });
+    }
+    await this.refrescarTrasladosMaps();
+    this.reconstruirEventosConBoletas();
+    if (coversEventumEnabled) {
+      this.reconstruirLugaresConCovers();
+    }
     this.syncTabEventoDetalle();
+    this.syncTabMisComprasPrincipal();
     this.persistState(Date.now());
     this.ngZone.run(() => {
       this.cdr.detectChanges();
@@ -1932,7 +2820,10 @@ export class MisCompras implements OnInit, OnDestroy {
     return (
       this.eventosConBoletas.length > 0 ||
       this.entradasCedidas.length > 0 ||
-      this.trasladosPendientesRecibir.length > 0
+      this.trasladosPendientesRecibir.length > 0 ||
+      (coversEventumEnabled && this.lugaresConCovers.length > 0) ||
+      this.coverCedidas.length > 0 ||
+      this.trasladosPendientesRecibirCover.length > 0
     );
   }
 
@@ -2136,6 +3027,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.reconstruirEventosConBoletas();
     this.fusionarProductosEnEventos();
     this.syncTabEventoDetalle();
+    void this.actualizarPromoProductos();
     this.persistState(Date.now());
     this.sincronizarRealtimeNotificaciones();
   }
@@ -2327,7 +3219,9 @@ export class MisCompras implements OnInit, OnDestroy {
         durationMs: Date.now() - this.refreshStartedAt,
         compras: this.compras.length,
         eventos: this.eventosConBoletas.length,
-        trasladosPendientes: this.trasladosPendientesRecibir.length
+        covers: this.boletasCover.length,
+        trasladosPendientes: this.trasladosPendientesRecibir.length,
+        trasladosPendientesCover: this.trasladosPendientesRecibirCover.length,
       });
       this.refreshStartedAt = null;
     }
@@ -2335,9 +3229,12 @@ export class MisCompras implements OnInit, OnDestroy {
     this.isRefreshing = false;
   }
 
-  private applyCachedState(state: any): void {
+  private applyCachedState(state: MisComprasState): void {
     this.compras = (state.compras || []).filter(
       (compra: Compra) => compra.estado_pago === TipoEstadoPago.COMPLETADO
+    );
+    this.comprasProductos = (state.comprasProductos || []).filter(
+      (compra: CompraProducto) => (compra.estado_pago || '').toLowerCase() === TipoEstadoPago.COMPLETADO
     );
     this.comprasConBoletas = (state.comprasConBoletas || []).filter(
       (item: { compra: Compra }) => item.compra?.estado_pago === TipoEstadoPago.COMPLETADO
@@ -2349,6 +3246,19 @@ export class MisCompras implements OnInit, OnDestroy {
     this.entradasCedidas = (state.entradasCedidas || []).filter(
       (b: BoletaComprada) => b.compra?.estado_pago === TipoEstadoPago.COMPLETADO
     );
+    this.comprasCover = (state.comprasCover || []).filter(
+      (compra) => (compra.estado_pago || '').toLowerCase() === TipoEstadoPago.COMPLETADO
+    );
+    this.boletasCover = state.boletasCover || [];
+    this.coverCedidas = state.coverCedidas || [];
+    this.trasladosPendientesRecibirCover = state.trasladosPendientesRecibirCover || [];
+    this.tabMisComprasPrincipal = state.tabMisComprasPrincipal || 'eventos';
+    this.aplicarTrasladosDesdeHistorial();
+    if (this.comprasCover.length > 0 || this.boletasCover.length > 0) {
+      this.reconstruirLugaresConCovers();
+    } else {
+      this.lugaresConCovers = [];
+    }
     this.estadoPagoFiltro = state.estadoPagoFiltro ?? null;
     this.estadoCompraFiltro = state.estadoCompraFiltro ?? null;
     this.eventoFiltro = state.eventoFiltro ?? null;
@@ -2361,10 +3271,12 @@ export class MisCompras implements OnInit, OnDestroy {
     this.tabBoletasDetalle = state.tabBoletasDetalle || 'sin-usar';
     this.eventoExpandidoKey = state.eventoExpandidoKey ?? null;
     this.loadingBoletasDetalle = this.eventosConBoletas.length > 0;
+    this.loadingCovers = coversEventumEnabled && this.boletasCover.length === 0;
     this.guiaEntradasAbierta = this.eventosConBoletas.length === 0;
     this.promoProductos = state.promoProductos ?? null;
     this.loadingPromoProductos = false;
-    void this.actualizarPromoProductos();
+    this.syncTabMisComprasPrincipal();
+    this.syncTrasladosPendientesNavBadge();
   }
 
   private persistState(lastUpdated: number): void {
@@ -2372,6 +3284,7 @@ export class MisCompras implements OnInit, OnDestroy {
     if (!userId) return;
     this.misComprasStateService.saveState(userId, {
       compras: this.compras,
+      comprasProductos: this.comprasProductos,
       comprasConBoletas: this.comprasConBoletas,
       eventosConBoletas: this.eventosConBoletas,
       eventosDisponibles: this.eventosDisponibles,
@@ -2391,6 +3304,11 @@ export class MisCompras implements OnInit, OnDestroy {
       eventoExpandidoKey: this.eventoExpandidoKey,
       eventoDetalleKey: this.eventoDetalleKey,
       promoProductos: this.promoProductos,
+      comprasCover: this.comprasCover,
+      boletasCover: this.boletasCover,
+      coverCedidas: this.coverCedidas,
+      trasladosPendientesRecibirCover: this.trasladosPendientesRecibirCover,
+      tabMisComprasPrincipal: this.tabMisComprasPrincipal,
       lastUpdated
     });
   }

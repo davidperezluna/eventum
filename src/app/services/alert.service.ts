@@ -14,7 +14,7 @@ export class AlertService {
    * Muestra un snackbar/toast no bloqueante
    */
   snackbar(message: string, options?: { timerMs?: number }): Promise<SweetAlertResult> {
-    const timerMs = Math.max(1500, Number(options?.timerMs || 2200));
+    const timerMs = Math.max(2500, Number(options?.timerMs || 4500));
     return Swal.fire({
       toast: true,
       title: message,

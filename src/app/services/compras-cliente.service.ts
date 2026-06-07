@@ -32,6 +32,8 @@ export interface ItemCompra {
    * Palco numerado: un id de tabla `palcos` por cada unidad del carrito. Longitud = cantidad.
    */
   palco_ids?: number[];
+  /** Cover: sesión nocturna a vincular tras confirmar pago. */
+  sesion_cover_id?: number;
 }
 
 export interface DatosCompra {
@@ -155,6 +157,43 @@ export class ComprasClienteService {
         } else if (tipoBoleta.cantidad_disponibles < item.cantidad) {
           errores.push(`Solo hay ${tipoBoleta.cantidad_disponibles} boletas disponibles de "${tipoBoleta.nombre}"`);
           continue;
+        }
+
+        if (item.sesion_cover_id) {
+          try {
+            const { data: aforoRaw, error: aforoErr } = await this.supabase.getClient().rpc(
+              'consultar_aforo_sesion_cover',
+              { p_sesion_id: item.sesion_cover_id },
+            );
+            if (aforoErr || !aforoRaw) {
+              errores.push('No se pudo validar disponibilidad del cover');
+              continue;
+            }
+            const aforo = aforoRaw as {
+              estado?: string;
+              cupos_disponibles?: number;
+              cantidad_vendida?: number;
+              cantidad_maxima_venta?: number | null;
+            };
+            if (aforo.estado && !['programada', 'abierta'].includes(aforo.estado)) {
+              errores.push('La sesión de cover ya no está disponible para venta');
+              continue;
+            }
+            if (Number(aforo.cupos_disponibles ?? 0) < item.cantidad) {
+              errores.push('No hay cupo suficiente en la sesión de cover seleccionada');
+              continue;
+            }
+            if (
+              aforo.cantidad_maxima_venta != null &&
+              Number(aforo.cantidad_vendida ?? 0) + item.cantidad > Number(aforo.cantidad_maxima_venta)
+            ) {
+              errores.push('Se agotaron las entradas online para esta sesión de cover');
+              continue;
+            }
+          } catch {
+            errores.push('Error al validar la sesión de cover');
+            continue;
+          }
         }
 
         if (cupos > 1) {

@@ -1,4 +1,4 @@
-﻿.carrito-page {
+.carrito-page {
   font-family: inherit;
   min-height: calc(100vh - 73px);
   background: var(--ec-page-bg, #f8fafc);
@@ -433,9 +433,16 @@
   gap: 0.65rem;
 }
 
+.carrito-item-top__copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
 .carrito-item-title {
   margin: 0;
-  flex: 1;
   min-width: 0;
   color: var(--ec-text-primary, #0f172a);
   font-size: 0.94rem;
@@ -448,6 +455,15 @@
   align-items: center;
   gap: 0.35rem;
   flex-shrink: 0;
+}
+
+.carrito-item-session {
+  margin: 0;
+  color: var(--ec-accent, #8b5cf6);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+  word-break: break-word;
 }
 
 .carrito-item-unit {

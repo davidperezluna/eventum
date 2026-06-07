@@ -1,6 +1,25 @@
 import { Injectable } from '@angular/core';
-import { BoletaComprada, Compra, Evento, TrasladoBoleta } from '../types';
+import { BehaviorSubject } from 'rxjs';
+import { BoletaComprada, Compra, CompraProducto, Evento, TrasladoBoleta } from '../types';
+import { BoletaCoverCliente, CompraCoverCliente } from '../types/covers';
 import { AppCacheService } from './app-cache.service';
+
+export interface BoletaCoverMisComprasItem {
+  compra: CompraCoverCliente;
+  boleta: BoletaCoverCliente;
+  esCedida?: boolean;
+}
+
+export interface LugarCoverMisComprasGrupo {
+  key: string;
+  lugarId: number;
+  lugarNombre: string;
+  compras: CompraCoverCliente[];
+  boletas: BoletaCoverMisComprasItem[];
+  totalBoletas: number;
+  totalDisponibles: number;
+  totalUsadas: number;
+}
 
 export interface PromoProductosMisCompras {
   eventoId: number;
@@ -13,6 +32,7 @@ export interface PromoProductosMisCompras {
 
 export interface MisComprasState {
   compras: Compra[];
+  comprasProductos: CompraProducto[];
   comprasConBoletas: Array<{ compra: Compra; boletas: BoletaComprada[] }>;
   eventosConBoletas: any[];
   eventosDisponibles: Evento[];
@@ -32,6 +52,11 @@ export interface MisComprasState {
   eventoExpandidoKey: string | null;
   eventoDetalleKey: string | null;
   promoProductos: PromoProductosMisCompras | null;
+  comprasCover: CompraCoverCliente[];
+  boletasCover: BoletaCoverMisComprasItem[];
+  coverCedidas: BoletaCoverMisComprasItem[];
+  trasladosPendientesRecibirCover: any[];
+  tabMisComprasPrincipal: 'eventos' | 'covers';
   lastUpdated: number;
 }
 
@@ -52,14 +77,20 @@ interface MisComprasPublicState {
   eventoExpandidoKey: string | null;
   eventoDetalleKey: string | null;
   promoProductos: PromoProductosMisCompras | null;
+  tabMisComprasPrincipal: 'eventos' | 'covers';
   lastUpdated: number;
 }
 
 interface MisComprasSensitiveState {
+  comprasProductos: CompraProducto[];
   comprasConBoletas: Array<{ compra: Compra; boletas: BoletaComprada[] }>;
   trasladosHistorial: TrasladoBoleta[];
   trasladosPendientesRecibir: any[];
   entradasCedidas: BoletaComprada[];
+  comprasCover: CompraCoverCliente[];
+  boletasCover: BoletaCoverMisComprasItem[];
+  coverCedidas: BoletaCoverMisComprasItem[];
+  trasladosPendientesRecibirCover: any[];
 }
 
 @Injectable({
@@ -67,8 +98,23 @@ interface MisComprasSensitiveState {
 })
 export class MisComprasStateService {
   private readonly ttlMs = 2 * 60 * 1000;
+  private readonly trasladosPendientesCountSubject = new BehaviorSubject(0);
+  readonly trasladosPendientesCount$ = this.trasladosPendientesCountSubject.asObservable();
 
   constructor(private appCacheService: AppCacheService) {}
+
+  setTrasladosPendientesCount(count: number): void {
+    this.trasladosPendientesCountSubject.next(Math.max(0, count));
+  }
+
+  hydrateTrasladosPendientesCountFromState(userId: number): void {
+    const state = this.getState(userId);
+    if (!state) return;
+    const total =
+      (state.trasladosPendientesRecibir?.length ?? 0) +
+      (state.trasladosPendientesRecibirCover?.length ?? 0);
+    this.setTrasladosPendientesCount(total);
+  }
 
   getState(userId: number): MisComprasState | null {
     const publicState = this.appCacheService.get<MisComprasPublicState>(this.publicCacheKey(userId), 'local');
@@ -77,10 +123,16 @@ export class MisComprasStateService {
 
     const state: MisComprasState = {
       ...publicState,
+      comprasProductos: sensitiveState?.comprasProductos || [],
       comprasConBoletas: sensitiveState?.comprasConBoletas || [],
       trasladosHistorial: sensitiveState?.trasladosHistorial || [],
       trasladosPendientesRecibir: sensitiveState?.trasladosPendientesRecibir || [],
-      entradasCedidas: sensitiveState?.entradasCedidas || []
+      entradasCedidas: sensitiveState?.entradasCedidas || [],
+      comprasCover: sensitiveState?.comprasCover || [],
+      boletasCover: sensitiveState?.boletasCover || [],
+      coverCedidas: sensitiveState?.coverCedidas || [],
+      trasladosPendientesRecibirCover: sensitiveState?.trasladosPendientesRecibirCover || [],
+      tabMisComprasPrincipal: publicState.tabMisComprasPrincipal || 'eventos',
     };
     return this.cloneState(state);
   }
@@ -105,14 +157,20 @@ export class MisComprasStateService {
       eventoExpandidoKey: safeState.eventoExpandidoKey,
       eventoDetalleKey: safeState.eventoDetalleKey,
       promoProductos: safeState.promoProductos ? { ...safeState.promoProductos } : null,
+      tabMisComprasPrincipal: safeState.tabMisComprasPrincipal || 'eventos',
       lastUpdated: safeState.lastUpdated
     };
 
     const sensitiveState: MisComprasSensitiveState = {
+      comprasProductos: safeState.comprasProductos,
       comprasConBoletas: safeState.comprasConBoletas,
       trasladosHistorial: safeState.trasladosHistorial,
       trasladosPendientesRecibir: safeState.trasladosPendientesRecibir,
-      entradasCedidas: safeState.entradasCedidas
+      entradasCedidas: safeState.entradasCedidas,
+      comprasCover: safeState.comprasCover,
+      boletasCover: safeState.boletasCover,
+      coverCedidas: safeState.coverCedidas,
+      trasladosPendientesRecibirCover: safeState.trasladosPendientesRecibirCover,
     };
 
     this.appCacheService.set(this.publicCacheKey(userId), publicState, 'local');
@@ -128,6 +186,7 @@ export class MisComprasStateService {
   clear(userId: number): void {
     this.appCacheService.remove(this.publicCacheKey(userId), 'local');
     this.appCacheService.remove(this.sensitiveCacheKey(userId), 'session');
+    this.setTrasladosPendientesCount(0);
   }
 
   private publicCacheKey(userId: number): string {
@@ -142,13 +201,27 @@ export class MisComprasStateService {
     return {
       ...state,
       compras: [...state.compras],
+      comprasProductos: [...(state.comprasProductos || [])],
       comprasConBoletas: state.comprasConBoletas.map((i) => ({ compra: i.compra, boletas: [...i.boletas] })),
       eventosConBoletas: [...state.eventosConBoletas],
       promoProductos: state.promoProductos ? { ...state.promoProductos } : null,
       eventosDisponibles: [...state.eventosDisponibles],
       trasladosHistorial: [...state.trasladosHistorial],
       trasladosPendientesRecibir: [...state.trasladosPendientesRecibir],
-      entradasCedidas: [...state.entradasCedidas]
+      entradasCedidas: [...state.entradasCedidas],
+      comprasCover: [...(state.comprasCover || [])],
+      boletasCover: (state.boletasCover || []).map((item) => ({
+        compra: { ...item.compra },
+        boleta: { ...item.boleta },
+        esCedida: item.esCedida,
+      })),
+      coverCedidas: (state.coverCedidas || []).map((item) => ({
+        compra: { ...item.compra },
+        boleta: { ...item.boleta },
+        esCedida: item.esCedida,
+      })),
+      trasladosPendientesRecibirCover: [...(state.trasladosPendientesRecibirCover || [])],
+      tabMisComprasPrincipal: state.tabMisComprasPrincipal || 'eventos',
     };
   }
 

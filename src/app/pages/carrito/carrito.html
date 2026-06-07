@@ -19,6 +19,14 @@
       <span class="material-icons" aria-hidden="true">arrow_back</span>
       Volver al evento
     </a>
+    <a
+      *ngIf="!carritoVacio && !evento && lugarCover?.id as lugarId"
+      [routerLink]="['/club', lugarId]"
+      class="carrito-back-evento carrito-back-evento--shell"
+    >
+      <span class="material-icons" aria-hidden="true">arrow_back</span>
+      Volver al club
+    </a>
 
     <section
       class="checkout-pendiente-alert"
@@ -80,7 +88,7 @@
     <ng-container *ngIf="!carritoVacio">
       <section class="carrito-evento-block">
         <header class="carrito-evento-header">
-          <h2 class="carrito-evento-title">{{ evento?.titulo }}</h2>
+          <h2 class="carrito-evento-title">{{ evento?.titulo || (lugarCover ? 'Covers — ' + lugarCover.nombre : 'Mi carrito') }}</h2>
           <p *ngIf="shouldShowPreventaHintProducto()" class="carrito-preventa-chip carrito-preventa-chip--urgent">
             <span class="material-icons" aria-hidden="true">local_offer</span>
             Preventa · {{ getPreventaCountdownLabelProducto() }}
@@ -88,16 +96,50 @@
         </header>
 
         <div class="carrito-items">
+          <div *ngFor="let item of itemsCover" class="carrito-item">
+            <div class="carrito-item-info">
+              <div class="carrito-item-top">
+                <div class="carrito-item-top__copy">
+                  <h4 class="carrito-item-title">{{ item.tipo_cover_nombre }}</h4>
+                  <p *ngIf="labelCoverSesion(item) as sesionLabel" class="carrito-item-session">{{ sesionLabel }}</p>
+                </div>
+                <div class="carrito-item-top__end">
+                  <p class="carrito-subtotal">{{ formatCurrency(item.precio * item.cantidad) }}</p>
+                  <button
+                    type="button"
+                    class="btn-remove-item-static"
+                    (click)="eliminarCoverDelCarrito(item)"
+                    title="Quitar cover"
+                    aria-label="Quitar cover"
+                  >
+                    <span class="material-icons">delete_outline</span>
+                  </button>
+                </div>
+              </div>
+              <p class="carrito-item-unit">{{ formatCurrency(item.precio) }} x {{ item.cantidad }}</p>
+              <div class="carrito-item-actions">
+                <div class="cantidad-controls">
+                  <button type="button" class="btn-cantidad" (click)="quitarCoverDelCarrito(item)">-</button>
+                  <span class="cantidad">{{ item.cantidad }}</span>
+                  <button type="button" class="btn-cantidad" (click)="agregarCoverAlCarrito(item)">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div *ngFor="let item of itemsCompra" class="carrito-item">
             <div class="carrito-item-info">
               <div class="carrito-item-top">
-                <h4 class="carrito-item-title">{{ item.tipo.nombre }}</h4>
+                <div class="carrito-item-top__copy">
+                  <h4 class="carrito-item-title">{{ item.tipo.nombre }}</h4>
+                  <p *ngIf="item.sesion_cover_label" class="carrito-item-session">{{ item.sesion_cover_label }}</p>
+                </div>
                 <div class="carrito-item-top__end">
                   <p class="carrito-subtotal">{{ formatCurrency(item.tipo.precio * item.cantidad) }}</p>
                   <button
                     type="button"
                     class="btn-remove-item-static"
-                    (click)="eliminarDelCarrito(item.tipo)"
+                    (click)="eliminarDelCarrito(item)"
                     title="Quitar item"
                     aria-label="Quitar item"
                   >
@@ -108,13 +150,13 @@
               <p class="carrito-item-unit">{{ formatCurrency(item.tipo.precio) }} x {{ item.cantidad }}</p>
               <div class="carrito-item-actions">
                 <div class="cantidad-controls">
-                  <button type="button" class="btn-cantidad" (click)="quitarDelCarrito(item.tipo)">-</button>
+                  <button type="button" class="btn-cantidad" (click)="quitarDelCarrito(item)">-</button>
                   <span class="cantidad">{{ item.cantidad }}</span>
                   <button
                     type="button"
                     class="btn-cantidad"
-                    (click)="agregarAlCarrito(item.tipo)"
-                    [disabled]="item.cantidad >= item.tipo.cantidad_disponibles"
+                    (click)="agregarAlCarrito(item)"
+                    [disabled]="item.cantidad >= maxCantidadLinea(item)"
                   >+</button>
                 </div>
               </div>
@@ -387,6 +429,10 @@
         </button>
 
         <div class="carrito-total">
+          <div class="total-row" *ngIf="itemsCover.length > 0">
+            <span>Valor covers:</span>
+            <span>{{ formatCurrency(getSubtotalCovers()) }}</span>
+          </div>
           <div class="total-row" *ngIf="itemsCompra.length > 0">
             <span>Valor boletas/palcos:</span>
             <span>{{ formatCurrency(getSubtotalBoletas()) }}</span>
@@ -401,7 +447,7 @@
           </div>
           <div class="total-row">
             <span>Subtotal:</span>
-            <span>{{ formatCurrency(getBaseNetaBoletas() + getSubtotalProductos()) }}</span>
+            <span>{{ formatCurrency(getSubtotalNeta()) }}</span>
           </div>
           <div class="total-row">
             <span>Servicio ({{ getPorcentajeServicio() }}%):</span>

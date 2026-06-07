@@ -19,6 +19,9 @@ export interface ItemCarritoEvento {
     telefono?: string;
   };
   palco_ids?: (number | null)[];
+  /** Cover: sesión nocturna reservada. */
+  sesion_cover_id?: number;
+  sesion_cover_label?: string;
 }
 
 export interface ItemCarritoProducto {
@@ -26,10 +29,32 @@ export interface ItemCarritoProducto {
   cantidad: number;
 }
 
+/** Línea de cover vendida sin pasar por tipos_boleta / eventos. */
+export interface ItemCarritoCover {
+  tipo_cover_id: number;
+  tipo_cover_nombre: string;
+  sesion_cover_id: number;
+  sesion_cover_label: string;
+  sesion_fecha?: string;
+  hora_apertura?: string;
+  hora_cierre?: string;
+  precio: number;
+  cantidad: number;
+  wompi_cuenta_id?: number | null;
+}
+
+export interface LugarCoverCarrito {
+  id: number;
+  nombre: string;
+  covers_porcentaje_servicio?: number;
+}
+
 interface CarritoPersistido {
   evento: Evento | null;
   items: ItemCarritoEvento[];
   itemsProductos: ItemCarritoProducto[];
+  lugarCover?: LugarCoverCarrito | null;
+  itemsCover?: ItemCarritoCover[];
   cupon?: CuponCarritoState;
   /** Caché por evento: si hay productos activos (evita parpadeo en carrito). */
   eventoTieneProductos?: boolean;
@@ -53,11 +78,15 @@ export class CarritoCompraService {
   private readonly itemsProductosSubject = new BehaviorSubject<ItemCarritoProducto[]>([]);
   private readonly totalItemsSubject = new BehaviorSubject<number>(0);
   private readonly cuponSubject = new BehaviorSubject<CuponCarritoState>({ ...CUPON_CARRITO_VACIO });
+  private readonly lugarCoverSubject = new BehaviorSubject<LugarCoverCarrito | null>(null);
+  private readonly itemsCoverSubject = new BehaviorSubject<ItemCarritoCover[]>([]);
   private eventoTieneProductosCache: boolean | null = null;
 
   readonly evento$ = this.eventoSubject.asObservable();
   readonly items$ = this.itemsSubject.asObservable();
   readonly itemsProductos$ = this.itemsProductosSubject.asObservable();
+  readonly lugarCover$ = this.lugarCoverSubject.asObservable();
+  readonly itemsCover$ = this.itemsCoverSubject.asObservable();
   readonly totalItems$ = this.totalItemsSubject.asObservable();
   readonly cupon$ = this.cuponSubject.asObservable();
 
@@ -75,6 +104,75 @@ export class CarritoCompraService {
 
   getItemsProductosSnapshot(): ItemCarritoProducto[] {
     return this.itemsProductosSubject.getValue();
+  }
+
+  getLugarCoverSnapshot(): LugarCoverCarrito | null {
+    return this.lugarCoverSubject.getValue();
+  }
+
+  getItemsCoverSnapshot(): ItemCarritoCover[] {
+    return this.itemsCoverSubject.getValue();
+  }
+
+  esCarritoSoloCover(): boolean {
+    return this.itemsCoverSubject.getValue().length > 0 && this.itemsSubject.getValue().length === 0;
+  }
+
+  /** Boletas, productos o contexto de evento (no compatible con covers en el mismo checkout). */
+  tieneContenidoEvento(): boolean {
+    return (
+      this.eventoSubject.getValue() != null ||
+      this.itemsSubject.getValue().length > 0 ||
+      this.itemsProductosSubject.getValue().length > 0
+    );
+  }
+
+  tieneContenidoCover(): boolean {
+    return this.itemsCoverSubject.getValue().length > 0;
+  }
+
+  limpiarContenidoEvento(): void {
+    this.itemsSubject.next([]);
+    this.itemsProductosSubject.next([]);
+    this.eventoSubject.next(null);
+    this.clearCupon();
+    this.resetEventoTieneProductosCache();
+    this.persistir();
+    this.actualizarTotalItems();
+  }
+
+  limpiarContenidoCover(): void {
+    this.itemsCoverSubject.next([]);
+    this.lugarCoverSubject.next(null);
+    this.persistir();
+    this.actualizarTotalItems();
+  }
+
+  /**
+   * Conflicto al iniciar o continuar un carrito de covers.
+   * Futuro: productos del lugar podrían convivir aquí (cover_mixto).
+   */
+  detectarConflictoAlAgregarCover(lugarId: number): 'evento' | 'otro_lugar' | null {
+    if (this.tieneContenidoEvento()) {
+      return 'evento';
+    }
+    const lugarActual = this.lugarCoverSubject.getValue();
+    if (lugarActual && lugarActual.id !== lugarId && this.tieneContenidoCover()) {
+      return 'otro_lugar';
+    }
+    return null;
+  }
+
+  getCantidadCoverEnCarrito(sesionCoverId: number): number {
+    const item = this.itemsCoverSubject.getValue().find((it) => it.sesion_cover_id === sesionCoverId);
+    return item?.cantidad ?? 0;
+  }
+
+  getSubtotalCovers(): number {
+    return this.itemsCoverSubject.getValue().reduce(
+      (acc, item) => acc + Number(item.precio) * item.cantidad,
+      0,
+    );
   }
 
   getCuponSnapshot(): CuponCarritoState {
@@ -138,9 +236,17 @@ export class CarritoCompraService {
     this.eventoTieneProductosCache = null;
   }
 
-  getCantidadEnCarrito(tipoBoletaId: number): number {
-    const item = this.itemsSubject.getValue().find((it) => it.tipo.id === tipoBoletaId);
+  getCantidadEnCarrito(tipoBoletaId: number, sesionCoverId?: number): number {
+    const item = this.findLinea(tipoBoletaId, sesionCoverId);
     return item ? item.cantidad : 0;
+  }
+
+  private findLinea(tipoBoletaId: number, sesionCoverId?: number): ItemCarritoEvento | undefined {
+    return this.itemsSubject.getValue().find(
+      (it) =>
+        it.tipo.id === tipoBoletaId &&
+        (it.sesion_cover_id ?? undefined) === (sesionCoverId ?? undefined),
+    );
   }
 
   getCantidadProductoEnCarrito(productoId: number): number {
@@ -164,11 +270,42 @@ export class CarritoCompraService {
   }
 
   getSubtotalCombinado(): number {
-    return this.getSubtotalBoletas() + this.getSubtotalProductos();
+    return this.getSubtotalBoletas() + this.getSubtotalCovers() + this.getSubtotalProductos();
   }
 
   estaVacio(): boolean {
-    return this.itemsSubject.getValue().length === 0 && this.itemsProductosSubject.getValue().length === 0;
+    return (
+      this.itemsSubject.getValue().length === 0 &&
+      this.itemsCoverSubject.getValue().length === 0 &&
+      this.itemsProductosSubject.getValue().length === 0
+    );
+  }
+
+  quitarCoverDelCarrito(sesionCoverId: number): void {
+    const items = this.itemsCoverSubject.getValue().map((item) => ({ ...item }));
+    const index = items.findIndex((item) => item.sesion_cover_id === sesionCoverId);
+    if (index === -1) return;
+    if (items[index].cantidad > 1) {
+      items[index].cantidad -= 1;
+    } else {
+      items.splice(index, 1);
+    }
+    if (items.length === 0) {
+      this.lugarCoverSubject.next(null);
+    }
+    this.itemsCoverSubject.next(items);
+    this.persistir();
+    this.actualizarTotalItems();
+  }
+
+  eliminarCoverDelCarrito(sesionCoverId: number): void {
+    const filtrados = this.itemsCoverSubject.getValue().filter((item) => item.sesion_cover_id !== sesionCoverId);
+    if (filtrados.length === 0) {
+      this.lugarCoverSubject.next(null);
+    }
+    this.itemsCoverSubject.next(filtrados);
+    this.persistir();
+    this.actualizarTotalItems();
   }
 
   syncEvento(evento: Evento): boolean {
@@ -191,12 +328,103 @@ export class CarritoCompraService {
     return false;
   }
 
-  agregarAlCarrito(tipo: TipoBoleta): boolean {
+  agregarCoverIndependiente(params: {
+    lugar: LugarCoverCarrito;
+    tipoCoverId: number;
+    tipoCoverNombre: string;
+    sesionCoverId: number;
+    sesionCoverLabel: string;
+    sesionFecha?: string;
+    horaApertura?: string;
+    horaCierre?: string;
+    precioSesion: number;
+    wompiCuentaId?: number | null;
+    maxCantidad?: number;
+  }): boolean {
+    const max = Math.max(1, params.maxCantidad ?? Number.MAX_SAFE_INTEGER);
+    this.lugarCoverSubject.next({ ...params.lugar });
+
+    const items = this.itemsCoverSubject.getValue().map((item) => ({ ...item }));
+    const existente = items.find((item) => item.sesion_cover_id === params.sesionCoverId);
+
+    if (existente) {
+      if (existente.cantidad >= max) return false;
+      existente.cantidad += 1;
+    } else {
+      if (max <= 0) return false;
+      items.push({
+        tipo_cover_id: params.tipoCoverId,
+        tipo_cover_nombre: params.tipoCoverNombre,
+        sesion_cover_id: params.sesionCoverId,
+        sesion_cover_label: params.sesionCoverLabel,
+        sesion_fecha: params.sesionFecha,
+        hora_apertura: params.horaApertura,
+        hora_cierre: params.horaCierre,
+        precio: Number(params.precioSesion),
+        cantidad: 1,
+        wompi_cuenta_id: params.wompiCuentaId ?? null,
+      });
+    }
+
+    this.itemsCoverSubject.next(items);
+    this.persistir();
+    this.actualizarTotalItems();
+    return true;
+  }
+
+  /** @deprecated Usar agregarCoverIndependiente */
+  agregarCoverAlCarrito(params: {
+    evento: Evento;
+    tipo: TipoBoleta;
+    sesionCoverId: number;
+    sesionCoverLabel: string;
+    precioSesion: number;
+    maxCantidad?: number;
+  }): boolean {
+    const max = Math.max(1, params.maxCantidad ?? params.tipo.cantidad_disponibles ?? 1);
+    const tipoConPrecio: TipoBoleta = { ...params.tipo, precio: params.precioSesion };
+    const conflicto = this.syncEvento(params.evento);
+    if (conflicto) {
+      // syncEvento vació el carrito al cambiar de evento
+    }
+
+    const items = this.itemsSubject.getValue().map((item) => ({
+      ...item,
+      palco_ids: item.palco_ids ? [...item.palco_ids] : undefined,
+    }));
+    const existente = items.find(
+      (item) => item.tipo.id === tipoConPrecio.id && item.sesion_cover_id === params.sesionCoverId,
+    );
+
+    if (existente) {
+      if (existente.cantidad >= max) return false;
+      existente.cantidad += 1;
+    } else {
+      if (max <= 0) return false;
+      items.push({
+        tipo: { ...tipoConPrecio },
+        cantidad: 1,
+        datosAsistente: {},
+        palco_ids: undefined,
+        sesion_cover_id: params.sesionCoverId,
+        sesion_cover_label: params.sesionCoverLabel,
+      });
+    }
+
+    this.itemsSubject.next(items);
+    this.persistir();
+    this.actualizarTotalItems();
+    return true;
+  }
+
+  agregarAlCarrito(tipo: TipoBoleta, sesionCoverId?: number): boolean {
     const items = this.itemsSubject.getValue().map((item) => ({
       ...item,
       palco_ids: item.palco_ids ? [...item.palco_ids] : undefined
     }));
-    const existente = items.find((item) => item.tipo.id === tipo.id);
+    const existente = items.find(
+      (item) => item.tipo.id === tipo.id && (item.sesion_cover_id ?? undefined) === (sesionCoverId ?? undefined),
+    );
 
     if (existente) {
       if (existente.cantidad >= tipo.cantidad_disponibles) {
@@ -256,12 +484,16 @@ export class CarritoCompraService {
     return true;
   }
 
-  quitarDelCarrito(tipoBoletaId: number): void {
+  quitarDelCarrito(tipoBoletaId: number, sesionCoverId?: number): void {
     const items = this.itemsSubject.getValue().map((item) => ({
       ...item,
       palco_ids: item.palco_ids ? [...item.palco_ids] : undefined
     }));
-    const index = items.findIndex((item) => item.tipo.id === tipoBoletaId);
+    const index = items.findIndex(
+      (item) =>
+        item.tipo.id === tipoBoletaId &&
+        (item.sesion_cover_id ?? undefined) === (sesionCoverId ?? undefined),
+    );
     if (index === -1) return;
 
     const item = items[index];
@@ -298,10 +530,16 @@ export class CarritoCompraService {
     this.actualizarTotalItems();
   }
 
-  eliminarDelCarrito(tipoBoletaId: number): void {
+  eliminarDelCarrito(tipoBoletaId: number, sesionCoverId?: number): void {
     const filtrados = this.itemsSubject
       .getValue()
-      .filter((item) => item.tipo.id !== tipoBoletaId)
+      .filter(
+        (item) =>
+          !(
+            item.tipo.id === tipoBoletaId &&
+            (item.sesion_cover_id ?? undefined) === (sesionCoverId ?? undefined)
+          ),
+      )
       .map((item) => ({
         ...item,
         palco_ids: item.palco_ids ? [...item.palco_ids] : undefined
@@ -344,8 +582,10 @@ export class CarritoCompraService {
 
   vaciarCarrito(): void {
     this.itemsSubject.next([]);
+    this.itemsCoverSubject.next([]);
     this.itemsProductosSubject.next([]);
     this.eventoSubject.next(null);
+    this.lugarCoverSubject.next(null);
     this.clearCupon();
     this.resetEventoTieneProductosCache();
     this.persistir();
@@ -354,8 +594,9 @@ export class CarritoCompraService {
 
   private actualizarTotalItems(): void {
     const boletas = this.itemsSubject.getValue().reduce((acc, item) => acc + item.cantidad, 0);
+    const covers = this.itemsCoverSubject.getValue().reduce((acc, item) => acc + item.cantidad, 0);
     const productos = this.itemsProductosSubject.getValue().reduce((acc, item) => acc + item.cantidad, 0);
-    this.totalItemsSubject.next(boletas + productos);
+    this.totalItemsSubject.next(boletas + covers + productos);
   }
 
   private esPalco(tipo: TipoBoleta): boolean {
@@ -370,12 +611,16 @@ export class CarritoCompraService {
       let itemsProductos: ItemCarritoProducto[] = [];
       let cupon: CuponCarritoState = { ...CUPON_CARRITO_VACIO };
       let eventoTieneProductos: boolean | null = null;
+      let lugarCover: LugarCoverCarrito | null = null;
+      let itemsCover: ItemCarritoCover[] = [];
 
       if (raw) {
         const parsed = JSON.parse(raw) as CarritoPersistido;
         evento = parsed?.evento ?? null;
         items = Array.isArray(parsed?.items) ? parsed.items : [];
         itemsProductos = Array.isArray(parsed?.itemsProductos) ? parsed.itemsProductos : [];
+        lugarCover = parsed?.lugarCover ?? null;
+        itemsCover = Array.isArray(parsed?.itemsCover) ? parsed.itemsCover : [];
         if (parsed?.cupon) {
           cupon = {
             eventoId: parsed.cupon.eventoId ?? null,
@@ -411,12 +656,16 @@ export class CarritoCompraService {
       this.eventoSubject.next(evento);
       this.itemsSubject.next(items);
       this.itemsProductosSubject.next(itemsProductos);
+      this.lugarCoverSubject.next(lugarCover);
+      this.itemsCoverSubject.next(itemsCover);
       this.cuponSubject.next(cupon);
       this.eventoTieneProductosCache = eventoTieneProductos;
     } catch (error) {
       console.warn('No se pudo restaurar el carrito desde storage:', error);
       this.eventoSubject.next(null);
       this.itemsSubject.next([]);
+      this.itemsCoverSubject.next([]);
+      this.lugarCoverSubject.next(null);
       this.itemsProductosSubject.next([]);
       this.cuponSubject.next({ ...CUPON_CARRITO_VACIO });
       this.eventoTieneProductosCache = null;
@@ -450,6 +699,8 @@ export class CarritoCompraService {
       evento: this.eventoSubject.getValue(),
       items: this.itemsSubject.getValue(),
       itemsProductos: this.itemsProductosSubject.getValue(),
+      lugarCover: this.lugarCoverSubject.getValue(),
+      itemsCover: this.itemsCoverSubject.getValue(),
       cupon:
         cupon.codigoCupon || cupon.cuponAplicado || cupon.abierto
           ? cupon

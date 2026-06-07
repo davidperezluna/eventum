@@ -1,6 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+/** Expira checkouts pendientes — boletas, productos, mixto y cover independiente. */
+const WOMPI_EXPIRE_PENDING_VERSION = '2.4.0-covers-independiente'
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -233,6 +236,32 @@ async function closeTransaccionProducto(
   }
 }
 
+async function cancelarCompraCoverSiExiste(
+  supabaseClient: ReturnType<typeof createClient>,
+  compraCoverId: number,
+  motivo: string,
+): Promise<void> {
+  const now = new Date().toISOString()
+  const { error: compraError } = await supabaseClient
+    .from('compras_cover')
+    .update({
+      estado_pago: 'fallido',
+      estado_compra: 'cancelada',
+      fecha_cancelacion: now,
+      motivo_cancelacion: motivo,
+    })
+    .eq('id', compraCoverId)
+    .neq('estado_compra', 'confirmada')
+
+  if (compraError) throw compraError
+
+  await supabaseClient
+    .from('boletas_cover')
+    .update({ estado: 'cancelada', fecha_actualizacion: now })
+    .eq('compra_cover_id', compraCoverId)
+    .in('estado', ['pendiente', 'activa'])
+}
+
 async function closeTransaccionCheckout(
   supabaseClient: ReturnType<typeof createClient>,
   checkoutId: number,
@@ -241,6 +270,7 @@ async function closeTransaccionCheckout(
   motivo: string,
   compraId: number | null,
   compraProductoId: number | null,
+  compraCoverId: number | null,
   transaccionProductoId: number | null,
 ): Promise<void> {
   const now = new Date().toISOString()
@@ -260,6 +290,7 @@ async function closeTransaccionCheckout(
   }
   if (compraId) updateData.compra_id = compraId
   if (compraProductoId) updateData.compra_producto_id = compraProductoId
+  if (compraCoverId) updateData.compra_cover_id = compraCoverId
 
   const { error } = await supabaseClient
     .from('transacciones_checkout')
@@ -463,7 +494,7 @@ serve(async (req) => {
       const { data: checkouts, error: checkoutError } = await supabaseClient
         .from('transacciones_checkout')
         .select(
-          'id, evento_id, compra_id, compra_producto_id, wompi_cuenta_id, wompi_transaction_id, wompi_reference, estado, wompi_status, es_activa, fecha_creacion, response_payload, webhook_payload, metadata',
+          'id, evento_id, compra_id, compra_producto_id, compra_cover_id, wompi_cuenta_id, wompi_transaction_id, wompi_reference, estado, wompi_status, es_activa, fecha_creacion, response_payload, webhook_payload, metadata',
         )
         .eq('estado', 'pendiente')
         .eq('es_activa', true)
@@ -486,6 +517,7 @@ serve(async (req) => {
             const checkoutId = Number(row.id)
             const compraId = row.compra_id ? Number(row.compra_id) : null
             const compraProductoId = row.compra_producto_id ? Number(row.compra_producto_id) : null
+            const compraCoverId = row.compra_cover_id ? Number(row.compra_cover_id) : null
             const meta = (row.metadata || {}) as Record<string, unknown>
             const transaccionProductoId = Number(meta.transaccion_producto_id ?? 0) || null
 
@@ -536,6 +568,7 @@ serve(async (req) => {
                 `Checkout finalizado sin aprobación (${wompiStatus})`,
                 compraId,
                 compraProductoId,
+                compraCoverId,
                 transaccionProductoId,
               )
               summary.checkout_rejected_or_voided += 1
@@ -550,6 +583,7 @@ serve(async (req) => {
               'Checkout no completado: link expirado o abandono',
               compraId,
               compraProductoId,
+              compraCoverId,
               transaccionProductoId,
             )
             summary.checkout_expired += 1
@@ -562,7 +596,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, summary }),
+      JSON.stringify({ success: true, version: WOMPI_EXPIRE_PENDING_VERSION, summary }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
     )
   } catch (error) {

@@ -1,0 +1,183 @@
+================================================================================
+Migración: 014_modulo_covers.sql (único archivo, idempotente)
+Módulo: Covers Eventum — checkout independiente, aforo, puerta
+================================================================================
+
+MANTENIMIENTO
+-------------
+Si agregas o cambias funciones en 014_modulo_covers.sql, actualiza SIEMPRE
+este archivo (.txt) en el mismo commit: nombre, parámetros, retorno y GRANT.
+
+EJECUCIÓN
+---------
+- Un solo SQL: supabase/migrations/014_modulo_covers.sql
+- Re-ejecutable: tablas IF NOT EXISTS, funciones CREATE OR REPLACE, política DROP IF EXISTS
+- Requiere: lugares, usuarios, wompi_cuentas, cupones_descuento, transacciones_checkout
+- Requiere: fn_usuario_id_actual (011_modulo_cupos_evento.sql)
+- Requiere: tabla traslados_boleta (palcos/eventos) para traslados cover
+
+FEATURE FLAG FRONTEND
+---------------------
+- environment.coversEventumEnabled (false por defecto)
+- src/app/core/covers-feature.ts
+- src/app/guards/covers-feature.guard.ts
+
+COLUMNAS NUEVAS
+---------------
+lugares:
+- covers_habilitado BOOLEAN DEFAULT false
+- covers_descripcion TEXT
+
+transacciones_checkout:
+- tipo: cover | cover_mixto (además de boletas, productos, mixto)
+- lugar_id BIGINT FK → lugares (checkout cover)
+- compra_cover_id BIGINT FK → compras_cover
+- evento_id nullable (cover puro sin evento)
+
+tipos_cover:
+- wompi_cuenta_id BIGINT FK → wompi_cuentas (cuenta de cobro por tipo)
+
+TABLAS CREADAS
+--------------
+1. public.tipos_cover
+   - Catálogo de covers por lugar (General, VIP, etc.)
+   - FK: lugar_id, organizador_id, wompi_cuenta_id
+   - permite_reingreso, precio_cop, limite_por_persona
+
+2. public.plantillas_cover
+   - Recurrencia por día de semana (ISO 1=lun … 7=dom)
+   - hora_apertura, hora_cierre (cruce medianoche OK)
+   - aforo_maximo, cantidad_maxima_venta
+
+3. public.sesiones_cover
+   - Instancia de una noche (fecha + horario)
+   - personas_dentro, cantidad_vendida
+   - estado: programada | abierta | cerrada | cancelada
+
+4. public.compras_cover
+   - Checkout independiente (sin evento/tipo_boleta espejo)
+   - Estados pago/compra, totales, Wompi, transaccion_checkout_id
+
+5. public.boletas_cover
+   - Una unidad vendida por sesión; codigo_qr propio (prefijo C-)
+   - compra_cover_id FK (obligatorio)
+   - titular_cliente_id FK → usuarios (quien usa el QR; inicial = comprador)
+   - estado: pendiente | activa | cancelada | consumida
+   - estado_acceso: pendiente | dentro | fuera | consumida
+
+TRASLADOS (extiende traslados_boleta existente)
+-----------------------------------------------
+- boleta_cover_id BIGINT nullable (polimórfico con boleta_id)
+- CONSTRAINT traslados_boleta_un_solo_destino
+- idx_traslados_boleta_cover
+
+6. public.accesos_cover
+   - Log entrada/salida en puerta (boleta_cover_id + sesion_cover_id)
+
+ÍNDICES
+-------
+- idx_compras_cover_cliente, idx_compras_cover_lugar
+- idx_boletas_cover_codigo_qr, idx_boletas_cover_compra
+- idx_tipos_cover_lugar_activo, idx_sesiones_cover_lugar_fecha, etc.
+
+RLS
+---
+- tipos_cover, sesiones_cover: SELECT público si lugar.covers_habilitado
+- boletas_cover: SELECT titular, comprador o destinatario con traslado pendiente
+- compras_cover: SELECT propio; service_role ALL
+- Escritura administrativa y puerta vía RPC SECURITY DEFINER
+
+FUNCIONES — HELPERS
+-------------------
+1. fn_usuario_es_admin() → BOOLEAN
+2. fn_usuario_puede_gestionar_cover(p_organizador_id) → BOOLEAN
+3. fn_aforo_default_lugar(p_lugar_id) → INTEGER
+4. fn_cover_horario_sesion(fecha, apertura, cierre) → TIMESTAMPTZ
+5. fn_generar_codigo_qr_cover() → TEXT (C-{uuid})
+6. fn_usuario_es_organizador() → BOOLEAN
+7. fn_usuario_puede_configurar_lugar_cover(p_lugar_id) → BOOLEAN
+
+FUNCIONES — CONFIGURACIÓN LUGAR
+-------------------------------
+8. configurar_lugar_cover(lugar_id, habilitado, descripcion)
+9. obtener_config_cover_lugar(lugar_id) → JSONB completo admin
+
+FUNCIONES — API PÚBLICA
+-----------------------
+10. listar_lugares_con_covers(limite, offset)
+11. obtener_lugar_cover(lugar_id) → { lugar, tipos_cover, sesiones }
+12. consultar_aforo_sesion_cover(sesion_id)
+
+FUNCIONES — GESTIÓN ORGANIZADOR
+-------------------------------
+13. upsert_tipo_cover(..., p_wompi_cuenta_id)
+14. upsert_plantilla_cover(...)
+15. crear_sesion_cover_manual(...)
+16. actualizar_sesion_cover(...)
+17. inicializar_cover_lugar(...) — wizard sin sync evento
+18. generar_sesiones_cover_desde_plantillas(hasta_fecha)
+19. cambiar_estado_sesion_cover(sesion_id, estado)
+
+FUNCIONES — CHECKOUT Y PUERTA
+-----------------------------
+20. crear_compra_cover_desde_pedido(cliente, lugar, items, totales, …)
+    - Webhook Wompi, compras $0, edge functions
+    - GRANT: authenticated, service_role
+21. confirmar_compra_cover(compra_cover_id) — GRANT: service_role
+22. listar_compras_cover_cliente(cliente_id?, limite?)
+23. listar_boletas_cover_cliente(cliente_id?, limite?) — titular actual (compras propias + recibidas)
+24. registrar_acceso_cover(codigo_qr, entrada|salida, sesion_id?)
+    - Solo QR en boletas_cover.codigo_qr (prefijo C-)
+
+FUNCIONES — TRASLADOS COVER (traslados_boleta)
+----------------------------------------------
+24. fn_traslado_cover_activo(boleta_cover_id) → BOOLEAN
+25. iniciar_traslado_boleta_cover(boleta_cover_id, email_destino) → { ok, traslado_id?, error? }
+26. listar_traslados_boleta_salientes(p_cliente_id?) → JSONB[] (enviado/recibido, origen = cliente)
+27. listar_traslados_boleta_pendientes_recibir(p_cliente_id?) → JSONB[] (enviado/recibido, destino = cliente)
+28. listar_traslados_boleta_trazabilidad(p_cliente_id?) → JSONB[] (origen o destino = cliente)
+26. marcar_traslado_boleta_cover_recibido(traslado_id)
+27. aceptar_traslado_boleta_cover(traslado_id) — actualiza titular_cliente_id
+28. rechazar_traslado_boleta_cover(traslado_id)
+29. cancelar_traslado_boleta_cover(traslado_id)
+    - GRANT: authenticated (todas)
+
+FLUJO DE NEGOCIO (checkout independiente)
+------------------------------------------
+1. configurar_lugar_cover → enciende covers en el lugar
+2. upsert_tipo_cover + asignar wompi_cuenta_id
+3. upsert_plantilla_cover + generar_sesiones_cover_desde_plantillas
+4. Cliente: carrito cover → pedido_covers → wompi-payment (tipo: cover)
+5. Webhook: crear_compra_cover_desde_pedido → compras_cover + boletas_cover
+6. Puerta: registrar_acceso_cover con codigo_qr de boletas_cover
+7. cambiar_estado_sesion_cover('cerrada') cierra la noche
+
+ELIMINADO (no usar en master)
+-----------------------------
+- sincronizar_checkout_tipo_cover (evento/tipo_boleta espejo)
+- vincular_boleta_cover (post-compra puente)
+- eventos.es_cover, tipos_boleta.es_cover / tipo_cover_id
+- Migración 016_traslados_cover.sql (fusionada en 014)
+
+DESPLIEGUE
+----------
+MASTER / PROD (fresh):
+1. Aplicar solo 014_modulo_covers.sql
+2. supabase functions deploy wompi-payment wompi-webhook wompi-sync-status wompi-expire-pending
+   (sin *-cover duplicadas; webhook sin vincular_boleta_cover legacy)
+3. Admin: asignar wompi_cuenta_id en cada tipo cover
+
+DEV (ya tenía 014 puente + 016):
+1. Aplicar 015_covers_limpieza_legacy_dev.sql
+2. Re-ejecutar 014_modulo_covers.sql completo
+3. Redesplegar edge functions si hubo cambios
+
+015 ELIMINA
+-----------
+- Funciones: sincronizar_checkout_tipo_cover, vincular_boleta_cover
+- Firmas viejas de upsert_tipo_cover (con evento_id / tipo_boleta_id)
+- Columnas: eventos.es_cover, tipos_boleta.es_cover/tipo_cover_id,
+  tipos_cover.evento_id/tipo_boleta_id, sesiones_cover.evento_id/tipo_boleta_id
+- Puente boletas: boletas_cover.boleta_id, accesos_cover.boleta_id
+
+================================================================================

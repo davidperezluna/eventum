@@ -17,6 +17,7 @@ export const environment = {
   /** Pruebas en celular (LAN): clientes pueden usar `/login-admin`. */
   allowClienteLoginAdmin: true,
   cuposEventumEnabled: true,
+  coversEventumEnabled: false,
   oneSignal: {
     appId: 'cb3f9dcf-6085-43d5-99ae-6c76db8abf57',
     serviceWorkerPath: '/push/onesignal/OneSignalSDKWorker.js',

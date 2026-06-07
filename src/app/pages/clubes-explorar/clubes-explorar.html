@@ -1,0 +1,47 @@
+<div class="clubes-page">
+  <header class="client-page-header client-page-header--compact">
+    <h1 class="client-page-header__title">{{ coversLabels.explorar }}</h1>
+    <p class="client-page-header__subtitle client-page-header__subtitle--full">{{ coversLabels.explorarSubtitle }}</p>
+    <p class="client-page-header__subtitle client-page-header__subtitle--short">{{ coversLabels.explorarSubtitleShort }}</p>
+  </header>
+
+  <div *ngIf="loading" class="clubes-loading">
+    <div class="clubes-spinner" aria-hidden="true"></div>
+    <p>Cargando clubes…</p>
+  </div>
+
+  <div *ngIf="!loading && lugares.length === 0" class="clubes-empty">
+    <span class="material-icons" aria-hidden="true">nightlife</span>
+    <h2>{{ coversLabels.sinClubes }}</h2>
+    <a routerLink="/eventos-cliente" class="clubes-btn-primary">Ver eventos</a>
+  </div>
+
+  <ul *ngIf="!loading && lugares.length > 0" class="clubes-list">
+    <li *ngFor="let lugar of lugares; trackBy: trackLugar" class="clubes-card">
+      <a [routerLink]="['/club', lugar.id]" class="clubes-card-link">
+        <div class="clubes-card-media" aria-hidden="true">
+          <img
+            *ngIf="lugar.imagen_principal; else sinImagen"
+            [src]="lugar.imagen_principal"
+            alt=""
+            loading="lazy"
+          />
+          <ng-template #sinImagen>
+            <span class="material-icons">nightlife</span>
+          </ng-template>
+        </div>
+        <div class="clubes-card-copy">
+          <h2 class="clubes-card-title">{{ lugar.nombre }}</h2>
+          <p *ngIf="lugar.ciudad || lugar.direccion" class="clubes-card-meta">
+            {{ lugar.ciudad }}<span *ngIf="lugar.ciudad && lugar.direccion"> · </span>{{ lugar.direccion }}
+          </p>
+          <p *ngIf="lugar.covers_descripcion" class="clubes-card-desc">{{ lugar.covers_descripcion }}</p>
+          <p *ngIf="lugar.precio_desde_cop != null" class="clubes-card-precio">
+            Desde {{ formatCurrency(lugar.precio_desde_cop) }}
+          </p>
+        </div>
+        <span class="material-icons clubes-card-chevron" aria-hidden="true">chevron_right</span>
+      </a>
+    </li>
+  </ul>
+</div>

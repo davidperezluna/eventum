@@ -8,6 +8,8 @@ export * from './enums';
 // Exportar todas las entidades
 export * from './entities';
 
+export * from './covers';
+
 // Tipos auxiliares y utilidades
 export type ID = number;
 export type UUID = string;
