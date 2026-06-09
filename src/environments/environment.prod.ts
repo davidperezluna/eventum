@@ -35,10 +35,13 @@ export const environment = {
   },
   publicAppUrl: 'https://www.eventumcol.com',
 
-  /** Comprobación de nueva versión PWA (ngsw) en apps instaladas iOS/Android. */
+  /** PWA (ngsw): solo activo en producción. */
   pwa: {
-    /** Cada cuánto comprobar si hay build nuevo (ms). Recarga en silencio si lo hay. */
+    serviceWorkerEnabled: true,
+    /** Cada cuánto comprobar si hay build nuevo (ms). */
     updateCheckIntervalMs: 5 * 60 * 1000,
+    /** `false` = recarga silenciosa al detectar VERSION_READY (recomendado en PWAs instaladas). */
+    showUpdateNotification: false,
   },
 
   /**

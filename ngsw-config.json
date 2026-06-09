@@ -5,7 +5,8 @@
     {
       "name": "app",
       "installMode": "prefetch",
-        "resources": {
+      "updateMode": "prefetch",
+      "resources": {
         "files": [
           "/favicon.ico",
           "/index.csr.html",
@@ -24,6 +25,22 @@
         "files": [
           "/**/*.(svg|cur|jpg|jpeg|png|apng|webp|avif|gif|otf|ttf|woff|woff2)"
         ]
+      }
+    }
+  ],
+  "dataGroups": [
+    {
+      "name": "supabase-api",
+      "urls": [
+        "https://*.supabase.co/**",
+        "http://127.0.0.1:54321/**",
+        "http://localhost:54321/**"
+      ],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 0,
+        "maxAge": "0u",
+        "timeout": "10s"
       }
     }
   ]

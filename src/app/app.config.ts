@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, isDevMode } from '@angular/core';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import {
   provideRouter,
   withEnabledBlockingInitialNavigation,
@@ -7,6 +7,7 @@ import {
 
 import { routes } from './app.routes';
 import { provideServiceWorker } from '@angular/service-worker';
+import { environment } from '../environments/environment';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -20,9 +21,9 @@ export const appConfig: ApplicationConfig = {
       })
     ),
     provideServiceWorker('ngsw-worker.js', {
-      enabled: !isDevMode(),
-      // Registro más temprano para detectar builds nuevos antes en PWAs instaladas.
-      registrationStrategy: 'registerWhenStable:5000',
+      // Solo producción: el build `dev` en Vercel no genera ngsw; registrarlo en staging dejaba F5 sirviendo builds viejos.
+      enabled: environment.production && (environment.pwa?.serviceWorkerEnabled ?? true),
+      registrationStrategy: 'registerWhenStable:3000',
     }),
     // GoogleAnalyticsService se inicializa automáticamente cuando se inyecta por primera vez
   ]

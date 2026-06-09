@@ -48,9 +48,11 @@ export const environment = {
     chromeWebBadge: '/icons/push/badge-monochrome-96.png',
   },
 
-  /** PWA (ngsw); en dev el service worker está deshabilitado, pero el tipo debe existir. */
+  /** PWA (ngsw); deshabilitado en localhost (`ng serve`). */
   pwa: {
+    serviceWorkerEnabled: false,
     updateCheckIntervalMs: 5 * 60 * 1000,
+    showUpdateNotification: false,
   },
 };
 

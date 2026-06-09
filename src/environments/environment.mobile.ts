@@ -43,6 +43,8 @@ export const environment = {
   },
 
   pwa: {
+    serviceWorkerEnabled: false,
     updateCheckIntervalMs: 5 * 60 * 1000,
+    showUpdateNotification: false,
   },
 };

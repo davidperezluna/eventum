@@ -45,7 +45,10 @@ export const environment = {
     chromeWebBadge: '/icons/push/badge-monochrome-96.png',
   },
 
+  /** Sin ngsw en staging: evita F5 sirviendo builds viejos por un worker residual. */
   pwa: {
+    serviceWorkerEnabled: false,
     updateCheckIntervalMs: 5 * 60 * 1000,
+    showUpdateNotification: false,
   },
 };
