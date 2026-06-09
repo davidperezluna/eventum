@@ -3048,14 +3048,19 @@ export class MisCompras implements OnInit, OnDestroy {
     return !!qrNotif && !!qrSeleccion && qrNotif === qrSeleccion;
   }
 
-  private aplicarCoverEntradaEnCaliente(metadata: Record<string, unknown>): boolean {
+  private aplicarCoverAccesoEnCaliente(metadata: Record<string, unknown>): boolean {
     const boletaCoverId = Number(metadata['boleta_cover_id'] ?? 0);
     if (!Number.isFinite(boletaCoverId) || boletaCoverId <= 0) {
       return false;
     }
 
+    const estadoRaw = String(metadata['estado_acceso'] || '').toLowerCase();
+    if (!estadoRaw) {
+      return false;
+    }
+
     const patch: Pick<BoletaCoverCliente, 'estado_acceso'> = {
-      estado_acceso: String(metadata['estado_acceso'] || 'dentro').toLowerCase() as BoletaCoverCliente['estado_acceso'],
+      estado_acceso: estadoRaw as BoletaCoverCliente['estado_acceso'],
     };
 
     const patched = this.patchCoverEnEstadoLocal(boletaCoverId, patch);
@@ -3065,10 +3070,10 @@ export class MisCompras implements OnInit, OnDestroy {
     return patched;
   }
 
-  private async aplicarCoverEntradaDesdeNotificacion(
+  private async aplicarCoverAccesoDesdeNotificacion(
     metadata: Record<string, unknown>
   ): Promise<void> {
-    if (this.aplicarCoverEntradaEnCaliente(metadata)) {
+    if (this.aplicarCoverAccesoEnCaliente(metadata)) {
       return;
     }
 
@@ -3208,8 +3213,8 @@ export class MisCompras implements OnInit, OnDestroy {
       return;
     }
 
-    if (tipo === 'cover_entrada_registrada') {
-      await this.aplicarCoverEntradaDesdeNotificacion(meta);
+    if (tipo === 'cover_entrada_registrada' || tipo === 'cover_salida_registrada') {
+      await this.aplicarCoverAccesoDesdeNotificacion(meta);
       this.reconstruirVistaTrasNotificacion();
       return;
     }
@@ -3272,6 +3277,8 @@ export class MisCompras implements OnInit, OnDestroy {
             const esEntradaValidada = tipo === 'entrada_validada';
             const esProductoRedimido = tipo === 'productos_redimidos';
             const esCoverEntrada = tipo === 'cover_entrada_registrada';
+            const esCoverSalida = tipo === 'cover_salida_registrada';
+            const esCoverAcceso = esCoverEntrada || esCoverSalida;
             const metadataBoletaId = Number(row?.metadata?.['boleta_id'] ?? 0);
             const metadataCompraProductoId = Number(row?.metadata?.['compra_producto_id'] ?? 0);
             const qrBoletaCoincide =
@@ -3286,8 +3293,8 @@ export class MisCompras implements OnInit, OnDestroy {
               Number.isFinite(metadataCompraProductoId) &&
               metadataCompraProductoId > 0 &&
               this.productoFilaSeleccionada?.compra.id === metadataCompraProductoId;
-            if (esCoverEntrada && row.metadata) {
-              this.aplicarCoverEntradaEnCaliente(row.metadata);
+            if (esCoverAcceso && row.metadata) {
+              this.aplicarCoverAccesoEnCaliente(row.metadata);
             }
 
             const qrCoverCoincide =

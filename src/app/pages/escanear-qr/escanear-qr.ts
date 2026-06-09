@@ -570,6 +570,13 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     this.productoItem = null;
     this.boletaCover = cover;
     this.modalVisible = true;
+    this.cdr.markForCheck();
+
+    if (this.esFlujoRapidoLector() && this.puedeRegistrarSalidaCover(cover)) {
+      await this.registrarSalidaCover();
+      return;
+    }
+
     this.programarAutoAvanceModalSiAplica();
     this.cdr.markForCheck();
   }
