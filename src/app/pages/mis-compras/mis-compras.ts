@@ -662,6 +662,77 @@ export class MisCompras implements OnInit, OnDestroy {
     return acceso !== '' && acceso !== 'pendiente';
   }
 
+  /** Covers con acceso ya registrado en puerta que hoy pueden entrar o salir con QR. */
+  coversAccesoRapido(): BoletaCoverConCompra[] {
+    return this.boletasCover
+      .filter((item) => this.esCoverAccesoRapido(item))
+      .sort((a, b) => {
+        const prio = (item: BoletaCoverConCompra) =>
+          this.accionCoverAccesoRapido(item) === 'salida' ? 0 : 1;
+        const byPrio = prio(a) - prio(b);
+        if (byPrio !== 0) return byPrio;
+        return (a.boleta.lugar_nombre || '').localeCompare(b.boleta.lugar_nombre || '', 'es');
+      });
+  }
+
+  coversAccesoRapidoEnClub(grupo: LugarCoverGrupo): BoletaCoverConCompra[] {
+    return this.coversAccesoRapido().filter(
+      (item) => item.compra.lugar_id === grupo.lugarId || String(item.compra.lugar_id) === grupo.key
+    );
+  }
+
+  esCoverAccesoRapido(item: BoletaCoverConCompra): boolean {
+    if (!this.puedeAbrirQrCover(item)) return false;
+    if (!this.esDiaSesionCover(item.boleta)) return false;
+    if (!this.coverAccesoUtilizadoEnPuerta(item.boleta)) return false;
+    if (this.esBoletaCoverUsada(item.boleta)) return false;
+    const acceso = (item.boleta.estado_acceso || '').toLowerCase();
+    return acceso === 'dentro' || (acceso === 'fuera' && !!item.boleta.permite_reingreso);
+  }
+
+  accionCoverAccesoRapido(item: BoletaCoverConCompra): 'entrada' | 'salida' {
+    return (item.boleta.estado_acceso || '').toLowerCase() === 'dentro' ? 'salida' : 'entrada';
+  }
+
+  labelBotonQrCover(item: BoletaCoverConCompra): string {
+    if ((item.boleta.estado_acceso || '').toLowerCase() === 'dentro') {
+      return 'QR para salir';
+    }
+    if (this.coverAccesoUtilizadoEnPuerta(item.boleta)) {
+      return 'QR para entrar';
+    }
+    return 'Ver QR';
+  }
+
+  iconoBotonQrCover(item: BoletaCoverConCompra): string {
+    if ((item.boleta.estado_acceso || '').toLowerCase() === 'dentro') {
+      return 'logout';
+    }
+    if (this.coverAccesoUtilizadoEnPuerta(item.boleta)) {
+      return 'login';
+    }
+    return 'qr_code_2';
+  }
+
+  hintQrCoverAcceso(item: BoletaCoverConCompra | null): string {
+    if (!item || !this.coverAccesoUtilizadoEnPuerta(item.boleta)) {
+      return 'Presenta este código en la puerta del club.';
+    }
+    return this.accionCoverAccesoRapido(item) === 'salida'
+      ? 'Estás dentro del club. Presenta este código en la puerta para registrar tu salida.'
+      : 'Presenta este código en la puerta para volver a entrar al club.';
+  }
+
+  mostrarSeccionAccesoCoverRapido(): boolean {
+    return (
+      this.coversEventumEnabled &&
+      !this.loading &&
+      !this.eventoDetalleKey &&
+      !this.lugarCoverDetalleKey &&
+      this.coversAccesoRapido().length > 0
+    );
+  }
+
   esBoletaCoverUsada(boleta: BoletaCoverCliente): boolean {
     const estado = (boleta.estado || '').toLowerCase();
     const acceso = (boleta.estado_acceso || '').toLowerCase();
@@ -774,9 +845,9 @@ export class MisCompras implements OnInit, OnDestroy {
     );
   }
 
-  abrirDetalleClubCover(lugarKey: string): void {
+  abrirDetalleClubCover(lugarKey: string | number): void {
     this.tabMisComprasPrincipal = 'covers';
-    this.router.navigate(['/mis-compras/club', lugarKey]);
+    this.router.navigate(['/mis-compras/club', String(lugarKey)]);
   }
 
   lugarCoverDetalle(): LugarCoverGrupo | null {
