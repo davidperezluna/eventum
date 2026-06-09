@@ -3298,7 +3298,7 @@ export class MisCompras implements OnInit, OnDestroy {
             }
 
             const qrCoverCoincide =
-              esCoverEntrada && this.coverQrAbiertoCoincideConNotificacion(row.metadata);
+              esCoverAcceso && this.coverQrAbiertoCoincideConNotificacion(row.metadata);
             const teniaQrAbierto = qrBoletaCoincide || qrProductoCoincide || qrCoverCoincide;
 
             const boletaActual = this.boletaSeleccionada;
@@ -3337,8 +3337,10 @@ export class MisCompras implements OnInit, OnDestroy {
               }
             }
 
-            // Para validaciones/redenciones usamos el modal de bienvenida y evitamos toast duplicado.
-            if (!esEntradaValidada && !esProductoRedimido && !esCoverEntrada) {
+            // Entrada cover: modal bienvenida (sin toast). Salida cover: toast al cerrar QR.
+            const omitirToast =
+              esEntradaValidada || esProductoRedimido || esCoverEntrada;
+            if (!omitirToast) {
               void this.alertService.snackbar(`${titulo}. ${mensaje}`);
             }
 
