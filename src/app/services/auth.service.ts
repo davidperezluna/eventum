@@ -834,6 +834,7 @@ export class AuthService {
       if (segments.length === 1) return true;
       if (segments.length === 2 && (b === 'actividad' || b === 'guia')) return true;
       if (segments.length === 3 && b === 'evento' && Boolean(segments[2])) return true;
+      if (segments.length === 3 && b === 'club' && Boolean(segments[2])) return true;
       return false;
     }
 
