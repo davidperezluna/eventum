@@ -12,6 +12,7 @@ import { MisCupos } from './pages/mis-cupos/mis-cupos';
 import { Carrito } from './pages/carrito/carrito';
 import { MisCompras } from './pages/mis-compras/mis-compras';
 import { MisComprasGuia } from './pages/mis-compras-guia/mis-compras-guia';
+import { AccesosPuerta } from './pages/accesos-puerta/accesos-puerta';
 import { Boletas } from './pages/boletas/boletas';
 import { Perfil } from './pages/perfil/perfil';
 import { PagoResultado } from './pages/pago-resultado/pago-resultado';
@@ -153,6 +154,7 @@ const appRoutes: Routes = [
       { path: 'mis-compras/guia', component: MisComprasGuia }, // Cliente: guía de uso de entradas
       { path: 'mis-compras/evento/:id', component: MisCompras }, // Cliente: detalle de boletas por evento
       { path: 'mis-compras/club/:id', component: MisCompras }, // Cliente: detalle de covers por club
+      { path: 'accesos-puerta', component: AccesosPuerta, canActivate: [coversFeatureGuard] },
       { path: 'mis-compras', component: MisCompras }, // Cliente: ver compras
       { path: 'categorias', component: Categorias },
       { path: 'lugares', component: Lugares },

@@ -827,8 +827,8 @@ export class AuthService {
       'cupos-evento',
       'clubes',
       'club',
+      'accesos-puerta',
     ]);
-    if (!raiz.has(a)) return false;
 
     if (a === 'mis-compras') {
       if (segments.length === 1) return true;

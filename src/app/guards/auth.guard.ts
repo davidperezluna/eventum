@@ -39,6 +39,7 @@ function clienteTienePermisoParaRuta(router: Router, url: string): boolean {
 
   if (a === 'pago-resultado' && segments.length === 1) return true;
   if (a === 'perfil' && segments.length === 1) return true;
+  if (a === 'accesos-puerta' && segments.length === 1) return true;
 
   return false;
 }
@@ -60,9 +61,10 @@ function esRutaLoginCliente(router: Router, url: string): boolean {
     'pago-resultado',
     'detalle-evento',
     'cupos-evento',
-    'clubes',
-    'club',
-  ]);
+      'clubes',
+      'club',
+      'accesos-puerta',
+    ]);
   if (!raiz.has(a)) return false;
 
   if (a === 'mis-compras') {

@@ -39,8 +39,10 @@ import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import type { AuthStateCallback } from '../../services/auth.service';
 import { ProductosService } from '../../services/productos.service';
 import { CoversService } from '../../services/covers.service';
+import { AccesosPuertaService } from '../../services/accesos-puerta.service';
 import { coversEventumEnabled } from '../../core/covers-feature';
 import { formatHoraCover, labelSesionCover } from '../../core/covers-labels';
+import { hintQrCoverAcceso as hintQrCoverAccesoText } from '../../core/cover-acceso-puerta';
 import { BoletaCoverCliente, CompraCoverCliente } from '../../types/covers';
 import {
   RESUMEN_CANCELAR_TRASLADO_COVER_PUNTOS,
@@ -276,6 +278,7 @@ export class MisCompras implements OnInit, OnDestroy {
     private authService: AuthService,
     private alertService: AlertService,
     private misComprasStateService: MisComprasStateService,
+    private accesosPuertaService: AccesosPuertaService,
     private supabaseService: SupabaseService,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone,
@@ -571,6 +574,7 @@ export class MisCompras implements OnInit, OnDestroy {
       this.reconstruirLugaresConCovers();
       this.syncTabCoversDetalle();
       this.syncTabMisComprasPrincipal();
+      this.syncAccesosPuertaNav();
     } finally {
       this.loadingCovers = false;
       this.cdr.detectChanges();
@@ -715,21 +719,16 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   hintQrCoverAcceso(item: BoletaCoverConCompra | null): string {
-    if (!item || !this.coverAccesoUtilizadoEnPuerta(item.boleta)) {
-      return 'Presenta este código en la puerta del club.';
-    }
-    return this.accionCoverAccesoRapido(item) === 'salida'
-      ? 'Estás dentro del club. Presenta este código en la puerta para registrar tu salida.'
-      : 'Presenta este código en la puerta para volver a entrar al club.';
+    return hintQrCoverAccesoText(item);
   }
 
-  mostrarSeccionAccesoCoverRapido(): boolean {
-    return (
-      this.coversEventumEnabled &&
-      !this.loading &&
-      !this.eventoDetalleKey &&
-      !this.lugarCoverDetalleKey &&
-      this.coversAccesoRapido().length > 0
+  private syncAccesosPuertaNav(): void {
+    if (!coversEventumEnabled) {
+      return;
+    }
+    this.accesosPuertaService.syncFromBoletasCover(
+      this.boletasCover,
+      this.trasladoSalientePorBoletaCoverId
     );
   }
 
@@ -3144,6 +3143,7 @@ export class MisCompras implements OnInit, OnDestroy {
     const patched = this.patchCoverEnEstadoLocal(boletaCoverId, patch);
     if (coversEventumEnabled) {
       this.reconstruirLugaresConCovers();
+      this.syncAccesosPuertaNav();
     }
     return patched;
   }
@@ -3518,7 +3518,9 @@ export class MisCompras implements OnInit, OnDestroy {
     this.boletasCover = state.boletasCover || [];
     this.coverCedidas = state.coverCedidas || [];
     this.trasladosPendientesRecibirCover = state.trasladosPendientesRecibirCover || [];
-    this.tabMisComprasPrincipal = state.tabMisComprasPrincipal || 'eventos';
+    const rawTab = state.tabMisComprasPrincipal || 'eventos';
+    this.tabMisComprasPrincipal =
+      rawTab === 'covers' || rawTab === 'acceso' ? 'covers' : 'eventos';
     this.aplicarTrasladosDesdeHistorial();
     if (this.comprasCover.length > 0 || this.boletasCover.length > 0) {
       this.reconstruirLugaresConCovers();

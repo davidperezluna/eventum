@@ -6,7 +6,8 @@ import { CarritoCompraService } from '../../services/carrito-compra.service';
 import { MisComprasStateService } from '../../services/mis-compras-state.service';
 import { TrasladosBoletaService } from '../../services/traslados-boleta.service';
 import { User } from '@supabase/supabase-js';
-import { filter, merge } from 'rxjs';
+import { filter, merge, Subscription } from 'rxjs';
+import { AccesosPuertaService } from '../../services/accesos-puerta.service';
 import { cuposEventumEnabled } from '../../core/cupos-feature';
 import { coversEventumEnabled } from '../../core/covers-feature';
 import { CUPOS_LABELS } from '../../core/cupos-labels';
@@ -58,6 +59,7 @@ export class Layout implements OnInit, OnDestroy {
   totalTrasladosPendientes = 0;
   subtotalCarrito = 0;
   enRutaCarrito = false;
+  mostrarNavAccesosPuerta = false;
 
   readonly cuposEventumEnabled = cuposEventumEnabled;
   readonly coversEventumEnabled = coversEventumEnabled;
@@ -66,7 +68,8 @@ export class Layout implements OnInit, OnDestroy {
   readonly currentYear = new Date().getFullYear();
   private routerSubscription?: any;
   private carritoSubscription?: any;
-  private trasladosPendientesSubscription?: any;
+  private trasladosPendientesSubscription?: Subscription;
+  private accesosPuertaSubscription?: Subscription;
   private unsubscribeAuthState?: () => void;
 
   constructor(
@@ -74,6 +77,7 @@ export class Layout implements OnInit, OnDestroy {
     private carritoCompraService: CarritoCompraService,
     private misComprasStateService: MisComprasStateService,
     private trasladosBoletaService: TrasladosBoletaService,
+    private accesosPuertaService: AccesosPuertaService,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
@@ -100,6 +104,9 @@ export class Layout implements OnInit, OnDestroy {
           this.loadMenuCliente();
           this.misComprasStateService.hydrateTrasladosPendientesCountFromState(usuario.id);
           void this.refreshTrasladosPendientesNavBadge(usuario.id);
+          if (this.coversEventumEnabled) {
+            void this.accesosPuertaService.refresh({ background: true });
+          }
         } else if (this.authService.isLector()) {
           this.userRole = 'Lector';
           this.menuItems = [];
@@ -114,6 +121,8 @@ export class Layout implements OnInit, OnDestroy {
         this.menuItems = [];
         this.clientNavItems = [];
         this.userRole = '';
+        this.mostrarNavAccesosPuerta = false;
+        this.accesosPuertaService.clear();
       }
       this.cdr.detectChanges();
     });
@@ -147,6 +156,19 @@ export class Layout implements OnInit, OnDestroy {
       this.carritoCompraService.itemsProductos$,
       this.carritoCompraService.itemsCover$,
     ).subscribe(() => this.refreshCarritoFabState());
+
+    this.mostrarNavAccesosPuerta = this.coversEventumEnabled && this.accesosPuertaService.getCount() > 0;
+    this.accesosPuertaSubscription = this.accesosPuertaService.tieneAccesos$.subscribe((tiene) => {
+      if (!this.coversEventumEnabled) {
+        return;
+      }
+      const changed = this.mostrarNavAccesosPuerta !== tiene;
+      this.mostrarNavAccesosPuerta = tiene;
+      if (changed && this.isCliente()) {
+        this.loadMenuCliente();
+      }
+      this.cdr.detectChanges();
+    });
   }
 
   get mostrarCarritoFab(): boolean {
@@ -230,6 +252,9 @@ export class Layout implements OnInit, OnDestroy {
     if (this.trasladosPendientesSubscription) {
       this.trasladosPendientesSubscription.unsubscribe();
     }
+    if (this.accesosPuertaSubscription) {
+      this.accesosPuertaSubscription.unsubscribe();
+    }
     if (this.unsubscribeAuthState) {
       this.unsubscribeAuthState();
     }
@@ -300,6 +325,14 @@ export class Layout implements OnInit, OnDestroy {
         exact: true,
         badge: 'traslados-pendientes',
       },
+      ...(this.coversEventumEnabled && this.mostrarNavAccesosPuerta
+        ? [{
+            path: '/accesos-puerta',
+            label: 'Acceso puerta',
+            icon: 'qr_code_scanner',
+            exact: true,
+          }]
+        : []),
       {
         path: '/carrito',
         label: 'Carrito',

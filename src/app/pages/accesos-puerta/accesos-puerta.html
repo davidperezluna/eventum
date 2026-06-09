@@ -1,0 +1,209 @@
+<div class="cupos-page accesos-puerta-page">
+  <header class="client-page-header client-page-header--compact client-page-header--in-nav accesos-puerta-header">
+    <h1 class="client-page-header__title">Acceso en puerta</h1>
+    <p class="client-page-header__subtitle client-page-header__subtitle--full">
+      Tu pase digital para entrar o salir del club esta noche.
+    </p>
+    <p class="client-page-header__subtitle client-page-header__subtitle--short">
+      Pase digital · puerta
+    </p>
+  </header>
+
+  <div class="cupos-content-shell accesos-puerta-shell">
+    <div class="ap-toolbar" *ngIf="accesos.length > 0 || isRefreshing">
+      <div class="ap-live" *ngIf="accesos.length > 0" aria-live="polite">
+        <span class="ap-live__dot" aria-hidden="true"></span>
+        <span>En vivo · puerta conectada</span>
+      </div>
+      <div class="ap-refresh" *ngIf="isRefreshing && !loading" aria-live="polite">
+        <span class="ap-refresh__spinner" aria-hidden="true"></span>
+        <span>Actualizando…</span>
+      </div>
+    </div>
+
+    <div *ngIf="loading && accesos.length === 0" class="cupos-loading">
+      <div class="cupos-spinner" aria-hidden="true"></div>
+      <p>Cargando accesos…</p>
+    </div>
+
+    <div *ngIf="!loading && accesos.length === 0" class="ap-empty">
+      <div class="ap-empty__icon" aria-hidden="true">
+        <span class="material-icons">qr_code_scanner</span>
+      </div>
+      <h2>Sin acceso activo en puerta</h2>
+      <p>Cuando tengas un cover con entrada o salida disponible hoy, tu pase aparecerá aquí al instante.</p>
+      <a routerLink="/mis-compras" class="cupos-btn-primary">Ir a Mis compras</a>
+    </div>
+
+    <section *ngIf="accesos.length > 0" class="ap-stage" aria-label="Pases de acceso">
+      <div
+        #carousel
+        class="ap-carousel"
+        [class.ap-carousel--single]="accesos.length === 1"
+        (scroll)="onCarouselScroll($event)"
+      >
+        <article
+          *ngFor="let item of accesos; let i = index"
+          class="ap-pass"
+          [class.ap-pass--salida]="accion(item) === 'salida'"
+          [class.ap-pass--entrada]="accion(item) === 'entrada'"
+          [class.ap-pass--focused]="focusedIndex === i"
+        >
+          <div class="ap-pass__top">
+            <span class="ap-pass__chip">
+              <span class="material-icons" aria-hidden="true">nightlife</span>
+              {{ accion(item) === 'salida' ? 'Salida' : 'Reingreso' }}
+            </span>
+            <span class="ap-pass__estado badge" [class]="estadoClass(item.boleta)">
+              {{ estadoLabel(item.boleta) }}
+            </span>
+          </div>
+
+          <h2 class="ap-pass__club">{{ item.boleta.lugar_nombre }}</h2>
+          <p class="ap-pass__hint">{{ mensajeEstado(item) }}</p>
+          <p class="ap-pass__sesion">{{ labelSesion(item.boleta) }}</p>
+          <p class="ap-pass__tipo">{{ item.boleta.tipo_cover_nombre }}</p>
+
+          <div class="ap-pass__timeline">
+            <div class="ap-pass__timeline-head">
+              <span>{{ horarioSesion(item.boleta) }}</span>
+              <span>{{ tiempoRestante(item.boleta) }}</span>
+            </div>
+            <div
+              class="ap-pass__timeline-track"
+              role="progressbar"
+              [attr.aria-valuenow]="progresoSesion(item.boleta)"
+              aria-valuemin="0"
+              aria-valuemax="100"
+            >
+              <div class="ap-pass__timeline-fill" [style.width.%]="progresoSesion(item.boleta)"></div>
+            </div>
+          </div>
+
+          <button type="button" class="ap-pass__qr-zone" (click)="verQr(item)">
+            <div class="ap-pass__qr-frame">
+              <img
+                *ngIf="qrThumb(item) as thumb; else qrPlaceholder"
+                [src]="thumb"
+                alt=""
+                class="ap-pass__qr-img"
+              />
+              <ng-template #qrPlaceholder>
+                <div class="ap-pass__qr-placeholder">
+                  <span class="material-icons" aria-hidden="true">qr_code_2</span>
+                </div>
+              </ng-template>
+              <div class="ap-pass__scan-line" aria-hidden="true"></div>
+            </div>
+            <span class="ap-pass__qr-cta">
+              <span class="material-icons" aria-hidden="true">{{ iconoBoton(item) }}</span>
+              {{ labelBoton(item) }}
+            </span>
+            <span class="ap-pass__qr-tip">Toca para ampliar · sube el brillo en puerta</span>
+          </button>
+
+          <button type="button" class="ap-pass__link" (click)="irAMisComprasClub(item.compra.lugar_id)">
+            Ver en Mis compras
+            <span class="material-icons" aria-hidden="true">chevron_right</span>
+          </button>
+        </article>
+      </div>
+
+      <div class="ap-dots" *ngIf="accesos.length > 1" role="tablist" aria-label="Seleccionar pase">
+        <button
+          *ngFor="let item of accesos; let i = index"
+          type="button"
+          class="ap-dots__dot"
+          [class.ap-dots__dot--active]="focusedIndex === i"
+          [attr.aria-selected]="focusedIndex === i"
+          [attr.aria-label]="item.boleta.lugar_nombre"
+          (click)="irAlIndice(i)"
+        ></button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="modal-overlay ap-qr-overlay" *ngIf="showCoverQrModal && coverSeleccionado">
+  <div class="ap-qr-sheet" (click)="$event.stopPropagation()">
+    <button type="button" class="modal-close" (click)="cerrarCoverQrModal()">
+      <span class="material-icons">close</span>
+    </button>
+
+    <div class="ap-qr-sheet__head">
+      <span class="ap-qr-sheet__chip">
+        {{ accion(coverSeleccionado) === 'salida' ? 'QR de salida' : 'QR de entrada' }}
+      </span>
+      <h2>{{ coverSeleccionado.boleta.lugar_nombre }}</h2>
+      <p>{{ coverSeleccionado.boleta.tipo_cover_nombre }}</p>
+      <p class="ap-qr-sheet__hint" *ngIf="coverAccesoUtilizado(coverSeleccionado.boleta)">
+        {{ hintQr(coverSeleccionado) }}
+      </p>
+    </div>
+
+    <div class="ap-qr-sheet__body">
+      <div class="ap-qr-sheet__frame" *ngIf="loadingCoverQR">
+        <div class="qr-loading">
+          <div class="spinner"></div>
+          <p>Generando código QR…</p>
+        </div>
+      </div>
+      <div class="ap-qr-sheet__frame" *ngIf="!loadingCoverQR && coverQrCodeUrl">
+        <img [src]="coverQrCodeUrl" alt="QR cover" class="ap-qr-sheet__img" />
+        <div class="ap-qr-sheet__scan-line" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <div class="ap-qr-sheet__meta">
+      <div>
+        <span class="info-label">Noche</span>
+        <span class="info-value">{{ fechaSesion(coverSeleccionado.boleta) }}</span>
+      </div>
+      <div>
+        <span class="info-label">Horario</span>
+        <span class="info-value">{{ horarioSesion(coverSeleccionado.boleta) }}</span>
+      </div>
+    </div>
+
+    <p class="ap-qr-sheet__brightness">
+      <span class="material-icons" aria-hidden="true">brightness_high</span>
+      Sube el brillo de la pantalla para escanear más rápido
+    </p>
+  </div>
+</div>
+
+<div
+  class="modal-overlay modal-overlay--mensaje-ingreso ap-toast-overlay"
+  *ngIf="showMensajeIngresoModal"
+  [class.ap-toast-overlay--salida]="mensajeIngresoTipo === 'cover-salida'"
+>
+  <div
+    class="modal-sheet ap-toast"
+    [style.--ap-toast-ms]="mensajeAutoCloseMs + 'ms'"
+    (click)="$event.stopPropagation()"
+  >
+    <div
+      class="ap-toast__progress"
+      aria-hidden="true"
+      [style.animation-duration]="mensajeAutoCloseMs + 'ms'"
+    ></div>
+    <button type="button" class="modal-close" (click)="cerrarMensajeIngreso()" aria-label="Cerrar">
+      <span class="material-icons">close</span>
+    </button>
+    <p class="modal-kicker">
+      {{ mensajeIngresoTipo === 'cover-salida' ? 'Salida registrada' : 'Entrada registrada' }}
+    </p>
+    <h2 class="modal-title">{{ mensajeIngresoTitulo }}</h2>
+    <p class="mensaje-ingreso-nota">{{ mensajeIngresoDetalle }}</p>
+    <div class="modal-info" *ngIf="mensajeIngresoEvento || mensajeIngresoReferencia">
+      <div class="mensaje-ingreso-bloque" *ngIf="mensajeIngresoEvento">
+        <span class="mensaje-ingreso-label">Club</span>
+        <strong class="mensaje-ingreso-value">{{ mensajeIngresoEvento }}</strong>
+      </div>
+      <div class="mensaje-ingreso-bloque" *ngIf="mensajeIngresoReferencia">
+        <span class="mensaje-ingreso-label">Referencia</span>
+        <strong class="mensaje-ingreso-value mensaje-ingreso-value--code">{{ mensajeIngresoReferencia }}</strong>
+      </div>
+    </div>
+  </div>
+</div>

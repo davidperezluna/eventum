@@ -56,7 +56,7 @@ export interface MisComprasState {
   boletasCover: BoletaCoverMisComprasItem[];
   coverCedidas: BoletaCoverMisComprasItem[];
   trasladosPendientesRecibirCover: any[];
-  tabMisComprasPrincipal: 'eventos' | 'covers';
+  tabMisComprasPrincipal: 'eventos' | 'covers' | 'acceso';
   lastUpdated: number;
 }
 
@@ -77,7 +77,7 @@ interface MisComprasPublicState {
   eventoExpandidoKey: string | null;
   eventoDetalleKey: string | null;
   promoProductos: PromoProductosMisCompras | null;
-  tabMisComprasPrincipal: 'eventos' | 'covers';
+  tabMisComprasPrincipal: 'eventos' | 'covers' | 'acceso';
   lastUpdated: number;
 }
 

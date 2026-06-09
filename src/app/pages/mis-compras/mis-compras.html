@@ -154,63 +154,6 @@
     </button>
   </nav>
 
-  <!-- Acceso rápido cover: entrar / salir con QR -->
-  <section
-    *ngIf="mostrarSeccionAccesoCoverRapido()"
-    class="mc-cover-acceso-rapido"
-    aria-labelledby="mc-cover-acceso-rapido-title"
-  >
-    <header class="mc-cover-acceso-rapido__head">
-      <h2 id="mc-cover-acceso-rapido-title" class="mc-cover-acceso-rapido__title">
-        <span class="material-icons" aria-hidden="true">qr_code_scanner</span>
-        Acceso en puerta
-      </h2>
-      <p class="mc-cover-acceso-rapido__desc">
-        Tienes covers con acceso registrado hoy. Abre el QR para entrar de nuevo o salir del club.
-      </p>
-    </header>
-
-    <div class="mc-cover-acceso-rapido__grid">
-      <article
-        *ngFor="let item of coversAccesoRapido()"
-        class="mc-cover-acceso-rapido__card"
-        [class.mc-cover-acceso-rapido__card--salida]="accionCoverAccesoRapido(item) === 'salida'"
-      >
-        <div class="mc-cover-acceso-rapido__card-top">
-          <span class="legal-modal__badge legal-modal__badge--cover">
-            <span class="material-icons" aria-hidden="true">nightlife</span>
-            {{ accionCoverAccesoRapido(item) === 'salida' ? 'Salida' : 'Reingreso' }}
-          </span>
-          <span class="badge" [class]="getEstadoCoverClass(item.boleta)">{{ getEstadoCoverLabel(item.boleta) }}</span>
-        </div>
-
-        <h3 class="mc-cover-acceso-rapido__club">{{ item.boleta.lugar_nombre }}</h3>
-        <p class="mc-cover-acceso-rapido__sesion">{{ labelSesionCoverBoleta(item.boleta) }}</p>
-        <p class="mc-cover-acceso-rapido__tipo">{{ item.boleta.tipo_cover_nombre }}</p>
-
-        <div class="mc-cover-acceso-rapido__actions">
-          <button
-            type="button"
-            class="mc-cover-acceso-rapido__btn"
-            [class.mc-cover-acceso-rapido__btn--salida]="accionCoverAccesoRapido(item) === 'salida'"
-            (click)="verQrCover(item)"
-          >
-            <span class="material-icons" aria-hidden="true">{{ iconoBotonQrCover(item) }}</span>
-            {{ labelBotonQrCover(item) }}
-          </button>
-          <button
-            type="button"
-            class="mc-cover-acceso-rapido__link"
-            (click)="abrirDetalleClubCover(item.compra.lugar_id)"
-          >
-            Ver club
-            <span class="material-icons" aria-hidden="true">chevron_right</span>
-          </button>
-        </div>
-      </article>
-    </div>
-  </section>
-
   <!-- Covers por aceptar (siempre visible, encima del contenido) -->
   <div
     *ngIf="coversEventumEnabled && !loading && !eventoDetalleKey && !lugarCoverDetalleKey && trasladosPendientesRecibirCover.length > 0"
@@ -1207,39 +1150,6 @@
         {{ coversCedidasEnClub(clubDetalle) === 1 ? 'recibida' : 'recibidas' }}
       </span>
     </div>
-
-    <section
-      *ngIf="coversAccesoRapidoEnClub(clubDetalle).length > 0"
-      class="mc-cover-acceso-rapido mc-cover-acceso-rapido--detalle"
-      aria-label="Acceso en puerta"
-    >
-      <div class="mc-cover-acceso-rapido__grid mc-cover-acceso-rapido__grid--detalle">
-        <article
-          *ngFor="let item of coversAccesoRapidoEnClub(clubDetalle)"
-          class="mc-cover-acceso-rapido__card"
-          [class.mc-cover-acceso-rapido__card--salida]="accionCoverAccesoRapido(item) === 'salida'"
-        >
-          <div class="mc-cover-acceso-rapido__card-top">
-            <span class="legal-modal__badge legal-modal__badge--cover">
-              <span class="material-icons" aria-hidden="true">nightlife</span>
-              {{ accionCoverAccesoRapido(item) === 'salida' ? 'Salida' : 'Reingreso' }}
-            </span>
-            <span class="badge" [class]="getEstadoCoverClass(item.boleta)">{{ getEstadoCoverLabel(item.boleta) }}</span>
-          </div>
-          <p class="mc-cover-acceso-rapido__sesion">{{ labelSesionCoverBoleta(item.boleta) }}</p>
-          <p class="mc-cover-acceso-rapido__tipo">{{ item.boleta.tipo_cover_nombre }}</p>
-          <button
-            type="button"
-            class="mc-cover-acceso-rapido__btn"
-            [class.mc-cover-acceso-rapido__btn--salida]="accionCoverAccesoRapido(item) === 'salida'"
-            (click)="verQrCover(item)"
-          >
-            <span class="material-icons" aria-hidden="true">{{ iconoBotonQrCover(item) }}</span>
-            {{ labelBotonQrCover(item) }}
-          </button>
-        </article>
-      </div>
-    </section>
 
     <div
       *ngIf="coversEventumEnabled && trasladosPendientesRecibirCoverEnClub(clubDetalle).length > 0"
