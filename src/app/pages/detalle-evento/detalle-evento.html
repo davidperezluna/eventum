@@ -225,7 +225,7 @@
               <button class="btn-cantidad" (click)="quitarDelCarrito(tipo)">-</button>
               <span class="cantidad">{{ getCantidadEnCarrito(tipo) }}</span>
               <button class="btn-cantidad" (click)="agregarAlCarrito(tipo)"
-                [disabled]="!tieneExistencias(tipo) || getCantidadEnCarrito(tipo) >= tipo.cantidad_disponibles">+</button>
+                [disabled]="!puedeAgregarMasBoletas(tipo)">+</button>
               <button class="btn-remove" (click)="eliminarDelCarrito(tipo)">
                 <span class="material-icons">delete</span>
               </button>

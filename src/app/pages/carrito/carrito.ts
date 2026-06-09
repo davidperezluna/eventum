@@ -610,9 +610,14 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   agregarAlCarrito(item: ItemCarritoEvento): void {
-    const agregado = this.carritoCompraService.agregarAlCarrito(item.tipo, item.sesion_cover_id);
+    const maxCantidad = this.maxCantidadLinea(item);
+    const agregado = this.carritoCompraService.agregarAlCarrito(
+      item.tipo,
+      item.sesion_cover_id,
+      maxCantidad,
+    );
     if (!agregado) {
-      this.alertService.warning('Stock limitado', `Solo hay ${item.tipo.cantidad_disponibles} boletas disponibles`);
+      this.alertService.warning('Stock limitado', `Solo puedes agregar ${maxCantidad} entrada(s) de este tipo.`);
     }
   }
 
@@ -625,7 +630,10 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   maxCantidadLinea(item: ItemCarritoEvento): number {
-    return item.tipo.cantidad_disponibles ?? 1;
+    const stockPalcos = this.esLineaPalcoMultipersona(item.tipo)
+      ? (this.palcosDisponiblesPorTipo.get(item.tipo.id) ?? []).length
+      : null;
+    return this.carritoCompraService.maxCantidadBoleta(item.tipo, stockPalcos);
   }
 
   getSubtotalBoletas(): number {

@@ -45,6 +45,7 @@
               <span *ngIf="tipoPorSesion(sesion)?.permite_reingreso">{{ coversLabels.reingresoSi }}</span>
               <span *ngIf="tipoPorSesion(sesion) && !tipoPorSesion(sesion)!.permite_reingreso">{{ coversLabels.reingresoNo }}</span>
               <span *ngIf="!sesionAgotada(sesion)"> · {{ cuposDisponibles(sesion) }} cupo(s)</span>
+              <span *ngIf="tipoPorSesion(sesion)?.limite_por_persona as limite"> · Máx. {{ limite }} por persona</span>
             </p>
           </div>
           <div class="club-sesion-action">

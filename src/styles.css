@@ -172,6 +172,129 @@ html.client-menu-open body {
   z-index: 12000 !important;
 }
 
+/* Modales Eventum (cliente + panel) */
+.app-alert-modal.swal2-popup {
+  width: min(92vw, 22rem);
+  padding: 1.35rem 1.25rem 1.15rem;
+  border-radius: 16px;
+  border: 1px solid var(--ec-border, #e2e8f0);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+  font-family: inherit;
+}
+
+.app-alert-modal__title.swal2-title {
+  margin: 0 0 0.45rem;
+  padding: 0;
+  color: var(--ec-text-primary, #0f172a);
+  font-size: 1.08rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.app-alert-modal__text.swal2-html-container {
+  margin: 0;
+  padding: 0;
+  color: var(--ec-text-muted, #64748b);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.app-alert-modal__icon.swal2-icon {
+  margin: 0.2rem auto 0.75rem;
+  transform: scale(0.82);
+  border-width: 2px;
+}
+
+.app-alert-modal--warning .app-alert-modal__icon.swal2-icon.swal2-warning {
+  border-color: var(--ec-badge-warning-icon, #b45309);
+  color: var(--ec-badge-warning-icon, #b45309);
+}
+
+.app-alert-modal--error .app-alert-modal__icon.swal2-icon.swal2-error {
+  border-color: var(--ec-badge-danger-text, #b91c1c);
+}
+
+.app-alert-modal--success .app-alert-modal__icon.swal2-icon.swal2-success {
+  border-color: var(--ec-badge-success-icon, #16a34a);
+}
+
+.app-alert-modal--info .app-alert-modal__icon.swal2-icon.swal2-info,
+.app-alert-modal--confirm .app-alert-modal__icon.swal2-icon.swal2-question {
+  border-color: var(--ec-accent, #8b5cf6);
+  color: var(--ec-accent, #8b5cf6);
+}
+
+.app-alert-modal__actions.swal2-actions {
+  width: 100%;
+  margin: 1rem 0 0;
+  padding: 0;
+  gap: 0.55rem;
+  flex-wrap: nowrap;
+}
+
+.app-alert-modal__btn {
+  margin: 0 !important;
+  min-height: 2.65rem;
+  padding: 0.55rem 1rem;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.app-alert-modal__btn--primary {
+  flex: 1 1 auto;
+  border: none;
+  background: var(--ec-accent, #8b5cf6);
+  color: #fff;
+}
+
+.app-alert-modal__btn--primary:hover,
+.app-alert-modal__btn--primary:focus-visible {
+  background: var(--ec-accent-strong, #7c3aed);
+}
+
+.app-alert-modal--warning .app-alert-modal__btn--primary {
+  background: var(--ec-badge-warning-icon, #b45309);
+}
+
+.app-alert-modal--warning .app-alert-modal__btn--primary:hover,
+.app-alert-modal--warning .app-alert-modal__btn--primary:focus-visible {
+  background: #92400e;
+}
+
+.app-alert-modal--error .app-alert-modal__btn--primary {
+  background: var(--ec-badge-danger-text, #b91c1c);
+}
+
+.app-alert-modal--error .app-alert-modal__btn--primary:hover,
+.app-alert-modal--error .app-alert-modal__btn--primary:focus-visible {
+  background: #991b1b;
+}
+
+.app-alert-modal--success .app-alert-modal__btn--primary {
+  background: var(--ec-badge-success-icon, #16a34a);
+}
+
+.app-alert-modal--success .app-alert-modal__btn--primary:hover,
+.app-alert-modal--success .app-alert-modal__btn--primary:focus-visible {
+  background: #15803d;
+}
+
+.app-alert-modal__btn--secondary {
+  flex: 1 1 auto;
+  border: 1px solid var(--ec-border-strong, #e5e7eb);
+  background: #fff;
+  color: var(--ec-text-body, #1e293b);
+}
+
+.app-alert-modal__btn--secondary:hover,
+.app-alert-modal__btn--secondary:focus-visible {
+  background: var(--ec-surface-muted, #f1f5f9);
+}
+
 .swal-error-text {
   margin: 0 0 0.85rem;
   line-height: 1.45;

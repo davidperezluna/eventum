@@ -89,8 +89,7 @@ export class EventoProductosTab implements OnInit, OnDestroy {
   }
 
   tieneExistencias(producto: Producto): boolean {
-    const disp = producto.cantidad_disponibles ?? Math.max(0, producto.cantidad_total - (producto.cantidad_vendidas ?? 0));
-    return disp > 0;
+    return this.maxCantidadPermitida(producto) > 0;
   }
 
   getCantidadEnCarrito(productoId: number): number {
@@ -99,6 +98,23 @@ export class EventoProductosTab implements OnInit, OnDestroy {
 
   getDisponibles(producto: Producto): number {
     return producto.cantidad_disponibles ?? Math.max(0, producto.cantidad_total - (producto.cantidad_vendidas ?? 0));
+  }
+
+  maxCantidadPermitida(producto: Producto): number {
+    const disponibles = this.getDisponibles(producto);
+    const limite = producto.limite_por_persona;
+    if (limite != null && limite > 0) {
+      return Math.min(disponibles, limite);
+    }
+    return disponibles;
+  }
+
+  puedeAgregarMasProductos(producto: Producto): boolean {
+    if (this.eventoFinalizado) return false;
+    return (
+      this.maxCantidadPermitida(producto) > 0 &&
+      this.getCantidadEnCarrito(producto.id) < this.maxCantidadPermitida(producto)
+    );
   }
 
   precioEventoVigente(): boolean {
@@ -193,16 +209,17 @@ export class EventoProductosTab implements OnInit, OnDestroy {
     if (this.evento) {
       this.carritoCompraService.syncEvento(this.evento);
     }
+    if (!this.puedeAgregarMasProductos(producto)) {
+      return;
+    }
     const productoConPrecioVigente: Producto = {
       ...producto,
       precio_preventa: this.getPrecioPreventa(producto),
       precio_evento: this.getPrecioEvento(producto),
       precio: this.getPrecioVigente(producto),
     };
-    const ok = this.carritoCompraService.agregarProductoAlCarrito(productoConPrecioVigente);
-    if (!ok) {
-      this.alertService.warning('Sin stock', 'No hay más unidades disponibles de este producto.');
-    }
+    this.carritoCompraService.agregarProductoAlCarrito(productoConPrecioVigente);
+    this.cdr.detectChanges();
   }
 
   quitarDelCarrito(producto: Producto): void {

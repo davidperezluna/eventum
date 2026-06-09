@@ -139,9 +139,42 @@ export class ClubDetalle implements OnInit, OnDestroy {
     return !!(sesion.wompi_cuenta_id ?? tipoCover.wompi_cuenta_id);
   }
 
+  maxCoverPermitidosEnCarrito(sesion: SesionCoverPublica, tipoCover: TipoCoverPublico): number {
+    const cupos = this.cuposDisponibles(sesion);
+    const limite = tipoCover.limite_por_persona;
+    if (limite != null && limite > 0) {
+      return Math.min(cupos, limite);
+    }
+    return cupos;
+  }
+
+  private avisoBloqueoAgregarCover(
+    sesion: SesionCoverPublica,
+    tipoCover: TipoCoverPublico,
+  ): { titulo: string; mensaje: string } | null {
+    const yaEnCarrito = this.getCantidadEnCarrito(sesion);
+    const maxPermitido = this.maxCoverPermitidosEnCarrito(sesion, tipoCover);
+    if (yaEnCarrito < maxPermitido) {
+      return null;
+    }
+
+    const limite = tipoCover.limite_por_persona;
+    if (limite != null && limite > 0 && yaEnCarrito >= limite) {
+      return {
+        titulo: 'Límite alcanzado',
+        mensaje: `Solo puedes comprar ${limite} cover(s) de este tipo por persona.`,
+      };
+    }
+
+    return {
+      titulo: 'Sin cupo',
+      mensaje: 'No hay más entradas disponibles para esta sesión.',
+    };
+  }
+
   async agregarCoverAlCarrito(sesion: SesionCoverPublica): Promise<void> {
     if (!this.coverDisponibleParaVenta(sesion)) {
-      this.alertService.warning('Sold Out', 'No hay entradas disponibles para esta sesión.');
+      this.alertService.warning('Agotado', 'No hay entradas disponibles para esta sesión.');
       return;
     }
 
@@ -160,17 +193,13 @@ export class ClubDetalle implements OnInit, OnDestroy {
       return;
     }
 
-    const limite = tipoCover.limite_por_persona ?? null;
-    const yaEnCarrito = this.getCantidadEnCarrito(sesion);
-    if (limite != null && limite > 0 && yaEnCarrito >= limite) {
-      this.alertService.warning('Límite alcanzado', `Solo puedes comprar ${limite} cover(s) de este tipo.`);
+    const bloqueo = this.avisoBloqueoAgregarCover(sesion, tipoCover);
+    if (bloqueo) {
+      this.alertService.warning(bloqueo.titulo, bloqueo.mensaje);
       return;
     }
 
-    const maxCantidad = Math.min(
-      this.cuposDisponibles(sesion),
-      limite != null && limite > 0 ? limite - yaEnCarrito : Number.MAX_SAFE_INTEGER,
-    );
+    const maxCantidad = this.maxCoverPermitidosEnCarrito(sesion, tipoCover);
 
     const clubNombre = this.lugar?.nombre ?? 'Club';
     const puedeContinuar = await resolverConflictoCoverAntesDeAgregar(
@@ -202,7 +231,11 @@ export class ClubDetalle implements OnInit, OnDestroy {
     });
 
     if (!agregado) {
-      this.alertService.warning('Sin cupo', 'No hay más entradas disponibles para esta sesión.');
+      const fallback = this.avisoBloqueoAgregarCover(sesion, tipoCover);
+      this.alertService.warning(
+        fallback?.titulo ?? 'Sin cupo',
+        fallback?.mensaje ?? 'No hay más entradas disponibles para esta sesión.',
+      );
     }
     this.cdr.detectChanges();
   }
@@ -221,10 +254,7 @@ export class ClubDetalle implements OnInit, OnDestroy {
     if (!this.coverDisponibleParaVenta(sesion)) return false;
     const tipoCover = this.tipoPorSesion(sesion);
     if (!tipoCover) return false;
-    const yaEnCarrito = this.getCantidadEnCarrito(sesion);
-    const limite = tipoCover.limite_por_persona ?? null;
-    if (limite != null && limite > 0 && yaEnCarrito >= limite) return false;
-    return yaEnCarrito < this.cuposDisponibles(sesion);
+    return this.avisoBloqueoAgregarCover(sesion, tipoCover) === null;
   }
 
   trackSesion(_index: number, sesion: SesionCoverPublica): number {

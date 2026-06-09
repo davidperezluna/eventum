@@ -248,9 +248,9 @@ export class CoversConfigDetalle implements OnInit {
         orden: tipo.orden ?? 0,
         activo: tipo.activo,
         categoria_id: categoriaId,
-        wompi_cuenta_id: wompiDefault,
+        wompi_cuenta_id: tipo.wompi_cuenta_id ?? wompiDefault,
       };
-      if (tipo.evento_id) {
+      if (!tipo.wompi_cuenta_id && tipo.evento_id) {
         void this.cargarWompiDelEvento(tipo.evento_id);
       }
     } else {

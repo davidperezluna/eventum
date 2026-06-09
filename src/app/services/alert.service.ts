@@ -6,10 +6,42 @@ import type { SweetAlertOptions, SweetAlertResult } from 'sweetalert2';
  * Servicio centralizado para manejar alertas usando SweetAlert2
  * Reemplaza los alert() y confirm() nativos del navegador
  */
+type AppAlertVariant = 'default' | 'success' | 'warning' | 'error' | 'info' | 'confirm';
+
+type AppModalBaseOptions = Pick<
+  SweetAlertOptions,
+  'customClass' | 'buttonsStyling' | 'allowOutsideClick' | 'allowEscapeKey'
+>;
+
 @Injectable({
   providedIn: 'root'
 })
 export class AlertService {
+  private modalClass(variant: AppAlertVariant = 'default'): SweetAlertOptions['customClass'] {
+    return {
+      popup: `app-alert-modal app-alert-modal--${variant}`,
+      title: 'app-alert-modal__title',
+      htmlContainer: 'app-alert-modal__text',
+      confirmButton: 'app-alert-modal__btn app-alert-modal__btn--primary',
+      cancelButton: 'app-alert-modal__btn app-alert-modal__btn--secondary',
+      actions: 'app-alert-modal__actions',
+      icon: 'app-alert-modal__icon',
+    };
+  }
+
+  private baseModalOptions(variant: AppAlertVariant): AppModalBaseOptions {
+    return {
+      customClass: this.modalClass(variant),
+      buttonsStyling: false,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+    };
+  }
+
+  private fireModal(options: SweetAlertOptions): Promise<SweetAlertResult> {
+    return Swal.fire(options);
+  }
+
   /**
    * Muestra un snackbar/toast no bloqueante
    */
@@ -40,16 +72,14 @@ export class AlertService {
    * Muestra un mensaje de éxito
    */
   success(title: string, message?: string): Promise<SweetAlertResult> {
-    return Swal.fire({
+    return this.fireModal({
+      ...this.baseModalOptions('success'),
       icon: 'success',
       title,
       text: message,
       confirmButtonText: '¡Perfecto!',
-      confirmButtonColor: '#10b981',
       timer: 3000,
       timerProgressBar: true,
-      allowOutsideClick: false,
-      allowEscapeKey: false
     });
   }
 
@@ -63,14 +93,12 @@ export class AlertService {
     options?: { html?: string }
   ): Promise<SweetAlertResult> {
     const html = options?.html?.trim();
-    return Swal.fire({
+    return this.fireModal({
+      ...this.baseModalOptions('error'),
       icon: 'error',
       title,
       ...(html ? { html } : { text: message }),
       confirmButtonText: 'Entendido',
-      confirmButtonColor: '#ef4444',
-      allowOutsideClick: false,
-      allowEscapeKey: false
     });
   }
 
@@ -78,14 +106,12 @@ export class AlertService {
    * Muestra un mensaje de advertencia
    */
   warning(title: string, message?: string): Promise<SweetAlertResult> {
-    return Swal.fire({
+    return this.fireModal({
+      ...this.baseModalOptions('warning'),
       icon: 'warning',
       title,
       text: message,
       confirmButtonText: 'Entendido',
-      confirmButtonColor: '#f59e0b',
-      allowOutsideClick: false,
-      allowEscapeKey: false
     });
   }
 
@@ -93,14 +119,12 @@ export class AlertService {
    * Muestra un mensaje informativo
    */
   info(title: string, message?: string): Promise<SweetAlertResult> {
-    return Swal.fire({
+    return this.fireModal({
+      ...this.baseModalOptions('info'),
       icon: 'info',
       title,
       text: message,
       confirmButtonText: 'Entendido',
-      confirmButtonColor: '#3b82f6',
-      allowOutsideClick: false,
-      allowEscapeKey: false
     });
   }
 
@@ -108,13 +132,11 @@ export class AlertService {
    * Muestra un mensaje simple (reemplaza alert())
    */
   alert(title: string, message?: string): Promise<SweetAlertResult> {
-    return Swal.fire({
+    return this.fireModal({
+      ...this.baseModalOptions('default'),
       title,
       text: message,
       confirmButtonText: 'OK',
-      confirmButtonColor: '#8b5cf6',
-      allowOutsideClick: false,
-      allowEscapeKey: false
     });
   }
 
@@ -127,18 +149,15 @@ export class AlertService {
     confirmText: string = 'Sí, continuar',
     cancelText: string = 'Cancelar'
   ): Promise<boolean> {
-    return Swal.fire({
+    return this.fireModal({
+      ...this.baseModalOptions('confirm'),
       title,
       text: message,
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: confirmText,
       cancelButtonText: cancelText,
-      confirmButtonColor: '#8b5cf6',
-      cancelButtonColor: '#6b7280',
       reverseButtons: true,
-      allowOutsideClick: false,
-      allowEscapeKey: false
     }).then((result) => {
       return result.isConfirmed;
     });
@@ -147,20 +166,16 @@ export class AlertService {
   /**
    * Muestra un mensaje de confirmación con opciones personalizadas
    */
-  confirmCustom(options: Partial<SweetAlertOptions>): Promise<boolean> {
-    const defaultOptions: Partial<SweetAlertOptions> = {
+  confirmCustom(options: SweetAlertOptions): Promise<boolean> {
+    return this.fireModal({
+      ...this.baseModalOptions('confirm'),
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, continuar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#8b5cf6',
-      cancelButtonColor: '#6b7280',
       reverseButtons: true,
-      allowOutsideClick: false,
-      allowEscapeKey: false
-    };
-
-    return Swal.fire({ ...defaultOptions, ...options } as SweetAlertOptions).then((result) => {
+      ...options,
+    }).then((result) => {
       return result.isConfirmed;
     });
   }
@@ -169,13 +184,13 @@ export class AlertService {
    * Muestra un mensaje de carga
    */
   loading(title: string = 'Cargando...'): void {
-    Swal.fire({
+    void this.fireModal({
+      ...this.baseModalOptions('default'),
       title,
-      allowOutsideClick: false,
-      allowEscapeKey: false,
+      showConfirmButton: false,
       didOpen: () => {
         Swal.showLoading();
-      }
+      },
     });
   }
 

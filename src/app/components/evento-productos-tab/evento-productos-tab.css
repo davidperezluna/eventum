@@ -1,99 +1,111 @@
 @import url('../../styles/compra-catalogo.shared.css');
 
+:host {
+  display: block;
+}
+
 .preventa-hint {
-  margin: 0.45rem 0 0;
+  margin: 0.55rem 0 0;
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  border: 1px solid #bbf7d0;
-  background: #f0fdf4;
-  color: #166534;
-  border-radius: 999px;
-  padding: 0.28rem 0.68rem;
+  gap: 0.35rem;
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
+  background: var(--ec-accent-soft, #f5f3ff);
+  color: var(--ec-accent-strong, #7c3aed);
+  border-radius: var(--ec-radius-badge, 6px);
+  padding: 0.28rem 0.62rem;
   font-size: 0.78rem;
-  font-weight: 800;
-  line-height: 1.2;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 .preventa-hint .material-icons {
   font-size: 0.95rem;
+  color: var(--color-secondary, #8b5cf6);
 }
 
 .preventa-hint--urgent {
-  border-color: #fdba74;
-  background: #fff7ed;
-  color: #9a3412;
-  box-shadow: 0 4px 12px -10px rgba(154, 52, 18, 0.5);
+  border-color: var(--ec-badge-warning-border, rgba(180, 83, 9, 0.32));
+  background: var(--ec-badge-warning-bg, #fef3c7);
+  color: var(--ec-badge-warning-text, #92400e);
+}
+
+.preventa-hint--urgent .material-icons {
+  color: var(--ec-badge-warning-icon, #b45309);
 }
 
 .preventa-hint--evento {
-  border-color: #c7d2fe;
-  background: #eef2ff;
-  color: #3730a3;
-  box-shadow: none;
+  border-color: var(--ec-border, #e2e8f0);
+  background: var(--ec-chip-surface, #fafbfc);
+  color: var(--ec-text-muted, #64748b);
+}
+
+.preventa-hint--evento .material-icons {
+  color: var(--ec-text-subtle, #94a3b8);
 }
 
 .producto-precio-stack {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.18rem;
-  min-width: 132px;
+  gap: 0.2rem;
+  min-width: 118px;
+  flex-shrink: 0;
 }
 
 .producto-precio-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  border: 1px solid #bbf7d0;
-  background: #f0fdf4;
-  color: #166534;
-  font-size: 0.7rem;
+  border-radius: var(--ec-radius-badge, 6px);
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
+  background: var(--ec-accent-soft, #f5f3ff);
+  color: var(--ec-accent-strong, #7c3aed);
+  font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  padding: 0.16rem 0.52rem;
+  padding: 0.16rem 0.48rem;
   white-space: nowrap;
 }
 
 .producto-precio-badge--evento {
-  border-color: #fde68a;
-  background: #fffbeb;
-  color: #92400e;
+  border-color: var(--ec-badge-warning-border, rgba(180, 83, 9, 0.32));
+  background: var(--ec-badge-warning-bg, #fef3c7);
+  color: var(--ec-badge-warning-text, #92400e);
 }
 
 .producto-precio-contexto {
   font-size: 0.78rem;
-  color: #475569;
-  font-weight: 700;
+  color: var(--ec-text-muted, #64748b);
+  font-weight: 600;
   line-height: 1.2;
 }
 
 .producto-precio-contexto--tachado {
   text-decoration: line-through;
   text-decoration-thickness: 1.5px;
-  opacity: 0.95;
+  opacity: 0.9;
 }
 
 .producto-precio-ahorro {
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  border: 1px solid #86efac;
-  background: #f0fdf4;
-  border-radius: 999px;
+  border: 1px solid var(--ec-badge-success-border, rgba(22, 163, 74, 0.38));
+  background: var(--ec-badge-success-bg, #dcfce7);
+  border-radius: var(--ec-radius-badge, 6px);
   padding: 0.12rem 0.48rem;
-  font-size: 0.74rem;
-  color: #15803d;
-  font-weight: 800;
+  font-size: 0.72rem;
+  color: var(--ec-badge-success-text, #15803d);
+  font-weight: 700;
   line-height: 1.2;
 }
 
 :host .tipo-boleta-header .precio {
-  font-size: 1.45rem;
-  font-weight: 900;
-  color: #0f172a;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--ec-text-primary, #0f172a);
   line-height: 1.05;
 }
 
@@ -113,42 +125,26 @@
   }
 
   :host .tipo-boleta-header .precio {
-    font-size: 1.34rem;
+    font-size: 1.05rem;
   }
 
   .preventa-hint {
     margin-top: 0.6rem;
-    margin-bottom: 0.3rem;
-    padding: 0.32rem 0.72rem;
     font-size: 0.8rem;
   }
 
   :host .tipo-boleta-card {
     padding: 1rem;
-    border-radius: 1rem;
+    border-radius: var(--ec-radius-card, 12px);
   }
 
   :host .tipo-descripcion {
     margin-bottom: 0.75rem;
-    line-height: 1.45;
   }
 
   :host .tipo-info {
     gap: 0.55rem;
     margin-bottom: 0.95rem;
-  }
-
-  :host .tipo-info-metricas {
-    row-gap: 0.45rem;
-  }
-
-  .producto-precio-badge {
-    font-size: 0.68rem;
-  }
-
-  .producto-precio-contexto,
-  .producto-precio-ahorro {
-    font-size: 0.76rem;
   }
 
   :host .tipo-actions {
@@ -157,6 +153,5 @@
 
   :host .btn-add {
     min-height: 44px;
-    border-radius: 12px;
   }
 }

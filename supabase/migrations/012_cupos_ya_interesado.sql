@@ -125,7 +125,6 @@ DECLARE
   v_uid BIGINT;
   v_aviso public.avisos_cupo%ROWTYPE;
   v_interes_id BIGINT;
-  v_display TEXT;
 BEGIN
   v_uid := public.fn_usuario_id_actual();
   IF v_uid IS NULL THEN
@@ -151,17 +150,6 @@ BEGIN
   INSERT INTO public.intereses_cupo (aviso_id, usuario_id, mensaje)
   VALUES (p_aviso_id, v_uid, trim(p_mensaje))
   RETURNING id INTO v_interes_id;
-
-  v_display := public.fn_autor_display(v_uid);
-
-  INSERT INTO public.notificaciones_usuario (usuario_id, tipo, titulo, mensaje, metadata)
-  VALUES (
-    v_aviso.usuario_id,
-    'cupo_interes',
-    'Alguien respondió a tu aviso',
-    v_display || ' quiere contactarte sobre tu aviso de cupo.',
-    jsonb_build_object('aviso_id', p_aviso_id, 'evento_id', v_aviso.evento_id, 'interes_id', v_interes_id)
-  );
 
   RETURN jsonb_build_object('ok', true, 'interes_id', v_interes_id);
 END;

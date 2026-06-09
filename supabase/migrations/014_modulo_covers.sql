@@ -762,6 +762,7 @@ BEGIN
       l.capacidad_maxima,
       l.covers_habilitado,
       l.covers_descripcion,
+      l.covers_porcentaje_servicio,
       l.activo
     FROM public.lugares l
     WHERE l.id = p_lugar_id

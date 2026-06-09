@@ -155,9 +155,21 @@ export class DetalleEvento implements OnInit, OnDestroy {
   }
 
   tieneExistencias(tipo: TipoBoleta): boolean {
-    const disponibles = Number(tipo.cantidad_disponibles ?? 0);
-    const soldOut = disponibles <= 0;
-    return !soldOut;
+    return this.maxCantidadPermitida(tipo) > 0;
+  }
+
+  maxCantidadPermitida(tipo: TipoBoleta): number {
+    const stockPalcos = this.esLineaPalcoMultipersona(tipo)
+      ? (this.palcosDisponiblesPorTipo.get(tipo.id) ?? []).length
+      : null;
+    return this.carritoCompraService.maxCantidadBoleta(tipo, stockPalcos);
+  }
+
+  puedeAgregarMasBoletas(tipo: TipoBoleta): boolean {
+    return (
+      this.tieneExistencias(tipo) &&
+      this.getCantidadEnCarrito(tipo) < this.maxCantidadPermitida(tipo)
+    );
   }
 
   ngOnInit() {
@@ -630,12 +642,16 @@ export class DetalleEvento implements OnInit, OnDestroy {
           // todavía hay cupo, preferimos el cálculo para no bloquear compras disponibles.
           const vendidas = Number(t.cantidad_vendidas ?? 0);
           const total = Number(t.cantidad_total ?? 0);
-          const disponiblesCalculados = Math.max(0, total - vendidas);
-
+          const disponiblesCalculados = Number.isFinite(total)
+            ? Math.max(0, total - vendidas)
+            : 0;
+          const rawDisponibles = Number(t.cantidad_disponibles);
           const disponibles =
-            (t.cantidad_disponibles === null || t.cantidad_disponibles === undefined)
+            t.cantidad_disponibles === null ||
+            t.cantidad_disponibles === undefined ||
+            !Number.isFinite(rawDisponibles)
               ? disponiblesCalculados
-              : t.cantidad_disponibles;
+              : Math.max(0, rawDisponibles);
 
           return {
             ...t,
@@ -670,8 +686,7 @@ export class DetalleEvento implements OnInit, OnDestroy {
   }
 
   async agregarAlCarrito(tipo: TipoBoleta) {
-    if (!this.tieneExistencias(tipo)) {
-      this.alertService.warning('Sold Out', `El tipo "${tipo.nombre}" ya no tiene existencias disponibles`);
+    if (!this.puedeAgregarMasBoletas(tipo)) {
       return;
     }
     const puedeContinuar = await resolverConflictoEventoAntesDeAgregar(
@@ -685,10 +700,8 @@ export class DetalleEvento implements OnInit, OnDestroy {
     if (this.evento) {
       this.carritoCompraService.syncEvento(this.evento);
     }
-    const agregado = this.carritoCompraService.agregarAlCarrito(tipo);
-    if (!agregado) {
-      this.alertService.warning('Stock limitado', `Solo hay ${tipo.cantidad_disponibles} boletas disponibles`);
-    }
+    const maxCantidad = this.maxCantidadPermitida(tipo);
+    this.carritoCompraService.agregarAlCarrito(tipo, undefined, maxCantidad);
     this.cdr.detectChanges();
   }
 

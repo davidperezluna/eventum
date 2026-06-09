@@ -1,4 +1,4 @@
-<div class="evento-section" *ngIf="!eventoFinalizado">
+<div class="evento-section detalle-tab-panel" *ngIf="!eventoFinalizado">
   <div class="section-heading-row">
     <div>
       <h2>Productos</h2>
@@ -87,7 +87,7 @@
             type="button"
             class="btn-cantidad"
             (click)="agregarAlCarrito(producto)"
-            [disabled]="!tieneExistencias(producto) || getCantidadEnCarrito(producto.id) >= getDisponibles(producto)"
+            [disabled]="!puedeAgregarMasProductos(producto)"
           >+</button>
           <button type="button" class="btn-remove" (click)="eliminarDelCarrito(producto)">
             <span class="material-icons">delete</span>
@@ -98,7 +98,7 @@
           type="button"
           class="btn-add"
           (click)="agregarAlCarrito(producto)"
-          [disabled]="!tieneExistencias(producto)"
+          [disabled]="!puedeAgregarMasProductos(producto)"
         >
           <span class="material-icons">add_shopping_cart</span>
           Agregar
@@ -112,7 +112,7 @@
   </div>
 </div>
 
-<div class="evento-section" *ngIf="eventoFinalizado">
+<div class="evento-section detalle-tab-panel" *ngIf="eventoFinalizado">
   <div class="evento-finalizado-message">
     <p>Este evento ya terminó. Los productos no están disponibles para compra.</p>
   </div>

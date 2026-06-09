@@ -1,4 +1,4 @@
-/* Copiado de detalle-evento.css — catálogo de compra (entradas/productos) */
+/* Catálogo de compra cliente — alineado con detalle-evento (zona compra v2) */
 
 .evento-section {
   border-radius: 1rem;
@@ -6,14 +6,14 @@
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   padding: 1.15rem;
   margin-bottom: 0.9rem;
-  background: white;
+  background: var(--ec-surface, #fff);
 }
 
 .evento-section h2 {
   font-size: 1.1rem;
   margin-bottom: 0.9rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--ec-text-primary, #0f172a);
 }
 
 .section-heading-row {
@@ -26,6 +26,9 @@
 
 .section-heading-row h2 {
   margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--ec-text-primary, #0f172a);
 }
 
 .evento-section .section-heading-row h2 {
@@ -35,33 +38,34 @@
 .section-kicker {
   margin: 0;
   font-size: 0.84rem;
-  color: #64748b;
+  color: var(--ec-text-muted, #64748b);
   font-weight: 500;
   line-height: 1.5;
 }
 
 .btn-carrito-rapido {
-  border: 1px solid #dbe4ff;
-  background: #fff;
-  color: #334155;
-  border-radius: 999px;
-  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--ec-border, #e2e8f0);
+  background: var(--ec-surface, #fff);
+  color: var(--ec-text-body, #1e293b);
+  border-radius: var(--ec-radius-control, 8px);
+  padding: 0.48rem 0.7rem;
   display: inline-flex;
   align-items: center;
   gap: 0.32rem;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 4px 12px -10px rgba(99, 102, 241, 0.45);
+  box-shadow: none;
 }
 
 .btn-carrito-rapido:hover {
-  background: #f8fafc;
-  border-color: #c7d2fe;
+  background: var(--ec-chip-hover, #f1f5f9);
+  border-color: var(--ec-accent-border, #ddd6fe);
 }
 
 .btn-carrito-rapido .material-icons {
   font-size: 1.05rem;
+  color: var(--color-secondary, #8b5cf6);
 }
 
 .btn-carrito-rapido-texto {
@@ -75,28 +79,27 @@
 }
 
 .tipo-boleta-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 0.95rem;
+  border: 1px solid var(--ec-border, #e2e8f0);
+  border-radius: var(--ec-radius-card, 12px);
   padding: 1rem;
-  transition: all 0.2s;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: var(--ec-surface, #fff);
+  box-shadow: none;
 }
 
 .tipo-boleta-card:hover {
-  transform: none;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
-  border-color: #cbd5e1;
+  border-color: var(--ec-accent-border, #ddd6fe);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
 }
 
 .tipo-boleta-card--licor {
-  border-color: #fcd34d;
+  border-color: var(--ec-badge-warning-border, rgba(180, 83, 9, 0.32));
 }
 
 .tipo-boleta-imagen {
   margin: -1rem -1rem 1rem;
   overflow: hidden;
-  border-radius: 0.95rem 0.95rem 0 0;
+  border-radius: var(--ec-radius-card, 12px) var(--ec-radius-card, 12px) 0 0;
 }
 
 .tipo-boleta-imagen img {
@@ -110,26 +113,31 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 0.75rem;
   margin-bottom: 1rem;
 }
 
 .tipo-boleta-header h3 {
   font-size: 1.02rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--ec-text-primary, #0f172a);
   margin: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .tipo-boleta-header .precio {
   font-size: 1.1rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--ec-text-primary, #0f172a);
+  white-space: nowrap;
 }
 
 .tipo-descripcion {
   font-size: 0.9rem;
-  color: #64748b;
+  color: var(--ec-text-muted, #64748b);
   margin-bottom: 1rem;
+  line-height: 1.45;
 }
 
 .tipo-info {
@@ -137,7 +145,7 @@
   flex-direction: column;
   gap: 0.4rem;
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: var(--ec-text-subtle, #94a3b8);
   margin-bottom: 1rem;
 }
 
@@ -166,25 +174,30 @@
 }
 
 .tipo-info .reservados.reservados--cero {
-  color: #94a3b8;
+  color: var(--ec-text-subtle, #94a3b8);
   font-weight: 500;
+}
+
+.tipo-info .limite {
+  color: var(--ec-text-muted, #64748b);
+  font-weight: 600;
 }
 
 .tipo-info .palco-badge {
   flex-basis: 100%;
-  background: #f8fafc;
-  color: #475569;
-  border: 1px solid #e2e8f0;
-  border-radius: 7px;
+  background: var(--ec-chip-surface, #fafbfc);
+  color: var(--ec-text-muted, #64748b);
+  border: 1px solid var(--ec-border, #e2e8f0);
+  border-radius: var(--ec-radius-badge, 6px);
   padding: 0.3rem 0.55rem;
   font-size: 0.74rem;
   font-weight: 600;
 }
 
 .tipo-info .palco-badge--licor {
-  background: #fff7ed;
-  color: #b45309;
-  border-color: #fed7aa;
+  background: var(--ec-badge-warning-bg, #fef3c7);
+  color: var(--ec-badge-warning-text, #92400e);
+  border-color: var(--ec-badge-warning-border, rgba(180, 83, 9, 0.32));
 }
 
 .tipo-info .fin-venta-block {
@@ -196,34 +209,38 @@
 
 .tipo-info .fin-venta-tipo {
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--ec-text-muted, #64748b);
   font-weight: 500;
 }
 
 .tipo-info .fin-venta-nota {
   font-size: 0.7rem;
-  color: #94a3b8;
+  color: var(--ec-text-subtle, #94a3b8);
   font-weight: 400;
   font-style: italic;
 }
 
 .soldout-badge {
-  background: #fee2e2;
-  color: #b91c1c;
-  border-radius: 999px;
+  background: var(--ec-badge-danger-bg, #fee2e2);
+  color: var(--ec-badge-danger-text, #b91c1c);
+  border-radius: var(--ec-radius-badge, 6px);
   padding: 0.25rem 0.75rem;
-  font-size: 0.75rem;
+  font-size: 0.66rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
+}
+
+.tipo-actions {
+  margin-top: 0.15rem;
 }
 
 .cantidad-controls {
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--ec-surface, #fff);
+  border: 1px solid var(--ec-border, #e2e8f0);
   border-radius: 100px;
   padding: 0.28rem 0.4rem 0.28rem 0.28rem;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
@@ -234,8 +251,8 @@
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: #f1f5f9;
-  color: #1e293b;
+  background: var(--ec-surface-muted, #f1f5f9);
+  color: var(--ec-text-body, #1e293b);
   font-size: 1.1rem;
   font-weight: 700;
   line-height: 1;
@@ -248,13 +265,13 @@
 }
 
 .btn-cantidad:hover:not(:disabled) {
-  background: #e2e8f0;
-  color: #0f172a;
+  background: var(--ec-chip-hover, #e2e8f0);
+  color: var(--ec-text-primary, #0f172a);
   transform: translateY(-1px);
 }
 
 .btn-cantidad:focus-visible {
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.18);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.18);
 }
 
 .btn-cantidad:disabled {
@@ -265,7 +282,7 @@
 
 .cantidad {
   font-weight: 800;
-  color: #0f172a;
+  color: var(--ec-text-primary, #0f172a);
   font-size: 1.02rem;
   min-width: 20px;
   text-align: center;
@@ -309,44 +326,46 @@
   gap: 0.5rem;
   padding: 0.6rem 0.9rem;
   font-weight: 700;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;
-  background: #eef2ff;
-  color: #3730a3;
-  border: 1px solid #c7d2fe;
-  border-radius: 11px;
-  font-size: 0.9rem;
+  border-radius: var(--ec-radius-control, 8px);
+  background: var(--color-secondary, #8b5cf6);
+  color: #fff;
+  border: 1px solid var(--color-secondary, #8b5cf6);
 }
 
 .btn-add .material-icons {
   font-size: 1.03rem;
-  color: #4f46e5;
+  color: #fff;
 }
 
 .btn-add:hover:not(:disabled) {
-  background: #e0e7ff;
-  border-color: #a5b4fc;
-  color: #312e81;
+  filter: brightness(1.05);
+  background: var(--color-secondary-dark, #5a67d8);
+  border-color: var(--color-secondary-dark, #5a67d8);
+  color: #fff;
 }
 
 .btn-add:disabled {
-  background: #f8fafc;
-  color: #94a3b8;
-  border-color: #e2e8f0;
+  background: var(--ec-surface-muted, #f8fafc);
+  color: var(--ec-text-subtle, #94a3b8);
+  border-color: var(--ec-border, #e2e8f0);
   cursor: not-allowed;
+  filter: none;
 }
 
 .evento-finalizado-message {
   text-align: center;
   padding: 2rem 1.5rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-radius: 1rem;
-  border: 2px dashed #cbd5e1;
+  background: var(--ec-chip-surface, #fafbfc);
+  border: 1px solid var(--ec-border, #e2e8f0);
+  border-radius: var(--ec-radius-control, 8px);
 }
 
 .evento-finalizado-message p {
-  font-size: 1.1rem;
-  color: #64748b;
+  font-size: 1rem;
+  color: var(--ec-text-muted, #64748b);
   line-height: 1.6;
   max-width: 500px;
   margin: 0 auto;
@@ -355,7 +374,7 @@
 .empty-state {
   text-align: center;
   padding: 1.5rem 1rem;
-  color: #64748b;
+  color: var(--ec-text-muted, #64748b);
 }
 
 .empty-state p {
@@ -374,11 +393,12 @@
 
   .section-heading-row {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
   }
 
   .btn-carrito-rapido {
     width: 100%;
     justify-content: center;
+    margin-top: 0.5rem;
   }
 }

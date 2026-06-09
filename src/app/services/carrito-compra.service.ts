@@ -417,7 +417,41 @@ export class CarritoCompraService {
     return true;
   }
 
-  agregarAlCarrito(tipo: TipoBoleta, sesionCoverId?: number): boolean {
+  /** Stock de boletas según tipo (sin límite por persona). */
+  stockBoleta(tipo: TipoBoleta): number {
+    const vendidas = Number(tipo.cantidad_vendidas ?? 0);
+    const total = Number(tipo.cantidad_total ?? 0);
+    const calculado = Number.isFinite(total) ? Math.max(0, total - vendidas) : 0;
+    const raw = Number(tipo.cantidad_disponibles);
+    if (!Number.isFinite(raw)) {
+      return calculado;
+    }
+    return Math.max(0, raw);
+  }
+
+  /** Máximo permitido en carrito: stock (opcionalmente acotado) + límite por persona. */
+  maxCantidadBoleta(tipo: TipoBoleta, stockOverride?: number | null): number {
+    const stockBase =
+      stockOverride != null && Number.isFinite(stockOverride)
+        ? Math.max(0, stockOverride)
+        : this.stockBoleta(tipo);
+    const limite = tipo.limite_por_persona;
+    if (limite != null && limite > 0) {
+      return Math.min(stockBase, limite);
+    }
+    return stockBase;
+  }
+
+  agregarAlCarrito(
+    tipo: TipoBoleta,
+    sesionCoverId?: number,
+    maxCantidad?: number,
+  ): boolean {
+    const max = Math.max(0, maxCantidad ?? this.maxCantidadBoleta(tipo));
+    if (max <= 0) {
+      return false;
+    }
+
     const items = this.itemsSubject.getValue().map((item) => ({
       ...item,
       palco_ids: item.palco_ids ? [...item.palco_ids] : undefined
@@ -427,7 +461,7 @@ export class CarritoCompraService {
     );
 
     if (existente) {
-      if (existente.cantidad >= tipo.cantidad_disponibles) {
+      if (existente.cantidad >= max) {
         return false;
       }
       existente.cantidad += 1;
@@ -436,9 +470,6 @@ export class CarritoCompraService {
         existente.palco_ids.push(null);
       }
     } else {
-      if (tipo.cantidad_disponibles <= 0) {
-        return false;
-      }
       items.push({
         tipo: { ...tipo },
         cantidad: 1,
