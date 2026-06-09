@@ -635,13 +635,14 @@ export class MisCompras implements OnInit, OnDestroy {
 
       const enTraslado = this.tieneTrasladoSalienteCoverActivo(item.boleta.id);
       const usada = this.esBoletaCoverUsada(item.boleta);
+      const accesoPuertaActivo = this.esCoverAccesoRapido(item);
       grupo.boletas.push(item);
       grupo.totalBoletas += 1;
       if (usada) {
         grupo.totalUsadas += 1;
       } else if (enTraslado) {
         grupo.totalTrasladoSaliente += 1;
-      } else {
+      } else if (!accesoPuertaActivo) {
         grupo.totalDisponibles += 1;
       }
     }
@@ -692,6 +693,11 @@ export class MisCompras implements OnInit, OnDestroy {
     if (this.esBoletaCoverUsada(item.boleta)) return false;
     const acceso = (item.boleta.estado_acceso || '').toLowerCase();
     return acceso === 'dentro' || (acceso === 'fuera' && !!item.boleta.permite_reingreso);
+  }
+
+  /** Sin usar en Mis compras: excluye acceso activo en puerta (vive en /accesos-puerta). */
+  esCoverSinUsarMisCompras(item: BoletaCoverConCompra): boolean {
+    return !this.esBoletaCoverUsada(item.boleta) && !this.esCoverAccesoRapido(item);
   }
 
   accionCoverAccesoRapido(item: BoletaCoverConCompra): 'entrada' | 'salida' {
@@ -877,6 +883,7 @@ export class MisCompras implements OnInit, OnDestroy {
   tiposCoverResumenParaBadges(grupo: LugarCoverGrupo): Array<{ nombre: string; total: number }> {
     const map = new Map<string, number>();
     for (const item of grupo.boletas) {
+      if (!this.esCoverSinUsarMisCompras(item)) continue;
       const nombre = (item.boleta.tipo_cover_nombre || 'Cover').trim();
       map.set(nombre, (map.get(nombre) || 0) + 1);
     }
@@ -891,7 +898,7 @@ export class MisCompras implements OnInit, OnDestroy {
 
   mostrarTabCoversDetalle(grupo: LugarCoverGrupo, tab: 'sin-usar' | 'usadas'): boolean {
     if (tab === 'sin-usar') {
-      return grupo.boletas.some((item) => !this.esBoletaCoverUsada(item.boleta));
+      return grupo.boletas.some((item) => this.esCoverSinUsarMisCompras(item));
     }
     return grupo.boletas.some((item) => this.esBoletaCoverUsada(item.boleta));
   }
@@ -899,7 +906,7 @@ export class MisCompras implements OnInit, OnDestroy {
   coversDetallePorTab(grupo: LugarCoverGrupo): BoletaCoverConCompra[] {
     return grupo.boletas.filter((item) =>
       this.tabCoversDetalle === 'sin-usar'
-        ? !this.esBoletaCoverUsada(item.boleta)
+        ? this.esCoverSinUsarMisCompras(item)
         : this.esBoletaCoverUsada(item.boleta)
     );
   }

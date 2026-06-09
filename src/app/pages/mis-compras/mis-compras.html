@@ -1296,7 +1296,11 @@
           </div>
         </div>
 
-        <p class="mc-cover-detalle-empty" *ngIf="coversDetallePorTab(clubDetalle).length === 0">
+        <p class="mc-cover-detalle-empty" *ngIf="coversDetallePorTab(clubDetalle).length === 0 && coversAccesoRapidoEnClub(clubDetalle).length > 0">
+          Tus covers con acceso en puerta están en
+          <a routerLink="/accesos-puerta">Acceso puerta</a>.
+        </p>
+        <p class="mc-cover-detalle-empty" *ngIf="coversDetallePorTab(clubDetalle).length === 0 && coversAccesoRapidoEnClub(clubDetalle).length === 0">
           No hay covers en esta pestaña.
         </p>
       </section>
