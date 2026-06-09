@@ -462,6 +462,18 @@ export interface LectorEventoTipoBoleta {
   tipos_boleta?: Pick<TipoBoleta, 'id' | 'nombre' | 'evento_id'>;
 }
 
+/** Permiso de escaneo cover: lector + lugar + tipo_cover (sin evento). */
+export interface LectorLugarTipoCover {
+  id: number;
+  usuario_id: number;
+  lugar_id: number;
+  tipo_cover_id: number;
+  fecha_creacion?: Date | string;
+  usuarios?: Pick<Usuario, 'id' | 'nombre' | 'apellido' | 'email'>;
+  lugares?: Pick<Lugar, 'id' | 'nombre' | 'ciudad'>;
+  tipos_cover?: { id: number; nombre: string; lugar_id: number };
+}
+
 /** Producto del catálogo de un evento (venta separada de boletas). */
 export interface Producto {
   id: number;

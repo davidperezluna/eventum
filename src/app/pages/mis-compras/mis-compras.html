@@ -1455,7 +1455,7 @@
     </button>
 
     <p class="modal-kicker">
-      {{ mensajeIngresoTipo === 'producto' ? 'ENTREGA OK' : 'INGRESO OK' }}
+      {{ mensajeIngresoTipo === 'producto' ? 'ENTREGA OK' : (mensajeIngresoTipo === 'cover' ? 'COVER OK' : 'INGRESO OK') }}
     </p>
     <h2 class="modal-title">{{ mensajeIngresoTitulo }}</h2>
     <p class="mensaje-ingreso-nota">{{ mensajeIngresoDetalle }}</p>
@@ -1480,8 +1480,18 @@
         <strong class="mensaje-ingreso-value mensaje-ingreso-value--code">{{ mensajeIngresoReferencia }}</strong>
       </div>
     </div>
+    <div class="modal-info" *ngIf="mensajeIngresoTipo === 'cover' && (mensajeIngresoEvento || mensajeIngresoReferencia)">
+      <div class="mensaje-ingreso-bloque" *ngIf="mensajeIngresoEvento">
+        <span class="mensaje-ingreso-label">Club</span>
+        <strong class="mensaje-ingreso-value">{{ mensajeIngresoEvento }}</strong>
+      </div>
+      <div class="mensaje-ingreso-bloque" *ngIf="mensajeIngresoReferencia">
+        <span class="mensaje-ingreso-label">Cover</span>
+        <strong class="mensaje-ingreso-value mensaje-ingreso-value--code">{{ mensajeIngresoReferencia }}</strong>
+      </div>
+    </div>
     <button type="button" class="btn-validate" (click)="accionMensajeIngresoModal()">
-      <span class="material-icons">{{ mensajeIngresoTipo === 'producto' ? 'inventory' : 'verified' }}</span>
+      <span class="material-icons">{{ mensajeIngresoTipo === 'producto' ? 'inventory' : (mensajeIngresoTipo === 'cover' ? 'nightlife' : 'verified') }}</span>
       {{ textoBotonMensajeIngresoModal() }}
     </button>
   </div>

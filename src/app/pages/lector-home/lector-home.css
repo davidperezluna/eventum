@@ -164,6 +164,15 @@
   color: var(--color-text-inverse);
 }
 
+.tag-evento--cover {
+  background: linear-gradient(135deg, #6d28d9 0%, #4c1d95 100%);
+}
+
+.grupo-card--cover {
+  border-color: rgba(109, 40, 217, 0.2);
+  background: linear-gradient(180deg, rgba(109, 40, 217, 0.04) 0%, var(--color-surface, #fff) 100%);
+}
+
 .tag-evento .material-icons {
   font-size: 1.1rem;
 }

@@ -13,13 +13,16 @@ import { RouterLink, ActivatedRoute } from '@angular/router';
 import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
 import { BoletasService } from '../../services/boletas.service';
 import { ComprasProductoService, ItemProductoEscaneo } from '../../services/compras-producto.service';
+import { CoversService } from '../../services/covers.service';
 import { AlertService } from '../../services/alert.service';
 import { AuthService, RolesPermitidos } from '../../services/auth.service';
 import {
   LectorPermisosService,
   buildPermisoKey,
+  buildPermisoCoverKey,
   PermisoEscaneo,
 } from '../../services/lector-permisos.service';
+import { BoletaCoverEscaneo } from '../../types/covers';
 import { LectorStateService } from '../../services/lector-state.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { BoletaComprada, TipoEstadoBoleta } from '../../types';
@@ -38,6 +41,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
   validando = false;
   boleta: BoletaComprada | null = null;
   productoItem: ItemProductoEscaneo | null = null;
+  boletaCover: BoletaCoverEscaneo | null = null;
   boletasEncontradas: BoletaComprada[] = [];
   modalVisible = false;
   nombreTipoBoleta = '';
@@ -53,7 +57,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
 
   permisos: PermisoEscaneo[] = [];
   permisoKeys = new Set<string>();
-  permisoEventoIds = new Set<number>();
+  permisoCoverKeys = new Set<string>();
   permisoEventoProductoIds = new Set<number>();
   esLector = false;
   cargandoPermisos = true;
@@ -87,6 +91,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     private boletasService: BoletasService,
     private comprasProductoService: ComprasProductoService,
+    private coversService: CoversService,
     private alertService: AlertService,
     private authService: AuthService,
     private lectorPermisos: LectorPermisosService,
@@ -140,14 +145,18 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     this.permisos = [...(permisos || [])];
     this.permisoKeys = new Set(
       this.permisos
-        .filter((p) => p.tipo_boleta_id != null)
-        .map((p) => buildPermisoKey(p.evento_id, p.tipo_boleta_id as number))
+        .filter((p) => p.scope === 'evento' && p.evento_id != null && p.tipo_boleta_id != null)
+        .map((p) => buildPermisoKey(p.evento_id!, p.tipo_boleta_id as number)),
     );
-    this.permisoEventoIds = new Set(this.permisos.map((p) => p.evento_id));
+    this.permisoCoverKeys = new Set(
+      this.permisos
+        .filter((p) => p.scope === 'cover' && p.lugar_id != null && p.tipo_cover_id != null)
+        .map((p) => buildPermisoCoverKey(p.lugar_id!, p.tipo_cover_id!)),
+    );
     this.permisoEventoProductoIds = new Set(
       this.permisos
-        .filter((p) => p.categoria === 'producto')
-        .map((p) => p.evento_id)
+        .filter((p) => p.scope === 'evento' && p.categoria === 'producto' && p.evento_id != null)
+        .map((p) => p.evento_id as number),
     );
   }
 
@@ -162,7 +171,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
       if (!options.background) {
         this.permisos = [];
         this.permisoKeys = new Set<string>();
-        this.permisoEventoIds = new Set<number>();
+        this.permisoCoverKeys = new Set<string>();
         this.permisoEventoProductoIds = new Set<number>();
         await this.alertService.error(
           'No se pudieron cargar tus permisos de escaneo.'
@@ -285,7 +294,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     if (this.cargandoPermisos) return;
     if (this.requierePermisosLector && this.permisos.length === 0) {
       this.cameraError =
-        'No tienes eventos asignados para escanear. Pide al administrador que te asigne permisos.';
+        'No tienes eventos ni covers asignados para escanear. Pide al administrador que te asigne permisos.';
       this.cdr.markForCheck();
       return;
     }
@@ -396,7 +405,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     if (this.requierePermisosLector && this.permisos.length === 0) {
-      await this.alertService.warning('Sin acceso', 'No tienes eventos asignados para escanear.');
+      await this.alertService.warning('Sin acceso', 'No tienes eventos ni covers asignados para escanear.');
       return;
     }
 
@@ -439,13 +448,14 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     if (this.requierePermisosLector && this.permisos.length === 0) {
       await this.alertService.warning(
         'Sin acceso',
-        'No tienes eventos asignados para escanear.'
+        'No tienes eventos ni covers asignados para escanear.'
       );
       return;
     }
 
     this.buscando = true;
     this.boleta = null;
+    this.boletaCover = null;
     this.errorPermiso = null;
     this.cdr.markForCheck();
 
@@ -458,16 +468,22 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
 
       const producto = await this.comprasProductoService.buscarItemPorCodigoQR(codigo.trim());
       const productoPedido = producto || await this.comprasProductoService.buscarCompraPorCodigoQR(codigo.trim());
-      if (!productoPedido) {
-        await this.alertService.info(
-          'No encontrado',
-          'No hay ninguna boleta o producto con ese código QR.'
-        );
-        await this.reiniciarEscaneo();
+      if (productoPedido) {
+        await this.mostrarProductoEnModal(productoPedido);
         return;
       }
 
-      await this.mostrarProductoEnModal(productoPedido);
+      const cover = await this.buscarCoverParaEscaneo(codigo.trim());
+      if (cover) {
+        await this.mostrarCoverEnModal(cover);
+        return;
+      }
+
+      await this.alertService.info(
+        'No encontrado',
+        'No hay ninguna boleta, producto o cover con ese código QR.',
+      );
+      await this.reiniciarEscaneo();
     } catch (err: unknown) {
       console.error(err);
       const msg = err instanceof Error ? err.message : 'Error desconocido';
@@ -501,6 +517,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
       eventoTitulo || boleta.evento?.titulo || `Evento #${tipoBoleta?.evento_id ?? ''}`;
     this.boleta = boleta;
     this.productoItem = null;
+    this.boletaCover = null;
     this.modalVisible = true;
     this.programarAutoAvanceModalSiAplica();
     this.cdr.markForCheck();
@@ -518,6 +535,40 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     }
     this.boleta = null;
     this.productoItem = item;
+    this.boletaCover = null;
+    this.modalVisible = true;
+    this.programarAutoAvanceModalSiAplica();
+    this.cdr.markForCheck();
+  }
+
+  private async buscarCoverParaEscaneo(codigo: string): Promise<BoletaCoverEscaneo | null> {
+    try {
+      return await this.coversService.buscarBoletaCoverParaEscaneo(codigo);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/sin permiso/i.test(msg)) {
+        this.errorPermiso = 'Este cover no corresponde a un lugar o tipo que tengas asignado.';
+        await this.alertService.warning('Sin permiso', this.errorPermiso);
+        return null;
+      }
+      throw err;
+    }
+  }
+
+  private async mostrarCoverEnModal(cover: BoletaCoverEscaneo): Promise<void> {
+    if (this.requierePermisosLector) {
+      const key = buildPermisoCoverKey(cover.lugar_id, cover.tipo_cover_id);
+      if (!this.permisoCoverKeys.has(key)) {
+        this.errorPermiso =
+          'Este cover no corresponde a un lugar o tipo que tengas asignado para escanear.';
+        await this.alertService.warning('Sin permiso', this.errorPermiso);
+        await this.reiniciarEscaneo();
+        return;
+      }
+    }
+    this.boleta = null;
+    this.productoItem = null;
+    this.boletaCover = cover;
     this.modalVisible = true;
     this.programarAutoAvanceModalSiAplica();
     this.cdr.markForCheck();
@@ -528,6 +579,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     this.modalVisible = false;
     this.boleta = null;
     this.productoItem = null;
+    this.boletaCover = null;
     this.nombreTipoBoleta = '';
     this.tituloEvento = '';
     if (!mantenerLista) {
@@ -743,6 +795,131 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  pagoCoverOk(cover: BoletaCoverEscaneo): boolean {
+    return (
+      String(cover.estado_pago || '').toLowerCase() === 'completado' &&
+      String(cover.estado_compra || '').toLowerCase() === 'confirmada'
+    );
+  }
+
+  puedeRegistrarEntradaCover(cover: BoletaCoverEscaneo): boolean {
+    if (!this.pagoCoverOk(cover)) return false;
+    const estado = String(cover.estado_acceso || '').toLowerCase();
+    if (estado === 'consumida' && !cover.permite_reingreso) return false;
+    if (estado === 'dentro') return false;
+    const dentro = cover.personas_dentro ?? 0;
+    const aforo = cover.aforo_maximo ?? 0;
+    return aforo <= 0 || dentro < aforo;
+  }
+
+  puedeRegistrarSalidaCover(cover: BoletaCoverEscaneo): boolean {
+    return String(cover.estado_acceso || '').toLowerCase() === 'dentro';
+  }
+
+  etiquetaEstadoCover(cover: BoletaCoverEscaneo): string {
+    const estado = String(cover.estado_acceso || '').toLowerCase();
+    if (estado === 'dentro') return 'Dentro del club';
+    if (estado === 'fuera' && cover.permite_reingreso) return 'Fuera · puede reingresar';
+    if (estado === 'fuera') return 'Salió (sin reingreso)';
+    if (estado === 'consumida') return 'Entrada consumida';
+    return 'Pendiente de ingreso';
+  }
+
+  async registrarEntradaCover(): Promise<void> {
+    if (!this.boletaCover) return;
+    if (!this.puedeRegistrarEntradaCover(this.boletaCover)) {
+      await this.alertService.warning(
+        'No se puede registrar entrada',
+        this.pagoCoverOk(this.boletaCover)
+          ? 'La persona ya está dentro, el aforo está completo o la entrada no permite reingreso.'
+          : 'El pago de la compra cover debe estar completado y confirmado.',
+      );
+      return;
+    }
+
+    if (!this.esFlujoRapidoLector()) {
+      const ok = await this.alertService.confirm(
+        'Registrar entrada',
+        `¿Registrar entrada al cover ${this.boletaCover.tipo_cover_nombre}?`,
+      );
+      if (!ok) return;
+    }
+
+    this.validando = true;
+    this.cdr.markForCheck();
+    try {
+      const res = await this.coversService.registrarAccesoCover(
+        this.boletaCover.codigo_qr,
+        'entrada',
+        this.boletaCover.sesion_cover_id,
+      );
+      this.boletaCover = {
+        ...this.boletaCover,
+        estado_acceso: res.estado_acceso,
+        personas_dentro: res.personas_dentro,
+        entradas_count: (this.boletaCover.entradas_count ?? 0) + 1,
+      };
+      if (this.esFlujoRapidoLector()) {
+        void this.alertService.snackbar('Entrada registrada', { timerMs: 1600 });
+      } else {
+        await this.alertService.success('Entrada registrada', 'Acceso de cover registrado correctamente.');
+      }
+      this.cerrarModal();
+      await this.reiniciarEscaneo();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error desconocido';
+      await this.alertService.error('Error al registrar entrada', msg);
+    } finally {
+      this.validando = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  async registrarSalidaCover(): Promise<void> {
+    if (!this.boletaCover) return;
+    if (!this.puedeRegistrarSalidaCover(this.boletaCover)) {
+      await this.alertService.warning('No se puede registrar salida', 'No hay una entrada activa para este QR.');
+      return;
+    }
+
+    if (!this.esFlujoRapidoLector()) {
+      const ok = await this.alertService.confirm(
+        'Registrar salida',
+        `¿Registrar salida del cover ${this.boletaCover.tipo_cover_nombre}?`,
+      );
+      if (!ok) return;
+    }
+
+    this.validando = true;
+    this.cdr.markForCheck();
+    try {
+      const res = await this.coversService.registrarAccesoCover(
+        this.boletaCover.codigo_qr,
+        'salida',
+        this.boletaCover.sesion_cover_id,
+      );
+      this.boletaCover = {
+        ...this.boletaCover,
+        estado_acceso: res.estado_acceso,
+        personas_dentro: res.personas_dentro,
+        salidas_count: (this.boletaCover.salidas_count ?? 0) + 1,
+      };
+      if (this.esFlujoRapidoLector()) {
+        void this.alertService.snackbar('Salida registrada', { timerMs: 1600 });
+      } else {
+        await this.alertService.success('Salida registrada', 'Salida de cover registrada correctamente.');
+      }
+      this.cerrarModal();
+      await this.reiniciarEscaneo();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error desconocido';
+      await this.alertService.error('Error al registrar salida', msg);
+    } finally {
+      this.validando = false;
+      this.cdr.markForCheck();
+    }
+  }
+
   private programarAutoAvanceModalSiAplica(): void {
     this.limpiarAutoAvance();
     if (!this.esFlujoRapidoLector()) return;
@@ -758,6 +935,13 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     } else if (this.productoItem) {
       const estadoProducto = String(this.productoItem.estado || '').toLowerCase();
       debeAutoAvanzar = estadoProducto === 'entregado' || !this.puedeValidarProducto(this.productoItem);
+    } else if (this.boletaCover) {
+      const estadoCover = String(this.boletaCover.estado_acceso || '').toLowerCase();
+      debeAutoAvanzar =
+        (estadoCover === 'consumida' && !this.boletaCover.permite_reingreso) ||
+        (estadoCover === 'dentro' && !this.puedeRegistrarSalidaCover(this.boletaCover)) ||
+        (!this.puedeRegistrarEntradaCover(this.boletaCover) &&
+          !this.puedeRegistrarSalidaCover(this.boletaCover));
     }
 
     if (!debeAutoAvanzar) return;

@@ -488,6 +488,26 @@
   cursor: pointer;
 }
 
+.cover-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.btn-cover-entrada {
+  background: linear-gradient(135deg, #6d28d9 0%, #4c1d95 100%);
+  color: #fff;
+}
+
+.btn-cover-salida {
+  width: 100%;
+  justify-content: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
 @media (max-width: 640px) {
   .manual-row {
     flex-direction: column;

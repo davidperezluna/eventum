@@ -3,6 +3,7 @@ import { SupabaseService } from './supabase.service';
 import {
   AforoSesionCover,
   BoletaCoverCliente,
+  BoletaCoverEscaneo,
   CompraCoverCliente,
   ConfigCoverLugar,
   DetalleLugarCoverPublico,
@@ -328,6 +329,54 @@ export class CoversService {
       tipos_cover: this.normalizeArray<TipoCover>(o['tipos_cover']),
       plantillas_cover: this.normalizeArray<PlantillaCover>(o['plantillas_cover']),
       sesiones_cover: this.normalizeArray<SesionCover>(o['sesiones_cover']),
+    };
+  }
+
+  async buscarBoletaCoverParaEscaneo(codigoQr: string): Promise<BoletaCoverEscaneo | null> {
+    const { data, error } = await this.supabase.getClient().rpc('buscar_boleta_cover_para_escaneo', {
+      p_codigo_qr: codigoQr.trim(),
+    });
+    if (error) throw error;
+    if (!data) return null;
+    const row = data as Record<string, unknown>;
+    return {
+      id: Number(row['id'] ?? 0),
+      codigo_qr: String(row['codigo_qr'] ?? ''),
+      estado_acceso: String(row['estado_acceso'] ?? ''),
+      entradas_count: Number(row['entradas_count'] ?? 0),
+      salidas_count: Number(row['salidas_count'] ?? 0),
+      sesion_cover_id: Number(row['sesion_cover_id'] ?? 0),
+      tipo_cover_id: Number(row['tipo_cover_id'] ?? 0),
+      lugar_id: Number(row['lugar_id'] ?? 0),
+      lugar_nombre: String(row['lugar_nombre'] ?? ''),
+      tipo_cover_nombre: String(row['tipo_cover_nombre'] ?? ''),
+      permite_reingreso: row['permite_reingreso'] !== false,
+      sesion_fecha: String(row['sesion_fecha'] ?? ''),
+      hora_apertura: String(row['hora_apertura'] ?? ''),
+      hora_cierre: String(row['hora_cierre'] ?? ''),
+      estado_pago: row['estado_pago'] != null ? String(row['estado_pago']) : undefined,
+      estado_compra: row['estado_compra'] != null ? String(row['estado_compra']) : undefined,
+      personas_dentro: Number(row['personas_dentro'] ?? 0),
+      aforo_maximo: Number(row['aforo_maximo'] ?? 0),
+    };
+  }
+
+  async registrarAccesoCover(
+    codigoQr: string,
+    tipoMovimiento: 'entrada' | 'salida',
+    sesionCoverId?: number | null,
+  ): Promise<{ ok: boolean; estado_acceso: string; personas_dentro: number }> {
+    const { data, error } = await this.supabase.getClient().rpc('registrar_acceso_cover', {
+      p_codigo_qr: codigoQr.trim(),
+      p_tipo_movimiento: tipoMovimiento,
+      p_sesion_cover_id: sesionCoverId ?? null,
+    });
+    if (error) throw error;
+    const row = (data ?? {}) as Record<string, unknown>;
+    return {
+      ok: row['ok'] === true,
+      estado_acceso: String(row['estado_acceso'] ?? ''),
+      personas_dentro: Number(row['personas_dentro'] ?? 0),
     };
   }
 

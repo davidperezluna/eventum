@@ -230,7 +230,7 @@ export class MisCompras implements OnInit, OnDestroy {
   mensajeIngresoReferencia = '';
   mensajeIngresoEvento = '';
   mensajeIngresoProductos: Array<{ nombre: string; cantidad: number }> = [];
-  mensajeIngresoTipo: 'entrada' | 'producto' = 'entrada';
+  mensajeIngresoTipo: 'entrada' | 'producto' | 'cover' = 'entrada';
   siguienteBoletaSugerida: BoletaConCompra | null = null;
 
   /** Traslados de palcos: historial y mapas para ocultar QR al remitente con envío pendiente. */
@@ -656,10 +656,22 @@ export class MisCompras implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  /** Cover que ya pasó por puerta al menos una vez (no transferible). */
+  coverAccesoUtilizadoEnPuerta(boleta: BoletaCoverCliente): boolean {
+    const acceso = (boleta.estado_acceso || '').toLowerCase();
+    return acceso !== '' && acceso !== 'pendiente';
+  }
+
   esBoletaCoverUsada(boleta: BoletaCoverCliente): boolean {
     const estado = (boleta.estado || '').toLowerCase();
     const acceso = (boleta.estado_acceso || '').toLowerCase();
-    return estado === 'consumida' || estado === 'cancelada' || acceso === 'consumida';
+    if (estado === 'consumida' || estado === 'cancelada' || acceso === 'consumida') {
+      return true;
+    }
+    if (acceso === 'fuera' && boleta.permite_reingreso === false) {
+      return true;
+    }
+    return false;
   }
 
   esDiaSesionCover(boleta: BoletaCoverCliente): boolean {
@@ -737,10 +749,13 @@ export class MisCompras implements OnInit, OnDestroy {
     if (!this.esTitularCover(item)) return false;
     if (this.tieneTrasladoSalienteCoverActivo(item.boleta.id)) return false;
     if (this.esBoletaCoverUsada(item.boleta)) return false;
+    if (this.coverAccesoUtilizadoEnPuerta(item.boleta)) return false;
     return true;
   }
 
   puedeMostrarQrCover(item: BoletaCoverConCompra): boolean {
+    const acceso = (item.boleta.estado_acceso || '').toLowerCase();
+    if (acceso === 'dentro') return false;
     return (
       this.esTitularCover(item) &&
       item.compra.estado_pago === TipoEstadoPago.COMPLETADO &&
@@ -752,6 +767,8 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   puedeAbrirQrCover(item: BoletaCoverConCompra): boolean {
+    const acceso = (item.boleta.estado_acceso || '').toLowerCase();
+    if (acceso === 'dentro') return false;
     return (
       this.esTitularCover(item) &&
       item.compra.estado_pago === TipoEstadoPago.COMPLETADO &&
@@ -1378,7 +1395,7 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   private abrirMensajeIngreso(
-    tipo: 'entrada' | 'producto',
+    tipo: 'entrada' | 'producto' | 'cover',
     titulo: string,
     detalle: string,
     siguienteBoleta?: BoletaConCompra | null,
@@ -1439,12 +1456,27 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   private abrirMensajeIngresoDesdeNotificacion(
-    tipo: 'entrada' | 'producto',
+    tipo: 'entrada' | 'producto' | 'cover',
     metadata: Record<string, unknown> | null | undefined,
     siguienteBoleta?: BoletaConCompra | null,
     compraProductoCapturada?: CompraProducto | null
   ): void {
     const meta = metadata ?? {};
+
+    if (tipo === 'cover') {
+      const lugar = String(meta['lugar_nombre'] || '').trim();
+      const tipoCover = String(meta['tipo_cover_nombre'] || '').trim();
+      const qr = String(meta['codigo_qr'] || '').trim();
+      this.abrirMensajeIngreso(
+        'cover',
+        'Bienvenido al club',
+        'Tu entrada de cover fue registrada en puerta.',
+        null,
+        qr || tipoCover || undefined,
+        lugar || undefined
+      );
+      return;
+    }
 
     if (tipo === 'producto') {
       const productos = this.productosRedimidosParaModal(meta, compraProductoCapturada);
@@ -2910,6 +2942,17 @@ export class MisCompras implements OnInit, OnDestroy {
       }
     }
 
+    if (coversEventumEnabled) {
+      for (const item of this.boletasCover) {
+        if (!this.puedeAbrirQrCover(item)) continue;
+        if (this.esBoletaCoverUsada(item.boleta)) continue;
+        const acceso = String(item.boleta.estado_acceso || '').toLowerCase();
+        if (acceso === 'pendiente' || acceso === 'fuera') {
+          return true;
+        }
+      }
+    }
+
     return false;
   }
 
@@ -2970,6 +3013,78 @@ export class MisCompras implements OnInit, OnDestroy {
     }
 
     return true;
+  }
+
+  private patchCoverEnEstadoLocal(
+    boletaCoverId: number,
+    patch: Pick<BoletaCoverCliente, 'estado_acceso'>
+  ): boolean {
+    let found = false;
+
+    for (const item of this.boletasCover) {
+      if (item.boleta.id === boletaCoverId) {
+        Object.assign(item.boleta, patch);
+        found = true;
+      }
+    }
+
+    if (this.coverBoletaSeleccionada?.boleta.id === boletaCoverId) {
+      Object.assign(this.coverBoletaSeleccionada.boleta, patch);
+    }
+
+    return found;
+  }
+
+  private coverQrAbiertoCoincideConNotificacion(
+    metadata: Record<string, unknown> | null | undefined
+  ): boolean {
+    if (!this.showCoverQrModal || !this.coverBoletaSeleccionada) {
+      return false;
+    }
+    const meta = metadata ?? {};
+    const idNotif = Number(meta['boleta_cover_id'] ?? 0);
+    const qrNotif = String(meta['codigo_qr'] || '').trim();
+    const seleccion = this.coverBoletaSeleccionada.boleta;
+    if (Number.isFinite(idNotif) && idNotif > 0 && seleccion.id === idNotif) {
+      return true;
+    }
+    const qrSeleccion = String(seleccion.codigo_qr || '').trim();
+    return !!qrNotif && !!qrSeleccion && qrNotif === qrSeleccion;
+  }
+
+  private aplicarCoverEntradaEnCaliente(metadata: Record<string, unknown>): boolean {
+    const boletaCoverId = Number(metadata['boleta_cover_id'] ?? 0);
+    if (!Number.isFinite(boletaCoverId) || boletaCoverId <= 0) {
+      return false;
+    }
+
+    const patch: Pick<BoletaCoverCliente, 'estado_acceso'> = {
+      estado_acceso: String(metadata['estado_acceso'] || 'dentro').toLowerCase() as BoletaCoverCliente['estado_acceso'],
+    };
+
+    const patched = this.patchCoverEnEstadoLocal(boletaCoverId, patch);
+    if (coversEventumEnabled) {
+      this.reconstruirLugaresConCovers();
+    }
+    return patched;
+  }
+
+  private async aplicarCoverEntradaDesdeNotificacion(
+    metadata: Record<string, unknown>
+  ): Promise<void> {
+    if (this.aplicarCoverEntradaEnCaliente(metadata)) {
+      return;
+    }
+
+    if (!coversEventumEnabled) {
+      return;
+    }
+
+    try {
+      await this.loadCoversPorTitular({ background: true });
+    } catch (err) {
+      console.error('[MisCompras] Error refrescando cover desde notificacion:', err);
+    }
   }
 
   private async aplicarEntradaValidadaDesdeNotificacion(
@@ -3070,6 +3185,9 @@ export class MisCompras implements OnInit, OnDestroy {
   private reconstruirVistaTrasNotificacion(): void {
     this.reconstruirEventosConBoletas();
     this.fusionarProductosEnEventos();
+    if (coversEventumEnabled) {
+      this.reconstruirLugaresConCovers();
+    }
     this.syncTabEventoDetalle();
     void this.actualizarPromoProductos();
     this.persistState(Date.now());
@@ -3090,6 +3208,12 @@ export class MisCompras implements OnInit, OnDestroy {
 
     if (tipo === 'productos_redimidos') {
       await this.aplicarProductosRedimidosDesdeNotificacion(meta);
+      this.reconstruirVistaTrasNotificacion();
+      return;
+    }
+
+    if (tipo === 'cover_entrada_registrada') {
+      await this.aplicarCoverEntradaDesdeNotificacion(meta);
       this.reconstruirVistaTrasNotificacion();
       return;
     }
@@ -3151,6 +3275,7 @@ export class MisCompras implements OnInit, OnDestroy {
             const tipo = String(row?.tipo || '').toLowerCase();
             const esEntradaValidada = tipo === 'entrada_validada';
             const esProductoRedimido = tipo === 'productos_redimidos';
+            const esCoverEntrada = tipo === 'cover_entrada_registrada';
             const metadataBoletaId = Number(row?.metadata?.['boleta_id'] ?? 0);
             const metadataCompraProductoId = Number(row?.metadata?.['compra_producto_id'] ?? 0);
             const qrBoletaCoincide =
@@ -3165,7 +3290,13 @@ export class MisCompras implements OnInit, OnDestroy {
               Number.isFinite(metadataCompraProductoId) &&
               metadataCompraProductoId > 0 &&
               this.productoFilaSeleccionada?.compra.id === metadataCompraProductoId;
-            const teniaQrAbierto = qrBoletaCoincide || qrProductoCoincide;
+            if (esCoverEntrada && row.metadata) {
+              this.aplicarCoverEntradaEnCaliente(row.metadata);
+            }
+
+            const qrCoverCoincide =
+              esCoverEntrada && this.coverQrAbiertoCoincideConNotificacion(row.metadata);
+            const teniaQrAbierto = qrBoletaCoincide || qrProductoCoincide || qrCoverCoincide;
 
             const boletaActual = this.boletaSeleccionada;
             const compraActual = this.compraSeleccionada;
@@ -3185,6 +3316,9 @@ export class MisCompras implements OnInit, OnDestroy {
             if (qrProductoCoincide) {
               this.cerrarProductoQrModal();
             }
+            if (qrCoverCoincide) {
+              this.cerrarCoverQrModal();
+            }
             if (teniaQrAbierto) {
               if (esEntradaValidada) {
                 this.abrirMensajeIngresoDesdeNotificacion('entrada', row.metadata, siguienteBoleta);
@@ -3195,11 +3329,13 @@ export class MisCompras implements OnInit, OnDestroy {
                   null,
                   compraProductoRedimida
                 );
+              } else if (esCoverEntrada) {
+                this.abrirMensajeIngresoDesdeNotificacion('cover', row.metadata);
               }
             }
 
             // Para validaciones/redenciones usamos el modal de bienvenida y evitamos toast duplicado.
-            if (!esEntradaValidada && !esProductoRedimido) {
+            if (!esEntradaValidada && !esProductoRedimido && !esCoverEntrada) {
               void this.alertService.snackbar(`${titulo}. ${mensaje}`);
             }
 

@@ -1,188 +1,280 @@
-<div class="lectores-page">
-  <header class="page-header">
-    <div>
-      <h1>
-        <span class="material-icons">qr_code_scanner</span>
-        Lectores (escaneo)
-      </h1>
-      <p>
-        Asigna a usuarios con rol <strong>Lector</strong> el evento, tipos de boleta y permisos para redimir
-        productos al escanear.
-      </p>
-    </div>
-    <div class="header-actions">
-      <a routerLink="/escanear-qr" class="btn-secondary btn-escanear">
-        <span class="material-icons">qr_code_scanner</span>
-        Escanear QR
-      </a>
-      <a
-        routerLink="/login-admin"
-        [queryParams]="{ returnUrl: '/lector/inicio' }"
-        class="btn-secondary btn-escanear"
-        title="App lector PWA / móvil"
-      >
-        <span class="material-icons">smartphone</span>
-        App lector
-      </a>
-      <button type="button" class="btn-primary" (click)="abrirModal()">
-        <span class="material-icons">add</span>
-        Nueva asignación
-      </button>
-    </div>
-  </header>
-
-  <div class="content-card">
-    <div *ngIf="loading" class="loading-state">Cargando parametrización...</div>
-
-    <div *ngIf="!loading && (filasBoletas.length > 0 || filasProductos.length > 0)" class="table-block">
-      <h3 class="table-title">Permisos de boletas</h3>
-      <div class="table-wrap" *ngIf="filasBoletas.length > 0">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Lector</th>
-            <th>Email</th>
-            <th>Evento</th>
-            <th>Tipo de boleta</th>
-            <th>Fecha</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let f of filasBoletas">
-            <td>{{ nombreLector(f) }}</td>
-            <td>{{ f.usuarios?.email || '—' }}</td>
-            <td>{{ tituloEvento(f) }}</td>
-            <td>{{ nombreTipoBoleta(f) }}</td>
-            <td>{{ f.fecha_creacion | date : 'short' }}</td>
-            <td>
-              <button type="button" class="btn-icon danger" (click)="eliminarFila(f)" title="Eliminar">
-                <span class="material-icons">delete</span>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      </div>
-      <p class="hint warn" *ngIf="filasBoletas.length === 0">
-        No hay permisos de boletas configurados.
-      </p>
-
-      <h3 class="table-title table-title--secondary">Permisos de productos por evento</h3>
-      <div class="table-wrap" *ngIf="filasProductos.length > 0">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Lector</th>
-              <th>Email</th>
-              <th>Evento</th>
-              <th>Permiso</th>
-              <th>Fecha</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let f of filasProductos">
-              <td>{{ nombreLector(f) }}</td>
-              <td>{{ f.usuarios?.email || '—' }}</td>
-              <td>{{ tituloEvento(f) }}</td>
-              <td>Productos del evento</td>
-              <td>{{ f.fecha_creacion | date : 'short' }}</td>
-              <td>
-                <button type="button" class="btn-icon danger" (click)="eliminarFila(f)" title="Eliminar">
-                  <span class="material-icons">delete</span>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p class="hint warn" *ngIf="filasProductos.length === 0">
-        No hay permisos de productos configurados.
-      </p>
-    </div>
-
-    <div *ngIf="!loading && filasBoletas.length === 0 && filasProductos.length === 0" class="empty-state">
-      <span class="material-icons empty-icon">qr_code_scanner</span>
-      <h3>Sin asignaciones</h3>
-      <p>Crea usuarios con rol Lector en Usuarios y luego agrégalos aquí con permisos de boletas o productos.</p>
-      <button type="button" class="btn-primary" (click)="abrirModal()">Nueva asignación</button>
-    </div>
-  </div>
-
-  <div *ngIf="showModal" class="modal-overlay" (click)="cerrarModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2>Nueva asignación</h2>
-        <button type="button" class="btn-close" (click)="cerrarModal()">
-          <span class="material-icons">close</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="lp-lector">Lector *</label>
-          <select id="lp-lector" [(ngModel)]="formUsuarioId" class="form-control">
-            <option [ngValue]="null">Seleccione…</option>
-            <option *ngFor="let u of lectores" [ngValue]="u.id">
-              {{ etiquetaLectorEnLista(u) }}
-            </option>
-          </select>
-          <p class="hint" *ngIf="lectores.length === 0">
-            No hay usuarios con rol Lector. Créalos o cámbialos en <a routerLink="/usuarios">Usuarios</a>.
-          </p>
-        </div>
-
-        <div class="form-group">
-          <label for="lp-evento">Evento *</label>
-          <select
-            id="lp-evento"
-            [(ngModel)]="formEventoId"
-            (ngModelChange)="onEventoCambiado()"
-            class="form-control"
-          >
-            <option [ngValue]="null">Seleccione…</option>
-            <option *ngFor="let ev of eventos" [ngValue]="ev.id">{{ ev.titulo }}</option>
-          </select>
-        </div>
-
-        <div class="form-group" *ngIf="formEventoId">
-          <label>Tipos de boleta del evento</label>
-          <p class="hint">Solo se listan tipos activos del evento seleccionado. Puedes marcar varios.</p>
-          <ul class="tipo-list" *ngIf="tiposBoletaEvento.length > 0">
-            <li *ngFor="let tb of tiposBoletaEvento">
-              <label class="tipo-row">
-                <input
-                  type="checkbox"
-                  [checked]="isTipoSeleccionado(tb.id)"
-                  (change)="toggleTipo(tb.id)"
-                />
-                <span>{{ tb.nombre }}</span>
-              </label>
-            </li>
-          </ul>
-          <p class="hint warn" *ngIf="tiposBoletaEvento.length === 0">Este evento no tiene tipos de boleta activos.</p>
-        </div>
-
-        <div class="form-group" *ngIf="formEventoId">
-          <label class="tipo-row permiso-productos-row">
-            <input
-              type="checkbox"
-              [checked]="formPermitirProductos"
-              (change)="formPermitirProductos = !formPermitirProductos"
-            />
-            <span>
-              Permitir escaneo/redención de <strong>productos</strong> para este evento
-            </span>
-          </label>
-          <p class="hint">
-            Este permiso habilita que el lector valide QR de productos del evento desde el módulo de escaneo.
-          </p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn-secondary" (click)="cerrarModal()">Cancelar</button>
-        <button type="button" class="btn-primary" (click)="guardarAsignacion()">Guardar</button>
-      </div>
-    </div>
-  </div>
-</div>
+<div class="lectores-page">
+  <header class="page-header">
+    <div>
+      <h1>
+        <span class="material-icons">qr_code_scanner</span>
+        Lectores (escaneo)
+      </h1>
+      <p>
+        Asigna a usuarios con rol <strong>Lector</strong> permisos por <strong>evento</strong> (boletas/productos)
+        o por <strong>lugar</strong> (covers de club).
+      </p>
+    </div>
+    <div class="header-actions">
+      <a routerLink="/escanear-qr" class="btn-secondary btn-escanear">
+        <span class="material-icons">qr_code_scanner</span>
+        Escanear QR
+      </a>
+      <a
+        routerLink="/login-admin"
+        [queryParams]="{ returnUrl: '/lector/inicio' }"
+        class="btn-secondary btn-escanear"
+        title="App lector PWA / móvil"
+      >
+        <span class="material-icons">smartphone</span>
+        App lector
+      </a>
+      <button type="button" class="btn-primary" (click)="abrirModal('evento')">
+        <span class="material-icons">add</span>
+        Asignar evento
+      </button>
+      <button type="button" class="btn-primary btn-cover" (click)="abrirModal('cover')">
+        <span class="material-icons">nightlife</span>
+        Asignar cover
+      </button>
+    </div>
+  </header>
+
+  <div class="content-card">
+    <div *ngIf="loading" class="loading-state">Cargando parametrización...</div>
+
+    <div *ngIf="!loading && hayAsignaciones" class="table-block">
+      <h3 class="table-title">Permisos de boletas (evento)</h3>
+      <div class="table-wrap" *ngIf="filasBoletas.length > 0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Lector</th>
+              <th>Email</th>
+              <th>Evento</th>
+              <th>Tipo de boleta</th>
+              <th>Fecha</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let f of filasBoletas">
+              <td>{{ nombreLector(f) }}</td>
+              <td>{{ f.usuarios?.email || '—' }}</td>
+              <td>{{ tituloEvento(f) }}</td>
+              <td>{{ nombreTipoBoleta(f) }}</td>
+              <td>{{ f.fecha_creacion | date : 'short' }}</td>
+              <td>
+                <button type="button" class="btn-icon danger" (click)="eliminarFila(f)" title="Eliminar">
+                  <span class="material-icons">delete</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="hint warn" *ngIf="filasBoletas.length === 0">No hay permisos de boletas configurados.</p>
+
+      <h3 class="table-title table-title--secondary">Permisos de productos por evento</h3>
+      <div class="table-wrap" *ngIf="filasProductos.length > 0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Lector</th>
+              <th>Email</th>
+              <th>Evento</th>
+              <th>Permiso</th>
+              <th>Fecha</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let f of filasProductos">
+              <td>{{ nombreLector(f) }}</td>
+              <td>{{ f.usuarios?.email || '—' }}</td>
+              <td>{{ tituloEvento(f) }}</td>
+              <td>Productos del evento</td>
+              <td>{{ f.fecha_creacion | date : 'short' }}</td>
+              <td>
+                <button type="button" class="btn-icon danger" (click)="eliminarFila(f)" title="Eliminar">
+                  <span class="material-icons">delete</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="hint warn" *ngIf="filasProductos.length === 0">No hay permisos de productos configurados.</p>
+
+      <h3 class="table-title table-title--secondary">Permisos de covers por lugar</h3>
+      <div class="table-wrap" *ngIf="filasCover.length > 0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Lector</th>
+              <th>Email</th>
+              <th>Lugar / club</th>
+              <th>Tipo de cover</th>
+              <th>Fecha</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let f of filasCover">
+              <td>{{ nombreLector(f) }}</td>
+              <td>{{ f.usuarios?.email || '—' }}</td>
+              <td>{{ tituloLugar(f) }}</td>
+              <td>{{ nombreTipoCover(f) }}</td>
+              <td>{{ f.fecha_creacion | date : 'short' }}</td>
+              <td>
+                <button type="button" class="btn-icon danger" (click)="eliminarFilaCover(f)" title="Eliminar">
+                  <span class="material-icons">delete</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="hint warn" *ngIf="filasCover.length === 0">
+        No hay permisos de cover configurados. Usa «Asignar cover» para lectores en clubes.
+      </p>
+    </div>
+
+    <div *ngIf="!loading && !hayAsignaciones" class="empty-state">
+      <span class="material-icons empty-icon">qr_code_scanner</span>
+      <h3>Sin asignaciones</h3>
+      <p>Crea usuarios con rol Lector en Usuarios y luego agrégalos aquí por evento o por lugar (cover).</p>
+      <div class="empty-actions">
+        <button type="button" class="btn-primary" (click)="abrirModal('evento')">Asignar evento</button>
+        <button type="button" class="btn-primary btn-cover" (click)="abrirModal('cover')">Asignar cover</button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="showModal" class="modal-overlay" (click)="cerrarModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ modalAlcance === 'cover' ? 'Nueva asignación — Cover' : 'Nueva asignación — Evento' }}</h2>
+        <button type="button" class="btn-close" (click)="cerrarModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-tabs" role="tablist" aria-label="Alcance de asignación">
+          <button
+            type="button"
+            class="modal-tab"
+            [class.active]="modalAlcance === 'evento'"
+            (click)="setModalAlcance('evento')"
+          >
+            <span class="material-icons">event</span>
+            Evento
+          </button>
+          <button
+            type="button"
+            class="modal-tab"
+            [class.active]="modalAlcance === 'cover'"
+            (click)="setModalAlcance('cover')"
+          >
+            <span class="material-icons">nightlife</span>
+            Cover (lugar)
+          </button>
+        </div>
+
+        <div class="form-group">
+          <label for="lp-lector">Lector *</label>
+          <select id="lp-lector" [(ngModel)]="formUsuarioId" class="form-control">
+            <option [ngValue]="null">Seleccione…</option>
+            <option *ngFor="let u of lectores" [ngValue]="u.id">
+              {{ etiquetaLectorEnLista(u) }}
+            </option>
+          </select>
+          <p class="hint" *ngIf="lectores.length === 0">
+            No hay usuarios con rol Lector. Créalos o cámbialos en <a routerLink="/usuarios">Usuarios</a>.
+          </p>
+        </div>
+
+        <ng-container *ngIf="modalAlcance === 'evento'">
+          <div class="form-group">
+            <label for="lp-evento">Evento *</label>
+            <select
+              id="lp-evento"
+              [(ngModel)]="formEventoId"
+              (ngModelChange)="onEventoCambiado()"
+              class="form-control"
+            >
+              <option [ngValue]="null">Seleccione…</option>
+              <option *ngFor="let ev of eventos" [ngValue]="ev.id">{{ ev.titulo }}</option>
+            </select>
+          </div>
+
+          <div class="form-group" *ngIf="formEventoId">
+            <label>Tipos de boleta del evento</label>
+            <p class="hint">Solo se listan tipos activos del evento seleccionado. Puedes marcar varios.</p>
+            <ul class="tipo-list" *ngIf="tiposBoletaEvento.length > 0">
+              <li *ngFor="let tb of tiposBoletaEvento">
+                <label class="tipo-row">
+                  <input
+                    type="checkbox"
+                    [checked]="isTipoSeleccionado(tb.id)"
+                    (change)="toggleTipo(tb.id)"
+                  />
+                  <span>{{ tb.nombre }}</span>
+                </label>
+              </li>
+            </ul>
+            <p class="hint warn" *ngIf="tiposBoletaEvento.length === 0">Este evento no tiene tipos de boleta activos.</p>
+          </div>
+
+          <div class="form-group" *ngIf="formEventoId">
+            <label class="tipo-row permiso-productos-row">
+              <input
+                type="checkbox"
+                [checked]="formPermitirProductos"
+                (change)="formPermitirProductos = !formPermitirProductos"
+              />
+              <span>Permitir escaneo/redención de <strong>productos</strong> para este evento</span>
+            </label>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="modalAlcance === 'cover'">
+          <div class="form-group">
+            <label for="lp-lugar">Lugar / club *</label>
+            <select
+              id="lp-lugar"
+              [(ngModel)]="formLugarId"
+              (ngModelChange)="onLugarCambiado()"
+              class="form-control"
+            >
+              <option [ngValue]="null">Seleccione…</option>
+              <option *ngFor="let l of lugaresCover" [ngValue]="l.id">
+                {{ l.nombre }}<span *ngIf="l.ciudad"> — {{ l.ciudad }}</span>
+              </option>
+            </select>
+            <p class="hint warn" *ngIf="lugaresCover.length === 0">
+              No hay lugares con covers habilitados. Configúralos en Covers Eventum.
+            </p>
+          </div>
+
+          <div class="form-group" *ngIf="formLugarId">
+            <label>Tipos de cover del lugar</label>
+            <p class="hint">El lector podrá escanear QR de estos tipos en la puerta del club.</p>
+            <ul class="tipo-list" *ngIf="tiposCoverLugar.length > 0">
+              <li *ngFor="let tc of tiposCoverLugar">
+                <label class="tipo-row">
+                  <input
+                    type="checkbox"
+                    [checked]="isTipoCoverSeleccionado(tc.id)"
+                    (change)="toggleTipoCover(tc.id)"
+                  />
+                  <span>{{ tc.nombre }}</span>
+                </label>
+              </li>
+            </ul>
+            <p class="hint warn" *ngIf="tiposCoverLugar.length === 0">Este lugar no tiene tipos de cover activos.</p>
+          </div>
+        </ng-container>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="cerrarModal()">Cancelar</button>
+        <button type="button" class="btn-primary" (click)="guardarAsignacion()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>

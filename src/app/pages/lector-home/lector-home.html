@@ -30,9 +30,9 @@
 
     <div *ngIf="loading" class="loading-state loading-state--compact">Cargando permisos...</div>
 
-    <div *ngIf="!loading && grupos.length === 0" class="empty-state">
+    <div *ngIf="!loading && grupos.length === 0 && gruposCover.length === 0" class="empty-state">
       <span class="material-icons empty-icon">event_busy</span>
-      <p>No tienes permisos de boletas o productos asignados. Contacta al administrador.</p>
+      <p>No tienes permisos de evento ni de cover asignados. Contacta al administrador.</p>
     </div>
 
     <div *ngFor="let g of grupos" class="grupo-card">
@@ -45,6 +45,21 @@
       <div class="tags-wrap">
         <span *ngFor="let t of g.tipos" class="tag tag-tipo">
           <span class="material-icons">{{ t.tipo_boleta_id == null ? 'inventory_2' : 'confirmation_number' }}</span>
+          {{ t.nombre }}
+        </span>
+      </div>
+    </div>
+
+    <div *ngFor="let g of gruposCover" class="grupo-card grupo-card--cover">
+      <p class="grupo-label">Lugar / club</p>
+      <div class="tag tag-evento tag-evento--cover">
+        <span class="material-icons">nightlife</span>
+        {{ g.titulo }}
+      </div>
+      <p class="grupo-label tipos-label">Covers que puedes escanear</p>
+      <div class="tags-wrap">
+        <span *ngFor="let t of g.tipos" class="tag tag-tipo">
+          <span class="material-icons">confirmation_number</span>
           {{ t.nombre }}
         </span>
       </div>

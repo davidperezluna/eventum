@@ -35,6 +35,58 @@
   align-items: center;
 }
 
+.btn-cover {
+  background: #6d28d9;
+  border-color: #6d28d9;
+}
+
+.btn-cover:hover {
+  background: #5b21b6;
+}
+
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  justify-content: center;
+  margin-top: var(--spacing-md);
+}
+
+.modal-tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  padding: 0.2rem;
+  border-radius: 8px;
+  background: var(--color-bg-secondary, #f1f5f9);
+}
+
+.modal-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary, #64748b);
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.modal-tab.active {
+  background: #fff;
+  color: var(--color-text-primary, #0f172a);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.modal-tab .material-icons {
+  font-size: 1.05rem;
+}
+
 .btn-escanear {
   text-decoration: none;
   font-weight: var(--font-weight-semibold);

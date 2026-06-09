@@ -194,6 +194,28 @@ export interface DetalleLugarCoverPublico {
   sesiones: SesionCoverPublica[];
 }
 
+/** Resultado de buscar_boleta_cover_para_escaneo (lector / puerta). */
+export interface BoletaCoverEscaneo {
+  id: number;
+  codigo_qr: string;
+  estado_acceso: string;
+  entradas_count?: number;
+  salidas_count?: number;
+  sesion_cover_id: number;
+  tipo_cover_id: number;
+  lugar_id: number;
+  lugar_nombre: string;
+  tipo_cover_nombre: string;
+  permite_reingreso: boolean;
+  sesion_fecha: string;
+  hora_apertura: string;
+  hora_cierre: string;
+  estado_pago?: string;
+  estado_compra?: string;
+  personas_dentro?: number;
+  aforo_maximo?: number;
+}
+
 /** Tarjeta en listado de clubes (RPC listar_lugares_con_covers). */
 export interface LugarCoverListado {
   id: number;

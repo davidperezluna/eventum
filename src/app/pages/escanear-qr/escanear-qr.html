@@ -9,7 +9,7 @@
           <span class="material-icons">qr_code_scanner</span>
           Check-in QR
         </h1>
-        <p *ngIf="modoApp === 'lector'">Escanea o busca por documento para validar entradas y productos.</p>
+        <p *ngIf="modoApp === 'lector'">Escanea o busca por documento para validar entradas, productos y covers.</p>
         <p *ngIf="modoApp !== 'lector'">Validación desde el panel (admin).</p>
       </div>
     </div>
@@ -31,7 +31,7 @@
     <section *ngIf="modoBusqueda === 'scanner'" class="scanner-section">
       <div *ngIf="requierePermisosLector && permisos.length === 0" class="alert-box warn">
         <span class="material-icons">info</span>
-        <p>No tienes eventos asignados. Contacta al administrador.</p>
+        <p>No tienes eventos ni covers asignados. Contacta al administrador.</p>
       </div>
 
       <div *ngIf="cameraError" class="alert-box error">
@@ -106,7 +106,7 @@
     </section>
   </ng-container>
 
-  <div *ngIf="modalVisible && (boleta || productoItem)" class="modal-overlay" (click)="cerrarModal(boletasEncontradas.length > 1)">
+  <div *ngIf="modalVisible && (boleta || productoItem || boletaCover)" class="modal-overlay" (click)="cerrarModal(boletasEncontradas.length > 1)">
     <div class="modal-sheet" (click)="$event.stopPropagation()">
       <button type="button" class="modal-close" (click)="cerrarModal(boletasEncontradas.length > 1)">
         <span class="material-icons">close</span>
@@ -211,6 +211,64 @@
             <p>El pago debe estar completado para validar este producto.</p>
             <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
             <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1)">Cerrar</button>
+          </div>
+        </ng-container>
+      </ng-container>
+
+      <ng-container *ngIf="boletaCover">
+        <ng-container *ngIf="boletaCover.estado_acceso === 'consumida' && !boletaCover.permite_reingreso">
+          <div class="modal-center">
+            <span class="material-icons modal-icon used">nightlife</span>
+            <h2>Cover ya consumido</h2>
+            <p>Esta entrada no permite reingreso.</p>
+            <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
+            <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1); reiniciarEscaneo()">
+              Siguiente
+            </button>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="!(boletaCover.estado_acceso === 'consumida' && !boletaCover.permite_reingreso) && !pagoCoverOk(boletaCover)">
+          <div class="modal-center">
+            <span class="material-icons modal-icon warn">payments</span>
+            <h2>Pago pendiente</h2>
+            <p>La compra cover debe estar pagada y confirmada para registrar acceso.</p>
+            <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
+            <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1)">Cerrar</button>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="pagoCoverOk(boletaCover) && !(boletaCover.estado_acceso === 'consumida' && !boletaCover.permite_reingreso)">
+          <p class="modal-kicker">COVER</p>
+          <h2 class="modal-title">{{ etiquetaEstadoCover(boletaCover) }}</h2>
+          <div class="modal-info">
+            <div class="modal-row"><span>Lugar</span><strong>{{ boletaCover.lugar_nombre }}</strong></div>
+            <div class="modal-row"><span>Tipo cover</span><strong>{{ boletaCover.tipo_cover_nombre }}</strong></div>
+            <div class="modal-row"><span>Sesión</span><strong>{{ boletaCover.sesion_fecha }} · {{ boletaCover.hora_apertura }}–{{ boletaCover.hora_cierre }}</strong></div>
+            <div class="modal-row" *ngIf="boletaCover.aforo_maximo"><span>Aforo</span><strong>{{ boletaCover.personas_dentro || 0 }} / {{ boletaCover.aforo_maximo }}</strong></div>
+            <div class="modal-row"><span>QR</span><code>{{ boletaCover.codigo_qr }}</code></div>
+          </div>
+          <div class="cover-actions" *ngIf="puedeRegistrarEntradaCover(boletaCover) || puedeRegistrarSalidaCover(boletaCover)">
+            <button
+              type="button"
+              class="btn-validate btn-cover-entrada"
+              *ngIf="puedeRegistrarEntradaCover(boletaCover)"
+              (click)="registrarEntradaCover()"
+              [disabled]="validando"
+            >
+              <span class="material-icons">login</span>
+              {{ validando ? 'Registrando...' : (requierePermisosLector && modoBusqueda === 'scanner' ? 'Entrada y siguiente' : 'Registrar entrada') }}
+            </button>
+            <button
+              type="button"
+              class="btn-secondary btn-cover-salida"
+              *ngIf="puedeRegistrarSalidaCover(boletaCover)"
+              (click)="registrarSalidaCover()"
+              [disabled]="validando"
+            >
+              <span class="material-icons">logout</span>
+              {{ validando ? 'Registrando...' : 'Registrar salida' }}
+            </button>
           </div>
         </ng-container>
       </ng-container>
