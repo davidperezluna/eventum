@@ -16,14 +16,12 @@ import { COVERS_LABELS, formatHoraCover } from '../../core/covers-labels';
 import { resolverConflictoCoverAntesDeAgregar } from '../../core/carrito-conflicto';
 import { ClientConfirmDialogService } from '../../services/client-confirm-dialog.service';
 import { irALoginCliente } from '../../core/login-redirect';
-import { DateFormatPipe } from '../../pipes/date-format.pipe';
-
 @Component({
   selector: 'app-club-detalle',
   standalone: true,
-  imports: [CommonModule, RouterModule, DateFormatPipe],
+  imports: [CommonModule, RouterModule],
   templateUrl: './club-detalle.html',
-  styleUrls: ['./club-detalle.css'],
+  styleUrls: ['../cupos-evento/cupos-evento.css', './club-detalle.css'],
 })
 export class ClubDetalle implements OnInit, OnDestroy {
   readonly coversLabels = COVERS_LABELS;
@@ -112,6 +110,33 @@ export class ClubDetalle implements OnInit, OnDestroy {
 
   horarioSesion(sesion: SesionCoverPublica): string {
     return `${formatHoraCover(sesion.hora_apertura)} – ${formatHoraCover(sesion.hora_cierre)}`;
+  }
+
+  fechaSesionCompacta(sesion: SesionCoverPublica): string {
+    const fecha = new Date(`${sesion.fecha}T12:00:00`);
+    return fecha.toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+
+  private fechaSesionDate(sesion: SesionCoverPublica): Date {
+    return new Date(`${sesion.fecha}T12:00:00`);
+  }
+
+  fechaSesionWeekday(sesion: SesionCoverPublica): string {
+    return this.fechaSesionDate(sesion)
+      .toLocaleDateString('es-CO', { weekday: 'short' })
+      .replace('.', '')
+      .toUpperCase();
+  }
+
+  fechaSesionDia(sesion: SesionCoverPublica): string {
+    return String(this.fechaSesionDate(sesion).getDate());
+  }
+
+  fechaSesionMes(sesion: SesionCoverPublica): string {
+    return this.fechaSesionDate(sesion)
+      .toLocaleDateString('es-CO', { month: 'short' })
+      .replace('.', '')
+      .toUpperCase();
   }
 
   labelCarritoSesion(sesion: SesionCoverPublica): string {

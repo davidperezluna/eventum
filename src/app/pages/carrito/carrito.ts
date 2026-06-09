@@ -71,6 +71,7 @@ export class Carrito implements OnInit, OnDestroy {
     transaccionCheckoutId: number;
     checkoutUrl: string | null;
     expiro: boolean;
+    expiresAtMs: number | null;
   } | null = null;
   cancelandoCheckoutPendiente = false;
   private cancelacionCheckoutSeq = 0;
@@ -371,6 +372,7 @@ export class Carrito implements OnInit, OnDestroy {
     transaccionCheckoutId: number;
     checkoutUrl: string | null;
     expiro: boolean;
+    expiresAtMs: number | null;
   } | null> {
     try {
       const { data } = await this.supabaseService
@@ -383,10 +385,12 @@ export class Carrito implements OnInit, OnDestroy {
         .limit(20);
 
       const candidatos = (data || []).map((row) => {
-        const expiresAt = row.expires_at ? new Date(String(row.expires_at)).getTime() : Number.NaN;
-        const expiro = Number.isFinite(expiresAt) && expiresAt <= Date.now();
+        const expiresAtMs = row.expires_at ? new Date(String(row.expires_at)).getTime() : null;
+        const expiro =
+          expiresAtMs != null && Number.isFinite(expiresAtMs) && expiresAtMs <= Date.now();
         return {
           ...row,
+          expiresAtMs: expiresAtMs != null && Number.isFinite(expiresAtMs) ? expiresAtMs : null,
           expiro,
         };
       });
@@ -401,6 +405,7 @@ export class Carrito implements OnInit, OnDestroy {
         transaccionCheckoutId: Number(candidato.id),
         checkoutUrl: candidato.checkout_url ? String(candidato.checkout_url) : null,
         expiro: !!candidato.expiro,
+        expiresAtMs: candidato.expiresAtMs,
       };
     } catch {
       return null;
@@ -446,7 +451,12 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   private guardarCheckoutPendienteEnCarrito(
-    pendiente: { transaccionCheckoutId: number; checkoutUrl: string | null; expiro: boolean }
+    pendiente: {
+      transaccionCheckoutId: number;
+      checkoutUrl: string | null;
+      expiro: boolean;
+      expiresAtMs: number | null;
+    }
   ): void {
     this.checkoutPendienteEnCurso = pendiente;
     if (typeof sessionStorage !== 'undefined') {
@@ -705,12 +715,50 @@ export class Carrito implements OnInit, OnDestroy {
     }).format(value);
   }
 
+  shouldShowCheckoutCountdown(): boolean {
+    const pendiente = this.checkoutPendienteEnCurso;
+    return !!pendiente && !pendiente.expiro && pendiente.expiresAtMs != null;
+  }
+
+  getCheckoutRemainingMs(): number {
+    const pendiente = this.checkoutPendienteEnCurso;
+    if (!pendiente?.expiresAtMs) return 0;
+    return Math.max(0, pendiente.expiresAtMs - this.nowMs);
+  }
+
+  getCheckoutCountdownLabel(): string {
+    const remainingMs = this.getCheckoutRemainingMs();
+    if (remainingMs <= 0) return '00:00';
+
+    const totalSeconds = Math.floor(remainingMs / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const pad = (n: number) => String(n).padStart(2, '0');
+
+    if (hours > 0) {
+      return `${hours}:${pad(minutes)}:${pad(seconds)}`;
+    }
+    return `${pad(minutes)}:${pad(seconds)}`;
+  }
+
+  isCheckoutCountdownUrgent(): boolean {
+    return this.getCheckoutRemainingMs() > 0 && this.getCheckoutRemainingMs() <= 5 * 60 * 1000;
+  }
+
+  private tickCountdown(): void {
+    this.nowMs = Date.now();
+    const pendiente = this.checkoutPendienteEnCurso;
+    if (pendiente && !pendiente.expiro && pendiente.expiresAtMs != null && this.nowMs >= pendiente.expiresAtMs) {
+      this.checkoutPendienteEnCurso = { ...pendiente, expiro: true };
+    }
+    this.cdr.detectChanges();
+  }
+
   private startCountdownTicker(): void {
     this.stopCountdownTicker();
-    this.countdownTimer = setInterval(() => {
-      this.nowMs = Date.now();
-      this.cdr.detectChanges();
-    }, 30000);
+    this.tickCountdown();
+    this.countdownTimer = setInterval(() => this.tickCountdown(), 1000);
   }
 
   private stopCountdownTicker(): void {

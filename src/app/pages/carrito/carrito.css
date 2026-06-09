@@ -349,6 +349,57 @@
   line-height: 1.45;
 }
 
+.checkout-pendiente-countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: var(--ec-radius-badge, 6px);
+  border: 1px solid var(--ec-badge-warning-border, rgba(180, 83, 9, 0.32));
+  background: var(--ec-badge-warning-bg, #fef3c7);
+  color: var(--ec-badge-warning-text, #92400e);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.14rem 0.45rem;
+  white-space: nowrap;
+}
+
+.checkout-pendiente-countdown .material-icons {
+  font-size: 0.82rem;
+}
+
+.checkout-pendiente-countdown strong {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+}
+
+.checkout-pendiente-countdown--urgent {
+  border-color: rgba(185, 28, 28, 0.28);
+  background: var(--ec-badge-danger-bg, #fee2e2);
+  color: var(--ec-badge-danger-text, #b91c1c);
+}
+
+.carrito-checkout-bar__countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-top: 0.12rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  color: var(--ec-badge-warning-text, #92400e);
+}
+
+.carrito-checkout-bar__countdown .material-icons {
+  font-size: 0.78rem;
+}
+
+.carrito-checkout-bar__countdown--urgent {
+  color: var(--ec-badge-danger-text, #b91c1c);
+}
+
 .checkout-pendiente-alert__actions {
   margin-top: 0.7rem;
   display: flex;

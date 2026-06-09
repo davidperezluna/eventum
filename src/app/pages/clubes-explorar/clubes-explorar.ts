@@ -3,14 +3,14 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { CoversService } from '../../services/covers.service';
 import { LugarCoverListado } from '../../types/covers';
-import { COVERS_LABELS } from '../../core/covers-labels';
+import { COVERS_LABELS, formatHoraCover } from '../../core/covers-labels';
 
 @Component({
   selector: 'app-clubes-explorar',
   standalone: true,
   imports: [CommonModule, RouterModule],
   templateUrl: './clubes-explorar.html',
-  styleUrls: ['./clubes-explorar.css'],
+  styleUrls: ['../cupos-evento/cupos-evento.css', './clubes-explorar.css'],
 })
 export class ClubesExplorar implements OnInit {
   readonly coversLabels = COVERS_LABELS;
@@ -53,6 +53,10 @@ export class ClubesExplorar implements OnInit {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(Number(value));
+  }
+
+  formatHora(hora: string | null | undefined): string {
+    return formatHoraCover(hora);
   }
 
   trackLugar(_index: number, lugar: LugarCoverListado): number {

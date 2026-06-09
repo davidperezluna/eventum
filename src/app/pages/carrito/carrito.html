@@ -44,13 +44,24 @@
           >
             {{ pendiente.expiro ? 'Vencido' : 'En curso' }}
           </span>
+          <span
+            *ngIf="shouldShowCheckoutCountdown()"
+            class="checkout-pendiente-countdown"
+            [class.checkout-pendiente-countdown--urgent]="isCheckoutCountdownUrgent()"
+            role="timer"
+            aria-live="polite"
+            [attr.aria-label]="'Vence en ' + getCheckoutCountdownLabel()"
+          >
+            <span class="material-icons" aria-hidden="true">timer</span>
+            Vence en <strong>{{ getCheckoutCountdownLabel() }}</strong>
+          </span>
         </div>
       </header>
       <p class="checkout-pendiente-alert__text">
         {{
           pendiente.expiro
             ? 'Hay un checkout vencido. Revisa su estado o cancélalo para crear una compra nueva.'
-            : 'Tienes una compra sin confirmar. Reanúdala para evitar duplicados.'
+            : 'Tienes una compra sin confirmar. Reanúdala antes de que venza el tiempo de pago.'
         }}
       </p>
       <div class="checkout-pendiente-alert__actions">
@@ -474,6 +485,15 @@
     <div class="carrito-checkout-bar__total">
       <span class="carrito-checkout-bar__label">Total</span>
       <span class="carrito-checkout-bar__amount">{{ formatCurrency(getTotal()) }}</span>
+      <span
+        *ngIf="checkoutPendienteEnCurso && shouldShowCheckoutCountdown()"
+        class="carrito-checkout-bar__countdown"
+        [class.carrito-checkout-bar__countdown--urgent]="isCheckoutCountdownUrgent()"
+        aria-live="polite"
+      >
+        <span class="material-icons" aria-hidden="true">timer</span>
+        {{ getCheckoutCountdownLabel() }}
+      </span>
     </div>
     <button
       *ngIf="checkoutPendienteEnCurso as pendiente; else pagarStickyBtn"
