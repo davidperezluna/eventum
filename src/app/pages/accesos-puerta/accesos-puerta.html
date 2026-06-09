@@ -80,27 +80,28 @@
             </div>
           </div>
 
-          <button type="button" class="ap-pass__qr-zone" (click)="verQr(item)">
+          <div class="ap-pass__qr-zone">
             <div class="ap-pass__qr-frame">
               <img
                 *ngIf="qrThumb(item) as thumb; else qrPlaceholder"
                 [src]="thumb"
-                alt=""
+                alt="Código QR para {{ accion(item) === 'salida' ? 'salir' : 'entrar' }}"
                 class="ap-pass__qr-img"
               />
               <ng-template #qrPlaceholder>
                 <div class="ap-pass__qr-placeholder">
-                  <span class="material-icons" aria-hidden="true">qr_code_2</span>
+                  <div class="spinner" *ngIf="qrCargando(item)"></div>
+                  <span class="material-icons" *ngIf="!qrCargando(item)" aria-hidden="true">qr_code_2</span>
                 </div>
               </ng-template>
-              <div class="ap-pass__scan-line" aria-hidden="true"></div>
+              <div class="ap-pass__scan-line" *ngIf="qrThumb(item)" aria-hidden="true"></div>
             </div>
             <span class="ap-pass__qr-cta">
               <span class="material-icons" aria-hidden="true">{{ iconoBoton(item) }}</span>
               {{ labelBoton(item) }}
             </span>
-            <span class="ap-pass__qr-tip">Toca para ampliar · sube el brillo en puerta</span>
-          </button>
+            <span class="ap-pass__qr-tip">Sube el brillo de la pantalla para escanear</span>
+          </div>
 
           <button type="button" class="ap-pass__link" (click)="irAMisComprasClub(item.compra.lugar_id)">
             Ver en Mis compras
@@ -121,54 +122,6 @@
         ></button>
       </div>
     </section>
-  </div>
-</div>
-
-<div class="modal-overlay ap-qr-overlay" *ngIf="showCoverQrModal && coverSeleccionado">
-  <div class="ap-qr-sheet" (click)="$event.stopPropagation()">
-    <button type="button" class="modal-close" (click)="cerrarCoverQrModal()">
-      <span class="material-icons">close</span>
-    </button>
-
-    <div class="ap-qr-sheet__head">
-      <span class="ap-qr-sheet__chip">
-        {{ accion(coverSeleccionado) === 'salida' ? 'QR de salida' : 'QR de entrada' }}
-      </span>
-      <h2>{{ coverSeleccionado.boleta.lugar_nombre }}</h2>
-      <p>{{ coverSeleccionado.boleta.tipo_cover_nombre }}</p>
-      <p class="ap-qr-sheet__hint" *ngIf="coverAccesoUtilizado(coverSeleccionado.boleta)">
-        {{ hintQr(coverSeleccionado) }}
-      </p>
-    </div>
-
-    <div class="ap-qr-sheet__body">
-      <div class="ap-qr-sheet__frame" *ngIf="loadingCoverQR">
-        <div class="qr-loading">
-          <div class="spinner"></div>
-          <p>Generando código QR…</p>
-        </div>
-      </div>
-      <div class="ap-qr-sheet__frame" *ngIf="!loadingCoverQR && coverQrCodeUrl">
-        <img [src]="coverQrCodeUrl" alt="QR cover" class="ap-qr-sheet__img" />
-        <div class="ap-qr-sheet__scan-line" aria-hidden="true"></div>
-      </div>
-    </div>
-
-    <div class="ap-qr-sheet__meta">
-      <div>
-        <span class="info-label">Noche</span>
-        <span class="info-value">{{ fechaSesion(coverSeleccionado.boleta) }}</span>
-      </div>
-      <div>
-        <span class="info-label">Horario</span>
-        <span class="info-value">{{ horarioSesion(coverSeleccionado.boleta) }}</span>
-      </div>
-    </div>
-
-    <p class="ap-qr-sheet__brightness">
-      <span class="material-icons" aria-hidden="true">brightness_high</span>
-      Sube el brillo de la pantalla para escanear más rápido
-    </p>
   </div>
 </div>
 

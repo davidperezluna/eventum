@@ -14,10 +14,8 @@ import QRCode from 'qrcode';
 import {
   accionCoverAccesoPuerta,
   CoverAccesoPuertaItem,
-  coverAccesoUtilizadoEnPuerta,
   getEstadoCoverClass,
   getEstadoCoverLabel,
-  hintQrCoverAcceso,
   iconoBotonQrCover,
   labelBotonQrCover,
   labelTiempoRestanteSesionCover,
@@ -31,9 +29,7 @@ import {
   CoverAccesoNotificacionEvento,
 } from '../../services/accesos-puerta.service';
 import { AuthService } from '../../services/auth.service';
-import { AlertService } from '../../services/alert.service';
 import { BoletaCoverCliente } from '../../types/covers';
-import { TipoEstadoPago } from '../../types';
 
 @Component({
   selector: 'app-accesos-puerta',
@@ -54,11 +50,6 @@ export class AccesosPuerta implements OnInit, OnDestroy {
   focusedIndex = 0;
   nowTick = Date.now();
 
-  showCoverQrModal = false;
-  coverSeleccionado: CoverAccesoPuertaItem | null = null;
-  coverQrCodeUrl = '';
-  loadingCoverQR = false;
-
   showMensajeIngresoModal = false;
   mensajeIngresoTitulo = '';
   mensajeIngresoDetalle = '';
@@ -76,11 +67,11 @@ export class AccesosPuerta implements OnInit, OnDestroy {
   private hadCachedDataOnInit = false;
   private readonly qrThumbs = new Map<number, string>();
   private readonly qrThumbPending = new Set<number>();
+  private readonly qrThumbSizePx = 220;
 
   constructor(
     private accesosPuertaService: AccesosPuertaService,
     private authService: AuthService,
-    private alertService: AlertService,
     private router: Router,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone
@@ -217,6 +208,10 @@ export class AccesosPuerta implements OnInit, OnDestroy {
     return this.qrThumbs.get(item.boleta.id) ?? null;
   }
 
+  qrCargando(item: CoverAccesoPuertaItem): boolean {
+    return this.qrThumbPending.has(item.boleta.id);
+  }
+
   irAlIndice(index: number): void {
     const el = this.carouselRef?.nativeElement;
     if (!el) {
@@ -262,27 +257,10 @@ export class AccesosPuerta implements OnInit, OnDestroy {
     });
   }
 
-  fechaSesion(boleta: BoletaCoverCliente): string {
-    const fecha = new Date(`${boleta.sesion_fecha}T12:00:00`);
-    return fecha.toLocaleDateString('es-CO', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-    });
-  }
-
   horarioSesion(boleta: BoletaCoverCliente): string {
     const apertura = formatHoraCover(boleta.sesion_hora_apertura);
     const cierre = formatHoraCover(boleta.sesion_hora_cierre);
     return apertura && cierre ? `${apertura} – ${cierre}` : apertura || cierre || '—';
-  }
-
-  hintQr(item: CoverAccesoPuertaItem | null): string {
-    return hintQrCoverAcceso(item);
-  }
-
-  coverAccesoUtilizado(boleta: BoletaCoverCliente): boolean {
-    return coverAccesoUtilizadoEnPuerta(boleta);
   }
 
   private ensureQrThumbs(items: CoverAccesoPuertaItem[]): void {
@@ -294,8 +272,8 @@ export class AccesosPuerta implements OnInit, OnDestroy {
       if (!codigo) continue;
       this.qrThumbPending.add(id);
       void QRCode.toDataURL(codigo, {
-        width: 128,
-        margin: 1,
+        width: this.qrThumbSizePx,
+        margin: 2,
         color: { dark: '#0f172a', light: '#ffffff' },
       })
         .then((url) => {
@@ -317,67 +295,9 @@ export class AccesosPuerta implements OnInit, OnDestroy {
     this.qrThumbPending.delete(boletaId);
   }
 
-  async verQr(item: CoverAccesoPuertaItem): Promise<void> {
-    if (item.compra.estado_pago !== TipoEstadoPago.COMPLETADO) {
-      this.alertService.warning('Pago pendiente', 'El QR estará disponible cuando el pago se confirme.');
-      return;
-    }
-    if (!item.boleta.codigo_qr?.trim()) {
-      this.alertService.warning('QR en preparación', 'Esta entrada aún no tiene código QR.');
-      return;
-    }
-
-    this.coverSeleccionado = item;
-    this.showCoverQrModal = true;
-
-    const existingThumb = this.qrThumbs.get(item.boleta.id);
-    if (existingThumb) {
-      this.coverQrCodeUrl = existingThumb;
-      this.loadingCoverQR = false;
-      this.refreshView();
-      return;
-    }
-
-    this.coverQrCodeUrl = '';
-    this.loadingCoverQR = true;
-    this.refreshView();
-
-    try {
-      this.coverQrCodeUrl = await QRCode.toDataURL(item.boleta.codigo_qr!, {
-        width: 280,
-        margin: 2,
-        color: { dark: '#000000', light: '#FFFFFF' },
-      });
-      this.qrThumbs.set(item.boleta.id, this.coverQrCodeUrl);
-    } catch (err) {
-      console.error('[AccesosPuerta] Error generando QR:', err);
-      this.coverQrCodeUrl = '';
-    } finally {
-      this.loadingCoverQR = false;
-      this.refreshView();
-    }
-  }
-
-  cerrarCoverQrModal(): void {
-    this.showCoverQrModal = false;
-    this.coverSeleccionado = null;
-    this.coverQrCodeUrl = '';
-    this.loadingCoverQR = false;
-    this.refreshView();
-  }
-
   private onNotificacionCover(evento: CoverAccesoNotificacionEvento): void {
     const meta = evento.metadata ?? {};
     const boletaId = Number(meta['boleta_cover_id'] ?? 0);
-
-    const qrAbierto =
-      this.showCoverQrModal &&
-      this.coverSeleccionado &&
-      boletaId === this.coverSeleccionado.boleta.id;
-
-    if (qrAbierto) {
-      this.cerrarCoverQrModal();
-    }
 
     if (boletaId) {
       this.invalidarQrThumb(boletaId);
