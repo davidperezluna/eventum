@@ -658,7 +658,7 @@
                               type="button"
                               class="asignar-option asignar-option--yo"
                               *ngIf="puedeMostrarBotonYoAsistoPalco(boleta, compra)"
-                              (click)="usarMiPerfilComoAsistentePalco(boleta, compra); $event.stopPropagation()"
+                              (click)="abrirModalYoAsisto(boleta, compra); $event.stopPropagation()"
                               [disabled]="rellenarPerfilBoletaId === boleta.id"
                             >
                               <span class="material-icons">person</span>
@@ -1029,7 +1029,7 @@
                             type="button"
                             class="asignar-option asignar-option--yo"
                             *ngIf="puedeMostrarBotonYoAsistoPalco(boleta, compra)"
-                            (click)="usarMiPerfilComoAsistentePalco(boleta, compra); $event.stopPropagation()"
+                            (click)="abrirModalYoAsisto(boleta, compra); $event.stopPropagation()"
                             [disabled]="rellenarPerfilBoletaId === boleta.id"
                           >
                             <span class="material-icons">person</span>
@@ -1559,6 +1559,83 @@
             ? (esTrasladoModalCover ? 'Transferiendo…' : 'Enviando…')
             : (esTrasladoModalCover ? 'Transferir cover' : 'Enviar solicitud')
         }}
+      </button>
+    </footer>
+  </div>
+</div>
+
+<!-- Modal Yo asisto (legal-modal) -->
+<div
+  class="legal-modal-overlay modal-overlay--traslado"
+  *ngIf="showYoAsistoModal"
+  (click)="cerrarModalYoAsisto()"
+  role="presentation"
+>
+  <div
+    class="legal-modal"
+    (click)="$event.stopPropagation()"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="'yo-asisto-modal-title'"
+  >
+    <header class="legal-modal__header">
+      <div class="legal-modal__header-text">
+        <span class="legal-modal__badge legal-modal__badge--entrada">
+          <span class="material-icons" aria-hidden="true">person</span>
+          Asignación
+        </span>
+        <h2 id="yo-asisto-modal-title">{{ resumenYoAsistoTitulo }}</h2>
+        <p>{{ resumenYoAsistoSubtitulo }}</p>
+      </div>
+      <button
+        type="button"
+        class="legal-modal__close"
+        (click)="cerrarModalYoAsisto()"
+        [disabled]="rellenarPerfilBoletaId != null"
+        aria-label="Cerrar"
+      >
+        <span class="material-icons">close</span>
+      </button>
+    </header>
+
+    <div class="legal-modal__body">
+      <p class="legal-modal__hint" *ngIf="resumenYoAsistoContexto">
+        Entrada: <strong>{{ resumenYoAsistoContexto }}</strong>
+      </p>
+      <ul class="legal-modal__summary-list">
+        <li *ngFor="let punto of resumenYoAsistoPuntos">{{ punto }}</li>
+      </ul>
+      <p
+        class="legal-modal__error"
+        *ngIf="yoAsistoBoleta && asignacionError?.boletaId === yoAsistoBoleta.id"
+        role="alert"
+      >
+        {{ asignacionError!.mensaje }}
+        <a
+          *ngIf="esErrorAsignacionDocumento(asignacionError!.mensaje)"
+          routerLink="/perfil"
+          class="asignacion-error-link"
+          (click)="cerrarModalYoAsisto()"
+        >Ir a Mi perfil</a>
+      </p>
+    </div>
+
+    <footer class="legal-modal__footer">
+      <button
+        type="button"
+        class="legal-modal__btn legal-modal__btn-secondary"
+        (click)="cerrarModalYoAsisto()"
+        [disabled]="rellenarPerfilBoletaId != null"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="legal-modal__btn legal-modal__btn-primary"
+        (click)="confirmarYoAsisto()"
+        [disabled]="rellenarPerfilBoletaId != null"
+      >
+        {{ rellenarPerfilBoletaId != null ? 'Aplicando…' : 'Sí, usar mis datos' }}
       </button>
     </footer>
   </div>

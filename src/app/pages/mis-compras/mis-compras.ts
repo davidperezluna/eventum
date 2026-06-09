@@ -55,6 +55,9 @@ import {
   RESUMEN_TRASLADO_ENTRADA_PUNTOS,
   RESUMEN_TRASLADO_ENTRADA_SUBTITULO,
   RESUMEN_TRASLADO_ENTRADA_TITULO,
+  RESUMEN_YO_ASISTO_PUNTOS,
+  RESUMEN_YO_ASISTO_SUBTITULO,
+  RESUMEN_YO_ASISTO_TITULO,
 } from '../../constants/traslados.constants';
 
 interface BoletaConCompra {
@@ -249,6 +252,10 @@ export class MisCompras implements OnInit, OnDestroy {
   showCancelarTrasladoModal = false;
   trasladoACancelar: TrasladoBoleta | null = null;
   cancelandoTraslado = false;
+
+  showYoAsistoModal = false;
+  yoAsistoBoleta: BoletaComprada | null = null;
+  yoAsistoCompra: Compra | null = null;
 
   rellenarPerfilBoletaId: number | null = null;
   /** Error visible junto al panel de asignación (además del modal SweetAlert). */
@@ -850,6 +857,10 @@ export class MisCompras implements OnInit, OnDestroy {
   get resumenTrasladoPuntos(): string[] {
     return this.esTrasladoModalCover ? RESUMEN_TRASLADO_COVER_PUNTOS : RESUMEN_TRASLADO_ENTRADA_PUNTOS;
   }
+
+  readonly resumenYoAsistoTitulo = RESUMEN_YO_ASISTO_TITULO;
+  readonly resumenYoAsistoSubtitulo = RESUMEN_YO_ASISTO_SUBTITULO;
+  readonly resumenYoAsistoPuntos = RESUMEN_YO_ASISTO_PUNTOS;
 
   abrirModalCancelarTraslado(t: TrasladoBoleta): void {
     this.trasladoACancelar = t;
@@ -2469,35 +2480,68 @@ export class MisCompras implements OnInit, OnDestroy {
     return this.puedeAsignarEntradaPorCorreoPalco(boleta, compra);
   }
 
-  async usarMiPerfilComoAsistentePalco(boleta: BoletaComprada, compra: Compra): Promise<void> {
+  abrirModalYoAsisto(boleta: BoletaComprada, compra: Compra): void {
     if (!this.puedeMostrarBotonYoAsistoPalco(boleta, compra)) {
       return;
     }
     this.limpiarErrorAsignacion(boleta.id);
+    this.yoAsistoBoleta = boleta;
+    this.yoAsistoCompra = compra;
+    this.showYoAsistoModal = true;
+    this.cdr.detectChanges();
+  }
 
-    const tipoNombre = boleta.tipo_boleta_meta?.nombre || 'esta entrada';
-    const palcoTxt =
-      boleta.numero_palco != null ? ` (palco ${boleta.numero_palco})` : '';
-    const confirmado = await this.alertService.confirm(
-      '¿Confirmas «Yo asisto»?',
-      `Se guardarán en la entrada${palcoTxt} el nombre y documento de tu perfil para «${tipoNombre}». Podrás ver y usar el código QR con esos datos. ¿Deseas continuar?`,
-      'Sí, usar mis datos',
-      'Cancelar'
-    );
-    if (!confirmado) {
+  cerrarModalYoAsisto(): void {
+    if (this.rellenarPerfilBoletaId != null) {
       return;
     }
+    this.resetYoAsistoModal();
+  }
+
+  private resetYoAsistoModal(): void {
+    this.showYoAsistoModal = false;
+    this.yoAsistoBoleta = null;
+    this.yoAsistoCompra = null;
+    this.cdr.detectChanges();
+  }
+
+  get resumenYoAsistoContexto(): string {
+    const boleta = this.yoAsistoBoleta;
+    if (!boleta) {
+      return '';
+    }
+    const tipoNombre = boleta.tipo_boleta_meta?.nombre || 'Entrada';
+    if (boleta.numero_palco != null) {
+      return `${tipoNombre} · Palco ${boleta.numero_palco}`;
+    }
+    return tipoNombre;
+  }
+
+  async confirmarYoAsisto(): Promise<void> {
+    const boleta = this.yoAsistoBoleta;
+    const compra = this.yoAsistoCompra;
+    if (!boleta || !compra) {
+      return;
+    }
+    if (!this.puedeMostrarBotonYoAsistoPalco(boleta, compra)) {
+      this.cerrarModalYoAsisto();
+      return;
+    }
+    this.limpiarErrorAsignacion(boleta.id);
 
     this.rellenarPerfilBoletaId = boleta.id;
     this.cdr.detectChanges();
     try {
       const res = await this.trasladosBoletaService.rellenarAsistentePalcoDesdePerfil(boleta.id);
       if (!res.ok) {
-        await this.mostrarErrorAsignacion(boleta.id, res.error || 'Error desconocido');
+        const msg = res.error || 'Error desconocido';
+        this.asignacionError = { boletaId: boleta.id, mensaje: msg };
+        this.cdr.detectChanges();
         return;
       }
 
       this.limpiarErrorAsignacion(boleta.id);
+      this.resetYoAsistoModal();
       try {
         await this.recargarBoletasYTraslados();
       } catch (e) {

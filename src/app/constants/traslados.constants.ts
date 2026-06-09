@@ -43,3 +43,14 @@ export const RESUMEN_CANCELAR_TRASLADO_ENTRADA_PUNTOS: string[] = [
   'Recuperas el uso de la entrada de inmediato.',
   'Podrás ver el QR cuando corresponda.',
 ];
+
+export const RESUMEN_YO_ASISTO_TITULO = 'Yo asisto';
+
+export const RESUMEN_YO_ASISTO_SUBTITULO =
+  'Asignar esta entrada con el nombre y documento de tu perfil.';
+
+export const RESUMEN_YO_ASISTO_PUNTOS: string[] = [
+  'Los datos se guardan en la entrada para validar el acceso.',
+  'Podrás ver y usar el código QR el día del evento.',
+  'Puedes repetir «Yo asisto» en otras entradas tuyas del mismo evento (acompañantes).',
+];
