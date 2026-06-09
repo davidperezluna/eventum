@@ -267,7 +267,7 @@
               [disabled]="validando"
             >
               <span class="material-icons">logout</span>
-              {{ validando ? 'Registrando...' : 'Registrar salida' }}
+              {{ validando ? 'Registrando...' : (requierePermisosLector && modoBusqueda === 'scanner' ? 'Salida y siguiente' : 'Registrar salida') }}
             </button>
           </div>
         </ng-container>

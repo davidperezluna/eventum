@@ -569,14 +569,6 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     this.boleta = null;
     this.productoItem = null;
     this.boletaCover = cover;
-
-    // Flujo rápido: salida sin abrir modal (evita parpadeo y cierre sin interacción).
-    if (this.esFlujoRapidoLector() && this.puedeRegistrarSalidaCover(cover)) {
-      this.cdr.markForCheck();
-      await this.registrarSalidaCover({ silencioso: true });
-      return;
-    }
-
     this.modalVisible = true;
     this.programarAutoAvanceModalSiAplica();
     this.cdr.markForCheck();
@@ -883,27 +875,19 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  async registrarSalidaCover(options?: { silencioso?: boolean }): Promise<void> {
+  async registrarSalidaCover(): Promise<void> {
     if (!this.boletaCover) return;
     if (!this.puedeRegistrarSalidaCover(this.boletaCover)) {
       await this.alertService.warning('No se puede registrar salida', 'No hay una entrada activa para este QR.');
-      if (!options?.silencioso) {
-        await this.reiniciarEscaneo();
-      }
       return;
     }
 
-    const flujoRapido = this.esFlujoRapidoLector();
-    const silencioso = options?.silencioso === true;
-
-    if (!flujoRapido && !silencioso) {
+    if (!this.esFlujoRapidoLector()) {
       const ok = await this.alertService.confirm(
         'Registrar salida',
         `¿Registrar salida del cover ${this.boletaCover.tipo_cover_nombre}?`,
       );
-      if (!ok) {
-        return;
-      }
+      if (!ok) return;
     }
 
     this.validando = true;
@@ -920,23 +904,16 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
         personas_dentro: res.personas_dentro,
         salidas_count: (this.boletaCover.salidas_count ?? 0) + 1,
       };
-      if (flujoRapido || silencioso) {
+      if (this.esFlujoRapidoLector()) {
         void this.alertService.snackbar('Salida registrada', { timerMs: 1600 });
       } else {
         await this.alertService.success('Salida registrada', 'Salida de cover registrada correctamente.');
       }
-      if (this.modalVisible) {
-        this.cerrarModal();
-      } else {
-        this.boletaCover = null;
-        this.limpiarAutoAvance();
-        this.cdr.markForCheck();
-      }
+      this.cerrarModal();
       await this.reiniciarEscaneo();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error desconocido';
       await this.alertService.error('Error al registrar salida', msg);
-      await this.reiniciarEscaneo();
     } finally {
       this.validando = false;
       this.cdr.markForCheck();

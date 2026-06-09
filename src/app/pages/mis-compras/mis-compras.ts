@@ -230,7 +230,7 @@ export class MisCompras implements OnInit, OnDestroy {
   mensajeIngresoReferencia = '';
   mensajeIngresoEvento = '';
   mensajeIngresoProductos: Array<{ nombre: string; cantidad: number }> = [];
-  mensajeIngresoTipo: 'entrada' | 'producto' | 'cover' = 'entrada';
+  mensajeIngresoTipo: 'entrada' | 'producto' | 'cover' | 'cover-salida' = 'entrada';
   siguienteBoletaSugerida: BoletaConCompra | null = null;
 
   /** Traslados de palcos: historial y mapas para ocultar QR al remitente con envío pendiente. */
@@ -1391,7 +1391,7 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   private abrirMensajeIngreso(
-    tipo: 'entrada' | 'producto' | 'cover',
+    tipo: 'entrada' | 'producto' | 'cover' | 'cover-salida',
     titulo: string,
     detalle: string,
     siguienteBoleta?: BoletaConCompra | null,
@@ -1452,21 +1452,28 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   private abrirMensajeIngresoDesdeNotificacion(
-    tipo: 'entrada' | 'producto' | 'cover',
+    tipo: 'entrada' | 'producto' | 'cover' | 'cover-salida',
     metadata: Record<string, unknown> | null | undefined,
     siguienteBoleta?: BoletaConCompra | null,
     compraProductoCapturada?: CompraProducto | null
   ): void {
     const meta = metadata ?? {};
 
-    if (tipo === 'cover') {
+    if (tipo === 'cover' || tipo === 'cover-salida') {
       const lugar = String(meta['lugar_nombre'] || '').trim();
       const tipoCover = String(meta['tipo_cover_nombre'] || '').trim();
       const qr = String(meta['codigo_qr'] || '').trim();
+      const estadoAcceso = String(meta['estado_acceso'] || '').toLowerCase();
+      const permiteReingreso = meta['permite_reingreso'] !== false;
+      const esSalida = tipo === 'cover-salida';
+      const detalleSalida =
+        estadoAcceso === 'consumida' || !permiteReingreso
+          ? 'Tu salida fue registrada. Esta entrada ya fue consumida.'
+          : 'Tu salida fue registrada. Puedes reingresar con el mismo QR cuando quieras.';
       this.abrirMensajeIngreso(
-        'cover',
-        'Bienvenido al club',
-        'Tu entrada de cover fue registrada en puerta.',
+        esSalida ? 'cover-salida' : 'cover',
+        esSalida ? 'Hasta pronto' : 'Bienvenido al club',
+        esSalida ? detalleSalida : 'Tu entrada de cover fue registrada en puerta.',
         null,
         qr || tipoCover || undefined,
         lugar || undefined
@@ -3293,12 +3300,14 @@ export class MisCompras implements OnInit, OnDestroy {
               Number.isFinite(metadataCompraProductoId) &&
               metadataCompraProductoId > 0 &&
               this.productoFilaSeleccionada?.compra.id === metadataCompraProductoId;
+            const qrCoverAbiertoCoincide =
+              this.showCoverQrModal && this.coverQrAbiertoCoincideConNotificacion(row.metadata);
+
             if (esCoverAcceso && row.metadata) {
               this.aplicarCoverAccesoEnCaliente(row.metadata);
             }
 
-            const qrCoverCoincide =
-              esCoverAcceso && this.coverQrAbiertoCoincideConNotificacion(row.metadata);
+            const qrCoverCoincide = esCoverAcceso && qrCoverAbiertoCoincide;
             const teniaQrAbierto = qrBoletaCoincide || qrProductoCoincide || qrCoverCoincide;
 
             const boletaActual = this.boletaSeleccionada;
@@ -3319,7 +3328,7 @@ export class MisCompras implements OnInit, OnDestroy {
             if (qrProductoCoincide) {
               this.cerrarProductoQrModal();
             }
-            if (qrCoverCoincide) {
+            if (qrCoverAbiertoCoincide) {
               this.cerrarCoverQrModal();
             }
             if (teniaQrAbierto) {
@@ -3334,12 +3343,13 @@ export class MisCompras implements OnInit, OnDestroy {
                 );
               } else if (esCoverEntrada) {
                 this.abrirMensajeIngresoDesdeNotificacion('cover', row.metadata);
+              } else if (esCoverSalida) {
+                this.abrirMensajeIngresoDesdeNotificacion('cover-salida', row.metadata);
               }
             }
 
-            // Entrada cover: modal bienvenida (sin toast). Salida cover: toast al cerrar QR.
             const omitirToast =
-              esEntradaValidada || esProductoRedimido || esCoverEntrada;
+              esEntradaValidada || esProductoRedimido || esCoverEntrada || esCoverSalida;
             if (!omitirToast) {
               void this.alertService.snackbar(`${titulo}. ${mensaje}`);
             }
