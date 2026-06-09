@@ -754,8 +754,6 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   puedeMostrarQrCover(item: BoletaCoverConCompra): boolean {
-    const acceso = (item.boleta.estado_acceso || '').toLowerCase();
-    if (acceso === 'dentro') return false;
     return (
       this.esTitularCover(item) &&
       item.compra.estado_pago === TipoEstadoPago.COMPLETADO &&
@@ -767,8 +765,6 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   puedeAbrirQrCover(item: BoletaCoverConCompra): boolean {
-    const acceso = (item.boleta.estado_acceso || '').toLowerCase();
-    if (acceso === 'dentro') return false;
     return (
       this.esTitularCover(item) &&
       item.compra.estado_pago === TipoEstadoPago.COMPLETADO &&
@@ -2947,7 +2943,7 @@ export class MisCompras implements OnInit, OnDestroy {
         if (!this.puedeAbrirQrCover(item)) continue;
         if (this.esBoletaCoverUsada(item.boleta)) continue;
         const acceso = String(item.boleta.estado_acceso || '').toLowerCase();
-        if (acceso === 'pendiente' || acceso === 'fuera') {
+        if (acceso === 'pendiente' || acceso === 'fuera' || acceso === 'dentro') {
           return true;
         }
       }
