@@ -125,6 +125,7 @@ interface LugarCoverGrupo {
   boletas: BoletaCoverConCompra[];
   totalBoletas: number;
   totalDisponibles: number;
+  totalEnCurso: number;
   totalTrasladoSaliente: number;
   totalUsadas: number;
 }
@@ -168,7 +169,7 @@ export class MisCompras implements OnInit, OnDestroy {
   eventoExpandidoKey: string | null = null;
   eventoDetalleKey: string | null = null;
   tabBoletasDetalle: 'sin-usar' | 'usadas' | 'sin-asignar' = 'sin-usar';
-  tabCoversDetalle: 'sin-usar' | 'usadas' = 'sin-usar';
+  tabCoversDetalle: 'sin-usar' | 'en-curso' | 'usadas' = 'sin-usar';
   tabEventoDetalle: 'entradas' | 'productos' = 'entradas';
   tabProductosDetalle: 'compradas' | 'redimidas' = 'compradas';
   loading = false;
@@ -609,6 +610,7 @@ export class MisCompras implements OnInit, OnDestroy {
           boletas: [],
           totalBoletas: 0,
           totalDisponibles: 0,
+          totalEnCurso: 0,
           totalTrasladoSaliente: 0,
           totalUsadas: 0,
         });
@@ -627,6 +629,7 @@ export class MisCompras implements OnInit, OnDestroy {
           boletas: [],
           totalBoletas: 0,
           totalDisponibles: 0,
+          totalEnCurso: 0,
           totalTrasladoSaliente: 0,
           totalUsadas: 0,
         };
@@ -635,14 +638,15 @@ export class MisCompras implements OnInit, OnDestroy {
 
       const enTraslado = this.tieneTrasladoSalienteCoverActivo(item.boleta.id);
       const usada = this.esBoletaCoverUsada(item.boleta);
-      const accesoPuertaActivo = this.esCoverAccesoRapido(item);
       grupo.boletas.push(item);
       grupo.totalBoletas += 1;
       if (usada) {
         grupo.totalUsadas += 1;
       } else if (enTraslado) {
         grupo.totalTrasladoSaliente += 1;
-      } else if (!accesoPuertaActivo) {
+      } else if (this.esCoverEnCurso(item.boleta)) {
+        grupo.totalEnCurso += 1;
+      } else {
         grupo.totalDisponibles += 1;
       }
     }
@@ -695,11 +699,6 @@ export class MisCompras implements OnInit, OnDestroy {
     return acceso === 'dentro' || (acceso === 'fuera' && !!item.boleta.permite_reingreso);
   }
 
-  /** Sin usar en Mis compras: excluye acceso activo en puerta (vive en /accesos-puerta). */
-  esCoverSinUsarMisCompras(item: BoletaCoverConCompra): boolean {
-    return !this.esBoletaCoverUsada(item.boleta) && !this.esCoverAccesoRapido(item);
-  }
-
   accionCoverAccesoRapido(item: BoletaCoverConCompra): 'entrada' | 'salida' {
     return (item.boleta.estado_acceso || '').toLowerCase() === 'dentro' ? 'salida' : 'entrada';
   }
@@ -748,6 +747,15 @@ export class MisCompras implements OnInit, OnDestroy {
       return true;
     }
     return false;
+  }
+
+  /** Cover activo en puerta (entró, salió con reingreso, etc.) pero aún no consumido. */
+  esCoverEnCurso(boleta: BoletaCoverCliente): boolean {
+    return !this.esBoletaCoverUsada(boleta) && this.coverAccesoUtilizadoEnPuerta(boleta);
+  }
+
+  esCoverSinUsar(boleta: BoletaCoverCliente): boolean {
+    return !this.esBoletaCoverUsada(boleta) && !this.coverAccesoUtilizadoEnPuerta(boleta);
   }
 
   esDiaSesionCover(boleta: BoletaCoverCliente): boolean {
@@ -865,6 +873,9 @@ export class MisCompras implements OnInit, OnDestroy {
     if (grupo.totalDisponibles > 0) {
       partes.push(`${grupo.totalDisponibles} sin usar`);
     }
+    if (grupo.totalEnCurso > 0) {
+      partes.push(`${grupo.totalEnCurso} en curso`);
+    }
     if (grupo.totalTrasladoSaliente > 0) {
       partes.push(
         `${grupo.totalTrasladoSaliente} con envío pendiente`
@@ -883,7 +894,6 @@ export class MisCompras implements OnInit, OnDestroy {
   tiposCoverResumenParaBadges(grupo: LugarCoverGrupo): Array<{ nombre: string; total: number }> {
     const map = new Map<string, number>();
     for (const item of grupo.boletas) {
-      if (!this.esCoverSinUsarMisCompras(item)) continue;
       const nombre = (item.boleta.tipo_cover_nombre || 'Cover').trim();
       map.set(nombre, (map.get(nombre) || 0) + 1);
     }
@@ -896,30 +906,42 @@ export class MisCompras implements OnInit, OnDestroy {
     return grupo.boletas.filter((item) => item.esCedida).length;
   }
 
-  mostrarTabCoversDetalle(grupo: LugarCoverGrupo, tab: 'sin-usar' | 'usadas'): boolean {
+  mostrarTabCoversDetalle(
+    grupo: LugarCoverGrupo,
+    tab: 'sin-usar' | 'en-curso' | 'usadas'
+  ): boolean {
     if (tab === 'sin-usar') {
-      return grupo.boletas.some((item) => this.esCoverSinUsarMisCompras(item));
+      return grupo.boletas.some((item) => this.esCoverSinUsar(item.boleta));
+    }
+    if (tab === 'en-curso') {
+      return grupo.boletas.some((item) => this.esCoverEnCurso(item.boleta));
     }
     return grupo.boletas.some((item) => this.esBoletaCoverUsada(item.boleta));
   }
 
   coversDetallePorTab(grupo: LugarCoverGrupo): BoletaCoverConCompra[] {
-    return grupo.boletas.filter((item) =>
-      this.tabCoversDetalle === 'sin-usar'
-        ? this.esCoverSinUsarMisCompras(item)
-        : this.esBoletaCoverUsada(item.boleta)
-    );
+    return grupo.boletas.filter((item) => {
+      if (this.tabCoversDetalle === 'sin-usar') {
+        return this.esCoverSinUsar(item.boleta);
+      }
+      if (this.tabCoversDetalle === 'en-curso') {
+        return this.esCoverEnCurso(item.boleta);
+      }
+      return this.esBoletaCoverUsada(item.boleta);
+    });
   }
 
   private syncTabCoversDetalle(): void {
     const detalle = this.lugarCoverDetalle();
     if (!detalle) return;
     if (this.mostrarTabCoversDetalle(detalle, this.tabCoversDetalle)) return;
-    if (this.mostrarTabCoversDetalle(detalle, 'sin-usar')) {
-      this.tabCoversDetalle = 'sin-usar';
-      return;
+    const orden: Array<'sin-usar' | 'en-curso' | 'usadas'> = ['sin-usar', 'en-curso', 'usadas'];
+    for (const tab of orden) {
+      if (this.mostrarTabCoversDetalle(detalle, tab)) {
+        this.tabCoversDetalle = tab;
+        return;
+      }
     }
-    this.tabCoversDetalle = 'usadas';
   }
 
   abrirModalTrasladoCover(item: BoletaCoverConCompra): void {

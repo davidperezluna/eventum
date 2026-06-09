@@ -1196,7 +1196,7 @@
       class="mc-segmented mc-segmented--status"
       role="tablist"
       aria-label="Estado de covers"
-      *ngIf="mostrarTabCoversDetalle(clubDetalle, 'sin-usar') || mostrarTabCoversDetalle(clubDetalle, 'usadas')"
+      *ngIf="mostrarTabCoversDetalle(clubDetalle, 'sin-usar') || mostrarTabCoversDetalle(clubDetalle, 'en-curso') || mostrarTabCoversDetalle(clubDetalle, 'usadas')"
     >
       <button
         type="button"
@@ -1210,6 +1210,19 @@
         <span class="material-icons" aria-hidden="true">check_circle</span>
         Sin usar
         <span class="mc-segmented-badge">{{ clubDetalle.totalDisponibles }}</span>
+      </button>
+      <button
+        type="button"
+        class="mc-segmented-tab"
+        role="tab"
+        *ngIf="mostrarTabCoversDetalle(clubDetalle, 'en-curso')"
+        [class.active]="tabCoversDetalle === 'en-curso'"
+        [attr.aria-selected]="tabCoversDetalle === 'en-curso'"
+        (click)="tabCoversDetalle = 'en-curso'"
+      >
+        <span class="material-icons" aria-hidden="true">timelapse</span>
+        En curso
+        <span class="mc-segmented-badge">{{ clubDetalle.totalEnCurso }}</span>
       </button>
       <button
         type="button"
@@ -1296,12 +1309,16 @@
           </div>
         </div>
 
-        <p class="mc-cover-detalle-empty" *ngIf="coversDetallePorTab(clubDetalle).length === 0 && coversAccesoRapidoEnClub(clubDetalle).length > 0">
-          Tus covers con acceso en puerta están en
-          <a routerLink="/accesos-puerta">Acceso puerta</a>.
-        </p>
-        <p class="mc-cover-detalle-empty" *ngIf="coversDetallePorTab(clubDetalle).length === 0 && coversAccesoRapidoEnClub(clubDetalle).length === 0">
-          No hay covers en esta pestaña.
+        <p class="mc-cover-detalle-empty" *ngIf="coversDetallePorTab(clubDetalle).length === 0">
+          No hay covers
+          {{
+            tabCoversDetalle === 'usadas'
+              ? 'usadas'
+              : tabCoversDetalle === 'en-curso'
+                ? 'en curso'
+                : 'sin usar'
+          }}
+          en este club.
         </p>
       </section>
     </div>

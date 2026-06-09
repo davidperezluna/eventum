@@ -152,32 +152,92 @@ export function hintQrCoverAcceso(item: CoverAccesoPuertaItem | null): string {
 
 export function parseHoraCoverToMinutes(hora: string | null | undefined): number | null {
   if (!hora?.trim()) return null;
-  const parts = hora.trim().split(':');
-  const h = Number(parts[0]);
-  const m = Number(parts[1] ?? 0);
+  const raw = hora.trim();
+
+  if (raw.includes('T')) {
+    const parsed = new Date(raw);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.getHours() * 60 + parsed.getMinutes();
+    }
+  }
+
+  const timeMatch = raw.match(/^(\d{1,2}):(\d{2})/);
+  if (!timeMatch) return null;
+  const h = Number(timeMatch[1]);
+  const m = Number(timeMatch[2]);
   if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
   return h * 60 + m;
 }
 
-/** Porcentaje de avance de la sesión (0–100) según hora local. */
+function duracionVentanaSesionCover(apertura: number, cierre: number): number {
+  if (cierre > apertura) return cierre - apertura;
+  return cierre + 24 * 60 - apertura;
+}
+
+/** Minutos transcurridos desde apertura, o null si aún no empezó / ya terminó. */
+function minutosDesdeInicioSesionCover(
+  apertura: number,
+  cierre: number,
+  current: number
+): number | null {
+  const cruzaMedianoche = cierre <= apertura;
+  if (!cruzaMedianoche) {
+    if (current < apertura || current > cierre) return null;
+    return current - apertura;
+  }
+  if (current >= apertura) return current - apertura;
+  if (current <= cierre) return 24 * 60 - apertura + current;
+  return null;
+}
+
+function minutosHastaInicioSesionCover(
+  apertura: number,
+  cierre: number,
+  current: number
+): number | null {
+  const cruzaMedianoche = cierre <= apertura;
+  if (!cruzaMedianoche) {
+    if (current >= apertura) return null;
+    return apertura - current;
+  }
+  if (current >= apertura || current <= cierre) return null;
+  return apertura - current;
+}
+
+function minutosHastaCierreSesionCover(
+  apertura: number,
+  cierre: number,
+  current: number
+): number | null {
+  const elapsed = minutosDesdeInicioSesionCover(apertura, cierre, current);
+  if (elapsed == null) return null;
+  const duration = duracionVentanaSesionCover(apertura, cierre);
+  const remaining = duration - elapsed;
+  return remaining > 0 ? remaining : 0;
+}
+
+function formatMinutosComoTexto(mins: number, prefijo: string): string {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h > 0 && m > 0) return `${prefijo} ${h}h ${m}m`;
+  if (h > 0) return `${prefijo} ${h}h`;
+  return `${prefijo} ${m} min`;
+}
+
+/** Porcentaje de avance de la sesión (0–100) según hora local y ventana apertura–cierre. */
 export function sesionProgresoCover(boleta: BoletaCoverCliente, now = new Date()): number {
   const apertura = parseHoraCoverToMinutes(boleta.sesion_hora_apertura);
   const cierre = parseHoraCoverToMinutes(boleta.sesion_hora_cierre);
-  if (apertura == null || cierre == null) return 35;
+  if (apertura == null || cierre == null) return 0;
 
-  let start = apertura;
-  let end = cierre;
-  if (end <= start) {
-    end += 24 * 60;
-  }
+  const current = now.getHours() * 60 + now.getMinutes();
+  const elapsed = minutosDesdeInicioSesionCover(apertura, cierre, current);
+  if (elapsed == null) return 0;
 
-  let current = now.getHours() * 60 + now.getMinutes();
-  if (end > 24 * 60 && current < start) {
-    current += 24 * 60;
-  }
-  if (current <= start) return 0;
-  if (current >= end) return 100;
-  return Math.round(((current - start) / (end - start)) * 100);
+  const duration = duracionVentanaSesionCover(apertura, cierre);
+  if (duration <= 0) return 0;
+  if (elapsed >= duration) return 100;
+  return Math.round((elapsed / duration) * 100);
 }
 
 export function minutosRestantesSesionCover(
@@ -186,33 +246,34 @@ export function minutosRestantesSesionCover(
 ): number | null {
   const apertura = parseHoraCoverToMinutes(boleta.sesion_hora_apertura);
   const cierre = parseHoraCoverToMinutes(boleta.sesion_hora_cierre);
-  if (cierre == null) return null;
+  if (apertura == null || cierre == null) return null;
 
-  let end = cierre;
-  if (apertura != null && cierre <= apertura) {
-    end += 24 * 60;
-  }
-
-  let current = now.getHours() * 60 + now.getMinutes();
-  if (apertura != null && cierre <= apertura && current < apertura) {
-    current += 24 * 60;
-  }
-  const diff = end - current;
-  return diff > 0 ? diff : 0;
+  const current = now.getHours() * 60 + now.getMinutes();
+  return minutosHastaCierreSesionCover(apertura, cierre, current);
 }
 
 export function labelTiempoRestanteSesionCover(
   boleta: BoletaCoverCliente,
   now = new Date()
 ): string {
-  const mins = minutosRestantesSesionCover(boleta, now);
-  if (mins == null) return 'Noche en curso';
+  const apertura = parseHoraCoverToMinutes(boleta.sesion_hora_apertura);
+  const cierre = parseHoraCoverToMinutes(boleta.sesion_hora_cierre);
+  if (apertura == null || cierre == null) return 'Noche en curso';
+
+  const acceso = (boleta.estado_acceso || '').toLowerCase();
+  const yaEnPuerta = acceso !== '' && acceso !== 'pendiente';
+  const current = now.getHours() * 60 + now.getMinutes();
+  const hastaInicio = minutosHastaInicioSesionCover(apertura, cierre, current);
+
+  if (hastaInicio != null && hastaInicio > 0) {
+    if (yaEnPuerta) return 'Noche en curso';
+    return formatMinutosComoTexto(hastaInicio, 'Abre en');
+  }
+
+  const mins = minutosHastaCierreSesionCover(apertura, cierre, current);
+  if (mins == null) return 'Fuera de horario';
   if (mins === 0) return 'Sesión por cerrar';
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  if (h > 0 && m > 0) return `Cierra en ${h}h ${m}m`;
-  if (h > 0) return `Cierra en ${h}h`;
-  return `Cierra en ${m} min`;
+  return formatMinutosComoTexto(mins, 'Cierra en');
 }
 
 export function mensajeEstadoPuerta(item: CoverAccesoPuertaItem): string {
