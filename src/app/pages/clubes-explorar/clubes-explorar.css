@@ -1,3 +1,42 @@
+.clubes-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  margin-bottom: 0.65rem;
+  padding: 0.28rem 0.55rem;
+  border-radius: var(--ec-radius-badge, 6px);
+  border: 1px solid var(--ec-border, #e2e8f0);
+  background: var(--ec-chip-surface, #fafbfc);
+  color: var(--ec-text-muted, #64748b);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.clubes-refresh--detalle {
+  position: fixed;
+  top: calc(var(--client-nav-height, 56px) + 0.5rem);
+  right: 0.75rem;
+  z-index: 20;
+  margin-bottom: 0;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.clubes-refresh__spinner {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  border: 2px solid rgba(100, 116, 139, 0.25);
+  border-top-color: var(--ec-text-body, #1e293b);
+  animation: clubes-refresh-spin 0.8s linear infinite;
+}
+
+@keyframes clubes-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .clubes-page .clubes-stats {
   display: inline-flex;
   align-items: center;

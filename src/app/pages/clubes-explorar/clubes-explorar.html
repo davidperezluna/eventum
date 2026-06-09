@@ -6,7 +6,17 @@
   </header>
 
   <div class="cupos-content-shell">
-    <div *ngIf="!loading && lugares.length > 0" class="clubes-stats" aria-live="polite">
+    <div
+      class="clubes-refresh"
+      *ngIf="isRefreshing && !loading"
+      aria-live="polite"
+      aria-label="Actualizando clubes"
+    >
+      <span class="clubes-refresh__spinner" aria-hidden="true"></span>
+      <span>Actualizando…</span>
+    </div>
+
+    <div *ngIf="lugares.length > 0" class="clubes-stats" aria-live="polite">
       <span class="clubes-stats__icon material-icons" aria-hidden="true">nightlife</span>
       <span class="clubes-stats__text">
         <strong>{{ lugares.length }}</strong>
@@ -14,7 +24,7 @@
       </span>
     </div>
 
-    <div *ngIf="loading" class="cupos-loading">
+    <div *ngIf="loading && lugares.length === 0" class="cupos-loading">
       <div class="cupos-spinner" aria-hidden="true"></div>
       <p>Cargando clubes…</p>
     </div>
@@ -26,7 +36,7 @@
       <a routerLink="/eventos-cliente" class="cupos-btn-primary">Ver eventos</a>
     </div>
 
-    <ul *ngIf="!loading && lugares.length > 0" class="cupos-list clubes-grid">
+    <ul *ngIf="lugares.length > 0" class="cupos-list clubes-grid">
       <li *ngFor="let lugar of lugares; trackBy: trackLugar" class="clubes-card">
         <a [routerLink]="['/club', lugar.id]" class="clubes-card__link">
           <div class="clubes-card__media" aria-hidden="true">

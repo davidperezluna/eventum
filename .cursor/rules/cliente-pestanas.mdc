@@ -1,5 +1,5 @@
 ---
-description: Estructura y estilos para nuevas pestañas y páginas del área cliente (Eventum)
+description: Estructura, estilos y caché/recarga silenciosa para nuevas pestañas y páginas del área cliente (Eventum)
 globs: src/app/pages/**/*.html,src/app/pages/**/*.ts,src/app/pages/**/*.css,src/app/components/**/*.html,src/app/components/**/*.css
 alwaysApply: false
 ---
@@ -150,6 +150,97 @@ export class MiPagina implements OnInit {
 5. ¿Acciones protegidas usan `requiereLogin` + `irALoginCliente`?
 6. ¿Ruta pública + `returnUrl` permitida post-OAuth?
 7. ¿Solo tokens `--ec-*` y CSS existente antes de añadir estilos nuevos?
+8. ¿Carga con caché + recarga silenciosa (ver sección siguiente)?
+
+## Caché y recarga silenciosa (obligatorio)
+
+Toda página cliente que **cargue datos del servidor** debe usar el mismo patrón que `mis-compras`, `clubes-explorar` y `club-detalle`. Objetivo: mostrar datos cacheados al instante y refrescar en background sin bloquear la UI.
+
+### Servicio de estado
+
+- Persistir con `AppCacheService` (`localStorage`; datos sensibles por usuario → `sessionStorage` como en `MisComprasStateService`).
+- Crear `*-state.service.ts` en `src/app/services/` con: `getState`, `saveState`, `isCacheFresh`, `clear`, `lastUpdated`, TTL **2 min** (páginas con sesión) o **5 min** (públicas).
+- Referencias: `mis-compras-state.service.ts`, `clubes-state.service.ts`, `eventos-cliente-state.service.ts`, `detalle-evento-state.service.ts`.
+
+### Ciclo de vida en el componente
+
+```typescript
+export class MiPaginaCliente implements OnInit, OnDestroy {
+  loading = true;
+  isRefreshing = false;
+  private refreshIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly refreshIndicatorDelayMs = 800;
+
+  ngOnInit(): void {
+    const cached = this.miStateService.getState(/* userId o clave */);
+    if (cached) {
+      this.applyCachedState(cached);
+      this.loading = false;
+      setTimeout(() => window.scrollTo({ top: cached.scrollY, behavior: 'auto' }), 0);
+    }
+    void this.cargar({ background: !!cached });
+  }
+
+  ngOnDestroy(): void {
+    this.persistState(Date.now());
+    this.stopSilentRefreshIndicator();
+  }
+
+  async cargar(options?: { background?: boolean }): Promise<void> {
+    const background = options?.background ?? false;
+    const hasVisibleData = /* hay datos en pantalla */;
+    const silentRefreshMode = background || hasVisibleData;
+
+    if (this.isOffline() && hasVisibleData) return; // conservar caché
+
+    this.loading = !silentRefreshMode && !hasVisibleData;
+    if (silentRefreshMode) this.startSilentRefreshIndicator();
+    else this.stopSilentRefreshIndicator();
+
+    const previous = /* snapshot de datos visibles */;
+    try {
+      // fetch…
+      this.persistState(Date.now());
+    } catch {
+      if (silentRefreshMode) /* restaurar previous */; else /* vacío o redirect */;
+    } finally {
+      this.loading = false;
+      this.stopSilentRefreshIndicator();
+    }
+  }
+}
+```
+
+### Reglas de comportamiento
+
+- **Primera visita** (sin caché): `loading = true` + spinner `cupos-loading`.
+- **Con caché o recarga**: datos visibles de inmediato; fetch en `{ background: true }`.
+- **Offline**: no vaciar datos si ya hay caché en pantalla.
+- **Error en refresh silencioso**: mantener datos anteriores; no redirigir ni mostrar pantalla vacía.
+- **Error en carga inicial** (sin caché): estado vacío o redirect según la página.
+- **Persistir** en `ngOnDestroy` y tras cada carga exitosa (`scrollY` incluido).
+
+### UI — indicador de refresh
+
+Mostrar badge solo si la recarga tarda >800 ms (evita parpadeo):
+
+```html
+<div class="clubes-refresh" *ngIf="isRefreshing && !loading" aria-live="polite">
+  <span class="clubes-refresh__spinner" aria-hidden="true"></span>
+  <span>Actualizando…</span>
+</div>
+```
+
+Estilos: reutilizar `.clubes-refresh` / `.clubes-refresh__spinner` (`clubes-explorar.css`) o el equivalente `.perfil-refresh` (`perfil.css`).
+
+### Checklist caché
+
+1. ¿Existe `*-state.service.ts` con TTL y claves `eventum:cache:v1:…`?
+2. ¿`ngOnInit` hidrata caché antes del fetch?
+3. ¿`cargar({ background: true })` cuando hay datos cacheados?
+4. ¿`persistState` en destroy y tras fetch OK?
+5. ¿Refresh silencioso no borra la UI en error/offline?
+6. ¿Indicador `isRefreshing` con delay 800 ms?
 
 ## Modal de acción cliente (`legal-modal`)
 
@@ -258,5 +349,8 @@ Cuando el usuario ya envió una transferencia y espera respuesta, mostrar un blo
 - Poner páginas cliente detrás de `authGuard` (redirige a `/login-admin`).
 - `alertService.warning` para “inicia sesión”.
 - Omitir estados `cupos-loading` / `cupos-empty`.
+- Crear páginas cliente con fetch directo sin caché ni recarga silenciosa en background.
+- Mostrar spinner completo cuando ya hay datos cacheados visibles.
+- Redirigir o vaciar la UI por error de red durante un refresh silencioso.
 - Usar `legal-modal` para términos legales extensos o checkbox de aceptación (usar `licor-modal` en carrito).
 - Poner términos y condiciones largos en modales de acción (transferir, asignar, etc.).

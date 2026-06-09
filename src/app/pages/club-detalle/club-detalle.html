@@ -1,10 +1,20 @@
 <div class="cupos-page club-detalle-page">
-  <div *ngIf="loading" class="cupos-loading">
+  <div
+    class="clubes-refresh clubes-refresh--detalle"
+    *ngIf="isRefreshing && !loading"
+    aria-live="polite"
+    aria-label="Actualizando club"
+  >
+    <span class="clubes-refresh__spinner" aria-hidden="true"></span>
+    <span>Actualizando…</span>
+  </div>
+
+  <div *ngIf="loading && !lugar" class="cupos-loading">
     <div class="cupos-spinner" aria-hidden="true"></div>
     <p>Cargando club…</p>
   </div>
 
-  <ng-container *ngIf="!loading && lugar">
+  <ng-container *ngIf="lugar">
     <div class="cupos-content-shell">
       <header class="club-hero">
         <a routerLink="/clubes" class="club-hero__back">

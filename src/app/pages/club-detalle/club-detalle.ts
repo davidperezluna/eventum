@@ -1,8 +1,9 @@
-import { ChangeDetectorRef, Component, NgZone, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CoversService } from '../../services/covers.service';
+import { ClubDetalleState, ClubesStateService } from '../../services/clubes-state.service';
 import { CarritoCompraService } from '../../services/carrito-compra.service';
 import { AuthService } from '../../services/auth.service';
 import { AlertService } from '../../services/alert.service';
@@ -27,21 +28,37 @@ export class ClubDetalle implements OnInit, OnDestroy {
   readonly coversLabels = COVERS_LABELS;
 
   lugarId = 0;
-  loading = true;
+  loading = false;
+  isRefreshing = false;
   detalle: DetalleLugarCoverPublico | null = null;
   private carritoSubscription?: Subscription;
+  private refreshIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
+  private refreshStartedAt: number | null = null;
+  private readonly refreshIndicatorDelayMs = 800;
+  private hadCachedDataOnInit = false;
 
   constructor(
     private route: ActivatedRoute,
     public router: Router,
     private coversService: CoversService,
+    private clubesStateService: ClubesStateService,
     private carritoCompraService: CarritoCompraService,
     private authService: AuthService,
     private alertService: AlertService,
     private clientConfirmDialog: ClientConfirmDialogService,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone,
-  ) {}
+  ) {
+    const id = Number(this.route.snapshot.paramMap.get('lugarId'));
+    if (Number.isFinite(id) && id > 0) {
+      const cachedState = this.clubesStateService.getDetalleState(id);
+      if (cachedState?.detalle) {
+        this.lugarId = id;
+        this.applyCachedState(cachedState);
+        this.hadCachedDataOnInit = true;
+      }
+    }
+  }
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('lugarId'));
@@ -53,11 +70,30 @@ export class ClubDetalle implements OnInit, OnDestroy {
     this.carritoSubscription = this.carritoCompraService.itemsCover$.subscribe(() => {
       this.cdr.detectChanges();
     });
-    void this.cargar();
+
+    const cachedState = this.clubesStateService.getDetalleState(id);
+    if (cachedState?.detalle) {
+      this.applyCachedState(cachedState);
+      this.loading = false;
+      this.hadCachedDataOnInit = true;
+      setTimeout(() => window.scrollTo({ top: cachedState.scrollY, behavior: 'auto' }), 0);
+    } else {
+      this.loading = true;
+    }
+
+    void this.cargar({ background: this.hadCachedDataOnInit });
   }
 
   ngOnDestroy(): void {
     this.carritoSubscription?.unsubscribe();
+    this.persistState(Date.now());
+    this.stopSilentRefreshIndicator();
+  }
+
+  @HostListener('window:beforeunload')
+  @HostListener('window:pagehide')
+  onPageExit(): void {
+    this.persistState(Date.now());
   }
 
   get lugar(): LugarCoverPublico | null {
@@ -76,21 +112,107 @@ export class ClubDetalle implements OnInit, OnDestroy {
     this.ngZone.run(() => this.cdr.detectChanges());
   }
 
-  async cargar(): Promise<void> {
-    this.loading = true;
+  async cargar(options?: { background?: boolean }): Promise<void> {
+    const background = options?.background ?? false;
+    const hasVisibleData = !!this.detalle && this.detalle.lugar.id === this.lugarId;
+    const silentRefreshMode = background || hasVisibleData;
+    const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+
+    if (offline && hasVisibleData) {
+      console.info('[ClubDetalle] Sin conexión, usando datos cacheados', { lugarId: this.lugarId });
+      this.loading = false;
+      this.stopSilentRefreshIndicator();
+      this.refreshView();
+      return;
+    }
+
+    this.loading = !silentRefreshMode && !hasVisibleData;
+    if (silentRefreshMode) {
+      this.startSilentRefreshIndicator();
+    } else {
+      this.stopSilentRefreshIndicator();
+    }
     this.refreshView();
+
+    const refreshStartedAt = Date.now();
+    const previousDetalle = this.detalle;
+
     try {
-      this.detalle = await this.coversService.obtenerLugarCoverPublico(this.lugarId);
-      if (!this.detalle) {
+      const detalle = await this.coversService.obtenerLugarCoverPublico(this.lugarId);
+      if (!detalle) {
+        if (silentRefreshMode) {
+          this.detalle = previousDetalle;
+        } else {
+          void this.router.navigate(['/clubes']);
+        }
+        return;
+      }
+
+      this.detalle = detalle;
+      this.persistState(Date.now());
+    } catch {
+      if (silentRefreshMode) {
+        this.detalle = previousDetalle;
+      } else {
+        this.detalle = null;
         void this.router.navigate(['/clubes']);
       }
-    } catch {
-      this.detalle = null;
-      void this.router.navigate(['/clubes']);
     } finally {
       this.loading = false;
+      this.stopSilentRefreshIndicator();
+      if (silentRefreshMode) {
+        console.info('[ClubDetalle] Refresco silencioso finalizado', {
+          durationMs: Date.now() - refreshStartedAt,
+          lugarId: this.lugarId,
+          sesiones: this.detalle?.sesiones.length ?? 0,
+        });
+      }
       this.refreshView();
     }
+  }
+
+  private applyCachedState(state: ClubDetalleState): void {
+    this.detalle = {
+      lugar: { ...state.detalle.lugar },
+      tipos_cover: [...state.detalle.tipos_cover],
+      sesiones: [...state.detalle.sesiones],
+    };
+  }
+
+  private persistState(lastUpdated: number): void {
+    if (!this.lugarId || !this.detalle) return;
+    this.clubesStateService.saveDetalleState(this.lugarId, {
+      detalle: this.detalle,
+      scrollY: typeof window !== 'undefined' ? window.scrollY : 0,
+      lastUpdated,
+    });
+  }
+
+  private startSilentRefreshIndicator(): void {
+    this.refreshStartedAt = Date.now();
+    console.info('[ClubDetalle] Refresco silencioso iniciado', { lugarId: this.lugarId });
+
+    if (this.refreshIndicatorTimer) {
+      clearTimeout(this.refreshIndicatorTimer);
+    }
+    this.isRefreshing = false;
+    this.refreshIndicatorTimer = setTimeout(() => {
+      this.isRefreshing = true;
+      this.refreshView();
+    }, this.refreshIndicatorDelayMs);
+  }
+
+  private stopSilentRefreshIndicator(): void {
+    if (this.refreshIndicatorTimer) {
+      clearTimeout(this.refreshIndicatorTimer);
+      this.refreshIndicatorTimer = null;
+    }
+
+    if (this.refreshStartedAt) {
+      this.refreshStartedAt = null;
+    }
+
+    this.isRefreshing = false;
   }
 
   tipoPorSesion(sesion: SesionCoverPublica): TipoCoverPublico | undefined {
