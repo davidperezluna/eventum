@@ -31,6 +31,7 @@ import {
 import { AuthService } from '../../services/auth.service';
 import { BoletaCoverCliente } from '../../types/covers';
 import { AccesoPuertaToastComponent } from '../../components/acceso-puerta-toast/acceso-puerta-toast';
+import { nombreDisplayUsuario } from '../../core/lector-scan-display';
 
 @Component({
   selector: 'app-accesos-puerta',
@@ -56,6 +57,7 @@ export class AccesosPuerta implements OnInit, OnDestroy {
   mensajeIngresoDetalle = '';
   mensajeIngresoReferencia = '';
   mensajeIngresoEvento = '';
+  mensajeIngresoAsistente = '';
   mensajeIngresoTipo: 'cover' | 'cover-salida' = 'cover';
 
   private readonly destroy$ = new Subject<void>();
@@ -320,6 +322,7 @@ export class AccesosPuerta implements OnInit, OnDestroy {
       : 'Tu entrada de cover fue registrada en puerta.';
     this.mensajeIngresoReferencia = qr || tipoCover || '';
     this.mensajeIngresoEvento = lugar || '';
+    this.mensajeIngresoAsistente = nombreDisplayUsuario(this.authService.getUsuario());
     this.showMensajeIngresoModal = true;
     this.refreshView();
 

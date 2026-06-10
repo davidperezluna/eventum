@@ -339,6 +339,14 @@ export class CoversService {
     if (error) throw error;
     if (!data) return null;
     const row = data as Record<string, unknown>;
+    let cover = this.mapBoletaCoverEscaneo(row);
+    if (!cover.titular_nombre?.trim() && cover.id > 0) {
+      cover = await this.enriquecerTitularCoverEscaneo(cover);
+    }
+    return cover;
+  }
+
+  private mapBoletaCoverEscaneo(row: Record<string, unknown>): BoletaCoverEscaneo {
     return {
       id: Number(row['id'] ?? 0),
       codigo_qr: String(row['codigo_qr'] ?? ''),
@@ -358,9 +366,29 @@ export class CoversService {
       estado_compra: row['estado_compra'] != null ? String(row['estado_compra']) : undefined,
       personas_dentro: Number(row['personas_dentro'] ?? 0),
       aforo_maximo: Number(row['aforo_maximo'] ?? 0),
+      titular_cliente_id:
+        row['titular_cliente_id'] != null ? Number(row['titular_cliente_id']) : undefined,
       titular_nombre: row['titular_nombre'] != null ? String(row['titular_nombre']) : undefined,
       titular_documento: row['titular_documento'] != null ? String(row['titular_documento']) : undefined,
     };
+  }
+
+  private async enriquecerTitularCoverEscaneo(cover: BoletaCoverEscaneo): Promise<BoletaCoverEscaneo> {
+    try {
+      const { data, error } = await this.supabase.getClient().rpc('obtener_display_titular_cover_boleta', {
+        p_boleta_cover_id: cover.id,
+      });
+      if (error) {
+        return cover;
+      }
+      const nombre = String(data ?? '').trim();
+      if (!nombre) {
+        return cover;
+      }
+      return { ...cover, titular_nombre: nombre };
+    } catch {
+      return cover;
+    }
   }
 
   async registrarAccesoCover(

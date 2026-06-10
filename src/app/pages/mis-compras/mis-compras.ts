@@ -44,6 +44,11 @@ import { AccesosPuertaService } from '../../services/accesos-puerta.service';
 import { coversEventumEnabled } from '../../core/covers-feature';
 import { formatHoraCover, labelSesionCover } from '../../core/covers-labels';
 import { hintQrCoverAcceso as hintQrCoverAccesoText } from '../../core/cover-acceso-puerta';
+import {
+  documentoAsistenteBoletaEscaneo,
+  nombreAsistenteBoletaEscaneo,
+  nombreDisplayUsuario,
+} from '../../core/lector-scan-display';
 import { BoletaCoverCliente, CompraCoverCliente } from '../../types/covers';
 import {
   RESUMEN_CANCELAR_TRASLADO_COVER_PUNTOS,
@@ -233,6 +238,7 @@ export class MisCompras implements OnInit, OnDestroy {
   mensajeIngresoDetalle = '';
   mensajeIngresoReferencia = '';
   mensajeIngresoEvento = '';
+  mensajeIngresoAsistente = '';
   mensajeIngresoProductos: Array<{ nombre: string; cantidad: number }> = [];
   mensajeIngresoTipo: 'entrada' | 'producto' | 'cover' | 'cover-salida' = 'entrada';
   siguienteBoletaSugerida: BoletaConCompra | null = null;
@@ -1497,13 +1503,15 @@ export class MisCompras implements OnInit, OnDestroy {
     siguienteBoleta?: BoletaConCompra | null,
     referencia?: string,
     evento?: string,
-    productos?: Array<{ nombre: string; cantidad: number }>
+    productos?: Array<{ nombre: string; cantidad: number }>,
+    asistente?: string
   ): void {
     this.mensajeIngresoTipo = tipo;
     this.mensajeIngresoTitulo = titulo;
     this.mensajeIngresoDetalle = detalle;
     this.mensajeIngresoReferencia = (referencia || '').trim();
     this.mensajeIngresoEvento = (evento || '').trim();
+    this.mensajeIngresoAsistente = (asistente || '').trim();
     this.mensajeIngresoProductos = productos || [];
     this.siguienteBoletaSugerida = siguienteBoleta || null;
     this.showMensajeIngresoModal = true;
@@ -1551,6 +1559,40 @@ export class MisCompras implements OnInit, OnDestroy {
     return '';
   }
 
+  private buscarBoletaLocalPorId(boletaId: number): BoletaComprada | null {
+    if (!Number.isFinite(boletaId) || boletaId <= 0) {
+      return null;
+    }
+    for (const grupo of this.eventosConBoletas) {
+      for (const tipo of grupo.tipos) {
+        for (const item of tipo.boletas || []) {
+          if (item.boleta?.id === boletaId) {
+            return item.boleta;
+          }
+        }
+      }
+    }
+    for (const row of this.comprasConBoletas) {
+      const found = row.boletas.find((b) => b.id === boletaId);
+      if (found) {
+        return found;
+      }
+    }
+    const cedida = this.entradasCedidas.find((b) => b.id === boletaId);
+    if (cedida) {
+      return cedida;
+    }
+    return null;
+  }
+
+  private asistenteDesdeBoleta(boleta: BoletaComprada | null | undefined): string {
+    const nombre = nombreAsistenteBoletaEscaneo(boleta);
+    return nombre === '—' ? '' : nombre;
+  }
+
+  readonly nombreAsistenteBoleta = nombreAsistenteBoletaEscaneo;
+  readonly documentoAsistenteBoleta = documentoAsistenteBoletaEscaneo;
+
   private abrirMensajeIngresoDesdeNotificacion(
     tipo: 'entrada' | 'producto' | 'cover' | 'cover-salida',
     metadata: Record<string, unknown> | null | undefined,
@@ -1576,7 +1618,9 @@ export class MisCompras implements OnInit, OnDestroy {
         esSalida ? detalleSalida : 'Tu entrada de cover fue registrada en puerta.',
         null,
         qr || tipoCover || undefined,
-        lugar || undefined
+        lugar || undefined,
+        undefined,
+        this.nombreAsistenteUsuarioActual()
       );
       return;
     }
@@ -1590,21 +1634,30 @@ export class MisCompras implements OnInit, OnDestroy {
         null,
         undefined,
         undefined,
-        productos
+        productos,
+        this.nombreAsistenteUsuarioActual()
       );
       return;
     }
 
     const evento = this.tituloEventoDesdeMetadata(meta);
     const qr = String(meta['codigo_qr'] || '').trim();
+    const boletaId = Number(meta['boleta_id'] ?? 0);
+    const boletaRef = siguienteBoleta?.boleta ?? this.buscarBoletaLocalPorId(boletaId);
     this.abrirMensajeIngreso(
       'entrada',
       'Bienvenido al evento',
       'Tu entrada fue validada en puerta.',
       siguienteBoleta ?? null,
       qr || undefined,
-      evento || undefined
+      evento || undefined,
+      undefined,
+      this.asistenteDesdeBoleta(boletaRef)
     );
+  }
+
+  private nombreAsistenteUsuarioActual(): string {
+    return nombreDisplayUsuario(this.authService.getUsuario());
   }
 
   cerrarMensajeIngresoModal(): void {
@@ -1613,6 +1666,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.mensajeIngresoDetalle = '';
     this.mensajeIngresoReferencia = '';
     this.mensajeIngresoEvento = '';
+    this.mensajeIngresoAsistente = '';
     this.mensajeIngresoProductos = [];
     this.siguienteBoletaSugerida = null;
     this.cdr.detectChanges();

@@ -38,8 +38,12 @@
 
     <div
       class="modal-info"
-      *ngIf="tipo !== 'producto' && (contextoValor || referenciaValor)"
+      *ngIf="tipo !== 'producto' && (asistenteValor || contextoValor || referenciaValor)"
     >
+      <div class="mensaje-ingreso-bloque" *ngIf="asistenteValor">
+        <span class="mensaje-ingreso-label">{{ asistenteEtiqueta }}</span>
+        <strong class="mensaje-ingreso-value">{{ asistenteValor }}</strong>
+      </div>
       <div class="mensaje-ingreso-bloque" *ngIf="contextoValor">
         <span class="mensaje-ingreso-label">{{ contextoEtiqueta }}</span>
         <strong class="mensaje-ingreso-value">{{ contextoValor }}</strong>

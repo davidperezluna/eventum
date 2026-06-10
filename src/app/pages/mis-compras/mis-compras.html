@@ -1491,6 +1491,7 @@
   [detalle]="mensajeIngresoDetalle"
   [contextoValor]="mensajeIngresoEvento"
   [referenciaValor]="mensajeIngresoReferencia"
+  [asistenteValor]="mensajeIngresoAsistente"
   [productos]="mensajeIngresoProductos"
   [actionLabel]="textoBotonMensajeIngresoModal()"
   (closed)="cerrarMensajeIngresoModal()"
@@ -1766,14 +1767,14 @@
           <span class="info-value">{{ (eventoSeleccionado?.lugar || lugarVistaBoleta(boletaSeleccionada, compraSeleccionada))?.nombre }}</span>
         </div>
 
-        <div class="info-row info-row--stack" *ngIf="boletaSeleccionada.nombre_asistente">
+        <div class="info-row info-row--stack">
           <span class="info-label">Asistente</span>
-          <span class="info-value">{{ boletaSeleccionada.nombre_asistente }}</span>
+          <span class="info-value">{{ nombreAsistenteBoleta(boletaSeleccionada) }}</span>
         </div>
 
-        <div class="info-row info-row--stack" *ngIf="boletaSeleccionada.documento_asistente">
+        <div class="info-row info-row--stack" *ngIf="documentoAsistenteBoleta(boletaSeleccionada) !== '—'">
           <span class="info-label">Documento</span>
-          <span class="info-value">{{ boletaSeleccionada.documento_asistente }}</span>
+          <span class="info-value">{{ documentoAsistenteBoleta(boletaSeleccionada) }}</span>
         </div>
 
         <div class="info-row info-row--stack" *ngIf="compraSeleccionada?.numero_transaccion">

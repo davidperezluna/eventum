@@ -295,6 +295,7 @@ export interface BoletaComprada {
   /** Nombre resuelto para lector cuando nombre_asistente viene vacío. */
   asistente_display_nombre?: string;
   asistente_display_documento?: string;
+  asistente_display_email?: string;
   /** Número legible del palco (si viene del join). */
   numero_palco?: number;
   /** Quién validó la entrada (join desde usuarios). */

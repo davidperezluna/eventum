@@ -100,6 +100,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
   escaneoToastDetalle = '';
   escaneoToastContexto = '';
   escaneoToastReferencia = '';
+  escaneoToastAsistente = '';
   escaneoToastProductos: AccesoPuertaToastProducto[] = [];
   private escaneoToastOnClosed: (() => void) | null = null;
 
@@ -696,6 +697,8 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
             detalle: 'La entrada fue validada correctamente en puerta.',
             contextoValor: eventoTitulo,
             referenciaValor: codigoQr,
+            asistenteValor:
+              this.nombreAsistenteBoleta(boleta) !== '—' ? this.nombreAsistenteBoleta(boleta) : undefined,
           },
           () => void this.reiniciarEscaneo()
         );
@@ -754,6 +757,8 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
           titulo: 'Gracias por tu compra',
           detalle: 'El pedido fue entregado en el punto de retiro.',
           productos: productosToast,
+          asistenteValor:
+            this.nombreAsistenteProducto(item) !== '—' ? this.nombreAsistenteProducto(item) : undefined,
         },
         () => void this.reiniciarEscaneo()
       );
@@ -947,6 +952,8 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
             detalle: 'La entrada de cover fue registrada en puerta.',
             contextoValor: cover.lugar_nombre || '',
             referenciaValor: cover.codigo_qr || cover.tipo_cover_nombre || '',
+            asistenteValor:
+              this.nombreAsistenteCover(cover) !== '—' ? this.nombreAsistenteCover(cover) : undefined,
           },
           () => void this.reiniciarEscaneo()
         );
@@ -1008,6 +1015,8 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
             detalle: detalleSalida,
             contextoValor: cover.lugar_nombre || '',
             referenciaValor: cover.codigo_qr || cover.tipo_cover_nombre || '',
+            asistenteValor:
+              this.nombreAsistenteCover(cover) !== '—' ? this.nombreAsistenteCover(cover) : undefined,
           },
           () => void this.reiniciarEscaneo()
         );
@@ -1028,6 +1037,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
       detalle: string;
       contextoValor?: string;
       referenciaValor?: string;
+      asistenteValor?: string;
       productos?: AccesoPuertaToastProducto[];
     },
     onClosed?: () => void
@@ -1037,6 +1047,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     this.escaneoToastDetalle = params.detalle;
     this.escaneoToastContexto = params.contextoValor?.trim() || '';
     this.escaneoToastReferencia = params.referenciaValor?.trim() || '';
+    this.escaneoToastAsistente = params.asistenteValor?.trim() || '';
     this.escaneoToastProductos = params.productos || [];
     this.escaneoToastOnClosed = onClosed ?? null;
     this.showEscaneoToast = true;

@@ -32,6 +32,8 @@ export class AccesoPuertaToastComponent implements OnChanges, OnDestroy {
   @Input() contextoValor = '';
   @Input() referenciaLabel = '';
   @Input() referenciaValor = '';
+  @Input() asistenteLabel = '';
+  @Input() asistenteValor = '';
   @Input() productos: AccesoPuertaToastProducto[] = [];
   @Input() autoCloseMs = 2800;
   @Input() actionLabel = '';
@@ -102,6 +104,13 @@ export class AccesoPuertaToastComponent implements OnChanges, OnDestroy {
       return 'Pedido';
     }
     return 'Referencia';
+  }
+
+  get asistenteEtiqueta(): string {
+    if (this.asistenteLabel.trim()) {
+      return this.asistenteLabel.trim();
+    }
+    return 'Asistente';
   }
 
   cerrar(): void {

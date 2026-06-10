@@ -496,7 +496,7 @@ export class ComprasProductoService {
           estado_pago,
           numero_pedido,
           eventos(titulo),
-          cliente:usuarios(nombre, apellido, documento_identidad)
+          cliente:usuarios(nombre, apellido, email, documento_identidad)
         ),
         producto:productos(id, nombre)
       `)
@@ -514,7 +514,7 @@ export class ComprasProductoService {
     const nombreCliente = [clienteRel?.nombre, clienteRel?.apellido]
       .filter((p) => !!String(p ?? '').trim())
       .join(' ')
-      .trim();
+      .trim() || String(clienteRel?.email ?? '').trim();
 
     return {
       id: data.id,
@@ -626,7 +626,7 @@ export class ComprasProductoService {
     const nombreCliente = [clienteRaw?.nombre, clienteRaw?.apellido]
       .filter((p) => !!String(p ?? '').trim())
       .join(' ')
-      .trim();
+      .trim() || String(clienteRaw?.email ?? '').trim();
 
     return {
       id: Number(data.id),

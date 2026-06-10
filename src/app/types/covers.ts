@@ -216,6 +216,7 @@ export interface BoletaCoverEscaneo {
   aforo_maximo?: number;
   titular_nombre?: string;
   titular_documento?: string;
+  titular_cliente_id?: number;
 }
 
 /** Tarjeta en listado de clubes (RPC listar_lugares_con_covers). */
