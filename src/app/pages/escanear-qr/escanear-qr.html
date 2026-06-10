@@ -143,7 +143,6 @@
           <div class="modal-row"><span>Evento</span><strong>{{ tituloEvento }}</strong></div>
           <div class="modal-row" *ngIf="boleta.nombre_asistente"><span>Asistente</span><strong>{{ boleta.nombre_asistente }}</strong></div>
           <div class="modal-row" *ngIf="boleta.documento_asistente"><span>Documento</span><strong>{{ boleta.documento_asistente }}</strong></div>
-          <div class="modal-row"><span>QR</span><code>{{ boleta.codigo_qr }}</code></div>
         </div>
         <button type="button" class="btn-validate" (click)="validarBoleta()" [disabled]="validando">
           <span class="material-icons">verified</span>
@@ -196,7 +195,6 @@
             </div>
             <div class="modal-row"><span>Documento</span><strong>{{ productoItem.compra?.documento_cliente || '—' }}</strong></div>
             <div class="modal-row"><span>Evento</span><strong>{{ productoItem.compra?.evento_titulo || ('Evento #' + (productoItem.compra?.evento_id || '—')) }}</strong></div>
-            <div class="modal-row"><span>QR</span><code>{{ productoItem.codigo_qr }}</code></div>
           </div>
           <button type="button" class="btn-validate" (click)="validarProducto()" [disabled]="validando">
             <span class="material-icons">verified</span>
@@ -244,9 +242,15 @@
           <div class="modal-info">
             <div class="modal-row"><span>Lugar</span><strong>{{ boletaCover.lugar_nombre }}</strong></div>
             <div class="modal-row"><span>Tipo cover</span><strong>{{ boletaCover.tipo_cover_nombre }}</strong></div>
-            <div class="modal-row"><span>Sesión</span><strong>{{ boletaCover.sesion_fecha }} · {{ boletaCover.hora_apertura }}–{{ boletaCover.hora_cierre }}</strong></div>
+            <div class="modal-row modal-row--stack">
+              <span>Sesión</span>
+              <strong>{{ fechaSesionCoverEscaneo(boletaCover) }}</strong>
+            </div>
+            <div class="modal-row modal-row--stack">
+              <span>Horario</span>
+              <strong>{{ horarioSesionCoverEscaneo(boletaCover) }}</strong>
+            </div>
             <div class="modal-row" *ngIf="boletaCover.aforo_maximo"><span>Aforo</span><strong>{{ boletaCover.personas_dentro || 0 }} / {{ boletaCover.aforo_maximo }}</strong></div>
-            <div class="modal-row"><span>QR</span><code>{{ boletaCover.codigo_qr }}</code></div>
           </div>
           <div class="cover-actions" *ngIf="puedeRegistrarEntradaCover(boletaCover) || puedeRegistrarSalidaCover(boletaCover)">
             <button
@@ -261,7 +265,7 @@
             </button>
             <button
               type="button"
-              class="btn-secondary btn-cover-salida"
+              class="btn-validate btn-cover-salida"
               *ngIf="puedeRegistrarSalidaCover(boletaCover)"
               (click)="registrarSalidaCover()"
               [disabled]="validando"
@@ -275,3 +279,15 @@
     </div>
   </div>
 </div>
+
+<app-acceso-puerta-toast
+  [visible]="showEscaneoToast"
+  [tipo]="escaneoToastTipo"
+  [titulo]="escaneoToastTitulo"
+  [detalle]="escaneoToastDetalle"
+  [contextoValor]="escaneoToastContexto"
+  [referenciaValor]="escaneoToastReferencia"
+  [productos]="escaneoToastProductos"
+  [autoCloseMs]="escaneoToastAutoCloseMs"
+  (closed)="cerrarToastEscaneo()"
+></app-acceso-puerta-toast>

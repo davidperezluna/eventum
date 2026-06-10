@@ -125,38 +125,13 @@
   </div>
 </div>
 
-<div
-  class="modal-overlay modal-overlay--mensaje-ingreso ap-toast-overlay"
-  *ngIf="showMensajeIngresoModal"
-  [class.ap-toast-overlay--salida]="mensajeIngresoTipo === 'cover-salida'"
->
-  <div
-    class="modal-sheet ap-toast"
-    [style.--ap-toast-ms]="mensajeAutoCloseMs + 'ms'"
-    (click)="$event.stopPropagation()"
-  >
-    <div
-      class="ap-toast__progress"
-      aria-hidden="true"
-      [style.animation-duration]="mensajeAutoCloseMs + 'ms'"
-    ></div>
-    <button type="button" class="modal-close" (click)="cerrarMensajeIngreso()" aria-label="Cerrar">
-      <span class="material-icons">close</span>
-    </button>
-    <p class="modal-kicker">
-      {{ mensajeIngresoTipo === 'cover-salida' ? 'Salida registrada' : 'Entrada registrada' }}
-    </p>
-    <h2 class="modal-title">{{ mensajeIngresoTitulo }}</h2>
-    <p class="mensaje-ingreso-nota">{{ mensajeIngresoDetalle }}</p>
-    <div class="modal-info" *ngIf="mensajeIngresoEvento || mensajeIngresoReferencia">
-      <div class="mensaje-ingreso-bloque" *ngIf="mensajeIngresoEvento">
-        <span class="mensaje-ingreso-label">Club</span>
-        <strong class="mensaje-ingreso-value">{{ mensajeIngresoEvento }}</strong>
-      </div>
-      <div class="mensaje-ingreso-bloque" *ngIf="mensajeIngresoReferencia">
-        <span class="mensaje-ingreso-label">Referencia</span>
-        <strong class="mensaje-ingreso-value mensaje-ingreso-value--code">{{ mensajeIngresoReferencia }}</strong>
-      </div>
-    </div>
-  </div>
-</div>
+<app-acceso-puerta-toast
+  [visible]="showMensajeIngresoModal"
+  [tipo]="mensajeIngresoTipo"
+  [titulo]="mensajeIngresoTitulo"
+  [detalle]="mensajeIngresoDetalle"
+  [contextoValor]="mensajeIngresoEvento"
+  [referenciaValor]="mensajeIngresoReferencia"
+  [autoCloseMs]="mensajeAutoCloseMs"
+  (closed)="cerrarMensajeIngreso()"
+></app-acceso-puerta-toast>

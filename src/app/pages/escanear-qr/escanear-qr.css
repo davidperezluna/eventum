@@ -285,13 +285,6 @@
   margin-top: var(--spacing-md);
 }
 
-.btn-validate {
-  width: 100%;
-  justify-content: center;
-  padding: var(--spacing-md);
-  font-size: var(--font-size-lg);
-}
-
 .alert-box {
   display: flex;
   align-items: flex-start;
@@ -456,7 +449,25 @@
 }
 
 .modal-row--stack {
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.2rem;
+}
+
+.modal-row--stack span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #64748b;
+}
+
+.modal-row--stack strong {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.4;
+  text-transform: capitalize;
 }
 
 .modal-row-list {
@@ -474,38 +485,65 @@
 
 .btn-validate {
   width: 100%;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 16px;
+  gap: 0.4rem;
+  min-height: 52px;
+  padding: 0.85rem 1rem;
   border: none;
   border-radius: 10px;
-  background: #fbbf24;
-  color: #0f172a;
-  font-size: 17px;
+  background: var(--ec-accent, #8b5cf6);
+  color: #fff;
+  font-size: 1rem;
   font-weight: 700;
+  font-family: inherit;
   cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.btn-validate:hover:not(:disabled) {
+  background: #7c3aed;
+  transform: translateY(-1px);
+}
+
+.btn-validate:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-validate .material-icons {
+  font-size: 1.25rem;
 }
 
 .cover-actions {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: 0.55rem;
 }
 
 .btn-cover-entrada {
-  background: linear-gradient(135deg, #6d28d9 0%, #4c1d95 100%);
+  background: var(--ec-accent, #8b5cf6);
   color: #fff;
 }
 
+.btn-cover-entrada:hover:not(:disabled) {
+  background: #7c3aed;
+}
+
 .btn-cover-salida {
-  width: 100%;
-  justify-content: center;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
+  background: #fff;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  box-shadow: none;
+}
+
+.btn-cover-salida:hover:not(:disabled) {
+  background: #f8fafc;
+  color: #1e293b;
+  border-color: #cbd5e1;
+  transform: none;
 }
 
 @media (max-width: 640px) {

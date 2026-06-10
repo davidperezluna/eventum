@@ -30,11 +30,12 @@ import {
 } from '../../services/accesos-puerta.service';
 import { AuthService } from '../../services/auth.service';
 import { BoletaCoverCliente } from '../../types/covers';
+import { AccesoPuertaToastComponent } from '../../components/acceso-puerta-toast/acceso-puerta-toast';
 
 @Component({
   selector: 'app-accesos-puerta',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, AccesoPuertaToastComponent],
   templateUrl: './accesos-puerta.html',
   styleUrls: ['../cupos-evento/cupos-evento.css', './accesos-puerta.css'],
 })
@@ -61,7 +62,6 @@ export class AccesosPuerta implements OnInit, OnDestroy {
   private notificacionSub: Subscription | null = null;
   private activosSub: Subscription | null = null;
   private refreshIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
-  private mensajeAutoCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private clockTimer: ReturnType<typeof setInterval> | null = null;
   private readonly refreshIndicatorDelayMs = 800;
   private hadCachedDataOnInit = false;
@@ -127,7 +127,6 @@ export class AccesosPuerta implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.accesosPuertaService.desactivarRealtimePagina();
     this.stopSilentRefreshIndicator();
-    this.cancelarCierreMensajeIngreso();
     if (this.clockTimer) {
       clearInterval(this.clockTimer);
       this.clockTimer = null;
@@ -325,26 +324,10 @@ export class AccesosPuerta implements OnInit, OnDestroy {
     this.refreshView();
 
     this.ensureQrThumbs(this.accesos);
-    this.programarCierreMensajeIngreso();
     void this.cargar({ background: true });
   }
 
-  private programarCierreMensajeIngreso(): void {
-    this.cancelarCierreMensajeIngreso();
-    this.mensajeAutoCloseTimer = setTimeout(() => {
-      this.cerrarMensajeIngreso();
-    }, this.mensajeAutoCloseMs);
-  }
-
-  private cancelarCierreMensajeIngreso(): void {
-    if (this.mensajeAutoCloseTimer) {
-      clearTimeout(this.mensajeAutoCloseTimer);
-      this.mensajeAutoCloseTimer = null;
-    }
-  }
-
   cerrarMensajeIngreso(): void {
-    this.cancelarCierreMensajeIngreso();
     this.showMensajeIngresoModal = false;
     this.ensureQrThumbs(this.accesos);
     this.refreshView();

@@ -36,6 +36,7 @@ import QRCode from 'qrcode';
 import html2canvas from 'html2canvas';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
+import { AccesoPuertaToastComponent } from '../../components/acceso-puerta-toast/acceso-puerta-toast';
 import type { AuthStateCallback } from '../../services/auth.service';
 import { ProductosService } from '../../services/productos.service';
 import { CoversService } from '../../services/covers.service';
@@ -132,7 +133,7 @@ interface LugarCoverGrupo {
 
 @Component({
   selector: 'app-mis-compras',
-  imports: [CommonModule, RouterModule, FormsModule, DateFormatPipe],
+  imports: [CommonModule, RouterModule, FormsModule, DateFormatPipe, AccesoPuertaToastComponent],
   templateUrl: './mis-compras.html',
   styleUrl: './mis-compras.css',
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
@@ -1631,7 +1632,7 @@ export class MisCompras implements OnInit, OnDestroy {
     if (this.mensajeIngresoTipo === 'entrada' && this.siguienteBoletaSugerida) {
       return 'Escanear siguiente';
     }
-    return 'Continuar';
+    return '';
   }
 
   private buscarSiguienteBoleta(boletaActual: BoletaComprada, compraActual: Compra | null): BoletaConCompra | null {

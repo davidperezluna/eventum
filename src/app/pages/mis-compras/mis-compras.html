@@ -549,12 +549,12 @@
         <ng-container *ngIf="!loadingBoletasDetalle && tiposDetallePorTab(detalle).length > 0; else detalleSinBoletas">
           <div *ngFor="let tipo of tiposDetallePorTab(detalle)" class="tipo-boletas-section">
             <h4>{{ tipo.nombre }} ({{ tipo.boletas.length }})</h4>
-            <div class="boletas-grid">
+            <div class="boletas-grid boletas-grid--entradas-detalle">
               <ng-container *ngFor="let item of tipo.boletas">
                 <ng-container *ngIf="item.boleta as boleta">
                   <ng-container *ngIf="item.compra as compra">
                     <div
-                      class="boleta-card"
+                      class="boleta-card boleta-card--cover"
                       [class.boleta-card--clickable]="boletaTarjetaAbreModal(boleta, compra)"
                       (click)="onClickTarjetaBoleta(boleta, compra, $event)"
                     >
@@ -564,11 +564,19 @@
                           <span class="boleta-palco-num" *ngIf="boleta.numero_palco != null">Palco {{ boleta.numero_palco }}</span>
                           <span class="boleta-palco-num" *ngIf="boleta.numero_palco == null">{{ boleta.tipo_boleta_meta?.nombre || 'Boleta' }}</span>
                         </div>
-                        <span class="boleta-compra-ref" *ngIf="!item.esCedida">Compra #{{ compra.numero_transaccion }}</span>
+                        <span class="boleta-compra-ref" *ngIf="!item.esCedida">Compra {{ compra.numero_transaccion }}</span>
                         <span class="boleta-compra-ref boleta-compra-ref--cedida" *ngIf="item.esCedida">Boleta recibida</span>
                       </div>
                       <span class="badge" [class]="getEstadoClass(boleta.estado)">
                         {{ getEstadoBoletaLabel(boleta.estado) }}
+                      </span>
+                    </div>
+
+                    <div class="boleta-fechas boleta-fechas--cover" *ngIf="eventoVistaBoleta(boleta, compra)?.fecha_inicio">
+                      <span class="boleta-fecha-noche">{{ fechaModalBoleta(boleta, compra) }}</span>
+                      <span class="boleta-fecha-hora">
+                        {{ horaModalBoleta(boleta, compra) }}
+                        <ng-container *ngIf="lugarVistaBoleta(boleta, compra)?.nombre as lugarNombre"> · {{ lugarNombre }}</ng-container>
                       </span>
                     </div>
                     <div class="boleta-traslado-saliente" *ngIf="trasladoSalienteParaBoleta(boleta.id) as trasladoSaliente">
@@ -608,12 +616,12 @@
                     <div class="boleta-actions" *ngIf="puedeMostrarQrBoleta(boleta, compra)">
                       <button
                         type="button"
-                        class="guia-resumen-link boleta-action-btn"
-                        (click)="verBoleta(boleta, compra)"
+                        class="boleta-cta-btn"
+                        (click)="verBoleta(boleta, compra); $event.stopPropagation()"
                         title="Ver boleta"
                       >
-                        <span class="material-icons" aria-hidden="true">confirmation_number</span>
-                        <span>Ver boleta</span>
+                        <span class="material-icons" aria-hidden="true">qr_code_2</span>
+                        <span>Ver QR</span>
                       </button>
                     </div>
                     <div class="boleta-asignar-palco" *ngIf="puedeAsignarEntradaPorCorreoPalco(boleta, compra)">
@@ -623,12 +631,12 @@
                       >
                         <button
                           type="button"
-                          class="asignar-palco-summary"
+                          class="asignar-palco-summary asignar-palco-summary--inline"
                           (click)="toggleAsignarPanel(boleta.id, $event)"
                           [attr.aria-expanded]="isAsignarPanelAbierto(boleta.id)"
                         >
-                          <span class="material-icons asignar-palco-summary-lead">playlist_add</span>
-                          <span>Asignar esta entrada</span>
+                          <span class="material-icons">swap_horiz</span>
+                          <span>Asignar entrada</span>
                           <span class="material-icons asignar-palco-chev">expand_more</span>
                         </button>
                         <div class="asignar-palco-panel" *ngIf="isAsignarPanelAbierto(boleta.id)">
@@ -914,7 +922,7 @@
               <ng-container *ngIf="item.boleta as boleta">
                 <ng-container *ngIf="item.compra as compra">
                   <div
-                    class="boleta-card"
+                    class="boleta-card boleta-card--cover"
                     [class.boleta-card--clickable]="boletaTarjetaAbreModal(boleta, compra)"
                     (click)="onClickTarjetaBoleta(boleta, compra, $event)"
                   >
@@ -924,13 +932,22 @@
                         <span class="boleta-palco-num" *ngIf="boleta.numero_palco != null">Palco {{ boleta.numero_palco }}</span>
                         <span class="boleta-palco-num" *ngIf="boleta.numero_palco == null">{{ boleta.tipo_boleta_meta?.nombre || 'Boleta' }}</span>
                       </div>
-                      <span class="boleta-compra-ref" *ngIf="!item.esCedida">Compra #{{ compra.numero_transaccion }}</span>
+                      <span class="boleta-compra-ref" *ngIf="!item.esCedida">Compra {{ compra.numero_transaccion }}</span>
                       <span class="boleta-compra-ref boleta-compra-ref--cedida" *ngIf="item.esCedida">Boleta recibida</span>
                     </div>
                     <span class="badge" [class]="getEstadoClass(boleta.estado)">
                       {{ getEstadoBoletaLabel(boleta.estado) }}
                     </span>
                   </div>
+
+                  <div class="boleta-fechas boleta-fechas--cover" *ngIf="eventoVistaBoleta(boleta, compra)?.fecha_inicio">
+                    <span class="boleta-fecha-noche">{{ fechaModalBoleta(boleta, compra) }}</span>
+                    <span class="boleta-fecha-hora">
+                      {{ horaModalBoleta(boleta, compra) }}
+                      <ng-container *ngIf="lugarVistaBoleta(boleta, compra)?.nombre as lugarNombre"> · {{ lugarNombre }}</ng-container>
+                    </span>
+                  </div>
+
                   <div class="boleta-traslado-saliente" *ngIf="trasladoSalienteParaBoleta(boleta.id) as trasladoSaliente">
                     <span class="legal-modal__badge legal-modal__badge--entrada">
                       <span class="material-icons" aria-hidden="true">confirmation_number</span>
@@ -955,17 +972,6 @@
                       Cuando el pago se confirme, podrás asignar cada acceso por correo o con «Yo asisto». El código QR solo se verá el día del evento.
                     </p>
                   </div>
-                  <p class="boleta-fechas" *ngIf="eventoVistaBoleta(boleta, compra)?.fecha_inicio">
-                    {{ eventoVistaBoleta(boleta, compra)?.fecha_inicio | dateFormat:'short' }}
-                    <span *ngIf="fechaFinEvento(eventoVistaBoleta(boleta, compra))"> - {{ fechaFinEvento(eventoVistaBoleta(boleta, compra)) | dateFormat:'short' }}</span>
-                  </p>
-                  <p class="boleta-lugar" *ngIf="lugarVistaBoleta(boleta, compra)?.nombre">
-                    <span class="material-icons">place</span>
-                    <strong>{{ lugarVistaBoleta(boleta, compra)?.nombre }}</strong>
-                  </p>
-                  <p class="boleta-direccion" *ngIf="lugarVistaBoleta(boleta, compra)?.direccion">
-                    {{ lugarVistaBoleta(boleta, compra)?.direccion }}<span *ngIf="lugarVistaBoleta(boleta, compra)?.ciudad">, {{ lugarVistaBoleta(boleta, compra)?.ciudad }}</span>
-                  </p>
                   <div class="boleta-datos" *ngIf="tieneAsistenteRegistrado(boleta)">
                     <p><strong>Asistente:</strong> {{ boleta.nombre_asistente }}</p>
                     <p *ngIf="boleta.documento_asistente"><strong>Documento:</strong> {{ boleta.documento_asistente }}</p>
@@ -979,12 +985,12 @@
                   <div class="boleta-actions" *ngIf="puedeMostrarQrBoleta(boleta, compra)">
                     <button
                       type="button"
-                      class="guia-resumen-link boleta-action-btn"
-                      (click)="verBoleta(boleta, compra)"
+                      class="boleta-cta-btn"
+                      (click)="verBoleta(boleta, compra); $event.stopPropagation()"
                       title="Ver boleta"
                     >
-                      <span class="material-icons" aria-hidden="true">confirmation_number</span>
-                      <span>Ver boleta</span>
+                      <span class="material-icons" aria-hidden="true">qr_code_2</span>
+                      <span>Ver QR</span>
                     </button>
                   </div>
                   <div class="boleta-asignar-palco" *ngIf="puedeAsignarEntradaPorCorreoPalco(boleta, compra)">
@@ -994,12 +1000,12 @@
                     >
                       <button
                         type="button"
-                        class="asignar-palco-summary"
+                        class="asignar-palco-summary asignar-palco-summary--inline"
                         (click)="toggleAsignarPanel(boleta.id, $event)"
                         [attr.aria-expanded]="isAsignarPanelAbierto(boleta.id)"
                       >
-                        <span class="material-icons asignar-palco-summary-lead">playlist_add</span>
-                        <span>Asignar esta entrada</span>
+                        <span class="material-icons">swap_horiz</span>
+                        <span>Asignar entrada</span>
                         <span class="material-icons asignar-palco-chev">expand_more</span>
                       </button>
                       <div class="asignar-palco-panel" *ngIf="isAsignarPanelAbierto(boleta.id)">
@@ -1292,7 +1298,12 @@
             </div>
 
             <div class="boleta-actions" *ngIf="puedeMostrarQrCover(item)">
-              <button type="button" class="guia-resumen-link boleta-action-btn" [class.boleta-action-btn--cover-salida]="accionCoverAccesoRapido(item) === 'salida'" (click)="verQrCover(item); $event.stopPropagation()">
+              <button
+                type="button"
+                class="boleta-cta-btn"
+                [class.boleta-cta-btn--salida]="accionCoverAccesoRapido(item) === 'salida'"
+                (click)="verQrCover(item); $event.stopPropagation()"
+              >
                 <span class="material-icons">{{ iconoBotonQrCover(item) }}</span>
                 {{ labelBotonQrCover(item) }}
               </button>
@@ -1464,80 +1475,27 @@
             </span>
           </div>
         </div>
-        <div class="info-row">
+        <div class="info-row info-row--stack">
           <span class="info-label">Pedido</span>
-          <span class="info-value">{{ referenciaPedidoCorta(productoFilaSeleccionada.compra.numero_pedido) }}</span>
+          <span class="info-value info-value--code">{{ referenciaPedidoCorta(productoFilaSeleccionada.compra.numero_pedido) }}</span>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Modal de bienvenida/agradecimiento después de validar QR -->
-<div class="modal-overlay modal-overlay--mensaje-ingreso" *ngIf="showMensajeIngresoModal" (click)="cerrarMensajeIngresoModal()">
-  <div class="modal-sheet mensaje-ingreso-sheet" (click)="$event.stopPropagation()">
-    <button type="button" class="modal-close" (click)="cerrarMensajeIngresoModal()" aria-label="Cerrar">
-      <span class="material-icons">close</span>
-    </button>
-
-    <p class="modal-kicker">
-      {{
-        mensajeIngresoTipo === 'producto'
-          ? 'ENTREGA OK'
-          : mensajeIngresoTipo === 'cover-salida'
-            ? 'SALIDA OK'
-            : mensajeIngresoTipo === 'cover'
-              ? 'COVER OK'
-              : 'INGRESO OK'
-      }}
-    </p>
-    <h2 class="modal-title">{{ mensajeIngresoTitulo }}</h2>
-    <p class="mensaje-ingreso-nota">{{ mensajeIngresoDetalle }}</p>
-    <div class="modal-info" *ngIf="mensajeIngresoTipo === 'producto' && mensajeIngresoProductos.length > 0">
-      <span class="mensaje-ingreso-label">Productos entregados</span>
-      <ul class="mensaje-ingreso-productos">
-        <li class="mensaje-ingreso-producto" *ngFor="let producto of mensajeIngresoProductos">
-          <span class="mensaje-ingreso-producto-nombre">{{ producto.nombre }}</span>
-          <span class="mensaje-ingreso-producto-cantidad">
-            {{ producto.cantidad }} {{ producto.cantidad === 1 ? 'unidad' : 'unidades' }}
-          </span>
-        </li>
-      </ul>
-    </div>
-    <div class="modal-info" *ngIf="mensajeIngresoTipo === 'entrada' && (mensajeIngresoEvento || mensajeIngresoReferencia)">
-      <div class="mensaje-ingreso-bloque" *ngIf="mensajeIngresoEvento">
-        <span class="mensaje-ingreso-label">Evento</span>
-        <strong class="mensaje-ingreso-value">{{ mensajeIngresoEvento }}</strong>
-      </div>
-      <div class="mensaje-ingreso-bloque" *ngIf="mensajeIngresoReferencia">
-        <span class="mensaje-ingreso-label">Entrada</span>
-        <strong class="mensaje-ingreso-value mensaje-ingreso-value--code">{{ mensajeIngresoReferencia }}</strong>
-      </div>
-    </div>
-    <div class="modal-info" *ngIf="(mensajeIngresoTipo === 'cover' || mensajeIngresoTipo === 'cover-salida') && (mensajeIngresoEvento || mensajeIngresoReferencia)">
-      <div class="mensaje-ingreso-bloque" *ngIf="mensajeIngresoEvento">
-        <span class="mensaje-ingreso-label">Club</span>
-        <strong class="mensaje-ingreso-value">{{ mensajeIngresoEvento }}</strong>
-      </div>
-      <div class="mensaje-ingreso-bloque" *ngIf="mensajeIngresoReferencia">
-        <span class="mensaje-ingreso-label">Cover</span>
-        <strong class="mensaje-ingreso-value mensaje-ingreso-value--code">{{ mensajeIngresoReferencia }}</strong>
-      </div>
-    </div>
-    <button type="button" class="btn-validate" (click)="accionMensajeIngresoModal()">
-      <span class="material-icons">{{
-        mensajeIngresoTipo === 'producto'
-          ? 'inventory'
-          : mensajeIngresoTipo === 'cover-salida'
-            ? 'logout'
-            : mensajeIngresoTipo === 'cover'
-              ? 'nightlife'
-              : 'verified'
-      }}</span>
-      {{ textoBotonMensajeIngresoModal() }}
-    </button>
-  </div>
-</div>
+<app-acceso-puerta-toast
+  [visible]="showMensajeIngresoModal"
+  [tipo]="mensajeIngresoTipo"
+  [titulo]="mensajeIngresoTitulo"
+  [detalle]="mensajeIngresoDetalle"
+  [contextoValor]="mensajeIngresoEvento"
+  [referenciaValor]="mensajeIngresoReferencia"
+  [productos]="mensajeIngresoProductos"
+  [actionLabel]="textoBotonMensajeIngresoModal()"
+  (closed)="cerrarMensajeIngresoModal()"
+  (action)="accionMensajeIngresoModal()"
+></app-acceso-puerta-toast>
 
 <!-- Modal transferir cover / asignar entrada (legal-modal) -->
 <div
@@ -1793,38 +1751,39 @@
 
       <!-- Información -->
       <div class="boleta-info-preview">
-        <!-- Se omite el precio en el modal -->
-
-        <div class="info-row" *ngIf="(eventoSeleccionado || eventoVistaBoleta(boletaSeleccionada, compraSeleccionada))?.fecha_inicio">
-          <span class="info-label">Fecha:</span>
+        <div class="info-row info-row--stack" *ngIf="(eventoSeleccionado || eventoVistaBoleta(boletaSeleccionada, compraSeleccionada))?.fecha_inicio">
+          <span class="info-label">Fecha</span>
           <span class="info-value">{{ fechaModalBoleta(boletaSeleccionada, compraSeleccionada) }}</span>
         </div>
 
-        <div class="info-row" *ngIf="(eventoSeleccionado || eventoVistaBoleta(boletaSeleccionada, compraSeleccionada))?.fecha_inicio">
-          <span class="info-label">Hora:</span>
+        <div class="info-row info-row--stack" *ngIf="(eventoSeleccionado || eventoVistaBoleta(boletaSeleccionada, compraSeleccionada))?.fecha_inicio">
+          <span class="info-label">Hora</span>
           <span class="info-value">{{ horaModalBoleta(boletaSeleccionada, compraSeleccionada) }}</span>
         </div>
 
-        <div class="info-row" *ngIf="lugarVistaBoleta(boletaSeleccionada, compraSeleccionada) || eventoSeleccionado?.lugar">
-          <span class="info-label">Lugar:</span>
+        <div class="info-row info-row--stack" *ngIf="lugarVistaBoleta(boletaSeleccionada, compraSeleccionada) || eventoSeleccionado?.lugar">
+          <span class="info-label">Lugar</span>
           <span class="info-value">{{ (eventoSeleccionado?.lugar || lugarVistaBoleta(boletaSeleccionada, compraSeleccionada))?.nombre }}</span>
         </div>
 
-        <div class="info-row" *ngIf="boletaSeleccionada.nombre_asistente">
-          <span class="info-label">Asistente:</span>
+        <div class="info-row info-row--stack" *ngIf="boletaSeleccionada.nombre_asistente">
+          <span class="info-label">Asistente</span>
           <span class="info-value">{{ boletaSeleccionada.nombre_asistente }}</span>
         </div>
 
-        <div class="info-row" *ngIf="boletaSeleccionada.documento_asistente">
-          <span class="info-label">Documento:</span>
+        <div class="info-row info-row--stack" *ngIf="boletaSeleccionada.documento_asistente">
+          <span class="info-label">Documento</span>
           <span class="info-value">{{ boletaSeleccionada.documento_asistente }}</span>
         </div>
 
+        <div class="info-row info-row--stack" *ngIf="compraSeleccionada?.numero_transaccion">
+          <span class="info-label">Compra</span>
+          <span class="info-value info-value--code">{{ compraSeleccionada?.numero_transaccion }}</span>
+        </div>
       </div>
 
-      <!-- Botones de acción -->
-      <div class="boleta-actions-preview">
-        <button class="btn-primary" *ngIf="!esBoletaUsada(boletaSeleccionada)" (click)="imprimirBoletaPDF(boletaSeleccionada, compraSeleccionada!)">
+      <div class="boleta-actions-preview" *ngIf="!esBoletaUsada(boletaSeleccionada)">
+        <button type="button" class="boleta-cta-btn" (click)="imprimirBoletaPDF(boletaSeleccionada, compraSeleccionada!)">
           <span class="material-icons">print</span>
           Imprimir PDF
         </button>

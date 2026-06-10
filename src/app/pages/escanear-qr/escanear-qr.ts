@@ -23,12 +23,19 @@ import {
   PermisoEscaneo,
 } from '../../services/lector-permisos.service';
 import { BoletaCoverEscaneo } from '../../types/covers';
+import { formatHoraCover } from '../../core/covers-labels';
 import { LectorStateService } from '../../services/lector-state.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { BoletaComprada, TipoEstadoBoleta } from '../../types';
+import {
+  AccesoPuertaToastComponent,
+  AccesoPuertaToastProducto,
+  AccesoPuertaToastTipo,
+} from '../../components/acceso-puerta-toast/acceso-puerta-toast';
+
 @Component({
   selector: 'app-escanear-qr',
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, AccesoPuertaToastComponent],
   templateUrl: './escanear-qr.html',
   styleUrl: './escanear-qr.css',
 })
@@ -78,6 +85,16 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
   };
   private restartTimer: ReturnType<typeof setTimeout> | null = null;
   private autoAdvanceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  readonly escaneoToastAutoCloseMs = 2800;
+  showEscaneoToast = false;
+  escaneoToastTipo: AccesoPuertaToastTipo = 'entrada';
+  escaneoToastTitulo = '';
+  escaneoToastDetalle = '';
+  escaneoToastContexto = '';
+  escaneoToastReferencia = '';
+  escaneoToastProductos: AccesoPuertaToastProducto[] = [];
+  private escaneoToastOnClosed: (() => void) | null = null;
 
   readonly readerId = 'eventum-qr-reader';
 
@@ -656,14 +673,21 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     this.validando = true;
     this.cdr.markForCheck();
     try {
-      await this.boletasService.validarBoleta(this.boleta.id);
-      if (this.esFlujoRapidoLector()) {
-        void this.alertService.snackbar('Entrada validada', { timerMs: 1600 });
-      } else {
-        await this.alertService.success('¡Boleta validada!', 'Entrada validada correctamente.');
-      }
+      const boleta = this.boleta;
+      const eventoTitulo = this.tituloEvento;
+      const codigoQr = boleta.codigo_qr || '';
+      await this.boletasService.validarBoleta(boleta.id);
       this.cerrarModal();
-      await this.reiniciarEscaneo();
+      this.mostrarToastEscaneo(
+        {
+          tipo: 'entrada',
+          titulo: 'Bienvenido al evento',
+          detalle: 'La entrada fue validada correctamente en puerta.',
+          contextoValor: eventoTitulo,
+          referenciaValor: codigoQr,
+        },
+        () => void this.reiniciarEscaneo()
+      );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error desconocido';
       await this.alertService.error('Error al validar', msg);
@@ -698,23 +722,29 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     this.validando = true;
     this.cdr.markForCheck();
     try {
-      if (this.productoItem.scope === 'compra') {
-        await this.comprasProductoService.validarCompraProductos(this.productoItem.id);
-        if (this.esFlujoRapidoLector()) {
-          void this.alertService.snackbar('Pedido redimido', { timerMs: 1600 });
-        } else {
-          await this.alertService.success('Pedido validado', 'Todos los productos del pedido quedaron marcados como redimidos.');
+      const item = this.productoItem;
+      const productosToast = this.resumenEntregaProducto(item).map((linea) => {
+        const match = linea.match(/^(.+?)\s+x(\d+)$/i);
+        if (match) {
+          return { nombre: match[1].trim(), cantidad: Number(match[2]) || 1 };
         }
+        return { nombre: linea, cantidad: item.cantidad || 1 };
+      });
+      if (item.scope === 'compra') {
+        await this.comprasProductoService.validarCompraProductos(item.id);
       } else {
-        await this.comprasProductoService.validarItemProducto(this.productoItem.id);
-        if (this.esFlujoRapidoLector()) {
-          void this.alertService.snackbar('Producto redimido', { timerMs: 1600 });
-        } else {
-          await this.alertService.success('Producto validado', 'El producto quedó marcado como redimido.');
-        }
+        await this.comprasProductoService.validarItemProducto(item.id);
       }
       this.cerrarModal();
-      await this.reiniciarEscaneo();
+      this.mostrarToastEscaneo(
+        {
+          tipo: 'producto',
+          titulo: 'Gracias por tu compra',
+          detalle: 'El pedido fue entregado en el punto de retiro.',
+          productos: productosToast,
+        },
+        () => void this.reiniciarEscaneo()
+      );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error desconocido';
       await this.alertService.error('Error al validar', msg);
@@ -816,6 +846,33 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     return String(cover.estado_acceso || '').toLowerCase() === 'dentro';
   }
 
+  fechaSesionCoverEscaneo(cover: BoletaCoverEscaneo | null | undefined): string {
+    if (!cover?.sesion_fecha) {
+      return '—';
+    }
+    const fecha = new Date(`${cover.sesion_fecha}T12:00:00`);
+    if (Number.isNaN(fecha.getTime())) {
+      return cover.sesion_fecha;
+    }
+    return fecha.toLocaleDateString('es-CO', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    });
+  }
+
+  horarioSesionCoverEscaneo(cover: BoletaCoverEscaneo | null | undefined): string {
+    if (!cover) {
+      return '—';
+    }
+    const apertura = formatHoraCover(cover.hora_apertura);
+    const cierre = formatHoraCover(cover.hora_cierre);
+    if (apertura && cierre) {
+      return `${apertura} – ${cierre}`;
+    }
+    return apertura || cierre || '—';
+  }
+
   etiquetaEstadoCover(cover: BoletaCoverEscaneo): string {
     const estado = String(cover.estado_acceso || '').toLowerCase();
     if (estado === 'dentro') return 'Dentro del club';
@@ -848,24 +905,29 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     this.validando = true;
     this.cdr.markForCheck();
     try {
+      const cover = this.boletaCover;
       const res = await this.coversService.registrarAccesoCover(
-        this.boletaCover.codigo_qr,
+        cover.codigo_qr,
         'entrada',
-        this.boletaCover.sesion_cover_id,
+        cover.sesion_cover_id,
       );
       this.boletaCover = {
-        ...this.boletaCover,
+        ...cover,
         estado_acceso: res.estado_acceso,
         personas_dentro: res.personas_dentro,
-        entradas_count: (this.boletaCover.entradas_count ?? 0) + 1,
+        entradas_count: (cover.entradas_count ?? 0) + 1,
       };
-      if (this.esFlujoRapidoLector()) {
-        void this.alertService.snackbar('Entrada registrada', { timerMs: 1600 });
-      } else {
-        await this.alertService.success('Entrada registrada', 'Acceso de cover registrado correctamente.');
-      }
       this.cerrarModal();
-      await this.reiniciarEscaneo();
+      this.mostrarToastEscaneo(
+        {
+          tipo: 'cover',
+          titulo: 'Bienvenido al club',
+          detalle: 'La entrada de cover fue registrada en puerta.',
+          contextoValor: cover.lugar_nombre || '',
+          referenciaValor: cover.codigo_qr || cover.tipo_cover_nombre || '',
+        },
+        () => void this.reiniciarEscaneo()
+      );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error desconocido';
       await this.alertService.error('Error al registrar entrada', msg);
@@ -893,24 +955,35 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     this.validando = true;
     this.cdr.markForCheck();
     try {
+      const cover = this.boletaCover;
       const res = await this.coversService.registrarAccesoCover(
-        this.boletaCover.codigo_qr,
+        cover.codigo_qr,
         'salida',
-        this.boletaCover.sesion_cover_id,
+        cover.sesion_cover_id,
       );
+      const estadoAcceso = String(res.estado_acceso || '').toLowerCase();
+      const permiteReingreso = cover.permite_reingreso !== false;
+      const detalleSalida =
+        estadoAcceso === 'consumida' || !permiteReingreso
+          ? 'La salida fue registrada. Esta entrada ya fue consumida.'
+          : 'La salida fue registrada. Puede reingresar con el mismo QR.';
       this.boletaCover = {
-        ...this.boletaCover,
+        ...cover,
         estado_acceso: res.estado_acceso,
         personas_dentro: res.personas_dentro,
-        salidas_count: (this.boletaCover.salidas_count ?? 0) + 1,
+        salidas_count: (cover.salidas_count ?? 0) + 1,
       };
-      if (this.esFlujoRapidoLector()) {
-        void this.alertService.snackbar('Salida registrada', { timerMs: 1600 });
-      } else {
-        await this.alertService.success('Salida registrada', 'Salida de cover registrada correctamente.');
-      }
       this.cerrarModal();
-      await this.reiniciarEscaneo();
+      this.mostrarToastEscaneo(
+        {
+          tipo: 'cover-salida',
+          titulo: 'Hasta pronto',
+          detalle: detalleSalida,
+          contextoValor: cover.lugar_nombre || '',
+          referenciaValor: cover.codigo_qr || cover.tipo_cover_nombre || '',
+        },
+        () => void this.reiniciarEscaneo()
+      );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error desconocido';
       await this.alertService.error('Error al registrar salida', msg);
@@ -918,6 +991,36 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
       this.validando = false;
       this.cdr.markForCheck();
     }
+  }
+
+  private mostrarToastEscaneo(
+    params: {
+      tipo: AccesoPuertaToastTipo;
+      titulo: string;
+      detalle: string;
+      contextoValor?: string;
+      referenciaValor?: string;
+      productos?: AccesoPuertaToastProducto[];
+    },
+    onClosed?: () => void
+  ): void {
+    this.escaneoToastTipo = params.tipo;
+    this.escaneoToastTitulo = params.titulo;
+    this.escaneoToastDetalle = params.detalle;
+    this.escaneoToastContexto = params.contextoValor?.trim() || '';
+    this.escaneoToastReferencia = params.referenciaValor?.trim() || '';
+    this.escaneoToastProductos = params.productos || [];
+    this.escaneoToastOnClosed = onClosed ?? null;
+    this.showEscaneoToast = true;
+    this.cdr.markForCheck();
+  }
+
+  cerrarToastEscaneo(): void {
+    this.showEscaneoToast = false;
+    const onClosed = this.escaneoToastOnClosed;
+    this.escaneoToastOnClosed = null;
+    this.cdr.markForCheck();
+    onClosed?.();
   }
 
   private programarAutoAvanceModalSiAplica(): void {

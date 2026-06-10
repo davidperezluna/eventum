@@ -1,0 +1,62 @@
+<div
+  class="modal-overlay modal-overlay--mensaje-ingreso ap-toast-overlay"
+  *ngIf="visible"
+  [class.ap-toast-overlay--salida]="esSalida"
+>
+  <div
+    class="modal-sheet ap-toast"
+    [style.--ap-toast-ms]="autoCloseMs + 'ms'"
+    (click)="$event.stopPropagation()"
+    role="dialog"
+    aria-modal="true"
+    aria-live="polite"
+  >
+    <div
+      class="ap-toast__progress"
+      *ngIf="!actionLabel"
+      aria-hidden="true"
+      [style.animation-duration]="autoCloseMs + 'ms'"
+    ></div>
+    <button type="button" class="modal-close" (click)="cerrar()" aria-label="Cerrar">
+      <span class="material-icons">close</span>
+    </button>
+    <p class="modal-kicker">{{ kicker }}</p>
+    <h2 class="modal-title">{{ titulo }}</h2>
+    <p class="mensaje-ingreso-nota">{{ detalle }}</p>
+
+    <div class="modal-info" *ngIf="tipo === 'producto' && productos.length > 0">
+      <span class="mensaje-ingreso-label">Productos entregados</span>
+      <ul class="mensaje-ingreso-productos">
+        <li class="mensaje-ingreso-producto" *ngFor="let producto of productos">
+          <span class="mensaje-ingreso-producto-nombre">{{ producto.nombre }}</span>
+          <span class="mensaje-ingreso-producto-cantidad">
+            {{ producto.cantidad }} {{ producto.cantidad === 1 ? 'unidad' : 'unidades' }}
+          </span>
+        </li>
+      </ul>
+    </div>
+
+    <div
+      class="modal-info"
+      *ngIf="tipo !== 'producto' && (contextoValor || referenciaValor)"
+    >
+      <div class="mensaje-ingreso-bloque" *ngIf="contextoValor">
+        <span class="mensaje-ingreso-label">{{ contextoEtiqueta }}</span>
+        <strong class="mensaje-ingreso-value">{{ contextoValor }}</strong>
+      </div>
+      <div class="mensaje-ingreso-bloque" *ngIf="referenciaValor">
+        <span class="mensaje-ingreso-label">{{ referenciaEtiqueta }}</span>
+        <strong class="mensaje-ingreso-value mensaje-ingreso-value--code">{{ referenciaValor }}</strong>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="ap-toast__action"
+      *ngIf="actionLabel"
+      (click)="onAction()"
+    >
+      {{ actionLabel }}
+    </button>
+  </div>
+</div>
