@@ -28,6 +28,13 @@ import { LectorStateService } from '../../services/lector-state.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { BoletaComprada, TipoEstadoBoleta } from '../../types';
 import {
+  documentoAsistenteBoletaEscaneo,
+  documentoAsistenteCoverEscaneo,
+  nombreAsistenteBoletaEscaneo,
+  nombreAsistenteCoverEscaneo,
+  nombreAsistenteProductoEscaneo,
+} from '../../core/lector-scan-display';
+import {
   AccesoPuertaToastComponent,
   AccesoPuertaToastProducto,
   AccesoPuertaToastTipo,
@@ -818,6 +825,12 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     if (v.email) return v.email;
     return `Usuario #${v.id}`;
   }
+
+  readonly nombreAsistenteBoleta = nombreAsistenteBoletaEscaneo;
+  readonly documentoAsistenteBoleta = documentoAsistenteBoletaEscaneo;
+  readonly nombreAsistenteProducto = nombreAsistenteProductoEscaneo;
+  readonly nombreAsistenteCover = nombreAsistenteCoverEscaneo;
+  readonly documentoAsistenteCover = documentoAsistenteCoverEscaneo;
 
   private esFlujoRapidoLector(): boolean {
     return this.modoBusqueda === 'scanner' && this.requierePermisosLector;

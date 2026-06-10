@@ -14,7 +14,7 @@ import { BoletaComprada, TipoBoleta, BoletaFilters, PaginatedResponse, Palco, Es
 export class BoletasService {
   /** Join estándar para listados y búsqueda de boletas (incluye meta del tipo para palcos). */
   private readonly selectBoletaConRelaciones =
-    '*, validado_por:usuarios!boletas_compradas_validado_por_usuario_id_fkey(id, nombre, apellido, email), palcos(numero), compras(estado_pago, estado_compra, evento_id, cliente_id, numero_transaccion, eventos(id, titulo, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais))), tipos_boleta(evento_id, nombre, personas_por_unidad, es_palco, eventos(id, titulo, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais)))';
+    '*, validado_por:usuarios!boletas_compradas_validado_por_usuario_id_fkey(id, nombre, apellido, email), palcos(numero), compras(estado_pago, estado_compra, evento_id, cliente_id, numero_transaccion, eventos(id, titulo, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais)), cliente:usuarios(nombre, apellido, documento_identidad)), tipos_boleta(evento_id, nombre, personas_por_unidad, es_palco, eventos(id, titulo, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais)))';
 
   constructor(
     private supabase: SupabaseService,
@@ -642,6 +642,30 @@ export class BoletasService {
     if (boleta.validado_por != null) {
       const vp = Array.isArray(boleta.validado_por) ? boleta.validado_por[0] : boleta.validado_por;
       boletaNormalizada.validado_por = vp ?? null;
+    }
+
+    const compraRaw = boleta.compras
+      ? Array.isArray(boleta.compras)
+        ? boleta.compras[0]
+        : boleta.compras
+      : null;
+    const clienteRaw = compraRaw?.cliente
+      ? Array.isArray(compraRaw.cliente)
+        ? compraRaw.cliente[0]
+        : compraRaw.cliente
+      : null;
+    if (clienteRaw) {
+      const nombreCliente = [clienteRaw.nombre, clienteRaw.apellido]
+        .filter((p) => !!String(p ?? '').trim())
+        .join(' ')
+        .trim();
+      if (nombreCliente) {
+        boletaNormalizada.asistente_display_nombre = nombreCliente;
+      }
+      const docCliente = String(clienteRaw.documento_identidad ?? '').trim();
+      if (docCliente) {
+        boletaNormalizada.asistente_display_documento = docCliente;
+      }
     }
     
     // Limpiar los objetos del join (ya los tenemos normalizados)

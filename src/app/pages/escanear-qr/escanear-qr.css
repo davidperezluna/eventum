@@ -398,6 +398,18 @@
   letter-spacing: 0.02em;
 }
 
+.modal-asistente-hint {
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #475569;
+}
+
+.modal-asistente-hint strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
 .modal-icon {
   font-size: 64px;
   display: block;

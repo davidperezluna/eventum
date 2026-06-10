@@ -214,6 +214,8 @@ export interface BoletaCoverEscaneo {
   estado_compra?: string;
   personas_dentro?: number;
   aforo_maximo?: number;
+  titular_nombre?: string;
+  titular_documento?: string;
 }
 
 /** Tarjeta en listado de clubes (RPC listar_lugares_con_covers). */

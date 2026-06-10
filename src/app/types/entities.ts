@@ -292,6 +292,9 @@ export interface BoletaComprada {
   palco_id?: number | null;
   /** Titular actual de la entrada (tras traslado = nuevo usuario). */
   titular_cliente_id?: number | null;
+  /** Nombre resuelto para lector cuando nombre_asistente viene vacío. */
+  asistente_display_nombre?: string;
+  asistente_display_documento?: string;
   /** Número legible del palco (si viene del join). */
   numero_palco?: number;
   /** Quién validó la entrada (join desde usuarios). */

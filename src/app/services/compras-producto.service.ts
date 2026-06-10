@@ -62,6 +62,7 @@ export interface ItemProductoEscaneo {
     numero_pedido: string;
     evento_titulo?: string;
     documento_cliente?: string;
+    nombre_cliente?: string;
   } | null;
   producto: {
     id: number;
@@ -495,7 +496,7 @@ export class ComprasProductoService {
           estado_pago,
           numero_pedido,
           eventos(titulo),
-          cliente:usuarios(documento_identidad)
+          cliente:usuarios(nombre, apellido, documento_identidad)
         ),
         producto:productos(id, nombre)
       `)
@@ -510,6 +511,10 @@ export class ComprasProductoService {
     const compraRaw = Array.isArray(data.compra) ? data.compra[0] : data.compra;
     const eventoRel = Array.isArray(compraRaw?.eventos) ? compraRaw?.eventos[0] : compraRaw?.eventos;
     const clienteRel = Array.isArray(compraRaw?.cliente) ? compraRaw?.cliente[0] : compraRaw?.cliente;
+    const nombreCliente = [clienteRel?.nombre, clienteRel?.apellido]
+      .filter((p) => !!String(p ?? '').trim())
+      .join(' ')
+      .trim();
 
     return {
       id: data.id,
@@ -527,6 +532,7 @@ export class ComprasProductoService {
         numero_pedido: String(compraRaw.numero_pedido || ''),
         evento_titulo: String(eventoRel?.titulo || ''),
         documento_cliente: String(clienteRel?.documento_identidad || ''),
+        nombre_cliente: nombreCliente || undefined,
       } : null,
       producto: Array.isArray(data.producto) ? (data.producto[0] as ItemProductoEscaneo['producto']) : (data.producto as ItemProductoEscaneo['producto']),
     };
@@ -553,7 +559,7 @@ export class ComprasProductoService {
         estado_pago,
         numero_pedido,
         eventos(titulo),
-        cliente:usuarios(documento_identidad),
+        cliente:usuarios(nombre, apellido, documento_identidad),
         compras_productos_items(
           id,
           estado,
@@ -614,6 +620,13 @@ export class ComprasProductoService {
     );
 
     const primerItem = items[0];
+    const clienteRaw = Array.isArray((data as any).cliente)
+      ? (data as any).cliente[0]
+      : (data as any).cliente;
+    const nombreCliente = [clienteRaw?.nombre, clienteRaw?.apellido]
+      .filter((p) => !!String(p ?? '').trim())
+      .join(' ')
+      .trim();
 
     return {
       id: Number(data.id),
@@ -630,7 +643,8 @@ export class ComprasProductoService {
         estado_pago: String(data.estado_pago || ''),
         numero_pedido: String(data.numero_pedido || numeroPedido),
         evento_titulo: String((Array.isArray((data as any).eventos) ? (data as any).eventos[0]?.titulo : (data as any).eventos?.titulo) || ''),
-        documento_cliente: String((Array.isArray((data as any).cliente) ? (data as any).cliente[0]?.documento_identidad : (data as any).cliente?.documento_identidad) || ''),
+        documento_cliente: String(clienteRaw?.documento_identidad || ''),
+        nombre_cliente: nombreCliente || undefined,
       },
       producto: {
         id: 0,

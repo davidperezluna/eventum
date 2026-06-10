@@ -358,6 +358,8 @@ export class CoversService {
       estado_compra: row['estado_compra'] != null ? String(row['estado_compra']) : undefined,
       personas_dentro: Number(row['personas_dentro'] ?? 0),
       aforo_maximo: Number(row['aforo_maximo'] ?? 0),
+      titular_nombre: row['titular_nombre'] != null ? String(row['titular_nombre']) : undefined,
+      titular_documento: row['titular_documento'] != null ? String(row['titular_documento']) : undefined,
     };
   }
 

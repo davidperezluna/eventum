@@ -118,6 +118,9 @@
           <span class="material-icons modal-icon used">history</span>
           <h2>Esta boleta ya fue escaneada</h2>
           <p>Alguien valido esta entrada antes. Sin doble ingreso.</p>
+          <p class="modal-asistente-hint" *ngIf="nombreAsistenteBoleta(boleta) !== '—'">
+            Asistente: <strong>{{ nombreAsistenteBoleta(boleta) }}</strong>
+          </p>
           <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
           <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1); reiniciarEscaneo()">
             Siguiente
@@ -130,6 +133,9 @@
           <span class="material-icons modal-icon blocked">block</span>
           <h2>Fuera de juego</h2>
           <p>Entrada {{ getEstadoLabel(boleta.estado) }}. No hay acceso.</p>
+          <p class="modal-asistente-hint" *ngIf="nombreAsistenteBoleta(boleta) !== '—'">
+            Asistente: <strong>{{ nombreAsistenteBoleta(boleta) }}</strong>
+          </p>
           <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
           <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1)">Cerrar</button>
         </div>
@@ -141,8 +147,10 @@
         <div class="modal-info">
           <div class="modal-row"><span>Tipo</span><strong>{{ nombreTipoBoleta }}</strong></div>
           <div class="modal-row"><span>Evento</span><strong>{{ tituloEvento }}</strong></div>
-          <div class="modal-row" *ngIf="boleta.nombre_asistente"><span>Asistente</span><strong>{{ boleta.nombre_asistente }}</strong></div>
-          <div class="modal-row" *ngIf="boleta.documento_asistente"><span>Documento</span><strong>{{ boleta.documento_asistente }}</strong></div>
+          <div class="modal-row"><span>Asistente</span><strong>{{ nombreAsistenteBoleta(boleta) }}</strong></div>
+          <div class="modal-row" *ngIf="documentoAsistenteBoleta(boleta) !== '—'">
+            <span>Documento</span><strong>{{ documentoAsistenteBoleta(boleta) }}</strong>
+          </div>
         </div>
         <button type="button" class="btn-validate" (click)="validarBoleta()" [disabled]="validando">
           <span class="material-icons">verified</span>
@@ -155,6 +163,9 @@
           <span class="material-icons modal-icon warn">payments</span>
           <h2>Pago pendiente</h2>
           <p>El pago debe estar completado para validar la entrada.</p>
+          <p class="modal-asistente-hint" *ngIf="nombreAsistenteBoleta(boleta) !== '—'">
+            Asistente: <strong>{{ nombreAsistenteBoleta(boleta) }}</strong>
+          </p>
           <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
           <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1)">Cerrar</button>
         </div>
@@ -167,6 +178,9 @@
             <span class="material-icons modal-icon used">inventory</span>
             <h2>Producto ya redimido</h2>
             <p>Este QR ya se valido previamente.</p>
+            <p class="modal-asistente-hint" *ngIf="nombreAsistenteProducto(productoItem) !== '—'">
+              Cliente: <strong>{{ nombreAsistenteProducto(productoItem) }}</strong>
+            </p>
             <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
             <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1); reiniciarEscaneo()">
               Siguiente
@@ -184,6 +198,7 @@
               <span>{{ productoItem.scope === 'compra' ? 'Pedido' : 'Producto' }}</span>
               <strong>{{ productoItem.scope === 'compra' ? 'Compra de productos' : (productoItem.producto?.nombre || 'Producto') }}</strong>
             </div>
+            <div class="modal-row"><span>Asistente</span><strong>{{ nombreAsistenteProducto(productoItem) }}</strong></div>
             <div class="modal-row"><span>Cantidad total</span><strong>{{ productoItem.cantidad }}</strong></div>
             <div class="modal-row modal-row--stack" *ngIf="resumenEntregaProducto(productoItem).length > 0">
               <span>Entrega</span>
@@ -207,6 +222,9 @@
             <span class="material-icons modal-icon warn">payments</span>
             <h2>Pago pendiente</h2>
             <p>El pago debe estar completado para validar este producto.</p>
+            <p class="modal-asistente-hint" *ngIf="nombreAsistenteProducto(productoItem) !== '—'">
+              Cliente: <strong>{{ nombreAsistenteProducto(productoItem) }}</strong>
+            </p>
             <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
             <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1)">Cerrar</button>
           </div>
@@ -219,6 +237,9 @@
             <span class="material-icons modal-icon used">nightlife</span>
             <h2>Cover ya consumido</h2>
             <p>Esta entrada no permite reingreso.</p>
+            <p class="modal-asistente-hint" *ngIf="nombreAsistenteCover(boletaCover) !== '—'">
+              Asistente: <strong>{{ nombreAsistenteCover(boletaCover) }}</strong>
+            </p>
             <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
             <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1); reiniciarEscaneo()">
               Siguiente
@@ -231,6 +252,9 @@
             <span class="material-icons modal-icon warn">payments</span>
             <h2>Pago pendiente</h2>
             <p>La compra cover debe estar pagada y confirmada para registrar acceso.</p>
+            <p class="modal-asistente-hint" *ngIf="nombreAsistenteCover(boletaCover) !== '—'">
+              Asistente: <strong>{{ nombreAsistenteCover(boletaCover) }}</strong>
+            </p>
             <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
             <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1)">Cerrar</button>
           </div>
@@ -240,6 +264,10 @@
           <p class="modal-kicker">COVER</p>
           <h2 class="modal-title">{{ etiquetaEstadoCover(boletaCover) }}</h2>
           <div class="modal-info">
+            <div class="modal-row"><span>Asistente</span><strong>{{ nombreAsistenteCover(boletaCover) }}</strong></div>
+            <div class="modal-row" *ngIf="documentoAsistenteCover(boletaCover) !== '—'">
+              <span>Documento</span><strong>{{ documentoAsistenteCover(boletaCover) }}</strong>
+            </div>
             <div class="modal-row"><span>Lugar</span><strong>{{ boletaCover.lugar_nombre }}</strong></div>
             <div class="modal-row"><span>Tipo cover</span><strong>{{ boletaCover.tipo_cover_nombre }}</strong></div>
             <div class="modal-row modal-row--stack">
