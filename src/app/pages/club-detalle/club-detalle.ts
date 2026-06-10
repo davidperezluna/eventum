@@ -280,7 +280,13 @@ export class ClubDetalle implements OnInit, OnDestroy {
     return this.carritoCompraService.getCantidadCoverEnCarrito(sesion.id);
   }
 
+  /** Sesiones con precio 0 no se venden desde el carrito del club. */
+  esSesionCoverDePago(sesion: SesionCoverPublica): boolean {
+    return (sesion.precio_cop ?? 0) > 0;
+  }
+
   coverDisponibleParaVenta(sesion: SesionCoverPublica): boolean {
+    if (!this.esSesionCoverDePago(sesion)) return false;
     const tipoCover = this.tipoPorSesion(sesion);
     if (!tipoCover || this.sesionAgotada(sesion)) return false;
     return !!(sesion.wompi_cuenta_id ?? tipoCover.wompi_cuenta_id);
