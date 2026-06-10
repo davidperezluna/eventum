@@ -2074,6 +2074,112 @@ export class MisCompras implements OnInit, OnDestroy {
     this.poblarMapasTrasladoSaliente(salientes);
   }
 
+  private async enriquecerTrasladosHistorial(): Promise<void> {
+    const historial = this.trasladosHistorial;
+    if (historial.length === 0) {
+      return;
+    }
+
+    const boletaMap = new Map<number, BoletaComprada>();
+    for (const grupo of this.comprasConBoletas) {
+      for (const boleta of grupo.boletas) {
+        boletaMap.set(boleta.id, boleta);
+      }
+    }
+    for (const item of this.entradasCedidas) {
+      boletaMap.set(item.id, item);
+    }
+
+    const coverMap = new Map<number, BoletaCoverCliente>();
+    for (const item of this.boletasCover) {
+      coverMap.set(item.boleta.id, item.boleta);
+    }
+    for (const item of this.coverCedidas) {
+      coverMap.set(item.boleta.id, item.boleta);
+    }
+
+    const missingBoletaIds = [
+      ...new Set(
+        historial
+          .map((t) => Number(t.boleta_id ?? 0))
+          .filter((id) => id > 0 && !boletaMap.has(id))
+      ),
+    ];
+    if (missingBoletaIds.length > 0) {
+      try {
+        const fetched = await this.boletasService.getBoletasByIds(missingBoletaIds);
+        fetched.forEach((b) => boletaMap.set(b.id, b));
+      } catch {
+        /* ignorar */
+      }
+    }
+
+    const missingCoverIds = [
+      ...new Set(
+        historial
+          .map((t) => Number(t.boleta_cover_id ?? 0))
+          .filter((id) => id > 0 && !coverMap.has(id))
+      ),
+    ];
+    if (missingCoverIds.length > 0 && coversEventumEnabled) {
+      try {
+        const fetched = await this.coversService.listarBoletasCoverCliente();
+        fetched.forEach((b) => coverMap.set(b.id, b));
+      } catch {
+        /* ignorar */
+      }
+    }
+
+    this.trasladosHistorial = historial.map((t) => {
+      const enriched: TrasladoBoleta = { ...t };
+      const boletaId = Number(t.boleta_id ?? 0);
+      const coverId = Number(t.boleta_cover_id ?? 0);
+
+      if (boletaId > 0 && boletaMap.has(boletaId)) {
+        const b = boletaMap.get(boletaId)!;
+        const compra = this.compras.find((c) => c.id === b.compra_id);
+        enriched.boleta = {
+          id: b.id,
+          codigo_qr: b.codigo_qr,
+          tipo_boleta_id: b.tipo_boleta_id,
+          numero_palco: b.numero_palco,
+          tipos_boleta: {
+            nombre: b.tipo_boleta_meta?.nombre || t.tipo_boleta_nombre || undefined,
+            eventos: {
+              titulo: compra?.evento?.titulo || t.evento_titulo || undefined,
+            },
+          },
+        };
+        if (!enriched.evento_titulo && compra?.evento?.titulo) {
+          enriched.evento_titulo = compra.evento.titulo;
+        }
+        if (!enriched.tipo_boleta_nombre && b.tipo_boleta_meta?.nombre) {
+          enriched.tipo_boleta_nombre = b.tipo_boleta_meta.nombre;
+        }
+      }
+
+      if (coverId > 0 && coverMap.has(coverId)) {
+        const bc = coverMap.get(coverId)!;
+        enriched.coverDetail = {
+          id: bc.id,
+          tipo_cover_nombre: bc.tipo_cover_nombre,
+          lugar_nombre: bc.lugar_nombre,
+        };
+        if (!enriched.lugar_nombre) {
+          enriched.lugar_nombre = bc.lugar_nombre;
+        }
+        if (!enriched.tipo_cover_nombre) {
+          enriched.tipo_cover_nombre = bc.tipo_cover_nombre;
+        }
+        if (!enriched.sesion_fecha) {
+          enriched.sesion_fecha = bc.sesion_fecha;
+        }
+      }
+
+      return enriched;
+    });
+  }
+
   private async poblarTrasladosSalientesDesdeApi(uid: number): Promise<void> {
     try {
       const salientes = await this.trasladosBoletaService.listarTrasladosSalientes(uid);
@@ -2093,7 +2199,11 @@ export class MisCompras implements OnInit, OnDestroy {
     }
     this.loadingTraslados = true;
     try {
-      this.trasladosHistorial = await this.trasladosBoletaService.listarMiTrazabilidad(uid);
+      this.trasladosHistorial = await this.trasladosBoletaService.listarMiTrazabilidad(
+        uid,
+        this.authService.getUsuario()
+      );
+      await this.enriquecerTrasladosHistorial();
       await this.poblarTrasladosSalientesDesdeApi(uid);
       const pend = await this.trasladosBoletaService.listarPendientesRecibir(uid);
       const pendEvento = pend.filter((t) => Number(t.boleta_id ?? 0) > 0 && Number(t.boleta_cover_id ?? 0) === 0);
@@ -2130,6 +2240,7 @@ export class MisCompras implements OnInit, OnDestroy {
       if (coversEventumEnabled && this.boletasCover.length > 0) {
         this.reconstruirLugaresConCovers();
       }
+      this.aplicarTrasladosDesdeHistorial();
     } catch (e) {
       console.error('Error cargando traslados:', e);
     } finally {
@@ -2854,31 +2965,105 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   nombreTipoBoletaTraslado(t: TrasladoBoleta): string {
+    if (t.tipo_boleta_nombre?.trim()) {
+      return t.tipo_boleta_nombre.trim();
+    }
     const tb = Array.isArray(t.boleta?.tipos_boleta) ? t.boleta?.tipos_boleta[0] : t.boleta?.tipos_boleta;
-    return tb?.nombre || '—';
+    return tb?.nombre || 'Entrada';
+  }
+
+  nombreTipoTraslado(t: TrasladoBoleta): string {
+    return this.esTrasladoCover(t) ? this.nombreTipoCoverTraslado(t) : this.nombreTipoBoletaTraslado(t);
+  }
+
+  referenciaTraslado(t: TrasladoBoleta): string {
+    const coverId = Number(t.boleta_cover_id ?? 0);
+    if (coverId > 0) {
+      return `Cover #${coverId}`;
+    }
+    const boletaId = Number(t.boleta_id ?? 0);
+    if (boletaId > 0) {
+      return `Boleta #${boletaId}`;
+    }
+    return 'Sin referencia';
+  }
+
+  emailOrigenTraslado(t: TrasladoBoleta): string {
+    const directo =
+      t.usuario_origen?.email?.trim() ||
+      t.usuario_origen_email?.trim();
+    if (directo) {
+      return directo;
+    }
+    const uid = this.authService.getUsuarioId();
+    if (uid && Number(t.usuario_origen_id) === uid) {
+      return this.authService.getUsuario()?.email?.trim() || '—';
+    }
+    return '—';
+  }
+
+  emailDestinoTraslado(t: TrasladoBoleta): string {
+    return (
+      t.email_destino?.trim() ||
+      t.usuario_destino?.email?.trim() ||
+      t.usuario_destino_email?.trim() ||
+      '—'
+    );
   }
 
   tituloEventoTraslado(t: TrasladoBoleta): string {
     if (t.boleta_cover_id) {
+      if (t.lugar_nombre?.trim()) {
+        return t.lugar_nombre.trim();
+      }
+      if (t.coverDetail?.lugar_nombre?.trim()) {
+        return t.coverDetail.lugar_nombre.trim();
+      }
       const sesion = Array.isArray(t.boleta_cover?.sesiones_cover)
         ? t.boleta_cover?.sesiones_cover[0]
         : t.boleta_cover?.sesiones_cover;
       const lugar = Array.isArray(sesion?.lugares) ? sesion?.lugares[0] : sesion?.lugares;
-      return lugar?.nombre || 'Cover';
+      if (lugar?.nombre?.trim()) {
+        return lugar.nombre.trim();
+      }
+      if (t.lugar_id) {
+        const club = this.lugaresConCovers.find((g) => g.lugarId === t.lugar_id);
+        if (club?.lugarNombre) {
+          return club.lugarNombre;
+        }
+      }
+      return 'Cover';
+    }
+
+    if (t.evento_titulo?.trim()) {
+      return t.evento_titulo.trim();
     }
     const tb = Array.isArray(t.boleta?.tipos_boleta) ? t.boleta?.tipos_boleta[0] : t.boleta?.tipos_boleta;
     const ev = tb?.eventos;
     if (Array.isArray(ev)) {
-      return ev[0]?.titulo || '—';
+      if (ev[0]?.titulo?.trim()) {
+        return ev[0].titulo.trim();
+      }
+    } else if (ev?.titulo?.trim()) {
+      return ev.titulo.trim();
     }
-    return ev?.titulo || '—';
+    if (t.evento_id) {
+      const grupo = this.eventosConBoletas.find((g) => g.key === String(t.evento_id));
+      if (grupo?.titulo?.trim()) {
+        return grupo.titulo.trim();
+      }
+    }
+    return 'Evento';
   }
 
   nombreTipoCoverTraslado(t: TrasladoBoleta): string {
+    if (t.tipo_cover_nombre?.trim()) {
+      return t.tipo_cover_nombre.trim();
+    }
     const tc = Array.isArray(t.boleta_cover?.tipos_cover)
       ? t.boleta_cover?.tipos_cover[0]
       : t.boleta_cover?.tipos_cover;
-    return tc?.nombre || t.coverDetail?.tipo_cover_nombre || 'Cover';
+    return tc?.nombre || t.coverDetail?.tipo_cover_nombre || 'Cover general';
   }
 
   esTrasladoCover(t: TrasladoBoleta): boolean {

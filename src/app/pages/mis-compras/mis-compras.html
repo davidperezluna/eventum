@@ -31,20 +31,22 @@
           <div class="actividad-card-main">
             <p class="actividad-evento">{{ tituloEventoTraslado(t) }}</p>
             <p class="actividad-resumen">
-              <span>{{ nombreTipoBoletaTraslado(t) }}</span>
+              <span>{{ esTrasladoCover(t) ? 'Cover' : 'Entrada' }}</span>
               <span class="actividad-dot">•</span>
-              <span>Boleta #{{ t.boleta_id }}</span>
+              <span>{{ nombreTipoTraslado(t) }}</span>
+              <span class="actividad-dot">•</span>
+              <span>{{ referenciaTraslado(t) }}</span>
             </p>
           </div>
 
           <div class="actividad-card-meta">
             <div class="actividad-meta-item">
               <span class="actividad-meta-label">Origen</span>
-              <strong>{{ t.usuario_origen?.email || '—' }}</strong>
+              <strong>{{ emailOrigenTraslado(t) }}</strong>
             </div>
             <div class="actividad-meta-item">
               <span class="actividad-meta-label">Destino</span>
-              <strong>{{ t.email_destino }}</strong>
+              <strong>{{ emailDestinoTraslado(t) }}</strong>
             </div>
             <div class="actividad-meta-item">
               <span class="actividad-meta-label">Fecha</span>
@@ -54,7 +56,7 @@
         </article>
       </div>
       <p class="actividad-page-vacio" *ngIf="trasladosHistorial.length === 0">
-        Aún no hay traslados de palco en tu cuenta. Cuando envíes o recibas una asignación por correo, aparecerá aquí.
+        Aún no hay traslados en tu cuenta. Cuando envíes o recibas una entrada o cover, aparecerá aquí.
       </p>
     </section>
   </ng-container>

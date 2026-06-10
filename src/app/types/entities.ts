@@ -343,6 +343,16 @@ export interface TrasladoBoleta {
   /** Contexto del RPC listar_traslados_boleta_* (filtro en detalle evento/club). */
   evento_id?: number | null;
   lugar_id?: number | null;
+  /** Campos planos del RPC listar_traslados_boleta_trazabilidad (vista Actividad). */
+  evento_titulo?: string | null;
+  tipo_boleta_nombre?: string | null;
+  tipo_cover_nombre?: string | null;
+  lugar_nombre?: string | null;
+  sesion_fecha?: string | null;
+  usuario_origen_email?: string | null;
+  usuario_origen_nombre?: string | null;
+  usuario_origen_apellido?: string | null;
+  usuario_destino_email?: string | null;
   /** Join opcional desde API */
   usuario_origen?: Pick<Usuario, 'id' | 'nombre' | 'apellido' | 'email'>;
   usuario_destino?: Pick<Usuario, 'id' | 'nombre' | 'apellido' | 'email'>;
