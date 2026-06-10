@@ -678,16 +678,21 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
       const codigoQr = boleta.codigo_qr || '';
       await this.boletasService.validarBoleta(boleta.id);
       this.cerrarModal();
-      this.mostrarToastEscaneo(
-        {
-          tipo: 'entrada',
-          titulo: 'Bienvenido al evento',
-          detalle: 'La entrada fue validada correctamente en puerta.',
-          contextoValor: eventoTitulo,
-          referenciaValor: codigoQr,
-        },
-        () => void this.reiniciarEscaneo()
-      );
+      if (this.requierePermisosLector) {
+        void this.alertService.snackbar('Entrada registrada', { timerMs: 1400 });
+        void this.reiniciarEscaneo();
+      } else {
+        this.mostrarToastEscaneo(
+          {
+            tipo: 'entrada',
+            titulo: 'Bienvenido al evento',
+            detalle: 'La entrada fue validada correctamente en puerta.',
+            contextoValor: eventoTitulo,
+            referenciaValor: codigoQr,
+          },
+          () => void this.reiniciarEscaneo()
+        );
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error desconocido';
       await this.alertService.error('Error al validar', msg);
@@ -918,16 +923,21 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
         entradas_count: (cover.entradas_count ?? 0) + 1,
       };
       this.cerrarModal();
-      this.mostrarToastEscaneo(
-        {
-          tipo: 'cover',
-          titulo: 'Bienvenido al club',
-          detalle: 'La entrada de cover fue registrada en puerta.',
-          contextoValor: cover.lugar_nombre || '',
-          referenciaValor: cover.codigo_qr || cover.tipo_cover_nombre || '',
-        },
-        () => void this.reiniciarEscaneo()
-      );
+      if (this.requierePermisosLector) {
+        void this.alertService.snackbar('Entrada registrada', { timerMs: 1400 });
+        void this.reiniciarEscaneo();
+      } else {
+        this.mostrarToastEscaneo(
+          {
+            tipo: 'cover',
+            titulo: 'Bienvenido al club',
+            detalle: 'La entrada de cover fue registrada en puerta.',
+            contextoValor: cover.lugar_nombre || '',
+            referenciaValor: cover.codigo_qr || cover.tipo_cover_nombre || '',
+          },
+          () => void this.reiniciarEscaneo()
+        );
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error desconocido';
       await this.alertService.error('Error al registrar entrada', msg);
@@ -974,16 +984,21 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
         salidas_count: (cover.salidas_count ?? 0) + 1,
       };
       this.cerrarModal();
-      this.mostrarToastEscaneo(
-        {
-          tipo: 'cover-salida',
-          titulo: 'Hasta pronto',
-          detalle: detalleSalida,
-          contextoValor: cover.lugar_nombre || '',
-          referenciaValor: cover.codigo_qr || cover.tipo_cover_nombre || '',
-        },
-        () => void this.reiniciarEscaneo()
-      );
+      if (this.requierePermisosLector) {
+        void this.alertService.snackbar('Salida registrada', { timerMs: 1400 });
+        void this.reiniciarEscaneo();
+      } else {
+        this.mostrarToastEscaneo(
+          {
+            tipo: 'cover-salida',
+            titulo: 'Hasta pronto',
+            detalle: detalleSalida,
+            contextoValor: cover.lugar_nombre || '',
+            referenciaValor: cover.codigo_qr || cover.tipo_cover_nombre || '',
+          },
+          () => void this.reiniciarEscaneo()
+        );
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error desconocido';
       await this.alertService.error('Error al registrar salida', msg);
