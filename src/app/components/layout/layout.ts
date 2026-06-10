@@ -318,6 +318,9 @@ export class Layout implements OnInit, OnDestroy {
   loadMenuCliente() {
     this.clientNavItems = [
       { path: '/eventos-cliente', label: 'Eventos', icon: 'event', exact: true },
+      ...(this.coversEventumEnabled
+        ? [{ path: '/clubes', label: COVERS_LABELS.explorar, icon: 'nightlife', exact: true }]
+        : []),
       {
         path: '/mis-compras',
         label: 'Mis compras',
@@ -343,9 +346,6 @@ export class Layout implements OnInit, OnDestroy {
       },
       ...(this.cuposEventumEnabled
         ? [{ path: '/cupos', label: CUPOS_LABELS.explorar, icon: 'forum', exact: true }]
-        : []),
-      ...(this.coversEventumEnabled
-        ? [{ path: '/clubes', label: COVERS_LABELS.explorar, icon: 'nightlife', exact: true }]
         : []),
       { path: '/perfil', label: 'Mi perfil', icon: 'person', exact: false, dividerBefore: true },
     ];

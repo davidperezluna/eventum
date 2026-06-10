@@ -200,6 +200,15 @@
           <a routerLink="/eventos-cliente" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="client-nav-item">
             Eventos
           </a>
+          <a
+            *ngIf="coversEventumEnabled"
+            routerLink="/clubes"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="client-nav-item"
+          >
+            {{ coversLabels.explorar }}
+          </a>
           <a routerLink="/carrito" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="client-nav-item client-nav-item--with-badge">
             Carrito
             <span *ngIf="totalItemsCarrito > 0" class="menu-badge">{{ totalItemsCarrito }}</span>
@@ -212,15 +221,6 @@
             class="client-nav-item"
           >
             {{ cuposLabels.explorar }}
-          </a>
-          <a
-            *ngIf="coversEventumEnabled"
-            routerLink="/clubes"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            class="client-nav-item"
-          >
-            {{ coversLabels.explorar }}
           </a>
           <a routerLink="/conocenos" routerLinkActive="active" class="client-nav-item">
             Conócenos
