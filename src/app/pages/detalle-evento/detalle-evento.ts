@@ -93,12 +93,14 @@ export class DetalleEvento implements OnInit, OnDestroy {
     terminos: boolean;
     politica: boolean;
     eventoFinalizado: boolean;
+    etapasAgotadas: boolean;
   } = {
     ubicacion: false,
     descripcion: false,
     terminos: false,
     politica: false,
-    eventoFinalizado: false
+    eventoFinalizado: false,
+    etapasAgotadas: false,
   };
 
   setTabCompra(tab: 'entradas' | 'productos'): void {
@@ -156,6 +158,14 @@ export class DetalleEvento implements OnInit, OnDestroy {
 
   tieneExistencias(tipo: TipoBoleta): boolean {
     return this.maxCantidadPermitida(tipo) > 0;
+  }
+
+  get tiposBoletaDisponibles(): TipoBoleta[] {
+    return this.tiposBoleta.filter((t) => this.tieneExistencias(t));
+  }
+
+  get tiposBoletaAgotados(): TipoBoleta[] {
+    return this.tiposBoleta.filter((t) => !this.tieneExistencias(t));
   }
 
   maxCantidadPermitida(tipo: TipoBoleta): number {
