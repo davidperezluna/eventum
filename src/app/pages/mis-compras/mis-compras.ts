@@ -2733,13 +2733,14 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   /**
-   * Palco multipersonal: asignar cada acceso solo con el email de un usuario registrado (acepta en Mis Boletas).
+   * Asignar o re-transferir entrada por correo (titular actual; acepta en Mis Boletas).
+   * Permite varios traslados mientras la boleta siga pendiente de uso.
    */
   puedeAsignarEntradaPorCorreoPalco(boleta: BoletaComprada, compra: Compra): boolean {
     if (compra.estado_pago !== 'completado') return false;
     if (!this.esTitularBoleta(boleta, compra)) return false;
     if (!this.requiereRegistroAsistentePalcoPosterior(boleta)) return false;
-    if (this.tieneAsistenteRegistrado(boleta)) return false;
+    if (this.esBoletaUsada(boleta)) return false;
     if (this.tieneTrasladoSalienteActivo(boleta.id)) return false;
     return true;
   }
@@ -2777,7 +2778,12 @@ export class MisCompras implements OnInit, OnDestroy {
   puedeMostrarBotonYoAsistoPalco(boleta: BoletaComprada, compra: Compra): boolean {
     // «Yo asisto» se permite en múltiples boletas para el mismo comprador
     // (por ejemplo, si va físicamente con más acompañantes).
-    return this.puedeAsignarEntradaPorCorreoPalco(boleta, compra);
+    if (!this.puedeAsignarEntradaPorCorreoPalco(boleta, compra)) return false;
+    return !this.tieneAsistenteRegistrado(boleta);
+  }
+
+  labelAsignarOTransferirEntrada(boleta: BoletaComprada): string {
+    return this.tieneAsistenteRegistrado(boleta) ? 'Transferir entrada' : 'Asignar entrada';
   }
 
   abrirModalYoAsisto(boleta: BoletaComprada, compra: Compra): void {

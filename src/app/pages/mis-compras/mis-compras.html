@@ -636,7 +636,7 @@
                           [attr.aria-expanded]="isAsignarPanelAbierto(boleta.id)"
                         >
                           <span class="material-icons">swap_horiz</span>
-                          <span>Asignar entrada</span>
+                          <span>{{ labelAsignarOTransferirEntrada(boleta) }}</span>
                           <span class="material-icons asignar-palco-chev">expand_more</span>
                         </button>
                         <div class="asignar-palco-panel" *ngIf="isAsignarPanelAbierto(boleta.id)">
@@ -1005,7 +1005,7 @@
                         [attr.aria-expanded]="isAsignarPanelAbierto(boleta.id)"
                       >
                         <span class="material-icons">swap_horiz</span>
-                        <span>Asignar entrada</span>
+                        <span>{{ labelAsignarOTransferirEntrada(boleta) }}</span>
                         <span class="material-icons asignar-palco-chev">expand_more</span>
                       </button>
                       <div class="asignar-palco-panel" *ngIf="isAsignarPanelAbierto(boleta.id)">
