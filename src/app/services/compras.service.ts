@@ -21,10 +21,19 @@ export class ComprasService {
    */
   async getCompras(filters?: CompraFilters): Promise<PaginatedResponse<Compra>> {
     try {
-      // Con solo_palcos: !inner en alias filtra padres con palco, y boletas_compradas
-      // sigue trayendo todas las boletas (para detectar Mixto).
-      const boletasSelect = filters?.solo_palcos
+      // string (no literal) evita el parser tipado de Supabase con embeds dinámicos.
+      const selectClause: string = filters?.solo_palcos
         ? `
+          *,
+          cliente:usuarios(id, nombre, apellido, email, telefono),
+          evento:eventos(
+            id,
+            titulo,
+            fecha_inicio,
+            lugar_id,
+            lugar:lugares(id, nombre, direccion, ciudad, pais, telefono, email)
+          ),
+          cupon:cupones_descuento!compras_cupon_id_fkey(id, codigo, porcentaje_descuento),
           boletas_compradas(
             id,
             grupo_palco_id,
@@ -33,9 +42,19 @@ export class ComprasService {
             palcos(numero),
             tipos_boleta(nombre)
           ),
-          _filtro_palco:boletas_compradas!inner(id, grupo_palco_id)
+          filtro_palco:boletas_compradas!inner(id, grupo_palco_id)
         `
         : `
+          *,
+          cliente:usuarios(id, nombre, apellido, email, telefono),
+          evento:eventos(
+            id,
+            titulo,
+            fecha_inicio,
+            lugar_id,
+            lugar:lugares(id, nombre, direccion, ciudad, pais, telefono, email)
+          ),
+          cupon:cupones_descuento!compras_cupon_id_fkey(id, codigo, porcentaje_descuento),
           boletas_compradas(
             id,
             grupo_palco_id,
@@ -46,22 +65,9 @@ export class ComprasService {
           )
         `;
 
-      // Incluir relaciones con usuarios (cliente) y eventos (con lugar anidado)
       let query = this.supabase
         .from(this.tableName)
-        .select(`
-          *,
-          cliente:usuarios(id, nombre, apellido, email, telefono),
-          evento:eventos(
-            id, 
-            titulo, 
-            fecha_inicio, 
-            lugar_id,
-            lugar:lugares(id, nombre, direccion, ciudad, pais, telefono, email)
-          ),
-          cupon:cupones_descuento!compras_cupon_id_fkey(id, codigo, porcentaje_descuento),
-          ${boletasSelect}
-        `, { count: 'exact' });
+        .select(selectClause, { count: 'exact' });
 
       // Aplicar filtros
       if (filters?.cliente_id) {
@@ -87,7 +93,7 @@ export class ComprasService {
         query = query.ilike('numero_transaccion', `%${filters.search}%`);
       }
       if (filters?.solo_palcos) {
-        query = query.not('_filtro_palco.grupo_palco_id', 'is', null);
+        query = query.not('filtro_palco.grupo_palco_id', 'is', null);
       }
 
       // Ordenamiento
@@ -110,8 +116,8 @@ export class ComprasService {
       }
       
       const total = count || 0;
-      const compras = ((data as Compra[]) || []).map((row) => {
-        const { _filtro_palco, ...compra } = row as Compra & { _filtro_palco?: unknown };
+      const compras = ((data as unknown as Array<Compra & { filtro_palco?: unknown }>) || []).map((row) => {
+        const { filtro_palco: _filtroPalco, ...compra } = row;
         return compra as Compra;
       });
       console.log('Compras cargadas:', compras.length, 'de', total);
