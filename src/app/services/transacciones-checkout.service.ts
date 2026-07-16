@@ -9,7 +9,6 @@ export interface TransaccionCheckout {
   evento_id: number;
   compra_id?: number | null;
   compra_producto_id?: number | null;
-  compra_cover_id?: number | null;
   numero_intento: string;
   wompi_transaction_id?: string | null;
   wompi_reference?: string | null;
@@ -36,18 +35,6 @@ export interface TransaccionCheckout {
     id: number;
     titulo?: string | null;
   } | null;
-  compra?: {
-    id: number;
-    numero_transaccion?: string | null;
-  } | null;
-  compra_producto?: {
-    id: number;
-    numero_pedido?: string | null;
-  } | null;
-  compra_cover?: {
-    id: number;
-    numero_transaccion?: string | null;
-  } | null;
 }
 
 export interface TransaccionCheckoutFilters {
@@ -69,7 +56,6 @@ interface TransaccionCheckoutRow {
   evento_id: number;
   compra_id?: number | null;
   compra_producto_id?: number | null;
-  compra_cover_id?: number | null;
   numero_intento: string;
   wompi_transaction_id?: string | null;
   wompi_reference?: string | null;
@@ -111,36 +97,6 @@ interface TransaccionCheckoutRow {
         titulo?: string | null;
       }>
     | null;
-  compra?:
-    | {
-        id: number;
-        numero_transaccion?: string | null;
-      }
-    | Array<{
-        id: number;
-        numero_transaccion?: string | null;
-      }>
-    | null;
-  compra_producto?:
-    | {
-        id: number;
-        numero_pedido?: string | null;
-      }
-    | Array<{
-        id: number;
-        numero_pedido?: string | null;
-      }>
-    | null;
-  compra_cover?:
-    | {
-        id: number;
-        numero_transaccion?: string | null;
-      }
-    | Array<{
-        id: number;
-        numero_transaccion?: string | null;
-      }>
-    | null;
 }
 
 @Injectable({
@@ -167,7 +123,6 @@ export class TransaccionesCheckoutService {
           evento_id,
           compra_id,
           compra_producto_id,
-          compra_cover_id,
           numero_intento,
           wompi_transaction_id,
           wompi_reference,
@@ -184,10 +139,7 @@ export class TransaccionesCheckoutService {
           request_payload,
           metadata,
           cliente:usuarios(id, nombre, apellido, email, documento_identidad),
-          evento:eventos(id, titulo),
-          compra:compras(id, numero_transaccion),
-          compra_producto:compras_productos(id, numero_pedido),
-          compra_cover:compras_cover(id, numero_transaccion)
+          evento:eventos(id, titulo)
         `,
         { count: 'exact' }
       );
@@ -213,22 +165,9 @@ export class TransaccionesCheckoutService {
 
     const search = filters?.search?.trim();
     if (search) {
-      const compraIds = await this.buscarCompraIdsPorTransaccion(search);
-      const orParts = [
-        `numero_intento.ilike.%${search}%`,
-        `wompi_reference.ilike.%${search}%`,
-        `wompi_transaction_id.ilike.%${search}%`,
-      ];
-      if (compraIds.boletas.length > 0) {
-        orParts.push(`compra_id.in.(${compraIds.boletas.join(',')})`);
-      }
-      if (compraIds.productos.length > 0) {
-        orParts.push(`compra_producto_id.in.(${compraIds.productos.join(',')})`);
-      }
-      if (compraIds.covers.length > 0) {
-        orParts.push(`compra_cover_id.in.(${compraIds.covers.join(',')})`);
-      }
-      query = query.or(orParts.join(','));
+      query = query.or(
+        `numero_intento.ilike.%${search}%,wompi_reference.ilike.%${search}%,wompi_transaction_id.ilike.%${search}%`
+      );
     }
 
     query = query.order('fecha_creacion', { ascending: false });
@@ -249,9 +188,6 @@ export class TransaccionesCheckoutService {
       ...row,
       cliente: this.normalizeRelation(row.cliente),
       evento: this.normalizeRelation(row.evento),
-      compra: this.normalizeRelation(row.compra),
-      compra_producto: this.normalizeRelation(row.compra_producto),
-      compra_cover: this.normalizeRelation(row.compra_cover),
     }));
 
     const total = count || 0;
@@ -314,53 +250,6 @@ export class TransaccionesCheckoutService {
       }
     }
     return set;
-  }
-
-  private async buscarCompraIdsPorTransaccion(search: string): Promise<{
-    boletas: number[];
-    productos: number[];
-    covers: number[];
-  }> {
-    const empty = { boletas: [] as number[], productos: [] as number[], covers: [] as number[] };
-    const term = search.trim();
-    if (!term) {
-      return empty;
-    }
-
-    try {
-      const [boletasRes, productosRes, coversRes] = await Promise.all([
-        this.supabase
-          .from('compras')
-          .select('id')
-          .ilike('numero_transaccion', `%${term}%`)
-          .limit(50),
-        this.supabase
-          .from('compras_productos')
-          .select('id')
-          .ilike('numero_pedido', `%${term}%`)
-          .limit(50),
-        this.supabase
-          .from('compras_cover')
-          .select('id')
-          .ilike('numero_transaccion', `%${term}%`)
-          .limit(50),
-      ]);
-
-      return {
-        boletas: (boletasRes.data || [])
-          .map((r) => Number((r as { id?: number }).id))
-          .filter((id) => Number.isInteger(id) && id > 0),
-        productos: (productosRes.data || [])
-          .map((r) => Number((r as { id?: number }).id))
-          .filter((id) => Number.isInteger(id) && id > 0),
-        covers: (coversRes.data || [])
-          .map((r) => Number((r as { id?: number }).id))
-          .filter((id) => Number.isInteger(id) && id > 0),
-      };
-    } catch (error) {
-      console.warn('No se pudo buscar compras por número de transacción:', error);
-      return empty;
-    }
   }
 
   async getNombresTiposBoleta(ids: number[]): Promise<Map<number, string>> {
