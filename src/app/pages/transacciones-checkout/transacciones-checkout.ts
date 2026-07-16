@@ -150,6 +150,24 @@ export class TransaccionesCheckout implements OnInit {
     return tx.evento?.titulo || `Evento #${tx.evento_id}`;
   }
 
+  getNumeroTransaccion(tx: TransaccionCheckout): string {
+    const boletas = String(tx.compra?.numero_transaccion || '').trim();
+    if (boletas) {
+      return boletas;
+    }
+    const cover = String(tx.compra_cover?.numero_transaccion || '').trim();
+    if (cover) {
+      return cover;
+    }
+    const producto =
+      String(tx.compra_producto?.numero_transaccion || '').trim() ||
+      String(tx.compra_producto?.numero_pedido || '').trim();
+    if (producto) {
+      return producto;
+    }
+    return '—';
+  }
+
   getQueSeCompro(tx: TransaccionCheckout): string {
     const payload = tx.request_payload as Record<string, unknown> | null | undefined;
     const pedidoBoletas = this.asRecord(payload?.['pedido_boletas']);

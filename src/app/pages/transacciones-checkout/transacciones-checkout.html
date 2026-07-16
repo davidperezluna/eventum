@@ -30,7 +30,7 @@
       (keyup.enter)="onFiltrosChange()"
       type="text"
       class="select-input"
-      placeholder="Buscar por intento o referencia"
+      placeholder="Buscar por transacción o referencia"
     />
   </div>
 
@@ -50,7 +50,7 @@
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Intento</th>
+                  <th>Transacción</th>
                   <th>Tipo</th>
                   <th>Cliente</th>
                   <th>Evento</th>
@@ -64,7 +64,7 @@
               <tbody>
                 <tr *ngFor="let tx of transacciones">
                   <td>{{ tx.id }}</td>
-                  <td>{{ tx.numero_intento }}</td>
+                  <td>{{ getNumeroTransaccion(tx) }}</td>
                   <td>
                     <span [class]="tipoClass(tx.tipo)">{{ tx.tipo }}</span>
                   </td>
@@ -102,7 +102,7 @@
               <div class="venta-info">
                 <div class="venta-header">
                   <div class="venta-header__start">
-                    <span class="venta-transaccion">{{ tx.numero_intento }}</span>
+                    <span class="venta-transaccion">{{ getNumeroTransaccion(tx) }}</span>
                     <span class="venta-fecha">{{ tx.fecha_creacion | dateFormat:'short' }}</span>
                   </div>
                   <div class="venta-toolbar">
@@ -190,7 +190,7 @@
       </div>
       <div class="modal-body">
         <div class="tx-grid">
-          <p><strong>Intento:</strong> {{ selectedTx.numero_intento }}</p>
+          <p><strong>Transacción:</strong> {{ getNumeroTransaccion(selectedTx) }}</p>
           <p><strong>Tipo:</strong> {{ selectedTx.tipo }}</p>
           <p><strong>Cliente:</strong> {{ getClienteLabel(selectedTx) }}</p>
           <p><strong>Evento:</strong> {{ getEventoLabel(selectedTx) }}</p>
