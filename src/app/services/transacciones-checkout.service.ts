@@ -124,12 +124,10 @@ interface TransaccionCheckoutRow {
   compra_producto?:
     | {
         id: number;
-        numero_transaccion?: string | null;
         numero_pedido?: string | null;
       }
     | Array<{
         id: number;
-        numero_transaccion?: string | null;
         numero_pedido?: string | null;
       }>
     | null;
@@ -188,7 +186,7 @@ export class TransaccionesCheckoutService {
           cliente:usuarios(id, nombre, apellido, email, documento_identidad),
           evento:eventos(id, titulo),
           compra:compras(id, numero_transaccion),
-          compra_producto:compras_productos(id, numero_transaccion, numero_pedido),
+          compra_producto:compras_productos(id, numero_pedido),
           compra_cover:compras_cover(id, numero_transaccion)
         `,
         { count: 'exact' }
@@ -339,7 +337,7 @@ export class TransaccionesCheckoutService {
         this.supabase
           .from('compras_productos')
           .select('id')
-          .or(`numero_transaccion.ilike.%${term}%,numero_pedido.ilike.%${term}%`)
+          .ilike('numero_pedido', `%${term}%`)
           .limit(50),
         this.supabase
           .from('compras_cover')

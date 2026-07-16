@@ -159,9 +159,7 @@ export class TransaccionesCheckout implements OnInit {
     if (cover) {
       return cover;
     }
-    const producto =
-      String(tx.compra_producto?.numero_transaccion || '').trim() ||
-      String(tx.compra_producto?.numero_pedido || '').trim();
+    const producto = String(tx.compra_producto?.numero_pedido || '').trim();
     if (producto) {
       return producto;
     }
