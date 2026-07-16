@@ -71,6 +71,8 @@ export interface CompraFilters extends BaseFilters {
   estado_compra?: string;
   fecha_desde?: Date | string;
   fecha_hasta?: Date | string;
+  /** Solo compras con al menos una boleta de palco (grupo_palco_id). */
+  solo_palcos?: boolean;
 }
 
 /**

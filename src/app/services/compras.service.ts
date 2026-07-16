@@ -21,6 +21,31 @@ export class ComprasService {
    */
   async getCompras(filters?: CompraFilters): Promise<PaginatedResponse<Compra>> {
     try {
+      // Con solo_palcos: !inner en alias filtra padres con palco, y boletas_compradas
+      // sigue trayendo todas las boletas (para detectar Mixto).
+      const boletasSelect = filters?.solo_palcos
+        ? `
+          boletas_compradas(
+            id,
+            grupo_palco_id,
+            palco_id,
+            tipo_boleta_id,
+            palcos(numero),
+            tipos_boleta(nombre)
+          ),
+          _filtro_palco:boletas_compradas!inner(id, grupo_palco_id)
+        `
+        : `
+          boletas_compradas(
+            id,
+            grupo_palco_id,
+            palco_id,
+            tipo_boleta_id,
+            palcos(numero),
+            tipos_boleta(nombre)
+          )
+        `;
+
       // Incluir relaciones con usuarios (cliente) y eventos (con lugar anidado)
       let query = this.supabase
         .from(this.tableName)
@@ -35,14 +60,7 @@ export class ComprasService {
             lugar:lugares(id, nombre, direccion, ciudad, pais, telefono, email)
           ),
           cupon:cupones_descuento!compras_cupon_id_fkey(id, codigo, porcentaje_descuento),
-          boletas_compradas(
-            id,
-            grupo_palco_id,
-            palco_id,
-            tipo_boleta_id,
-            palcos(numero),
-            tipos_boleta(nombre)
-          )
+          ${boletasSelect}
         `, { count: 'exact' });
 
       // Aplicar filtros
@@ -68,6 +86,9 @@ export class ComprasService {
         // Buscar por número de transacción
         query = query.ilike('numero_transaccion', `%${filters.search}%`);
       }
+      if (filters?.solo_palcos) {
+        query = query.not('_filtro_palco.grupo_palco_id', 'is', null);
+      }
 
       // Ordenamiento
       const sortBy = filters?.sortBy || 'fecha_compra';
@@ -89,7 +110,10 @@ export class ComprasService {
       }
       
       const total = count || 0;
-      const compras = (data as Compra[]) || [];
+      const compras = ((data as Compra[]) || []).map((row) => {
+        const { _filtro_palco, ...compra } = row as Compra & { _filtro_palco?: unknown };
+        return compra as Compra;
+      });
       console.log('Compras cargadas:', compras.length, 'de', total);
       
       return {

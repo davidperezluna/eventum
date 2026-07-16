@@ -90,6 +90,7 @@ export class VentasPalcos implements OnInit {
         evento_id: this.eventoFiltro || undefined,
         estado_pago: this.estadoPagoFiltro || undefined,
         estado_compra: this.estadoCompraFiltro || undefined,
+        solo_palcos: true,
       });
       this.compras = response.data || [];
       this.total = response.total || 0;
