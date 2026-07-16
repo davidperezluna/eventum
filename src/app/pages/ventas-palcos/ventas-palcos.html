@@ -59,7 +59,20 @@
               <tbody>
                 <tr *ngFor="let compra of comprasPalcos">
                   <td>{{ compra.id }}</td>
-                  <td>{{ compra.numero_transaccion }}</td>
+                  <td>
+                    <a
+                      *ngIf="tieneCheckout(compra); else transaccionSinCheckoutPalcosDesktop"
+                      class="btn-link"
+                      [routerLink]="['/transacciones-checkout']"
+                      [queryParams]="{ compra_id: compra.id }"
+                      title="Ver transacción completa"
+                    >
+                      {{ compra.numero_transaccion || ('#' + compra.id) }}
+                    </a>
+                    <ng-template #transaccionSinCheckoutPalcosDesktop>
+                      <span>{{ compra.numero_transaccion || ('#' + compra.id) }}</span>
+                    </ng-template>
+                  </td>
                   <td>
                     <span class="tipo-compra-badge" [attr.title]="'Palco, o palco + boletas en la misma compra'">
                       {{ tipoCompraLabel(compra) }}
@@ -132,7 +145,20 @@
               <div class="venta-info">
                 <div class="venta-header">
                   <div class="venta-header__start">
-                    <span class="venta-transaccion">{{ compra.numero_transaccion || ('#' + compra.id) }}</span>
+                    <span class="venta-transaccion">
+                      <a
+                        *ngIf="tieneCheckout(compra); else transaccionSinCheckoutPalcosMobile"
+                        class="btn-link"
+                        [routerLink]="['/transacciones-checkout']"
+                        [queryParams]="{ compra_id: compra.id }"
+                        title="Ver transacción completa"
+                      >
+                        {{ compra.numero_transaccion || ('#' + compra.id) }}
+                      </a>
+                      <ng-template #transaccionSinCheckoutPalcosMobile>
+                        <span>{{ compra.numero_transaccion || ('#' + compra.id) }}</span>
+                      </ng-template>
+                    </span>
                     <span class="venta-fecha">{{ compra.fecha_compra | dateFormat:'short' }}</span>
                   </div>
                   <div class="venta-toolbar">

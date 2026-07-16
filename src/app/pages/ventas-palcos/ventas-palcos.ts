@@ -1,20 +1,23 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ComprasService } from '../../services/compras.service';
 import { AlertService } from '../../services/alert.service';
 import { EventosService } from '../../services/eventos.service';
+import { TransaccionesCheckoutService } from '../../services/transacciones-checkout.service';
 import { Compra, Evento, PaginatedResponse, TipoEstadoCompra, TipoEstadoPago } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 @Component({
   selector: 'app-ventas-palcos',
-  imports: [CommonModule, FormsModule, DateFormatPipe],
+  imports: [CommonModule, FormsModule, RouterModule, DateFormatPipe],
   templateUrl: './ventas-palcos.html',
   styleUrl: '../ventas/ventas.css',
 })
 export class VentasPalcos implements OnInit {
   compras: Compra[] = [];
+  comprasConCheckout = new Set<number>();
   deletingCompraId: number | null = null;
   loading = false;
   total = 0;
@@ -53,6 +56,7 @@ export class VentasPalcos implements OnInit {
     private comprasService: ComprasService,
     private alertService: AlertService,
     private eventosService: EventosService,
+    private transaccionesCheckoutService: TransaccionesCheckoutService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -94,14 +98,30 @@ export class VentasPalcos implements OnInit {
       });
       this.compras = response.data || [];
       this.total = response.total || 0;
+      await this.cargarDisponibilidadCheckout(this.compras);
     } catch (error) {
       console.error('Error cargando ventas de palcos:', error);
       this.compras = [];
       this.total = 0;
+      this.comprasConCheckout = new Set<number>();
     } finally {
       this.loading = false;
       this.cdr.detectChanges();
     }
+  }
+
+  private async cargarDisponibilidadCheckout(compras: Compra[]): Promise<void> {
+    try {
+      const ids = compras.map((c) => c.id);
+      this.comprasConCheckout = await this.transaccionesCheckoutService.getCompraIdsConCheckout(ids);
+    } catch (error) {
+      console.warn('No se pudo cargar disponibilidad de checkout para ventas palcos:', error);
+      this.comprasConCheckout = new Set<number>();
+    }
+  }
+
+  tieneCheckout(compra: Compra): boolean {
+    return this.comprasConCheckout.has(compra.id);
   }
 
   onFiltrosChange(): void {
