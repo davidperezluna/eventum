@@ -219,6 +219,15 @@ export class ClubDetalle implements OnInit, OnDestroy {
     return this.detalle?.tipos_cover.find((t) => t.id === sesion.tipo_cover_id);
   }
 
+  /** Precio vigente del producto; la sesión puede tener snapshot 0/desactualizado. */
+  precioCover(sesion: SesionCoverPublica): number {
+    const tipo = this.tipoPorSesion(sesion);
+    if (tipo?.precio_cop != null && Number(tipo.precio_cop) > 0) {
+      return Number(tipo.precio_cop);
+    }
+    return Number(sesion.precio_cop ?? 0);
+  }
+
   cuposDisponibles(sesion: SesionCoverPublica): number {
     const venta = sesion.cupos_venta_disponibles;
     const dentro = sesion.cupos_dentro_disponibles ?? 0;
@@ -282,7 +291,7 @@ export class ClubDetalle implements OnInit, OnDestroy {
 
   /** Sesiones con precio 0 no se venden desde el carrito del club. */
   esSesionCoverDePago(sesion: SesionCoverPublica): boolean {
-    return (sesion.precio_cop ?? 0) > 0;
+    return this.precioCover(sesion) > 0;
   }
 
   coverDisponibleParaVenta(sesion: SesionCoverPublica): boolean {
@@ -378,7 +387,7 @@ export class ClubDetalle implements OnInit, OnDestroy {
       sesionFecha: sesion.fecha,
       horaApertura: sesion.hora_apertura,
       horaCierre: sesion.hora_cierre,
-      precioSesion: sesion.precio_cop,
+      precioSesion: this.precioCover(sesion),
       wompiCuentaId: wompiId,
       maxCantidad,
     });

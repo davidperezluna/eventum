@@ -269,7 +269,7 @@ export class Layout implements OnInit, OnDestroy {
       { path: '/categorias', label: 'Categorías', icon: 'category' },
       { path: '/lugares', label: 'Lugares', icon: 'place' },
       ...(this.coversEventumEnabled
-        ? [{ path: '/covers-config', label: 'Covers', icon: 'nightlife' }]
+        ? [{ path: '/covers-config', label: 'Covers', icon: 'local_bar' }]
         : []),
       { path: '/boletas', label: 'Boletas sin usar', icon: 'confirmation_number' },
       { path: '/boletas-usadas', label: 'Boletas usadas', icon: 'how_to_reg' },
@@ -301,7 +301,7 @@ export class Layout implements OnInit, OnDestroy {
     this.menuItems = [
       { path: '/dashboard-organizador', label: 'Dashboard', icon: 'dashboard' },
       ...(this.coversEventumEnabled
-        ? [{ path: '/covers-config', label: 'Covers', icon: 'nightlife' }]
+        ? [{ path: '/covers-config', label: 'Covers', icon: 'local_bar' }]
         : []),
     ];
     /*
@@ -319,7 +319,7 @@ export class Layout implements OnInit, OnDestroy {
     this.clientNavItems = [
       { path: '/eventos-cliente', label: 'Eventos', icon: 'event', exact: true },
       ...(this.coversEventumEnabled
-        ? [{ path: '/clubes', label: COVERS_LABELS.explorar, icon: 'nightlife', exact: true }]
+        ? [{ path: '/clubes', label: COVERS_LABELS.explorar, icon: 'local_bar', exact: true }]
         : []),
       {
         path: '/mis-compras',

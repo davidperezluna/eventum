@@ -41,7 +41,10 @@ export class UsuariosService {
         query = query.eq('email_verificado', filters.email_verificado);
       }
       if (filters?.search) {
-        query = query.or(`email.ilike.%${filters.search}%,nombre.ilike.%${filters.search}%,apellido.ilike.%${filters.search}%`);
+        const s = filters.search.trim();
+        query = query.or(
+          `email.ilike.%${s}%,nombre.ilike.%${s}%,apellido.ilike.%${s}%,documento_identidad.ilike.%${s}%`,
+        );
       }
 
       // Ordenamiento

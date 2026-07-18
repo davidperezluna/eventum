@@ -17,7 +17,7 @@
     </div>
 
     <div *ngIf="lugares.length > 0" class="clubes-stats" aria-live="polite">
-      <span class="clubes-stats__icon material-icons" aria-hidden="true">nightlife</span>
+      <span class="clubes-stats__icon material-icons" aria-hidden="true">local_bar</span>
       <span class="clubes-stats__text">
         <strong>{{ lugares.length }}</strong>
         {{ lugares.length === 1 ? 'club disponible' : 'clubes disponibles' }}
@@ -30,7 +30,7 @@
     </div>
 
     <div *ngIf="!loading && lugares.length === 0" class="cupos-empty">
-      <span class="material-icons" aria-hidden="true">nightlife</span>
+      <span class="material-icons" aria-hidden="true">local_bar</span>
       <h2>{{ coversLabels.sinClubes }}</h2>
       <p>Pronto habrá bares y clubes con cover disponible en Eventum.</p>
       <a routerLink="/eventos-cliente" class="cupos-btn-primary">Ver eventos</a>
@@ -48,7 +48,7 @@
             />
             <ng-template #sinImagen>
               <div class="clubes-card__media-fallback">
-                <span class="material-icons">nightlife</span>
+                <span class="material-icons">local_bar</span>
               </div>
             </ng-template>
             <div class="clubes-card__media-overlay"></div>

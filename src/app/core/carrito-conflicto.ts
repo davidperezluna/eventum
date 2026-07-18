@@ -33,7 +33,7 @@ export async function confirmarCambioCarritoACovers(
     message,
     confirmText: 'Vaciar y continuar',
     cancelText: 'Cancelar',
-    icon: 'nightlife',
+    icon: 'local_bar',
   });
 }
 

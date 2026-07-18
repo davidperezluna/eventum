@@ -88,6 +88,8 @@ export interface Lugar {
   covers_descripcion?: string | null;
   /** % servicio Eventum en venta online de covers (como eventos.porcentaje_servicio). */
   covers_porcentaje_servicio?: number;
+  /** Organizador responsable de covers en este lugar. */
+  covers_organizador_id?: number | null;
   fecha_creacion?: Date | string;
 }
 

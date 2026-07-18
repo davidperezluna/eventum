@@ -4,6 +4,97 @@ export type EstadoSesionCover = 'programada' | 'abierta' | 'cerrada' | 'cancelad
 
 export type EstadoAccesoCover = 'pendiente' | 'dentro' | 'fuera' | 'consumida';
 
+/** Cobro offline al vender/asignar covers en puerta. */
+export type MetodoPagoCoverManual = 'efectivo' | 'transferencia' | 'tarjeta' | 'cortesia';
+
+export interface VentaCoverManualResult {
+  ok: boolean;
+  compra_cover_id: number;
+  numero_transaccion: string;
+  metodo_pago: string;
+  total: number;
+  cantidad: number;
+  cliente_id: number;
+  boletas_cover: Array<{ id: number; codigo_qr: string; sesion_cover_id: number }>;
+}
+
+export interface UsuarioCoverVenta {
+  id: number;
+  nombre?: string | null;
+  apellido?: string | null;
+  email: string;
+  documento_identidad?: string | null;
+  activo?: boolean;
+}
+
+export interface ResumenNocheCover {
+  sesion_cover_id: number;
+  fecha: string;
+  estado: EstadoSesionCover;
+  aforo_maximo: number;
+  personas_dentro: number;
+  cantidad_vendida: number;
+  porcentaje_servicio_config: number;
+  covers_activos: number;
+  app_covers: number;
+  app_ingresos: number;
+  app_servicio_eventum: number;
+  puerta_covers: number;
+  puerta_ingresos: number;
+  puerta_por_metodo: Record<string, number>;
+  cortesias: number;
+  ingresos_totales: number;
+  nota_servicio?: string;
+}
+
+export interface VentaNocheCoverItem {
+  boleta_id: number;
+  codigo_qr: string;
+  precio_unitario: number;
+  boleta_estado: string;
+  estado_acceso: EstadoAccesoCover;
+  fecha_creacion?: string;
+  compra_id: number;
+  numero_transaccion: string;
+  fecha_compra: string;
+  compra_total: number;
+  valor_servicio: number;
+  metodo_pago: string | null;
+  origen_venta: 'online' | 'manual' | string;
+  notas?: string | null;
+  vendido_por_usuario_id?: number | null;
+  vendido_por_nombre?: string | null;
+  vendido_por_email?: string | null;
+  cliente_id?: number | null;
+  cliente_nombre?: string | null;
+  cliente_email?: string | null;
+  cliente_documento?: string | null;
+  tipo_cover_nombre?: string;
+}
+
+export interface PersonaDentroCover {
+  boleta_id: number;
+  codigo_qr: string;
+  estado_acceso: string;
+  ultima_entrada_at?: string | null;
+  entradas_count?: number;
+  cliente_id?: number | null;
+  cliente_nombre?: string | null;
+  cliente_email?: string | null;
+  cliente_documento?: string | null;
+  tipo_cover_nombre?: string;
+}
+
+export interface AccesoCoverItem {
+  id: number;
+  tipo_movimiento: 'entrada' | 'salida' | string;
+  fecha_creacion: string;
+  personas_dentro_despues?: number;
+  codigo_qr?: string;
+  cliente_nombre?: string | null;
+  cliente_documento?: string | null;
+}
+
 export interface LugarCoverConfig {
   id: number;
   nombre: string;
@@ -13,6 +104,10 @@ export interface LugarCoverConfig {
   covers_habilitado?: boolean;
   covers_descripcion?: string | null;
   covers_porcentaje_servicio?: number;
+  /** Organizador responsable de covers en este lugar. */
+  covers_organizador_id?: number | null;
+  covers_organizador_nombre?: string | null;
+  covers_organizador_email?: string | null;
   activo?: boolean;
 }
 

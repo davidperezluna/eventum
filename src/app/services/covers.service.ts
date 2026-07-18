@@ -10,9 +10,16 @@ import {
   EstadoSesionCover,
   ItemPedidoCover,
   LugarCoverListado,
+  MetodoPagoCoverManual,
+  PersonaDentroCover,
   PlantillaCover,
+  ResumenNocheCover,
   SesionCover,
   TipoCover,
+  UsuarioCoverVenta,
+  VentaCoverManualResult,
+  VentaNocheCoverItem,
+  AccesoCoverItem,
 } from '../types/covers';
 
 @Injectable({ providedIn: 'root' })
@@ -33,12 +40,14 @@ export class CoversService {
     coversHabilitado: boolean,
     coversDescripcion?: string | null,
     coversPorcentajeServicio?: number | null,
+    coversOrganizadorId?: number | null,
   ): Promise<void> {
     const { data, error } = await this.supabase.getClient().rpc('configurar_lugar_cover', {
       p_lugar_id: lugarId,
       p_covers_habilitado: coversHabilitado,
       p_covers_descripcion: coversDescripcion ?? null,
       p_covers_porcentaje_servicio: coversPorcentajeServicio ?? null,
+      p_covers_organizador_id: coversOrganizadorId ?? null,
     });
     if (error) throw error;
     const res = data as { ok?: boolean };
@@ -218,6 +227,90 @@ export class CoversService {
     return { compra_cover_id: compraCoverId };
   }
 
+  /** Venta/asignación manual el día de la noche (efectivo, transferencia, etc.). */
+  async venderCoverManual(params: {
+    sesionCoverId: number;
+    clienteId: number;
+    cantidad: number;
+    metodoPago: MetodoPagoCoverManual;
+    notas?: string | null;
+  }): Promise<VentaCoverManualResult> {
+    const { data, error } = await this.supabase.getClient().rpc('vender_cover_manual', {
+      p_sesion_cover_id: params.sesionCoverId,
+      p_cliente_id: params.clienteId,
+      p_cantidad: params.cantidad,
+      p_metodo_pago: params.metodoPago,
+      p_notas: params.notas ?? null,
+    });
+    if (error) throw error;
+    const row = (data ?? {}) as Record<string, unknown>;
+    return {
+      ok: row['ok'] !== false,
+      compra_cover_id: Number(row['compra_cover_id'] ?? 0),
+      numero_transaccion: String(row['numero_transaccion'] ?? ''),
+      metodo_pago: String(row['metodo_pago'] ?? params.metodoPago),
+      total: Number(row['total'] ?? 0),
+      cantidad: Number(row['cantidad'] ?? params.cantidad),
+      cliente_id: Number(row['cliente_id'] ?? params.clienteId),
+      boletas_cover: Array.isArray(row['boletas_cover'])
+        ? (row['boletas_cover'] as VentaCoverManualResult['boletas_cover'])
+        : [],
+    };
+  }
+
+  async buscarUsuariosParaVentaCover(q: string, limit = 20): Promise<UsuarioCoverVenta[]> {
+    const { data, error } = await this.supabase.getClient().rpc('buscar_usuarios_para_venta_cover', {
+      p_q: q.trim(),
+      p_limit: limit,
+    });
+    if (error) throw error;
+    return this.normalizeArray<UsuarioCoverVenta>(data);
+  }
+
+  async obtenerResumenNoche(sesionCoverId: number): Promise<{
+    resumen: ResumenNocheCover;
+    ventas: VentaNocheCoverItem[];
+  }> {
+    const { data, error } = await this.supabase.getClient().rpc('obtener_resumen_noche_cover', {
+      p_sesion_cover_id: sesionCoverId,
+    });
+    if (error) throw error;
+    const row = (data ?? {}) as Record<string, unknown>;
+    const resumen = (row['resumen'] ?? {}) as ResumenNocheCover;
+    return {
+      resumen: {
+        ...resumen,
+        puerta_por_metodo: (resumen.puerta_por_metodo ?? {}) as Record<string, number>,
+      },
+      ventas: this.normalizeArray<VentaNocheCoverItem>(row['ventas']),
+    };
+  }
+
+  async anularBoletaCover(boletaId: number, motivo?: string | null): Promise<void> {
+    const { error } = await this.supabase.getClient().rpc('anular_boleta_cover', {
+      p_boleta_cover_id: boletaId,
+      p_motivo: motivo ?? null,
+    });
+    if (error) throw error;
+  }
+
+  async listarDentroSesion(sesionCoverId: number): Promise<PersonaDentroCover[]> {
+    const { data, error } = await this.supabase.getClient().rpc('listar_dentro_sesion_cover', {
+      p_sesion_cover_id: sesionCoverId,
+    });
+    if (error) throw error;
+    return this.normalizeArray<PersonaDentroCover>(data);
+  }
+
+  async listarAccesosSesion(sesionCoverId: number, limite = 50): Promise<AccesoCoverItem[]> {
+    const { data, error } = await this.supabase.getClient().rpc('listar_accesos_sesion_cover', {
+      p_sesion_cover_id: sesionCoverId,
+      p_limite: limite,
+    });
+    if (error) throw error;
+    return this.normalizeArray<AccesoCoverItem>(data);
+  }
+
   async listarComprasCoverCliente(): Promise<CompraCoverCliente[]> {
     const { data, error } = await this.supabase.getClient().rpc('listar_compras_cover_cliente');
     if (error) throw error;
@@ -297,7 +390,6 @@ export class CoversService {
     aforoMaximo?: number | null;
     cantidadMaximaVenta?: number | null;
     permiteReingreso?: boolean;
-    categoriaId?: number | null;
     wompiCuentaId?: number | null;
     generarSesiones?: boolean;
   }): Promise<ConfigCoverLugar> {
@@ -312,7 +404,7 @@ export class CoversService {
       p_aforo_maximo: params.aforoMaximo ?? null,
       p_cantidad_maxima_venta: params.cantidadMaximaVenta ?? null,
       p_permite_reingreso: params.permiteReingreso ?? true,
-      p_categoria_id: params.categoriaId ?? null,
+      p_categoria_id: null,
       p_wompi_cuenta_id: params.wompiCuentaId ?? null,
       p_generar_sesiones: params.generarSesiones ?? true,
     });
@@ -418,6 +510,13 @@ export class CoversService {
         return Array.isArray(parsed) ? (parsed as T[]) : [];
       } catch {
         return [];
+      }
+    }
+    // Algunos RPC JSONB llegan como objeto indexado { "0": {...}, "1": {...} }
+    if (raw && typeof raw === 'object') {
+      const values = Object.values(raw as Record<string, unknown>);
+      if (values.length && values.every((v) => v && typeof v === 'object')) {
+        return values as T[];
       }
     }
     return [];

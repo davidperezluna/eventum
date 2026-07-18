@@ -31,7 +31,7 @@
           />
           <ng-template #heroSinImagen>
             <div class="club-hero__fallback" aria-hidden="true">
-              <span class="material-icons">nightlife</span>
+              <span class="material-icons">local_bar</span>
             </div>
           </ng-template>
           <div class="club-hero__shade" aria-hidden="true"></div>
@@ -90,7 +90,7 @@
                 <div class="club-sesion-card__title-row">
                   <h3 class="club-sesion-card__tipo">{{ sesion.tipo_cover_nombre }}</h3>
                   <span class="club-sesion-card__precio club-sesion-card__precio--inline">
-                    {{ formatCurrency(sesion.precio_cop) }}
+                    {{ formatCurrency(precioCover(sesion)) }}
                   </span>
                 </div>
                 <p class="club-sesion-card__horario">
@@ -121,7 +121,7 @@
             </div>
 
             <footer class="club-sesion-card__footer">
-              <span class="club-sesion-card__precio">{{ formatCurrency(sesion.precio_cop) }}</span>
+              <span class="club-sesion-card__precio">{{ formatCurrency(precioCover(sesion)) }}</span>
               <div class="club-sesion-card__controls" *ngIf="esSesionCoverDePago(sesion)">
                 <div class="cantidad-controls" *ngIf="getCantidadEnCarrito(sesion) > 0">
                   <button type="button" class="btn-cantidad" (click)="quitarCoverDelCarrito(sesion)">-</button>

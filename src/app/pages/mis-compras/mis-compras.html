@@ -150,7 +150,7 @@
       [class.active]="tabMisComprasPrincipal === 'covers'"
       (click)="setTabMisComprasPrincipal('covers')"
     >
-      <span class="material-icons" aria-hidden="true">nightlife</span>
+      <span class="material-icons" aria-hidden="true">local_bar</span>
       Covers
       <span class="mc-segmented-badge" *ngIf="badgeCoversTab() > 0">{{ badgeCoversTab() }}</span>
     </button>
@@ -1088,7 +1088,7 @@
               <h3 class="event-title">{{ grupo.lugarNombre }}</h3>
               <div class="event-meta">
                 <span class="event-meta-line">
-                  <span class="material-icons">nightlife</span>
+                  <span class="material-icons">local_bar</span>
                   {{ grupo.totalDisponibles }} {{ grupo.totalDisponibles === 1 ? 'entrada' : 'entradas' }}
                   <ng-container *ngIf="grupo.totalTrasladoSaliente > 0">
                     · {{ grupo.totalTrasladoSaliente }} en envío
@@ -1130,7 +1130,7 @@
       <h1 class="client-page-header__title">{{ clubDetalle.lugarNombre }}</h1>
       <p class="client-page-header__subtitle mc-evento-detalle-meta mc-cover-detalle-meta">
         <span class="mc-cover-detalle-meta-item">
-          <span class="material-icons" aria-hidden="true">nightlife</span>
+          <span class="material-icons" aria-hidden="true">local_bar</span>
           {{ clubDetalle.totalDisponibles }} {{ clubDetalle.totalDisponibles === 1 ? 'cover' : 'covers' }}
           <ng-container *ngIf="clubDetalle.totalTrasladoSaliente > 0">
             · {{ clubDetalle.totalTrasladoSaliente }} en envío

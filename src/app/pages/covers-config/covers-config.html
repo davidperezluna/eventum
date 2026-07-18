@@ -1,56 +1,71 @@
 <div class="covers-admin-page">
   <header class="page-header">
-    <div>
-      <h1>
-        <span class="material-icons">nightlife</span>
-        Covers — lugares
-      </h1>
-      <p>Elige un lugar para configurar tipos, horarios recurrentes y sesiones.</p>
-    </div>
+    <h1>
+      <span class="material-icons" aria-hidden="true">local_bar</span>
+      Covers
+    </h1>
+    <p *ngIf="esAdministrador">Asigna responsables y publica clubes.</p>
+    <p *ngIf="!esAdministrador">Gestiona horarios y noches de tus clubes.</p>
   </header>
 
-  <div class="filters-card">
-    <input
-      type="search"
-      class="search-input"
-      [(ngModel)]="searchTerm"
-      (ngModelChange)="loadLugares()"
-      placeholder="Buscar por nombre, dirección o ciudad…"
-    />
+  <div class="toolbar" *ngIf="mostrarBusqueda && !loading">
+    <div class="search-wrap">
+      <span class="material-icons search-wrap__icon" aria-hidden="true">search</span>
+      <input
+        type="search"
+        class="search-input"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="onSearchChange()"
+        placeholder="Buscar club…"
+        aria-label="Buscar club"
+      />
+    </div>
   </div>
 
-  <div class="content-card">
-    <div *ngIf="loading" class="loading-state">Cargando lugares…</div>
+  <div *ngIf="loading" class="loading-state">
+    <span class="material-icons spin" aria-hidden="true">refresh</span>
+    Cargando…
+  </div>
 
-    <div *ngIf="!loading && lugares.length === 0" class="empty-state">
-      <span class="material-icons">place</span>
-      <p>No hay lugares activos. Crea uno en <a routerLink="/lugares">Lugares</a>.</p>
-    </div>
+  <div *ngIf="!loading && lugares.length === 0" class="empty-state">
+    <span class="material-icons" aria-hidden="true">place</span>
+    <h2 *ngIf="esAdministrador">No hay lugares</h2>
+    <p *ngIf="esAdministrador">Crea un lugar y vuelve aquí para activar covers.</p>
+    <a *ngIf="esAdministrador" routerLink="/lugares" class="btn-primary">Ir a Lugares</a>
 
-    <div *ngIf="!loading && lugares.length > 0" class="lugares-list">
-      <article *ngFor="let lugar of lugares" class="lugar-row">
-        <div class="lugar-row__main">
-          <h3>{{ lugar.nombre }}</h3>
-          <p class="lugar-row__meta">{{ lugar.direccion }}, {{ lugar.ciudad }}</p>
-          <p class="lugar-row__cap" *ngIf="lugar.capacidad_maxima">
-            <span class="material-icons">groups</span>
-            Capacidad: {{ lugar.capacidad_maxima }}
+    <h2 *ngIf="!esAdministrador">Sin clubes asignados</h2>
+    <p *ngIf="!esAdministrador">Pide a un administrador que te asigne como responsable.</p>
+  </div>
+
+  <ul *ngIf="!loading && lugares.length > 0" class="club-list" role="list">
+    <li
+      *ngFor="let lugar of lugares"
+      class="club-row"
+      [attr.data-estado]="estadoDe(lugar)"
+      role="button"
+      tabindex="0"
+      (click)="irConfigurar(lugar.id)"
+      (keydown.enter)="irConfigurar(lugar.id)"
+      (keydown.space)="$event.preventDefault(); irConfigurar(lugar.id)"
+    >
+      <div class="club-row__main">
+            <div class="club-row__avatar" aria-hidden="true">{{ (lugar.nombre || '?').charAt(0) }}</div>
+        <div>
+          <div class="club-row__title">
+            <h3>{{ lugar.nombre }}</h3>
+            <span class="status-pill" [attr.data-estado]="estadoDe(lugar)">
+              {{ labelEstado(lugar) }}
+            </span>
+          </div>
+          <p class="club-row__meta">
+            {{ lugar.ciudad }}
+            <ng-container *ngIf="esAdministrador && labelResponsable(lugar)">
+              · {{ labelResponsable(lugar) }}
+            </ng-container>
           </p>
         </div>
-        <div class="lugar-row__actions">
-          <span
-            class="badge"
-            [class.badge--on]="coversHabilitado(lugar)"
-            [class.badge--off]="!coversHabilitado(lugar)"
-          >
-            {{ coversHabilitado(lugar) ? 'Covers activos' : 'Sin covers' }}
-          </span>
-          <button type="button" class="btn-primary" (click)="irConfigurar(lugar.id)">
-            <span class="material-icons">settings</span>
-            Configurar
-          </button>
-        </div>
-      </article>
-    </div>
-  </div>
+      </div>
+      <span class="material-icons club-row__chevron" aria-hidden="true">chevron_right</span>
+    </li>
+  </ul>
 </div>
