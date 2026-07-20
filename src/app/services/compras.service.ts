@@ -95,6 +95,11 @@ export class ComprasService {
       if (filters?.solo_palcos) {
         query = query.not('filtro_palco.grupo_palco_id', 'is', null);
       }
+      if (filters?.ocultar_total_cero_cliente_id != null) {
+        const cid = filters.ocultar_total_cero_cliente_id;
+        // NOT (cliente_id = cid AND total = 0)
+        query = query.or(`cliente_id.neq.${cid},total.gt.0`);
+      }
 
       // Ordenamiento
       const sortBy = filters?.sortBy || 'fecha_compra';

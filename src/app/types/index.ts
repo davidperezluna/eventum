@@ -73,6 +73,8 @@ export interface CompraFilters extends BaseFilters {
   fecha_hasta?: Date | string;
   /** Solo compras con al menos una boleta de palco (grupo_palco_id). */
   solo_palcos?: boolean;
+  /** Oculta compras con total 0 de este cliente (p. ej. cortesías del cliente sistema). */
+  ocultar_total_cero_cliente_id?: number;
 }
 
 /**
