@@ -425,7 +425,7 @@ export class DashboardOrganizadorService {
       }
 
       return merged
-        .filter((v) => Number(v.total || 0) > 0)
+        .filter((v) => !(Number(v.cliente_id) === 5 && Number(v.total || 0) === 0))
         .sort((a, b) => normalizarFecha(b.fecha_compra) - normalizarFecha(a.fecha_compra))
         .slice(0, 5);
     }, []);
