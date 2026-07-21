@@ -18,6 +18,11 @@ export const environment = {
   allowClienteLoginAdmin: true,
   cuposEventumEnabled: true,
   coversEventumEnabled: false,
+  /**
+   * Detalle evento → Entradas (no agotadas): mostrar disponibles / reservados / vendidas / totales.
+   * `false` = ocultar esas cifras. Etapas agotadas siempre las muestran.
+   */
+  mostrarMetricasEntradasDisponibles: false,
   oneSignal: {
     appId: 'cb3f9dcf-6085-43d5-99ae-6c76db8abf57',
     serviceWorkerPath: '/push/onesignal/OneSignalSDKWorker.js',

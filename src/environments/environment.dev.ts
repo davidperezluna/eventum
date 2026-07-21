@@ -13,6 +13,11 @@ export const environment = {
   cuposEventumEnabled: true,
   /** Staging/dev desplegado: activar mientras se prueba el módulo Covers. */
   coversEventumEnabled: true,
+  /**
+   * Detalle evento → Entradas (no agotadas): mostrar disponibles / reservados / vendidas / totales.
+   * `false` = ocultar esas cifras. Etapas agotadas siempre las muestran.
+   */
+  mostrarMetricasEntradasDisponibles: false,
   /** Mantener alineado con `index.html` (OneSignal se inicializa allí antes del bundle). */
   oneSignal: {
     appId: 'cb3f9dcf-6085-43d5-99ae-6c76db8abf57',

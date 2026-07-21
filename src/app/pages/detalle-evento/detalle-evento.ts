@@ -33,6 +33,7 @@ import { cuposEventumEnabled } from '../../core/cupos-feature';
 import { CUPOS_LABELS } from '../../core/cupos-labels';
 import { resolverConflictoEventoAntesDeAgregar } from '../../core/carrito-conflicto';
 import { ClientConfirmDialogService } from '../../services/client-confirm-dialog.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-detalle-evento',
@@ -44,6 +45,8 @@ import { ClientConfirmDialogService } from '../../services/client-confirm-dialog
 export class DetalleEvento implements OnInit, OnDestroy {
   readonly cuposEventumEnabled = cuposEventumEnabled;
   readonly cuposLabels = CUPOS_LABELS;
+  /** `true` muestra disponibles/reservados/vendidas/totales en entradas a la venta. */
+  readonly mostrarMetricasEntradasDisponibles = environment.mostrarMetricasEntradasDisponibles === true;
   evento: Evento | null = null;
   tiposBoleta: TipoBoleta[] = [];
   lugar: Lugar | null = null;
