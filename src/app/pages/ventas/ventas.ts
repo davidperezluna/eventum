@@ -297,9 +297,9 @@ export class Ventas implements OnInit, OnDestroy {
     }
     if (this.esTipoPalcoMultipersona(tipo)) {
       const palcos = this.palcosDisponiblesPorTipoId.get(tipo.id) || [];
-      return Math.max(1, palcos.length);
+      return Math.max(0, palcos.length);
     }
-    return Math.max(1, Number(tipo.cantidad_disponibles ?? 0));
+    return Math.max(0, Number(tipo.cantidad_disponibles ?? 0));
   }
 
   getTipoVentaManual(tipoId: number | null): TipoBoleta | undefined {
@@ -494,14 +494,14 @@ export class Ventas implements OnInit, OnDestroy {
     const preparados: TipoBoleta[] = [];
 
     for (const raw of tipos) {
-      let disponibles = this.disponiblesTipoBoleta(raw);
+      let disponibles: number;
 
       if (this.esTipoPalcoMultipersona(raw)) {
+        // Siempre usar palcos libres (no el stock del tipo, que puede quedar desfasado).
         await this.cargarPalcosDisponiblesTipo(raw.id);
-        const palcosLibres = this.palcosDisponiblesPorTipoId.get(raw.id)?.length ?? 0;
-        if (raw.es_palco || palcosLibres > 0) {
-          disponibles = palcosLibres;
-        }
+        disponibles = this.palcosDisponiblesPorTipoId.get(raw.id)?.length ?? 0;
+      } else {
+        disponibles = this.disponiblesTipoBoleta(raw);
       }
 
       if (disponibles > 0) {
