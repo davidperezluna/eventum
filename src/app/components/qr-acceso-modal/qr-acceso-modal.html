@@ -1,0 +1,83 @@
+<div
+  class="modal-overlay modal-overlay--qr-acceso"
+  *ngIf="visible"
+  (click)="onOverlayClick()"
+>
+  <div
+    class="modal-sheet qr-acceso-sheet"
+    (click)="$event.stopPropagation()"
+    role="dialog"
+    aria-modal="true"
+  >
+    <button type="button" class="modal-close" (click)="onCloseClick()" aria-label="Cerrar">
+      <span class="material-icons">close</span>
+    </button>
+
+    <!-- Ya usada / bloqueada -->
+    <div class="modal-center" *ngIf="vista === 'used' || vista === 'blocked'">
+      <span
+        class="material-icons modal-icon"
+        [class.used]="vista === 'used'"
+        [class.warn]="vista === 'blocked'"
+      >{{ blockedIcon }}</span>
+      <h2>{{ blockedTitle }}</h2>
+      <p>{{ blockedMessage }}</p>
+      <p class="modal-asistente-hint" *ngIf="blockedHint">{{ blockedHint }}</p>
+      <div class="modal-info" *ngIf="rows.length">
+        <div class="modal-row" *ngFor="let row of rows">
+          <span>{{ row.label }}</span>
+          <strong>{{ row.value }}</strong>
+        </div>
+      </div>
+      <button type="button" class="btn-validate" (click)="onCloseClick()">Cerrar</button>
+    </div>
+
+    <!-- Lista para mostrar QR -->
+    <ng-container *ngIf="vista === 'ready'">
+      <header class="qr-acceso-sheet__head" *ngIf="kicker || title || chip">
+        <p class="modal-kicker" *ngIf="kicker">{{ kicker }}</p>
+        <h2 class="modal-title" *ngIf="title">{{ title }}</h2>
+        <p class="qr-acceso-sheet__tipo" *ngIf="chip">{{ chip }}</p>
+      </header>
+
+      <div class="boleta-qr-preview boleta-qr-preview--sheet">
+        <div *ngIf="loadingQr" class="qr-loading">
+          <div class="spinner"></div>
+          <p>Generando código QR...</p>
+        </div>
+        <img *ngIf="qrUrl && !loadingQr" [src]="qrUrl" alt="Código QR" class="qr-image" />
+      </div>
+
+      <div
+        class="modal-info"
+        [class.modal-info--productos]="!!listSection?.prominent"
+        *ngIf="listSection?.lines?.length || rows.length"
+      >
+        <div
+          class="modal-row modal-row--stack"
+          [class.modal-row--productos]="!!listSection?.prominent"
+          *ngIf="listSection?.lines?.length"
+        >
+          <span>{{ listSection!.label }}</span>
+          <strong class="modal-row__list" [class.modal-row__list--productos]="!!listSection?.prominent">
+            <span *ngFor="let line of listSection!.lines">{{ line }}</span>
+          </strong>
+        </div>
+        <div class="modal-row" *ngFor="let row of rows">
+          <span>{{ row.label }}</span>
+          <strong>{{ row.value }}</strong>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="btn-validate btn-validate--secondary"
+        *ngIf="secondaryActionLabel"
+        (click)="onSecondaryAction()"
+      >
+        <span class="material-icons" *ngIf="secondaryActionIcon">{{ secondaryActionIcon }}</span>
+        {{ secondaryActionLabel }}
+      </button>
+    </ng-container>
+  </div>
+</div>

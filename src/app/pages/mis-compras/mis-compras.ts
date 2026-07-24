@@ -37,6 +37,12 @@ import html2canvas from 'html2canvas';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { AccesoPuertaToastComponent } from '../../components/acceso-puerta-toast/acceso-puerta-toast';
+import {
+  QrAccesoModalComponent,
+  QrAccesoModalListSection,
+  QrAccesoModalRow,
+  QrAccesoModalVista,
+} from '../../components/qr-acceso-modal/qr-acceso-modal';
 import type { AuthStateCallback } from '../../services/auth.service';
 import { ProductosService } from '../../services/productos.service';
 import { CoversService } from '../../services/covers.service';
@@ -138,7 +144,7 @@ interface LugarCoverGrupo {
 
 @Component({
   selector: 'app-mis-compras',
-  imports: [CommonModule, RouterModule, FormsModule, DateFormatPipe, AccesoPuertaToastComponent],
+  imports: [CommonModule, RouterModule, FormsModule, DateFormatPipe, AccesoPuertaToastComponent, QrAccesoModalComponent],
   templateUrl: './mis-compras.html',
   styleUrl: './mis-compras.css',
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
@@ -158,6 +164,13 @@ export class MisCompras implements OnInit, OnDestroy {
   private notificacionesChannel: RealtimeChannel | null = null;
   private unsubscribeAuthState: (() => void) | null = null;
   private realtimeUsuarioIdActual: number | null = null;
+  /** Respaldo si el websocket de notificaciones no entrega el evento a tiempo. */
+  private pollEscaneoTimer: ReturnType<typeof setInterval> | null = null;
+  private pollEscaneoInFlight = false;
+  /** Poll lento en detalle; con QR abierto se acelera para cerrar casi al instante. */
+  private readonly pollEscaneoIntervalMs = 3000;
+  private readonly pollEscaneoRapidoMs = 700;
+  private pollEscaneoIntervalActualMs = 0;
   
   compras: Compra[] = [];
   comprasProductos: CompraProducto[] = [];
@@ -387,9 +400,13 @@ export class MisCompras implements OnInit, OnDestroy {
         if (coversEventumEnabled) {
           this.reconstruirLugaresConCovers();
         }
+        this.sincronizarRealtimeNotificaciones();
+        this.sincronizarPollEscaneoDetalle();
         this.cdr.detectChanges();
       });
     } else {
+      this.sincronizarRealtimeNotificaciones();
+      this.sincronizarPollEscaneoDetalle();
       this.cdr.detectChanges();
     }
   }
@@ -1046,6 +1063,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.coverQrCodeUrl = '';
     this.showCoverQrModal = true;
     this.loadingCoverQR = this.puedeMostrarQrCover(item);
+    this.sincronizarPollEscaneoDetalle();
     this.cdr.detectChanges();
 
     if (!this.loadingCoverQR) return;
@@ -1069,6 +1087,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.coverBoletaSeleccionada = null;
     this.coverQrCodeUrl = '';
     this.loadingCoverQR = false;
+    this.sincronizarPollEscaneoDetalle();
     this.cdr.detectChanges();
   }
 
@@ -1469,6 +1488,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.productoQrCodeUrl = '';
     this.showProductoQrModal = true;
     this.loadingProductoQR = this.puedeMostrarQrProducto(fila, grupo);
+    this.sincronizarPollEscaneoDetalle();
     this.cdr.detectChanges();
 
     const codigoPedido = this.getCodigoQrCompraProducto(fila.compra);
@@ -1493,7 +1513,260 @@ export class MisCompras implements OnInit, OnDestroy {
     this.productoFilaSeleccionada = null;
     this.productoQrCodeUrl = '';
     this.loadingProductoQR = false;
+    this.sincronizarPollEscaneoDetalle();
     this.cdr.detectChanges();
+  }
+
+  vistaModalProducto(): QrAccesoModalVista {
+    if (!this.productoFilaSeleccionada) {
+      return 'blocked';
+    }
+    if (this.loadingProductoQR || this.productoQrCodeUrl) {
+      return 'ready';
+    }
+    return 'blocked';
+  }
+
+  tituloModalProducto(): string {
+    const compra = this.productoFilaSeleccionada?.compra;
+    const detalle = this.detalleProductosCompra(compra);
+    if (detalle.length === 1) {
+      return detalle[0].nombre;
+    }
+    if (detalle.length > 1) {
+      return `${detalle.length} productos para retirar`;
+    }
+    return 'Retiro en evento';
+  }
+
+  listaModalProducto(): QrAccesoModalListSection | null {
+    const compra = this.productoFilaSeleccionada?.compra;
+    if (!compra) {
+      return null;
+    }
+    const detalle = this.detalleProductosCompra(compra);
+    // Un solo producto ya va en el título; la lista refuerza cuando hay varios o cantidad > 1.
+    if (detalle.length === 1 && detalle[0].cantidad <= 1) {
+      return null;
+    }
+    if (!detalle.length) {
+      return null;
+    }
+    return {
+      label: 'Productos',
+      lines: detalle.map((p) =>
+        p.cantidad > 1 ? `${p.nombre} ×${p.cantidad}` : p.nombre
+      ),
+      prominent: true,
+    };
+  }
+
+  vistaModalCover(): QrAccesoModalVista {
+    const item = this.coverBoletaSeleccionada;
+    if (!item) {
+      return 'blocked';
+    }
+    if (this.esBoletaCoverUsada(item.boleta)) {
+      return 'used';
+    }
+    if (this.loadingCoverQR || this.coverQrCodeUrl) {
+      return 'ready';
+    }
+    return 'blocked';
+  }
+
+  iconoBloqueoModalCover(): 'history' | 'schedule' | 'shield' {
+    const item = this.coverBoletaSeleccionada;
+    if (item && this.esBoletaCoverUsada(item.boleta)) {
+      return 'history';
+    }
+    return 'schedule';
+  }
+
+  tituloBloqueoModalCover(): string {
+    const item = this.coverBoletaSeleccionada;
+    if (item && this.esBoletaCoverUsada(item.boleta)) {
+      return 'Esta entrada ya fue usada';
+    }
+    return 'QR aún no disponible';
+  }
+
+  mensajeBloqueoModalCover(): string {
+    const item = this.coverBoletaSeleccionada;
+    if (!item) {
+      return '';
+    }
+    if (this.esBoletaCoverUsada(item.boleta)) {
+      return 'Tu cover ya no está disponible para ingreso.';
+    }
+    return this.mensajeHabilitacionQrCover(item.boleta);
+  }
+
+  hintBloqueoModalCover(): string {
+    const item = this.coverBoletaSeleccionada;
+    if (!item || !this.coverAccesoUtilizadoEnPuerta(item.boleta)) {
+      return '';
+    }
+    return this.hintQrCoverAcceso(item);
+  }
+
+  filasModalCover(): QrAccesoModalRow[] {
+    const item = this.coverBoletaSeleccionada;
+    if (!item) {
+      return [];
+    }
+    return [
+      { label: 'Noche', value: this.fechaSesionCoverBoleta(item.boleta) },
+      { label: 'Horario', value: this.horarioSesionCoverBoleta(item.boleta) },
+      { label: 'Compra', value: item.compra.numero_transaccion || '—' },
+    ];
+  }
+
+  vistaModalBoleta(): QrAccesoModalVista {
+    const boleta = this.boletaSeleccionada;
+    if (!boleta) {
+      return 'blocked';
+    }
+    if (this.esBoletaUsada(boleta)) {
+      return 'used';
+    }
+    if (this.compraSeleccionada?.estado_pago !== 'completado') {
+      return 'blocked';
+    }
+    if (!this.esDiaEventoBoleta(boleta, this.compraSeleccionada)) {
+      return 'blocked';
+    }
+    return 'ready';
+  }
+
+  tituloModalBoleta(): string {
+    const boleta = this.boletaSeleccionada;
+    const compra = this.compraSeleccionada;
+    if (!boleta) {
+      return 'Lista para ingreso';
+    }
+    return (
+      this.eventoSeleccionado?.titulo ||
+      this.eventoVistaBoleta(boleta, compra)?.titulo ||
+      'Lista para ingreso'
+    );
+  }
+
+  chipModalBoleta(): string {
+    const boleta = this.boletaSeleccionada;
+    if (!boleta) {
+      return 'Entrada';
+    }
+    return this.tipoBoletaSeleccionado?.nombre || boleta.tipo_boleta_meta?.nombre || 'Entrada';
+  }
+
+  iconoBloqueoModalBoleta(): 'history' | 'payments' | 'shield' {
+    const boleta = this.boletaSeleccionada;
+    if (!boleta) {
+      return 'shield';
+    }
+    if (this.esBoletaUsada(boleta)) {
+      return 'history';
+    }
+    if (this.compraSeleccionada?.estado_pago !== 'completado') {
+      return 'payments';
+    }
+    return 'shield';
+  }
+
+  tituloBloqueoModalBoleta(): string {
+    const boleta = this.boletaSeleccionada;
+    if (!boleta) {
+      return 'QR aún no disponible';
+    }
+    if (this.esBoletaUsada(boleta)) {
+      return 'Esta boleta ya fue escaneada';
+    }
+    if (this.compraSeleccionada?.estado_pago !== 'completado') {
+      return 'Pago pendiente';
+    }
+    return 'QR aún no disponible';
+  }
+
+  mensajeBloqueoModalBoleta(): string {
+    const boleta = this.boletaSeleccionada;
+    if (!boleta) {
+      return '';
+    }
+    if (this.esBoletaUsada(boleta)) {
+      return 'Tu entrada ya fue validada en puerta. El QR ya no está disponible.';
+    }
+    if (this.compraSeleccionada?.estado_pago !== 'completado') {
+      return 'El código QR estará disponible cuando el pago esté completado.';
+    }
+    return this.mensajeHabilitacionQrBoleta(boleta, this.compraSeleccionada);
+  }
+
+  hintBloqueoModalBoleta(): string {
+    const boleta = this.boletaSeleccionada;
+    if (!boleta || !this.esBoletaUsada(boleta)) {
+      return '';
+    }
+    const nombre = this.nombreAsistenteBoleta(boleta);
+    return nombre !== '—' ? `Asistente: ${nombre}` : '';
+  }
+
+  filasModalBoleta(): QrAccesoModalRow[] {
+    const boleta = this.boletaSeleccionada;
+    const compra = this.compraSeleccionada;
+    if (!boleta) {
+      return [];
+    }
+
+    if (this.esBoletaUsada(boleta)) {
+      return [];
+    }
+
+    if (compra?.estado_pago !== 'completado') {
+      return [];
+    }
+
+    if (!this.esDiaEventoBoleta(boleta, compra)) {
+      return [
+        {
+          label: 'Tipo',
+          value: this.tipoBoletaSeleccionado?.nombre || boleta.tipo_boleta_meta?.nombre || 'Entrada',
+        },
+        {
+          label: 'Evento',
+          value:
+            this.eventoSeleccionado?.titulo ||
+            this.eventoVistaBoleta(boleta, compra)?.titulo ||
+            'Evento',
+        },
+        { label: 'Asistente', value: this.nombreAsistenteBoleta(boleta) },
+      ];
+    }
+
+    const rows: QrAccesoModalRow[] = [
+      { label: 'Asistente', value: this.nombreAsistenteBoleta(boleta) },
+    ];
+    const doc = this.documentoAsistenteBoleta(boleta);
+    if (doc !== '—') {
+      rows.push({ label: 'Documento', value: doc });
+    }
+    const evento = this.eventoSeleccionado || this.eventoVistaBoleta(boleta, compra);
+    if (evento?.fecha_inicio) {
+      rows.push({ label: 'Fecha', value: this.fechaModalBoleta(boleta, compra) });
+      rows.push({ label: 'Hora', value: this.horaModalBoleta(boleta, compra) });
+    }
+    const lugar = this.eventoSeleccionado?.lugar || this.lugarVistaBoleta(boleta, compra);
+    if (lugar?.nombre) {
+      rows.push({ label: 'Lugar', value: String(lugar.nombre) });
+    }
+    return rows;
+  }
+
+  onImprimirPdfModalBoleta(): void {
+    if (!this.boletaSeleccionada || !this.compraSeleccionada) {
+      return;
+    }
+    void this.imprimirBoletaPDF(this.boletaSeleccionada, this.compraSeleccionada);
   }
 
   private abrirMensajeIngreso(
@@ -1654,6 +1927,96 @@ export class MisCompras implements OnInit, OnDestroy {
       undefined,
       this.asistenteDesdeBoleta(boletaRef)
     );
+  }
+
+  /**
+   * Si el QR de esa boleta está abierto, lo cierra y muestra el modal de bienvenida.
+   * @returns true si manejó la UI del modal.
+   */
+  private presentarIngresoSiModalBoletaAbierta(
+    boletaId: number,
+    metadata: Record<string, unknown>
+  ): boolean {
+    if (!this.showBoletaModal || this.boletaSeleccionada?.id !== boletaId) {
+      return false;
+    }
+
+    const boletaActual = this.boletaSeleccionada;
+    const compraActual = this.compraSeleccionada;
+    const siguienteBoleta =
+      boletaActual && compraActual
+        ? this.buscarSiguienteBoleta(boletaActual, compraActual)
+        : null;
+
+    // Cerrar QR de inmediato y pintar bienvenida sin esperar recargas.
+    this.cerrarBoletaModal();
+    this.abrirMensajeIngresoDesdeNotificacion('entrada', metadata, siguienteBoleta);
+    this.cdr.detectChanges();
+    return true;
+  }
+
+  /**
+   * Si el QR de ese pedido está abierto, lo cierra y muestra el toast de entrega.
+   */
+  private presentarIngresoSiModalProductoAbierta(
+    compraProductoId: number,
+    metadata: Record<string, unknown>
+  ): boolean {
+    if (
+      !this.showProductoQrModal ||
+      this.productoFilaSeleccionada?.compra.id !== compraProductoId
+    ) {
+      return false;
+    }
+
+    const compraCapturada = this.productoFilaSeleccionada.compra;
+    this.cerrarProductoQrModal();
+    this.abrirMensajeIngresoDesdeNotificacion(
+      'producto',
+      metadata,
+      null,
+      compraCapturada
+    );
+    this.cdr.detectChanges();
+    return true;
+  }
+
+  /**
+   * Si el QR de ese cover está abierto, lo cierra y muestra bienvenida/salida.
+   */
+  private presentarIngresoSiModalCoverAbierta(
+    tipo: 'cover' | 'cover-salida',
+    metadata: Record<string, unknown>
+  ): boolean {
+    if (!this.coverQrAbiertoCoincideConNotificacion(metadata)) {
+      return false;
+    }
+    this.cerrarCoverQrModal();
+    this.abrirMensajeIngresoDesdeNotificacion(tipo, metadata);
+    this.cdr.detectChanges();
+    return true;
+  }
+
+  /** Cierra el QR abierto correspondiente y muestra toast/snackbar unificado. */
+  private presentarIngresoSiModalQrAbierta(
+    tipo: string,
+    metadata: Record<string, unknown>
+  ): boolean {
+    if (tipo === 'entrada_validada') {
+      const boletaId = Number(metadata['boleta_id'] ?? 0);
+      return this.presentarIngresoSiModalBoletaAbierta(boletaId, metadata);
+    }
+    if (tipo === 'productos_redimidos') {
+      const compraProductoId = Number(metadata['compra_producto_id'] ?? 0);
+      return this.presentarIngresoSiModalProductoAbierta(compraProductoId, metadata);
+    }
+    if (tipo === 'cover_entrada_registrada') {
+      return this.presentarIngresoSiModalCoverAbierta('cover', metadata);
+    }
+    if (tipo === 'cover_salida_registrada') {
+      return this.presentarIngresoSiModalCoverAbierta('cover-salida', metadata);
+    }
+    return false;
   }
 
   private nombreAsistenteUsuarioActual(): string {
@@ -2330,14 +2693,14 @@ export class MisCompras implements OnInit, OnDestroy {
 
   async loadBoletasPorCompra(options?: { background?: boolean }) {
     const background = options?.background ?? false;
-    this.loadingBoletasDetalle = true;
-    this.cdr.detectChanges();
-
     if (!background) {
+      this.loadingBoletasDetalle = true;
+      this.cdr.detectChanges();
       this.comprasConBoletas = [];
       this.eventosConBoletas = [];
       this.eventoExpandidoKey = null;
     }
+
     const uid = this.authService.getUsuarioId();
     if (!uid) {
       this.entradasCedidas = [];
@@ -2395,6 +2758,8 @@ export class MisCompras implements OnInit, OnDestroy {
       }
 
       this.reconstruirEventosConBoletas();
+      this.fusionarProductosEnEventos();
+      this.syncTabEventoDetalle();
     } finally {
       this.loadingBoletasDetalle = false;
       this.sincronizarRealtimeNotificaciones();
@@ -3279,6 +3644,7 @@ export class MisCompras implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.persistState(Date.now());
     this.endSilentRefreshCycle();
+    this.detenerPollEscaneoDetalle();
     this.detenerRealtimeNotificaciones();
     if (this.unsubscribeAuthState) {
       this.unsubscribeAuthState();
@@ -3289,10 +3655,12 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   private tieneItemsPendientesRedencion(): boolean {
+    // Mantener realtime mientras haya boletas/productos/covers que aún puedan escanearse,
+    // aunque no se pueda abrir el QR (p. ej. sin asignar): el listado igual debe actualizarse.
     for (const item of this.comprasConBoletas) {
       for (const boleta of item.boletas) {
         if (this.esBoletaCancelada(boleta)) continue;
-        if (this.puedeAbrirVistaBoleta(boleta, item.compra) && !this.esBoletaUsada(boleta)) {
+        if (!this.esBoletaUsada(boleta)) {
           return true;
         }
       }
@@ -3300,8 +3668,7 @@ export class MisCompras implements OnInit, OnDestroy {
 
     for (const boleta of this.entradasCedidas) {
       if (this.esBoletaCancelada(boleta)) continue;
-      const compra = this.compraVistaParaBoletaCedida(boleta);
-      if (this.puedeAbrirVistaBoleta(boleta, compra) && !this.esBoletaUsada(boleta)) {
+      if (!this.esBoletaUsada(boleta)) {
         return true;
       }
     }
@@ -3317,16 +3684,35 @@ export class MisCompras implements OnInit, OnDestroy {
 
     if (coversEventumEnabled) {
       for (const item of this.boletasCover) {
-        if (!this.puedeAbrirQrCover(item)) continue;
         if (this.esBoletaCoverUsada(item.boleta)) continue;
         const acceso = String(item.boleta.estado_acceso || '').toLowerCase();
-        if (acceso === 'pendiente' || acceso === 'fuera' || acceso === 'dentro') {
+        if (acceso === 'pendiente' || acceso === 'fuera' || acceso === 'dentro' || !acceso) {
           return true;
         }
       }
     }
 
     return false;
+  }
+
+  private normalizeNotificacionMetadata(
+    raw: Record<string, unknown> | string | null | undefined
+  ): Record<string, unknown> {
+    if (!raw) {
+      return {};
+    }
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw) as unknown;
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          return parsed as Record<string, unknown>;
+        }
+      } catch {
+        return {};
+      }
+      return {};
+    }
+    return raw;
   }
 
   private patchBoletaEnEstadoLocal(
@@ -3451,6 +3837,19 @@ export class MisCompras implements OnInit, OnDestroy {
   private async aplicarCoverAccesoDesdeNotificacion(
     metadata: Record<string, unknown>
   ): Promise<void> {
+    const tipoNotif =
+      String(metadata['estado_acceso'] || '').toLowerCase() === 'fuera' ||
+      String(metadata['tipo'] || '').toLowerCase() === 'cover_salida_registrada'
+        ? 'cover-salida'
+        : 'cover';
+    // Preferir tipo explícito del caller vía metadata interno.
+    const tipoUi =
+      metadata['__toast_tipo'] === 'cover-salida' || metadata['__toast_tipo'] === 'cover'
+        ? (metadata['__toast_tipo'] as 'cover' | 'cover-salida')
+        : tipoNotif;
+
+    this.presentarIngresoSiModalCoverAbierta(tipoUi, metadata);
+
     if (this.aplicarCoverAccesoEnCaliente(metadata)) {
       return;
     }
@@ -3471,6 +3870,8 @@ export class MisCompras implements OnInit, OnDestroy {
   ): Promise<void> {
     const boletaId = Number(metadata['boleta_id'] ?? 0);
     if (!Number.isFinite(boletaId) || boletaId <= 0) {
+      // Sin id usable: recargar para no dejar la UI desfasada.
+      this.loadCompras({ background: true, resetPage: false });
       return;
     }
 
@@ -3478,6 +3879,9 @@ export class MisCompras implements OnInit, OnDestroy {
       estado: String(metadata['estado'] || 'usada').toLowerCase() as BoletaComprada['estado'],
       fecha_uso: metadata['fecha_uso'] as Date | string | undefined,
     };
+
+    // Cerrar QR + bienvenida aunque el evento llegue por poll/recarga y no por el handler realtime.
+    this.presentarIngresoSiModalBoletaAbierta(boletaId, metadata);
 
     if (this.patchBoletaEnEstadoLocal(boletaId, patch)) {
       return;
@@ -3533,6 +3937,9 @@ export class MisCompras implements OnInit, OnDestroy {
     const estado = String(metadata['estado'] || TipoEstadoItemProducto.ENTREGADO).toLowerCase();
     const fechaRedencion = metadata['fecha_redencion'] as Date | string | undefined;
 
+    // Cerrar QR + toast aunque el evento llegue por poll y no por realtime.
+    this.presentarIngresoSiModalProductoAbierta(compraProductoId, metadata);
+
     if (this.patchCompraProductoRedimidaEnEstadoLocal(compraProductoId, estado, fechaRedencion)) {
       return;
     }
@@ -3575,25 +3982,31 @@ export class MisCompras implements OnInit, OnDestroy {
 
   private async refrescarDesdeNotificacion(
     tipo: string,
-    metadata: Record<string, unknown> | null | undefined
+    metadata: Record<string, unknown> | string | null | undefined
   ): Promise<void> {
-    const meta = metadata ?? {};
+    const meta = this.normalizeNotificacionMetadata(metadata);
 
     if (tipo === 'entrada_validada') {
       await this.aplicarEntradaValidadaDesdeNotificacion(meta);
       this.reconstruirVistaTrasNotificacion();
+      this.sincronizarPollEscaneoDetalle();
+      // Recarga en background sin bloquear el cierre del QR / bienvenida.
+      void this.loadBoletasPorCompra({ background: true });
       return;
     }
 
     if (tipo === 'productos_redimidos') {
       await this.aplicarProductosRedimidosDesdeNotificacion(meta);
       this.reconstruirVistaTrasNotificacion();
+      this.sincronizarPollEscaneoDetalle();
       return;
     }
 
     if (tipo === 'cover_entrada_registrada' || tipo === 'cover_salida_registrada') {
+      meta['__toast_tipo'] = tipo === 'cover_salida_registrada' ? 'cover-salida' : 'cover';
       await this.aplicarCoverAccesoDesdeNotificacion(meta);
       this.reconstruirVistaTrasNotificacion();
+      this.sincronizarPollEscaneoDetalle();
       return;
     }
 
@@ -3601,7 +4014,7 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   private sincronizarRealtimeNotificaciones(): void {
-    const usuarioId = this.authService.getUsuario()?.id || null;
+    const usuarioId = this.authService.getUsuarioId();
     if (!usuarioId) {
       this.detenerRealtimeNotificaciones();
       return;
@@ -3620,7 +4033,7 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   private iniciarRealtimeNotificaciones(): void {
-    const usuarioId = this.authService.getUsuario()?.id || null;
+    const usuarioId = this.authService.getUsuarioId();
     if (!usuarioId || !this.tieneItemsPendientesRedencion()) return;
 
     this.detenerRealtimeNotificaciones();
@@ -3643,7 +4056,7 @@ export class MisCompras implements OnInit, OnDestroy {
               titulo?: string | null;
               mensaje?: string | null;
               tipo?: string | null;
-              metadata?: Record<string, unknown> | null;
+              metadata?: Record<string, unknown> | string | null;
             };
             const rowUsuarioId = Number(row?.usuario_id ?? 0);
             if (!Number.isFinite(rowUsuarioId) || rowUsuarioId !== usuarioId) {
@@ -3652,86 +4065,287 @@ export class MisCompras implements OnInit, OnDestroy {
             const titulo = String(row?.titulo || 'Actualizacion');
             const mensaje = String(row?.mensaje || 'Tu estado de compra cambio.');
             const tipo = String(row?.tipo || '').toLowerCase();
+            const metadata = this.normalizeNotificacionMetadata(row?.metadata);
             const esEntradaValidada = tipo === 'entrada_validada';
             const esProductoRedimido = tipo === 'productos_redimidos';
             const esCoverEntrada = tipo === 'cover_entrada_registrada';
             const esCoverSalida = tipo === 'cover_salida_registrada';
-            const esCoverAcceso = esCoverEntrada || esCoverSalida;
-            const metadataBoletaId = Number(row?.metadata?.['boleta_id'] ?? 0);
-            const metadataCompraProductoId = Number(row?.metadata?.['compra_producto_id'] ?? 0);
-            const qrBoletaCoincide =
-              esEntradaValidada &&
-              this.showBoletaModal &&
-              Number.isFinite(metadataBoletaId) &&
-              metadataBoletaId > 0 &&
-              this.boletaSeleccionada?.id === metadataBoletaId;
-            const qrProductoCoincide =
-              esProductoRedimido &&
-              this.showProductoQrModal &&
-              Number.isFinite(metadataCompraProductoId) &&
-              metadataCompraProductoId > 0 &&
-              this.productoFilaSeleccionada?.compra.id === metadataCompraProductoId;
-            const qrCoverAbiertoCoincide =
-              this.showCoverQrModal && this.coverQrAbiertoCoincideConNotificacion(row.metadata);
+            const esScanAcceso =
+              esEntradaValidada || esProductoRedimido || esCoverEntrada || esCoverSalida;
 
-            if (esCoverAcceso && row.metadata) {
-              this.aplicarCoverAccesoEnCaliente(row.metadata);
+            if (esCoverEntrada || esCoverSalida) {
+              this.aplicarCoverAccesoEnCaliente(metadata);
             }
 
-            const qrCoverCoincide = esCoverAcceso && qrCoverAbiertoCoincide;
-            const teniaQrAbierto = qrBoletaCoincide || qrProductoCoincide || qrCoverCoincide;
-
-            const boletaActual = this.boletaSeleccionada;
-            const compraActual = this.compraSeleccionada;
-            const siguienteBoleta =
-              qrBoletaCoincide && boletaActual
-                ? this.buscarSiguienteBoleta(boletaActual, compraActual)
-                : null;
-
-            const compraProductoRedimida =
-              esProductoRedimido && this.productoFilaSeleccionada?.compra
-                ? this.productoFilaSeleccionada.compra
-                : null;
-
-            if (qrBoletaCoincide) {
-              this.cerrarBoletaModal();
-            }
-            if (qrProductoCoincide) {
-              this.cerrarProductoQrModal();
-            }
-            if (qrCoverAbiertoCoincide) {
-              this.cerrarCoverQrModal();
-            }
-            if (teniaQrAbierto) {
-              if (esEntradaValidada) {
-                this.abrirMensajeIngresoDesdeNotificacion('entrada', row.metadata, siguienteBoleta);
-              } else if (esProductoRedimido) {
-                this.abrirMensajeIngresoDesdeNotificacion(
-                  'producto',
-                  row.metadata,
-                  null,
-                  compraProductoRedimida
-                );
-              } else if (esCoverEntrada) {
-                this.abrirMensajeIngresoDesdeNotificacion('cover', row.metadata);
-              } else if (esCoverSalida) {
-                this.abrirMensajeIngresoDesdeNotificacion('cover-salida', row.metadata);
+            const mostroIngreso = this.presentarIngresoSiModalQrAbierta(tipo, metadata);
+            if (!mostroIngreso) {
+              if (esScanAcceso) {
+                void this.alertService.snackbar(`${titulo}. ${mensaje}`, { timerMs: 2800 });
+              } else {
+                void this.alertService.snackbar(`${titulo}. ${mensaje}`);
               }
             }
 
-            const omitirToast =
-              esEntradaValidada || esProductoRedimido || esCoverEntrada || esCoverSalida;
-            if (!omitirToast) {
-              void this.alertService.snackbar(`${titulo}. ${mensaje}`);
-            }
-
-            void this.refrescarDesdeNotificacion(tipo, row.metadata).finally(() => {
+            void this.refrescarDesdeNotificacion(tipo, metadata).finally(() => {
               this.cdr.detectChanges();
             });
           });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.info('[MisCompras] Realtime notificaciones suscrito');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('[MisCompras] Realtime notificaciones:', status);
+          setTimeout(() => {
+            if (this.tieneItemsPendientesRedencion() && this.realtimeUsuarioIdActual === usuarioId) {
+              this.iniciarRealtimeNotificaciones();
+            }
+          }, 2500);
+        }
+      });
+  }
+
+  private sincronizarPollEscaneoDetalle(): void {
+    const qrAbierto =
+      this.showBoletaModal || this.showProductoQrModal || this.showCoverQrModal;
+    const debePoll =
+      qrAbierto ||
+      (!!this.eventoDetalleKey &&
+        !this.vistaActividad &&
+        this.tieneItemsPendientesRedencion());
+
+    if (!debePoll) {
+      this.detenerPollEscaneoDetalle();
+      return;
+    }
+
+    const intervaloDeseado = qrAbierto
+      ? this.pollEscaneoRapidoMs
+      : this.pollEscaneoIntervalMs;
+
+    if (this.pollEscaneoTimer && this.pollEscaneoIntervalActualMs === intervaloDeseado) {
+      return;
+    }
+
+    this.detenerPollEscaneoDetalle();
+    this.pollEscaneoIntervalActualMs = intervaloDeseado;
+    this.pollEscaneoTimer = setInterval(() => {
+      void this.pollEscaneoDetalleTick();
+    }, intervaloDeseado);
+
+    // Primer chequeo inmediato al abrir QR / entrar al detalle.
+    void this.pollEscaneoDetalleTick();
+  }
+
+  private detenerPollEscaneoDetalle(): void {
+    if (this.pollEscaneoTimer) {
+      clearInterval(this.pollEscaneoTimer);
+      this.pollEscaneoTimer = null;
+    }
+    this.pollEscaneoIntervalActualMs = 0;
+    this.pollEscaneoInFlight = false;
+  }
+
+  private compraProductoEstaRedimida(compra: CompraProducto | null | undefined): boolean {
+    const items = compra?.compras_productos_items || [];
+    if (!items.length) {
+      return false;
+    }
+    return items.every((item) => this.esProductoRedimido(item));
+  }
+
+  private async pollEscaneoDetalleTick(): Promise<void> {
+    if (this.pollEscaneoInFlight) {
+      return;
+    }
+    const qrAbierto =
+      this.showBoletaModal || this.showProductoQrModal || this.showCoverQrModal;
+    if (
+      !qrAbierto &&
+      (!this.eventoDetalleKey || this.vistaActividad || !this.tieneItemsPendientesRedencion())
+    ) {
+      this.detenerPollEscaneoDetalle();
+      return;
+    }
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      return;
+    }
+
+    this.pollEscaneoInFlight = true;
+    try {
+      let cambio = false;
+      let mostroIngreso = false;
+
+      if (this.showProductoQrModal && this.productoFilaSeleccionada?.compra.id) {
+        // Con QR de producto abierto: solo ese pedido.
+        const compraId = this.productoFilaSeleccionada.compra.id;
+        try {
+          const fresh = await this.comprasProductoService.getCompraById(compraId);
+          if (this.compraProductoEstaRedimida(fresh)) {
+            const meta: Record<string, unknown> = {
+              compra_producto_id: fresh.id,
+              evento_id: fresh.evento_id,
+              numero_pedido: fresh.numero_pedido,
+              estado: TipoEstadoItemProducto.ENTREGADO,
+            };
+            if (this.presentarIngresoSiModalProductoAbierta(fresh.id, meta)) {
+              mostroIngreso = true;
+            }
+            if (
+              this.patchCompraProductoRedimidaEnEstadoLocal(
+                fresh.id,
+                TipoEstadoItemProducto.ENTREGADO
+              )
+            ) {
+              cambio = true;
+            }
+          }
+        } catch (err) {
+          console.warn('[MisCompras] Poll producto falló:', err);
+        }
+      } else if (this.showBoletaModal && this.boletaSeleccionada?.id) {
+        // Con QR de entrada abierto: solo esa boleta.
+        const frescas = await this.boletasService.getBoletasByIds([
+          this.boletaSeleccionada.id,
+        ]);
+        for (const fresh of frescas || []) {
+          if (String(fresh.estado || '').toLowerCase() !== 'usada') {
+            continue;
+          }
+          const meta: Record<string, unknown> = {
+            boleta_id: fresh.id,
+            compra_id: fresh.compra_id,
+            codigo_qr: fresh.codigo_qr,
+            estado: fresh.estado,
+            fecha_uso: fresh.fecha_uso,
+            evento_id: this.eventoDetalleKey ? Number(this.eventoDetalleKey) : undefined,
+          };
+          if (this.presentarIngresoSiModalBoletaAbierta(fresh.id, meta)) {
+            mostroIngreso = true;
+          }
+          if (
+            this.patchBoletaEnEstadoLocal(fresh.id, {
+              estado: fresh.estado,
+              fecha_uso: fresh.fecha_uso,
+            })
+          ) {
+            cambio = true;
+          }
+        }
+      } else if (this.eventoDetalleKey && !this.vistaActividad) {
+        // Sin QR abierto: pedidos + boletas pendientes del evento.
+        for (const compraId of this.idsComprasProductoPendientesEventoDetalle()) {
+          try {
+            const fresh = await this.comprasProductoService.getCompraById(compraId);
+            if (!this.compraProductoEstaRedimida(fresh)) {
+              continue;
+            }
+            const meta: Record<string, unknown> = {
+              compra_producto_id: fresh.id,
+              evento_id: fresh.evento_id,
+              numero_pedido: fresh.numero_pedido,
+              estado: TipoEstadoItemProducto.ENTREGADO,
+            };
+            if (this.presentarIngresoSiModalProductoAbierta(fresh.id, meta)) {
+              mostroIngreso = true;
+            }
+            if (
+              this.patchCompraProductoRedimidaEnEstadoLocal(
+                fresh.id,
+                TipoEstadoItemProducto.ENTREGADO
+              )
+            ) {
+              cambio = true;
+            }
+          } catch (err) {
+            console.warn('[MisCompras] Poll producto detalle falló:', err);
+          }
+        }
+
+        const boletaIds = this.idsBoletasPendientesEventoDetalle();
+        if (boletaIds.length) {
+          const frescas = await this.boletasService.getBoletasByIds(boletaIds);
+          for (const fresh of frescas || []) {
+            if (String(fresh.estado || '').toLowerCase() !== 'usada') {
+              continue;
+            }
+            const meta: Record<string, unknown> = {
+              boleta_id: fresh.id,
+              compra_id: fresh.compra_id,
+              codigo_qr: fresh.codigo_qr,
+              estado: fresh.estado,
+              fecha_uso: fresh.fecha_uso,
+              evento_id: Number(this.eventoDetalleKey),
+            };
+            if (this.presentarIngresoSiModalBoletaAbierta(fresh.id, meta)) {
+              mostroIngreso = true;
+            }
+            if (
+              this.patchBoletaEnEstadoLocal(fresh.id, {
+                estado: fresh.estado,
+                fecha_uso: fresh.fecha_uso,
+              })
+            ) {
+              cambio = true;
+            }
+          }
+        }
+      }
+
+      if (cambio) {
+        this.reconstruirVistaTrasNotificacion();
+        if (!mostroIngreso && !this.showMensajeIngresoModal) {
+          void this.alertService.snackbar(
+            'Actualización en puerta. Tu acceso fue validado.',
+            { timerMs: 2800 }
+          );
+        }
+        this.cdr.detectChanges();
+      }
+
+      this.sincronizarPollEscaneoDetalle();
+    } catch (err) {
+      console.warn('[MisCompras] Poll escaneo detalle falló:', err);
+    } finally {
+      this.pollEscaneoInFlight = false;
+    }
+  }
+
+  private idsComprasProductoPendientesEventoDetalle(): number[] {
+    const detalle = this.eventoDetalleBoletas();
+    if (!detalle) {
+      return [];
+    }
+    const ids: number[] = [];
+    for (const compra of detalle.comprasProductos || []) {
+      if ((compra.estado_pago || '').toLowerCase() !== TipoEstadoPago.COMPLETADO) {
+        continue;
+      }
+      const items = compra.compras_productos_items || [];
+      if (items.some((item) => this.esProductoComprado(item))) {
+        ids.push(compra.id);
+      }
+    }
+    return ids;
+  }
+
+  private idsBoletasPendientesEventoDetalle(): number[] {
+    const detalle = this.eventoDetalleBoletas();
+    if (!detalle) {
+      return [];
+    }
+    const ids: number[] = [];
+    for (const tipo of detalle.tipos || []) {
+      for (const item of tipo.boletas || []) {
+        const boleta = item.boleta;
+        if (!boleta || this.esBoletaCancelada(boleta) || this.esBoletaUsada(boleta)) {
+          continue;
+        }
+        ids.push(boleta.id);
+      }
+    }
+    return ids;
   }
 
   private suscribirReinicioRealtimePorAuth(): void {
@@ -3927,6 +4541,7 @@ export class MisCompras implements OnInit, OnDestroy {
 
   getEstadoClass(estado?: string): string {
     if (estado === 'completado' || estado === 'confirmada') return 'badge-success';
+    if (estado === 'usada') return 'badge-info';
     if (estado === 'pendiente') return 'badge-warning';
     if (estado === 'cancelada' || estado === 'fallido') return 'badge-danger';
     return 'badge-info';
@@ -4079,6 +4694,7 @@ export class MisCompras implements OnInit, OnDestroy {
     const debeGenerarQr = compra.estado_pago === 'completado' && !this.esBoletaUsada(boleta) && this.esDiaEventoBoleta(boleta, compra);
     this.loadingQR = debeGenerarQr;
     this.showBoletaModal = true;
+    this.sincronizarPollEscaneoDetalle();
     this.cdr.detectChanges();
 
     // Generar QR solo entre fecha_inicio y fecha_fin del evento (días locales) y mientras la boleta no haya sido usada.
@@ -4140,6 +4756,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.eventoSeleccionado = null;
     this.tipoBoletaSeleccionado = null;
     this.qrCodeUrl = '';
+    this.sincronizarPollEscaneoDetalle();
     this.cdr.detectChanges();
   }
 

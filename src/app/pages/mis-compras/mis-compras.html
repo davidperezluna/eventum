@@ -1390,99 +1390,38 @@
   </ng-container>
 </div>
 
-<!-- Modal QR cover -->
-<div class="modal-overlay" *ngIf="showCoverQrModal && coverBoletaSeleccionada">
-  <div class="modal-content boleta-modal" (click)="$event.stopPropagation()">
-    <button class="modal-close" (click)="cerrarCoverQrModal()"><span class="material-icons">close</span></button>
-    <div class="boleta-preview">
-      <div class="boleta-header-preview">
-        <h2>{{ coverBoletaSeleccionada.boleta.lugar_nombre }}</h2>
-        <p class="boleta-tipo">{{ coverBoletaSeleccionada.boleta.tipo_cover_nombre }}</p>
-        <p class="mc-cover-qr-acceso-hint" *ngIf="coverAccesoUtilizadoEnPuerta(coverBoletaSeleccionada.boleta)">
-          {{ hintQrCoverAcceso(coverBoletaSeleccionada) }}
-        </p>
-      </div>
-      <div class="boleta-qr-preview" *ngIf="loadingCoverQR">
-        <div class="qr-loading">
-          <div class="spinner"></div>
-          <p>Generando código QR…</p>
-        </div>
-      </div>
-      <div class="boleta-qr-preview" *ngIf="!loadingCoverQR && coverQrCodeUrl">
-        <img [src]="coverQrCodeUrl" alt="QR cover" class="qr-image">
-      </div>
-      <div class="boleta-qr-preview" *ngIf="!loadingCoverQR && !coverQrCodeUrl">
-        <div class="qr-pending">
-          <span class="material-icons">schedule</span>
-          <p>{{ mensajeHabilitacionQrCover(coverBoletaSeleccionada.boleta) }}</p>
-        </div>
-      </div>
-      <div class="boleta-info-preview">
-        <div class="info-row info-row--stack">
-          <span class="info-label">Noche</span>
-          <span class="info-value">{{ fechaSesionCoverBoleta(coverBoletaSeleccionada.boleta) }}</span>
-        </div>
-        <div class="info-row info-row--stack">
-          <span class="info-label">Horario</span>
-          <span class="info-value">{{ horarioSesionCoverBoleta(coverBoletaSeleccionada.boleta) }}</span>
-        </div>
-        <div class="info-row info-row--stack">
-          <span class="info-label">Compra</span>
-          <span class="info-value info-value--code">{{ coverBoletaSeleccionada.compra.numero_transaccion }}</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- Modal QR cover (mismo sheet que entradas / productos) -->
+<app-qr-acceso-modal
+  [visible]="showCoverQrModal && !!coverBoletaSeleccionada"
+  [vista]="vistaModalCover()"
+  [kicker]="'TU COVER'"
+  [title]="coverBoletaSeleccionada?.boleta?.lugar_nombre || 'Cover'"
+  [chip]="coverBoletaSeleccionada?.boleta?.tipo_cover_nombre || ''"
+  [blockedIcon]="iconoBloqueoModalCover()"
+  [blockedTitle]="tituloBloqueoModalCover()"
+  [blockedMessage]="mensajeBloqueoModalCover()"
+  [blockedHint]="hintBloqueoModalCover()"
+  [qrUrl]="coverQrCodeUrl"
+  [loadingQr]="loadingCoverQR"
+  [rows]="filasModalCover()"
+  (closed)="cerrarCoverQrModal()"
+></app-qr-acceso-modal>
 
-<!-- Modal QR de producto -->
-<div class="modal-overlay" *ngIf="showProductoQrModal && productoFilaSeleccionada">
-  <div class="modal-content boleta-modal" (click)="$event.stopPropagation()">
-    <button class="modal-close" (click)="cerrarProductoQrModal()">
-      <span class="material-icons">close</span>
-    </button>
-
-    <div class="boleta-preview">
-      <div class="boleta-header-preview">
-        <h2>Pedido {{ referenciaPedidoCorta(productoFilaSeleccionada.compra.numero_pedido) }}</h2>
-        <p class="boleta-tipo">Retiro en evento</p>
-      </div>
-
-      <div class="boleta-qr-preview" *ngIf="loadingProductoQR">
-        <div class="qr-loading">
-          <div class="spinner"></div>
-          <p>Generando código QR...</p>
-        </div>
-      </div>
-
-      <div class="boleta-qr-preview" *ngIf="!loadingProductoQR && productoQrCodeUrl">
-        <img [src]="productoQrCodeUrl" alt="Código QR producto" class="qr-image">
-      </div>
-
-      <div class="boleta-qr-preview" *ngIf="!loadingProductoQR && !productoQrCodeUrl">
-        <div class="qr-pending">
-          <span class="material-icons">shield</span>
-          <p>El código QR estará disponible el día del evento.</p>
-        </div>
-      </div>
-
-      <div class="boleta-info-preview">
-        <div class="info-row info-row--stack" *ngIf="detalleProductosCompra(productoFilaSeleccionada.compra).length > 0">
-          <span class="info-label">Productos</span>
-          <div class="info-value info-value--list">
-            <span *ngFor="let p of detalleProductosCompra(productoFilaSeleccionada.compra)">
-              {{ p.nombre }} x{{ p.cantidad }}
-            </span>
-          </div>
-        </div>
-        <div class="info-row info-row--stack">
-          <span class="info-label">Pedido</span>
-          <span class="info-value info-value--code">{{ referenciaPedidoCorta(productoFilaSeleccionada.compra.numero_pedido) }}</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- Modal QR producto (mismo sheet / flujo que entradas) -->
+<app-qr-acceso-modal
+  [visible]="showProductoQrModal && !!productoFilaSeleccionada"
+  [vista]="vistaModalProducto()"
+  [kicker]="'TU PEDIDO'"
+  [title]="tituloModalProducto()"
+  [chip]="'Retiro en evento'"
+  [blockedIcon]="'shield'"
+  [blockedTitle]="'QR aún no disponible'"
+  [blockedMessage]="'El código QR estará disponible el día del evento.'"
+  [qrUrl]="productoQrCodeUrl"
+  [loadingQr]="loadingProductoQR"
+  [listSection]="listaModalProducto()"
+  (closed)="cerrarProductoQrModal()"
+></app-qr-acceso-modal>
 
 <app-acceso-puerta-toast
   [visible]="showMensajeIngresoModal"
@@ -1709,89 +1648,25 @@
   </div>
 </div>
 
-<!-- Modal de vista previa de boleta -->
-<div class="modal-overlay" *ngIf="showBoletaModal">
-  <div class="modal-content boleta-modal" (click)="$event.stopPropagation()">
-    <button class="modal-close" (click)="cerrarBoletaModal()">
-      <span class="material-icons">close</span>
-    </button>
-
-    <div class="boleta-preview" *ngIf="boletaSeleccionada">
-      <!-- Encabezado -->
-      <div class="boleta-header-preview">
-        <h2>{{ eventoSeleccionado?.titulo || eventoVistaBoleta(boletaSeleccionada, compraSeleccionada)?.titulo || 'Evento' }}</h2>
-        <p class="boleta-tipo">{{ tipoBoletaSeleccionado?.nombre || boletaSeleccionada.tipo_boleta_meta?.nombre || '' }}</p>
-      </div>
-
-      <!-- QR Code (entre fecha_inicio y fecha_fin del evento; si la boleta no fue usada) -->
-        <div class="boleta-qr-preview" *ngIf="compraSeleccionada?.estado_pago === 'completado' && !esBoletaUsada(boletaSeleccionada) && esDiaEventoBoleta(boletaSeleccionada, compraSeleccionada)">
-        <div *ngIf="loadingQR" class="qr-loading">
-          <div class="spinner"></div>
-          <p>Generando código QR...</p>
-        </div>
-        <img *ngIf="qrCodeUrl && !loadingQR" [src]="qrCodeUrl" alt="Código QR" class="qr-image">
-      </div>
-        <div class="boleta-qr-preview" *ngIf="compraSeleccionada?.estado_pago === 'completado' && !esBoletaUsada(boletaSeleccionada) && !esDiaEventoBoleta(boletaSeleccionada, compraSeleccionada)">
-        <div class="qr-pending">
-          <span class="material-icons">shield</span>
-          <p>{{ mensajeHabilitacionQrBoleta(boletaSeleccionada, compraSeleccionada) }}</p>
-        </div>
-      </div>
-        <div class="boleta-qr-preview" *ngIf="compraSeleccionada?.estado_pago === 'completado' && esBoletaUsada(boletaSeleccionada)">
-        <div class="qr-pending">
-          <span class="material-icons">check_circle</span>
-          <p>Esta boleta ya fue usada. El código QR y la impresión PDF ya no están disponibles.</p>
-        </div>
-      </div>
-        <div class="boleta-qr-preview" *ngIf="compraSeleccionada?.estado_pago !== 'completado'">
-        <div class="qr-pending">
-          <span class="material-icons">lock</span>
-          <p>El código QR estará disponible una vez que el pago sea completado</p>
-        </div>
-      </div>
-
-      <!-- Información -->
-      <div class="boleta-info-preview">
-        <div class="info-row info-row--stack" *ngIf="(eventoSeleccionado || eventoVistaBoleta(boletaSeleccionada, compraSeleccionada))?.fecha_inicio">
-          <span class="info-label">Fecha</span>
-          <span class="info-value">{{ fechaModalBoleta(boletaSeleccionada, compraSeleccionada) }}</span>
-        </div>
-
-        <div class="info-row info-row--stack" *ngIf="(eventoSeleccionado || eventoVistaBoleta(boletaSeleccionada, compraSeleccionada))?.fecha_inicio">
-          <span class="info-label">Hora</span>
-          <span class="info-value">{{ horaModalBoleta(boletaSeleccionada, compraSeleccionada) }}</span>
-        </div>
-
-        <div class="info-row info-row--stack" *ngIf="lugarVistaBoleta(boletaSeleccionada, compraSeleccionada) || eventoSeleccionado?.lugar">
-          <span class="info-label">Lugar</span>
-          <span class="info-value">{{ (eventoSeleccionado?.lugar || lugarVistaBoleta(boletaSeleccionada, compraSeleccionada))?.nombre }}</span>
-        </div>
-
-        <div class="info-row info-row--stack">
-          <span class="info-label">Asistente</span>
-          <span class="info-value">{{ nombreAsistenteBoleta(boletaSeleccionada) }}</span>
-        </div>
-
-        <div class="info-row info-row--stack" *ngIf="documentoAsistenteBoleta(boletaSeleccionada) !== '—'">
-          <span class="info-label">Documento</span>
-          <span class="info-value">{{ documentoAsistenteBoleta(boletaSeleccionada) }}</span>
-        </div>
-
-        <div class="info-row info-row--stack" *ngIf="compraSeleccionada?.numero_transaccion">
-          <span class="info-label">Compra</span>
-          <span class="info-value info-value--code">{{ compraSeleccionada?.numero_transaccion }}</span>
-        </div>
-      </div>
-
-      <div class="boleta-actions-preview" *ngIf="!esBoletaUsada(boletaSeleccionada)">
-        <button type="button" class="boleta-cta-btn" (click)="imprimirBoletaPDF(boletaSeleccionada, compraSeleccionada!)">
-          <span class="material-icons">print</span>
-          Imprimir PDF
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- Modal QR entrada (sheet compartido con productos / covers) -->
+<app-qr-acceso-modal
+  [visible]="showBoletaModal && !!boletaSeleccionada"
+  [vista]="vistaModalBoleta()"
+  [kicker]="'TU ENTRADA'"
+  [title]="tituloModalBoleta()"
+  [chip]="chipModalBoleta()"
+  [blockedIcon]="iconoBloqueoModalBoleta()"
+  [blockedTitle]="tituloBloqueoModalBoleta()"
+  [blockedMessage]="mensajeBloqueoModalBoleta()"
+  [blockedHint]="hintBloqueoModalBoleta()"
+  [qrUrl]="qrCodeUrl"
+  [loadingQr]="loadingQR"
+  [rows]="filasModalBoleta()"
+  [secondaryActionLabel]="vistaModalBoleta() === 'ready' ? 'Imprimir PDF' : ''"
+  [secondaryActionIcon]="'print'"
+  (closed)="cerrarBoletaModal()"
+  (secondaryAction)="onImprimirPdfModalBoleta()"
+></app-qr-acceso-modal>
 
 <!-- Template oculto para impresión/PDF -->
 <div id="ticket-template" class="ticket-print-container" *ngIf="boletaSeleccionada && !esBoletaUsada(boletaSeleccionada) && eventoSeleccionado && tipoBoletaSeleccionado">
