@@ -3573,6 +3573,12 @@
 }
 
 /* Desplegable compacto: asignación palco */
+.boleta-asignar-palco,
+.asignar-palco-details,
+.asignar-palco-panel {
+  overflow-anchor: none;
+}
+
 .asignar-palco-details {
   border-radius: 12px;
   border: 1px solid #e2e8f0;

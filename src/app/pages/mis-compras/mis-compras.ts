@@ -1787,10 +1787,35 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   toggleAsignarPanel(boletaId: number, event: Event): void {
+    event.preventDefault();
     event.stopPropagation();
+
+    // En móvil, al montar/desmontar el panel el navegador reancora el scroll y “salta” arriba.
+    const win = typeof window !== 'undefined' ? window : null;
+    const scrollY = win?.scrollY ?? 0;
+    const target = event.currentTarget;
+    if (target instanceof HTMLElement) {
+      target.blur();
+    }
+
     this.asignarPanelAbiertoBoletaId =
       this.asignarPanelAbiertoBoletaId === boletaId ? null : boletaId;
     this.cdr.detectChanges();
+
+    if (!win) return;
+    const restore = () => {
+      if (Math.abs(win.scrollY - scrollY) > 1) {
+        win.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
+      }
+    };
+    restore();
+    requestAnimationFrame(() => {
+      restore();
+      requestAnimationFrame(restore);
+    });
+    // Algunos WebKit/Chromium móvil reajustan el scroll tras el paint.
+    setTimeout(restore, 0);
+    setTimeout(restore, 50);
   }
 
   onClickTarjetaBoleta(boleta: BoletaComprada, compra: Compra, event: Event): void {
