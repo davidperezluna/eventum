@@ -183,19 +183,18 @@ export class DashboardEventos implements OnInit, OnDestroy {
   }
 
   async loadEventos(_options?: { background?: boolean }) {
-    // Para el selector de eventos, no necesitamos todos, solo los activos y publicados
-    // Reducir el límite y optimizar la consulta
+    // Selector: todos los eventos (incl. finalizados); solo filtra por organizador si aplica.
     const filters: any = {
-      limit: 500, // Reducido de 1000
+      limit: 500,
       page: 1,
-      activo: true,
-      estado: 'publicado'
+      sortBy: 'fecha_inicio',
+      sortOrder: 'desc',
     };
-    
+
     if (this.esOrganizador && this.organizadorId) {
       filters.organizador_id = this.organizadorId;
     }
-    
+
     try {
       const response = await this.eventosService.getEventos(filters);
       if (this.esOrganizador && this.organizadorId) {
@@ -207,9 +206,12 @@ export class DashboardEventos implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     } catch (err) {
       console.error('Error cargando eventos:', err);
-      // Si falla, intentar con menos eventos
       try {
-        const response = await this.eventosService.getEventos({ limit: 100, page: 1, activo: true });
+        const fallback: any = { limit: 500, page: 1, sortBy: 'fecha_inicio', sortOrder: 'desc' };
+        if (this.esOrganizador && this.organizadorId) {
+          fallback.organizador_id = this.organizadorId;
+        }
+        const response = await this.eventosService.getEventos(fallback);
         if (this.esOrganizador && this.organizadorId) {
           this.eventos = (response.data || []).filter(e => e.organizador_id === this.organizadorId);
         } else {
