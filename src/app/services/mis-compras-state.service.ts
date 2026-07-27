@@ -48,7 +48,7 @@ export interface MisComprasState {
   page: number;
   total: number;
   totalPages: number;
-  tabBoletasDetalle: 'sin-usar' | 'usadas' | 'sin-asignar';
+  tabBoletasDetalle: 'sin-usar' | 'usadas';
   eventoExpandidoKey: string | null;
   eventoDetalleKey: string | null;
   promoProductos: PromoProductosMisCompras | null;
@@ -73,7 +73,7 @@ interface MisComprasPublicState {
   page: number;
   total: number;
   totalPages: number;
-  tabBoletasDetalle: 'sin-usar' | 'usadas' | 'sin-asignar';
+  tabBoletasDetalle: 'sin-usar' | 'usadas';
   eventoExpandidoKey: string | null;
   eventoDetalleKey: string | null;
   promoProductos: PromoProductosMisCompras | null;

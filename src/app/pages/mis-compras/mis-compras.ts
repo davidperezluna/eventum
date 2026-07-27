@@ -69,9 +69,6 @@ import {
   RESUMEN_TRASLADO_ENTRADA_PUNTOS,
   RESUMEN_TRASLADO_ENTRADA_SUBTITULO,
   RESUMEN_TRASLADO_ENTRADA_TITULO,
-  RESUMEN_YO_ASISTO_PUNTOS,
-  RESUMEN_YO_ASISTO_SUBTITULO,
-  RESUMEN_YO_ASISTO_TITULO,
 } from '../../constants/traslados.constants';
 
 interface BoletaConCompra {
@@ -187,7 +184,7 @@ export class MisCompras implements OnInit, OnDestroy {
   eventosConBoletas: EventoBoletasGrupo[] = [];
   eventoExpandidoKey: string | null = null;
   eventoDetalleKey: string | null = null;
-  tabBoletasDetalle: 'sin-usar' | 'usadas' | 'sin-asignar' = 'sin-usar';
+  tabBoletasDetalle: 'sin-usar' | 'usadas' = 'sin-usar';
   tabCoversDetalle: 'sin-usar' | 'en-curso' | 'usadas' = 'sin-usar';
   tabEventoDetalle: 'entradas' | 'productos' = 'entradas';
   tabProductosDetalle: 'compradas' | 'redimidas' = 'compradas';
@@ -276,14 +273,9 @@ export class MisCompras implements OnInit, OnDestroy {
   trasladoACancelar: TrasladoBoleta | null = null;
   cancelandoTraslado = false;
 
-  showYoAsistoModal = false;
-  yoAsistoBoleta: BoletaComprada | null = null;
-  yoAsistoCompra: Compra | null = null;
 
-  rellenarPerfilBoletaId: number | null = null;
-  /** Error visible junto al panel de asignación (además del modal SweetAlert). */
+  /** Error visible junto al botón de envío por correo. */
   asignacionError: { boletaId: number; mensaje: string } | null = null;
-  asignarPanelAbiertoBoletaId: number | null = null;
 
   /** Ruta `/mis-compras/actividad`: solo trazabilidad de traslados. */
   vistaActividad = false;
@@ -994,10 +986,6 @@ export class MisCompras implements OnInit, OnDestroy {
     return this.esTrasladoModalCover ? RESUMEN_TRASLADO_COVER_PUNTOS : RESUMEN_TRASLADO_ENTRADA_PUNTOS;
   }
 
-  readonly resumenYoAsistoTitulo = RESUMEN_YO_ASISTO_TITULO;
-  readonly resumenYoAsistoSubtitulo = RESUMEN_YO_ASISTO_SUBTITULO;
-  readonly resumenYoAsistoPuntos = RESUMEN_YO_ASISTO_PUNTOS;
-
   abrirModalCancelarTraslado(t: TrasladoBoleta): void {
     this.trasladoACancelar = t;
     this.showCancelarTrasladoModal = true;
@@ -1223,11 +1211,10 @@ export class MisCompras implements OnInit, OnDestroy {
 
   mostrarTabBoletas(
     grupo: EventoBoletasGrupo | null | undefined,
-    tab: 'sin-usar' | 'sin-asignar' | 'usadas'
+    tab: 'sin-usar' | 'usadas'
   ): boolean {
     if (!grupo) return false;
     if (tab === 'sin-usar') return (grupo.totalSinUsar ?? 0) > 0;
-    if (tab === 'sin-asignar') return (grupo.totalSinAsignar ?? 0) > 0;
     return (grupo.totalUsadas ?? 0) > 0;
   }
 
@@ -1263,13 +1250,12 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   private normalizarTabBoletasDetalle(detalle: EventoBoletasGrupo): void {
+    if ((this.tabBoletasDetalle as string) === 'sin-asignar') {
+      this.tabBoletasDetalle = 'sin-usar';
+    }
     if (this.mostrarTabBoletas(detalle, this.tabBoletasDetalle)) return;
     if (this.mostrarTabBoletas(detalle, 'sin-usar')) {
       this.tabBoletasDetalle = 'sin-usar';
-      return;
-    }
-    if (this.mostrarTabBoletas(detalle, 'sin-asignar')) {
-      this.tabBoletasDetalle = 'sin-asignar';
       return;
     }
     this.tabBoletasDetalle = 'usadas';
@@ -2127,7 +2113,6 @@ export class MisCompras implements OnInit, OnDestroy {
 
   boletaTarjetaAbreModal(boleta: BoletaComprada, compra: Compra): boolean {
     if (this.esBoletaUsada(boleta) || this.esBoletaCancelada(boleta)) return false;
-    if (!this.tieneAsistenteRegistrado(boleta)) return false;
     return this.puedeAbrirVistaBoleta(boleta, compra);
   }
 
@@ -2143,42 +2128,6 @@ export class MisCompras implements OnInit, OnDestroy {
     return !!el?.closest(
       'button, a, input, select, textarea, label, .boleta-asignar-palco, .boleta-actions, .boleta-traslado-saliente'
     );
-  }
-
-  isAsignarPanelAbierto(boletaId: number): boolean {
-    return this.asignarPanelAbiertoBoletaId === boletaId;
-  }
-
-  toggleAsignarPanel(boletaId: number, event: Event): void {
-    event.preventDefault();
-    event.stopPropagation();
-
-    // En móvil, al montar/desmontar el panel el navegador reancora el scroll y “salta” arriba.
-    const win = typeof window !== 'undefined' ? window : null;
-    const scrollY = win?.scrollY ?? 0;
-    const target = event.currentTarget;
-    if (target instanceof HTMLElement) {
-      target.blur();
-    }
-
-    this.asignarPanelAbiertoBoletaId =
-      this.asignarPanelAbiertoBoletaId === boletaId ? null : boletaId;
-    this.cdr.detectChanges();
-
-    if (!win) return;
-    const restore = () => {
-      if (Math.abs(win.scrollY - scrollY) > 1) {
-        win.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
-      }
-    };
-    restore();
-    requestAnimationFrame(() => {
-      restore();
-      requestAnimationFrame(restore);
-    });
-    // Algunos WebKit/Chromium móvil reajustan el scroll tras el paint.
-    setTimeout(restore, 0);
-    setTimeout(restore, 50);
   }
 
   onClickTarjetaBoleta(boleta: BoletaComprada, compra: Compra, event: Event): void {
@@ -2831,16 +2780,12 @@ export class MisCompras implements OnInit, OnDestroy {
 
       const estaEnTraslado = this.tieneTrasladoSalienteActivo(boleta.id);
       const estaUsada = this.esBoletaUsada(boleta);
-      const estaAsignada = this.tieneAsistenteRegistrado(boleta);
       grupoTipo.boletas.push({ compra, boleta, esCedida });
       grupoTipo.totalBoletas += 1;
       grupoEvento.totalBoletas += 1;
       if (estaUsada) {
         grupoTipo.totalUsadas += 1;
         grupoEvento.totalUsadas += 1;
-      } else if (!estaAsignada) {
-        grupoTipo.totalSinAsignar += 1;
-        grupoEvento.totalSinAsignar += 1;
       } else {
         grupoTipo.totalSinUsar += 1;
         grupoEvento.totalSinUsar += 1;
@@ -3069,10 +3014,8 @@ export class MisCompras implements OnInit, OnDestroy {
         ...tipo,
         boletas: tipo.boletas.filter((item) => {
           const usada = this.esBoletaUsada(item.boleta);
-          const asignada = this.tieneAsistenteRegistrado(item.boleta);
           if (this.tabBoletasDetalle === 'usadas') return usada;
-          if (this.tabBoletasDetalle === 'sin-asignar') return !usada && !asignada;
-          return !usada && asignada;
+          return !usada;
         })
       }))
       .filter((tipo) => tipo.boletas.length > 0);
@@ -3129,134 +3072,9 @@ export class MisCompras implements OnInit, OnDestroy {
   puedeAsignarEntradaPorCorreoPalco(boleta: BoletaComprada, compra: Compra): boolean {
     if (compra.estado_pago !== 'completado') return false;
     if (!this.esTitularBoleta(boleta, compra)) return false;
-    if (!this.requiereRegistroAsistentePalcoPosterior(boleta)) return false;
     if (this.esBoletaUsada(boleta)) return false;
     if (this.tieneTrasladoSalienteActivo(boleta.id)) return false;
     return true;
-  }
-
-  private eventoIdDeBoleta(boleta: BoletaComprada, compra: Compra): number | null {
-    const cid = compra.evento_id;
-    if (cid != null && cid > 0) return cid;
-    const eid = boleta.evento?.id;
-    if (eid != null && eid > 0) return eid;
-    return null;
-  }
-
-  otraBoletaMismoEventoTitularYaConAsistente(boleta: BoletaComprada, compra: Compra): boolean {
-    const eid = this.eventoIdDeBoleta(boleta, compra);
-    if (eid == null) return false;
-
-    const esOtraConAsistente = (other: BoletaComprada, otherCompra: Compra): boolean => {
-      if (other.id === boleta.id) return false;
-      if (this.eventoIdDeBoleta(other, otherCompra) !== eid) return false;
-      if (!this.esTitularBoleta(other, otherCompra)) return false;
-      return this.tieneAsistenteRegistrado(other);
-    };
-
-    for (const row of this.comprasConBoletas) {
-      for (const o of row.boletas) {
-        if (esOtraConAsistente(o, row.compra)) return true;
-      }
-    }
-    for (const o of this.entradasCedidas) {
-      if (esOtraConAsistente(o, this.compraVistaParaBoletaCedida(o))) return true;
-    }
-    return false;
-  }
-
-  puedeMostrarBotonYoAsistoPalco(boleta: BoletaComprada, compra: Compra): boolean {
-    // «Yo asisto» se permite en múltiples boletas para el mismo comprador
-    // (por ejemplo, si va físicamente con más acompañantes).
-    if (!this.puedeAsignarEntradaPorCorreoPalco(boleta, compra)) return false;
-    return !this.tieneAsistenteRegistrado(boleta);
-  }
-
-  labelAsignarOTransferirEntrada(boleta: BoletaComprada): string {
-    return this.tieneAsistenteRegistrado(boleta) ? 'Transferir entrada' : 'Asignar entrada';
-  }
-
-  abrirModalYoAsisto(boleta: BoletaComprada, compra: Compra): void {
-    if (!this.puedeMostrarBotonYoAsistoPalco(boleta, compra)) {
-      return;
-    }
-    this.limpiarErrorAsignacion(boleta.id);
-    this.yoAsistoBoleta = boleta;
-    this.yoAsistoCompra = compra;
-    this.showYoAsistoModal = true;
-    this.cdr.detectChanges();
-  }
-
-  cerrarModalYoAsisto(): void {
-    if (this.rellenarPerfilBoletaId != null) {
-      return;
-    }
-    this.resetYoAsistoModal();
-  }
-
-  private resetYoAsistoModal(): void {
-    this.showYoAsistoModal = false;
-    this.yoAsistoBoleta = null;
-    this.yoAsistoCompra = null;
-    this.cdr.detectChanges();
-  }
-
-  get resumenYoAsistoContexto(): string {
-    const boleta = this.yoAsistoBoleta;
-    if (!boleta) {
-      return '';
-    }
-    const tipoNombre = boleta.tipo_boleta_meta?.nombre || 'Entrada';
-    if (boleta.numero_palco != null) {
-      return `${tipoNombre} · Palco ${boleta.numero_palco}`;
-    }
-    return tipoNombre;
-  }
-
-  async confirmarYoAsisto(): Promise<void> {
-    const boleta = this.yoAsistoBoleta;
-    const compra = this.yoAsistoCompra;
-    if (!boleta || !compra) {
-      return;
-    }
-    if (!this.puedeMostrarBotonYoAsistoPalco(boleta, compra)) {
-      this.cerrarModalYoAsisto();
-      return;
-    }
-    this.limpiarErrorAsignacion(boleta.id);
-
-    this.rellenarPerfilBoletaId = boleta.id;
-    this.cdr.detectChanges();
-    try {
-      const res = await this.trasladosBoletaService.rellenarAsistentePalcoDesdePerfil(boleta.id);
-      if (!res.ok) {
-        const msg = res.error || 'Error desconocido';
-        this.asignacionError = { boletaId: boleta.id, mensaje: msg };
-        this.cdr.detectChanges();
-        return;
-      }
-
-      this.limpiarErrorAsignacion(boleta.id);
-      this.resetYoAsistoModal();
-      try {
-        await this.recargarBoletasYTraslados();
-      } catch (e) {
-        console.error(e);
-        await this.alertService.warning(
-          'Aviso',
-          'Se aplicaron los datos, pero no se pudo recargar la pantalla automáticamente.'
-        );
-        return;
-      }
-      void this.alertService.snackbar(
-        'Listo. Se aplicaron los datos de tu perfil. El QR aparecerá el día del evento.'
-      );
-    } finally {
-      this.rellenarPerfilBoletaId = null;
-      this.ngZone.run(() => {
-        this.cdr.detectChanges();
-      });
-    }
   }
 
   private limpiarErrorAsignacion(boletaId?: number): void {
@@ -3598,7 +3416,6 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   private async recargarBoletasYTraslados(): Promise<void> {
-    this.asignarPanelAbiertoBoletaId = null;
     await this.loadBoletasPorCompra({ background: true });
     if (coversEventumEnabled) {
       await this.loadCoversPorTitular({ background: true });
@@ -4450,7 +4267,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.page = state.page || 1;
     this.total = state.total || 0;
     this.totalPages = state.totalPages || 0;
-    this.tabBoletasDetalle = state.tabBoletasDetalle || 'sin-usar';
+    this.tabBoletasDetalle = state.tabBoletasDetalle === 'usadas' ? 'usadas' : 'sin-usar';
     this.eventoExpandidoKey = state.eventoExpandidoKey ?? null;
     this.loadingBoletasDetalle = this.eventosConBoletas.length > 0;
     this.loadingCovers = coversEventumEnabled && this.boletasCover.length === 0;
@@ -4558,10 +4375,10 @@ export class MisCompras implements OnInit, OnDestroy {
   Math = Math;
 
   /**
-   * En esta versión, toda boleta se asigna después del pago en Mis Boletas.
+   * Ya no se exige asignación previa para ver el QR; el titular accede directo el día del evento.
    */
-  requiereRegistroAsistentePalcoPosterior(b: BoletaComprada): boolean {
-    return true;
+  requiereRegistroAsistentePalcoPosterior(_b: BoletaComprada): boolean {
+    return false;
   }
 
   tieneAsistenteRegistrado(b: BoletaComprada): boolean {
@@ -4646,9 +4463,6 @@ export class MisCompras implements OnInit, OnDestroy {
     if (compra.estado_pago !== 'completado') return false;
     if (!this.esTitularBoleta(boleta, compra)) return false;
     if (this.tieneTrasladoSalienteActivo(boleta.id)) return false;
-    if (this.requiereRegistroAsistentePalcoPosterior(boleta) && !this.tieneAsistenteRegistrado(boleta)) {
-      return false;
-    }
     return true;
   }
 
@@ -4675,14 +4489,6 @@ export class MisCompras implements OnInit, OnDestroy {
       this.alertService.warning(
         'Traslado enviado',
         'No puedes ver el QR mientras el destinatario no acepte o rechace. Puedes cancelar el envío si sigue en estado enviado.'
-      );
-      return;
-    }
-
-    if (!this.puedeAbrirVistaBoleta(boleta, compra)) {
-      this.alertService.warning(
-        'Asigna la entrada',
-        'Asigna por correo a quien usará el acceso (debe aceptar en Mis Boletas) o usa «Yo asisto» si tú la usarás con los datos de tu perfil.'
       );
       return;
     }
@@ -4775,8 +4581,8 @@ export class MisCompras implements OnInit, OnDestroy {
       }
       if (!this.puedeAbrirVistaBoleta(boleta, compra)) {
         this.alertService.warning(
-          'Registra al asistente',
-          'Primero completa la asignación del asistente para poder generar el PDF con QR.'
+          'No disponible',
+          'El QR estará disponible cuando el pago esté confirmado y no haya un traslado pendiente.'
         );
         return;
       }
