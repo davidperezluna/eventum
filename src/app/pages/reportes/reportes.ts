@@ -56,7 +56,7 @@ export class Reportes implements OnInit, OnDestroy {
   loadingOrganizadores = false;
   isManualRefreshing = false;
   error: string | null = null;
-
+  
   esAdministrador = false;
   esOrganizador = false;
   organizadorId: number | null = null;
@@ -117,7 +117,7 @@ export class Reportes implements OnInit, OnDestroy {
     private reportesService: ReportesService,
     private cdr: ChangeDetectorRef
   ) {}
-
+  
   ngOnInit(): void {
     this.loadReportesSubject
       .pipe(
@@ -147,7 +147,7 @@ export class Reportes implements OnInit, OnDestroy {
       if (!usuario) {
         return;
       }
-
+      
       const incomingUserId = usuario.id ?? this.authService.getUsuarioId();
       const userChanged = incomingUserId !== this.currentCacheUserId;
       let usedCache = false;
@@ -183,8 +183,8 @@ export class Reportes implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-    if (this.unsubscribeAuth) {
-      this.unsubscribeAuth();
+      if (this.unsubscribeAuth) {
+        this.unsubscribeAuth();
     }
   }
 
@@ -294,7 +294,7 @@ export class Reportes implements OnInit, OnDestroy {
       }
       return;
     }
-
+    
     if (manual && this.isManualRefreshing) return;
     if (manual) {
       this.isManualRefreshing = true;
@@ -304,7 +304,7 @@ export class Reportes implements OnInit, OnDestroy {
     this.loading = searching || (!background && !hasVisibleData);
     this.error = null;
     this.cdr.detectChanges();
-
+    
     try {
       const eventoId = this.eventoFiltro || undefined;
       const orgId = this.organizadorConsultaId;
