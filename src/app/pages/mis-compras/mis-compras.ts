@@ -9,6 +9,7 @@ import { BoletasService } from '../../services/boletas.service';
 import { TrasladosBoletaService } from '../../services/traslados-boleta.service';
 import { EventosService } from '../../services/eventos.service';
 import { AuthService } from '../../services/auth.service';
+import { UsuariosService } from '../../services/usuarios.service';
 import { AlertService } from '../../services/alert.service';
 import {
   MisComprasState,
@@ -69,6 +70,11 @@ import {
   RESUMEN_TRASLADO_ENTRADA_PUNTOS,
   RESUMEN_TRASLADO_ENTRADA_SUBTITULO,
   RESUMEN_TRASLADO_ENTRADA_TITULO,
+  CONFIRMAR_USAR_PERFIL_BOLETA,
+  LABEL_USAR_PERFIL_BOLETA,
+  LABEL_USAR_PERFIL_BOLETA_APLICANDO,
+  RESUMEN_YO_ASISTO_DOCUMENTO_HINT,
+  RESUMEN_YO_ASISTO_DOCUMENTO_LABEL,
   RESUMEN_YO_ASISTO_PUNTOS,
   RESUMEN_YO_ASISTO_SUBTITULO,
   RESUMEN_YO_ASISTO_TITULO,
@@ -279,6 +285,7 @@ export class MisCompras implements OnInit, OnDestroy {
   showYoAsistoModal = false;
   yoAsistoBoleta: BoletaComprada | null = null;
   yoAsistoCompra: Compra | null = null;
+  yoAsistoDocumentoInput = '';
 
   rellenarPerfilBoletaId: number | null = null;
   /** Error visible junto al panel de asignación (además del modal SweetAlert). */
@@ -297,6 +304,7 @@ export class MisCompras implements OnInit, OnDestroy {
     private trasladosBoletaService: TrasladosBoletaService,
     private eventosService: EventosService,
     private authService: AuthService,
+    private usuariosService: UsuariosService,
     private alertService: AlertService,
     private misComprasStateService: MisComprasStateService,
     private accesosPuertaService: AccesosPuertaService,
@@ -997,6 +1005,11 @@ export class MisCompras implements OnInit, OnDestroy {
   readonly resumenYoAsistoTitulo = RESUMEN_YO_ASISTO_TITULO;
   readonly resumenYoAsistoSubtitulo = RESUMEN_YO_ASISTO_SUBTITULO;
   readonly resumenYoAsistoPuntos = RESUMEN_YO_ASISTO_PUNTOS;
+  readonly labelUsarPerfilBoleta = LABEL_USAR_PERFIL_BOLETA;
+  readonly labelUsarPerfilBoletaAplicando = LABEL_USAR_PERFIL_BOLETA_APLICANDO;
+  readonly resumenYoAsistoDocumentoLabel = RESUMEN_YO_ASISTO_DOCUMENTO_LABEL;
+  readonly resumenYoAsistoDocumentoHint = RESUMEN_YO_ASISTO_DOCUMENTO_HINT;
+  readonly confirmarUsarPerfilBoleta = CONFIRMAR_USAR_PERFIL_BOLETA;
 
   abrirModalCancelarTraslado(t: TrasladoBoleta): void {
     this.trasladoACancelar = t;
@@ -3166,14 +3179,22 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   puedeMostrarBotonYoAsistoPalco(boleta: BoletaComprada, compra: Compra): boolean {
-    // «Yo asisto» se permite en múltiples boletas para el mismo comprador
-    // (por ejemplo, si va físicamente con más acompañantes).
+    // Vincular varias boletas al mismo perfil del comprador (acompañantes en puerta).
     if (!this.puedeAsignarEntradaPorCorreoPalco(boleta, compra)) return false;
     return !this.tieneAsistenteRegistrado(boleta);
   }
 
   labelAsignarOTransferirEntrada(boleta: BoletaComprada): string {
     return this.tieneAsistenteRegistrado(boleta) ? 'Transferir entrada' : 'Asignar entrada';
+  }
+
+  private usuarioTieneDocumentoPerfil(): boolean {
+    const doc = String(this.authService.getUsuario()?.documento_identidad ?? '').trim();
+    return doc.length > 0;
+  }
+
+  get yoAsistoRequiereDocumento(): boolean {
+    return this.showYoAsistoModal && !this.usuarioTieneDocumentoPerfil();
   }
 
   abrirModalYoAsisto(boleta: BoletaComprada, compra: Compra): void {
@@ -3183,6 +3204,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.limpiarErrorAsignacion(boleta.id);
     this.yoAsistoBoleta = boleta;
     this.yoAsistoCompra = compra;
+    this.yoAsistoDocumentoInput = '';
     this.showYoAsistoModal = true;
     this.cdr.detectChanges();
   }
@@ -3198,7 +3220,69 @@ export class MisCompras implements OnInit, OnDestroy {
     this.showYoAsistoModal = false;
     this.yoAsistoBoleta = null;
     this.yoAsistoCompra = null;
+    this.yoAsistoDocumentoInput = '';
     this.cdr.detectChanges();
+  }
+
+  private mensajeErrorGuardarDocumentoPerfil(err: unknown): string {
+    const raw = err as { code?: string; message?: string; details?: string } | null;
+    const code = String(raw?.code ?? '').trim();
+    const message = String(raw?.message ?? '').toLowerCase();
+    const details = String(raw?.details ?? '').toLowerCase();
+    const blob = `${message} ${details}`;
+
+    if (
+      code === '23505' ||
+      blob.includes('documento_identidad') ||
+      blob.includes('already exists') ||
+      blob.includes('duplicate key')
+    ) {
+      return 'Ese documento ya está registrado en otra cuenta de Eventum. Revisa el número o inicia sesión con la cuenta correcta.';
+    }
+
+    if (err instanceof Error && err.message.trim()) {
+      return err.message;
+    }
+    if (typeof raw?.message === 'string' && raw.message.trim()) {
+      return raw.message;
+    }
+    return 'No se pudo guardar el documento en tu perfil. Intenta de nuevo.';
+  }
+
+  private async guardarDocumentoPerfilSiFalta(): Promise<boolean> {
+    if (this.usuarioTieneDocumentoPerfil()) {
+      return true;
+    }
+    const documento = this.yoAsistoDocumentoInput.trim();
+    if (!documento) {
+      this.asignacionError = {
+        boletaId: this.yoAsistoBoleta?.id ?? 0,
+        mensaje: 'Ingresa tu documento de identidad para vincular la entrada a tu perfil.',
+      };
+      this.cdr.detectChanges();
+      return false;
+    }
+    const usuarioId = this.authService.getUsuarioId();
+    if (!usuarioId) {
+      this.asignacionError = {
+        boletaId: this.yoAsistoBoleta?.id ?? 0,
+        mensaje: 'Debes iniciar sesión para continuar.',
+      };
+      this.cdr.detectChanges();
+      return false;
+    }
+    try {
+      await this.usuariosService.updateUsuario(usuarioId, { documento_identidad: documento });
+      await this.authService.refreshUsuario();
+      return true;
+    } catch (err: unknown) {
+      this.asignacionError = {
+        boletaId: this.yoAsistoBoleta?.id ?? 0,
+        mensaje: this.mensajeErrorGuardarDocumentoPerfil(err),
+      };
+      this.cdr.detectChanges();
+      return false;
+    }
   }
 
   get resumenYoAsistoContexto(): string {
@@ -3228,6 +3312,11 @@ export class MisCompras implements OnInit, OnDestroy {
     this.rellenarPerfilBoletaId = boleta.id;
     this.cdr.detectChanges();
     try {
+      const perfilListo = await this.guardarDocumentoPerfilSiFalta();
+      if (!perfilListo) {
+        return;
+      }
+
       const res = await this.trasladosBoletaService.rellenarAsistentePalcoDesdePerfil(boleta.id);
       if (!res.ok) {
         const msg = res.error || 'Error desconocido';
@@ -3249,7 +3338,7 @@ export class MisCompras implements OnInit, OnDestroy {
         return;
       }
       void this.alertService.snackbar(
-        'Listo. Se aplicaron los datos de tu perfil. El QR aparecerá el día del evento.'
+        'Listo. Esta entrada quedó vinculada a tu perfil. El QR aparecerá el día del evento.'
       );
     } finally {
       this.rellenarPerfilBoletaId = null;
@@ -3257,6 +3346,19 @@ export class MisCompras implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       });
     }
+  }
+
+  mostrarAsignacionErrorEnPanelBoleta(boletaId: number): boolean {
+    if (this.asignacionError?.boletaId !== boletaId) {
+      return false;
+    }
+    if (this.showYoAsistoModal && this.yoAsistoBoleta?.id === boletaId) {
+      return false;
+    }
+    if (this.showTrasladoModal && this.trasladoBoleta?.id === boletaId) {
+      return false;
+    }
+    return true;
   }
 
   private limpiarErrorAsignacion(boletaId?: number): void {
@@ -4682,7 +4784,7 @@ export class MisCompras implements OnInit, OnDestroy {
     if (!this.puedeAbrirVistaBoleta(boleta, compra)) {
       this.alertService.warning(
         'Asigna la entrada',
-        'Asigna por correo a quien usará el acceso (debe aceptar en Mis Boletas) o usa «Yo asisto» si tú la usarás con los datos de tu perfil.'
+        'Asigna por correo a quien usará el acceso (debe aceptar en Mis Boletas) o usa «Usar con mi perfil» si tú entrarás con esta cuenta.'
       );
       return;
     }

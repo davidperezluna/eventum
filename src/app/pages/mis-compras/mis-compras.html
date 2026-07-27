@@ -601,7 +601,7 @@
                     <div class="boleta-palco-pendiente-pago"
                       *ngIf="requiereRegistroAsistentePalcoPosterior(boleta) && compra.estado_pago !== 'completado'">
                       <p class="help-text">
-                        Cuando el pago se confirme, podrás asignar cada acceso por correo o con «Yo asisto». El código QR solo se verá el día
+                        Cuando el pago se confirme, podrás asignar cada acceso por correo o vincularlo a tu perfil. El código QR solo se verá el día
                         del evento.
                       </p>
                     </div>
@@ -638,16 +638,16 @@
                         </button>
                         <div class="asignar-palco-panel" *ngIf="isAsignarPanelAbierto(boleta.id)">
                           <p class="help-text boleta-asignar-hint" *ngIf="boleta.numero_palco != null && !otraBoletaMismoEventoTitularYaConAsistente(boleta, compra)">
-                            Palco <strong>{{ boleta.numero_palco }}</strong> · correo a otra persona o «Yo asisto» para asignar varias boletas a tu nombre (acompañantes).
+                            Palco <strong>{{ boleta.numero_palco }}</strong> · correo a otra persona o <strong>Usar con mi perfil</strong> para vincular varias boletas a tu nombre (acompañantes).
                           </p>
                           <p class="help-text boleta-asignar-hint" *ngIf="boleta.numero_palco != null && otraBoletaMismoEventoTitularYaConAsistente(boleta, compra)">
-                            Palco <strong>{{ boleta.numero_palco }}</strong> · ya asignaste boletas con «Yo asisto». Puedes seguir usando «Yo asisto» en más boletas.
+                            Palco <strong>{{ boleta.numero_palco }}</strong> · ya vinculaste boletas a tu perfil. Puedes repetirlo en más entradas.
                           </p>
                           <p class="help-text boleta-asignar-hint" *ngIf="boleta.numero_palco == null && !otraBoletaMismoEventoTitularYaConAsistente(boleta, compra)">
-                            Correo a usuario registrado (acepta en Mis Boletas) o «Yo asisto» para asignar boletas a tu nombre (acompañantes).
+                            Correo a usuario registrado (acepta en Mis Boletas) o <strong>Usar con mi perfil</strong> para vincular boletas a tu nombre (acompañantes).
                           </p>
                           <p class="help-text boleta-asignar-hint" *ngIf="boleta.numero_palco == null && otraBoletaMismoEventoTitularYaConAsistente(boleta, compra)">
-                            Ya asignaste boletas con «Yo asisto» antes en este evento. Puedes seguir usando «Yo asisto» en más boletas.
+                            Ya vinculaste entradas a tu perfil en este evento. Puedes repetirlo en más boletas.
                           </p>
                           <div class="asignar-palco-options" role="group" aria-label="Forma de asignar esta entrada">
                             <button
@@ -666,12 +666,12 @@
                               [disabled]="rellenarPerfilBoletaId === boleta.id">
                               <span class="material-icons">person</span>
                               <span class="asignar-option-text">
-                                <strong>{{ rellenarPerfilBoletaId === boleta.id ? 'Aplicando…' : 'Yo asisto' }}</strong>
-                                <small>Usar los datos de mi perfil</small>
+                                <strong>{{ rellenarPerfilBoletaId === boleta.id ? labelUsarPerfilBoletaAplicando : labelUsarPerfilBoleta }}</strong>
+                                <small>Esta boleta se usará con tu perfil</small>
                               </span>
                             </button>
                             </div>
-                          <p class="asignacion-error" *ngIf="asignacionError?.boletaId === boleta.id" role="alert">
+                          <p class="asignacion-error" *ngIf="mostrarAsignacionErrorEnPanelBoleta(boleta.id)" role="alert">
                             {{ asignacionError!.mensaje }}
                             <a *ngIf="esErrorAsignacionDocumento(asignacionError!.mensaje)" routerLink="/perfil" class="asignacion-error-link">Ir
                               a Mi perfil</a>
@@ -957,7 +957,7 @@
                   <div class="boleta-palco-pendiente-pago"
                     *ngIf="requiereRegistroAsistentePalcoPosterior(boleta) && compra.estado_pago !== 'completado'">
                     <p class="help-text">
-                      Cuando el pago se confirme, podrás asignar cada acceso por correo o con «Yo asisto». El código QR solo se verá el día
+                      Cuando el pago se confirme, podrás asignar cada acceso por correo o vincularlo a tu perfil. El código QR solo se verá el día
                       del evento.
                     </p>
                   </div>
@@ -994,16 +994,16 @@
                       </button>
                       <div class="asignar-palco-panel" *ngIf="isAsignarPanelAbierto(boleta.id)">
                         <p class="help-text boleta-asignar-hint" *ngIf="boleta.numero_palco != null && !otraBoletaMismoEventoTitularYaConAsistente(boleta, compra)">
-                          Palco <strong>{{ boleta.numero_palco }}</strong> · correo a otra persona o «Yo asisto» para asignar varias boletas a tu nombre (acompañantes).
+                          Palco <strong>{{ boleta.numero_palco }}</strong> · correo a otra persona o <strong>Usar con mi perfil</strong> para vincular varias boletas a tu nombre (acompañantes).
                         </p>
                         <p class="help-text boleta-asignar-hint" *ngIf="boleta.numero_palco != null && otraBoletaMismoEventoTitularYaConAsistente(boleta, compra)">
-                          Palco <strong>{{ boleta.numero_palco }}</strong> · ya asignaste boletas con «Yo asisto». Puedes seguir usando «Yo asisto» en más boletas.
+                          Palco <strong>{{ boleta.numero_palco }}</strong> · ya vinculaste boletas a tu perfil. Puedes repetirlo en más entradas.
                         </p>
                         <p class="help-text boleta-asignar-hint" *ngIf="boleta.numero_palco == null && !otraBoletaMismoEventoTitularYaConAsistente(boleta, compra)">
-                          Correo a usuario registrado (acepta en Mis Boletas) o «Yo asisto» para asignar boletas a tu nombre (acompañantes).
+                          Correo a usuario registrado (acepta en Mis Boletas) o <strong>Usar con mi perfil</strong> para vincular boletas a tu nombre (acompañantes).
                         </p>
                         <p class="help-text boleta-asignar-hint" *ngIf="boleta.numero_palco == null && otraBoletaMismoEventoTitularYaConAsistente(boleta, compra)">
-                          Ya asignaste boletas con «Yo asisto» antes en este evento. Puedes seguir usando «Yo asisto» en más boletas.
+                          Ya vinculaste entradas a tu perfil en este evento. Puedes repetirlo en más boletas.
                         </p>
                         <div class="asignar-palco-options" role="group" aria-label="Forma de asignar esta entrada">
                           <button
@@ -1022,12 +1022,12 @@
                             [disabled]="rellenarPerfilBoletaId === boleta.id">
                             <span class="material-icons">person</span>
                             <span class="asignar-option-text">
-                              <strong>{{ rellenarPerfilBoletaId === boleta.id ? 'Aplicando…' : 'Yo asisto' }}</strong>
-                              <small>Usar los datos de mi perfil</small>
+                              <strong>{{ rellenarPerfilBoletaId === boleta.id ? labelUsarPerfilBoletaAplicando : labelUsarPerfilBoleta }}</strong>
+                              <small>Esta boleta se usará con tu perfil</small>
                             </span>
                           </button>
                           </div>
-                        <p class="asignacion-error" *ngIf="asignacionError?.boletaId === boleta.id" role="alert">
+                        <p class="asignacion-error" *ngIf="mostrarAsignacionErrorEnPanelBoleta(boleta.id)" role="alert">
                           {{ asignacionError!.mensaje }}
                           <a *ngIf="esErrorAsignacionDocumento(asignacionError!.mensaje)" routerLink="/perfil" class="asignacion-error-link">Ir
                             a Mi perfil</a>
@@ -1487,7 +1487,7 @@
   </div>
 </div>
 
-<!-- Modal Yo asisto (legal-modal) -->
+<!-- Modal usar con mi perfil (legal-modal) -->
 <div class="legal-modal-overlay modal-overlay--traslado" *ngIf="showYoAsistoModal" (click)="cerrarModalYoAsisto()"
   role="presentation">
   <div class="legal-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
@@ -1496,7 +1496,7 @@
       <div class="legal-modal__header-text">
         <span class="legal-modal__badge legal-modal__badge--entrada">
           <span class="material-icons" aria-hidden="true">person</span>
-          Asignación
+          Tu perfil
         </span>
         <h2 id="yo-asisto-modal-title">{{ resumenYoAsistoTitulo }}</h2>
         <p>{{ resumenYoAsistoSubtitulo }}</p>
@@ -1514,11 +1514,23 @@
       <ul class="legal-modal__summary-list">
         <li *ngFor="let punto of resumenYoAsistoPuntos">{{ punto }}</li>
       </ul>
+
+      <div class="legal-modal__field" *ngIf="yoAsistoRequiereDocumento">
+        <p class="legal-modal__hint">{{ resumenYoAsistoDocumentoHint }}</p>
+        <label for="yo-asisto-documento">{{ resumenYoAsistoDocumentoLabel }} *</label>
+        <input
+          id="yo-asisto-documento"
+          type="text"
+          inputmode="numeric"
+          [(ngModel)]="yoAsistoDocumentoInput"
+          placeholder="Número de documento"
+          autocomplete="off"
+        />
+      </div>
+
       <p class="legal-modal__error" *ngIf="yoAsistoBoleta && asignacionError?.boletaId === yoAsistoBoleta.id"
         role="alert">
         {{ asignacionError!.mensaje }}
-        <a *ngIf="esErrorAsignacionDocumento(asignacionError!.mensaje)" routerLink="/perfil"
-          class="asignacion-error-link" (click)="cerrarModalYoAsisto()">Ir a Mi perfil</a>
       </p>
     </div>
 
@@ -1528,8 +1540,8 @@
         Cancelar
       </button>
       <button type="button" class="legal-modal__btn legal-modal__btn-primary" (click)="confirmarYoAsisto()"
-        [disabled]="rellenarPerfilBoletaId != null">
-        {{ rellenarPerfilBoletaId != null ? 'Aplicando…' : 'Sí, usar mis datos' }}
+        [disabled]="rellenarPerfilBoletaId != null || (yoAsistoRequiereDocumento && !yoAsistoDocumentoInput.trim())">
+        {{ rellenarPerfilBoletaId != null ? labelUsarPerfilBoletaAplicando : confirmarUsarPerfilBoleta }}
       </button>
     </footer>
   </div>
