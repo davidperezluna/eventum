@@ -1494,10 +1494,6 @@
     [attr.aria-labelledby]="'yo-asisto-modal-title'">
     <header class="legal-modal__header">
       <div class="legal-modal__header-text">
-        <span class="legal-modal__badge legal-modal__badge--entrada">
-          <span class="material-icons" aria-hidden="true">person</span>
-          Tu perfil
-        </span>
         <h2 id="yo-asisto-modal-title">{{ resumenYoAsistoTitulo }}</h2>
         <p>{{ resumenYoAsistoSubtitulo }}</p>
       </div>
@@ -1508,15 +1504,13 @@
     </header>
 
     <div class="legal-modal__body">
-      <p class="legal-modal__hint" *ngIf="resumenYoAsistoContexto">
-        Entrada: <strong>{{ resumenYoAsistoContexto }}</strong>
+      <p class="legal-modal__line" *ngIf="resumenYoAsistoContexto">
+        Entrada · <strong>{{ resumenYoAsistoContexto }}</strong>
       </p>
-      <ul class="legal-modal__summary-list">
-        <li *ngFor="let punto of resumenYoAsistoPuntos">{{ punto }}</li>
-      </ul>
+
+      <p class="legal-modal__hint">{{ resumenYoAsistoNotaTraslado }}</p>
 
       <div class="legal-modal__field" *ngIf="yoAsistoRequiereDocumento">
-        <p class="legal-modal__hint">{{ resumenYoAsistoDocumentoHint }}</p>
         <label for="yo-asisto-documento">{{ resumenYoAsistoDocumentoLabel }} *</label>
         <input
           id="yo-asisto-documento"
@@ -1527,6 +1521,22 @@
           autocomplete="off"
         />
       </div>
+
+      <label
+        class="legal-modal__check"
+        *ngIf="yoAsistoMostrarOpcionVincularTodas"
+        [class.legal-modal__check--checked]="yoAsistoVincularTodas"
+      >
+        <input
+          type="checkbox"
+          [(ngModel)]="yoAsistoVincularTodas"
+          [disabled]="rellenarPerfilBoletaId != null"
+        />
+        <span class="legal-modal__check-text">
+          {{ resumenYoAsistoVincularTodasHint }}
+          <strong>({{ yoAsistoCantidadPendientesEvento }})</strong>
+        </span>
+      </label>
 
       <p class="legal-modal__error" *ngIf="yoAsistoBoleta && asignacionError?.boletaId === yoAsistoBoleta.id"
         role="alert">

@@ -73,11 +73,11 @@ import {
   CONFIRMAR_USAR_PERFIL_BOLETA,
   LABEL_USAR_PERFIL_BOLETA,
   LABEL_USAR_PERFIL_BOLETA_APLICANDO,
-  RESUMEN_YO_ASISTO_DOCUMENTO_HINT,
   RESUMEN_YO_ASISTO_DOCUMENTO_LABEL,
-  RESUMEN_YO_ASISTO_PUNTOS,
+  RESUMEN_YO_ASISTO_NOTA_TRASLADO,
   RESUMEN_YO_ASISTO_SUBTITULO,
   RESUMEN_YO_ASISTO_TITULO,
+  RESUMEN_YO_ASISTO_VINCULAR_TODAS_HINT,
 } from '../../constants/traslados.constants';
 
 interface BoletaConCompra {
@@ -286,6 +286,7 @@ export class MisCompras implements OnInit, OnDestroy {
   yoAsistoBoleta: BoletaComprada | null = null;
   yoAsistoCompra: Compra | null = null;
   yoAsistoDocumentoInput = '';
+  yoAsistoVincularTodas = false;
 
   rellenarPerfilBoletaId: number | null = null;
   /** Error visible junto al panel de asignación (además del modal SweetAlert). */
@@ -1004,12 +1005,12 @@ export class MisCompras implements OnInit, OnDestroy {
 
   readonly resumenYoAsistoTitulo = RESUMEN_YO_ASISTO_TITULO;
   readonly resumenYoAsistoSubtitulo = RESUMEN_YO_ASISTO_SUBTITULO;
-  readonly resumenYoAsistoPuntos = RESUMEN_YO_ASISTO_PUNTOS;
+  readonly resumenYoAsistoNotaTraslado = RESUMEN_YO_ASISTO_NOTA_TRASLADO;
   readonly labelUsarPerfilBoleta = LABEL_USAR_PERFIL_BOLETA;
   readonly labelUsarPerfilBoletaAplicando = LABEL_USAR_PERFIL_BOLETA_APLICANDO;
   readonly resumenYoAsistoDocumentoLabel = RESUMEN_YO_ASISTO_DOCUMENTO_LABEL;
-  readonly resumenYoAsistoDocumentoHint = RESUMEN_YO_ASISTO_DOCUMENTO_HINT;
   readonly confirmarUsarPerfilBoleta = CONFIRMAR_USAR_PERFIL_BOLETA;
+  readonly resumenYoAsistoVincularTodasHint = RESUMEN_YO_ASISTO_VINCULAR_TODAS_HINT;
 
   abrirModalCancelarTraslado(t: TrasladoBoleta): void {
     this.trasladoACancelar = t;
@@ -3197,6 +3198,52 @@ export class MisCompras implements OnInit, OnDestroy {
     return this.showYoAsistoModal && !this.usuarioTieneDocumentoPerfil();
   }
 
+  private listarBoletasParaVincularPerfil(
+    boletaRef: BoletaComprada,
+    compraRef: Compra,
+    incluirMismoEvento: boolean
+  ): Array<{ boleta: BoletaComprada; compra: Compra }> {
+    const eventoId = this.eventoIdDeBoleta(boletaRef, compraRef);
+    const candidatas: Array<{ boleta: BoletaComprada; compra: Compra }> = [];
+
+    for (const row of this.comprasConBoletas) {
+      for (const boleta of row.boletas) {
+        if (!this.puedeMostrarBotonYoAsistoPalco(boleta, row.compra)) {
+          continue;
+        }
+        if (
+          incluirMismoEvento &&
+          eventoId != null &&
+          this.eventoIdDeBoleta(boleta, row.compra) !== eventoId
+        ) {
+          continue;
+        }
+        candidatas.push({ boleta, compra: row.compra });
+      }
+    }
+
+    candidatas.sort((a, b) => {
+      if (a.boleta.id === boletaRef.id) return -1;
+      if (b.boleta.id === boletaRef.id) return 1;
+      return a.boleta.id - b.boleta.id;
+    });
+
+    return candidatas;
+  }
+
+  get yoAsistoCantidadPendientesEvento(): number {
+    const boleta = this.yoAsistoBoleta;
+    const compra = this.yoAsistoCompra;
+    if (!boleta || !compra) {
+      return 0;
+    }
+    return this.listarBoletasParaVincularPerfil(boleta, compra, true).length;
+  }
+
+  get yoAsistoMostrarOpcionVincularTodas(): boolean {
+    return this.yoAsistoCantidadPendientesEvento > 1;
+  }
+
   abrirModalYoAsisto(boleta: BoletaComprada, compra: Compra): void {
     if (!this.puedeMostrarBotonYoAsistoPalco(boleta, compra)) {
       return;
@@ -3205,6 +3252,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.yoAsistoBoleta = boleta;
     this.yoAsistoCompra = compra;
     this.yoAsistoDocumentoInput = '';
+    this.yoAsistoVincularTodas = this.listarBoletasParaVincularPerfil(boleta, compra, true).length > 1;
     this.showYoAsistoModal = true;
     this.cdr.detectChanges();
   }
@@ -3221,6 +3269,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.yoAsistoBoleta = null;
     this.yoAsistoCompra = null;
     this.yoAsistoDocumentoInput = '';
+    this.yoAsistoVincularTodas = false;
     this.cdr.detectChanges();
   }
 
@@ -3317,10 +3366,28 @@ export class MisCompras implements OnInit, OnDestroy {
         return;
       }
 
-      const res = await this.trasladosBoletaService.rellenarAsistentePalcoDesdePerfil(boleta.id);
-      if (!res.ok) {
-        const msg = res.error || 'Error desconocido';
-        this.asignacionError = { boletaId: boleta.id, mensaje: msg };
+      const vincularTodas =
+        this.yoAsistoVincularTodas && this.yoAsistoMostrarOpcionVincularTodas;
+      const objetivos = vincularTodas
+        ? this.listarBoletasParaVincularPerfil(boleta, compra, true)
+        : [{ boleta, compra }];
+
+      let vinculadas = 0;
+      let ultimoError = 'Error desconocido';
+
+      for (const objetivo of objetivos) {
+        const res = await this.trasladosBoletaService.rellenarAsistentePalcoDesdePerfil(
+          objetivo.boleta.id
+        );
+        if (res.ok) {
+          vinculadas += 1;
+        } else {
+          ultimoError = res.error || ultimoError;
+        }
+      }
+
+      if (vinculadas === 0) {
+        this.asignacionError = { boletaId: boleta.id, mensaje: ultimoError };
         this.cdr.detectChanges();
         return;
       }
@@ -3337,8 +3404,19 @@ export class MisCompras implements OnInit, OnDestroy {
         );
         return;
       }
+
+      if (vinculadas < objetivos.length) {
+        void this.alertService.warning(
+          'Vinculación parcial',
+          `Se vincularon ${vinculadas} de ${objetivos.length} entradas. ${ultimoError}`
+        );
+        return;
+      }
+
       void this.alertService.snackbar(
-        'Listo. Esta entrada quedó vinculada a tu perfil. El QR aparecerá el día del evento.'
+        vinculadas === 1
+          ? 'Entrada vinculada a tu perfil.'
+          : `${vinculadas} entradas vinculadas a tu perfil.`
       );
     } finally {
       this.rellenarPerfilBoletaId = null;

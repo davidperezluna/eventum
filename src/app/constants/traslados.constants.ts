@@ -44,16 +44,13 @@ export const RESUMEN_CANCELAR_TRASLADO_ENTRADA_PUNTOS: string[] = [
   'Podrás ver el QR cuando corresponda.',
 ];
 
-export const RESUMEN_YO_ASISTO_TITULO = 'Usar con mi perfil';
+export const RESUMEN_YO_ASISTO_TITULO = 'Vincular a mi perfil';
 
 export const RESUMEN_YO_ASISTO_SUBTITULO =
-  'Esta entrada quedará vinculada al nombre y documento de tu cuenta Eventum.';
+  'La entrada queda a tu nombre. El QR se activa el día del evento.';
 
-export const RESUMEN_YO_ASISTO_PUNTOS: string[] = [
-  'Los datos de tu perfil se guardan en la entrada para validar el acceso.',
-  'Podrás ver y usar el código QR el día del evento.',
-  'Puedes repetir este paso en otras entradas tuyas del mismo evento (acompañantes).',
-];
+export const RESUMEN_YO_ASISTO_NOTA_TRASLADO =
+  'Si no la usarás tú, después puedes transferirla por correo desde Asignar entrada.';
 
 export const LABEL_USAR_PERFIL_BOLETA = 'Usar con mi perfil';
 
@@ -61,7 +58,7 @@ export const LABEL_USAR_PERFIL_BOLETA_APLICANDO = 'Aplicando…';
 
 export const RESUMEN_YO_ASISTO_DOCUMENTO_LABEL = 'Documento de identidad';
 
-export const RESUMEN_YO_ASISTO_DOCUMENTO_HINT =
-  'Falta tu documento en el perfil. Ingrésalo aquí para vincular esta entrada a tu cuenta.';
+export const CONFIRMAR_USAR_PERFIL_BOLETA = 'Vincular entrada';
 
-export const CONFIRMAR_USAR_PERFIL_BOLETA = 'Confirmar y usar mi perfil';
+export const RESUMEN_YO_ASISTO_VINCULAR_TODAS_HINT =
+  'Vincular también las otras entradas sin asignar de este evento';
