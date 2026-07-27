@@ -1,4 +1,4 @@
-﻿.dashboard-eventos {
+.dashboard-eventos {
   max-width: var(--content-max-width);
   margin: 0 auto;
   padding: clamp(0.75rem, 2.2vw, 1.5rem);
@@ -361,6 +361,12 @@
   margin: 0 0 1rem;
   font-size: clamp(1rem, 2.2vw, 1.25rem);
   color: var(--color-text-primary);
+}
+
+.report-card__hint {
+  margin: -0.65rem 0 0.85rem;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary, #64748b);
 }
 
 .boletas-estado-grid,

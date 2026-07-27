@@ -183,12 +183,13 @@ export class DashboardEventos implements OnInit, OnDestroy {
   }
 
   async loadEventos(_options?: { background?: boolean }) {
-    // Selector: todos los eventos (incl. finalizados); solo filtra por organizador si aplica.
     const filters: any = {
       limit: 500,
       page: 1,
       sortBy: 'fecha_inicio',
       sortOrder: 'desc',
+      activo: true,
+      estado: 'publicado',
     };
 
     if (this.esOrganizador && this.organizadorId) {
@@ -207,7 +208,14 @@ export class DashboardEventos implements OnInit, OnDestroy {
     } catch (err) {
       console.error('Error cargando eventos:', err);
       try {
-        const fallback: any = { limit: 500, page: 1, sortBy: 'fecha_inicio', sortOrder: 'desc' };
+        const fallback: any = {
+          limit: 500,
+          page: 1,
+          sortBy: 'fecha_inicio',
+          sortOrder: 'desc',
+          activo: true,
+          estado: 'publicado',
+        };
         if (this.esOrganizador && this.organizadorId) {
           fallback.organizador_id = this.organizadorId;
         }
@@ -307,9 +315,8 @@ export class DashboardEventos implements OnInit, OnDestroy {
   private async loadReportesInternal() {
     // Usar Promise.all para hacer todas las peticiones en paralelo
     const organizadorId = this.organizadorId || undefined;
-    const fechaDesde = this.fechaDesde || undefined;
-    const fechaHasta = this.fechaHasta || undefined;
     const eventoFiltro = this.eventoFiltro || undefined;
+    const { desde: ventasDiaDesde, hasta: ventasDiaHasta } = this.rangoVentasPorDia();
 
     try {
       const [
@@ -321,7 +328,7 @@ export class DashboardEventos implements OnInit, OnDestroy {
         distribucionTipoBoleta,
         reporteEvento
       ] = await Promise.all([
-        this.reportesService.getVentasPorDia(fechaDesde, fechaHasta, organizadorId, eventoFiltro).catch((err) => {
+        this.reportesService.getVentasPorDia(ventasDiaDesde, ventasDiaHasta, organizadorId, eventoFiltro).catch((err) => {
           console.error('Error cargando ventas por día:', err);
           return [];
         }),
@@ -378,6 +385,36 @@ export class DashboardEventos implements OnInit, OnDestroy {
 
   get tieneFiltrosActivos(): boolean {
     return !!(this.eventoFiltro || this.fechaDesde || this.fechaHasta);
+  }
+
+  /** Sin filtro de fechas, Ventas por Día muestra solo la última semana. */
+  get ventasPorDiaUsaUltimaSemana(): boolean {
+    return !this.fechaDesde && !this.fechaHasta;
+  }
+
+  private rangoVentasPorDia(): { desde?: string; hasta?: string } {
+    if (this.fechaDesde || this.fechaHasta) {
+      return {
+        desde: this.fechaDesde || undefined,
+        hasta: this.fechaHasta || undefined,
+      };
+    }
+
+    const hasta = new Date();
+    const desde = new Date();
+    desde.setDate(desde.getDate() - 6);
+
+    return {
+      desde: this.toIsoDateLocal(desde),
+      hasta: this.toIsoDateLocal(hasta),
+    };
+  }
+
+  private toIsoDateLocal(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
   get cantidadFiltrosActivos(): number {

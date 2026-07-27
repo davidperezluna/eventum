@@ -57,9 +57,39 @@ export interface VentaCompletadaDetalle {
   providedIn: 'root'
 })
 export class ReportesService {
+  /** PostgREST devuelve como máximo 1000 filas por petición. */
+  private readonly supabasePageSize = 1000;
+
   constructor(
     private supabase: SupabaseService
   ) {}
+
+  /**
+   * Recorre páginas de una consulta Supabase hasta agotar resultados.
+   */
+  private async fetchAllPages<T>(
+    buildQuery: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message?: string } | null }>
+  ): Promise<T[]> {
+    const all: T[] = [];
+    for (let from = 0; ; from += this.supabasePageSize) {
+      const { data, error } = await buildQuery(from, from + this.supabasePageSize - 1);
+      if (error) {
+        throw error;
+      }
+      const batch = data || [];
+      all.push(...batch);
+      if (batch.length < this.supabasePageSize) {
+        break;
+      }
+    }
+    return all;
+  }
+
+  private compraEventoId(compra: unknown): number | null {
+    const row = Array.isArray(compra) ? compra[0] : compra;
+    const eventoId = Number((row as { evento_id?: number | string } | null)?.evento_id);
+    return Number.isFinite(eventoId) && eventoId > 0 ? eventoId : null;
+  }
 
   /**
    * Obtiene reporte de ventas por día en un rango de fechas
@@ -242,7 +272,6 @@ export class ReportesService {
    */
   async getAsistenciaPorEvento(organizadorId?: number, eventoId?: number): Promise<ReporteAsistencia[]> {
     try {
-      // Obtener eventos
       let eventosQuery = this.supabase
         .from('eventos')
         .select('id, titulo');
@@ -262,72 +291,40 @@ export class ReportesService {
 
       const eventosIds = eventos.map(e => e.id);
 
-      // Obtener todos los tipos de boleta de estos eventos en una sola petición
-      const { data: tiposBoleta, error: tiposError } = await this.supabase
-        .from('tipos_boleta')
-        .select('id, evento_id')
-        .in('evento_id', eventosIds);
+      const boletas = await this.fetchAllPages<{
+        estado: string;
+        compras: { evento_id: number } | { evento_id: number }[];
+      }>((from, to) =>
+        this.supabase
+          .from('boletas_compradas')
+          .select('estado, compras!inner(estado_pago, evento_id)')
+          .eq('compras.estado_pago', 'completado')
+          .in('compras.evento_id', eventosIds)
+          .range(from, to)
+      );
 
-      if (tiposError) {
-        console.error('Error obteniendo tipos de boleta:', tiposError);
-      }
-
-      // Crear mapa de evento_id -> tipos_boleta_ids
-      const tiposPorEvento: { [key: number]: number[] } = {};
-      if (tiposBoleta) {
-        tiposBoleta.forEach(tipo => {
-          if (!tiposPorEvento[tipo.evento_id]) {
-            tiposPorEvento[tipo.evento_id] = [];
-          }
-          tiposPorEvento[tipo.evento_id].push(tipo.id);
-        });
-      }
-
-      const todosTiposIds = tiposBoleta?.map(t => t.id) || [];
-
-      // Obtener todas las boletas de estos tipos en una sola petición
-      let boletasQuery = this.supabase
-        .from('boletas_compradas')
-        .select('estado, tipo_boleta_id, compras!inner(estado_pago)')
-        .eq('compras.estado_pago', 'completado');
-
-      if (todosTiposIds.length > 0) {
-        boletasQuery = boletasQuery.in('tipo_boleta_id', todosTiposIds);
-      }
-
-      const { data: boletas, error: boletasError } = await boletasQuery;
-
-      if (boletasError) {
-        console.error('Error obteniendo boletas:', boletasError);
-      }
-
-      // Agrupar boletas por evento
       const boletasPorEvento: { [key: number]: { vendidas: number; usadas: number; pendientes: number } } = {};
-      
-      if (boletas) {
-        boletas.forEach(boleta => {
-          // Encontrar el evento_id de este tipo_boleta
-          const tipoBoleta = tiposBoleta?.find(t => t.id === boleta.tipo_boleta_id);
-          if (tipoBoleta) {
-            const eventoId = tipoBoleta.evento_id;
-            if (!boletasPorEvento[eventoId]) {
-              boletasPorEvento[eventoId] = { vendidas: 0, usadas: 0, pendientes: 0 };
-            }
-            boletasPorEvento[eventoId].vendidas += 1;
-            if (boleta.estado === 'usada') {
-              boletasPorEvento[eventoId].usadas += 1;
-            } else if (boleta.estado === 'pendiente') {
-              boletasPorEvento[eventoId].pendientes += 1;
-            }
-          }
-        });
+
+      for (const boleta of boletas) {
+        const evId = this.compraEventoId(boleta.compras);
+        if (evId == null) {
+          continue;
+        }
+        if (!boletasPorEvento[evId]) {
+          boletasPorEvento[evId] = { vendidas: 0, usadas: 0, pendientes: 0 };
+        }
+        boletasPorEvento[evId].vendidas += 1;
+        if (boleta.estado === 'usada') {
+          boletasPorEvento[evId].usadas += 1;
+        } else if (boleta.estado === 'pendiente') {
+          boletasPorEvento[evId].pendientes += 1;
+        }
       }
 
-      // Construir reportes
       const reportes: ReporteAsistencia[] = eventos.map(evento => {
         const stats = boletasPorEvento[evento.id] || { vendidas: 0, usadas: 0, pendientes: 0 };
-        const tasa_asistencia = stats.vendidas > 0 
-          ? Math.round((stats.usadas / stats.vendidas) * 100) 
+        const tasa_asistencia = stats.vendidas > 0
+          ? Math.round((stats.usadas / stats.vendidas) * 100)
           : 0;
 
         return {
@@ -340,7 +337,9 @@ export class ReportesService {
         };
       });
 
-      return reportes.sort((a, b) => b.boletas_vendidas - a.boletas_vendidas);
+      return reportes
+        .filter(r => r.boletas_vendidas > 0)
+        .sort((a, b) => b.boletas_vendidas - a.boletas_vendidas);
     } catch (error) {
       console.error('Error en getAsistenciaPorEvento:', error);
       return [];
@@ -487,54 +486,49 @@ export class ReportesService {
     try {
       type BoletaTipo = {
         tipo_boleta_id: number;
-        tipos_boleta: { nombre: string; eventos?: { titulo: string } | { titulo: string }[] } | { nombre: string; eventos?: { titulo: string } | { titulo: string }[] }[];
+        tipos_boleta: { nombre: string } | { nombre: string }[];
       };
 
-      let data: BoletaTipo[] | null = null;
-      let error: { message: string } | null = null;
-
-      if (organizadorId != null) {
-        let query = this.supabase
-          .from('boletas_compradas')
-          .select('tipo_boleta_id, tipos_boleta!inner(nombre, eventos!inner(titulo, organizador_id)), compras!inner(estado_pago)')
-          .eq('compras.estado_pago', 'completado')
-          .eq('eventos.organizador_id', organizadorId);
-        if (eventoId) {
-          query = query.eq('tipos_boleta.evento_id', eventoId);
+      let eventosIds: number[] | null = null;
+      if (organizadorId != null || eventoId != null) {
+        let eventosQuery = this.supabase.from('eventos').select('id');
+        if (organizadorId != null) {
+          eventosQuery = eventosQuery.eq('organizador_id', organizadorId);
         }
-        const response = await query;
-        data = response.data as BoletaTipo[] | null;
-        error = response.error;
-      } else {
+        if (eventoId != null) {
+          eventosQuery = eventosQuery.eq('id', eventoId);
+        }
+        const { data: eventos, error: eventosError } = await eventosQuery;
+        if (eventosError || !eventos?.length) {
+          return [];
+        }
+        eventosIds = eventos.map((e) => e.id);
+      }
+
+      const boletas = await this.fetchAllPages<BoletaTipo>((from, to) => {
         let query = this.supabase
           .from('boletas_compradas')
-          .select('tipo_boleta_id, tipos_boleta!inner(nombre, eventos(titulo)), compras!inner(estado_pago)')
+          .select('tipo_boleta_id, tipos_boleta!inner(nombre), compras!inner(estado_pago, evento_id)')
           .eq('compras.estado_pago', 'completado');
-        if (eventoId) {
-          query = query.eq('tipos_boleta.evento_id', eventoId);
+        if (eventosIds) {
+          query = query.in('compras.evento_id', eventosIds);
         }
-        const response = await query;
-        data = response.data as BoletaTipo[] | null;
-        error = response.error;
-      }
-
-      if (error || !data) {
-        return [];
-      }
+        return query.range(from, to);
+      });
 
       const distribucion: { [key: string]: number } = {};
-      const total = data.length;
+      const total = boletas.length;
 
-      data.forEach(boleta => {
+      for (const boleta of boletas) {
         const label = this.getTipoBoletaLabel(boleta);
         distribucion[label] = (distribucion[label] || 0) + 1;
-      });
+      }
 
       return Object.entries(distribucion)
         .map(([tipo, cantidad]) => ({
           tipo,
           cantidad,
-          porcentaje: total > 0 ? Math.round((cantidad / total) * 100) : 0
+          porcentaje: total > 0 ? Math.round((cantidad / total) * 100) : 0,
         }))
         .sort((a, b) => b.cantidad - a.cantidad);
     } catch (error) {
@@ -568,88 +562,43 @@ export class ReportesService {
 
       const eventosIds = eventos.map(e => e.id);
 
-      // Obtener todas las compras de estos eventos en una sola petición
-      let comprasQuery = this.supabase
-        .from('compras')
-        .select('id, total, evento_id')
-        .in('evento_id', eventosIds)
-        .eq('estado_pago', 'completado');
+      const compras = await this.fetchAllPages<{ id: number; total: number; evento_id: number }>(
+        (from, to) =>
+          this.supabase
+            .from('compras')
+            .select('id, total, evento_id')
+            .in('evento_id', eventosIds)
+            .eq('estado_pago', 'completado')
+            .range(from, to)
+      );
 
-      const { data: compras, error: comprasError } = await comprasQuery;
-
-      if (comprasError) {
-        console.error('Error obteniendo compras:', comprasError);
-      }
-
-      // Obtener todos los tipos de boleta de estos eventos en una sola petición
-      const { data: tiposBoleta, error: tiposError } = await this.supabase
-        .from('tipos_boleta')
-        .select('id, evento_id')
-        .in('evento_id', eventosIds);
-
-      if (tiposError) {
-        console.error('Error obteniendo tipos de boleta:', tiposError);
-      }
-
-      // Crear mapa de evento_id -> tipos_boleta_ids
-      const tiposPorEvento: { [key: number]: number[] } = {};
-      if (tiposBoleta) {
-        tiposBoleta.forEach(tipo => {
-          if (!tiposPorEvento[tipo.evento_id]) {
-            tiposPorEvento[tipo.evento_id] = [];
-          }
-          tiposPorEvento[tipo.evento_id].push(tipo.id);
-        });
-      }
-
-      const todosTiposIds = tiposBoleta?.map(t => t.id) || [];
-
-      // Agrupar compras por evento primero
       const ingresosPorEvento: { [key: number]: number } = {};
-      if (compras) {
-        compras.forEach(compra => {
-          const eventoId = compra.evento_id;
-          ingresosPorEvento[eventoId] = (ingresosPorEvento[eventoId] || 0) + Number(compra.total || 0);
-        });
+      for (const compra of compras) {
+        const eventoIdCompra = compra.evento_id;
+        ingresosPorEvento[eventoIdCompra] =
+          (ingresosPorEvento[eventoIdCompra] || 0) + Number(compra.total || 0);
       }
 
-      // Obtener todas las boletas de estos tipos en una sola petición
-      let boletasQuery = this.supabase
-        .from('boletas_compradas')
-        .select('tipo_boleta_id, compra_id, compras!inner(estado_pago)')
-        .eq('compras.estado_pago', 'completado');
+      const boletas = await this.fetchAllPages<{
+        compras: { evento_id: number } | { evento_id: number }[];
+      }>((from, to) =>
+        this.supabase
+          .from('boletas_compradas')
+          .select('compras!inner(estado_pago, evento_id)')
+          .eq('compras.estado_pago', 'completado')
+          .in('compras.evento_id', eventosIds)
+          .range(from, to)
+      );
 
-      if (todosTiposIds.length > 0) {
-        boletasQuery = boletasQuery.in('tipo_boleta_id', todosTiposIds);
-      } else {
-        // Si no hay tipos, retornar reportes vacíos
-        return eventos.map(evento => ({
-          evento_id: evento.id,
-          evento_titulo: evento.titulo,
-          ingresos: ingresosPorEvento[evento.id] || 0,
-          boletas_vendidas: 0
-        }));
-      }
-
-      const { data: boletas, error: boletasError } = await boletasQuery;
-
-      if (boletasError) {
-        console.error('Error obteniendo boletas:', boletasError);
-      }
-
-      // Agrupar boletas por evento (usando tipos_boleta como intermediario)
       const boletasPorEvento: { [key: number]: number } = {};
-      if (boletas) {
-        boletas.forEach(boleta => {
-          // Encontrar el evento_id de este tipo_boleta
-          const tipoBoleta = tiposBoleta?.find(t => t.id === boleta.tipo_boleta_id);
-          if (tipoBoleta) {
-            boletasPorEvento[tipoBoleta.evento_id] = (boletasPorEvento[tipoBoleta.evento_id] || 0) + 1;
-          }
-        });
+      for (const boleta of boletas) {
+        const evId = this.compraEventoId(boleta.compras);
+        if (evId == null) {
+          continue;
+        }
+        boletasPorEvento[evId] = (boletasPorEvento[evId] || 0) + 1;
       }
 
-      // Construir reportes
       const reportes = eventos.map(evento => ({
         evento_id: evento.id,
         evento_titulo: evento.titulo,

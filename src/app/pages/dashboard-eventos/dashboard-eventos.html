@@ -171,6 +171,7 @@
       <!-- Ventas por Día -->
       <div class="report-card">
         <h2>Ventas por Día</h2>
+        <p class="report-card__hint" *ngIf="ventasPorDiaUsaUltimaSemana">Últimos 7 días</p>
         <div class="ventas-simple-list">
           <div *ngIf="ventasPorDia.length > 0" class="ventas-simple-head">
             <span>Fecha</span>

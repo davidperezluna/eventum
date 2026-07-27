@@ -29,9 +29,10 @@ export class ExcelExportService {
   async exportToExcel(data: any[], filename: string, sheetName: string = 'Reporte'): Promise<void> {
     const xlsx = await this.loadXLSX();
     const worksheet = xlsx.utils.json_to_sheet(data);
+    this.applyThousandsFormat(worksheet, xlsx);
     const workbook = xlsx.utils.book_new();
     xlsx.utils.book_append_sheet(workbook, worksheet, sheetName);
-    
+
     // Generar el archivo Excel
     xlsx.writeFile(workbook, `${filename}.xlsx`);
   }
@@ -42,14 +43,39 @@ export class ExcelExportService {
   async exportMultipleSheets(sheets: { name: string; data: any[] }[], filename: string): Promise<void> {
     const xlsx = await this.loadXLSX();
     const workbook = xlsx.utils.book_new();
-    
+
     sheets.forEach(sheet => {
       const worksheet = xlsx.utils.json_to_sheet(sheet.data);
+      this.applyThousandsFormat(worksheet, xlsx);
       xlsx.utils.book_append_sheet(workbook, worksheet, sheet.name);
     });
-    
+
     // Generar el archivo Excel
     xlsx.writeFile(workbook, `${filename}.xlsx`);
+  }
+
+  /** Formato es-CO: miles con punto (ej. 5.205.600). */
+  private applyThousandsFormat(worksheet: Record<string, unknown>, xlsx: any): void {
+    const ref = worksheet['!ref'] as string | undefined;
+    if (!ref) return;
+
+    const range = xlsx.utils.decode_range(ref);
+    for (let row = range.s.r; row <= range.e.r; row++) {
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const addr = xlsx.utils.encode_cell({ r: row, c: col });
+        const cell = worksheet[addr] as { t?: string; v?: unknown; w?: string } | undefined;
+        if (!cell || cell.t !== 'n' || typeof cell.v !== 'number' || !Number.isFinite(cell.v)) {
+          continue;
+        }
+        const isInt = Number.isInteger(cell.v);
+        cell.t = 's';
+        cell.v = new Intl.NumberFormat('es-CO', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: isInt ? 0 : 2,
+        }).format(cell.v);
+        delete cell.w;
+      }
+    }
   }
 
   /**
