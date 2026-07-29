@@ -32,9 +32,7 @@ import {
   CompraProductoItem,
   TipoEstadoItemProducto
 } from '../../types';
-import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
-import html2canvas from 'html2canvas';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { AccesoPuertaToastComponent } from '../../components/acceso-puerta-toast/acceso-puerta-toast';
@@ -1774,13 +1772,6 @@ export class MisCompras implements OnInit, OnDestroy {
       rows.push({ label: 'Lugar', value: String(lugar.nombre) });
     }
     return rows;
-  }
-
-  onImprimirPdfModalBoleta(): void {
-    if (!this.boletaSeleccionada || !this.compraSeleccionada) {
-      return;
-    }
-    void this.imprimirBoletaPDF(this.boletaSeleccionada, this.compraSeleccionada);
   }
 
   private abrirMensajeIngreso(
@@ -4938,103 +4929,6 @@ export class MisCompras implements OnInit, OnDestroy {
     this.qrCodeUrl = '';
     this.sincronizarPollEscaneoDetalle();
     this.cdr.detectChanges();
-  }
-
-  /**
-   * Genera e imprime el PDF de una boleta
-   */
-  async imprimirBoletaPDF(boleta: BoletaComprada, compra: Compra) {
-    try {
-      if (!this.esTitularBoleta(boleta, compra)) {
-        this.alertService.warning('No disponible', 'No tienes acceso a esta entrada.');
-        return;
-      }
-      if (this.tieneTrasladoSalienteActivo(boleta.id)) {
-        this.alertService.warning('Traslado en curso', 'No puedes imprimir el QR mientras el envío esté pendiente.');
-        return;
-      }
-      if (!this.puedeAbrirVistaBoleta(boleta, compra)) {
-        this.alertService.warning(
-          'Registra al asistente',
-          'Primero completa la asignación del asistente para poder generar el PDF con QR.'
-        );
-        return;
-      }
-      if (this.esBoletaUsada(boleta)) {
-        this.alertService.warning('Boleta usada', 'Esta boleta ya fue usada y no permite generar QR ni PDF.');
-        return;
-      }
-      if (!this.esDiaEventoBoleta(boleta, compra)) {
-        this.alertService.warning('QR bloqueado por seguridad', this.mensajeHabilitacionQrBoleta(boleta, compra));
-        return;
-      }
-      // Obtener información del tipo de boleta y evento
-      const tipoBoleta = await this.boletasService.getTipoBoletaById(boleta.tipo_boleta_id);
-      
-      if (!tipoBoleta) {
-        this.alertService.error('Error', 'No se pudo obtener la información del tipo de boleta');
-        return;
-      }
-
-      // Obtener información del evento
-      const evento = await this.eventosService.getEventoById(tipoBoleta.evento_id);
-      
-      if (!evento) {
-        this.alertService.error('Error', 'No se pudo obtener la información del evento');
-        return;
-      }
-
-      // Generar el PDF
-      await this.generarPDF(boleta, compra, tipoBoleta, evento);
-    } catch (error) {
-      console.error('Error al generar PDF:', error);
-      this.alertService.error('Error', 'Error al generar el PDF de la boleta');
-    }
-  }
-
-  /**
-   * Genera el PDF usando el diseño HTML
-   */
-  private async generarPDF(boleta: BoletaComprada, compra: Compra, tipoBoleta: TipoBoleta, evento: Evento) {
-    // Asegurarnos de que el template esté actualizado con los datos actuales
-    // (Angular ya se encarga de esto mediante el binding en el HTML)
-    
-    // Esperar un ciclo para que el DOM se actualice
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    const element = document.getElementById('ticket-template');
-    if (!element) {
-      console.error('No se encontró el elemento ticket-template');
-      return;
-    }
-
-    try {
-      // Convertir HTML a Canvas
-      const canvas = await html2canvas(element, {
-        scale: 2, // Mejor calidad
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      
-      const doc = new jsPDF({
-        orientation: 'landscape', // Diseño horizontal para el ticket
-        unit: 'mm',
-        format: [80, 180] // Tamaño personalizado del ticket
-      });
-
-      // Añadir la imagen al PDF
-      doc.addImage(imgData, 'PNG', 0, 0, 180, 80);
-
-      // Guardar el PDF
-      const fileName = `Ticket_${boleta.codigo_qr}_${evento.titulo.substring(0, 20).replace(/[^a-z0-9]/gi, '_')}.pdf`;
-      doc.save(fileName);
-    } catch (err) {
-      console.error('Error convirtiendo HTML a PDF:', err);
-      throw err;
-    }
   }
 }
 
