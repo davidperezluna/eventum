@@ -358,3 +358,9 @@
     </div>
   </footer>
 </div>
+
+<app-preventa-licor-flyer
+  *ngIf="preventaLicorFlyerEnabled && preventaLicorFlyer as flyer"
+  [promo]="flyer.promo"
+  [eventoTitulo]="flyer.eventoTitulo"
+/>

@@ -3,6 +3,14 @@ import { SupabaseService } from './supabase.service';
 import { TimezoneService } from './timezone.service';
 import { PaginatedResponse, Producto, ProductoFilters } from '../types';
 
+export interface PreventaLicorPromoDestacada {
+  eventoId: number;
+  ahorroMaximoUnitario: number;
+  cantidadLicores: number;
+  precioPreventaDesde: number;
+  totalEventosConPreventaLicor: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -204,5 +212,80 @@ export class ProductosService {
     }
 
     return resultado;
+  }
+
+  /**
+   * Mejor preventa de licor entre eventos (mayor ahorro unitario preventa vs precio en evento).
+   */
+  async getPreventaLicorPromoDestacada(eventoIds: number[]): Promise<PreventaLicorPromoDestacada | null> {
+    const ids = Array.from(new Set(eventoIds.filter((id) => Number.isFinite(id) && id > 0)));
+    if (ids.length === 0) {
+      return null;
+    }
+
+    const { data, error } = await this.supabase
+      .from('productos')
+      .select('evento_id, precio, precio_preventa, precio_evento, es_licor, cantidad_total, cantidad_vendidas')
+      .in('evento_id', ids)
+      .eq('activo', true)
+      .eq('es_licor', true);
+
+    if (error) {
+      console.warn('getPreventaLicorPromoDestacada:', error);
+      return null;
+    }
+
+    const porEvento = new Map<
+      number,
+      { ahorroMaximo: number; cantidadLicores: number; precioPreventaMin: number }
+    >();
+    const eventosConAhorro = new Set<number>();
+
+    for (const row of (data || []) as Array<{
+      evento_id: number;
+      precio: number;
+      precio_preventa?: number | null;
+      precio_evento?: number | null;
+      cantidad_total?: number | null;
+      cantidad_vendidas?: number | null;
+    }>) {
+      const eventoId = Number(row.evento_id);
+      const vendidos = Number(row.cantidad_vendidas ?? 0);
+      const total = Number(row.cantidad_total ?? 0);
+
+      const precioPreventa = Number(row.precio_preventa ?? row.precio ?? 0);
+      const precioEvento = Number(row.precio_evento ?? row.precio ?? 0);
+      if (!Number.isFinite(precioPreventa) || !Number.isFinite(precioEvento)) {
+        continue;
+      }
+
+      const ahorro = Math.max(0, precioEvento - precioPreventa);
+
+      eventosConAhorro.add(eventoId);
+      const actual = porEvento.get(eventoId) ?? {
+        ahorroMaximo: 0,
+        cantidadLicores: 0,
+        precioPreventaMin: Number.POSITIVE_INFINITY,
+      };
+      actual.cantidadLicores += 1;
+      actual.ahorroMaximo = Math.max(actual.ahorroMaximo, ahorro);
+      actual.precioPreventaMin = Math.min(actual.precioPreventaMin, precioPreventa);
+      porEvento.set(eventoId, actual);
+    }
+
+    let mejor: PreventaLicorPromoDestacada | null = null;
+    for (const [eventoId, stats] of porEvento.entries()) {
+      if (!mejor || stats.ahorroMaximo > mejor.ahorroMaximoUnitario) {
+        mejor = {
+          eventoId,
+          ahorroMaximoUnitario: stats.ahorroMaximo,
+          cantidadLicores: stats.cantidadLicores,
+          precioPreventaDesde: Number.isFinite(stats.precioPreventaMin) ? stats.precioPreventaMin : 0,
+          totalEventosConPreventaLicor: eventosConAhorro.size,
+        };
+      }
+    }
+
+    return mejor;
   }
 }

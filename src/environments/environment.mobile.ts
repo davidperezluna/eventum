@@ -18,6 +18,8 @@ export const environment = {
   allowClienteLoginAdmin: true,
   cuposEventumEnabled: true,
   coversEventumEnabled: false,
+  /** `true`: flyer de preventa licor al entrar en /eventos-cliente. */
+  preventaLicorFlyerEnabled: true,
   /**
    * Detalle evento → Entradas (no agotadas): mostrar disponibles / reservados / vendidas / totales.
    * `false` = ocultar esas cifras. Etapas agotadas siempre las muestran.

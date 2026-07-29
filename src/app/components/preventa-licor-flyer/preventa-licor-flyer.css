@@ -1,0 +1,258 @@
+.plf-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  background: rgb(15 23 42 / 55%);
+  backdrop-filter: blur(4px);
+  animation: plf-overlay-in 0.35s ease;
+}
+
+.plf-sheet {
+  position: relative;
+  width: min(100%, 420px);
+  max-height: min(92vh, 640px);
+  overflow: auto;
+  padding: 1.35rem 1.25rem calc(1.15rem + env(safe-area-inset-bottom, 0px));
+  border-radius: 20px 20px 0 0;
+  border: none;
+  background: var(--ec-surface, #fff);
+  color: var(--ec-text-body, #1e293b);
+  font-family: var(--ec-font, inherit);
+  box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.18);
+  animation: plf-sheet-up 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.plf-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--ec-surface-muted, #f1f5f9);
+  color: var(--ec-text-muted, #64748b);
+  cursor: pointer;
+}
+
+.plf-close:hover {
+  background: var(--ec-chip-hover, #f1f5f9);
+  color: var(--ec-text-body, #1e293b);
+}
+
+.plf-visual {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 0.85rem;
+}
+
+.plf-visual__icon-wrap {
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 999px;
+  background: var(--ec-accent-soft, #f5f3ff);
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
+}
+
+.plf-visual__icon {
+  font-size: 2rem;
+  color: var(--ec-accent, #8b5cf6);
+}
+
+.plf-visual__badge {
+  position: absolute;
+  right: -0.35rem;
+  bottom: 0;
+  z-index: 2;
+  padding: 0.12rem 0.38rem;
+  border-radius: 999px;
+  background: var(--ec-badge-warning-bg, #fef3c7);
+  border: 1px solid var(--ec-badge-warning-border, rgba(180, 83, 9, 0.32));
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ec-badge-warning-text, #92400e);
+}
+
+.plf-kicker {
+  display: table;
+  margin: 0 auto 0.55rem;
+  padding: 0.22rem 0.65rem;
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ec-accent-strong, #7c3aed);
+  background: var(--ec-accent-soft, #f5f3ff);
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
+  border-radius: 999px;
+}
+
+.plf-title {
+  margin: 0 0 0.65rem;
+  text-align: center;
+  font-size: clamp(1.25rem, 4.8vw, 1.5rem);
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ec-text-primary, #0f172a);
+}
+
+.plf-title__amount {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: clamp(1.75rem, 6.5vw, 2.1rem);
+  line-height: 1.05;
+  color: var(--ec-accent-strong, #7c3aed);
+}
+
+.plf-lead {
+  margin: 0 0 0.9rem;
+  text-align: center;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ec-text-muted, #64748b);
+}
+
+.plf-perks {
+  margin: 0 0 0.95rem;
+  padding: 0.75rem 0.85rem;
+  list-style: none;
+  border-radius: var(--ec-radius-card, 12px);
+  background: var(--ec-surface-muted, #f1f5f9);
+  border: 1px solid var(--ec-border, #e2e8f0);
+}
+
+.plf-perks li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--ec-text-body, #1e293b);
+}
+
+.plf-perks li + li {
+  margin-top: 0.45rem;
+}
+
+.plf-perks .material-icons {
+  font-size: 1.05rem;
+  color: var(--ec-accent, #8b5cf6);
+}
+
+.plf-event {
+  margin: 0 0 1rem;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--ec-text-muted, #64748b);
+}
+
+.plf-event strong {
+  color: var(--ec-text-primary, #0f172a);
+  font-weight: 700;
+}
+
+.plf-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  min-height: 2.875rem;
+  border: none;
+  border-radius: var(--ec-radius-control, 8px);
+  background: var(--ec-accent, #8b5cf6);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.plf-cta:hover {
+  background: var(--ec-accent-strong, #7c3aed);
+}
+
+.plf-cta .material-icons {
+  font-size: 1.15rem;
+}
+
+.plf-dismiss {
+  display: block;
+  width: 100%;
+  margin-top: 0.55rem;
+  padding: 0.55rem;
+  border: none;
+  background: transparent;
+  color: var(--ec-text-muted, #64748b);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.plf-dismiss:hover {
+  color: var(--ec-text-body, #1e293b);
+}
+
+.plf-legal {
+  margin: 0.65rem 0 0;
+  text-align: center;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: var(--ec-text-subtle, #94a3b8);
+}
+
+@keyframes plf-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes plf-sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (min-width: 640px) {
+  .plf-overlay {
+    align-items: center;
+    padding: 1.25rem;
+  }
+
+  .plf-sheet {
+    border-radius: var(--ec-radius-card, 12px);
+    padding-bottom: 1.15rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plf-overlay,
+  .plf-sheet {
+    animation: none;
+  }
+}

@@ -7,18 +7,20 @@ import { AuthService } from '../../services/auth.service';
 import { CuposEventoService } from '../../services/cupos-evento.service';
 import { CategoriasService } from '../../services/categorias.service';
 import { EventosClienteStateService } from '../../services/eventos-cliente-state.service';
-import { ProductosService } from '../../services/productos.service';
+import { ProductosService, PreventaLicorPromoDestacada } from '../../services/productos.service';
+import { PreventaLicorFlyer } from '../../components/preventa-licor-flyer/preventa-licor-flyer';
 import { Evento, CategoriaEvento, TipoEstadoEvento } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { cuposEventumEnabled } from '../../core/cupos-feature';
+import { preventaLicorFlyerVistoEnSesion } from '../../core/preventa-licor-flyer-session';
 import { CUPOS_LABELS } from '../../core/cupos-labels';
 
 @Component({
   selector: 'app-eventos-cliente',
-  imports: [CommonModule, RouterModule, FormsModule, DateFormatPipe],
+  imports: [CommonModule, RouterModule, FormsModule, DateFormatPipe, PreventaLicorFlyer],
   templateUrl: './eventos-cliente.html',
   styleUrl: './eventos-cliente.css',
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
@@ -38,6 +40,7 @@ export class EventosCliente implements OnInit, OnDestroy {
   searchTerm = '';
   categoriaFiltro: number | null = null;
   resumenProductosPorEvento = new Map<number, { cantidad: number; precioMinimo: number }>();
+  preventaLicorFlyer: { promo: PreventaLicorPromoDestacada; eventoTitulo: string } | null = null;
 
   private searchSubject = new Subject<string>();
   private searchSubscription: Subscription | null = null;
@@ -48,6 +51,9 @@ export class EventosCliente implements OnInit, OnDestroy {
   readonly appVersion = environment.appVersion;
   readonly cuposEventumEnabled = cuposEventumEnabled;
   readonly cuposLabels = CUPOS_LABELS;
+  readonly preventaLicorFlyerEnabled = environment.preventaLicorFlyerEnabled !== false;
+  /** Ahorro de referencia si el catálogo aún no trae diferencial de precios. */
+  private readonly preventaLicorAhorroFallback = 50_000;
   respuestasCupos = 0;
 
   constructor(
@@ -70,6 +76,7 @@ export class EventosCliente implements OnInit, OnDestroy {
       this.applyCachedState(cachedState);
       this.initialBootstrapLoading = false;
       this.loading = false;
+      void this.cargarPreventaLicorFlyer();
       setTimeout(() => window.scrollTo({ top: cachedState.scrollY, behavior: 'auto' }), 0);
     } else {
       this.loading = true;
@@ -134,6 +141,7 @@ export class EventosCliente implements OnInit, OnDestroy {
       this.loading = false;
       this.stopSilentRefreshIndicator();
       this.aplicarFiltrosLocales();
+      void this.cargarPreventaLicorFlyer();
       this.cdr.detectChanges();
       return;
     }
@@ -251,6 +259,7 @@ export class EventosCliente implements OnInit, OnDestroy {
     const ids = this.eventos.map((evento) => evento.id);
     if (ids.length === 0) {
       this.resumenProductosPorEvento = new Map();
+      await this.cargarPreventaLicorFlyer();
       this.cdr.detectChanges();
       return;
     }
@@ -261,7 +270,59 @@ export class EventosCliente implements OnInit, OnDestroy {
       console.warn('No se pudo cargar resumen de productos por evento:', error);
       this.resumenProductosPorEvento = new Map();
     } finally {
-      this.cdr.detectChanges();
+      await this.cargarPreventaLicorFlyer();
+      this.cdr.markForCheck();
+    }
+  }
+
+  private async cargarPreventaLicorFlyer(): Promise<void> {
+    if (!this.preventaLicorFlyerEnabled || preventaLicorFlyerVistoEnSesion()) {
+      this.preventaLicorFlyer = null;
+      return;
+    }
+
+    const primerEvento =
+      this.eventosConProductos[0] ?? this.eventos[0];
+    if (!primerEvento) {
+      this.preventaLicorFlyer = null;
+      return;
+    }
+
+    try {
+      const ids = this.eventos.map((evento) => evento.id);
+      const promoDb = await this.productosService.getPreventaLicorPromoDestacada(ids);
+      const eventoDestino = promoDb
+        ? this.eventos.find((item) => item.id === promoDb.eventoId) ?? primerEvento
+        : primerEvento;
+
+      const promo: PreventaLicorPromoDestacada = promoDb ?? {
+        eventoId: primerEvento.id,
+        ahorroMaximoUnitario: this.preventaLicorAhorroFallback,
+        cantidadLicores: 1,
+        precioPreventaDesde: this.getPrecioMinimoProductoEvento(primerEvento.id) || 0,
+        totalEventosConPreventaLicor: this.eventos.length,
+      };
+
+      if (promo.ahorroMaximoUnitario <= 0) {
+        promo.ahorroMaximoUnitario = this.preventaLicorAhorroFallback;
+      }
+
+      this.preventaLicorFlyer = {
+        promo,
+        eventoTitulo: eventoDestino.titulo?.trim() || 'tu evento',
+      };
+    } catch (error) {
+      console.warn('No se pudo cargar promo de preventa licor:', error);
+      this.preventaLicorFlyer = {
+        promo: {
+          eventoId: primerEvento.id,
+          ahorroMaximoUnitario: this.preventaLicorAhorroFallback,
+          cantidadLicores: 1,
+          precioPreventaDesde: this.getPrecioMinimoProductoEvento(primerEvento.id) || 0,
+          totalEventosConPreventaLicor: this.eventos.length,
+        },
+        eventoTitulo: primerEvento.titulo?.trim() || 'tu evento',
+      };
     }
   }
 
