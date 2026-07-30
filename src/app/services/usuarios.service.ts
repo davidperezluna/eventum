@@ -102,56 +102,52 @@ export class UsuariosService {
   }
 
   /**
-   * Crea un nuevo usuario con Supabase Auth
+   * Crea un nuevo usuario vía Edge Function (Admin API — sin email de confirmación).
    */
   async createUsuario(usuarioData: { email: string; password: string; nombre?: string; apellido?: string; tipo_usuario_id: number; telefono?: string; activo?: boolean }): Promise<Usuario> {
     try {
-      console.log('Creando usuario en Supabase Auth:', usuarioData.email);
-      
-      const { data: authData, error: authError } = await this.supabase.auth.signUp({
-        email: usuarioData.email,
-        password: usuarioData.password,
-        options: {
-          data: {
-            nombre: usuarioData.nombre || '',
-            apellido: usuarioData.apellido || ''
-          }
-        }
+      console.log('Creando usuario (admin-create-user):', usuarioData.email);
+
+      const {
+        data: { session },
+      } = await this.supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      if (!accessToken) {
+        throw new Error('Sesión expirada. Vuelve a iniciar sesión como administrador.');
+      }
+
+      const { data, error } = await this.supabase.functions.invoke('admin-create-user', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: {
+          email: usuarioData.email,
+          password: usuarioData.password,
+          nombre: usuarioData.nombre,
+          apellido: usuarioData.apellido,
+          tipo_usuario_id: usuarioData.tipo_usuario_id,
+          telefono: usuarioData.telefono,
+          activo: usuarioData.activo !== undefined ? usuarioData.activo : true,
+        },
       });
 
-      if (authError || !authData?.user) {
-        console.error('Error creando usuario en Auth:', authError);
-        throw authError || { message: 'Error al crear usuario en Auth' };
-      }
-
-      console.log('Usuario creado en Auth:', authData.user.id);
-
-      // Crear registro en tabla usuarios
-      const usuarioRecord: Partial<Usuario> = {
-        email: usuarioData.email,
-        nombre: usuarioData.nombre,
-        apellido: usuarioData.apellido,
-        telefono: usuarioData.telefono,
-        tipo_usuario_id: usuarioData.tipo_usuario_id,
-        activo: usuarioData.activo !== undefined ? usuarioData.activo : true,
-        email_verificado: authData.user.email_confirmed_at ? true : false,
-        auth_user_id: authData.user.id
-      };
-
-      const { data, error } = await this.supabase
-        .from('usuarios')
-        .insert(usuarioRecord)
-        .select()
-        .single();
-
       if (error) {
-        console.error('Error creando registro en tabla usuarios:', error);
-        throw error;
+        console.error('Error invocando admin-create-user:', error);
+        const fnError = data as { error?: string } | null;
+        throw new Error(fnError?.error || error.message || 'Error al crear usuario');
       }
 
-      console.log('Usuario creado exitosamente:', data);
-      return data as Usuario;
-    } catch (error: any) {
+      if (data?.error) {
+        throw new Error(String(data.error));
+      }
+
+      if (!data?.usuario) {
+        throw new Error('Respuesta inválida al crear usuario');
+      }
+
+      console.log('Usuario creado exitosamente:', data.usuario);
+      return data.usuario as Usuario;
+    } catch (error: unknown) {
       console.error('Error catch en createUsuario:', error);
       throw error;
     }

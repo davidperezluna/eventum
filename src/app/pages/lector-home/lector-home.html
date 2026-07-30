@@ -20,48 +20,66 @@
     </div>
   </div>
 
-  <section class="content-card alcance-section">
-    <h2 class="section-title">
-      <span class="material-icons">event</span>
-      Tu alcance de escaneo
-    </h2>
+  <section class="content-card alcance-section alcance-accordion">
+    <button
+      type="button"
+      class="alcance-accordion__header"
+      (click)="toggleAlcance()"
+      [attr.aria-expanded]="alcanceAbierto"
+      aria-controls="alcance-escaneo-panel"
+    >
+      <h2 class="section-title">
+        <span class="material-icons">event</span>
+        Tu alcance de escaneo
+        <span class="alcance-accordion__count" *ngIf="!loading && totalGrupos > 0">{{ totalGrupos }}</span>
+      </h2>
+      <span class="material-icons alcance-accordion__icon" [class.open]="alcanceAbierto" aria-hidden="true">expand_more</span>
+    </button>
+
+    <div
+      id="alcance-escaneo-panel"
+      class="alcance-accordion__content"
+      [class.open]="alcanceAbierto"
+      [attr.aria-hidden]="!alcanceAbierto"
+    >
       <p class="hint">Asignado desde el panel web. No editable desde aquí.</p>
       <p class="hint hint-refresh" *ngIf="refreshing && !loading">Actualizando permisos en segundo plano…</p>
 
-    <div *ngIf="loading" class="loading-state loading-state--compact">Cargando permisos...</div>
+      <div *ngIf="loading" class="loading-state loading-state--compact">Cargando permisos...</div>
 
-    <div *ngIf="!loading && grupos.length === 0 && gruposCover.length === 0" class="empty-state">
-      <span class="material-icons empty-icon">event_busy</span>
-      <p>No tienes permisos de evento ni de cover asignados. Contacta al administrador.</p>
-    </div>
+      <div *ngIf="!loading && grupos.length === 0 && gruposCover.length === 0" class="empty-state">
+        <span class="material-icons empty-icon">event_busy</span>
+        <p>No tienes permisos de evento ni de cover asignados. Contacta al administrador.</p>
+      </div>
 
-    <div *ngFor="let g of grupos" class="grupo-card">
-      <p class="grupo-label">Evento</p>
-      <div class="tag tag-evento">
-        <span class="material-icons">event</span>
-        {{ g.titulo }}
+      <div *ngFor="let g of grupos" class="grupo-card">
+        <p class="grupo-label">Evento</p>
+        <div class="tag tag-evento">
+          <span class="material-icons">event</span>
+          {{ g.titulo }}
+        </div>
+        <p class="grupo-label tipos-label">Permisos de validación en este evento</p>
+        <div class="tags-wrap">
+          <span *ngFor="let t of g.tipos" class="tag tag-tipo">
+            <span class="material-icons">{{ t.tipo_boleta_id == null ? 'inventory_2' : 'confirmation_number' }}</span>
+            {{ t.nombre }}
+          </span>
+        </div>
       </div>
-      <p class="grupo-label tipos-label">Permisos de validación en este evento</p>
-      <div class="tags-wrap">
-        <span *ngFor="let t of g.tipos" class="tag tag-tipo">
-          <span class="material-icons">{{ t.tipo_boleta_id == null ? 'inventory_2' : 'confirmation_number' }}</span>
-          {{ t.nombre }}
-        </span>
-      </div>
-    </div>
 
-    <div *ngFor="let g of gruposCover" class="grupo-card grupo-card--cover">
-      <p class="grupo-label">Lugar / club</p>
-      <div class="tag tag-evento tag-evento--cover">
-        <span class="material-icons">local_bar</span>
-        {{ g.titulo }}
-      </div>
-      <p class="grupo-label tipos-label">Covers que puedes escanear</p>
-      <div class="tags-wrap">
-        <span *ngFor="let t of g.tipos" class="tag tag-tipo">
-          <span class="material-icons">confirmation_number</span>
-          {{ t.nombre }}
-        </span>
+      <div *ngFor="let g of gruposCover" class="grupo-card grupo-card--cover">
+        <p class="grupo-label">Lugar / club</p>
+        <div class="tag tag-evento tag-evento--cover">
+          <span class="material-icons">local_bar</span>
+          {{ g.titulo }}
+        </div>
+        <p class="grupo-label tipos-label">Covers que puedes escanear</p>
+        <div class="tags-wrap">
+          <span *ngFor="let t of g.tipos" class="tag tag-tipo">
+            <span class="material-icons">confirmation_number</span>
+            {{ t.nombre }}
+          </span>
+        </div>
       </div>
     </div>
   </section>
