@@ -54,6 +54,7 @@ import {
   nombreAsistenteBoletaEscaneo,
   nombreDisplayUsuario,
 } from '../../core/lector-scan-display';
+import { DateTimeUtil } from '../../utils/date-time.util';
 import { BoletaCoverCliente, CompraCoverCliente } from '../../types/covers';
 import {
   RESUMEN_CANCELAR_TRASLADO_COVER_PUNTOS,
@@ -791,11 +792,7 @@ export class MisCompras implements OnInit, OnDestroy {
 
   esDiaSesionCover(boleta: BoletaCoverCliente): boolean {
     if (!boleta.sesion_fecha) return true;
-    const sesion = new Date(`${boleta.sesion_fecha}T12:00:00`);
-    if (Number.isNaN(sesion.getTime())) return true;
-    const hoy = this.diaCalendarioLocal(new Date());
-    const diaSesion = this.diaCalendarioLocal(sesion);
-    return hoy === diaSesion;
+    return this.hoyCalendarioApp() === boleta.sesion_fecha.trim();
   }
 
   labelSesionCoverBoleta(boleta: BoletaCoverCliente): string {
@@ -841,11 +838,7 @@ export class MisCompras implements OnInit, OnDestroy {
     if (!boleta.sesion_fecha) {
       return 'El código QR estará disponible el día de la noche reservada.';
     }
-    const sesion = new Date(`${boleta.sesion_fecha}T12:00:00`);
-    if (Number.isNaN(sesion.getTime())) {
-      return 'El código QR estará disponible el día de la noche reservada.';
-    }
-    return `Disponible el ${this.formatFechaHabilitacionAmigable(sesion)}`;
+    return `Disponible el ${this.formatFechaHabilitacionAmigable(boleta.sesion_fecha)}`;
   }
 
   esTitularCover(item: BoletaCoverConCompra): boolean {
@@ -1416,33 +1409,34 @@ export class MisCompras implements OnInit, OnDestroy {
 
   esDiaEventoGrupo(grupo: EventoBoletasGrupo | null | undefined): boolean {
     if (!grupo?.fechaInicio) return true;
-    const inicio = new Date(grupo.fechaInicio);
-    if (Number.isNaN(inicio.getTime())) return true;
-    const fin = grupo.fechaFin ? new Date(grupo.fechaFin) : inicio;
-    if (Number.isNaN(fin.getTime())) return true;
-    const hoy = this.diaCalendarioLocal(new Date());
-    const desde = Math.min(this.diaCalendarioLocal(inicio), this.diaCalendarioLocal(fin));
-    const hasta = Math.max(this.diaCalendarioLocal(inicio), this.diaCalendarioLocal(fin));
-    return hoy >= desde && hoy <= hasta;
+    return this.estaEnRangoCalendarioApp(grupo.fechaInicio, grupo.fechaFin);
   }
 
-  private formatFechaHabilitacionAmigable(fecha: Date): string {
+  private formatFechaHabilitacionAmigable(fecha: string | Date): string {
+    if (typeof fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fecha.trim())) {
+      const [year, month, day] = fecha.trim().split('-').map(Number);
+      const date = new Date(year, month - 1, day, 12, 0, 0);
+      return new Intl.DateTimeFormat('es-CO', {
+        weekday: 'short',
+        day: '2-digit',
+        month: 'long',
+      }).format(date);
+    }
+    const date = typeof fecha === 'string' ? DateTimeUtil.parseStoredDate(fecha) : fecha;
+    if (Number.isNaN(date.getTime())) return '';
     return new Intl.DateTimeFormat('es-CO', {
+      timeZone: DateTimeUtil.APP_TIMEZONE,
       weekday: 'short',
       day: '2-digit',
       month: 'long',
-    }).format(fecha);
+    }).format(date);
   }
 
   mensajeHabilitacionQrProducto(grupo: EventoBoletasGrupo | null | undefined): string {
     if (!grupo?.fechaInicio) {
       return 'El QR de este producto estará disponible el día del evento.';
     }
-    const inicio = new Date(grupo.fechaInicio);
-    if (Number.isNaN(inicio.getTime())) {
-      return 'El QR de este producto estará disponible el día del evento.';
-    }
-    return `El código QR se habilita el ${this.formatFechaHabilitacionAmigable(inicio)}.`;
+    return `El código QR se habilita el ${this.formatFechaHabilitacionAmigable(grupo.fechaInicio)}.`;
   }
 
   mensajeEstadoQrProducto(fila: ProductoConCompra, grupo: EventoBoletasGrupo | null | undefined): string {
@@ -1468,11 +1462,7 @@ export class MisCompras implements OnInit, OnDestroy {
     if (!grupo?.fechaInicio) {
       return 'QR disponible el día del evento';
     }
-    const inicio = new Date(grupo.fechaInicio);
-    if (Number.isNaN(inicio.getTime())) {
-      return 'QR disponible el día del evento';
-    }
-    return `Disponible desde ${this.formatFechaHabilitacionAmigable(inicio)}`;
+    return `Disponible desde ${this.formatFechaHabilitacionAmigable(grupo.fechaInicio)}`;
   }
 
   puedeAbrirQrProducto(fila: ProductoConCompra, grupo: EventoBoletasGrupo): boolean {
@@ -4742,45 +4732,48 @@ export class MisCompras implements OnInit, OnDestroy {
   private fechaInicioEventoBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): Date | null {
     const raw = this.eventoVistaBoleta(boleta, compra)?.fecha_inicio;
     if (!raw) return null;
-    const d = new Date(raw);
+    const d = DateTimeUtil.parseStoredDate(raw);
     if (Number.isNaN(d.getTime())) return null;
     return d;
   }
 
-  private fechaFinEventoBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): Date | null {
+  private fechaFinEventoBoletaRaw(boleta: BoletaComprada | null | undefined, compra?: Compra | null): string | null {
     const raw = this.fechaFinEvento(this.eventoVistaBoleta(boleta, compra));
-    if (!raw) return null;
-    const d = new Date(raw);
-    if (Number.isNaN(d.getTime())) return null;
-    return d;
+    return raw || null;
   }
 
-  /** Día local YYYYMMDD para comparar rangos de calendario sin depender de la hora. */
-  private diaCalendarioLocal(d: Date): number {
-    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  /** Hoy como YYYY-MM-DD en zona horaria de negocio (Colombia). */
+  private hoyCalendarioApp(): string {
+    return new Date().toLocaleDateString('en-CA', { timeZone: DateTimeUtil.APP_TIMEZONE });
+  }
+
+  /** True si hoy (Colombia) cae entre fecha_inicio y fecha_fin inclusive. */
+  private estaEnRangoCalendarioApp(fechaInicio: string, fechaFin?: string | null): boolean {
+    const inicioKey = DateTimeUtil.toCalendarDateKey(fechaInicio);
+    if (!inicioKey) return true;
+    const finKey = fechaFin ? DateTimeUtil.toCalendarDateKey(fechaFin) : inicioKey;
+    if (!finKey) return true;
+    const hoyKey = this.hoyCalendarioApp();
+    const desde = inicioKey <= finKey ? inicioKey : finKey;
+    const hasta = inicioKey <= finKey ? finKey : inicioKey;
+    return hoyKey >= desde && hoyKey <= hasta;
   }
 
   /**
-   * True si hoy (fecha local) está entre fecha_inicio y fecha_fin del evento (inclusive).
+   * True si hoy (Colombia) está entre fecha_inicio y fecha_fin del evento (inclusive).
    * Sin fecha_fin se usa solo el día de fecha_inicio (evento de un día).
    */
   esDiaEventoBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): boolean {
-    const inicio = this.fechaInicioEventoBoleta(boleta, compra);
-    if (!inicio) return true;
-    const fin = this.fechaFinEventoBoleta(boleta, compra);
-    const hoy = new Date();
-    const h = this.diaCalendarioLocal(hoy);
-    const a = this.diaCalendarioLocal(inicio);
-    const b = fin ? this.diaCalendarioLocal(fin) : a;
-    const desde = Math.min(a, b);
-    const hasta = Math.max(a, b);
-    return h >= desde && h <= hasta;
+    const rawInicio = this.eventoVistaBoleta(boleta, compra)?.fecha_inicio;
+    if (!rawInicio) return true;
+    return this.estaEnRangoCalendarioApp(rawInicio, this.fechaFinEventoBoletaRaw(boleta, compra));
   }
 
   fechaModalBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): string {
     const fechaEvento = this.fechaInicioEventoBoleta(boleta, compra);
     if (!fechaEvento) return '';
     return new Intl.DateTimeFormat('es-CO', {
+      timeZone: DateTimeUtil.APP_TIMEZONE,
       day: '2-digit',
       month: 'short',
       year: 'numeric'
@@ -4791,6 +4784,7 @@ export class MisCompras implements OnInit, OnDestroy {
     const fechaEvento = this.fechaInicioEventoBoleta(boleta, compra);
     if (!fechaEvento) return '';
     return new Intl.DateTimeFormat('es-CO', {
+      timeZone: DateTimeUtil.APP_TIMEZONE,
       hour: 'numeric',
       minute: '2-digit',
       hour12: true
@@ -4798,11 +4792,11 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   mensajeHabilitacionQrBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): string {
-    const inicio = this.fechaInicioEventoBoleta(boleta, compra);
-    if (!inicio) {
+    const rawInicio = this.eventoVistaBoleta(boleta, compra)?.fecha_inicio;
+    if (!rawInicio) {
       return 'El código QR solo será visible el día del evento. Hoy aún no está disponible en la app.';
     }
-    return `El código QR se habilita el ${this.formatFechaHabilitacionAmigable(inicio)}.`;
+    return `El código QR se habilita el ${this.formatFechaHabilitacionAmigable(rawInicio)}.`;
   }
 
   esBoletaUsada(boleta: BoletaComprada | null | undefined): boolean {
