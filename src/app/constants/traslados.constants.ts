@@ -44,21 +44,21 @@ export const RESUMEN_CANCELAR_TRASLADO_ENTRADA_PUNTOS: string[] = [
   'Podrás ver el QR cuando corresponda.',
 ];
 
-export const RESUMEN_YO_ASISTO_TITULO = 'Usar esta entrada';
+export const RESUMEN_YO_ASISTO_TITULO = 'Asignar a mi perfil';
 
 export const RESUMEN_YO_ASISTO_SUBTITULO =
-  'Quedará a tu nombre y el QR se habilitará el día del evento.';
+  'La entrada queda a tu nombre. El QR se habilita el día del evento.';
 
 export const RESUMEN_YO_ASISTO_NOTA_TRASLADO =
-  '¿La usará otra persona? Puedes enviársela desde Asignar entrada.';
+  'Si asistirá otra persona, envíala por correo desde la tarjeta.';
 
-export const LABEL_USAR_PERFIL_BOLETA = 'Usar con mi perfil';
+export const LABEL_USAR_PERFIL_BOLETA = 'Asignar a mi perfil';
 
-export const LABEL_USAR_PERFIL_BOLETA_APLICANDO = 'Aplicando…';
+export const LABEL_USAR_PERFIL_BOLETA_APLICANDO = 'Asignando…';
 
 export const RESUMEN_YO_ASISTO_DOCUMENTO_LABEL = 'Documento de identidad';
 
-export const CONFIRMAR_USAR_PERFIL_BOLETA = 'Usar esta entrada';
+export const CONFIRMAR_USAR_PERFIL_BOLETA = 'Asignar a mi perfil';
 
 export const RESUMEN_YO_ASISTO_VINCULAR_TODAS_HINT =
-  'Usar también mis otras entradas sin asignar';
+  'Asignar también mis otras entradas sin asignar';
