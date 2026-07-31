@@ -1626,16 +1626,20 @@ export class MisCompras implements OnInit, OnDestroy {
 
   vistaModalBoleta(): QrAccesoModalVista {
     const boleta = this.boletaSeleccionada;
+    const compra = this.compraSeleccionada;
     if (!boleta) {
       return 'blocked';
     }
     if (this.esBoletaUsada(boleta)) {
       return 'used';
     }
-    if (this.compraSeleccionada?.estado_pago !== 'completado') {
+    if (compra?.estado_pago !== 'completado') {
       return 'blocked';
     }
-    if (!this.esDiaEventoBoleta(boleta, this.compraSeleccionada)) {
+    if (this.boletaPendienteAsignacion(boleta, compra)) {
+      return 'blocked';
+    }
+    if (!this.esDiaEventoBoleta(boleta, compra)) {
       return 'blocked';
     }
     return 'ready';
@@ -1662,55 +1666,98 @@ export class MisCompras implements OnInit, OnDestroy {
     return this.tipoBoletaSeleccionado?.nombre || boleta.tipo_boleta_meta?.nombre || 'Entrada';
   }
 
-  iconoBloqueoModalBoleta(): 'history' | 'payments' | 'shield' {
+  iconoBloqueoModalBoleta(): 'history' | 'payments' | 'shield' | 'schedule' | 'person' {
     const boleta = this.boletaSeleccionada;
+    const compra = this.compraSeleccionada;
     if (!boleta) {
       return 'shield';
     }
     if (this.esBoletaUsada(boleta)) {
       return 'history';
     }
-    if (this.compraSeleccionada?.estado_pago !== 'completado') {
+    if (compra?.estado_pago !== 'completado') {
       return 'payments';
+    }
+    if (this.boletaPendienteAsignacion(boleta, compra)) {
+      return 'person';
     }
     return 'shield';
   }
 
   tituloBloqueoModalBoleta(): string {
     const boleta = this.boletaSeleccionada;
+    const compra = this.compraSeleccionada;
     if (!boleta) {
       return 'QR aún no disponible';
     }
     if (this.esBoletaUsada(boleta)) {
       return 'Esta boleta ya fue escaneada';
     }
-    if (this.compraSeleccionada?.estado_pago !== 'completado') {
+    if (compra?.estado_pago !== 'completado') {
       return 'Pago pendiente';
+    }
+    if (this.boletaPendienteAsignacion(boleta, compra)) {
+      return 'Entrada sin asignar';
     }
     return 'QR aún no disponible';
   }
 
   mensajeBloqueoModalBoleta(): string {
     const boleta = this.boletaSeleccionada;
+    const compra = this.compraSeleccionada;
     if (!boleta) {
       return '';
     }
     if (this.esBoletaUsada(boleta)) {
       return 'Tu entrada ya fue validada en puerta. El QR ya no está disponible.';
     }
-    if (this.compraSeleccionada?.estado_pago !== 'completado') {
+    if (compra?.estado_pago !== 'completado') {
       return 'El código QR estará disponible cuando el pago esté completado.';
     }
-    return this.mensajeHabilitacionQrBoleta(boleta, this.compraSeleccionada);
+    if (this.boletaPendienteAsignacion(boleta, compra)) {
+      return 'Asigna por correo a quien usará el acceso o elige «Usar con mi perfil» si entrarás con esta cuenta.';
+    }
+    return this.mensajeHabilitacionQrBoleta(boleta, compra);
   }
 
   hintBloqueoModalBoleta(): string {
     const boleta = this.boletaSeleccionada;
-    if (!boleta || !this.esBoletaUsada(boleta)) {
+    const compra = this.compraSeleccionada;
+    if (!boleta) {
+      return '';
+    }
+    if (this.boletaPendienteAsignacion(boleta, compra)) {
+      const rawInicio = this.eventoVistaBoleta(boleta, compra)?.fecha_inicio;
+      if (rawInicio) {
+        return `El QR se habilitará el ${this.formatFechaHabilitacionAmigable(rawInicio)} cuando asignes esta entrada.`;
+      }
+      return 'El código QR se mostrará el día del evento cuando la entrada esté asignada.';
+    }
+    if (!this.esBoletaUsada(boleta)) {
       return '';
     }
     const nombre = this.nombreAsistenteBoleta(boleta);
     return nombre !== '—' ? `Asistente: ${nombre}` : '';
+  }
+
+  labelAsignarDesdeModalBoleta(): string {
+    const boleta = this.boletaSeleccionada;
+    const compra = this.compraSeleccionada;
+    if (!boleta || !this.boletaPendienteAsignacion(boleta, compra)) {
+      return '';
+    }
+    return 'Asignar entrada';
+  }
+
+  asignarDesdeModalBoleta(): void {
+    const boleta = this.boletaSeleccionada;
+    if (!boleta) {
+      return;
+    }
+    const boletaId = boleta.id;
+    this.cerrarBoletaModal();
+    this.asignarPanelAbiertoBoletaId = boletaId;
+    this.cdr.detectChanges();
   }
 
   filasModalBoleta(): QrAccesoModalRow[] {
@@ -1726,6 +1773,29 @@ export class MisCompras implements OnInit, OnDestroy {
 
     if (compra?.estado_pago !== 'completado') {
       return [];
+    }
+
+    if (this.boletaPendienteAsignacion(boleta, compra)) {
+      const rows: QrAccesoModalRow[] = [
+        {
+          label: 'Tipo',
+          value: this.tipoBoletaSeleccionado?.nombre || boleta.tipo_boleta_meta?.nombre || 'Entrada',
+        },
+        {
+          label: 'Evento',
+          value:
+            this.eventoSeleccionado?.titulo ||
+            this.eventoVistaBoleta(boleta, compra)?.titulo ||
+            'Evento',
+        },
+        { label: 'Estado', value: 'Sin asignar' },
+      ];
+      const evento = this.eventoSeleccionado || this.eventoVistaBoleta(boleta, compra);
+      if (evento?.fecha_inicio) {
+        rows.push({ label: 'Fecha', value: this.fechaModalBoleta(boleta, compra) });
+        rows.push({ label: 'Hora', value: this.horaModalBoleta(boleta, compra) });
+      }
+      return rows;
     }
 
     if (!this.esDiaEventoBoleta(boleta, compra)) {
@@ -2122,8 +2192,7 @@ export class MisCompras implements OnInit, OnDestroy {
 
   boletaTarjetaAbreModal(boleta: BoletaComprada, compra: Compra): boolean {
     if (this.esBoletaUsada(boleta) || this.esBoletaCancelada(boleta)) return false;
-    if (!this.tieneAsistenteRegistrado(boleta)) return false;
-    return this.puedeAbrirVistaBoleta(boleta, compra);
+    return this.puedeAbrirModalBoleta(boleta, compra);
   }
 
   productoCompraTarjetaAbreModal(compra: CompraProducto, grupo: EventoBoletasGrupo): boolean {
@@ -4729,6 +4798,21 @@ export class MisCompras implements OnInit, OnDestroy {
     return !!(b.nombre_asistente?.trim() && b.documento_asistente?.trim());
   }
 
+  /** Pago confirmado, titular y sin traslado pendiente — puede abrir el modal (aunque falte asignar). */
+  puedeAbrirModalBoleta(boleta: BoletaComprada, compra: Compra): boolean {
+    if (compra.estado_pago !== 'completado') return false;
+    if (!this.esTitularBoleta(boleta, compra)) return false;
+    if (this.tieneTrasladoSalienteActivo(boleta.id)) return false;
+    return true;
+  }
+
+  /** Falta registrar asistente antes de mostrar el QR. */
+  boletaPendienteAsignacion(boleta: BoletaComprada | null | undefined, compra?: Compra | null): boolean {
+    if (!boleta || !compra) return false;
+    if (!this.puedeAbrirModalBoleta(boleta, compra)) return false;
+    return this.requiereRegistroAsistentePalcoPosterior(boleta) && !this.tieneAsistenteRegistrado(boleta);
+  }
+
   private fechaInicioEventoBoleta(boleta: BoletaComprada | null | undefined, compra?: Compra | null): Date | null {
     const raw = this.eventoVistaBoleta(boleta, compra)?.fecha_inicio;
     if (!raw) return null;
@@ -4855,19 +4939,11 @@ export class MisCompras implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.puedeAbrirVistaBoleta(boleta, compra)) {
-      this.alertService.warning(
-        'Asigna la entrada',
-        'Asigna por correo a quien usará el acceso (debe aceptar en Mis Boletas) o usa «Usar con mi perfil» si tú entrarás con esta cuenta.'
-      );
-      return;
-    }
-
     this.boletaSeleccionada = boleta;
     this.compraSeleccionada = compra;
     this.eventoSeleccionado = this.eventoVistaBoleta(boleta, compra);
     this.tipoBoletaSeleccionado = this.tipoBoletaVistaBoleta(boleta);
-    const debeGenerarQr = compra.estado_pago === 'completado' && !this.esBoletaUsada(boleta) && this.esDiaEventoBoleta(boleta, compra);
+    const debeGenerarQr = this.puedeMostrarQrBoleta(boleta, compra);
     this.loadingQR = debeGenerarQr;
     this.showBoletaModal = true;
     this.sincronizarPollEscaneoDetalle();

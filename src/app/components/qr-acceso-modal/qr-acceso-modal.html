@@ -29,6 +29,15 @@
           <strong>{{ row.value }}</strong>
         </div>
       </div>
+      <button
+        type="button"
+        class="btn-validate btn-validate--secondary"
+        *ngIf="secondaryActionLabel"
+        (click)="onSecondaryAction()"
+      >
+        <span class="material-icons" *ngIf="secondaryActionIcon">{{ secondaryActionIcon }}</span>
+        {{ secondaryActionLabel }}
+      </button>
       <button type="button" class="btn-validate" (click)="onCloseClick()">Cerrar</button>
     </div>
 

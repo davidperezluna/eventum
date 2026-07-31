@@ -28,7 +28,7 @@ export class QrAccesoModalComponent {
   @Input() kicker = '';
   @Input() title = '';
   @Input() chip = '';
-  @Input() blockedIcon: 'history' | 'payments' | 'shield' | 'schedule' = 'shield';
+  @Input() blockedIcon: 'history' | 'payments' | 'shield' | 'schedule' | 'person' = 'shield';
   @Input() blockedTitle = '';
   @Input() blockedMessage = '';
   @Input() blockedHint = '';

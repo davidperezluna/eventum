@@ -610,6 +610,11 @@
                       <p *ngIf="boleta.documento_asistente"><strong>Documento:</strong> {{ boleta.documento_asistente }}</p>
                       <p *ngIf="boleta.email_asistente"><strong>Email:</strong> {{ boleta.email_asistente }}</p>
                     </div>
+                    <div class="boleta-palco-pendiente-pago" *ngIf="boletaPendienteAsignacion(boleta, compra)">
+                      <p class="help-text">
+                        Asigna esta entrada para ver el QR el día del evento. Toca la tarjeta para más detalles.
+                      </p>
+                    </div>
                     <div class="boleta-palco-pendiente-pago" *ngIf="puedeAbrirVistaBoleta(boleta, compra) && !esDiaEventoBoleta(boleta, compra)">
                       <p class="help-text">
                         {{ mensajeHabilitacionQrBoleta(boleta, compra) }}
@@ -965,6 +970,11 @@
                     <p><strong>Asistente:</strong> {{ boleta.nombre_asistente }}</p>
                     <p *ngIf="boleta.documento_asistente"><strong>Documento:</strong> {{ boleta.documento_asistente }}</p>
                     <p *ngIf="boleta.email_asistente"><strong>Email:</strong> {{ boleta.email_asistente }}</p>
+                  </div>
+                  <div class="boleta-palco-pendiente-pago" *ngIf="boletaPendienteAsignacion(boleta, compra)">
+                    <p class="help-text">
+                      Asigna esta entrada para ver el QR el día del evento. Toca la tarjeta para más detalles.
+                    </p>
                   </div>
                   <div class="boleta-palco-pendiente-pago" *ngIf="puedeAbrirVistaBoleta(boleta, compra) && !esDiaEventoBoleta(boleta, compra)">
                     <p class="help-text">
@@ -1628,5 +1638,8 @@
   [qrUrl]="qrCodeUrl"
   [loadingQr]="loadingQR"
   [rows]="filasModalBoleta()"
+  [secondaryActionLabel]="labelAsignarDesdeModalBoleta()"
+  [secondaryActionIcon]="'person_add'"
+  (secondaryAction)="asignarDesdeModalBoleta()"
   (closed)="cerrarBoletaModal()"
 ></app-qr-acceso-modal>
