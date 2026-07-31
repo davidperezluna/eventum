@@ -10,7 +10,7 @@ export const RESUMEN_TRASLADO_COVER_PUNTOS: string[] = [
   'Puedes cancelar; si rechaza, recuperas el cover.',
 ];
 
-export const RESUMEN_TRASLADO_ENTRADA_TITULO = 'Asignar entrada';
+export const RESUMEN_TRASLADO_ENTRADA_TITULO = 'Enviar entrada';
 
 export const RESUMEN_TRASLADO_ENTRADA_SUBTITULO =
   'Indica la cuenta Eventum de quien recibirá la entrada.';
@@ -44,13 +44,13 @@ export const RESUMEN_CANCELAR_TRASLADO_ENTRADA_PUNTOS: string[] = [
   'Podrás ver el QR cuando corresponda.',
 ];
 
-export const RESUMEN_YO_ASISTO_TITULO = 'Vincular a mi perfil';
+export const RESUMEN_YO_ASISTO_TITULO = 'Usar esta entrada';
 
 export const RESUMEN_YO_ASISTO_SUBTITULO =
-  'La entrada queda a tu nombre. El QR se activa el día del evento.';
+  'Quedará a tu nombre y el QR se habilitará el día del evento.';
 
 export const RESUMEN_YO_ASISTO_NOTA_TRASLADO =
-  'Si no la usarás tú, después puedes transferirla por correo desde Asignar entrada.';
+  '¿La usará otra persona? Puedes enviársela desde Asignar entrada.';
 
 export const LABEL_USAR_PERFIL_BOLETA = 'Usar con mi perfil';
 
@@ -58,7 +58,7 @@ export const LABEL_USAR_PERFIL_BOLETA_APLICANDO = 'Aplicando…';
 
 export const RESUMEN_YO_ASISTO_DOCUMENTO_LABEL = 'Documento de identidad';
 
-export const CONFIRMAR_USAR_PERFIL_BOLETA = 'Vincular entrada';
+export const CONFIRMAR_USAR_PERFIL_BOLETA = 'Usar esta entrada';
 
 export const RESUMEN_YO_ASISTO_VINCULAR_TODAS_HINT =
-  'Vincular también las otras entradas sin asignar de este evento';
+  'Usar también mis otras entradas sin asignar';

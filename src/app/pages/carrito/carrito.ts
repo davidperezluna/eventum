@@ -285,7 +285,6 @@ export class Carrito implements OnInit, OnDestroy {
   aceptarTerminosLicor(): void {
     this.terminosAceptados = true;
     this.cerrarModalTerminosLicor();
-    this.alertService.snackbarSuccess('Términos aceptados', 'Ahora puedes finalizar la compra cuando quieras.');
   }
 
   abrirModalTerminosLicor(): void {

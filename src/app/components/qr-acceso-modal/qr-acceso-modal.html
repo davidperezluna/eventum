@@ -5,6 +5,7 @@
 >
   <div
     class="modal-sheet qr-acceso-sheet"
+    [class.qr-acceso-sheet--productos]="!!listSection?.prominent"
     (click)="$event.stopPropagation()"
     role="dialog"
     aria-modal="true"
@@ -64,11 +65,11 @@
       >
         <div
           class="modal-row modal-row--stack"
-          [class.modal-row--productos]="!!listSection?.prominent"
+          [class.modal-row--productos]="!!listSection!.prominent"
           *ngIf="listSection?.lines?.length"
         >
           <span>{{ listSection!.label }}</span>
-          <strong class="modal-row__list" [class.modal-row__list--productos]="!!listSection?.prominent">
+          <strong class="modal-row__list" [class.modal-row__list--productos]="!!listSection!.prominent">
             <span *ngFor="let line of listSection!.lines">{{ line }}</span>
           </strong>
         </div>

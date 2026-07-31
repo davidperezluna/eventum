@@ -13,12 +13,24 @@
   background: #fff;
   border-radius: 20px 20px 0 0;
   width: 100%;
-  max-width: 480px;
+  max-width: 100%;
   max-height: min(92vh, 720px);
   overflow-y: auto;
   padding: 1.15rem 1.15rem calc(1.15rem + env(safe-area-inset-bottom, 0px));
   position: relative;
   box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.18);
+  animation: qr-acceso-sheet-up 0.28s ease-out;
+}
+
+@keyframes qr-acceso-sheet-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .modal-overlay--qr-acceso .modal-close {
@@ -170,22 +182,23 @@
 }
 
 .modal-overlay--qr-acceso .modal-info--productos {
-  background: #f5f3ff;
-  border-color: #ddd6fe;
-  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  padding: 0.2rem 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
 }
 
 .modal-overlay--qr-acceso .modal-row--productos {
-  padding: 0.35rem 0;
-  gap: 0.55rem;
+  padding: 0;
+  gap: 0.3rem;
 }
 
 .modal-overlay--qr-acceso .modal-row--productos > span {
-  color: #7c3aed;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 .modal-overlay--qr-acceso .modal-row__list--productos {
@@ -194,9 +207,18 @@
 
 .modal-overlay--qr-acceso .modal-row__list--productos > span {
   color: #0f172a;
-  font-size: 1.05rem;
-  font-weight: 800;
-  line-height: 1.3;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.modal-overlay--qr-acceso .qr-acceso-sheet--productos .boleta-qr-preview--sheet {
+  margin: 0 0 0.85rem;
+  padding: 0.35rem 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .modal-overlay--qr-acceso .boleta-qr-preview--sheet {
@@ -282,7 +304,15 @@
   }
 
   .qr-acceso-sheet.modal-sheet {
+    max-width: 480px;
     border-radius: 18px;
     max-height: 85vh;
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qr-acceso-sheet.modal-sheet {
+    animation: none;
   }
 }

@@ -1,0 +1,240 @@
+<article
+  class="ticket-card"
+  [class.ticket-card--entry]="card.kind === 'entrada'"
+  [class.ticket-card--clickable]="card.clickable"
+  [class.ticket-card--with-stub]="card.kind === 'producto' || (card.kind === 'entrada' && card.hasTalon)"
+  [class.ticket-card--cover]="card.kind === 'cover'"
+  [attr.aria-label]="card.ariaLabel || null"
+  [attr.role]="card.clickable ? 'button' : null"
+  [attr.tabindex]="card.clickable ? 0 : null"
+  (click)="onCardClick($event)"
+  (keydown.enter)="onCardClick($event)"
+  (keydown.space)="onCardClick($event); $event.preventDefault()"
+>
+  <div class="ticket-card__body">
+    <ng-container *ngIf="card.kind === 'entrada'">
+      <header class="ticket-card__header">
+        <div class="ticket-card__heading-row">
+          <strong class="ticket-card__title">{{ card.title }}</strong>
+          <span *ngIf="card.badge as badge" class="ticket-badge ticket-status" [ngClass]="badge.className">{{ badge.label }}</span>
+        </div>
+        <span class="ticket-card__reference" [class.ticket-card__reference--received]="card.received">
+          {{ card.reference }}
+        </span>
+      </header>
+
+      <div class="ticket-card__date ticket-card__date--entry" *ngIf="card.dateTitle">
+        <span class="ticket-card__date-icon material-icons" aria-hidden="true">calendar_month</span>
+        <span class="ticket-card__date-copy">
+          <strong>{{ card.dateTitle }}</strong>
+          <span>{{ card.dateSubtitle }}</span>
+        </span>
+      </div>
+
+      <ng-container *ngTemplateOutlet="traslado; context: { $implicit: card.traslado }"></ng-container>
+
+      <div class="ticket-card__notice" *ngIf="card.pendingMessage">
+        <p>{{ card.pendingMessage }}</p>
+      </div>
+
+      <div class="ticket-card__attendee" *ngIf="card.attendee as attendee">
+        <div class="ticket-card__attendee-field">
+          <span class="ticket-card__attendee-icon material-icons" aria-hidden="true">person</span>
+          <span class="ticket-card__attendee-copy">
+            <span class="ticket-card__attendee-label">Cliente</span>
+            <strong class="ticket-card__attendee-value">{{ attendee.name }}</strong>
+          </span>
+        </div>
+        <div class="ticket-card__attendee-field" *ngIf="attendee.document">
+          <span class="ticket-card__attendee-icon material-icons" aria-hidden="true">badge</span>
+          <span class="ticket-card__attendee-copy">
+            <span class="ticket-card__attendee-label">Documento</span>
+            <strong class="ticket-card__attendee-value">{{ attendee.document }}</strong>
+          </span>
+        </div>
+        <div class="ticket-card__attendee-field" *ngIf="attendee.email">
+          <span class="ticket-card__attendee-icon material-icons" aria-hidden="true">mail_outline</span>
+          <span class="ticket-card__attendee-copy">
+            <span class="ticket-card__attendee-label">Email</span>
+            <strong class="ticket-card__attendee-value">{{ attendee.email }}</strong>
+          </span>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="card.kind === 'producto'">
+      <header class="ticket-card__header ticket-card__header--product">
+        <div class="ticket-card__info">
+          <strong class="ticket-card__purchase-label">{{ card.purchaseLabel }}</strong>
+          <span class="ticket-card__reference">{{ card.purchaseMeta }}</span>
+        </div>
+        <span class="ticket-badge badge-info-soft">{{ card.countLabel }}</span>
+      </header>
+
+      <div class="product-list">
+        <div class="product-row" *ngFor="let item of card.items">
+          <div class="product-row__media" aria-hidden="true">
+            <img *ngIf="item.imageUrl; else productPlaceholder" [src]="item.imageUrl" alt="" loading="lazy" />
+            <ng-template #productPlaceholder><span class="material-icons">inventory_2</span></ng-template>
+          </div>
+          <div class="product-row__body">
+            <div class="product-row__top">
+              <h5>
+                {{ item.name }}
+                <span class="product-row__alcohol" *ngIf="item.alcohol">+18</span>
+              </h5>
+              <span class="ticket-badge product-row__badge" [ngClass]="item.badge.className">{{ item.badge.label }}</span>
+            </div>
+            <p class="product-row__meta">{{ item.quantityLine }}</p>
+            <div class="product-row__pricing" *ngIf="item.pricing as pricing">
+              <p>{{ pricing.status }}</p>
+              <div>
+                <strong>{{ pricing.current }}</strong>
+                <span>{{ pricing.reference }}</span>
+              </div>
+              <small *ngIf="pricing.saving">{{ pricing.saving }}</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="card.kind === 'cover'">
+      <header class="ticket-card__header">
+        <div class="ticket-card__info">
+          <strong class="ticket-card__title">{{ card.title }}</strong>
+          <span class="ticket-card__reference" [class.ticket-card__reference--received]="card.received">
+            {{ card.reference }}
+          </span>
+        </div>
+        <span class="ticket-badge" [ngClass]="card.badge.className">{{ card.badge.label }}</span>
+      </header>
+
+      <div class="ticket-card__date">
+        <strong>{{ card.dateTitle }}</strong>
+        <span>{{ card.dateSubtitle }}</span>
+      </div>
+
+      <ng-container *ngTemplateOutlet="traslado; context: { $implicit: card.traslado }"></ng-container>
+
+      <div class="ticket-card__notice" *ngIf="card.blockedMessage">
+        <p>{{ card.blockedMessage }}</p>
+      </div>
+
+      <div class="ticket-card__cover-actions" *ngIf="card.qrAction || card.canTransfer">
+        <button
+          *ngIf="card.qrAction as qrAction"
+          type="button"
+          class="ticket-card__primary-action"
+          [class.ticket-card__primary-action--exit]="qrAction.exit"
+          (click)="emitAction('view-qr', $event)"
+        >
+          <span class="material-icons">{{ qrAction.icon }}</span>
+          {{ qrAction.label }}
+        </button>
+        <button
+          *ngIf="card.canTransfer"
+          type="button"
+          class="ticket-card__secondary-action"
+          (click)="emitAction('transfer', $event)"
+        >
+          <span class="material-icons">swap_horiz</span>
+          Transferir cover
+        </button>
+      </div>
+    </ng-container>
+  </div>
+
+  <ng-container *ngIf="card.kind === 'entrada' && card.hasTalon">
+    <div class="ticket-card__stub" [class.ticket-card__stub--used]="card.used">
+      <div class="ticket-card__tear" aria-hidden="true"></div>
+      <div class="ticket-card__used" *ngIf="card.used; else entradaActions">
+        <span class="material-icons" aria-hidden="true">check_circle</span>
+        <span>Entrada utilizada</span>
+      </div>
+      <ng-template #entradaActions>
+        <div class="ticket-card__actions">
+          <button
+            *ngIf="card.qr as qr"
+            type="button"
+            class="ticket-action"
+            [class.ticket-action--ready]="qr.ready"
+            (click)="emitAction('view-qr', $event)"
+          >
+            <span class="ticket-action__icon ticket-action__icon--qr"><span class="material-icons">{{ qr.icon }}</span></span>
+            <span class="ticket-action__copy"><strong>{{ qr.title }}</strong><small>{{ qr.subtitle }}</small></span>
+            <span class="material-icons ticket-action__chevron">chevron_right</span>
+          </button>
+
+          <ng-container *ngIf="card.assignment as assignment">
+            <ng-container *ngIf="assignment.mode === 'assign'; else transferEntry">
+              <button type="button" class="ticket-action" (click)="emitAction('send', $event)">
+                <span class="ticket-action__icon"><span class="material-icons">forward_to_inbox</span></span>
+                <span class="ticket-action__copy"><strong>Enviar</strong><small>A otra persona</small></span>
+                <span class="material-icons ticket-action__chevron">chevron_right</span>
+              </button>
+              <button
+                *ngIf="assignment.canUseProfile"
+                type="button"
+                class="ticket-action"
+                [disabled]="assignment.applyingProfile"
+                (click)="emitAction('use-profile', $event)"
+              >
+                <span class="ticket-action__icon"><span class="material-icons">person</span></span>
+                <span class="ticket-action__copy">
+                  <strong>{{ assignment.applyingProfile ? 'Aplicando…' : 'Mi perfil' }}</strong>
+                  <small>Para ti</small>
+                </span>
+                <span class="material-icons ticket-action__chevron">chevron_right</span>
+              </button>
+            </ng-container>
+            <ng-template #transferEntry>
+              <button type="button" class="ticket-action" (click)="emitAction('transfer', $event)">
+                <span class="ticket-action__icon"><span class="material-icons">swap_horiz</span></span>
+                <span class="ticket-action__copy"><strong>Transferir entrada</strong><small>Enviar a otra persona</small></span>
+                <span class="material-icons ticket-action__chevron">chevron_right</span>
+              </button>
+            </ng-template>
+            <p class="ticket-card__error" *ngIf="assignment.error">
+              {{ assignment.error }}
+              <a *ngIf="assignment.errorHasProfileLink" routerLink="/perfil" (click)="$event.stopPropagation()">Ir a Mi perfil</a>
+            </p>
+          </ng-container>
+        </div>
+      </ng-template>
+    </div>
+  </ng-container>
+
+  <ng-container *ngIf="card.kind === 'producto'">
+    <div class="ticket-card__stub" [class.ticket-card__stub--used]="card.redeemed">
+      <div class="ticket-card__tear" aria-hidden="true"></div>
+      <div class="ticket-card__used" *ngIf="card.redeemed">
+        <span class="material-icons" aria-hidden="true">check_circle</span>
+        <span>Productos retirados</span>
+      </div>
+      <div class="product-qr" *ngIf="!card.redeemed && card.qr as qr">
+        <p *ngIf="qr.message">{{ qr.message }}</p>
+        <button *ngIf="qr.ready" type="button" (click)="emitAction('view-qr', $event)">
+          <span class="material-icons">qr_code_2</span>
+          <span>Ver QR del pedido</span>
+          <span class="material-icons product-qr__chevron">chevron_right</span>
+        </button>
+      </div>
+      <footer class="product-total"><span>Total pedido</span><strong>{{ card.total }}</strong></footer>
+    </div>
+  </ng-container>
+
+  <ng-template #traslado let-transfer>
+    <div class="ticket-card__transfer" *ngIf="transfer">
+      <span class="ticket-card__transfer-badge" [class.ticket-card__transfer-badge--cover]="transfer.badgeVariant === 'cover'">
+        <span class="material-icons" aria-hidden="true">{{ transfer.badgeIcon }}</span>
+        {{ transfer.badgeLabel }}
+      </span>
+      <p>{{ transfer.destinationLabel }}: <strong>{{ transfer.email }}</strong>. {{ transfer.message }}</p>
+      <button *ngIf="transfer.cancellable" type="button" (click)="emitAction('cancel-transfer', $event)">
+        <span class="material-icons" aria-hidden="true">undo</span>
+        Cancelar envío
+      </button>
+    </div>
+  </ng-template>
+</article>
