@@ -1717,7 +1717,7 @@ export class MisCompras implements OnInit, OnDestroy {
       return 'Pago pendiente';
     }
     if (this.boletaPendienteAsignacion(boleta, compra)) {
-      return 'Entrada sin asignar';
+      return 'Asigna esta entrada';
     }
     return 'QR aún no disponible';
   }
@@ -1735,7 +1735,7 @@ export class MisCompras implements OnInit, OnDestroy {
       return 'El código QR estará disponible cuando el pago esté completado.';
     }
     if (this.boletaPendienteAsignacion(boleta, compra)) {
-      return 'Asigna por correo a la persona que usará esta entrada para habilitar el QR.';
+      return 'Envíala por correo a quien asistirá o asígnala a tu perfil. Sin asignación no hay QR.';
     }
     return this.mensajeHabilitacionQrBoleta(boleta, compra);
   }
@@ -1749,9 +1749,9 @@ export class MisCompras implements OnInit, OnDestroy {
     if (this.boletaPendienteAsignacion(boleta, compra)) {
       const rawInicio = this.eventoVistaBoleta(boleta, compra)?.fecha_inicio;
       if (rawInicio) {
-        return `QR disponible el ${this.formatFechaHabilitacionAmigable(rawInicio)}.`;
+        return `QR activo el ${this.formatFechaHabilitacionAmigable(rawInicio)}.`;
       }
-      return 'El QR se muestra el día del evento.';
+      return 'El QR se activa el día del evento.';
     }
     if (!this.esBoletaUsada(boleta)) {
       return '';
@@ -1776,7 +1776,7 @@ export class MisCompras implements OnInit, OnDestroy {
     }
 
     if (this.boletaPendienteAsignacion(boleta, compra)) {
-      const rows: QrAccesoModalRow[] = [
+      return [
         {
           label: 'Tipo',
           value: this.tipoBoletaSeleccionado?.nombre || boleta.tipo_boleta_meta?.nombre || 'Entrada',
@@ -1788,14 +1788,7 @@ export class MisCompras implements OnInit, OnDestroy {
             this.eventoVistaBoleta(boleta, compra)?.titulo ||
             'Evento',
         },
-        { label: 'Estado', value: 'Sin asignar' },
       ];
-      const evento = this.eventoSeleccionado || this.eventoVistaBoleta(boleta, compra);
-      if (evento?.fecha_inicio) {
-        rows.push({ label: 'Fecha', value: this.fechaModalBoleta(boleta, compra) });
-        rows.push({ label: 'Hora', value: this.horaModalBoleta(boleta, compra) });
-      }
-      return rows;
     }
 
     if (!this.esDiaEventoBoleta(boleta, compra)) {
@@ -5287,7 +5280,7 @@ export class MisCompras implements OnInit, OnDestroy {
 
   boletaTarjetaAriaLabel(boleta: BoletaComprada, compra: Compra): string {
     if (this.boletaPendienteAsignacion(boleta, compra)) {
-      return 'Entrada sin asignar. Toca para ver detalles';
+      return 'Asigna esta entrada: envía por correo o usa tu perfil';
     }
     if (this.muestraDesprendibleBoleta(boleta, compra)) {
       return this.desprendibleBoletaAriaLabel(boleta, compra);

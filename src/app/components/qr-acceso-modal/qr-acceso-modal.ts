@@ -36,10 +36,13 @@ export class QrAccesoModalComponent {
   @Input() loadingQr = false;
   @Input() rows: QrAccesoModalRow[] = [];
   @Input() listSection: QrAccesoModalListSection | null = null;
+  @Input() primaryActionLabel = '';
+  @Input() primaryActionIcon = '';
   @Input() secondaryActionLabel = '';
   @Input() secondaryActionIcon = '';
 
   @Output() closed = new EventEmitter<void>();
+  @Output() primaryAction = new EventEmitter<void>();
   @Output() secondaryAction = new EventEmitter<void>();
 
   onOverlayClick(): void {
@@ -48,6 +51,10 @@ export class QrAccesoModalComponent {
 
   onCloseClick(): void {
     this.closed.emit();
+  }
+
+  onPrimaryAction(): void {
+    this.primaryAction.emit();
   }
 
   onSecondaryAction(): void {
