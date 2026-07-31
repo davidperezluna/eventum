@@ -4747,11 +4747,22 @@ export class MisCompras implements OnInit, OnDestroy {
     return new Date().toLocaleDateString('en-CA', { timeZone: DateTimeUtil.APP_TIMEZONE });
   }
 
+  /** Clave YYYY-MM-DD en zona horaria de negocio (Colombia). */
+  private calendarioAppKey(value: string | Date): string {
+    if (typeof value === 'string') {
+      return DateTimeUtil.toCalendarDateKey(value);
+    }
+    return value.toLocaleDateString('en-CA', { timeZone: DateTimeUtil.APP_TIMEZONE });
+  }
+
   /** True si hoy (Colombia) cae entre fecha_inicio y fecha_fin inclusive. */
-  private estaEnRangoCalendarioApp(fechaInicio: string, fechaFin?: string | null): boolean {
-    const inicioKey = DateTimeUtil.toCalendarDateKey(fechaInicio);
+  private estaEnRangoCalendarioApp(
+    fechaInicio: string | Date,
+    fechaFin?: string | Date | null
+  ): boolean {
+    const inicioKey = this.calendarioAppKey(fechaInicio);
     if (!inicioKey) return true;
-    const finKey = fechaFin ? DateTimeUtil.toCalendarDateKey(fechaFin) : inicioKey;
+    const finKey = fechaFin ? this.calendarioAppKey(fechaFin) : inicioKey;
     if (!finKey) return true;
     const hoyKey = this.hoyCalendarioApp();
     const desde = inicioKey <= finKey ? inicioKey : finKey;
