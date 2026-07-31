@@ -65,9 +65,6 @@
           <span class="disponibles" [class.sin-stock]="!tieneExistencias(producto)">
             {{ getDisponibles(producto) }} disponibles
           </span>
-          <span *ngIf="producto.cantidad_vendidas !== undefined && producto.cantidad_vendidas > 0" class="vendidas">
-            {{ producto.cantidad_vendidas }} vendidos de {{ producto.cantidad_total }} totales
-          </span>
           <span *ngIf="producto.limite_por_persona" class="limite">Máx. {{ producto.limite_por_persona }} por persona</span>
         </div>
         <span *ngIf="producto.es_licor" class="palco-badge palco-badge--licor">
