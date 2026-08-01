@@ -148,7 +148,7 @@
 
     <!-- Compra primero (entradas y carrito) -->
     <div class="detalle-zone detalle-zone--compra">
-      <nav class="detalle-compra-tabs" *ngIf="tieneProductos || loadingProductosFlag" aria-label="Secciones de compra">
+      <nav class="detalle-compra-tabs" *ngIf="mostrarTabsCompra" aria-label="Secciones de compra">
         <button
           type="button"
           class="detalle-compra-tab"
@@ -172,7 +172,7 @@
       </nav>
 
       <!-- Tipos de boleta disponibles -->
-      <div class="entradas-panel evento-section detalle-tab-panel" [hidden]="tabCompra !== 'entradas' || isEventoFinalizado()">
+      <div class="entradas-panel evento-section detalle-tab-panel" [hidden]="tabCompra !== 'entradas' || isEventoFinalizado() || mostrarSoloProductos">
       <div class="section-heading-row">
         <div>
           <h2>Entradas</h2>
@@ -251,7 +251,7 @@
 
       <div
         class="etapas-agotadas-zone detalle-tab-panel"
-        *ngIf="!loadingBoletas && tiposBoletaAgotados.length > 0"
+        *ngIf="!loadingBoletas && tiposBoletaAgotados.length > 0 && !mostrarSoloProductos"
         [hidden]="tabCompra !== 'entradas' || isEventoFinalizado()"
       >
         <div class="evento-section evento-accordion etapas-agotadas-accordion">
@@ -289,7 +289,7 @@
 
       <app-evento-productos-tab
         *ngIf="evento && tieneProductos"
-        [hidden]="tabCompra !== 'productos'"
+        [hidden]="!mostrarPanelProductos"
         class="detalle-tab-panel"
         [evento]="evento"
         [eventoFinalizado]="isEventoFinalizado()"
@@ -299,7 +299,7 @@
       ></app-evento-productos-tab>
 
       <div
-        *ngIf="tabCompra === 'productos' && loadingProductosFlag"
+        *ngIf="mostrarPanelProductos && loadingProductosFlag"
         class="evento-section detalle-tab-panel productos-pending-state"
         aria-live="polite"
       >
@@ -309,7 +309,7 @@
       </div>
 
       <div
-        *ngIf="tabCompra === 'productos' && !loadingProductosFlag && !tieneProductos"
+        *ngIf="mostrarPanelProductos && !loadingProductosFlag && !tieneProductos"
         class="evento-section detalle-tab-panel productos-pending-state"
       >
         <div class="empty-state">

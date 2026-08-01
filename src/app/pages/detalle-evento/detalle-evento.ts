@@ -171,6 +171,31 @@ export class DetalleEvento implements OnInit, OnDestroy {
     return this.tiposBoleta.filter((t) => !this.tieneExistencias(t));
   }
 
+  get tieneEntradasEnVenta(): boolean {
+    return this.tiposBoletaDisponibles.length > 0;
+  }
+
+  get catalogoCompraListo(): boolean {
+    return !this.loadingBoletas && !this.loadingProductosFlag;
+  }
+
+  /** Tabs solo cuando hay entradas y productos a la vez. */
+  get mostrarTabsCompra(): boolean {
+    return this.catalogoCompraListo && this.tieneEntradasEnVenta && this.tieneProductos;
+  }
+
+  /** Sin entradas en venta: productos directo, sin selector de tabs. */
+  get mostrarSoloProductos(): boolean {
+    if (this.tieneEntradasEnVenta || this.loadingBoletas) {
+      return false;
+    }
+    return this.tieneProductos || this.loadingProductosFlag;
+  }
+
+  get mostrarPanelProductos(): boolean {
+    return this.tabCompra === 'productos' || this.mostrarSoloProductos;
+  }
+
   maxCantidadPermitida(tipo: TipoBoleta): number {
     const stockPalcos = this.esLineaPalcoMultipersona(tipo)
       ? (this.palcosDisponiblesPorTipo.get(tipo.id) ?? []).length
@@ -205,6 +230,8 @@ export class DetalleEvento implements OnInit, OnDestroy {
     const tabQuery = this.route.snapshot.queryParamMap.get('tab');
     if (tabQuery === 'productos') {
       this.tabCompra = 'productos';
+    } else {
+      this.sincronizarVistaCompra();
     }
 
     this.loadUsuario();
@@ -549,6 +576,7 @@ export class DetalleEvento implements OnInit, OnDestroy {
           })
           .finally(() => {
             this.loadingProductosFlag = false;
+            this.sincronizarVistaCompra();
             this.cdr.detectChanges();
           })
       );
@@ -580,6 +608,8 @@ export class DetalleEvento implements OnInit, OnDestroy {
 
       // Esperar a que todas las cargas terminen en paralelo
       await Promise.all(promesas);
+
+      this.sincronizarVistaCompra();
 
       // Actualizar estado y vista después de que todo esté cargado
       this.loading = false;
@@ -679,11 +709,13 @@ export class DetalleEvento implements OnInit, OnDestroy {
         });
       await this.refrescarPalcosDisponibles();
       this.loadingBoletas = false;
+      this.sincronizarVistaCompra();
       this.cdr.detectChanges();
     } catch (err) {
       console.error('Error cargando tipos de boleta:', err);
       this.tiposBoleta = [];
       this.loadingBoletas = false;
+      this.sincronizarVistaCompra();
       this.cdr.detectChanges();
       // No lanzar el error para que no rompa la carga del evento
     }
@@ -977,8 +1009,40 @@ export class DetalleEvento implements OnInit, OnDestroy {
   onProductosActualizados(productos: Producto[]): void {
     this.productosCache = [...productos];
     this.tieneProductos = this.productosCache.length > 0;
+    this.sincronizarVistaCompra();
     this.persistState(Date.now());
     this.cdr.detectChanges();
+  }
+
+  private sincronizarVistaCompra(): void {
+    const tabQuery = this.route.snapshot.queryParamMap.get('tab');
+
+    if (tabQuery === 'productos' && (this.tieneProductos || this.loadingProductosFlag)) {
+      this.tabCompra = 'productos';
+      return;
+    }
+
+    if (
+      !this.tieneEntradasEnVenta &&
+      !this.loadingBoletas &&
+      (this.tieneProductos || this.loadingProductosFlag)
+    ) {
+      this.tabCompra = 'productos';
+      return;
+    }
+
+    if (!this.catalogoCompraListo) {
+      return;
+    }
+
+    if (this.tieneEntradasEnVenta && !this.tieneProductos) {
+      this.tabCompra = 'entradas';
+      return;
+    }
+
+    if (this.tieneEntradasEnVenta && this.tieneProductos && tabQuery !== 'productos') {
+      this.tabCompra = 'entradas';
+    }
   }
 }
 
