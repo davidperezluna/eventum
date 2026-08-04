@@ -2413,7 +2413,7 @@ export class MisCompras implements OnInit, OnDestroy {
         ? {
             ready: qrReady,
             message: qrReady
-              ? 'QR único del pedido'
+              ? 'Muéstralo en el punto de entrega del evento.'
               : this.mensajeEstadoQrCompraProducto(compraDetalle.compra, grupo),
           }
         : undefined,

@@ -9,6 +9,7 @@ import {
   LOGIN_MOTIVO_TEXTO,
 } from '../../core/login-redirect';
 import { urlDestinoClienteConPerfil } from '../../core/perfil-completo';
+import { COMPRA_COPY } from '../../core/compra-copy';
 
 /** Acceso público para clientes (Google). Personal usa `/login-admin`. */
 @Component({
@@ -25,7 +26,7 @@ export class Login implements OnInit {
   constructor(
     private authService: AuthService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
   ) {}
 
   async ngOnInit() {
@@ -34,6 +35,8 @@ export class Login implements OnInit {
     guardarReturnUrlLogin(returnUrl);
     if (motivo && LOGIN_MOTIVO_TEXTO[motivo]) {
       this.contextoLogin = LOGIN_MOTIVO_TEXTO[motivo];
+    } else if (returnUrl === '/carrito') {
+      this.contextoLogin = COMPRA_COPY.loginContextoPagar;
     } else if (returnUrl) {
       this.contextoLogin = 'Entra para continuar donde lo dejaste.';
     }

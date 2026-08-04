@@ -851,6 +851,11 @@
   border: 1px solid rgba(139, 92, 246, 0.18);
 }
 
+.login-hint--accent {
+  color: #5b21b6;
+  border-color: rgba(139, 92, 246, 0.28);
+}
+
 .login-staff-link-wrap {
   margin: 0.65rem 0 0;
   text-align: center;

@@ -6,7 +6,11 @@
       </div>
       <h1 class="pago-panel__title">Confirmando tu pago…</h1>
       <p class="pago-panel__lead">
-        Hablamos con el medio de pago para ver el resultado. Suele tardar solo unos segundos.
+        Consultamos con Wompi el resultado de tu pago. Suele tardar unos segundos; en casos puntuales puede
+        demorar hasta 30 segundos. No cierres esta ventana.
+      </p>
+      <p *ngIf="consultaIntentosMax > 1" class="pago-panel__lead pago-panel__lead--progress" aria-live="polite">
+        Intento {{ consultaIntento }} de {{ consultaIntentosMax }}…
       </p>
     </article>
 
@@ -14,7 +18,7 @@
       <div class="pago-panel__icon" aria-hidden="true">
         <span class="material-icons">cancel</span>
       </div>
-      <span class="pago-estado-chip pago-estado-chip--error">Sin resultado</span>
+      <span class="pago-estado-chip pago-estado-chip--error">Sin confirmar</span>
       <h1 class="pago-panel__title">{{ errorTitulo }}</h1>
       <p class="pago-panel__lead">{{ error }}</p>
       <div class="pago-panel__actions">
@@ -22,7 +26,7 @@
           Ir a Mis compras
         </button>
         <button type="button" class="btn btn-secondary" (click)="router.navigate(['/eventos-cliente'])">
-          Volver a Eventos
+          Explorar eventos
         </button>
       </div>
     </article>
@@ -56,29 +60,30 @@
 
       <div *ngIf="mostrarAvisoCuentaEventum" class="pago-cuenta-eventum" role="note">
         <span class="material-icons" aria-hidden="true">account_circle</span>
-        <p>
-          Entra a Eventum con <strong>{{ emailCuentaEventum }}</strong> para ver boletas y productos.
-          El correo que Wompi te envió puede ser distinto: es el comprobante de pago, no tu cuenta Eventum.
-        </p>
+        <div class="pago-cuenta-eventum__body">
+          <p class="pago-cuenta-eventum__label">{{ tituloAvisoCuentaEventum }}</p>
+          <p class="pago-cuenta-eventum__email">{{ emailCuentaEventum }}</p>
+          <p class="pago-cuenta-eventum__note">{{ notaAvisoCuentaEventum }}</p>
+        </div>
       </div>
 
       <section class="pago-summary" aria-labelledby="pago-summary-heading">
         <h3 id="pago-summary-heading" class="pago-summary__heading">Resumen de la operación</h3>
         <dl class="pago-summary__grid">
           <div class="pago-summary-row" *ngIf="compra">
-            <dt>Transacción boletas</dt>
+            <dt>Número de compra (boletas)</dt>
             <dd>{{ compra.numero_transaccion }}</dd>
           </div>
           <div class="pago-summary-row" *ngIf="compraProducto">
-            <dt>Pedido productos</dt>
+            <dt>Pedido de productos</dt>
             <dd>{{ compraProducto.numero_pedido }}</dd>
           </div>
           <div class="pago-summary-row" *ngIf="!compraProducto && transaccionProducto">
-            <dt>Referencia productos</dt>
+            <dt>Referencia de productos</dt>
             <dd>{{ transaccionProducto.numero_transaccion }}</dd>
           </div>
           <div class="pago-summary-row" *ngIf="!compra && !compraProducto && transaccionCheckout?.numero_intento">
-            <dt>Intento checkout</dt>
+            <dt>Referencia de pago</dt>
             <dd>{{ transaccionCheckout!.numero_intento }}</dd>
           </div>
           <div class="pago-summary-row" *ngIf="compra?.wompi_reference">
@@ -90,7 +95,7 @@
             <dd>{{ transaccionCheckout!.wompi_reference }}</dd>
           </div>
           <div class="pago-summary-row pago-summary-row--accent">
-            <dt>Total cobrado</dt>
+            <dt>Total</dt>
             <dd>{{ formatCurrency(getTotalMostrado()) }}</dd>
           </div>
           <div class="pago-summary-row" *ngIf="compra?.wompi_payment_method">
@@ -111,18 +116,21 @@
       <div class="pago-panel__actions">
         <ng-container *ngIf="getEstadoPagoReferencia() === 'completado'">
           <button type="button" class="btn btn-primary" (click)="router.navigate(['/mis-compras'])">
-            Ver mis boletas
+            Ver en Mis compras
           </button>
           <button type="button" class="btn btn-secondary" (click)="router.navigate(['/eventos-cliente'])">
-            Explorar más eventos
+            Explorar eventos
           </button>
+          <a *ngIf="mostrarEnlaceGuiaCompras" routerLink="/mis-compras/guia" class="pago-panel__guia-link">
+            ¿Primera compra? Lee la guía de uso
+          </a>
         </ng-container>
         <ng-container *ngIf="getEstadoPagoReferencia() === 'pendiente'">
           <button type="button" class="btn btn-primary" (click)="router.navigate(['/mis-compras'])">
             Revisar estado en Mis compras
           </button>
           <button type="button" class="btn btn-secondary" (click)="router.navigate(['/eventos-cliente'])">
-            Volver al inicio
+            Explorar eventos
           </button>
         </ng-container>
         <ng-container *ngIf="getEstadoPagoReferencia() === 'fallido'">
@@ -138,7 +146,7 @@
             Ir a Mis compras
           </button>
           <button type="button" class="btn btn-secondary" (click)="router.navigate(['/eventos-cliente'])">
-            Volver a Eventos
+            Explorar eventos
           </button>
         </ng-container>
       </div>

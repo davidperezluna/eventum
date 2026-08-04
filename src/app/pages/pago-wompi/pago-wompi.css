@@ -274,6 +274,12 @@
   transform: translateY(1px);
 }
 
+.btn-primary:disabled {
+  opacity: 0.72;
+  cursor: wait;
+  transform: none;
+}
+
 .btn-secondary {
   border: 1px solid var(--ec-border, #e2e8f0);
   background: var(--ec-surface, #fff);

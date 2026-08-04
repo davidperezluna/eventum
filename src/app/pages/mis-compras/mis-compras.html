@@ -1,7 +1,7 @@
 <div class="mis-compras-page">
   <div *ngIf="loading" class="loading-state">
     <div class="spinner"></div>
-    <p>{{ vistaActividad ? 'Cargando…' : 'Cargando compras...' }}</p>
+    <p>{{ vistaActividad ? 'Cargando…' : 'Cargando tus compras…' }}</p>
   </div>
 
   <ng-container *ngIf="!loading && vistaActividad">
@@ -105,7 +105,8 @@
         <ul class="guia-resumen-list">
           <li>Solo puedes asignar o enviar entradas con pago confirmado.</li>
           <li>Si envías por correo, el destinatario debe tener cuenta y documento registrado.</li>
-          <li>El QR solo se habilita el día del evento.</li>
+          <li>El QR de entradas solo se habilita el día del evento.</li>
+          <li>Productos: muestra el QR del pedido en el punto de entrega del evento.</li>
         </ul>
         <div class="guia-resumen-actions">
           <a routerLink="/mis-compras/guia" class="guia-resumen-link" aria-label="Ir a guía completa">
@@ -927,11 +928,15 @@
   <div *ngIf="!loading && !vistaActividad && !tieneContenidoMisBoletas()" class="empty-state">
     <span class="material-icons empty-state__lead-icon" aria-hidden="true">shopping_bag</span>
     <p class="empty-state__title">Aún no tienes compras</p>
-    <p class="empty-subtitle">Explora eventos o clubes y adquiere boletas, productos o cover</p>
-    <a routerLink="/eventos-cliente" class="btn-primary empty-state__cta">
-      <span class="material-icons" aria-hidden="true">event</span>
-      Ver Eventos
-    </a>
+    <p class="empty-subtitle">
+      Explora eventos o clubes y adquiere boletas, productos o covers. Tras pagar, todo aparecerá aquí en unos minutos.
+    </p>
+    <div class="empty-state__actions">
+      <a routerLink="/eventos-cliente" class="btn-primary empty-state__cta">
+        <span class="material-icons" aria-hidden="true">event</span>
+        Ver eventos
+      </a>
+    </div>
   </div>
 
   <!-- Paginación -->

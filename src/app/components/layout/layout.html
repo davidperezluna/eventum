@@ -227,7 +227,11 @@
           </a>
         </nav>
         <div class="client-user-menu">
-          <a routerLink="/login" class="btn-login-public">Entrar</a>
+          <a
+            routerLink="/login"
+            [queryParams]="headerLoginQueryParams"
+            class="btn-login-public"
+          >Entrar</a>
         </div>
       </div>
     </header>

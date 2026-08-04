@@ -5,27 +5,22 @@
         <span class="material-icons">lock</span>
       </div>
 
-      <span class="pago-wompi-chip">Confirmación</span>
+      <span class="pago-wompi-chip">Paso 2 · Confirmación antes de Wompi</span>
 
       <h1 class="pago-wompi-panel__title">Confirma tu cuenta antes de pagar</h1>
-      <p class="pago-wompi-panel__lead">
-        Revisa el correo de abajo. Tus entradas y productos quedarán en Eventum con esa cuenta.
-      </p>
+      <p class="pago-wompi-panel__lead">{{ compraCopy.pagoWompiLead }}</p>
 
       <div class="pago-wompi-email-hero" role="note">
         <span class="material-icons pago-wompi-email-hero__icon" aria-hidden="true">mail</span>
         <div class="pago-wompi-email-hero__body">
-          <p class="pago-wompi-email-hero__label">Su compra se ligará a este correo</p>
+          <p class="pago-wompi-email-hero__label">{{ compraCopy.emailHeroLabel }}</p>
           <p class="pago-wompi-email-hero__email">{{ p.emailCuenta || 'tu cuenta Eventum' }}</p>
         </div>
       </div>
 
       <div class="pago-wompi-note" role="note">
         <span class="material-icons" aria-hidden="true">info</span>
-        <p>
-          En Wompi puedes usar otro correo solo para el <strong>recibo del banco</strong>.
-          Eso no mueve tus entradas: para verlas entra con el correo de arriba en <strong>Mis compras</strong>.
-        </p>
+        <p>{{ compraCopy.wompiReciboNota }}</p>
       </div>
 
       <section class="pago-wompi-summary" aria-labelledby="pago-wompi-summary-heading">
@@ -47,12 +42,17 @@
       </section>
 
       <div class="pago-wompi-panel__actions">
-        <button type="button" class="btn btn-primary" (click)="continuarAWompi()">
-          <span class="material-icons" aria-hidden="true">arrow_forward</span>
-          Continuar a Wompi
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="continuarAWompi()"
+          [disabled]="redirigiendo"
+        >
+          <span class="material-icons" aria-hidden="true">{{ redirigiendo ? 'hourglass_empty' : 'arrow_forward' }}</span>
+          {{ redirigiendo ? 'Abriendo Wompi…' : 'Continuar a Wompi' }}
         </button>
-        <button type="button" class="btn btn-secondary" (click)="router.navigate(['/eventos-cliente'])">
-          Volver a eventos
+        <button type="button" class="btn btn-secondary" (click)="router.navigate(['/carrito'])">
+          Volver al carrito
         </button>
       </div>
     </article>

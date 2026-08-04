@@ -19,6 +19,7 @@ import {
   urlDestinoClienteConPerfil,
 } from '../../core/perfil-completo';
 import { ClientConfirmDialog } from '../client-confirm-dialog/client-confirm-dialog';
+import { LOGIN_QUERY_CARRITO_PAGAR } from '../../core/login-redirect';
 
 type ClientNavItem = {
   path: string;
@@ -72,6 +73,12 @@ export class Layout implements OnInit, OnDestroy {
   readonly cuposLabels = CUPOS_LABELS;
   readonly coversLabels = COVERS_LABELS;
   readonly currentYear = new Date().getFullYear();
+
+  /** Login contextual de compra cuando hay ítems en el carrito (header «Entrar»). */
+  get headerLoginQueryParams(): typeof LOGIN_QUERY_CARRITO_PAGAR | undefined {
+    return this.totalItemsCarrito > 0 ? LOGIN_QUERY_CARRITO_PAGAR : undefined;
+  }
+
   private routerSubscription?: any;
   private carritoSubscription?: any;
   private trasladosPendientesSubscription?: Subscription;

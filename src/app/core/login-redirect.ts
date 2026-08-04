@@ -1,4 +1,5 @@
 import { Router } from '@angular/router';
+import { COMPRA_COPY } from './compra-copy';
 
 export const LOGIN_RETURN_URL_KEY = 'eventum_login_return_url';
 
@@ -7,10 +8,16 @@ export const LOGIN_MOTIVO_TEXTO: Record<string, string> = {
   contactar: 'Entra para contactar en el tablón y enviar tu interés.',
   publicar: 'Entra para publicar tu aviso en este evento.',
   reportar: 'Entra para reportar un aviso.',
-  pagar: 'Entra para finalizar tu compra de forma segura.',
+  pagar: COMPRA_COPY.loginContextoPagar,
   'sesion-expirada': 'Tu sesión terminó. Entra de nuevo para continuar donde lo dejaste.',
   'mis-publicaciones': 'Entra para ver tus publicaciones de cupo.',
 };
+
+/** Query params para login desde flujo de compra (carrito / pago). */
+export const LOGIN_QUERY_CARRITO_PAGAR = {
+  returnUrl: '/carrito',
+  motivo: 'pagar',
+} as const;
 
 export function guardarReturnUrlLogin(returnUrl: string | null | undefined): void {
   if (typeof sessionStorage === 'undefined') return;

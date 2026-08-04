@@ -5,9 +5,9 @@
   >
     <h1 class="client-page-header__title">Mi carrito</h1>
     <p class="client-page-header__subtitle client-page-header__subtitle--full">
-      Confirma tus boletas, productos y finaliza tu compra de forma segura.
+      Revisa tu pedido, confirma tu cuenta y finaliza el pago de forma segura.
     </p>
-    <p class="client-page-header__subtitle client-page-header__subtitle--short">Confirma y paga de forma segura.</p>
+    <p class="client-page-header__subtitle client-page-header__subtitle--short">Revisa y paga con seguridad.</p>
   </header>
 
   <section class="carrito-shell">
@@ -60,7 +60,7 @@
       <p class="checkout-pendiente-alert__text">
         {{
           pendiente.expiro
-            ? 'Hay un checkout vencido. Revisa su estado o cancélalo para crear una compra nueva.'
+            ? 'Hay un pago vencido. Revisa su estado o cancélalo para crear una compra nueva.'
             : 'Tienes una compra sin confirmar. Reanúdala antes de que venza el tiempo de pago.'
         }}
       </p>
@@ -89,11 +89,17 @@
         <span class="material-icons">shopping_cart</span>
       </div>
       <h2>Tu carrito está vacío</h2>
-      <p>Agrega boletas, palcos o productos desde el detalle del evento.</p>
-      <a routerLink="/eventos-cliente" class="empty-state__cta">
-        <span class="material-icons" aria-hidden="true">event</span>
-        Ver eventos
-      </a>
+      <p>Agrega boletas, palcos, productos o covers desde el detalle del evento o club.</p>
+      <div class="empty-state__actions">
+        <a routerLink="/eventos-cliente" class="empty-state__cta">
+          <span class="material-icons" aria-hidden="true">event</span>
+          Ver eventos
+        </a>
+        <a *ngIf="coversEventumEnabled" routerLink="/clubes" class="empty-state__cta empty-state__cta--secondary">
+          <span class="material-icons" aria-hidden="true">nightlife</span>
+          Explorar clubes
+        </a>
+      </div>
     </div>
 
     <ng-container *ngIf="!carritoVacio">
@@ -120,44 +126,20 @@
               {{ esCompraMixtaBoletasProductos ? 'link' : (tieneBoletasEnCarrito ? 'confirmation_number' : 'storefront') }}
             </span>
             <div class="carrito-vinculo-aviso__copy">
-              <p class="carrito-vinculo-aviso__title">
-                {{
-                  esCompraMixtaBoletasProductos
-                    ? 'Tu compra'
-                    : (tieneBoletasEnCarrito ? 'Boletas y palcos' : 'Productos')
-                }}
+              <p class="carrito-vinculo-aviso__email-label" *ngIf="tieneSesionParaVinculo; else avisoVinculoSinSesion">
+                {{ compraCopy.emailHeroLabel }}
               </p>
-              <p class="carrito-vinculo-aviso__text" *ngIf="tieneSesionParaVinculo; else avisoVinculoSinSesion">
-                <ng-container *ngIf="esCompraMixtaBoletasProductos">
-                  Esta compra quedará vinculada a tu cuenta Eventum con el correo
-                  <strong>{{ emailCuentaCompra }}</strong>:
-                </ng-container>
-                <ng-container *ngIf="!esCompraMixtaBoletasProductos && tieneBoletasEnCarrito">
-                  {{ totalUnidadesBoletasEnCarrito() }} entrada(s) quedarán vinculadas a tu cuenta Eventum con el correo
-                  <strong>{{ emailCuentaCompra }}</strong>.
-                  Las verás en <strong>Mis compras</strong> con ese usuario.
-                </ng-container>
-                <ng-container *ngIf="!esCompraMixtaBoletasProductos && tieneProductosEnCarrito">
-                  {{ totalUnidadesProductosEnCarrito() }} producto(s) quedarán vinculados a tu cuenta Eventum con el correo
-                  <strong>{{ emailCuentaCompra }}</strong>.
-                  Los retiras en el evento desde <strong>Mis compras</strong> con el código QR.
-                </ng-container>
+              <p *ngIf="tieneSesionParaVinculo" class="carrito-vinculo-aviso__email">
+                <strong>{{ emailCuentaCompra }}</strong>
               </p>
               <ul
-                *ngIf="tieneSesionParaVinculo && esCompraMixtaBoletasProductos"
+                *ngIf="tieneSesionParaVinculo && lineasDetalleVinculo.length"
                 class="carrito-vinculo-aviso__lista"
               >
-                <li>
-                  <strong>{{ totalUnidadesBoletasEnCarrito() }}</strong>
-                  entrada(s) → las verás en <strong>Mis compras</strong>.
-                </li>
-                <li>
-                  <strong>{{ totalUnidadesProductosEnCarrito() }}</strong>
-                  producto(s) → los retiras en el evento con el QR de <strong>Mis compras</strong>.
-                </li>
+                <li *ngFor="let linea of lineasDetalleVinculo">{{ linea }}</li>
               </ul>
               <p *ngIf="tieneSesionParaVinculo" class="carrito-vinculo-aviso__wompi-hint">
-                En Wompi puedes poner otro correo para el recibo del banco; tus entradas siguen en la cuenta Eventum indicada arriba.
+                {{ compraCopy.wompiReciboNota }}
               </p>
               <button
                 *ngIf="tieneSesionParaVinculo"
@@ -170,13 +152,21 @@
               </button>
               <ng-template #avisoVinculoSinSesion>
                 <p class="carrito-vinculo-aviso__text">
-                  Al pagar, todo quedará vinculado al correo de tu cuenta Eventum.
+                  {{ compraCopy.sinSesionVinculo }}
                   <a routerLink="/login" [queryParams]="{ returnUrl: '/carrito', motivo: 'pagar' }">Inicia sesión</a>
                   para continuar.
                 </p>
               </ng-template>
             </div>
           </div>
+
+          <p
+            *ngIf="esCompraMixtaBoletasProductos"
+            class="carrito-cupon-mixto-aviso"
+            role="note"
+          >
+            {{ compraCopy.cuponMixto }}
+          </p>
 
           <div *ngFor="let item of itemsCover" class="carrito-item">
             <div class="carrito-item-info">
@@ -222,8 +212,8 @@
                     type="button"
                     class="btn-remove-item-static"
                     (click)="eliminarDelCarrito(item)"
-                    title="Quitar item"
-                    aria-label="Quitar item"
+                    title="Quitar entrada"
+                    aria-label="Quitar entrada"
                   >
                     <span class="material-icons">delete_outline</span>
                   </button>
@@ -420,7 +410,7 @@
           </summary>
 
           <div class="cupon-details__body">
-            <p class="cupon-details__note">Solo aplica sobre boletas y palcos.</p>
+            <p class="cupon-details__note">Solo aplica sobre boletas y palcos, no sobre productos.</p>
 
             <div class="cupon-input-group" *ngIf="!cuponAplicado">
               <input
@@ -535,6 +525,7 @@
             <span>Servicio ({{ getPorcentajeServicio() }}%):</span>
             <span>{{ formatCurrency(getValorServicio()) }}</span>
           </div>
+          <p class="carrito-servicio-hint">Cargo por procesamiento de pago en línea.</p>
           <div class="total-row main">
             <h3>Total: {{ formatCurrency(getTotal()) }}</h3>
           </div>
@@ -542,11 +533,12 @@
             type="button"
             class="btn-comprar btn-comprar--inline"
             (click)="procesarCompra()"
-            [disabled]="comprando || !!checkoutPendienteEnCurso"
+            [disabled]="comprando || !!checkoutPendienteEnCurso || tienePalcosIncompletos()"
           >
             <span class="material-icons">{{ comprando ? 'hourglass_empty' : 'shopping_cart' }}</span>
-            {{ comprando ? 'Procesando...' : (checkoutPendienteEnCurso ? 'Pago en curso: recupéralo o cancélalo' : 'Finalizar compra') }}
+            {{ labelBotonFinalizarCompra }}
           </button>
+          <p *ngIf="hintAccionCompra as hint" class="carrito-accion-hint">{{ hint }}</p>
         </div>
       </section>
     </ng-container>
@@ -591,13 +583,14 @@
           type="button"
           class="carrito-checkout-bar__btn"
           (click)="procesarCompra()"
-          [disabled]="comprando"
+          [disabled]="comprando || tienePalcosIncompletos()"
         >
           <span class="material-icons" aria-hidden="true">{{ comprando ? 'hourglass_empty' : 'shopping_cart' }}</span>
-          {{ comprando ? 'Procesando…' : 'Pagar' }}
+          {{ labelBotonFinalizarCompra }}
         </button>
       </ng-template>
     </ng-template>
+    <p *ngIf="hintAccionCompra as hint" class="carrito-checkout-bar__hint">{{ hint }}</p>
   </div>
 
   <div class="palco-mapa-overlay" *ngIf="mapaAmpliado as mapa" (click)="cerrarMapaAmpliado()">

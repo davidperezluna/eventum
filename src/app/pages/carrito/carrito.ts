@@ -1,8 +1,10 @@
 import { ChangeDetectorRef, Component, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { WOMPI_CHECKOUT_STORAGE_KEY } from '../pago-wompi/pago-wompi';
+import { coversEventumEnabled } from '../../core/covers-feature';
+import { COMPRA_COPY, lineasDetalleVinculoCarrito } from '../../core/compra-copy';
 import { Subscription } from 'rxjs';
 import { BoletasService } from '../../services/boletas.service';
 import {
@@ -87,6 +89,7 @@ export class Carrito implements OnInit, OnDestroy {
 
   constructor(
     public router: Router,
+    private route: ActivatedRoute,
     private boletasService: BoletasService,
     private carritoCompraService: CarritoCompraService,
     private comprasClienteService: ComprasClienteService,
@@ -105,6 +108,19 @@ export class Carrito implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.usuario = this.authService.getUsuario();
+
+    if (this.route.snapshot.queryParamMap.get('aviso') === 'pago-wompi-sin-datos') {
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { aviso: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+      this.alertService.snackbar(
+        'No encontramos los datos del pago. Si acabas de iniciar una compra, vuelve a finalizar desde el carrito.'
+      );
+    }
+
     this.unsubscribeAuth = this.authService.onAuthStateChange((_user, usuario) => {
       this.usuario = usuario;
       if (usuario) {
@@ -229,6 +245,50 @@ export class Carrito implements OnInit, OnDestroy {
 
   get tieneSesionParaVinculo(): boolean {
     return !!this.emailCuentaCompra;
+  }
+
+  readonly coversEventumEnabled = coversEventumEnabled;
+  readonly compraCopy = COMPRA_COPY;
+
+  get lineasDetalleVinculo(): string[] {
+    return lineasDetalleVinculoCarrito({
+      unidadesBoletas: this.totalUnidadesBoletasEnCarrito(),
+      unidadesProductos: this.totalUnidadesProductosEnCarrito(),
+      esMixto: this.esCompraMixtaBoletasProductos,
+      tieneBoletas: this.tieneBoletasEnCarrito,
+      tieneProductos: this.tieneProductosEnCarrito,
+    });
+  }
+
+  tienePalcosIncompletos(): boolean {
+    return this.itemsCompra.some(
+      (item) => this.esLineaPalcoMultipersona(item.tipo) && !this.palcosSeleccionCompletos(item),
+    );
+  }
+
+  get hintAccionCompra(): string | null {
+    if (this.checkoutPendienteEnCurso) {
+      return this.checkoutPendienteEnCurso.expiro
+        ? 'Tienes un pago vencido: revísalo o cancélalo para continuar.'
+        : 'Tienes un pago sin confirmar: recupéralo o cancélalo antes de una compra nueva.';
+    }
+    if (this.tienePalcosIncompletos()) {
+      return 'Selecciona todos los palcos antes de finalizar la compra.';
+    }
+    if (this.tieneLicor() && !this.terminosAceptados) {
+      return 'Al finalizar se te pedirá aceptar los términos de venta +18.';
+    }
+    return null;
+  }
+
+  get labelBotonFinalizarCompra(): string {
+    if (this.comprando) {
+      return 'Procesando…';
+    }
+    if (this.checkoutPendienteEnCurso) {
+      return 'Pago en curso: recupéralo o cancélalo';
+    }
+    return 'Finalizar compra';
   }
 
   async cambiarCuentaGoogleParaCompra(): Promise<void> {
@@ -1483,7 +1543,6 @@ export class Carrito implements OnInit, OnDestroy {
         );
       }
 
-      this.carritoCompraService.vaciarCarrito();
       await this.router.navigate(['/pago-wompi']);
     } catch (error: any) {
       console.error('Error procesando compra:', error);

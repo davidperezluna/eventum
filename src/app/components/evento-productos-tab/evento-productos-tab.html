@@ -21,7 +21,7 @@
     >
       <span class="material-icons">shopping_cart</span>
       <span class="btn-carrito-rapido-texto">
-        {{ totalItemsCarrito }} item(s) · {{ formatCurrency(getTotalCarrito()) }}
+        {{ totalItemsCarrito }} producto(s) · {{ formatCurrency(getTotalCarrito()) }}
       </span>
       <span class="material-icons">arrow_forward</span>
     </button>
@@ -74,7 +74,7 @@
           <span class="fin-venta-tipo">Fin de venta: {{ producto.fecha_venta_fin | dateFormat:'short' }}</span>
           <span class="fin-venta-nota">Hasta agotar existencias</span>
         </div>
-        <span *ngIf="!tieneExistencias(producto)" class="soldout-badge">SOLD OUT</span>
+        <span *ngIf="!tieneExistencias(producto)" class="soldout-badge">Agotado</span>
       </div>
       <div class="tipo-actions">
         <div class="cantidad-controls" *ngIf="getCantidadEnCarrito(producto.id) > 0">

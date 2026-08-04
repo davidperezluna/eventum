@@ -167,7 +167,7 @@
         >
           <span class="material-icons" aria-hidden="true">storefront</span>
           <span>Productos</span>
-          <span *ngIf="loadingProductosFlag" class="tab-loading-pill" aria-live="polite">cargando...</span>
+          <span *ngIf="loadingProductosFlag" class="tab-loading-pill" aria-live="polite">Cargando…</span>
         </button>
       </nav>
 
@@ -187,7 +187,7 @@
         >
           <span class="material-icons">shopping_cart</span>
           <span class="btn-carrito-rapido-texto">
-            {{ getCantidadTotalCarrito() }} item(s) · {{ formatCurrency(getTotal()) }}
+            {{ getCantidadTotalCarrito() }} artículo(s) · {{ formatCurrency(getTotal()) }}
           </span>
           <span class="material-icons">arrow_forward</span>
         </button>
@@ -279,7 +279,7 @@
                       Fin de venta: {{ tipo.fecha_venta_fin | dateFormat:'short' }}
                     </span>
                   </div>
-                  <span class="soldout-badge">Sold out</span>
+                  <span class="soldout-badge">Agotado</span>
                 </div>
               </article>
             </div>
@@ -331,7 +331,7 @@
       </button>
       <div class="accordion-content" [class.open]="acordeones.eventoFinalizado">
         <div class="evento-finalizado-message">
-          <p>Este evento ya termino. Las boletas no estan disponibles para compra.</p>
+          <p>Este evento ya terminó. Las boletas no están disponibles para compra.</p>
         </div>
       </div>
       </div>

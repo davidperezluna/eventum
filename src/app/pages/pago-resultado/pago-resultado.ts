@@ -7,6 +7,7 @@ import { CarritoCompraService } from '../../services/carrito-compra.service';
 import { AuthService } from '../../services/auth.service';
 import { Compra, CompraProducto, TransaccionProducto } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
+import { COMPRA_COPY } from '../../core/compra-copy';
 
 const PAGO_PENDIENTE_STORAGE_KEY = 'eventum_pago_pendiente';
 
@@ -43,6 +44,9 @@ export class PagoResultado implements OnInit {
   loading = true;
   error: string | null = null;
   errorTitulo = 'No pudimos mostrar tu compra';
+  consultaIntento = 0;
+  consultaIntentosMax = 1;
+  readonly compraCopy = COMPRA_COPY;
 
   constructor(
     private route: ActivatedRoute,
@@ -179,8 +183,13 @@ export class PagoResultado implements OnInit {
   async verificarEstadoCompra(): Promise<void> {
     const intentosMax = this.wompiTxnId && !this.transaccionProductoId ? 12 : this.wompiTxnId ? 10 : 1;
     const delayMs = 2500;
+    this.consultaIntentosMax = intentosMax;
+    this.consultaIntento = 0;
 
     for (let intento = 0; intento < intentosMax; intento++) {
+      this.consultaIntento = intento + 1;
+      this.cdr.detectChanges();
+
       if (intento > 0) {
         await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
@@ -409,15 +418,16 @@ export class PagoResultado implements OnInit {
 
   getEstadoPagoLead(): string {
     const emailCuenta = this.emailCuentaEventum;
-    switch (this.getEstadoPagoReferencia()) {
+    const estado = this.getEstadoPagoReferencia();
+    switch (estado) {
       case 'completado':
         return emailCuenta
-          ? `Compra registrada en la cuenta Eventum ${emailCuenta}. Si Wompi te envió el comprobante a otro correo, es solo el recibo del banco: entra con ${emailCuenta} para ver tus entradas en Mis compras.`
-          : 'Tu compra quedó registrada. Revisa Mis compras para boletas; los productos se entregan en el evento.';
+          ? COMPRA_COPY.pagoResultadoLeadCompletado
+          : COMPRA_COPY.pagoResultadoLeadCompletadoSinEmail;
       case 'pendiente':
         return emailCuenta
-          ? `Tu banco o Wompi aún pueden estar procesando el cobro. Cuando se confirme, verás todo en Mis compras con la cuenta ${emailCuenta}.`
-          : 'Tu banco o Wompi aún pueden estar procesando el cobro. En unos minutos debería actualizarse aquí y en Mis compras.';
+          ? COMPRA_COPY.pagoResultadoLeadPendiente
+          : COMPRA_COPY.pagoResultadoLeadPendienteSinEmail;
       case 'fallido':
         return 'No se aplicó ningún cobro válido desde esta solicitud. Puedes volver al evento e intentarlo con otro medio de pago.';
       default:
@@ -430,7 +440,22 @@ export class PagoResultado implements OnInit {
   }
 
   get mostrarAvisoCuentaEventum(): boolean {
-    return !!this.emailCuentaEventum && this.getEstadoPagoReferencia() === 'completado';
+    const estado = this.getEstadoPagoReferencia();
+    return !!this.emailCuentaEventum && (estado === 'completado' || estado === 'pendiente');
+  }
+
+  get tituloAvisoCuentaEventum(): string {
+    return this.getEstadoPagoReferencia() === 'pendiente'
+      ? COMPRA_COPY.emailHeroLabelPendiente
+      : COMPRA_COPY.emailHeroLabelConfirmado;
+  }
+
+  get notaAvisoCuentaEventum(): string {
+    return COMPRA_COPY.wompiReciboNotaPostPago;
+  }
+
+  get mostrarEnlaceGuiaCompras(): boolean {
+    return this.getEstadoPagoReferencia() === 'completado';
   }
 
   getTotalMostrado(): number {
