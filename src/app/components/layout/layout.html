@@ -250,15 +250,18 @@
     *ngIf="mostrarCarritoFab"
     routerLink="/carrito"
     class="carrito-fab"
-    aria-label="Ver carrito"
+    aria-label="Continuar compra, {{ totalItemsCarrito }} artículos, {{ formatCurrencyCarrito(subtotalCarrito) }}"
   >
-    <span class="carrito-fab__left">
-      <span class="material-icons" aria-hidden="true">shopping_cart</span>
-      <span class="carrito-fab__label">Ver carrito</span>
+    <span class="carrito-fab__cta">
+      <span class="material-icons carrito-fab__icon" aria-hidden="true">shopping_cart_checkout</span>
+      <span class="carrito-fab__copy">
+        <span class="carrito-fab__label">Continuar compra</span>
+        <span class="carrito-fab__meta">{{ totalItemsCarrito }} artículo{{ totalItemsCarrito === 1 ? '' : 's' }}</span>
+      </span>
     </span>
-    <span class="carrito-fab__right">
-      <span class="carrito-fab__badge">{{ totalItemsCarrito }}</span>
+    <span class="carrito-fab__total-wrap">
       <span class="carrito-fab__total">{{ formatCurrencyCarrito(subtotalCarrito) }}</span>
+      <span class="material-icons carrito-fab__arrow" aria-hidden="true">arrow_forward</span>
     </span>
   </a>
 

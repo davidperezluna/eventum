@@ -2023,6 +2023,45 @@ a.carrito-checkout-bar__btn {
   font-size: 1rem;
 }
 
+.carrito-add-more {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 0.35rem;
+  border: 1px dashed var(--ec-accent-border, #ddd6fe);
+  border-radius: var(--ec-radius-control, 8px);
+  background: var(--ec-accent-soft, #f5f3ff);
+  padding: 0.72rem 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ec-accent-strong, #7c3aed);
+  font-size: 0.88rem;
+  font-weight: 700;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.carrito-add-more:hover {
+  background: var(--ec-accent-hover, #ede9fe);
+  border-color: var(--ec-accent, #8b5cf6);
+}
+
+.carrito-add-more .material-icons {
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.carrito-add-more__label {
+  flex: 1;
+  min-width: 0;
+}
+
+.carrito-add-more__arrow {
+  font-size: 1.1rem;
+  opacity: 0.85;
+}
+
 .carrito-upsell-row {
   width: 100%;
   box-sizing: border-box;

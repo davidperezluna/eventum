@@ -323,6 +323,17 @@
             </div>
           </div>
 
+          <button
+            *ngIf="mostrarAgregarMasBoletas"
+            type="button"
+            class="carrito-add-more"
+            (click)="irAgregarBoletas()"
+          >
+            <span class="material-icons" aria-hidden="true">add_circle_outline</span>
+            <span class="carrito-add-more__label">Agregar más boletas</span>
+            <span class="material-icons carrito-add-more__arrow" aria-hidden="true">chevron_right</span>
+          </button>
+
           <div *ngFor="let item of itemsProductos" class="carrito-item carrito-item--producto">
             <div class="carrito-item-info">
               <div class="carrito-item-top">
@@ -379,6 +390,17 @@
               </div>
             </div>
           </div>
+
+          <button
+            *ngIf="mostrarAgregarMasProductos"
+            type="button"
+            class="carrito-add-more"
+            (click)="irAgregarProductos()"
+          >
+            <span class="material-icons" aria-hidden="true">add_circle_outline</span>
+            <span class="carrito-add-more__label">Agregar más productos</span>
+            <span class="material-icons carrito-add-more__arrow" aria-hidden="true">chevron_right</span>
+          </button>
         </div>
 
         <details
@@ -444,51 +466,6 @@
             </div>
           </div>
         </details>
-
-        <div class="licor-legal-card" *ngIf="tieneLicor()" [class.licor-legal-card--accepted]="terminosAceptados">
-          <div class="licor-legal-card__head">
-            <span class="licor-legal-badge" aria-hidden="true">+18</span>
-            <div class="licor-legal-card__titles">
-              <h5>Bebidas alcohólicas</h5>
-              <p>Confirmación obligatoria antes de pagar productos con alcohol.</p>
-            </div>
-            <span class="material-icons licor-legal-card__icon" aria-hidden="true">local_bar</span>
-          </div>
-        
-          <ul class="licor-legal-points">
-            <li>Debes ser mayor de 18 años.</li>
-            <li>Eventum actúa solo como intermediario, no como distribuidor.</li>
-            <li>La entrega se realiza en el evento según normas del organizador.</li>
-          </ul>
-        
-          <label class="licor-legal-check" [class.licor-legal-check--checked]="terminosAceptados">
-            <input type="checkbox" [(ngModel)]="terminosAceptados" />
-            <span class="licor-legal-check__box" aria-hidden="true"></span>
-            <span class="licor-legal-check__text">
-              Acepto los términos para bebidas alcohólicas
-            </span>
-          </label>
-<button type="button" class="licor-legal-link" (click)="abrirModalTerminosLicor()">
-  Leer términos completos
-</button>
-        </div>
-
-        <button
-          type="button"
-          class="carrito-upsell-row"
-          *ngIf="mostrarInvitacionProductos"
-          (click)="volverAlEvento()"
-        >
-          <span class="carrito-upsell-row__icon-wrap" aria-hidden="true">
-            <span class="material-icons">storefront</span>
-          </span>
-          <span class="carrito-upsell-row__copy">
-            <span class="carrito-upsell-row__kicker">Productos</span>
-            <span class="carrito-upsell-row__title">Agrega productos antes de pagar</span>
-            <span class="carrito-upsell-row__meta">Cierra boletas y productos en una sola compra</span>
-          </span>
-          <span class="carrito-upsell-row__action">Ver →</span>
-        </button>
 
         <div class="carrito-total">
           <div class="total-row" *ngIf="itemsCover.length > 0">
@@ -648,7 +625,7 @@
     Volver al carrito
   </button>
   <button type="button" class="btn-primary-modal licor-modal__btn" (click)="aceptarTerminosLicor()">
-    Aceptar términos
+    Aceptar y continuar
   </button>
 </footer>
   </div>

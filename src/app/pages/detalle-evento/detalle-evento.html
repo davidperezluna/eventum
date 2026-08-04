@@ -176,11 +176,13 @@
       <div class="section-heading-row">
         <div>
           <h2>Entradas</h2>
-          <p class="section-kicker">Selecciona tus boletas y revisa el total antes de pagar.</p>
+          <p class="section-kicker" *ngIf="getCantidadTotalCarrito() === 0">
+            Selecciona tus boletas y revisa el total antes de pagar.
+          </p>
         </div>
         <button
           type="button"
-          class="btn-carrito-rapido"
+          class="btn-carrito-rapido btn-carrito-rapido--desktop-only"
           *ngIf="getCantidadTotalCarrito() > 0"
           (click)="irACarrito()"
           aria-label="Ir al carrito de compra"

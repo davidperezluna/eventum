@@ -313,6 +313,16 @@
   font-size: 0.83rem;
 }
 
+.btn-carrito-rapido--desktop-only {
+  display: inline-flex;
+}
+
+@media (max-width: 768px) {
+  .btn-carrito-rapido--desktop-only {
+    display: none;
+  }
+}
+
 .evento-image-background {
   position: absolute;
   top: 0;

@@ -228,11 +228,16 @@ export class Carrito implements OnInit, OnDestroy {
     return !this.carritoVacio || !!this.checkoutPendienteEnCurso;
   }
 
-  get mostrarInvitacionProductos(): boolean {
-    return !!this.evento &&
-      this.itemsCompra.length > 0 &&
-      this.itemsProductos.length === 0 &&
-      this.eventoTieneProductosDisponibles !== false;
+  get mostrarAgregarMasBoletas(): boolean {
+    return !!this.evento?.id && !this.esCarritoCover();
+  }
+
+  get mostrarAgregarMasProductos(): boolean {
+    return (
+      !!this.evento?.id &&
+      !this.esCarritoCover() &&
+      this.eventoTieneProductosDisponibles !== false
+    );
   }
 
   get mostrarCupon(): boolean {
@@ -284,9 +289,6 @@ export class Carrito implements OnInit, OnDestroy {
     }
     if (this.tienePalcosIncompletos()) {
       return 'Selecciona todos los palcos antes de finalizar la compra.';
-    }
-    if (this.tieneLicor() && !this.terminosAceptados) {
-      return 'Al finalizar se te pedirá aceptar los términos de venta +18.';
     }
     return null;
   }
@@ -425,13 +427,10 @@ export class Carrito implements OnInit, OnDestroy {
     this.carritoCompraService.eliminarProductoDelCarrito(item.producto.id);
   }
 
-  aceptarTerminosLicor(): void {
+  async aceptarTerminosLicor(): Promise<void> {
     this.terminosAceptados = true;
     this.cerrarModalTerminosLicor();
-  }
-
-  abrirModalTerminosLicor(): void {
-    this.modalTerminosLicor = true;
+    await this.procesarCompra();
   }
 
   cerrarModalTerminosLicor(): void {
@@ -445,12 +444,26 @@ export class Carrito implements OnInit, OnDestroy {
       .filter(Boolean);
   }
 
-  volverAlEvento(): void {
-    if (this.evento?.id) {
-      this.router.navigate(['/detalle-evento', this.evento.id], { queryParams: { tab: 'productos' } });
-    } else {
+  irAgregarBoletas(): void {
+    if (!this.evento?.id) {
       this.irAEventos();
+      return;
     }
+    void this.router.navigate(['/detalle-evento', this.evento.id]);
+  }
+
+  irAgregarProductos(): void {
+    if (!this.evento?.id) {
+      this.irAEventos();
+      return;
+    }
+    void this.router.navigate(['/detalle-evento', this.evento.id], {
+      queryParams: { tab: 'productos' },
+    });
+  }
+
+  volverAlEvento(): void {
+    this.irAgregarProductos();
   }
 
   irAEventos(): void {
