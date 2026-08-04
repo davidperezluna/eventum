@@ -24,7 +24,7 @@
 }
 
 .mis-compras-page .client-page-header--compact + .guia-entradas-section,
-.mis-compras-page .client-page-header--compact + .mis-compras-productos-promo,
+.mis-compras-page .client-page-header--compact + .mc-segmented--principal,
 .mis-compras-page .client-page-header--compact + .filters-toolbar,
 .mis-compras-page .client-page-header--subpage + .actividad-page-section {
   margin-top: 0.4rem;
@@ -147,175 +147,9 @@
   color: #334155;
 }
 
-/* Promo productos — fila táctil alineada con tarjetas de evento */
-.mis-compras-productos-promo {
-  max-width: var(--mc-block-max);
-  margin: 0 auto 0.85rem;
-  padding: 0 var(--mc-gutter);
-  box-sizing: border-box;
-}
-
-.mis-compras-productos-promo__row,
-.mis-compras-productos-promo__skeleton {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  min-height: 3.35rem;
-  padding: 0.85rem 0.95rem;
-  border-radius: var(--ec-radius-card, 12px);
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: var(--ec-surface, #fff);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  box-sizing: border-box;
-}
-
-.mis-compras-productos-promo__row {
-  text-decoration: none;
-  color: inherit;
-  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.mis-compras-productos-promo__row:hover {
-  background: var(--ec-chip-hover, #f1f5f9);
-  border-color: rgba(15, 23, 42, 0.12);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
-}
-
-.mis-compras-productos-promo__row:active {
-  background: var(--ec-surface-muted, #f1f5f9);
-}
-
-.mis-compras-productos-promo__icon-wrap {
-  flex-shrink: 0;
-  width: 2.35rem;
-  height: 2.35rem;
-  border-radius: var(--ec-radius-control, 8px);
-  background: var(--ec-accent-soft, #f5f3ff);
-  border: 1px solid var(--ec-accent-border, #ddd6fe);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.mis-compras-productos-promo__icon {
-  font-size: 1.15rem;
-  color: var(--ec-accent, #8b5cf6);
-}
-
-.mis-compras-productos-promo__copy {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-}
-
-.mis-compras-productos-promo__kicker {
-  font-size: 0.68rem;
-  font-weight: var(--ec-font-weight-label, 600);
-  color: var(--ec-text-subtle, #94a3b8);
-  line-height: 1.2;
-}
-
-.mis-compras-productos-promo__title {
-  display: block;
-  font-size: 0.84rem;
-  font-weight: var(--ec-font-weight-title, 800);
-  letter-spacing: -0.02em;
-  line-height: 1.25;
-  color: var(--ec-text-primary, #0f172a);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.mis-compras-productos-promo__meta {
-  display: block;
-  font-size: 0.74rem;
-  font-weight: var(--ec-font-weight-body, 500);
-  line-height: 1.3;
-  color: var(--ec-text-muted, #64748b);
-}
-
-.mis-compras-productos-promo__cta {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.1rem;
-  font-size: 0.78rem;
-  font-weight: var(--ec-font-weight-label, 600);
-  color: var(--ec-accent, #8b5cf6);
-  opacity: 0.85;
-}
-
-.mis-compras-productos-promo__cta .material-icons {
-  font-size: 1rem;
-}
-
-.mis-compras-productos-promo__row:hover .mis-compras-productos-promo__cta {
-  opacity: 1;
-}
-
-.mis-compras-productos-promo__skeleton {
-  pointer-events: none;
-}
-
-.mis-compras-productos-promo__skeleton-icon {
-  flex-shrink: 0;
-  width: 2.35rem;
-  height: 2.35rem;
-  border-radius: var(--ec-radius-control, 8px);
-  background: var(--ec-surface-muted, #f1f5f9);
-}
-
-.mis-compras-productos-promo__skeleton-copy {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.mis-compras-productos-promo__skeleton-line {
-  display: block;
-  height: 0.62rem;
-  border-radius: var(--ec-radius-badge, 6px);
-  background: var(--ec-surface-muted, #f1f5f9);
-}
-
-.mis-compras-productos-promo__skeleton-line--short {
-  width: 55%;
-  height: 0.5rem;
-}
-
-@keyframes mc-promo-skeleton-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.55;
-  }
-}
-
-.mis-compras-productos-promo__skeleton-icon,
-.mis-compras-productos-promo__skeleton-line {
-  animation: mc-promo-skeleton-pulse 1.2s ease-in-out infinite;
-}
-
-/* Separador antes del listado de eventos */
+/* Listado de eventos */
 .mis-compras-eventos-section {
   margin-top: 0.35rem;
-}
-
-.mis-compras-eventos-section::before {
-  content: '';
-  display: block;
-  width: calc(100% - (2 * var(--mc-gutter)));
-  max-width: calc(var(--mc-block-max) - (2 * var(--mc-gutter)));
-  margin: 0.25rem auto 0.75rem;
-  border-top: 1px solid var(--ec-border);
 }
 
 .mis-compras-eventos-heading {
@@ -4212,8 +4046,7 @@
     padding-bottom: 0.5rem;
   }
 
-  .mis-compras-page .client-page-header--compact + .guia-entradas-section,
-  .mis-compras-page .client-page-header--compact + .mis-compras-productos-promo {
+  .mis-compras-page .client-page-header--compact + .guia-entradas-section {
     margin-top: 0.45rem;
   }
 
@@ -4225,45 +4058,12 @@
     padding: 0.9rem 0.85rem;
   }
 
-  .mis-compras-productos-promo {
-    margin-bottom: 0.9rem;
-  }
-
-  .mis-compras-productos-promo__row,
-  .mis-compras-productos-promo__skeleton {
-    min-height: 3.5rem;
-    padding: 0.88rem 0.85rem;
-    gap: 0.55rem;
-  }
-
-  .mis-compras-productos-promo__icon-wrap {
-    width: 2.2rem;
-    height: 2.2rem;
-  }
-
-  .mis-compras-productos-promo__icon {
-    font-size: 1.05rem;
-  }
-
-  .mis-compras-productos-promo__title {
-    font-size: 0.8rem;
-    white-space: normal;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .mis-compras-productos-promo__cta {
-    font-size: 0.74rem;
-  }
-
   .mis-compras-eventos-section {
     margin-top: 0.4rem;
   }
 
   .mis-compras-eventos-section::before {
-    margin: 0.35rem auto 0.8rem;
+    display: none;
   }
 
   .mis-compras-eventos-heading {

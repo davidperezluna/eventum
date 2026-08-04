@@ -14,7 +14,6 @@ import { AlertService } from '../../services/alert.service';
 import {
   MisComprasState,
   MisComprasStateService,
-  PromoProductosMisCompras,
 } from '../../services/mis-compras-state.service';
 import { ComprasProductoService } from '../../services/compras-producto.service';
 import { SupabaseService } from '../../services/supabase.service';
@@ -50,7 +49,6 @@ import {
   ProductoTicketCard,
 } from '../../components/compra-ticket-card/compra-ticket-card';
 import type { AuthStateCallback } from '../../services/auth.service';
-import { ProductosService } from '../../services/productos.service';
 import { CoversService } from '../../services/covers.service';
 import { AccesosPuertaService } from '../../services/accesos-puerta.service';
 import { coversEventumEnabled } from '../../core/covers-feature';
@@ -188,9 +186,6 @@ interface LugarCoverGrupo {
 })
 export class MisCompras implements OnInit, OnDestroy {
   readonly coversEventumEnabled = coversEventumEnabled;
-  promoProductos: PromoProductosMisCompras | null = null;
-  loadingPromoProductos = false;
-  private promoProductosRefreshSeq = 0;
   guiaEntradasAbierta = false;
   private destroy$ = new Subject<void>();
   private loadComprasSubject = new Subject<void>();
@@ -333,7 +328,6 @@ export class MisCompras implements OnInit, OnDestroy {
   constructor(
     private comprasService: ComprasService,
     private comprasProductoService: ComprasProductoService,
-    private productosService: ProductosService,
     private coversService: CoversService,
     private boletasService: BoletasService,
     private trasladosBoletaService: TrasladosBoletaService,
@@ -1147,102 +1141,8 @@ export class MisCompras implements OnInit, OnDestroy {
       this.loadingComprasProductos = false;
       this.fusionarProductosEnEventos();
       this.syncTabEventoDetalle();
-      await this.actualizarPromoProductos();
       this.cdr.detectChanges();
     }
-  }
-
-  private async actualizarPromoProductos(): Promise<void> {
-    const ids = this.eventosConBoletas
-      .map((grupo) => Number(grupo.key))
-      .filter((id) => Number.isFinite(id) && id > 0);
-
-    if (ids.length === 0) {
-      this.promoProductos = null;
-      this.loadingPromoProductos = false;
-      return;
-    }
-
-    const promoActual = this.promoProductos;
-    const mostrarSkeleton = !promoActual;
-    if (mostrarSkeleton) {
-      this.loadingPromoProductos = true;
-      this.cdr.detectChanges();
-    }
-
-    const refreshSeq = ++this.promoProductosRefreshSeq;
-    try {
-      const resumen = await this.productosService.getResumenProductosPorEvento(ids);
-      if (refreshSeq !== this.promoProductosRefreshSeq) {
-        return;
-      }
-      const candidatos = this.eventosConBoletas
-        .map((grupo) => {
-          const eventoId = Number(grupo.key);
-          const info = resumen.get(eventoId);
-          if (!info?.cantidad) {
-            return null;
-          }
-          return {
-            grupo,
-            eventoId,
-            info,
-            sinComprasProducto: (grupo.totalItemsProducto ?? 0) === 0,
-          };
-        })
-        .filter((item): item is NonNullable<typeof item> => item !== null)
-        .sort((a, b) => {
-          if (a.sinComprasProducto !== b.sinComprasProducto) {
-            return a.sinComprasProducto ? -1 : 1;
-          }
-          const fechaA = a.grupo.fechaInicio ? new Date(a.grupo.fechaInicio).getTime() : 0;
-          const fechaB = b.grupo.fechaInicio ? new Date(b.grupo.fechaInicio).getTime() : 0;
-          return fechaA - fechaB;
-        });
-
-      const mejor = candidatos[0];
-      if (!mejor) {
-        this.promoProductos = null;
-        return;
-      }
-
-      const siguientePromo: PromoProductosMisCompras = {
-        eventoId: mejor.eventoId,
-        titulo: mejor.grupo.titulo,
-        cantidad: mejor.info.cantidad,
-        precioMinimo: mejor.info.precioMinimo,
-        sinComprasProducto: mejor.sinComprasProducto,
-        totalEventosConProductos: candidatos.length,
-      };
-      if (!this.esMismaPromoProductos(promoActual, siguientePromo)) {
-        this.promoProductos = siguientePromo;
-      }
-    } catch (err) {
-      console.error('Error cargando promo de productos:', err);
-      if (!promoActual) {
-        this.promoProductos = null;
-      }
-    } finally {
-      if (refreshSeq === this.promoProductosRefreshSeq) {
-        this.loadingPromoProductos = false;
-        this.cdr.detectChanges();
-      }
-    }
-  }
-
-  private esMismaPromoProductos(
-    actual: PromoProductosMisCompras | null,
-    siguiente: PromoProductosMisCompras
-  ): boolean {
-    if (!actual) return false;
-    return (
-      actual.eventoId === siguiente.eventoId &&
-      actual.titulo === siguiente.titulo &&
-      actual.cantidad === siguiente.cantidad &&
-      actual.precioMinimo === siguiente.precioMinimo &&
-      actual.sinComprasProducto === siguiente.sinComprasProducto &&
-      actual.totalEventosConProductos === siguiente.totalEventosConProductos
-    );
   }
 
   eventoTieneEntradas(grupo: EventoBoletasGrupo | null | undefined): boolean {
@@ -4480,7 +4380,6 @@ export class MisCompras implements OnInit, OnDestroy {
       this.reconstruirLugaresConCovers();
     }
     this.syncTabEventoDetalle();
-    void this.actualizarPromoProductos();
     this.persistState(Date.now());
     this.sincronizarRealtimeNotificaciones();
   }
@@ -4967,8 +4866,6 @@ export class MisCompras implements OnInit, OnDestroy {
     this.loadingBoletasDetalle = this.eventosConBoletas.length > 0;
     this.loadingCovers = coversEventumEnabled && this.boletasCover.length === 0;
     this.guiaEntradasAbierta = this.eventosConBoletas.length === 0;
-    this.promoProductos = state.promoProductos ?? null;
-    this.loadingPromoProductos = false;
     this.fusionarProductosEnEventos();
     this.syncTabMisComprasPrincipal();
     this.syncTrasladosPendientesNavBadge();
@@ -4998,7 +4895,7 @@ export class MisCompras implements OnInit, OnDestroy {
       tabBoletasDetalle: this.tabBoletasDetalle,
       eventoExpandidoKey: this.eventoExpandidoKey,
       eventoDetalleKey: this.eventoDetalleKey,
-      promoProductos: this.promoProductos,
+      promoProductos: null,
       comprasCover: this.comprasCover,
       boletasCover: this.boletasCover,
       coverCedidas: this.coverCedidas,

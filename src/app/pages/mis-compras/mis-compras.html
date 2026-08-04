@@ -157,65 +157,6 @@
     </button>
   </nav>
 
-  <section
-    *ngIf="!eventoDetalleKey && !lugarCoverDetalleKey && (tabMisComprasPrincipal === 'eventos' || !coversEventumEnabled) && (loadingPromoProductos || promoProductos)"
-    class="mis-compras-productos-promo"
-    aria-label="Productos disponibles en tus eventos"
-  >
-    <div
-      *ngIf="loadingPromoProductos && !promoProductos"
-      class="mis-compras-productos-promo__skeleton"
-      aria-busy="true"
-      aria-label="Cargando productos de tus eventos"
-    >
-      <span class="mis-compras-productos-promo__skeleton-icon" aria-hidden="true"></span>
-      <span class="mis-compras-productos-promo__skeleton-copy" aria-hidden="true">
-        <span class="mis-compras-productos-promo__skeleton-line"></span>
-        <span class="mis-compras-productos-promo__skeleton-line mis-compras-productos-promo__skeleton-line--short"></span>
-      </span>
-    </div>
-
-    <a
-      *ngIf="promoProductos"
-      class="mis-compras-productos-promo__row"
-      [routerLink]="['/detalle-evento', promoProductos.eventoId]"
-      [queryParams]="{ tab: 'productos' }"
-      [attr.aria-label]="'Ver productos en ' + promoProductos.titulo"
-    >
-      <span class="mis-compras-productos-promo__icon-wrap" aria-hidden="true">
-        <span class="material-icons mis-compras-productos-promo__icon">storefront</span>
-      </span>
-      <span class="mis-compras-productos-promo__copy">
-        <span class="mis-compras-productos-promo__kicker">Productos</span>
-        <span class="mis-compras-productos-promo__title">
-          <ng-container *ngIf="promoProductos.sinComprasProducto">
-            {{ promoProductos.cantidad }}
-            {{ promoProductos.cantidad === 1 ? 'producto' : 'productos' }} · {{ promoProductos.titulo }}
-          </ng-container>
-          <ng-container *ngIf="!promoProductos.sinComprasProducto">
-            Más productos · {{ promoProductos.titulo }}
-          </ng-container>
-        </span>
-        <span class="mis-compras-productos-promo__meta">
-          <ng-container *ngIf="promoProductos.sinComprasProducto">
-            Desde {{ formatCurrency(promoProductos.precioMinimo) }}
-          </ng-container>
-          <ng-container *ngIf="!promoProductos.sinComprasProducto">
-            {{ promoProductos.cantidad }} disponibles
-          </ng-container>
-          <ng-container *ngIf="promoProductos.totalEventosConProductos > 1">
-            · +{{ promoProductos.totalEventosConProductos - 1 }}
-            {{ promoProductos.totalEventosConProductos - 1 === 1 ? 'evento' : 'eventos' }}
-          </ng-container>
-        </span>
-      </span>
-      <span class="mis-compras-productos-promo__cta" aria-hidden="true">
-        Ver
-        <span class="material-icons">chevron_right</span>
-      </span>
-    </a>
-  </section>
-
   <div class="filters-toolbar" *ngIf="mostrarToolbarFiltrosMisCompras && !eventoDetalleKey && !lugarCoverDetalleKey && (tabMisComprasPrincipal === 'eventos' || !coversEventumEnabled)">
     <button
       type="button"
