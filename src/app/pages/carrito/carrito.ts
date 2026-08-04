@@ -565,7 +565,19 @@ export class Carrito implements OnInit, OnDestroy {
       return;
     }
     const eventoId = this.evento?.id ?? null;
-    this.checkoutPendienteEnCurso = await this.resolverCheckoutPendiente(clienteId, eventoId);
+    const pendiente = await this.resolverCheckoutPendiente(clienteId, eventoId);
+    if (!pendiente) {
+      this.checkoutPendienteEnCurso = null;
+      return;
+    }
+    if (pendiente.expiro) {
+      const cancelado = await this.cancelarCheckoutVencidoAutomaticamente(pendiente);
+      if (!cancelado) {
+        this.checkoutPendienteEnCurso = pendiente;
+      }
+      return;
+    }
+    this.checkoutPendienteEnCurso = pendiente;
   }
 
   private async siguePendienteCheckout(transaccionCheckoutId: number): Promise<boolean> {
@@ -663,6 +675,77 @@ export class Carrito implements OnInit, OnDestroy {
     this.checkoutPendienteEnCurso = null;
   }
 
+  private limpiarCheckoutPendienteLocal(): void {
+    this.checkoutPendienteEnCurso = null;
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('eventum_pago_pendiente');
+    }
+  }
+
+  private async ejecutarCancelacionCheckout(
+    transaccionCheckoutId: number,
+    options?: { notificarExito?: boolean }
+  ): Promise<boolean> {
+    const ok = await this.withTimeout(
+      this.comprasProductoService.cancelarCheckoutPendiente(transaccionCheckoutId),
+      12000,
+      false
+    );
+    if (!ok) {
+      const siguePendiente = await this.withTimeout(
+        this.siguePendienteCheckout(transaccionCheckoutId),
+        6000,
+        true
+      );
+      if (!siguePendiente) {
+        this.limpiarCheckoutPendienteLocal();
+        if (options?.notificarExito !== false) {
+          this.alertService.snackbarSuccess('Pago pendiente cancelado', 'Ya puedes crear una compra nueva.');
+        }
+        return true;
+      }
+      return false;
+    }
+
+    this.limpiarCheckoutPendienteLocal();
+    if (options?.notificarExito !== false) {
+      this.alertService.snackbarSuccess('Pago pendiente cancelado', 'Ya puedes crear una compra nueva.');
+    }
+    return true;
+  }
+
+  private async cancelarCheckoutVencidoAutomaticamente(pendiente: {
+    transaccionCheckoutId: number;
+    checkoutUrl: string | null;
+    expiro: boolean;
+    expiresAtMs: number | null;
+    totalPago: number;
+    eventoTitulo: string | null;
+  }): Promise<boolean> {
+    if (this.cancelandoCheckoutPendiente) {
+      return false;
+    }
+    this.cancelandoCheckoutPendiente = true;
+    this.cdr.detectChanges();
+    try {
+      const cancelado = await this.ejecutarCancelacionCheckout(pendiente.transaccionCheckoutId, {
+        notificarExito: false,
+      });
+      if (cancelado) {
+        this.alertService.snackbar(
+          'El pago vencido se canceló automáticamente. Ya puedes hacer una compra nueva.'
+        );
+      }
+      return cancelado;
+    } catch (error: unknown) {
+      console.error('Error cancelando checkout vencido:', error);
+      return false;
+    } finally {
+      this.cancelandoCheckoutPendiente = false;
+      this.cdr.detectChanges();
+    }
+  }
+
   async cancelarCheckoutPendiente(): Promise<void> {
     const pendiente = this.checkoutPendienteEnCurso;
     if (!pendiente || this.cancelandoCheckoutPendiente) {
@@ -678,37 +761,13 @@ export class Carrito implements OnInit, OnDestroy {
       }
     }, 15000);
     try {
-      const ok = await this.withTimeout(
-        this.comprasProductoService.cancelarCheckoutPendiente(pendiente.transaccionCheckoutId),
-        12000,
-        false
-      );
+      const ok = await this.ejecutarCancelacionCheckout(pendiente.transaccionCheckoutId);
       if (!ok) {
-        const siguePendiente = await this.withTimeout(
-          this.siguePendienteCheckout(pendiente.transaccionCheckoutId),
-          6000,
-          true
-        );
-        if (!siguePendiente) {
-          this.checkoutPendienteEnCurso = null;
-          if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.removeItem('eventum_pago_pendiente');
-          }
-          this.alertService.snackbarSuccess('Pago pendiente cancelado', 'Ya puedes crear una compra nueva.');
-          return;
-        }
         this.alertService.snackbarError(
           'No se pudo cancelar el pago pendiente',
           'Intenta de nuevo en unos segundos o usa "Recuperar pago pendiente".'
         );
-        return;
       }
-
-      this.checkoutPendienteEnCurso = null;
-      if (typeof sessionStorage !== 'undefined') {
-        sessionStorage.removeItem('eventum_pago_pendiente');
-      }
-      this.alertService.snackbarSuccess('Pago pendiente cancelado', 'Ya puedes crear una compra nueva.');
     } catch (error: any) {
       this.alertService.snackbarError(
         'No se pudo cancelar el pago pendiente',
@@ -927,8 +986,15 @@ export class Carrito implements OnInit, OnDestroy {
   private tickCountdown(): void {
     this.nowMs = Date.now();
     const pendiente = this.checkoutPendienteEnCurso;
-    if (pendiente && !pendiente.expiro && pendiente.expiresAtMs != null && this.nowMs >= pendiente.expiresAtMs) {
-      this.checkoutPendienteEnCurso = { ...pendiente, expiro: true };
+    if (
+      pendiente &&
+      !pendiente.expiro &&
+      !this.cancelandoCheckoutPendiente &&
+      pendiente.expiresAtMs != null &&
+      this.nowMs >= pendiente.expiresAtMs
+    ) {
+      void this.cancelarCheckoutVencidoAutomaticamente({ ...pendiente, expiro: true });
+      return;
     }
     this.cdr.detectChanges();
   }

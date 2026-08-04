@@ -544,15 +544,6 @@
     <div class="carrito-checkout-bar__total" *ngIf="!carritoVacio">
       <span class="carrito-checkout-bar__label">Total</span>
       <span class="carrito-checkout-bar__amount">{{ formatCurrency(getTotal()) }}</span>
-      <span
-        *ngIf="checkoutPendienteEnCurso && shouldShowCheckoutCountdown()"
-        class="carrito-checkout-bar__countdown"
-        [class.carrito-checkout-bar__countdown--urgent]="isCheckoutCountdownUrgent()"
-        aria-live="polite"
-      >
-        <span class="material-icons" aria-hidden="true">timer</span>
-        {{ getCheckoutCountdownLabel() }}
-      </span>
     </div>
     <ng-container *ngIf="checkoutPendienteEnCurso as pendiente; else pagarStickyBtn">
       <div class="carrito-checkout-bar__pending">
@@ -601,7 +592,18 @@
       *ngIf="checkoutPendienteEnCurso && !checkoutPendienteEnCurso.expiro"
       class="carrito-checkout-bar__hint carrito-checkout-bar__hint--pending"
     >
-      Reanuda el pago antes de que venza el tiempo.
+      <span
+        *ngIf="shouldShowCheckoutCountdown()"
+        class="carrito-checkout-bar__countdown carrito-checkout-bar__countdown--desktop"
+        [class.carrito-checkout-bar__countdown--urgent]="isCheckoutCountdownUrgent()"
+        role="timer"
+        aria-live="polite"
+        [attr.aria-label]="'Vence en ' + getCheckoutCountdownLabel()"
+      >
+        <span class="material-icons" aria-hidden="true">timer</span>
+        Vence en <strong>{{ getCheckoutCountdownLabel() }}</strong>
+      </span>
+      <span class="carrito-checkout-bar__hint-text">Reanuda el pago antes de que venza el tiempo.</span>
     </p>
     <p
       *ngIf="checkoutPendienteEnCurso?.expiro"

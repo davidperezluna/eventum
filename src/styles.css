@@ -316,16 +316,46 @@ html.client-menu-open body {
   color: #b91c1c;
 }
 
-/* Snackbar compacto estilo Material-like */
+/* Snackbar compacto — arriba, borde a borde en móvil */
+body > .swal2-container.swal2-top,
+body > .swal2-container.swal2-top-start,
+body > .swal2-container.swal2-top-end {
+  position: fixed !important;
+  inset: 0 0 auto 0 !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  background: transparent !important;
+  overflow: visible !important;
+  z-index: 1200 !important;
+}
+
+body > .swal2-container.swal2-top .swal2-popup.app-snackbar-toast.swal2-toast,
+body > .swal2-container.swal2-top-end .swal2-popup.app-snackbar-toast.swal2-toast {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  box-sizing: border-box !important;
+  align-self: stretch !important;
+}
+
 .app-snackbar-toast.swal2-toast {
   background: linear-gradient(135deg, #15803d 0%, #16a34a 100%) !important;
   color: #ffffff !important;
-  border-radius: 6px !important;
-  padding: 0.62rem 0.82rem !important;
+  padding: calc(0.72rem + env(safe-area-inset-top, 0px)) 1rem 0.72rem !important;
   min-height: 0 !important;
-  max-width: min(92vw, 360px) !important;
-  box-shadow: 0 6px 18px rgba(22, 163, 74, 0.35) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.32) !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
 .app-snackbar-toast .swal2-title {
@@ -335,7 +365,34 @@ html.client-menu-open body {
   font-size: 0.88rem !important;
   font-weight: 500 !important;
   line-height: 1.35 !important;
-  text-align: left !important;
+  text-align: center !important;
+}
+
+@media (min-width: 768px) {
+  body > .swal2-container.swal2-top,
+  body > .swal2-container.swal2-top-start,
+  body > .swal2-container.swal2-top-end {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: calc(0.75rem + env(safe-area-inset-top, 0px)) 1rem 0 !important;
+    align-items: flex-start !important;
+    justify-content: flex-end !important;
+  }
+
+  body > .swal2-container.swal2-top .swal2-popup.app-snackbar-toast.swal2-toast,
+  body > .swal2-container.swal2-top-end .swal2-popup.app-snackbar-toast.swal2-toast {
+    width: auto !important;
+    max-width: min(420px, calc(100vw - 2rem)) !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    padding: 0.72rem 1rem !important;
+    align-self: flex-start !important;
+    box-shadow: 0 8px 24px rgba(22, 163, 74, 0.28) !important;
+  }
+
+  .app-snackbar-toast .swal2-title {
+    text-align: left !important;
+  }
 }
 
 .app-snackbar-toast .swal2-html-container,
@@ -357,7 +414,7 @@ html.client-menu-open body {
 @keyframes app-snackbar-enter {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.98);
+    transform: translateY(-12px) scale(0.98);
   }
   to {
     opacity: 1;
@@ -372,6 +429,6 @@ html.client-menu-open body {
   }
   to {
     opacity: 0;
-    transform: translateY(6px) scale(0.98);
+    transform: translateY(-8px) scale(0.98);
   }
 }

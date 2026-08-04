@@ -50,7 +50,7 @@ export class AlertService {
     return Swal.fire({
       toast: true,
       title: message,
-      position: 'bottom-start',
+      position: 'top-end',
       showConfirmButton: false,
       timer: timerMs,
       timerProgressBar: false,
