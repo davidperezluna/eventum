@@ -1,5 +1,10 @@
-<div class="pago-wompi-page" *ngIf="payload as p">
-  <section class="pago-wompi-shell">
+<div class="pago-wompi-page">
+  <div *ngIf="!payload" class="loading-state" aria-live="polite" aria-busy="true">
+    <div class="spinner"></div>
+    <p>Preparando pago…</p>
+  </div>
+
+  <section *ngIf="payload as p" class="pago-wompi-shell">
     <article class="pago-wompi-panel" [class.pago-wompi-panel--busy]="volviendoCarrito || redirigiendo">
       <div class="pago-wompi-panel__icon" aria-hidden="true">
         <span class="material-icons">lock</span>

@@ -13,8 +13,9 @@ export const COMPRA_COPY = {
   loginContextoPagar:
     'Entra para finalizar tu compra. Lo que agregaste al carrito se mantiene. Usa el correo donde quieres ver tu compra en Mis compras.',
   sinSesionVinculo: 'Al pagar, todo quedará en el correo de tu cuenta Eventum.',
-  cuponMixto:
-    'En compras mixtas (boletas + productos) el cupón no aplica. Compra entradas y productos por separado si quieres usar un descuento.',
+  cuponMixtoTitulo: 'Cupón no disponible en compra mixta',
+  cuponMixtoTexto:
+    'Boletas y productos se pagan en un solo pedido. Si quieres usar un descuento, compra cada tipo por separado.',
   pagoWompiLead: 'Confirma que sea el correo donde quieres ver tu compra.',
   pagoResultadoLeadCompletado: 'Tu pago se procesó correctamente.',
   pagoResultadoLeadPendiente: 'Estamos confirmando el pago con tu banco o Wompi.',

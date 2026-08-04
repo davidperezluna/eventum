@@ -297,6 +297,7 @@
         [eventoFinalizado]="isEventoFinalizado()"
         [productosIniciales]="productosCache"
         [refrescoSilenciosoInicial]="productosCache.length > 0"
+        contexto="detalle"
         (productosActualizados)="onProductosActualizados($event)"
       ></app-evento-productos-tab>
 

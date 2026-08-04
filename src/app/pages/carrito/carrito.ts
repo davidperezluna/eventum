@@ -30,6 +30,10 @@ import { CoversService } from '../../services/covers.service';
 import { labelSesionCover } from '../../core/covers-labels';
 import { TERMINOS_LICOR_TEXTO, TERMINOS_LICOR_TITULO } from '../../constants/productos.constants';
 import {
+  DetalleEventoState,
+  DetalleEventoStateService,
+} from '../../services/detalle-evento-state.service';
+import {
   CuponDescuento,
   EstadoPalco,
   Evento,
@@ -60,6 +64,7 @@ export class Carrito implements OnInit, OnDestroy {
   validandoCupon = false;
   private cuponRestaurado = false;
   comprando = false;
+  vaciandoCarrito = false;
   terminosAceptados = false;
   modalTerminosLicor = false;
   readonly terminosLicorTitulo = TERMINOS_LICOR_TITULO;
@@ -80,8 +85,11 @@ export class Carrito implements OnInit, OnDestroy {
   } | null = null;
   cancelandoCheckoutPendiente = false;
   cambiandoCuentaGoogle = false;
-  inicializandoCarrito = true;
+  /** Solo bloquea la vista si no hay datos locales del carrito ni cache del evento. */
+  inicializandoCarrito = false;
   private cancelacionCheckoutSeq = 0;
+  private refreshIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly refreshIndicatorDelayMs = 800;
   mapaAmpliado: { url: string; titulo: string } | null = null;
   private subscriptions = new Subscription();
   private unsubscribeAuth?: () => void;
@@ -105,12 +113,14 @@ export class Carrito implements OnInit, OnDestroy {
     private eventosService: EventosService,
     private supabaseService: SupabaseService,
     private coversService: CoversService,
+    private detalleEventoStateService: DetalleEventoStateService,
     private ngZone: NgZone,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.usuario = this.authService.getUsuario();
+    this.hidratarDesdeCacheDetalleEvento();
 
     if (this.route.snapshot.queryParamMap.get('aviso') === 'pago-wompi-sin-datos') {
       void this.router.navigate([], {
@@ -144,7 +154,9 @@ export class Carrito implements OnInit, OnDestroy {
           palco_ids: item.palco_ids ? [...item.palco_ids] : undefined
         }));
         this.limpiarCuponSiCompraMixta();
-        void this.refrescarPalcosDisponibles();
+        const eventoId = this.evento?.id ?? this.carritoCompraService.getEventoSnapshot()?.id;
+        const tieneCache = !!(eventoId && this.detalleEventoStateService.getState(eventoId));
+        void this.refrescarPalcosDisponibles({ background: tieneCache });
       })
     );
 
@@ -178,9 +190,13 @@ export class Carrito implements OnInit, OnDestroy {
         this.carritoCompraService.clearCuponSiEventoDistinto(evento?.id ?? null);
         const productosCache = this.carritoCompraService.getEventoTieneProductosCache(evento?.id ?? null);
         this.eventoTieneProductosDisponibles = productosCache;
-        void this.cargarDisponibilidadProductosUpsell(evento?.id ?? null);
+        const tieneCacheDetalle = !!(evento?.id && this.detalleEventoStateService.getState(evento.id));
+        if (tieneCacheDetalle) {
+          this.hidratarDesdeCacheDetalleEvento(evento!.id);
+        }
+        void this.cargarDisponibilidadProductosUpsell(evento?.id ?? null, { background: tieneCacheDetalle });
         if (evento?.id) {
-          void this.refrescarEvento(evento.id);
+          void this.refrescarEvento(evento.id, { background: tieneCacheDetalle });
         }
         void this.cargarCheckoutPendienteEnCarrito();
         void this.restaurarCuponDesdeCache();
@@ -196,20 +212,110 @@ export class Carrito implements OnInit, OnDestroy {
       })
     );
 
-    void this.bootstrapCarrito();
+    const tieneDatosLocales = !this.carritoCompraService.estaVacio() || !!this.carritoCompraService.getEventoSnapshot();
+    this.inicializandoCarrito = !tieneDatosLocales;
+    void this.bootstrapCarrito({ background: tieneDatosLocales });
   }
 
-  private async bootstrapCarrito(): Promise<void> {
+  private async bootstrapCarrito(options?: { background?: boolean }): Promise<void> {
+    const background = options?.background ?? false;
+    if (background) {
+      this.startSilentRefreshIndicator();
+    }
     try {
       await this.validarSesionEnSegundoPlano();
     } finally {
       this.inicializandoCarrito = false;
+      this.stopSilentRefreshIndicator();
       this.cdr.detectChanges();
+    }
+  }
+
+  get mostrarLoadingCarrito(): boolean {
+    return this.inicializandoCarrito;
+  }
+
+  private hidratarDesdeCacheDetalleEvento(eventoId?: number): void {
+    const id = eventoId ?? this.carritoCompraService.getEventoSnapshot()?.id ?? this.evento?.id;
+    if (!id) return;
+
+    const cached = this.detalleEventoStateService.getState(id);
+    if (!cached) return;
+
+    this.evento = { ...cached.evento };
+    this.carritoCompraService.syncEvento(this.evento);
+    this.eventoTieneProductosDisponibles = cached.tieneProductos;
+    this.carritoCompraService.setEventoTieneProductosCache(id, cached.tieneProductos);
+    this.applyPalcosFromDetalleCache(cached);
+    this.cdr.detectChanges();
+  }
+
+  private applyPalcosFromDetalleCache(cached: DetalleEventoState): void {
+    for (const item of this.carritoCompraService.getItemsSnapshot()) {
+      if (!this.esLineaPalcoMultipersona(item.tipo)) continue;
+      const tipoId = item.tipo.id;
+      const disponibles = cached.palcosDisponiblesPorTipo.get(tipoId);
+      const catalogo = cached.palcosCatalogoPorTipo.get(tipoId);
+      if (disponibles) {
+        this.palcosDisponiblesPorTipo.set(tipoId, [...disponibles]);
+      }
+      if (catalogo) {
+        this.palcosCatalogoPorTipo.set(tipoId, [...catalogo]);
+      }
+    }
+  }
+
+  private persistDetalleCacheParcial(lastUpdated: number): void {
+    const eventoId = this.evento?.id;
+    if (!eventoId || !this.evento) return;
+
+    const existing = this.detalleEventoStateService.getState(eventoId);
+    const palcosDisponibles = new Map(existing?.palcosDisponiblesPorTipo ?? []);
+    const palcosCatalogo = new Map(existing?.palcosCatalogoPorTipo ?? []);
+
+    for (const [tipoId, list] of this.palcosDisponiblesPorTipo.entries()) {
+      palcosDisponibles.set(tipoId, [...list]);
+    }
+    for (const [tipoId, list] of this.palcosCatalogoPorTipo.entries()) {
+      palcosCatalogo.set(tipoId, [...list]);
+    }
+
+    this.detalleEventoStateService.saveState(eventoId, {
+      evento: this.evento,
+      tiposBoleta: existing?.tiposBoleta ?? [],
+      tieneProductos:
+        typeof this.eventoTieneProductosDisponibles === 'boolean'
+          ? this.eventoTieneProductosDisponibles
+          : (existing?.tieneProductos ?? false),
+      productos: existing?.productos ?? [],
+      lugar: existing?.lugar ?? null,
+      categoria: existing?.categoria ?? null,
+      palcosDisponiblesPorTipo: palcosDisponibles,
+      palcosCatalogoPorTipo: palcosCatalogo,
+      lastUpdated,
+    });
+  }
+
+  private startSilentRefreshIndicator(): void {
+    if (this.refreshIndicatorTimer) {
+      clearTimeout(this.refreshIndicatorTimer);
+    }
+    this.refreshIndicatorTimer = setTimeout(() => {
+      this.cdr.detectChanges();
+    }, this.refreshIndicatorDelayMs);
+  }
+
+  private stopSilentRefreshIndicator(): void {
+    if (this.refreshIndicatorTimer) {
+      clearTimeout(this.refreshIndicatorTimer);
+      this.refreshIndicatorTimer = null;
     }
   }
 
   ngOnDestroy(): void {
     this.stopCountdownTicker();
+    this.stopSilentRefreshIndicator();
+    this.persistDetalleCacheParcial(Date.now());
     this.subscriptions.unsubscribe();
     this.unsubscribeAuth?.();
   }
@@ -238,6 +344,22 @@ export class Carrito implements OnInit, OnDestroy {
       !this.esCarritoCover() &&
       this.eventoTieneProductosDisponibles !== false
     );
+  }
+
+  get mostrarSeccionBoletas(): boolean {
+    return this.itemsCompra.length > 0 || this.mostrarAgregarMasBoletas;
+  }
+
+  get mostrarSeccionProductos(): boolean {
+    return this.itemsProductos.length > 0 || this.mostrarAgregarMasProductos;
+  }
+
+  get unidadesBoletasEnCarrito(): number {
+    return this.itemsCompra.reduce((acc, item) => acc + item.cantidad, 0);
+  }
+
+  get unidadesProductosEnCarrito(): number {
+    return this.itemsProductos.reduce((acc, item) => acc + item.cantidad, 0);
   }
 
   get mostrarCupon(): boolean {
@@ -449,7 +571,7 @@ export class Carrito implements OnInit, OnDestroy {
       this.irAEventos();
       return;
     }
-    void this.router.navigate(['/detalle-evento', this.evento.id]);
+    void this.router.navigate(['/carrito/agregar', this.evento.id, 'boletas']);
   }
 
   irAgregarProductos(): void {
@@ -457,13 +579,46 @@ export class Carrito implements OnInit, OnDestroy {
       this.irAEventos();
       return;
     }
-    void this.router.navigate(['/detalle-evento', this.evento.id], {
-      queryParams: { tab: 'productos' },
-    });
+    void this.router.navigate(['/carrito/agregar', this.evento.id, 'productos']);
   }
 
   volverAlEvento(): void {
     this.irAgregarProductos();
+  }
+
+  async vaciarCarritoConfirmado(): Promise<void> {
+    if (this.vaciandoCarrito || this.comprando || this.carritoVacio) {
+      return;
+    }
+
+    const pendiente = this.checkoutPendienteEnCurso;
+    const confirmado = await this.alertService.confirm(
+      'Vaciar carrito',
+      pendiente
+        ? 'Se quitarán todos los artículos y se cancelará el pago pendiente. ¿Continuar?'
+        : 'Se quitarán todos los artículos del carrito. ¿Continuar?',
+      'Vaciar carrito',
+      'Cancelar',
+    );
+    if (!confirmado) {
+      return;
+    }
+
+    this.vaciandoCarrito = true;
+    this.cdr.detectChanges();
+    try {
+      if (pendiente) {
+        await this.ejecutarCancelacionCheckout(pendiente.transaccionCheckoutId, { notificarExito: false });
+        this.limpiarCheckoutPendienteLocal();
+      }
+      this.carritoCompraService.vaciarCarrito();
+      this.terminosAceptados = false;
+      this.checkoutPendienteEnCurso = null;
+      this.alertService.snackbar('Carrito vaciado');
+    } finally {
+      this.vaciandoCarrito = false;
+      this.cdr.detectChanges();
+    }
   }
 
   irAEventos(): void {
@@ -471,13 +626,23 @@ export class Carrito implements OnInit, OnDestroy {
     this.router.navigate([destino]);
   }
 
-  async refrescarEvento(eventoId: number): Promise<void> {
+  async refrescarEvento(eventoId: number, options?: { background?: boolean }): Promise<void> {
+    const background = options?.background ?? false;
+    if (background) {
+      this.startSilentRefreshIndicator();
+    }
     try {
       const evento = await this.eventosService.getEventoById(eventoId);
       this.evento = evento;
       this.carritoCompraService.syncEvento(evento);
+      this.persistDetalleCacheParcial(Date.now());
     } catch (error) {
       console.error('No se pudo refrescar el evento del carrito:', error);
+    } finally {
+      if (background) {
+        this.stopSilentRefreshIndicator();
+      }
+      this.cdr.detectChanges();
     }
   }
 
@@ -1025,22 +1190,41 @@ export class Carrito implements OnInit, OnDestroy {
     }
   }
 
-  private async cargarDisponibilidadProductosUpsell(eventoId: number | null): Promise<void> {
+  private async cargarDisponibilidadProductosUpsell(
+    eventoId: number | null,
+    options?: { background?: boolean },
+  ): Promise<void> {
     if (!eventoId) {
       this.eventoTieneProductosDisponibles = null;
       this.cdr.detectChanges();
       return;
     }
 
+    const cached = this.detalleEventoStateService.getState(eventoId);
+    if (cached && this.eventoTieneProductosDisponibles === null) {
+      this.eventoTieneProductosDisponibles = cached.tieneProductos;
+      this.carritoCompraService.setEventoTieneProductosCache(eventoId, cached.tieneProductos);
+      this.cdr.detectChanges();
+    }
+
+    const background = options?.background ?? false;
+    if (background) {
+      this.startSilentRefreshIndicator();
+    }
+
     try {
       const tieneProductos = await this.productosService.eventoTieneProductos(eventoId);
       this.carritoCompraService.setEventoTieneProductosCache(eventoId, tieneProductos);
       this.eventoTieneProductosDisponibles = tieneProductos;
+      this.persistDetalleCacheParcial(Date.now());
     } catch {
       if (this.eventoTieneProductosDisponibles === null) {
         this.eventoTieneProductosDisponibles = false;
       }
     } finally {
+      if (background) {
+        this.stopSilentRefreshIndicator();
+      }
       this.cdr.detectChanges();
     }
   }
@@ -1279,16 +1463,27 @@ export class Carrito implements OnInit, OnDestroy {
     this.mapaAmpliado = null;
   }
 
-  private async refrescarPalcosDisponibles(): Promise<void> {
+  private async refrescarPalcosDisponibles(options?: { background?: boolean }): Promise<void> {
     const seq = ++this.refreshPalcosSeq;
+    const eventoId = this.evento?.id;
+    const cached = eventoId ? this.detalleEventoStateService.getState(eventoId) : null;
+    if (cached) {
+      this.applyPalcosFromDetalleCache(cached);
+    }
+
+    const background = options?.background ?? false;
+    if (background) {
+      this.startSilentRefreshIndicator();
+    }
+
     const tiposPalco = this.itemsCompra
       .map((item) => item.tipo)
       .filter((tipo, index, arr) =>
         this.esLineaPalcoMultipersona(tipo) && arr.findIndex((t) => t.id === tipo.id) === index
       );
 
-    const nextDisponibles = new Map<number, Palco[]>();
-    const nextCatalogo = new Map<number, Palco[]>();
+    const nextDisponibles = new Map(this.palcosDisponiblesPorTipo);
+    const nextCatalogo = new Map(this.palcosCatalogoPorTipo);
 
     for (const tipo of tiposPalco) {
       const result = await this.obtenerPalcosTipoConFallback(tipo.id);
@@ -1296,13 +1491,17 @@ export class Carrito implements OnInit, OnDestroy {
       nextCatalogo.set(tipo.id, result.catalogo);
     }
 
-    // Evitar condiciones de carrera: solo aplica el resultado del refresco más reciente.
     if (seq !== this.refreshPalcosSeq) {
       return;
     }
 
     this.palcosDisponiblesPorTipo = nextDisponibles;
     this.palcosCatalogoPorTipo = nextCatalogo;
+    this.persistDetalleCacheParcial(Date.now());
+
+    if (background) {
+      this.stopSilentRefreshIndicator();
+    }
     this.cdr.detectChanges();
   }
 

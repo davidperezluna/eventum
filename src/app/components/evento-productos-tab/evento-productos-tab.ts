@@ -1,18 +1,19 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, HostBinding, Input, Output, EventEmitter, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { ProductosService } from '../../services/productos.service';
-import { CarritoCompraService, ItemCarritoProducto } from '../../services/carrito-compra.service';
+import { CarritoCompraService } from '../../services/carrito-compra.service';
 import { AlertService } from '../../services/alert.service';
 import { Evento, Producto } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { resolverConflictoEventoAntesDeAgregar } from '../../core/carrito-conflicto';
 import { ClientConfirmDialogService } from '../../services/client-confirm-dialog.service';
 
+export type ProductosCompraContexto = 'detalle' | 'carrito';
+
 @Component({
   selector: 'app-evento-productos-tab',
-  imports: [CommonModule, RouterModule, DateFormatPipe],
+  imports: [CommonModule, DateFormatPipe],
   templateUrl: './evento-productos-tab.html',
   styleUrl: './evento-productos-tab.css'
 })
@@ -21,11 +22,23 @@ export class EventoProductosTab implements OnInit, OnDestroy {
   @Input() eventoFinalizado = false;
   @Input() productosIniciales: Producto[] = [];
   @Input() refrescoSilenciosoInicial = false;
+  /** `detalle`: pestaña en detalle-evento. `carrito`: pantalla agregar productos. */
+  @Input() contexto: ProductosCompraContexto = 'detalle';
+  /** @deprecated Usar `contexto="carrito"`. */
+  @Input() embebidoEnCarrito = false;
   @Output() productosActualizados = new EventEmitter<Producto[]>();
+
+  @HostBinding('class')
+  get hostClass(): string {
+    return this.esContextoCarrito ? 'productos-compra-host--carrito' : 'productos-compra-host--detalle';
+  }
+
+  get esContextoCarrito(): boolean {
+    return this.contexto === 'carrito' || this.embebidoEnCarrito;
+  }
 
   productos: Producto[] = [];
   loading = false;
-  totalItemsCarrito = 0;
   private productosCargados = false;
   nowMs = Date.now();
   private countdownTimer: ReturnType<typeof setInterval> | null = null;
@@ -37,18 +50,11 @@ export class EventoProductosTab implements OnInit, OnDestroy {
     private carritoCompraService: CarritoCompraService,
     private alertService: AlertService,
     private clientConfirmDialog: ClientConfirmDialogService,
-    private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.carritoCompraService.syncEvento(this.evento);
-    this.carritoCompraService.totalItems$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((total) => {
-        this.totalItemsCarrito = total;
-        this.cdr.detectChanges();
-      });
 
     if (this.productosIniciales.length > 0) {
       this.productos = [...this.productosIniciales];
@@ -193,6 +199,21 @@ export class EventoProductosTab implements OnInit, OnDestroy {
     return targetMs - this.nowMs <= 24 * 60 * 60 * 1000;
   }
 
+  descripcionProductoVisible(producto: Producto): boolean {
+    const descripcion = (producto.descripcion || '').trim();
+    if (!descripcion) return false;
+    const nombre = (producto.nombre || '').trim();
+    return descripcion.localeCompare(nombre, 'es', { sensitivity: 'accent' }) !== 0;
+  }
+
+  cantidadEnCarrito(productoId: number): number {
+    return this.getCantidadEnCarrito(productoId);
+  }
+
+  trackByProductoId(_index: number, producto: Producto): number {
+    return producto.id;
+  }
+
   async agregarAlCarrito(producto: Producto): Promise<void> {
     if (this.eventoFinalizado) {
       this.alertService.warning('Evento finalizado', 'No se pueden comprar productos en un evento finalizado.');
@@ -228,16 +249,6 @@ export class EventoProductosTab implements OnInit, OnDestroy {
 
   eliminarDelCarrito(producto: Producto): void {
     this.carritoCompraService.eliminarProductoDelCarrito(producto.id);
-  }
-
-  getTotalCarrito(): number {
-    const base = this.carritoCompraService.getSubtotalCombinado();
-    const pct = Math.min(100, Math.max(0, Number(this.evento?.porcentaje_servicio ?? 0)));
-    return base + (base * pct) / 100;
-  }
-
-  irACarrito(): void {
-    this.router.navigate(['/carrito']);
   }
 
   formatCurrency(value: number): string {

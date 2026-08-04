@@ -2029,9 +2029,9 @@
 }
 
 .btn-add {
-  background: #f5f3ff;
-  color: #3730a3;
-  border: 1px solid #ddd6fe;
+  background: var(--ec-surface, #fff);
+  color: #5b21b6;
+  border: 1px solid #e9e5ff;
   border-radius: 11px;
   padding: 0.6rem 0.9rem;
   font-size: 0.9rem;
@@ -2040,13 +2040,13 @@
 
 .btn-add .material-icons {
   font-size: 1.03rem;
-  color: #8b5cf6;
+  color: #7c3aed;
 }
 
 .btn-add:hover:not(:disabled) {
-  background: #ede9fe;
-  border-color: #b4bdf0;
-  color: #312e81;
+  background: #faf5ff;
+  border-color: #ddd6fe;
+  color: #4c1d95;
   transform: none;
   filter: none;
 }
@@ -3640,21 +3640,21 @@
 }
 
 .btn-add {
-  border-radius: var(--ec-radius-control, 8px);
-  background: var(--color-secondary, #8b5cf6);
-  color: #fff;
-  border: 1px solid var(--color-secondary, #8b5cf6);
+  background: var(--ec-surface, #fff);
+  color: #5b21b6;
+  border: 1px solid #e9e5ff;
+  border-radius: 10px;
 }
 
 .btn-add .material-icons {
-  color: #fff;
+  color: #7c3aed;
 }
 
 .btn-add:hover:not(:disabled) {
-  filter: brightness(1.05);
-  background: var(--color-secondary-dark, #5a67d8);
-  border-color: var(--color-secondary-dark, #5a67d8);
-  color: #fff;
+  background: #faf5ff;
+  border-color: #ddd6fe;
+  color: #4c1d95;
+  filter: none;
 }
 
 .soldout-badge {

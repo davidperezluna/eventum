@@ -1,4 +1,10 @@
 <div class="carrito-page" [class.carrito-page--checkout-pendiente]="!!checkoutPendienteEnCurso">
+  <div *ngIf="mostrarLoadingCarrito" class="loading-state" aria-live="polite" aria-busy="true">
+    <div class="spinner"></div>
+    <p>Cargando tu carrito…</p>
+  </div>
+
+  <ng-container *ngIf="!mostrarLoadingCarrito">
   <header
     class="client-page-header client-page-header--compact client-page-header--in-nav carrito-page-header"
     [class.carrito-page-header--has-items]="tieneContenidoCarritoVisible"
@@ -10,14 +16,6 @@
     <p class="client-page-header__subtitle client-page-header__subtitle--short">Revisa y paga con seguridad.</p>
   </header>
 
-  <div *ngIf="inicializandoCarrito" class="carrito-loading" aria-live="polite" aria-busy="true">
-    <div class="loading-state loading-state--embedded">
-      <div class="spinner"></div>
-      <p>Cargando tu carrito…</p>
-    </div>
-  </div>
-
-  <ng-container *ngIf="!inicializandoCarrito">
   <section class="carrito-shell">
     <a
       *ngIf="!carritoVacio && evento?.id as eventoId"
@@ -150,13 +148,17 @@
             </div>
           </div>
 
-          <p
+          <div
             *ngIf="esCompraMixtaBoletasProductos"
-            class="carrito-cupon-mixto-aviso"
+            class="carrito-info-note carrito-info-note--mixto"
             role="note"
           >
-            {{ compraCopy.cuponMixto }}
-          </p>
+            <span class="material-icons carrito-info-note__icon" aria-hidden="true">local_offer</span>
+            <div class="carrito-info-note__body">
+              <p class="carrito-info-note__title">{{ compraCopy.cuponMixtoTitulo }}</p>
+              <p class="carrito-info-note__text">{{ compraCopy.cuponMixtoTexto }}</p>
+            </div>
+          </div>
 
           <div *ngFor="let item of itemsCover" class="carrito-item">
             <div class="carrito-item-info">
@@ -189,6 +191,28 @@
             </div>
           </div>
 
+          <section class="carrito-section" *ngIf="mostrarSeccionBoletas">
+            <header class="carrito-section__head">
+              <div class="carrito-section__title-wrap">
+                <h3 class="carrito-section__title">
+                  <span class="material-icons" aria-hidden="true">confirmation_number</span>
+                  Boletas
+                </h3>
+                <span class="carrito-section__meta" *ngIf="unidadesBoletasEnCarrito > 0">
+                  {{ unidadesBoletasEnCarrito }} en el carrito
+                </span>
+              </div>
+              <button
+                *ngIf="mostrarAgregarMasBoletas"
+                type="button"
+                class="carrito-section__action"
+                (click)="irAgregarBoletas()"
+              >
+                {{ itemsCompra.length ? 'Agregar más' : 'Agregar boletas' }}
+              </button>
+            </header>
+
+            <div class="carrito-section__list" *ngIf="itemsCompra.length > 0">
           <div *ngFor="let item of itemsCompra" class="carrito-item">
             <div class="carrito-item-info">
               <div class="carrito-item-top">
@@ -322,18 +346,35 @@
               </div>
             </div>
           </div>
+            </div>
 
-          <button
-            *ngIf="mostrarAgregarMasBoletas"
-            type="button"
-            class="carrito-add-more"
-            (click)="irAgregarBoletas()"
-          >
-            <span class="material-icons" aria-hidden="true">add_circle_outline</span>
-            <span class="carrito-add-more__label">Agregar más boletas</span>
-            <span class="material-icons carrito-add-more__arrow" aria-hidden="true">chevron_right</span>
-          </button>
+            <p class="carrito-section__empty" *ngIf="itemsCompra.length === 0 && mostrarAgregarMasBoletas">
+              Aún no tienes boletas en este pedido.
+            </p>
+          </section>
 
+          <section class="carrito-section" *ngIf="mostrarSeccionProductos">
+            <header class="carrito-section__head">
+              <div class="carrito-section__title-wrap">
+                <h3 class="carrito-section__title">
+                  <span class="material-icons" aria-hidden="true">storefront</span>
+                  Productos
+                </h3>
+                <span class="carrito-section__meta" *ngIf="unidadesProductosEnCarrito > 0">
+                  {{ unidadesProductosEnCarrito }} en el carrito
+                </span>
+              </div>
+              <button
+                *ngIf="mostrarAgregarMasProductos"
+                type="button"
+                class="carrito-section__action"
+                (click)="irAgregarProductos()"
+              >
+                {{ itemsProductos.length ? 'Agregar más' : 'Agregar productos' }}
+              </button>
+            </header>
+
+            <div class="carrito-section__list" *ngIf="itemsProductos.length > 0">
           <div *ngFor="let item of itemsProductos" class="carrito-item carrito-item--producto">
             <div class="carrito-item-info">
               <div class="carrito-item-top">
@@ -390,16 +431,21 @@
               </div>
             </div>
           </div>
+            </div>
+
+            <p class="carrito-section__empty" *ngIf="itemsProductos.length === 0 && mostrarAgregarMasProductos">
+              Aún no tienes productos en este pedido.
+            </p>
+          </section>
 
           <button
-            *ngIf="mostrarAgregarMasProductos"
             type="button"
-            class="carrito-add-more"
-            (click)="irAgregarProductos()"
+            class="carrito-vaciar-row"
+            (click)="vaciarCarritoConfirmado()"
+            [disabled]="vaciandoCarrito || comprando"
           >
-            <span class="material-icons" aria-hidden="true">add_circle_outline</span>
-            <span class="carrito-add-more__label">Agregar más productos</span>
-            <span class="material-icons carrito-add-more__arrow" aria-hidden="true">chevron_right</span>
+            <span class="material-icons" aria-hidden="true">remove_shopping_cart</span>
+            <span>{{ vaciandoCarrito ? 'Vaciando carrito…' : 'Vaciar carrito' }}</span>
           </button>
         </div>
 

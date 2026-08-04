@@ -1,0 +1,154 @@
+<div class="catalogo-page">
+  <div *ngIf="loading" class="loading-state" aria-live="polite" aria-busy="true">
+    <div class="spinner"></div>
+    <p>Cargando catálogo…</p>
+  </div>
+
+  <ng-container *ngIf="!loading && evento">
+    <header class="catalogo-header">
+      <button type="button" class="catalogo-header__back" (click)="volverAlCarrito()">
+        <span class="material-icons" aria-hidden="true">arrow_back</span>
+        Mi carrito
+      </button>
+      <div class="catalogo-header__copy">
+        <p class="catalogo-header__kicker">Paso 1 · Selección</p>
+        <h1 class="catalogo-header__title">{{ tituloCatalogo }}</h1>
+        <p class="catalogo-header__evento">{{ evento.titulo }}</p>
+      </div>
+    </header>
+
+    <nav class="catalogo-switch" *ngIf="mostrarAlternativaCatalogo">
+      <button type="button" class="catalogo-switch__btn" (click)="irOtroCatalogo()">
+        <span class="material-icons" aria-hidden="true">
+          {{ esBoletas ? 'storefront' : 'confirmation_number' }}
+        </span>
+        Ver {{ otroCatalogoLabel }}
+      </button>
+    </nav>
+
+    <p *ngIf="eventoFinalizado" class="catalogo-empty">
+      Este evento ya terminó. No hay {{ esBoletas ? 'boletas' : 'productos' }} disponibles para compra.
+    </p>
+
+    <section *ngIf="esBoletas && !eventoFinalizado" class="catalogo-boletas" aria-label="Entradas disponibles">
+      <div *ngIf="loadingBoletas" class="loading-small">
+        <p>Cargando tipos de boleta...</p>
+      </div>
+
+      <div *ngIf="!loadingBoletas && tiposBoletaDisponibles.length > 0" class="tipos-boleta-grid">
+        <div *ngFor="let tipo of tiposBoletaDisponibles" class="tipo-boleta-card">
+          <div class="tipo-boleta-header">
+            <h3>{{ tipo.nombre }}</h3>
+            <span class="precio">{{ formatCurrency(tipo.precio) }}</span>
+          </div>
+          <p *ngIf="descripcionTipoVisible(tipo)" class="tipo-descripcion">{{ tipo.descripcion }}</p>
+          <div class="tipo-info">
+            <div class="tipo-info-metricas" *ngIf="mostrarMetricasEntradasDisponibles">
+              <span class="disponibles">{{ tipo.cantidad_disponibles }} disponibles</span>
+              <span class="reservados" [class.reservados--cero]="cantidadPalcosReservados(tipo) === 0">
+                {{ cantidadPalcosReservados(tipo) }} reservados
+              </span>
+              <span *ngIf="tipo.cantidad_vendidas !== undefined && tipo.cantidad_vendidas > 0" class="vendidas">
+                {{ tipo.cantidad_vendidas }} vendidas de {{ tipo.cantidad_total }} totales
+              </span>
+            </div>
+            <span *ngIf="tipo.limite_por_persona" class="limite">Máx. {{ tipo.limite_por_persona }} por persona</span>
+            <span *ngIf="esLineaPalcoMultipersona(tipo)" class="palco-badge">
+              Palco: {{ cuposPorPalco(tipo) }} pers. por unidad · inventario en palcos
+            </span>
+            <div *ngIf="mostrarFinVentaTipo(tipo) && tipo.fecha_venta_fin" class="fin-venta-block">
+              <span class="fin-venta-tipo">Fin de venta: {{ tipo.fecha_venta_fin | dateFormat:'short' }}</span>
+              <span class="fin-venta-nota">Hasta agotar existencias por etapa</span>
+            </div>
+          </div>
+          <div class="tipo-actions">
+            <div class="cantidad-controls" *ngIf="getCantidadBoleta(tipo.id) > 0">
+              <button type="button" class="btn-cantidad" (click)="quitarBoleta(tipo)">-</button>
+              <span class="cantidad">{{ getCantidadBoleta(tipo.id) }}</span>
+              <button
+                type="button"
+                class="btn-cantidad"
+                (click)="agregarBoleta(tipo)"
+                [disabled]="!puedeAgregarMasBoletas(tipo)"
+              >+</button>
+              <button type="button" class="btn-remove" (click)="eliminarBoleta(tipo)">
+                <span class="material-icons">delete</span>
+              </button>
+            </div>
+            <button *ngIf="getCantidadBoleta(tipo.id) === 0" type="button" class="btn-add" (click)="agregarBoleta(tipo)">
+              <span class="material-icons">add_shopping_cart</span>
+              Agregar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <p
+        *ngIf="!loadingBoletas && tiposBoletaDisponibles.length === 0 && tiposBoletaAgotadosList.length > 0"
+        class="entradas-agotadas-hint"
+      >
+        No hay entradas a la venta en este momento.
+      </p>
+
+      <div *ngIf="!loadingBoletas && tiposBoleta.length === 0" class="empty-state">
+        <p>No hay boletas disponibles para este evento</p>
+      </div>
+
+      <div class="etapas-agotadas-zone" *ngIf="!loadingBoletas && tiposBoletaAgotadosList.length > 0">
+        <div class="evento-section evento-accordion etapas-agotadas-accordion">
+          <button class="accordion-header" (click)="toggleEtapasAgotadas()" type="button">
+            <h2>
+              <span class="material-icons">history</span>
+              Etapas agotadas
+            </h2>
+            <span class="material-icons accordion-icon" [class.open]="etapasAgotadasAbierto">expand_more</span>
+          </button>
+          <div class="accordion-content" [class.open]="etapasAgotadasAbierto">
+            <div class="tipos-boleta-grid tipos-boleta-grid--agotados">
+              <article *ngFor="let tipo of tiposBoletaAgotadosList" class="tipo-boleta-card tipo-boleta-card--agotado">
+                <div class="tipo-boleta-header">
+                  <h3>{{ tipo.nombre }}</h3>
+                  <span class="precio precio--agotado">{{ formatCurrency(tipo.precio) }}</span>
+                </div>
+                <p *ngIf="descripcionTipoVisible(tipo)" class="tipo-descripcion">{{ tipo.descripcion }}</p>
+                <div class="tipo-info">
+                  <div class="tipo-info-metricas">
+                    <span *ngIf="tipo.cantidad_vendidas !== undefined && tipo.cantidad_vendidas > 0" class="vendidas">
+                      {{ tipo.cantidad_vendidas }} vendidas de {{ tipo.cantidad_total }} totales
+                    </span>
+                    <span *ngIf="mostrarFinVentaTipo(tipo) && tipo.fecha_venta_fin" class="fin-venta-tipo">
+                      Fin de venta: {{ tipo.fecha_venta_fin | dateFormat:'short' }}
+                    </span>
+                  </div>
+                  <span class="soldout-badge">Agotado</span>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section *ngIf="!esBoletas && !eventoFinalizado && evento" class="catalogo-productos" aria-label="Productos disponibles">
+      <app-evento-productos-tab
+        [evento]="evento"
+        [eventoFinalizado]="eventoFinalizado"
+        [productosIniciales]="productosCache"
+        [refrescoSilenciosoInicial]="productosCache.length > 0"
+        contexto="carrito"
+        (productosActualizados)="onProductosActualizados($event)"
+      ></app-evento-productos-tab>
+    </section>
+
+    <footer class="catalogo-footer">
+      <div class="catalogo-footer__summary" *ngIf="totalItemsCarrito > 0">
+        <span class="catalogo-footer__count">{{ totalItemsCarrito }} en tu carrito</span>
+        <strong class="catalogo-footer__total">{{ formatCurrency(subtotalCarrito) }}</strong>
+      </div>
+      <button type="button" class="catalogo-footer__cta" (click)="volverAlCarrito()">
+        <span class="material-icons" aria-hidden="true">shopping_cart_checkout</span>
+        {{ totalItemsCarrito > 0 ? 'Listo, volver al carrito' : 'Volver al carrito' }}
+      </button>
+    </footer>
+  </ng-container>
+</div>

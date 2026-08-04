@@ -1,116 +1,137 @@
-<div class="evento-section detalle-tab-panel" *ngIf="!eventoFinalizado">
-  <div class="section-heading-row">
-    <div>
+<div
+  class="productos-compra-panel"
+  *ngIf="!eventoFinalizado"
+  [class.productos-compra-panel--carrito]="esContextoCarrito"
+>
+  <header class="productos-compra-intro">
+    <ng-container *ngIf="!esContextoCarrito">
       <h2>Productos</h2>
       <p class="section-kicker">Selecciona tus productos y revisa el total antes de pagar.</p>
-      <p
-        class="preventa-hint"
-        [class.preventa-hint--urgent]="preventaUrgente()"
-        [class.preventa-hint--evento]="!preventaActiva()"
-      >
-        <span class="material-icons">{{ preventaActiva() ? 'schedule' : 'local_offer' }}</span>
-        {{ getPrecioEstadoHintLabel() }}
-      </p>
-    </div>
-    <button
-      type="button"
-      class="btn-carrito-rapido"
-      *ngIf="totalItemsCarrito > 0"
-      (click)="irACarrito()"
-      aria-label="Ir al carrito de productos"
+    </ng-container>
+    <div
+      class="preventa-banner"
+      [class.preventa-banner--urgent]="preventaUrgente()"
+      [class.preventa-banner--evento]="!preventaActiva()"
     >
-      <span class="material-icons">shopping_cart</span>
-      <span class="btn-carrito-rapido-texto">
-        {{ totalItemsCarrito }} producto(s) · {{ formatCurrency(getTotalCarrito()) }}
-      </span>
-      <span class="material-icons">arrow_forward</span>
-    </button>
-  </div>
+      <span class="material-icons" aria-hidden="true">{{ preventaActiva() ? 'schedule' : 'local_offer' }}</span>
+      <span>{{ getPrecioEstadoHintLabel() }}</span>
+    </div>
+  </header>
 
   <div *ngIf="loading" class="loading-small">
     <p>Cargando productos...</p>
   </div>
 
-  <div *ngIf="!loading && productos.length > 0" class="tipos-boleta-grid">
-    <div
-      *ngFor="let producto of productos"
-      class="tipo-boleta-card"
-      [class.tipo-boleta-card--licor]="producto.es_licor"
+  <ul *ngIf="!loading && productos.length > 0" class="pc-list" role="list">
+    <li
+      *ngFor="let producto of productos; trackBy: trackByProductoId"
+      class="pc-card"
+      [class.pc-card--licor]="producto.es_licor"
+      [class.pc-card--agotado]="!tieneExistencias(producto)"
+      [class.pc-card--en-carrito]="cantidadEnCarrito(producto.id) > 0"
     >
-      <div class="tipo-boleta-imagen" *ngIf="producto.imagen_url">
-        <img [src]="producto.imagen_url" [alt]="producto.nombre" loading="lazy" />
-      </div>
-      <div class="tipo-boleta-header">
-        <h3>{{ producto.nombre }}</h3>
-        <div class="producto-precio-stack">
-          <span class="producto-precio-badge" [class.producto-precio-badge--evento]="precioEventoVigente()">
-            {{ getEstadoPrecioLabel() }}
-          </span>
-          <span class="precio">{{ formatCurrency(getPrecioVigente(producto)) }}</span>
-          <small
-            *ngIf="tienePrecioDiferenciado(producto)"
-            class="producto-precio-contexto producto-precio-contexto--tachado"
-          >
-            {{ precioEventoVigente() ? 'Preventa' : 'En evento' }}:
-            {{ formatCurrency(getPrecioReferencia(producto)) }}
-          </small>
-          <small *ngIf="getAhorroUnitario(producto) > 0" class="producto-precio-ahorro">
-            Ahorras {{ formatCurrency(getAhorroUnitario(producto)) }} comprando antes
-          </small>
+      <div class="pc-card__inner">
+        <div class="pc-card__visual" *ngIf="producto.imagen_url; else pcPlaceholder">
+          <img [src]="producto.imagen_url" [alt]="producto.nombre" loading="lazy" />
+        </div>
+        <ng-template #pcPlaceholder>
+          <div class="pc-card__visual pc-card__visual--placeholder" aria-hidden="true">
+            <span class="material-icons">{{ producto.es_licor ? 'local_bar' : 'inventory_2' }}</span>
+          </div>
+        </ng-template>
+
+        <div class="pc-card__content">
+          <div class="pc-card__head">
+            <div class="pc-card__title-block">
+              <h3 class="pc-card__title">{{ producto.nombre }}</h3>
+              <p *ngIf="descripcionProductoVisible(producto)" class="pc-card__subtitle">{{ producto.descripcion }}</p>
+            </div>
+            <span
+              class="pc-estado-precio"
+              [class.pc-estado-precio--evento]="precioEventoVigente()"
+            >{{ getEstadoPrecioLabel() }}</span>
+          </div>
+
+          <div class="pc-card__pricing">
+            <span class="pc-card__precio">{{ formatCurrency(getPrecioVigente(producto)) }}</span>
+            <span
+              *ngIf="tienePrecioDiferenciado(producto)"
+              class="pc-card__precio-ref"
+            >
+              {{ precioEventoVigente() ? 'Preventa' : 'En evento' }}
+              {{ formatCurrency(getPrecioReferencia(producto)) }}
+            </span>
+          </div>
+
+          <p *ngIf="getAhorroUnitario(producto) > 0" class="pc-card__ahorro">
+            <span class="material-icons" aria-hidden="true">savings</span>
+            Ahorras {{ formatCurrency(getAhorroUnitario(producto)) }} en preventa
+          </p>
+
+          <div class="pc-card__meta">
+            <span class="pc-chip" [class.pc-chip--danger]="!tieneExistencias(producto)">
+              {{ getDisponibles(producto) }} disp.
+            </span>
+            <span *ngIf="producto.limite_por_persona" class="pc-chip">Máx. {{ producto.limite_por_persona }}</span>
+            <span *ngIf="producto.es_licor" class="pc-chip pc-chip--licor">+18</span>
+            <span *ngIf="!tieneExistencias(producto)" class="pc-chip pc-chip--soldout">Agotado</span>
+          </div>
+
+          <p *ngIf="producto.fecha_venta_fin" class="pc-card__fin-venta">
+            Fin de venta {{ producto.fecha_venta_fin | dateFormat:'short' }}
+          </p>
         </div>
       </div>
-      <p *ngIf="producto.descripcion" class="tipo-descripcion">{{ producto.descripcion }}</p>
-      <div class="tipo-info">
-        <div class="tipo-info-metricas">
-          <span class="disponibles" [class.sin-stock]="!tieneExistencias(producto)">
-            {{ getDisponibles(producto) }} disponibles
-          </span>
-          <span *ngIf="producto.limite_por_persona" class="limite">Máx. {{ producto.limite_por_persona }} por persona</span>
-        </div>
-        <span *ngIf="producto.es_licor" class="palco-badge palco-badge--licor">
-          Licor · +18 · Eventum es intermediario
-        </span>
-        <div *ngIf="producto.fecha_venta_fin" class="fin-venta-block">
-          <span class="fin-venta-tipo">Fin de venta: {{ producto.fecha_venta_fin | dateFormat:'short' }}</span>
-          <span class="fin-venta-nota">Hasta agotar existencias</span>
-        </div>
-        <span *ngIf="!tieneExistencias(producto)" class="soldout-badge">Agotado</span>
-      </div>
-      <div class="tipo-actions">
-        <div class="cantidad-controls" *ngIf="getCantidadEnCarrito(producto.id) > 0">
-          <button type="button" class="btn-cantidad" (click)="quitarDelCarrito(producto)">-</button>
-          <span class="cantidad">{{ getCantidadEnCarrito(producto.id) }}</span>
+
+      <div class="pc-card__footer">
+        <div class="pc-stepper" *ngIf="cantidadEnCarrito(producto.id) > 0; else pcAddBtn">
           <button
             type="button"
-            class="btn-cantidad"
+            class="pc-stepper__btn"
+            (click)="quitarDelCarrito(producto)"
+            aria-label="Quitar uno"
+          >−</button>
+          <span class="pc-stepper__qty">{{ cantidadEnCarrito(producto.id) }}</span>
+          <button
+            type="button"
+            class="pc-stepper__btn"
             (click)="agregarAlCarrito(producto)"
             [disabled]="!puedeAgregarMasProductos(producto)"
+            aria-label="Agregar uno"
           >+</button>
-          <button type="button" class="btn-remove" (click)="eliminarDelCarrito(producto)">
-            <span class="material-icons">delete</span>
+          <button
+            type="button"
+            class="pc-stepper__remove"
+            (click)="eliminarDelCarrito(producto)"
+            aria-label="Quitar del carrito"
+          >
+            <span class="material-icons">delete_outline</span>
           </button>
         </div>
-        <button
-          *ngIf="getCantidadEnCarrito(producto.id) === 0"
-          type="button"
-          class="btn-add"
-          (click)="agregarAlCarrito(producto)"
-          [disabled]="!puedeAgregarMasProductos(producto)"
-        >
-          <span class="material-icons">add_shopping_cart</span>
-          Agregar
-        </button>
+        <ng-template #pcAddBtn>
+          <button
+            type="button"
+            class="pc-add-btn"
+            (click)="agregarAlCarrito(producto)"
+            [disabled]="!puedeAgregarMasProductos(producto)"
+          >
+            <span class="material-icons" aria-hidden="true">add</span>
+            Agregar al carrito
+          </button>
+        </ng-template>
       </div>
-    </div>
-  </div>
+    </li>
+  </ul>
 
-  <div *ngIf="!loading && productos.length === 0" class="empty-state">
+  <div *ngIf="!loading && productos.length === 0" class="pc-empty">
+    <span class="material-icons" aria-hidden="true">inventory_2</span>
     <p>No hay productos disponibles para este evento</p>
   </div>
 </div>
 
-<div class="evento-section detalle-tab-panel" *ngIf="eventoFinalizado">
-  <div class="evento-finalizado-message">
+<div class="productos-compra-panel productos-compra-panel--finalizado" *ngIf="eventoFinalizado">
+  <div class="pc-empty">
+    <span class="material-icons" aria-hidden="true">event_busy</span>
     <p>Este evento ya terminó. Los productos no están disponibles para compra.</p>
   </div>
 </div>

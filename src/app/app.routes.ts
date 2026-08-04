@@ -10,6 +10,7 @@ import { CuposEvento } from './pages/cupos-evento/cupos-evento';
 import { CuposExplorar } from './pages/cupos-explorar/cupos-explorar';
 import { MisCupos } from './pages/mis-cupos/mis-cupos';
 import { Carrito } from './pages/carrito/carrito';
+import { CarritoAgregar } from './pages/carrito-agregar/carrito-agregar';
 import { MisCompras } from './pages/mis-compras/mis-compras';
 import { MisComprasGuia } from './pages/mis-compras-guia/mis-compras-guia';
 import { AccesosPuerta } from './pages/accesos-puerta/accesos-puerta';
@@ -135,6 +136,7 @@ const appRoutes: Routes = [
       ...coversPublicRoutes,
       ...(cuposEventumEnabled ? [{ path: 'mis-cupos', component: MisCupos, canActivate: [cuposFeatureGuard] }] : []),
       { path: 'carrito', component: Carrito },
+      { path: 'carrito/agregar/:eventoId/:tipo', component: CarritoAgregar },
       { path: 'carrito-productos', redirectTo: 'carrito', pathMatch: 'full' },
       { path: 'pago-wompi', component: PagoWompi },
       { path: 'pago-resultado', component: PagoResultado },

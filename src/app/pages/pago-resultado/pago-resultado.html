@@ -1,20 +1,14 @@
 <div class="pago-resultado-page">
-  <section class="pago-resultado-shell">
-    <article *ngIf="loading" class="pago-panel pago-panel--loading">
-      <div class="loading-state loading-state--embedded">
-        <div class="spinner"></div>
-      </div>
-      <h1 class="pago-panel__title">Confirmando tu pago…</h1>
-      <p class="pago-panel__lead">
-        Consultamos con Wompi el resultado de tu pago. Suele tardar unos segundos; en casos puntuales puede
-        demorar hasta 30 segundos. No cierres esta ventana.
-      </p>
-      <p *ngIf="consultaIntentosMax > 1" class="pago-panel__lead pago-panel__lead--progress" aria-live="polite">
-        Intento {{ consultaIntento }} de {{ consultaIntentosMax }}…
-      </p>
-    </article>
+  <div *ngIf="loading" class="loading-state" aria-live="polite" aria-busy="true">
+    <div class="spinner"></div>
+    <p>Confirmando tu pago…</p>
+    <p *ngIf="consultaIntentosMax > 1" class="pago-resultado-loading__progress" aria-live="polite">
+      Intento {{ consultaIntento }} de {{ consultaIntentosMax }}…
+    </p>
+  </div>
 
-    <article *ngIf="!loading && error" class="pago-panel pago-panel--error" aria-live="polite">
+  <section *ngIf="!loading" class="pago-resultado-shell">
+    <article *ngIf="error" class="pago-panel pago-panel--error" aria-live="polite">
       <div class="pago-panel__icon" aria-hidden="true">
         <span class="material-icons">cancel</span>
       </div>
@@ -32,7 +26,7 @@
     </article>
 
     <article
-      *ngIf="!loading && !error && (compra || compraProducto || transaccionProducto || transaccionCheckout)"
+      *ngIf="!error && (compra || compraProducto || transaccionProducto || transaccionCheckout)"
       class="pago-panel"
       [class.pago-panel--success]="getEstadoPagoReferencia() === 'completado'"
       [class.pago-panel--warning]="getEstadoPagoReferencia() === 'pendiente'"
