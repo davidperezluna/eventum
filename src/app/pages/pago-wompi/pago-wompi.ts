@@ -22,6 +22,7 @@ export interface WompiCheckoutPayload {
 export class PagoWompi implements OnInit {
   payload: WompiCheckoutPayload | null = null;
   redirigiendo = false;
+  volviendoCarrito = false;
   readonly compraCopy = COMPRA_COPY;
 
   constructor(
@@ -47,6 +48,14 @@ export class PagoWompi implements OnInit {
     sessionStorage.removeItem(WOMPI_CHECKOUT_STORAGE_KEY);
     this.carritoCompraService.vaciarCarrito();
     window.location.href = url;
+  }
+
+  volverAlCarrito(): void {
+    if (this.volviendoCarrito || this.redirigiendo) {
+      return;
+    }
+    this.volviendoCarrito = true;
+    void this.router.navigate(['/carrito']);
   }
 
   formatCurrency(value: number): string {

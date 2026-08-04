@@ -4,9 +4,12 @@ export const COMPRA_COPY = {
   emailHeroLabelConfirmado: 'Tu compra quedó en esta cuenta',
   emailHeroLabelPendiente: 'Cuando se confirme, verás tu compra en esta cuenta',
   wompiReciboNota:
-    'En Wompi puedes usar otro correo solo para el recibo del banco. Eso no mueve tus entradas: entrarás con el correo de arriba en Mis compras.',
+    'En la pasarela puedes usar otro correo solo para el recibo del banco. Eso no mueve tus entradas: entrarás con el correo de arriba en Mis compras.',
   wompiReciboNotaPostPago:
-    'Si el recibo de Wompi llegó a otro correo, es solo el comprobante del banco.',
+    'Si el recibo de la pasarela llegó a otro correo, es solo el comprobante del banco.',
+  pagoWompiChip: 'Paso 2 · Confirmación antes de la pasarela',
+  pagoWompiContinuar: 'Continuar a la pasarela',
+  pagoWompiAbriendo: 'Abriendo la pasarela…',
   loginContextoPagar:
     'Entra para finalizar tu compra. Lo que agregaste al carrito se mantiene. Usa el correo donde quieres ver tu compra en Mis compras.',
   sinSesionVinculo: 'Al pagar, todo quedará en el correo de tu cuenta Eventum.',

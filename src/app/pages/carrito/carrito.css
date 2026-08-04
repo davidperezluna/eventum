@@ -18,6 +18,37 @@
   padding-bottom: 0.45rem;
 }
 
+.carrito-loading {
+  max-width: var(--carrito-max);
+  margin: 0 auto;
+  padding: 2.5rem var(--carrito-gutter) 3rem;
+  min-height: 12rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.carrito-loading .loading-state--embedded {
+  min-height: auto;
+  padding: 0;
+}
+
+.carrito-shell {
+  animation: carrito-content-in 0.22s ease;
+}
+
+@keyframes carrito-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .client-page-header__subtitle--short {
   display: none;
 }
@@ -1326,6 +1357,10 @@
     padding-bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
   }
 
+  .carrito-page--checkout-pendiente {
+    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
   .carrito-page .carrito-page-header--has-items .client-page-header__subtitle {
     display: none;
   }
@@ -1420,11 +1455,50 @@
   .carrito-checkout-bar__btn .material-icons {
     font-size: 1.05rem;
   }
+
+  .carrito-checkout-bar__pending {
+    flex: 1 1 100%;
+    order: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    min-width: 0;
+  }
+
+  .carrito-checkout-bar--pendiente .carrito-checkout-bar__pending {
+    flex: 1;
+    order: 1;
+  }
+
+  .carrito-checkout-bar__btn--secondary {
+    background: var(--ec-surface, #fff);
+    color: var(--ec-text-primary, #0f172a);
+    border: 1px solid var(--ec-border, #e2e8f0);
+    min-height: 42px;
+  }
+
+  .carrito-checkout-bar__btn--secondary:hover:not(:disabled) {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+  }
+
+  .carrito-checkout-bar__btn--secondary:disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+  }
 }
 
 @media (min-width: 769px) {
   .carrito-checkout-bar {
     display: none !important;
+  }
+
+  .carrito-checkout-bar.carrito-checkout-bar--pendiente {
+    display: flex !important;
+  }
+
+  .carrito-page--checkout-pendiente {
+    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -1574,6 +1648,10 @@
   font-size: 0.72rem;
   line-height: 1.35;
   color: var(--ec-text-muted, #64748b);
+}
+
+.carrito-checkout-bar__hint--pending {
+  text-align: center;
 }
 
 .palco-mapa-overlay {

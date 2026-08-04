@@ -1,4 +1,4 @@
-<div class="carrito-page">
+<div class="carrito-page" [class.carrito-page--checkout-pendiente]="!!checkoutPendienteEnCurso">
   <header
     class="client-page-header client-page-header--compact client-page-header--in-nav carrito-page-header"
     [class.carrito-page-header--has-items]="tieneContenidoCarritoVisible"
@@ -10,6 +10,14 @@
     <p class="client-page-header__subtitle client-page-header__subtitle--short">Revisa y paga con seguridad.</p>
   </header>
 
+  <div *ngIf="inicializandoCarrito" class="carrito-loading" aria-live="polite" aria-busy="true">
+    <div class="loading-state loading-state--embedded">
+      <div class="spinner"></div>
+      <p>Cargando tu carrito…</p>
+    </div>
+  </div>
+
+  <ng-container *ngIf="!inicializandoCarrito">
   <section class="carrito-shell">
     <a
       *ngIf="!carritoVacio && evento?.id as eventoId"
@@ -60,28 +68,10 @@
       <p class="checkout-pendiente-alert__text">
         {{
           pendiente.expiro
-            ? 'Hay un pago vencido. Revisa su estado o cancélalo para crear una compra nueva.'
-            : 'Tienes una compra sin confirmar. Reanúdala antes de que venza el tiempo de pago.'
+            ? 'Revisa el estado o cancela para crear una compra nueva.'
+            : 'Reanuda el pago antes de que venza el tiempo.'
         }}
       </p>
-      <div class="checkout-pendiente-alert__actions">
-        <button
-          type="button"
-          class="checkout-pendiente-alert__btn"
-          (click)="recuperarCheckoutPendiente()"
-          [disabled]="cancelandoCheckoutPendiente"
-        >
-          {{ pendiente.expiro ? 'Revisar estado' : 'Recuperar pago' }}
-        </button>
-        <button
-          type="button"
-          class="checkout-pendiente-alert__btn-alt"
-          (click)="cancelarCheckoutPendiente()"
-          [disabled]="cancelandoCheckoutPendiente"
-        >
-          {{ cancelandoCheckoutPendiente ? 'Cancelando…' : 'Cancelar y seguir' }}
-        </button>
-      </div>
     </section>
 
     <div class="empty-state" *ngIf="mostrarEstadoCarritoVacio">
@@ -530,10 +520,11 @@
             <h3>Total: {{ formatCurrency(getTotal()) }}</h3>
           </div>
           <button
+            *ngIf="!checkoutPendienteEnCurso"
             type="button"
             class="btn-comprar btn-comprar--inline"
             (click)="procesarCompra()"
-            [disabled]="comprando || !!checkoutPendienteEnCurso || tienePalcosIncompletos()"
+            [disabled]="comprando || tienePalcosIncompletos()"
           >
             <span class="material-icons">{{ comprando ? 'hourglass_empty' : 'shopping_cart' }}</span>
             {{ labelBotonFinalizarCompra }}
@@ -544,8 +535,13 @@
     </ng-container>
   </section>
 
-  <div class="carrito-checkout-bar" *ngIf="tieneContenidoCarritoVisible" aria-label="Resumen de pago">
-    <div class="carrito-checkout-bar__total" *ngIf="!carritoVacio || !checkoutPendienteEnCurso">
+  <div
+    class="carrito-checkout-bar"
+    *ngIf="tieneContenidoCarritoVisible"
+    [class.carrito-checkout-bar--pendiente]="!!checkoutPendienteEnCurso"
+    aria-label="Resumen de pago"
+  >
+    <div class="carrito-checkout-bar__total" *ngIf="!carritoVacio">
       <span class="carrito-checkout-bar__label">Total</span>
       <span class="carrito-checkout-bar__amount">{{ formatCurrency(getTotal()) }}</span>
       <span
@@ -558,16 +554,27 @@
         {{ getCheckoutCountdownLabel() }}
       </span>
     </div>
-    <button
-      *ngIf="checkoutPendienteEnCurso as pendiente; else pagarStickyBtn"
-      type="button"
-      class="carrito-checkout-bar__btn carrito-checkout-bar__btn--recover"
-      (click)="recuperarCheckoutPendiente()"
-      [disabled]="cancelandoCheckoutPendiente"
-    >
-      <span class="material-icons" aria-hidden="true">restore</span>
-      {{ pendiente.expiro ? 'Revisar estado' : 'Recuperar pago' }}
-    </button>
+    <ng-container *ngIf="checkoutPendienteEnCurso as pendiente; else pagarStickyBtn">
+      <div class="carrito-checkout-bar__pending">
+        <button
+          type="button"
+          class="carrito-checkout-bar__btn carrito-checkout-bar__btn--recover"
+          (click)="recuperarCheckoutPendiente()"
+          [disabled]="cancelandoCheckoutPendiente"
+        >
+          <span class="material-icons" aria-hidden="true">restore</span>
+          {{ pendiente.expiro ? 'Revisar estado' : 'Recuperar pago' }}
+        </button>
+        <button
+          type="button"
+          class="carrito-checkout-bar__btn carrito-checkout-bar__btn--secondary"
+          (click)="cancelarCheckoutPendiente()"
+          [disabled]="cancelandoCheckoutPendiente"
+        >
+          {{ cancelandoCheckoutPendiente ? 'Cancelando…' : 'Cancelar y seguir' }}
+        </button>
+      </div>
+    </ng-container>
     <ng-template #pagarStickyBtn>
       <a
         *ngIf="!usuario; else pagarStickyLoggedBtn"
@@ -590,7 +597,19 @@
         </button>
       </ng-template>
     </ng-template>
-    <p *ngIf="hintAccionCompra as hint" class="carrito-checkout-bar__hint">{{ hint }}</p>
+    <p
+      *ngIf="checkoutPendienteEnCurso && !checkoutPendienteEnCurso.expiro"
+      class="carrito-checkout-bar__hint carrito-checkout-bar__hint--pending"
+    >
+      Reanuda el pago antes de que venza el tiempo.
+    </p>
+    <p
+      *ngIf="checkoutPendienteEnCurso?.expiro"
+      class="carrito-checkout-bar__hint carrito-checkout-bar__hint--pending"
+    >
+      El plazo terminó. Revisa el estado o cancela para comprar de nuevo.
+    </p>
+    <p *ngIf="!checkoutPendienteEnCurso && hintAccionCompra as hint" class="carrito-checkout-bar__hint">{{ hint }}</p>
   </div>
 
   <div class="palco-mapa-overlay" *ngIf="mapaAmpliado as mapa" (click)="cerrarMapaAmpliado()">
@@ -602,6 +621,7 @@
       <img [src]="mapa.url" alt="Plano de palcos ampliado" class="palco-mapa-dialog-img" />
     </div>
   </div>
+  </ng-container>
 </div>
 
 <div class="licor-modal-overlay" *ngIf="modalTerminosLicor" (click)="cerrarModalTerminosLicor()" role="presentation">

@@ -1,11 +1,11 @@
 <div class="pago-wompi-page" *ngIf="payload as p">
   <section class="pago-wompi-shell">
-    <article class="pago-wompi-panel">
+    <article class="pago-wompi-panel" [class.pago-wompi-panel--busy]="volviendoCarrito || redirigiendo">
       <div class="pago-wompi-panel__icon" aria-hidden="true">
         <span class="material-icons">lock</span>
       </div>
 
-      <span class="pago-wompi-chip">Paso 2 · Confirmación antes de Wompi</span>
+      <span class="pago-wompi-chip">{{ compraCopy.pagoWompiChip }}</span>
 
       <h1 class="pago-wompi-panel__title">Confirma tu cuenta antes de pagar</h1>
       <p class="pago-wompi-panel__lead">{{ compraCopy.pagoWompiLead }}</p>
@@ -34,10 +34,6 @@
             <dt>Total a pagar</dt>
             <dd>{{ formatCurrency(p.totalPago) }}</dd>
           </div>
-          <div class="pago-wompi-summary-row">
-            <dt>Pasarela</dt>
-            <dd>Wompi</dd>
-          </div>
         </dl>
       </section>
 
@@ -49,11 +45,18 @@
           [disabled]="redirigiendo"
         >
           <span class="material-icons" aria-hidden="true">{{ redirigiendo ? 'hourglass_empty' : 'arrow_forward' }}</span>
-          {{ redirigiendo ? 'Abriendo Wompi…' : 'Continuar a Wompi' }}
+          {{ redirigiendo ? compraCopy.pagoWompiAbriendo : compraCopy.pagoWompiContinuar }}
         </button>
-        <button type="button" class="btn btn-secondary" (click)="router.navigate(['/carrito'])">
-          Volver al carrito
+        <button type="button" class="btn btn-secondary" (click)="volverAlCarrito()" [disabled]="redirigiendo || volviendoCarrito">
+          <span class="material-icons" aria-hidden="true">{{ volviendoCarrito ? 'hourglass_empty' : 'arrow_back' }}</span>
+          {{ volviendoCarrito ? 'Volviendo al carrito…' : 'Volver al carrito' }}
         </button>
+      </div>
+
+      <div *ngIf="volviendoCarrito" class="pago-wompi-panel__overlay" aria-live="polite" aria-busy="true">
+        <div class="loading-state loading-state--embedded">
+          <div class="spinner"></div>
+        </div>
       </div>
     </article>
   </section>

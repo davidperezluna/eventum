@@ -65,6 +65,7 @@ export class Layout implements OnInit, OnDestroy {
   totalTrasladosPendientes = 0;
   subtotalCarrito = 0;
   enRutaCarrito = false;
+  enRutaPagoWompi = false;
   mostrarNavAccesosPuerta = false;
   clientePerfilIncompleto = false;
 
@@ -189,7 +190,7 @@ export class Layout implements OnInit, OnDestroy {
   }
 
   get mostrarCarritoFab(): boolean {
-    if (this.totalItemsCarrito <= 0 || this.enRutaCarrito) {
+    if (this.totalItemsCarrito <= 0 || this.enRutaCarrito || this.enRutaPagoWompi) {
       return false;
     }
     if (this.isLector()) {
@@ -218,6 +219,7 @@ export class Layout implements OnInit, OnDestroy {
   private syncRutaCarrito(url: string): void {
     const path = (url || '').split('?')[0];
     this.enRutaCarrito = path === '/carrito' || path.startsWith('/carrito/');
+    this.enRutaPagoWompi = path === '/pago-wompi';
   }
 
   private verificarRedireccionCompletarPerfil(url: string): void {

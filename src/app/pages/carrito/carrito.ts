@@ -75,9 +75,12 @@ export class Carrito implements OnInit, OnDestroy {
     checkoutUrl: string | null;
     expiro: boolean;
     expiresAtMs: number | null;
+    totalPago: number;
+    eventoTitulo: string | null;
   } | null = null;
   cancelandoCheckoutPendiente = false;
   cambiandoCuentaGoogle = false;
+  inicializandoCarrito = true;
   private cancelacionCheckoutSeq = 0;
   mapaAmpliado: { url: string; titulo: string } | null = null;
   private subscriptions = new Subscription();
@@ -193,7 +196,16 @@ export class Carrito implements OnInit, OnDestroy {
       })
     );
 
-    void this.validarSesionEnSegundoPlano();
+    void this.bootstrapCarrito();
+  }
+
+  private async bootstrapCarrito(): Promise<void> {
+    try {
+      await this.validarSesionEnSegundoPlano();
+    } finally {
+      this.inicializandoCarrito = false;
+      this.cdr.detectChanges();
+    }
   }
 
   ngOnDestroy(): void {
@@ -268,9 +280,7 @@ export class Carrito implements OnInit, OnDestroy {
 
   get hintAccionCompra(): string | null {
     if (this.checkoutPendienteEnCurso) {
-      return this.checkoutPendienteEnCurso.expiro
-        ? 'Tienes un pago vencido: revísalo o cancélalo para continuar.'
-        : 'Tienes un pago sin confirmar: recupéralo o cancélalo antes de una compra nueva.';
+      return null;
     }
     if (this.tienePalcosIncompletos()) {
       return 'Selecciona todos los palcos antes de finalizar la compra.';
@@ -505,11 +515,13 @@ export class Carrito implements OnInit, OnDestroy {
     checkoutUrl: string | null;
     expiro: boolean;
     expiresAtMs: number | null;
+    totalPago: number;
+    eventoTitulo: string | null;
   } | null> {
     try {
       const { data } = await this.supabaseService
         .from('transacciones_checkout')
-        .select('id, checkout_url, expires_at, evento_id')
+        .select('id, checkout_url, expires_at, evento_id, total, eventos(titulo)')
         .eq('cliente_id', clienteId)
         .eq('estado', 'pendiente')
         .eq('es_activa', true)
@@ -538,6 +550,8 @@ export class Carrito implements OnInit, OnDestroy {
         checkoutUrl: candidato.checkout_url ? String(candidato.checkout_url) : null,
         expiro: !!candidato.expiro,
         expiresAtMs: candidato.expiresAtMs,
+        totalPago: Number(candidato.total) || 0,
+        eventoTitulo: this.tituloEventoCheckoutRow(candidato),
       };
     } catch {
       return null;
@@ -588,6 +602,8 @@ export class Carrito implements OnInit, OnDestroy {
       checkoutUrl: string | null;
       expiro: boolean;
       expiresAtMs: number | null;
+      totalPago: number;
+      eventoTitulo: string | null;
     }
   ): void {
     this.checkoutPendienteEnCurso = pendiente;
@@ -605,12 +621,42 @@ export class Carrito implements OnInit, OnDestroy {
       return;
     }
     if (!pendiente.expiro && pendiente.checkoutUrl) {
-      window.location.href = pendiente.checkoutUrl;
+      this.navegarAPagoWompi({
+        checkoutUrl: pendiente.checkoutUrl,
+        totalPago: pendiente.totalPago,
+        eventoTitulo: pendiente.eventoTitulo,
+      });
       return;
     }
-    this.router.navigate(['/pago-resultado'], {
-      queryParams: { transaccion_checkout_id: pendiente.transaccionCheckoutId }
+    void this.router.navigate(['/pago-resultado'], {
+      queryParams: { transaccion_checkout_id: pendiente.transaccionCheckoutId },
     });
+  }
+
+  private tituloEventoCheckoutRow(row: { eventos?: unknown }): string | null {
+    const eventoRel = Array.isArray(row.eventos) ? row.eventos[0] : row.eventos;
+    const titulo = (eventoRel as { titulo?: string | null } | null)?.titulo;
+    return titulo ? String(titulo).trim() : null;
+  }
+
+  private navegarAPagoWompi(opts: {
+    checkoutUrl: string;
+    totalPago: number;
+    eventoTitulo?: string | null;
+  }): void {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(
+        WOMPI_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          checkoutUrl: opts.checkoutUrl,
+          emailCuenta: this.emailCuentaCompra,
+          totalPago: opts.totalPago,
+          eventoTitulo:
+            opts.eventoTitulo ?? this.evento?.titulo ?? this.lugarCover?.nombre ?? null,
+        }),
+      );
+    }
+    void this.router.navigate(['/pago-wompi']);
   }
 
   ocultarAvisoCheckoutPendiente(): void {
@@ -1531,19 +1577,13 @@ export class Carrito implements OnInit, OnDestroy {
         if (Object.keys(pending).length > 0) {
           sessionStorage.setItem('eventum_pago_pendiente', JSON.stringify(pending));
         }
-
-        sessionStorage.setItem(
-          WOMPI_CHECKOUT_STORAGE_KEY,
-          JSON.stringify({
-            checkoutUrl,
-            emailCuenta: this.emailCuentaCompra,
-            totalPago,
-            eventoTitulo: this.evento?.titulo || this.lugarCover?.nombre || null,
-          }),
-        );
       }
 
-      await this.router.navigate(['/pago-wompi']);
+      this.navegarAPagoWompi({
+        checkoutUrl,
+        totalPago,
+        eventoTitulo: this.evento?.titulo || this.lugarCover?.nombre || null,
+      });
     } catch (error: any) {
       console.error('Error procesando compra:', error);
       if (this.authService.isAuthOrRlsError(error?.message)) {

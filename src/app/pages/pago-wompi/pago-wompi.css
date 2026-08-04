@@ -29,6 +29,7 @@
   align-items: center;
   text-align: center;
   width: 100%;
+  position: relative;
   border: 1px solid var(--ec-border, #e2e8f0);
   border-radius: var(--ec-radius-card, 12px);
   background: var(--ec-surface, #fff);
@@ -235,6 +236,26 @@
   flex-direction: column;
   gap: 0.55rem;
   width: 100%;
+}
+
+.pago-wompi-panel--busy {
+  pointer-events: none;
+}
+
+.pago-wompi-panel__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.pago-wompi-panel__overlay .loading-state--embedded {
+  min-height: auto;
+  padding: 0;
 }
 
 .btn {
