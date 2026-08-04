@@ -298,8 +298,8 @@
 
 .checkout-pendiente-alert {
   background: var(--ec-surface, #fff);
-  border: 1px solid var(--ec-border, #e2e8f0);
-  border-left: 3px solid var(--ec-badge-warning-icon, #b45309);
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
+  border-left: 3px solid var(--ec-accent, #8b5cf6);
   border-radius: var(--ec-radius-card, 12px);
   padding: 0.9rem 0.95rem;
   margin-bottom: 0.85rem;
@@ -450,6 +450,7 @@
 }
 
 .checkout-pendiente-alert--expired {
+  border-color: rgba(185, 28, 28, 0.22);
   border-left-color: var(--ec-badge-danger-text, #b91c1c);
 }
 
@@ -465,12 +466,12 @@
   width: 2.15rem;
   height: 2.15rem;
   border-radius: var(--ec-radius-control, 8px);
-  background: var(--ec-badge-warning-bg, #fef3c7);
-  border: 1px solid var(--ec-badge-warning-border, rgba(180, 83, 9, 0.32));
+  background: var(--ec-accent-soft, #f5f3ff);
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--ec-badge-warning-icon, #b45309);
+  color: var(--ec-accent-strong, #7c3aed);
   font-size: 1.15rem;
 }
 
@@ -501,9 +502,9 @@
   display: inline-flex;
   align-items: center;
   border-radius: var(--ec-radius-badge, 6px);
-  border: 1px solid var(--ec-badge-warning-border, rgba(180, 83, 9, 0.32));
-  background: var(--ec-badge-warning-bg, #fef3c7);
-  color: var(--ec-badge-warning-text, #92400e);
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
+  background: var(--ec-accent-soft, #f5f3ff);
+  color: var(--ec-accent-strong, #7c3aed);
   font-size: 0.66rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -530,9 +531,9 @@
   align-items: center;
   gap: 0.25rem;
   border-radius: var(--ec-radius-badge, 6px);
-  border: 1px solid var(--ec-badge-warning-border, rgba(180, 83, 9, 0.32));
-  background: var(--ec-badge-warning-bg, #fef3c7);
-  color: var(--ec-badge-warning-text, #92400e);
+  border: 1px solid var(--ec-badge-info-border, rgba(139, 92, 246, 0.34));
+  background: var(--ec-accent-hover, #ede9fe);
+  color: var(--ec-accent-strong, #7c3aed);
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -565,7 +566,7 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.03em;
-  color: var(--ec-badge-warning-text, #92400e);
+  color: var(--ec-accent-strong, #7c3aed);
 }
 
 .carrito-checkout-bar__countdown .material-icons {
