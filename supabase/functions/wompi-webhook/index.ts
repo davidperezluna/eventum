@@ -524,59 +524,6 @@ function generarCodigoQrBoleta(): string {
   return `B-${crypto.randomUUID()}`
 }
 
-type PerfilCompradorAsistente = {
-  nombre?: string | null
-  apellido?: string | null
-  email?: string | null
-  telefono?: string | null
-  documento_identidad?: string | null
-}
-
-function asistenteDesdeComprador(
-  comprador: PerfilCompradorAsistente | null | undefined,
-): Record<string, string | undefined> {
-  if (!comprador) {
-    return {}
-  }
-
-  const nombre = [comprador.nombre, comprador.apellido]
-    .map((parte) => String(parte ?? '').trim())
-    .filter(Boolean)
-    .join(' ')
-  const documento = String(comprador.documento_identidad ?? '').trim()
-  const email = String(comprador.email ?? '').trim()
-  const telefono = String(comprador.telefono ?? '').trim()
-
-  if (!nombre || !documento) {
-    return {}
-  }
-
-  return {
-    nombre_asistente: nombre,
-    documento_asistente: documento,
-    email_asistente: email || undefined,
-    telefono_asistente: telefono || undefined,
-  }
-}
-
-async function cargarAsistenteComprador(
-  supabaseClient: ReturnType<typeof createClient>,
-  clienteId: number,
-): Promise<Record<string, string | undefined>> {
-  const { data, error } = await supabaseClient
-    .from('usuarios')
-    .select('nombre, apellido, email, telefono, documento_identidad')
-    .eq('id', clienteId)
-    .maybeSingle()
-
-  if (error) {
-    console.warn('No se pudo cargar perfil del comprador para asignar asistente:', error.message)
-    return {}
-  }
-
-  return asistenteDesdeComprador(data as PerfilCompradorAsistente | null)
-}
-
 function getPedidoBoletasFromCheckout(checkout: CheckoutIntent): Record<string, unknown> | null {
   const payload = (checkout.request_payload || {}) as Record<string, unknown>
   const requestBody = (payload.request_body || {}) as Record<string, unknown>
@@ -712,10 +659,8 @@ async function crearCompraBoletasDesdeCheckout(
     const now = new Date().toISOString()
     const boletasRows: Record<string, unknown>[] = []
     const clienteId = Number(pedido.cliente_id)
-    const asistenteComprador =
-      Number.isFinite(clienteId) && clienteId > 0
-        ? await cargarAsistenteComprador(supabaseClient, clienteId)
-        : {}
+    const asistenteUsuarioId =
+      Number.isFinite(clienteId) && clienteId > 0 ? clienteId : null
 
     for (const item of items) {
       const tipoBoletaId = Number(item.tipo_boleta_id)
@@ -736,7 +681,8 @@ async function crearCompraBoletasDesdeCheckout(
               tipo_boleta_id: tipoBoletaId,
               codigo_qr: generarCodigoQrBoleta(),
               precio_unitario: p === 0 ? precioUnitario : 0,
-              ...asistenteComprador,
+              asistente_usuario_id: asistenteUsuarioId,
+              titular_cliente_id: asistenteUsuarioId,
               estado: 'pendiente',
               fecha_creacion: now,
               grupo_palco_id: grupoId,
@@ -752,7 +698,8 @@ async function crearCompraBoletasDesdeCheckout(
             tipo_boleta_id: tipoBoletaId,
             codigo_qr: generarCodigoQrBoleta(),
             precio_unitario: precioUnitario,
-            ...asistenteComprador,
+            asistente_usuario_id: asistenteUsuarioId,
+            titular_cliente_id: asistenteUsuarioId,
             estado: 'pendiente',
             fecha_creacion: now,
             consume_inventario: true,

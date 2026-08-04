@@ -180,9 +180,9 @@
                   <span *ngIf="!boleta.evento" class="text-muted">-</span>
                 </td>
                 <td>{{ nombreTipoBoletaLabel(boleta) }}</td>
-                <td>{{ boleta.nombre_asistente || 'Sin nombre' }}</td>
-                <td>{{ boleta.email_asistente || '-' }}</td>
-                <td>{{ boleta.telefono_asistente || '-' }}</td>
+                <td>{{ nombreAsistenteLabel(boleta) }}</td>
+                <td>{{ emailAsistenteLabel(boleta) }}</td>
+                <td>{{ telefonoAsistenteLabel(boleta) }}</td>
                 <td>${{ boleta.precio_unitario | number:'1.2-2' }}</td>
                 <td>
                   <ng-container *ngIf="boleta.grupo_palco_id || boleta.palco_id">
@@ -261,15 +261,15 @@
               </div>
               <div class="boleta-card-row">
                 <span class="boleta-card-label">Asistente:</span>
-                <span class="boleta-card-value">{{ boleta.nombre_asistente || 'Sin nombre' }}</span>
+                <span class="boleta-card-value">{{ nombreAsistenteLabel(boleta) }}</span>
               </div>
               <div class="boleta-card-row">
                 <span class="boleta-card-label">Email:</span>
-                <span class="boleta-card-value">{{ boleta.email_asistente || '-' }}</span>
+                <span class="boleta-card-value">{{ emailAsistenteLabel(boleta) }}</span>
               </div>
               <div class="boleta-card-row">
                 <span class="boleta-card-label">Teléfono:</span>
-                <span class="boleta-card-value">{{ boleta.telefono_asistente || '-' }}</span>
+                <span class="boleta-card-value">{{ telefonoAsistenteLabel(boleta) }}</span>
               </div>
               <div class="boleta-card-row">
                 <span class="boleta-card-label">Precio:</span>
@@ -332,7 +332,7 @@
                   <span *ngIf="!boleta.evento" class="text-muted">-</span>
                 </td>
                 <td>{{ nombreTipoBoletaLabel(boleta) }}</td>
-                <td>{{ boleta.email_asistente || '-' }}</td>
+                <td>{{ emailAsistenteLabel(boleta) }}</td>
                 <td>
                   <span *ngIf="boleta.fecha_uso">{{ boleta.fecha_uso | dateFormat:'short' }}</span>
                   <span *ngIf="!boleta.fecha_uso" class="text-muted">—</span>
@@ -372,7 +372,7 @@
               </div>
               <div class="boleta-card-row">
                 <span class="boleta-card-label">Email:</span>
-                <span class="boleta-card-value">{{ boleta.email_asistente || '-' }}</span>
+                <span class="boleta-card-value">{{ emailAsistenteLabel(boleta) }}</span>
               </div>
               <div class="boleta-card-row">
                 <span class="boleta-card-label">Fecha validación:</span>
@@ -555,19 +555,19 @@
             </div>
             <div class="info-item">
               <span class="info-label">Asistente:</span>
-              <span class="info-value">{{ boletaEncontrada.nombre_asistente || 'Sin nombre' }}</span>
+              <span class="info-value">{{ nombreAsistenteLabel(boletaEncontrada) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Cédula:</span>
-              <span class="info-value">{{ boletaEncontrada.documento_asistente || '-' }}</span>
+              <span class="info-value">{{ documentoAsistenteLabel(boletaEncontrada) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Email:</span>
-              <span class="info-value">{{ boletaEncontrada.email_asistente || '-' }}</span>
+              <span class="info-value">{{ emailAsistenteLabel(boletaEncontrada) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Teléfono:</span>
-              <span class="info-value">{{ boletaEncontrada.telefono_asistente || '-' }}</span>
+              <span class="info-value">{{ telefonoAsistenteLabel(boletaEncontrada) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Precio:</span>
@@ -629,7 +629,7 @@
                     <span *ngIf="boleta.evento.fecha_inicio">{{ boleta.evento.fecha_inicio | dateFormat:'shortDate' }}</span>
                   </div>
                   <div class="boleta-item-subtitle">
-                    <span>{{ boleta.nombre_asistente || 'Sin nombre' }}</span>
+                    <span>{{ nombreAsistenteLabel(boleta) }}</span>
                     <span class="separator">•</span>
                     <span>${{ boleta.precio_unitario | number:'1.2-2' }}</span>
                   </div>
@@ -643,11 +643,11 @@
               <div class="boleta-item-details">
                 <div class="detail-item">
                   <span class="material-icons">email</span>
-                  <span>{{ boleta.email_asistente || '-' }}</span>
+                  <span>{{ emailAsistenteLabel(boleta) }}</span>
                 </div>
                 <div class="detail-item">
                   <span class="material-icons">phone</span>
-                  <span>{{ boleta.telefono_asistente || '-' }}</span>
+                  <span>{{ telefonoAsistenteLabel(boleta) }}</span>
                 </div>
                 <div class="detail-item">
                   <span class="material-icons">event</span>

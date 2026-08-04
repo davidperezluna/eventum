@@ -32,11 +32,6 @@
       <p>{{ error }}</p>
     </div>
 
-    <div *ngIf="success && !loading" class="perfil-alert perfil-alert--success" role="status">
-      <span class="material-icons" aria-hidden="true">check_circle</span>
-      <p>{{ success }}</p>
-    </div>
-
     <ng-container *ngIf="!loading && usuario">
       <section class="perfil-identity" aria-label="Resumen de cuenta">
         <div class="perfil-identity__photo">

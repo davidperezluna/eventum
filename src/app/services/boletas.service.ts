@@ -14,7 +14,7 @@ import { BoletaComprada, TipoBoleta, BoletaFilters, PaginatedResponse, Palco, Es
 export class BoletasService {
   /** Join estándar para listados y búsqueda de boletas (incluye meta del tipo para palcos). */
   private readonly selectBoletaConRelaciones =
-    '*, validado_por:usuarios!boletas_compradas_validado_por_usuario_id_fkey(id, nombre, apellido, email), palcos(numero), compras(estado_pago, estado_compra, evento_id, cliente_id, numero_transaccion, eventos(id, titulo, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais)), cliente:usuarios(nombre, apellido, email, documento_identidad)), tipos_boleta(evento_id, nombre, personas_por_unidad, es_palco, eventos(id, titulo, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais)))';
+    '*, validado_por:usuarios!boletas_compradas_validado_por_usuario_id_fkey(id, nombre, apellido, email), asistente_usuario:usuarios!asistente_usuario_id(id, nombre, apellido, email, telefono, documento_identidad), palcos(numero), compras(estado_pago, estado_compra, evento_id, cliente_id, numero_transaccion, eventos(id, titulo, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais)), cliente:usuarios(nombre, apellido, email, documento_identidad)), tipos_boleta(evento_id, nombre, personas_por_unidad, es_palco, eventos(id, titulo, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais)))';
 
   constructor(
     private supabase: SupabaseService,
@@ -22,31 +22,41 @@ export class BoletasService {
     private authService: AuthService
   ) {}
 
-  /**
-   * Actualiza datos del asistente (p. ej. registro posterior en palcos).
-   */
-  async actualizarDatosAsistenteBoleta(
-    boletaId: number,
-    datos: {
-      nombre_asistente: string;
-      documento_asistente: string;
-      email_asistente?: string | null;
-      telefono_asistente?: string | null;
-    }
-  ): Promise<void> {
+  /** Vincula la boleta al usuario asistente (perfil Eventum). */
+  async vincularAsistenteUsuario(boletaId: number, usuarioId: number): Promise<void> {
     const { error } = await this.supabase
       .from('boletas_compradas')
-      .update({
-        nombre_asistente: datos.nombre_asistente,
-        documento_asistente: datos.documento_asistente,
-        email_asistente: datos.email_asistente ?? null,
-        telefono_asistente: datos.telefono_asistente ?? null
-      })
+      .update({ asistente_usuario_id: usuarioId })
       .eq('id', boletaId);
 
     if (error) {
       throw error;
     }
+  }
+
+  private aplicarFiltrosAsistente<T extends { ilike: Function; or: Function; filter: Function }>(
+    query: T,
+    filters?: BoletaFilters
+  ): T {
+    if (filters?.nombre_asistente) {
+      query = query.ilike('asistente_usuario.nombre', `%${filters.nombre_asistente}%`) as T;
+    }
+    if (filters?.email_asistente) {
+      query = query.ilike('asistente_usuario.email', `%${filters.email_asistente}%`) as T;
+    }
+    if (filters?.telefono_asistente) {
+      query = query.ilike('asistente_usuario.telefono', `%${filters.telefono_asistente}%`) as T;
+    }
+    if (filters?.documento_asistente) {
+      query = query.ilike('asistente_usuario.documento_identidad', `%${filters.documento_asistente}%`) as T;
+    }
+    if (filters?.search) {
+      const searchTerm = `%${filters.search}%`;
+      query = query.or(
+        `codigo_qr.ilike.${searchTerm},asistente_usuario.nombre.ilike.${searchTerm},asistente_usuario.email.ilike.${searchTerm}`
+      ) as T;
+    }
+    return query;
   }
 
   /**
@@ -103,27 +113,12 @@ export class BoletasService {
         if (filters?.codigo_qr) {
           boletasQuery = boletasQuery.ilike('codigo_qr', `%${filters.codigo_qr}%`);
         }
-        if (filters?.nombre_asistente) {
-          boletasQuery = boletasQuery.ilike('nombre_asistente', `%${filters.nombre_asistente}%`);
-        }
-        if (filters?.email_asistente) {
-          boletasQuery = boletasQuery.ilike('email_asistente', `%${filters.email_asistente}%`);
-        }
-        if (filters?.telefono_asistente) {
-          boletasQuery = boletasQuery.ilike('telefono_asistente', `%${filters.telefono_asistente}%`);
-        }
+        boletasQuery = this.aplicarFiltrosAsistente(boletasQuery, filters);
         if (filters?.fecha_desde) {
           boletasQuery = boletasQuery.gte('fecha_creacion', filters.fecha_desde);
         }
         if (filters?.fecha_hasta) {
           boletasQuery = boletasQuery.lte('fecha_creacion', filters.fecha_hasta);
-        }
-        if (filters?.documento_asistente) {
-          boletasQuery = boletasQuery.ilike('documento_asistente', `%${filters.documento_asistente}%`);
-        }
-        if (filters?.search) {
-          const searchTerm = `%${filters.search}%`;
-          boletasQuery = boletasQuery.or(`codigo_qr.ilike.${searchTerm},nombre_asistente.ilike.${searchTerm},email_asistente.ilike.${searchTerm}`);
         }
         
         // Ordenamiento
@@ -170,25 +165,12 @@ export class BoletasService {
     if (filters?.codigo_qr) {
       query = query.ilike('codigo_qr', `%${filters.codigo_qr}%`);
     }
-    if (filters?.nombre_asistente) {
-      query = query.ilike('nombre_asistente', `%${filters.nombre_asistente}%`);
-    }
-    if (filters?.email_asistente) {
-      query = query.ilike('email_asistente', `%${filters.email_asistente}%`);
-    }
-    if (filters?.telefono_asistente) {
-      query = query.ilike('telefono_asistente', `%${filters.telefono_asistente}%`);
-    }
+    query = this.aplicarFiltrosAsistente(query, filters);
     if (filters?.fecha_desde) {
       query = query.gte('fecha_creacion', filters.fecha_desde);
     }
     if (filters?.fecha_hasta) {
       query = query.lte('fecha_creacion', filters.fecha_hasta);
-    }
-    // Búsqueda general (busca en código QR, nombre, email)
-    if (filters?.search) {
-      const searchTerm = `%${filters.search}%`;
-      query = query.or(`codigo_qr.ilike.${searchTerm},nombre_asistente.ilike.${searchTerm},email_asistente.ilike.${searchTerm}`);
     }
 
     // Ordenamiento
@@ -552,7 +534,7 @@ export class BoletasService {
       let query = this.supabase
         .from('boletas_compradas')
         .select(this.selectBoletaConRelaciones)
-        .ilike('documento_asistente', `%${documento.trim()}%`);
+        .ilike('asistente_usuario.documento_identidad', `%${documento.trim()}%`);
       if (soloPendientes) {
         query = query.eq('estado', 'pendiente');
       }
@@ -644,33 +626,11 @@ export class BoletasService {
       boletaNormalizada.validado_por = vp ?? null;
     }
 
-    const compraRaw = boleta.compras
-      ? Array.isArray(boleta.compras)
-        ? boleta.compras[0]
-        : boleta.compras
-      : null;
-    const clienteRaw = compraRaw?.cliente
-      ? Array.isArray(compraRaw.cliente)
-        ? compraRaw.cliente[0]
-        : compraRaw.cliente
-      : null;
-    if (clienteRaw) {
-      const nombreCliente = [clienteRaw.nombre, clienteRaw.apellido]
-        .filter((p) => !!String(p ?? '').trim())
-        .join(' ')
-        .trim();
-      if (nombreCliente) {
-        boletaNormalizada.asistente_display_nombre = nombreCliente;
-      } else {
-        const emailCliente = String(clienteRaw.email ?? '').trim();
-        if (emailCliente) {
-          boletaNormalizada.asistente_display_email = emailCliente;
-        }
-      }
-      const docCliente = String(clienteRaw.documento_identidad ?? '').trim();
-      if (docCliente) {
-        boletaNormalizada.asistente_display_documento = docCliente;
-      }
+    if (boleta.asistente_usuario != null) {
+      const au = Array.isArray(boleta.asistente_usuario)
+        ? boleta.asistente_usuario[0]
+        : boleta.asistente_usuario;
+      boletaNormalizada.asistente_usuario = au ?? null;
     }
     
     // Limpiar los objetos del join (ya los tenemos normalizados)

@@ -282,10 +282,15 @@ export interface BoletaComprada {
   codigo_qr: string;
   codigo_barras?: string;
   precio_unitario: number;
-  nombre_asistente?: string;
-  documento_asistente?: string;
-  email_asistente?: string;
-  telefono_asistente?: string;
+  asistente_usuario_id?: number | null;
+  asistente_usuario?: {
+    id: number;
+    nombre?: string | null;
+    apellido?: string | null;
+    email?: string | null;
+    telefono?: string | null;
+    documento_identidad?: string | null;
+  } | null;
   /** Agrupa las boletas de un mismo palco vendido. */
   grupo_palco_id?: string | null;
   /** Solo filas en true descuentan inventario del tipo (palco: una por unidad). */
@@ -294,10 +299,6 @@ export interface BoletaComprada {
   palco_id?: number | null;
   /** Titular actual de la entrada (tras traslado = nuevo usuario). */
   titular_cliente_id?: number | null;
-  /** Nombre resuelto para lector cuando nombre_asistente viene vacío. */
-  asistente_display_nombre?: string;
-  asistente_display_documento?: string;
-  asistente_display_email?: string;
   /** Número legible del palco (si viene del join). */
   numero_palco?: number;
   /** Quién validó la entrada (join desde usuarios). */

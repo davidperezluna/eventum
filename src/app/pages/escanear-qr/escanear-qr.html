@@ -100,8 +100,8 @@
           (click)="seleccionarBoletaLista(b)"
         >
           <div>
-            <strong>{{ b.nombre_asistente || 'Sin nombre' }}</strong>
-            <span class="result-hint">{{ b.documento_asistente || '—' }}</span>
+            <strong>{{ nombreAsistenteBoleta(b) }}</strong>
+            <span class="result-hint">{{ documentoAsistenteBoleta(b) }}</span>
           </div>
           <span class="material-icons">chevron_right</span>
         </button>

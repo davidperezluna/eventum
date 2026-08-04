@@ -86,12 +86,15 @@ export interface BoletaFilters extends BaseFilters {
   tipo_boleta_id?: number;
   estado?: string;
   codigo_qr?: string;
+  asistente_usuario_id?: number;
+  fecha_desde?: Date | string;
+  fecha_hasta?: Date | string;
+  /** Búsqueda por documento del asistente (join usuarios). */
+  documento_asistente?: string;
+  /** Búsqueda por nombre/email del asistente (join usuarios). */
   nombre_asistente?: string;
   email_asistente?: string;
   telefono_asistente?: string;
-  fecha_desde?: Date | string;
-  fecha_hasta?: Date | string;
-  documento_asistente?: string;
 }
 
 /** Filtros para productos */

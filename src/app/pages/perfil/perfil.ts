@@ -28,7 +28,6 @@ export class Perfil implements OnInit, OnDestroy {
   saving = false;
   cerrandoSesion = false;
   error: string | null = null;
-  success: string | null = null;
 
   /** Escritorio: “Más datos” abierto; móvil: colapsado (menos scroll). */
   masDatosPerfilAbierto = false;
@@ -279,7 +278,6 @@ export class Perfil implements OnInit, OnDestroy {
     this.intentadoGuardar = true;
     this.saving = true;
     this.error = null;
-    this.success = null;
 
     try {
       // Subir foto de perfil si hay una nueva
@@ -368,27 +366,35 @@ export class Perfil implements OnInit, OnDestroy {
     
     try {
       const usuarioActualizado = await this.usuariosService.updateUsuario(this.usuario.id, updateData);
-      // Actualizar el usuario en el auth service
-      this.authService.refreshUsuario();
-      this.usuario = usuarioActualizado;
-      this.formData.foto_perfil = usuarioActualizado.foto_perfil || '';
-      this.previewUrl = usuarioActualizado.foto_perfil || null;
+      await this.authService.refreshUsuario();
+      this.usuario = this.authService.getUsuario() ?? usuarioActualizado;
+      this.formData = {
+        nombre: this.usuario.nombre || '',
+        apellido: this.usuario.apellido || '',
+        telefono: normalizarTelefonoColombia(this.usuario.telefono || ''),
+        fecha_nacimiento: formatFechaNacimientoParaInput(this.usuario.fecha_nacimiento),
+        genero: this.usuario.genero || TipoGenero.NO_ESPECIFICADO,
+        documento_identidad: this.usuario.documento_identidad || '',
+        direccion: this.usuario.direccion || '',
+        ciudad: this.usuario.ciudad || '',
+        pais: this.usuario.pais || '',
+        foto_perfil: this.usuario.foto_perfil || '',
+      };
+      this.previewUrl = this.usuario.foto_perfil || null;
       this.selectedFile = null;
-      this.success = 'Perfil actualizado correctamente';
       this.saving = false;
       this.persistState(Date.now());
       this.cdr.detectChanges();
-      
-      // Limpiar mensaje de éxito después de 3 segundos
-      setTimeout(() => {
-        this.success = null;
-        this.cdr.detectChanges();
-      }, 3000);
+      void this.alertService.snackbarSuccess(
+        'Perfil actualizado',
+        'Tus cambios se guardaron correctamente.'
+      );
     } catch (err: any) {
       console.error('Error actualizando perfil:', err);
       this.error = 'Error al actualizar el perfil: ' + (err.message || 'Error desconocido');
       this.saving = false;
       this.cdr.detectChanges();
+      void this.alertService.snackbarError('No se pudo guardar', this.error ?? undefined);
     }
   }
 
@@ -419,23 +425,22 @@ export class Perfil implements OnInit, OnDestroy {
         throw error;
       }
 
-      this.success = 'Contraseña actualizada correctamente';
       this.cambiarPassword = false;
       this.passwordActual = '';
       this.passwordNueva = '';
       this.passwordConfirmar = '';
       this.saving = false;
       this.cdr.detectChanges();
-
-      setTimeout(() => {
-        this.success = null;
-        this.cdr.detectChanges();
-      }, 3000);
+      void this.alertService.snackbarSuccess(
+        'Contraseña actualizada',
+        'Tu nueva contraseña ya está activa.'
+      );
     } catch (err: any) {
       console.error('Error cambiando contraseña:', err);
       this.error = err.message || 'Error al cambiar la contraseña';
       this.saving = false;
       this.cdr.detectChanges();
+      void this.alertService.snackbarError('No se pudo cambiar la contraseña', this.error ?? undefined);
     }
   }
 

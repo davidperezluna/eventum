@@ -142,7 +142,7 @@ export class MisComprasStateService {
 
     const publicState: MisComprasPublicState = {
       compras: safeState.compras,
-      eventosConBoletas: this.stripSensitiveBoletas(safeState.eventosConBoletas),
+      eventosConBoletas: this.stripSensitiveEventoData(safeState.eventosConBoletas),
       eventosDisponibles: safeState.eventosDisponibles,
       estadoPagoFiltro: safeState.estadoPagoFiltro,
       estadoCompraFiltro: safeState.estadoCompraFiltro,
@@ -225,9 +225,13 @@ export class MisComprasStateService {
     };
   }
 
-  private stripSensitiveBoletas(eventosConBoletas: any[]): any[] {
+  private stripSensitiveEventoData(eventosConBoletas: any[]): any[] {
     return (eventosConBoletas || []).map((evento) => ({
       ...evento,
+      comprasProductos: [],
+      totalItemsProducto: 0,
+      totalProductosComprados: 0,
+      totalProductosRedimidos: 0,
       tipos: (evento?.tipos || []).map((tipo: any) => ({
         ...tipo,
         boletas: []

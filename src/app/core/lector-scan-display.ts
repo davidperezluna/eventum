@@ -1,42 +1,23 @@
 import { BoletaComprada } from '../types';
-import { Usuario } from '../types/entities';
+import {
+  documentoAsistenteBoleta,
+  nombreAsistenteBoleta,
+} from './asistente-boleta';
 import { BoletaCoverEscaneo } from '../types/covers';
 
-export function nombreCompletoUsuario(
-  nombre?: string | null,
-  apellido?: string | null,
-): string {
-  return [nombre, apellido].filter((p) => !!String(p ?? '').trim()).join(' ').trim();
-}
-
-export function nombreDisplayUsuario(
-  usuario: Pick<Usuario, 'nombre' | 'apellido' | 'email'> | null | undefined,
-): string {
-  const nombre = nombreCompletoUsuario(usuario?.nombre, usuario?.apellido);
-  if (nombre) return nombre;
-  return String(usuario?.email ?? '').trim();
-}
+export { nombreCompletoUsuario, nombreDisplayUsuario } from './asistente-boleta';
 
 export function nombreAsistenteBoletaEscaneo(boleta: BoletaComprada | null | undefined): string {
   if (!boleta) return '—';
-  const directo = String(boleta.nombre_asistente ?? '').trim();
-  if (directo) return directo;
-  const display = String(boleta.asistente_display_nombre ?? '').trim();
-  if (display) return display;
-  const email = String(boleta.asistente_display_email ?? '').trim();
-  if (email) return email;
-  return '—';
+  const nombre = nombreAsistenteBoleta(boleta);
+  return nombre === '—' ? '—' : nombre;
 }
 
 export function documentoAsistenteBoletaEscaneo(boleta: BoletaComprada | null | undefined): string {
   if (!boleta) return '—';
-  const directo = String(boleta.documento_asistente ?? '').trim();
-  if (directo) return directo;
-  const display = String(boleta.asistente_display_documento ?? '').trim();
-  if (display) return display;
-  return '—';
+  const doc = documentoAsistenteBoleta(boleta);
+  return doc === '—' ? '—' : doc;
 }
-
 export function nombreAsistenteProductoEscaneo(
   item: { compra?: { nombre_cliente?: string | null } | null } | null | undefined,
 ): string {

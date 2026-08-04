@@ -57,6 +57,14 @@ import { coversEventumEnabled } from '../../core/covers-feature';
 import { formatHoraCover, labelSesionCover } from '../../core/covers-labels';
 import { hintQrCoverAcceso as hintQrCoverAccesoText } from '../../core/cover-acceso-puerta';
 import {
+  documentoAsistenteDesdeUsuario,
+  emailAsistenteDesdeUsuario,
+  nombreAsistenteDesdeUsuario,
+  tieneAsistenteUsuarioValido,
+  tieneAsistenteUsuarioEnlazado,
+  resolverPerfilAsistenteBoleta,
+} from '../../core/asistente-boleta';
+import {
   documentoAsistenteBoletaEscaneo,
   nombreAsistenteBoletaEscaneo,
   nombreDisplayUsuario,
@@ -185,6 +193,8 @@ export class MisCompras implements OnInit, OnDestroy {
   private readonly refreshIndicatorDelayMs = 800;
   private refreshStartedAt: number | null = null;
   private currentLoadBackground = false;
+  /** Evita reinyectar productos cacheados tras una lectura real del servidor. */
+  private comprasProductosFetchCompletado = false;
   private notificacionesChannel: RealtimeChannel | null = null;
   private unsubscribeAuthState: (() => void) | null = null;
   private realtimeUsuarioIdActual: number | null = null;
@@ -425,6 +435,7 @@ export class MisCompras implements OnInit, OnDestroy {
     if (entroEnDetalle && this.authService.getUsuarioId()) {
       void this.refrescarTrasladosMaps().then(() => {
         this.reconstruirEventosConBoletas();
+        this.fusionarProductosEnEventos();
         if (coversEventumEnabled) {
           this.reconstruirLugaresConCovers();
         }
@@ -1122,6 +1133,8 @@ export class MisCompras implements OnInit, OnDestroy {
     const clienteId = this.authService.getUsuarioId();
     if (!clienteId) {
       this.comprasProductos = [];
+      this.comprasProductosFetchCompletado = true;
+      this.fusionarProductosEnEventos();
       return;
     }
 
@@ -1139,6 +1152,7 @@ export class MisCompras implements OnInit, OnDestroy {
       console.error('Error cargando compras de productos:', err);
       this.comprasProductos = [];
     } finally {
+      this.comprasProductosFetchCompletado = true;
       this.loadingComprasProductos = false;
       this.fusionarProductosEnEventos();
       this.syncTabEventoDetalle();
@@ -2326,11 +2340,14 @@ export class MisCompras implements OnInit, OnDestroy {
         ? 'Cuando el pago se confirme, podrás asignar cada entrada. El código QR solo se verá el día del evento.'
         : undefined,
       attendee: this.tieneAsistenteRegistrado(boleta)
-        ? {
-            name: boleta.nombre_asistente || '',
-            document: boleta.documento_asistente || undefined,
-            email: boleta.email_asistente || undefined,
-          }
+        ? (() => {
+            const perfil = this.perfilAsistenteBoleta(boleta);
+            return {
+              name: nombreAsistenteDesdeUsuario(perfil) || nombreAsistenteBoletaEscaneo(boleta),
+              document: documentoAsistenteDesdeUsuario(perfil) || documentoAsistenteBoletaEscaneo(boleta) || undefined,
+              email: emailAsistenteDesdeUsuario(perfil) || undefined,
+            };
+          })()
         : undefined,
       used: usada,
       hasTalon: this.boletaTarjetaTieneAcciones(boleta, compra) || usada,
@@ -2601,15 +2618,27 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   private fusionarProductosEnEventos(): void {
-    if (this.comprasProductos.length === 0) {
-      return;
-    }
-
     for (const grupo of this.eventosConBoletas) {
       grupo.comprasProductos = [];
       grupo.totalItemsProducto = 0;
       grupo.totalProductosComprados = 0;
       grupo.totalProductosRedimidos = 0;
+    }
+
+    if (this.comprasProductos.length === 0) {
+      this.eventosConBoletas = this.eventosConBoletas
+        .filter(
+          (grupo) =>
+            grupo.totalBoletas > 0 ||
+            grupo.totalCedidas > 0
+        )
+        .sort((a, b) => {
+          const fechaA = a.fechaInicio ? new Date(a.fechaInicio).getTime() : 0;
+          const fechaB = b.fechaInicio ? new Date(b.fechaInicio).getTime() : 0;
+          if (fechaA !== fechaB) return fechaB - fechaA;
+          return a.titulo.localeCompare(b.titulo);
+        });
+      return;
     }
 
     for (const compra of this.comprasProductos) {
@@ -3248,7 +3277,11 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   private restaurarProductosDesdeSnapshot(snapshot: Map<string, EventoBoletasGrupo>): void {
-    if (this.comprasProductos.length > 0 || snapshot.size === 0) {
+    if (
+      this.comprasProductosFetchCompletado ||
+      this.comprasProductos.length > 0 ||
+      snapshot.size === 0
+    ) {
       return;
     }
 
@@ -3463,12 +3496,11 @@ export class MisCompras implements OnInit, OnDestroy {
 
   /**
    * Asignar o re-transferir entrada por correo (titular actual; acepta en Mis Boletas).
-   * Permite varios traslados mientras la boleta siga pendiente de uso.
+   * Aplica tanto a entradas sin asignar como a las ya vinculadas en «Sin usar».
    */
   puedeAsignarEntradaPorCorreoPalco(boleta: BoletaComprada, compra: Compra): boolean {
     if (compra.estado_pago !== 'completado') return false;
     if (!this.esTitularBoleta(boleta, compra)) return false;
-    if (!this.requiereRegistroAsistentePalcoPosterior(boleta)) return false;
     if (this.esBoletaUsada(boleta)) return false;
     if (this.tieneTrasladoSalienteActivo(boleta.id)) return false;
     return true;
@@ -3850,6 +3882,7 @@ export class MisCompras implements OnInit, OnDestroy {
           try {
             await this.refrescarTrasladosMaps();
             this.reconstruirEventosConBoletas();
+            this.fusionarProductosEnEventos();
           } catch (e) {
             console.error('Error refrescando traslado pendiente:', e);
           }
@@ -4110,6 +4143,7 @@ export class MisCompras implements OnInit, OnDestroy {
     }
     await this.refrescarTrasladosMaps();
     this.reconstruirEventosConBoletas();
+    this.fusionarProductosEnEventos();
     if (coversEventumEnabled) {
       this.reconstruirLugaresConCovers();
     }
@@ -5009,6 +5043,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.guiaEntradasAbierta = this.eventosConBoletas.length === 0;
     this.promoProductos = state.promoProductos ?? null;
     this.loadingPromoProductos = false;
+    this.fusionarProductosEnEventos();
     this.syncTabMisComprasPrincipal();
     this.syncTrasladosPendientesNavBadge();
   }
@@ -5124,14 +5159,18 @@ export class MisCompras implements OnInit, OnDestroy {
   Math = Math;
 
   /**
-   * En esta versión, toda boleta se asigna después del pago en Mis Boletas.
+   * Tras el checkout la boleta ya trae asistente_usuario_id; solo falta el paso manual si no hay FK.
    */
   requiereRegistroAsistentePalcoPosterior(b: BoletaComprada): boolean {
-    return true;
+    return !tieneAsistenteUsuarioEnlazado(b);
+  }
+
+  perfilAsistenteBoleta(b: BoletaComprada) {
+    return resolverPerfilAsistenteBoleta(b, this.authService.getUsuario());
   }
 
   tieneAsistenteRegistrado(b: BoletaComprada): boolean {
-    return !!(b.nombre_asistente?.trim() && b.documento_asistente?.trim());
+    return tieneAsistenteUsuarioValido(b, this.authService.getUsuario());
   }
 
   /** Pago confirmado, titular y sin traslado pendiente — puede abrir el modal (aunque falte asignar). */

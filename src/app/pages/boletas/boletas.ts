@@ -14,6 +14,13 @@ import { AuthService } from '../../services/auth.service';
 import { BoletaComprada, TipoBoleta, PaginatedResponse, TipoEstadoBoleta, Evento } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { validarDocumentoIdentidadColombia } from '../../core/documento-identidad';
+import {
+  documentoAsistenteBoleta,
+  emailAsistenteDesdeUsuario,
+  nombreAsistenteBoleta,
+  telefonoAsistenteDesdeUsuario,
+  usuarioAsistenteDeBoleta,
+} from '../../core/asistente-boleta';
 
 @Component({
   selector: 'app-boletas',
@@ -24,6 +31,19 @@ import { validarDocumentoIdentidadColombia } from '../../core/documento-identida
 export class Boletas implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private loadBoletasSubject = new Subject<void>();
+
+  readonly nombreAsistenteLabel = (boleta: BoletaComprada) => {
+    const n = nombreAsistenteBoleta(boleta);
+    return n === '—' ? 'Sin nombre' : n;
+  };
+  readonly documentoAsistenteLabel = (boleta: BoletaComprada) => {
+    const d = documentoAsistenteBoleta(boleta);
+    return d === '—' ? '-' : d;
+  };
+  readonly emailAsistenteLabel = (boleta: BoletaComprada) =>
+    emailAsistenteDesdeUsuario(usuarioAsistenteDeBoleta(boleta)) || '-';
+  readonly telefonoAsistenteLabel = (boleta: BoletaComprada) =>
+    telefonoAsistenteDesdeUsuario(usuarioAsistenteDeBoleta(boleta)) || '-';
 
   /** Ruta: pendientes = sin usar; usadas = historial de validaciones */
   vistaBoletas: 'pendientes' | 'usadas' = 'pendientes';
