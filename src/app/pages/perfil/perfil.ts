@@ -36,6 +36,9 @@ export class Perfil implements OnInit, OnDestroy {
   /** Pendiente rehabilitar desde la UI cuando se necesite. */
   mostrarCambiarContrasena = false;
 
+  intentadoGuardar = false;
+  documentoTocado = false;
+
   // Propiedades para cambio de contraseña
   cambiarPassword = false;
   passwordActual = '';
@@ -103,6 +106,40 @@ export class Perfil implements OnInit, OnDestroy {
     if (el?.tagName === 'DETAILS') {
       this.masDatosPerfilAbierto = el.open;
     }
+  }
+
+  esCliente(): boolean {
+    return this.usuario?.tipo_usuario_id === 1;
+  }
+
+  marcarDocumentoTocado(): void {
+    this.documentoTocado = true;
+  }
+
+  errorDocumentoPerfil(): string | null {
+    const doc = String(this.formData.documento_identidad ?? '').trim();
+    if (!doc) {
+      return this.esCliente() ? 'Ingresa tu número de cédula.' : null;
+    }
+    const validacion = validarDocumentoIdentidadColombia(doc);
+    return validacion.valido ? null : (validacion.mensaje ?? 'Documento inválido.');
+  }
+
+  mostrarErrorDocumento(): boolean {
+    return this.intentadoGuardar || this.documentoTocado;
+  }
+
+  get puedeGuardarPerfil(): boolean {
+    if (this.saving || this.uploadingImage) {
+      return false;
+    }
+    if (!String(this.formData.nombre ?? '').trim() || !String(this.formData.apellido ?? '').trim()) {
+      return false;
+    }
+    if (!validarTelefonoColombia(String(this.formData.telefono ?? '')).valido) {
+      return false;
+    }
+    return !this.errorDocumentoPerfil();
   }
 
   loadUsuario(options?: { background?: boolean }) {
@@ -239,6 +276,7 @@ export class Perfil implements OnInit, OnDestroy {
       return;
     }
 
+    this.intentadoGuardar = true;
     this.saving = true;
     this.error = null;
     this.success = null;
@@ -265,14 +303,16 @@ export class Perfil implements OnInit, OnDestroy {
         return;
       }
 
+      const errorDocumento = this.errorDocumentoPerfil();
+      if (errorDocumento) {
+        this.error = errorDocumento;
+        this.saving = false;
+        this.cdr.detectChanges();
+        return;
+      }
+
       if (documentoPerfil) {
         const validacionDocumento = validarDocumentoIdentidadColombia(documentoPerfil);
-        if (!validacionDocumento.valido) {
-          this.error = validacionDocumento.mensaje ?? 'Documento de identidad inválido.';
-          this.saving = false;
-          this.cdr.detectChanges();
-          return;
-        }
         this.formData.documento_identidad = validacionDocumento.normalizado;
       }
 

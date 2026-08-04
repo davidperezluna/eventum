@@ -413,6 +413,21 @@
   line-height: 1.35;
 }
 
+.perfil-field-error {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  color: #dc2626;
+  line-height: 1.35;
+}
+
+.perfil-field--error input {
+  border-color: #dc2626;
+}
+
+.perfil-field--error input:focus {
+  outline-color: #dc2626;
+}
+
 /* Más datos */
 .perfil-mas-datos {
   border: 1px solid var(--ec-border, #e2e8f0);

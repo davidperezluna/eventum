@@ -129,6 +129,10 @@ export class CompletarPerfilFormComponent implements OnInit {
     );
   }
 
+  get puedeEnviar(): boolean {
+    return this.formularioValido();
+  }
+
   private marcarTodosTocados(): void {
     (Object.keys(this.camposTocados) as CampoPerfilForm[]).forEach((campo) => {
       this.camposTocados[campo] = true;

@@ -161,7 +161,7 @@
     <button
       type="submit"
       class="legal-modal__btn legal-modal__btn-primary"
-      [disabled]="guardando"
+      [disabled]="guardando || !puedeEnviar"
     >
       {{ guardando ? 'Guardando…' : textoBotonPrimario }}
     </button>

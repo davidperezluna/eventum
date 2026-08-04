@@ -179,8 +179,13 @@
                   </div>
                 </div>
 
-                <div class="perfil-field">
-                  <label for="perfil-documento">Documento de identidad</label>
+                <div
+                  class="perfil-field"
+                  [class.perfil-field--error]="mostrarErrorDocumento() && errorDocumentoPerfil()"
+                >
+                  <label for="perfil-documento">
+                    Documento de identidad<span *ngIf="esCliente()"> *</span>
+                  </label>
                   <input
                     id="perfil-documento"
                     type="text"
@@ -190,8 +195,18 @@
                     [(ngModel)]="formData.documento_identidad"
                     name="documento_identidad"
                     placeholder="Cédula (6 a 10 dígitos)"
+                    (blur)="marcarDocumentoTocado()"
                   />
-                  <p class="perfil-field-hint">Solo números. Ej: 1234567890</p>
+                  <p
+                    class="perfil-field-error"
+                    *ngIf="mostrarErrorDocumento() && errorDocumentoPerfil()"
+                    role="alert"
+                  >
+                    {{ errorDocumentoPerfil() }}
+                  </p>
+                  <p class="perfil-field-hint" *ngIf="!(mostrarErrorDocumento() && errorDocumentoPerfil())">
+                    Solo números. Ej: 1234567890
+                  </p>
                 </div>
 
                 <div class="perfil-field">
@@ -235,7 +250,7 @@
           </details>
 
           <div class="perfil-form-actions">
-            <button type="submit" class="perfil-btn perfil-btn--primary" [disabled]="saving || uploadingImage">
+            <button type="submit" class="perfil-btn perfil-btn--primary" [disabled]="!puedeGuardarPerfil">
               <span class="material-icons" *ngIf="!saving" aria-hidden="true">save</span>
               <span class="perfil-spinner perfil-spinner--btn" *ngIf="saving" aria-hidden="true"></span>
               {{ saving ? 'Guardando…' : 'Guardar cambios' }}
