@@ -13,6 +13,7 @@ import { AuthService } from '../../services/auth.service';
 })
 export class CompraVinculoAviso {
   @Input() emailCuenta = '';
+  @Input() documentoIdentidad = '';
   @Input() esMixto = false;
   @Input() tieneBoletas = false;
   @Input() tieneProductos = false;
@@ -30,19 +31,6 @@ export class CompraVinculoAviso {
 
   get tieneSesion(): boolean {
     return !!this.emailCuenta.trim();
-  }
-
-  get iconoVinculo(): string {
-    if (this.esMixto) {
-      return 'link';
-    }
-    if (this.tieneBoletas) {
-      return 'confirmation_number';
-    }
-    if (this.tieneProductos) {
-      return 'storefront';
-    }
-    return 'mail';
   }
 
   async cambiarCuenta(): Promise<void> {

@@ -6,13 +6,15 @@
   role="note"
   aria-label="Vinculación de la compra"
 >
-  <span class="material-icons compra-vinculo-aviso__icon" aria-hidden="true">{{ iconoVinculo }}</span>
   <div class="compra-vinculo-aviso__copy">
     <p class="compra-vinculo-aviso__email-label" *ngIf="tieneSesion; else avisoSinSesion">
       {{ compraCopy.emailHeroLabel }}
     </p>
     <p *ngIf="tieneSesion" class="compra-vinculo-aviso__email">
       <strong>{{ emailCuenta }}</strong>
+    </p>
+    <p *ngIf="tieneSesion && documentoIdentidad" class="compra-vinculo-aviso__documento">
+      {{ compraCopy.identificacionCuentaLabel }}: <strong>{{ documentoIdentidad }}</strong>
     </p>
     <button
       *ngIf="tieneSesion && !ocultarCambiarCuenta"

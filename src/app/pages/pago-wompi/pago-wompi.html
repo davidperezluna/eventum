@@ -16,6 +16,7 @@
       <app-compra-vinculo-aviso
         class="pago-wompi-vinculo"
         [emailCuenta]="p.emailCuenta"
+        [documentoIdentidad]="p.documentoIdentidad ?? ''"
         [esMixto]="p.vinculo?.esMixto ?? false"
         [tieneBoletas]="p.vinculo?.tieneBoletas ?? false"
         [tieneProductos]="p.vinculo?.tieneProductos ?? false"

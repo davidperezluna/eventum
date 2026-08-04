@@ -1,7 +1,4 @@
 .compra-vinculo-aviso {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.65rem;
   width: 100%;
   padding: 0.85rem 0.95rem;
   border-radius: var(--ec-radius-card, 12px);
@@ -23,27 +20,8 @@
   border-left: 3px solid var(--ec-accent, #8b5cf6);
 }
 
-.compra-vinculo-aviso--mixto .compra-vinculo-aviso__icon {
-  color: var(--ec-accent, #8b5cf6);
-}
-
-.compra-vinculo-aviso__icon {
-  flex-shrink: 0;
-  font-size: 1.35rem;
-  margin-top: 0.05rem;
-}
-
-.compra-vinculo-aviso--boletas .compra-vinculo-aviso__icon {
-  color: #2563eb;
-}
-
-.compra-vinculo-aviso--productos .compra-vinculo-aviso__icon {
-  color: #059669;
-}
-
 .compra-vinculo-aviso__copy {
   min-width: 0;
-  flex: 1;
 }
 
 .compra-vinculo-aviso__email-label {
@@ -65,6 +43,18 @@
 
 .compra-vinculo-aviso__email strong {
   font-weight: 800;
+}
+
+.compra-vinculo-aviso__documento {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: var(--ec-text, #334155);
+}
+
+.compra-vinculo-aviso__documento strong {
+  font-weight: 800;
+  color: var(--ec-text-strong, #0f172a);
 }
 
 .compra-vinculo-aviso__cambiar-cuenta {

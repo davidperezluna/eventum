@@ -3,6 +3,7 @@ export const COMPRA_COPY = {
   emailHeroLabel: 'Tu compra quedará en esta cuenta',
   emailHeroLabelConfirmado: 'Tu compra quedó en esta cuenta',
   emailHeroLabelPendiente: 'Cuando se confirme, verás tu compra en esta cuenta',
+  identificacionCuentaLabel: 'Identificación',
   compraAppNota:
     'Tu compra no llega a tu correo. Después del pago, consúmala en Mis compras dentro de la app.',
   wompiReciboNota:

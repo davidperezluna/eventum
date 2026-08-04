@@ -390,6 +390,10 @@ export class Carrito implements OnInit, OnDestroy {
     return (this.usuario?.email || this.authService.getCurrentUser()?.email || '').trim();
   }
 
+  get documentoCuentaCompra(): string {
+    return (this.usuario?.documento_identidad || '').trim();
+  }
+
   readonly compraCopy = COMPRA_COPY;
 
   tienePalcosIncompletos(): boolean {
@@ -1026,6 +1030,7 @@ export class Carrito implements OnInit, OnDestroy {
     valorServicio?: number;
     transaccionCheckoutId?: number | null;
     expiresAtMs?: number | null;
+    documentoIdentidad?: string;
   }): void {
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.setItem(
@@ -1041,6 +1046,7 @@ export class Carrito implements OnInit, OnDestroy {
           valorServicio:
             opts.valorServicio !== undefined ? opts.valorServicio : this.getValorServicio(),
           emailCuenta: this.emailCuentaCompra,
+          documentoIdentidad: opts.documentoIdentidad ?? this.documentoCuentaCompra,
           totalPago: opts.totalPago,
           eventoTitulo:
             opts.eventoTitulo ?? this.evento?.titulo ?? this.lugarCover?.nombre ?? null,

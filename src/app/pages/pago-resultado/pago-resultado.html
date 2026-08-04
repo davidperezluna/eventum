@@ -57,6 +57,9 @@
         <div class="pago-cuenta-eventum__body">
           <p class="pago-cuenta-eventum__label">{{ tituloAvisoCuentaEventum }}</p>
           <p class="pago-cuenta-eventum__email">{{ emailCuentaEventum }}</p>
+          <p *ngIf="documentoIdentidadEventum" class="pago-cuenta-eventum__documento">
+            {{ compraCopy.identificacionCuentaLabel }}: <strong>{{ documentoIdentidadEventum }}</strong>
+          </p>
           <p class="pago-cuenta-eventum__note">{{ notaAvisoCuentaEventum }}</p>
         </div>
       </div>

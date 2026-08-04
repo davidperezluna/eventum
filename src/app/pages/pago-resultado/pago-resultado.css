@@ -183,6 +183,18 @@
   color: var(--ec-text-primary, #0f172a);
 }
 
+.pago-cuenta-eventum__documento {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: var(--ec-text, #334155);
+}
+
+.pago-cuenta-eventum__documento strong {
+  font-weight: 800;
+  color: var(--ec-text-primary, #0f172a);
+}
+
 .pago-cuenta-eventum__note {
   margin: 0;
   font-size: 0.82rem;

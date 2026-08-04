@@ -7,6 +7,7 @@ import { SupabaseService } from './supabase.service';
 import { TimezoneService } from './timezone.service';
 import { AuthService } from './auth.service';
 import { BoletaComprada, TipoBoleta, BoletaFilters, PaginatedResponse, Palco, EstadoPalco } from '../types';
+import { normalizarDocumentoIdentidad } from '../core/documento-identidad';
 
 @Injectable({
   providedIn: 'root'
@@ -526,28 +527,66 @@ export class BoletasService {
     return this.buscarBoletasPorDocumentoInterno(documento, true);
   }
 
+  private async resolverUsuarioIdsPorDocumento(documento: string): Promise<number[]> {
+    const doc = normalizarDocumentoIdentidad(documento);
+    if (!doc) {
+      return [];
+    }
+
+    const { data, error } = await this.supabase
+      .from('usuarios')
+      .select('id')
+      .eq('documento_identidad', doc);
+
+    if (error) {
+      throw error;
+    }
+
+    return [
+      ...new Set(
+        (data || [])
+          .map((u) => Number(u.id))
+          .filter((id) => Number.isFinite(id) && id > 0)
+      ),
+    ];
+  }
+
+  private boletaCompraPagada(boleta: BoletaComprada): boolean {
+    const pago = (boleta.estado_pago || boleta.compra?.estado_pago || '').toLowerCase();
+    return pago === 'completado';
+  }
+
   private async buscarBoletasPorDocumentoInterno(
     documento: string,
     soloPendientes: boolean
   ): Promise<BoletaComprada[]> {
     try {
+      const usuarioIds = await this.resolverUsuarioIdsPorDocumento(documento);
+      if (usuarioIds.length === 0) {
+        return [];
+      }
+
       let query = this.supabase
         .from('boletas_compradas')
         .select(this.selectBoletaConRelaciones)
-        .ilike('asistente_usuario.documento_identidad', `%${documento.trim()}%`);
+        .in('asistente_usuario_id', usuarioIds);
       if (soloPendientes) {
         query = query.eq('estado', 'pendiente');
       }
       const response = await query.order('fecha_creacion', { ascending: false });
-      
+
       if (response.error) {
         throw response.error;
       }
-      
-      const boletas = ((response.data as any[]) || []).map(boleta => 
+
+      let boletas = ((response.data as any[]) || []).map((boleta) =>
         this.normalizarBoletaConCompra(boleta)
       );
-      
+
+      if (soloPendientes) {
+        boletas = boletas.filter((boleta) => this.boletaCompraPagada(boleta));
+      }
+
       return boletas;
     } catch (error) {
       console.error('Error en buscarBoletasPorDocumento:', error);

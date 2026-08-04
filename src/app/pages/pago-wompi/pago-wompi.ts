@@ -17,6 +17,7 @@ export interface PagoPendienteCheckoutUi {
   valorServicio?: number;
   vinculo?: CompraVinculoPayload | null;
   emailCuenta?: string;
+  documentoIdentidad?: string;
   eventoTitulo?: string | null;
   totalPago?: number;
   checkoutUrl?: string | null;
@@ -40,6 +41,7 @@ export interface PagoWompiResumenLinea {
 
 export interface WompiCheckoutPayload {
   emailCuenta: string;
+  documentoIdentidad?: string;
   totalPago: number;
   eventoTitulo?: string | null;
   itemsResumen?: PagoWompiResumenLinea[];
@@ -215,6 +217,7 @@ export class PagoWompi implements OnInit, OnDestroy {
             valorServicio: this.payload.valorServicio,
             vinculo: this.payload.vinculo,
             emailCuenta: this.payload.emailCuenta,
+            documentoIdentidad: this.payload.documentoIdentidad,
             eventoTitulo: this.payload.eventoTitulo,
             totalPago: this.payload.totalPago,
             checkoutUrl,
@@ -354,27 +357,42 @@ export class PagoWompi implements OnInit, OnDestroy {
       return;
     }
 
+    const usuario = this.authService.getUsuario();
     const email = (
-      this.authService.getUsuario()?.email ||
+      usuario?.email ||
       this.authService.getCurrentUser()?.email ||
       ''
     ).trim();
-    if (!email || email === this.payload.emailCuenta) {
+    const documento = (usuario?.documento_identidad || '').trim();
+    const emailActual = (this.payload.emailCuenta || '').trim();
+    const documentoActual = (this.payload.documentoIdentidad || '').trim();
+
+    if (email === emailActual && documento === documentoActual) {
       return;
     }
 
+    if (!email && !documento) {
+      return;
+    }
+
+    const emailCambio = !!email && email !== emailActual;
     const clienteId = this.authService.getUsuarioId();
-    const teniaLinkPendiente = !!this.payload.checkoutUrl?.trim();
+    const teniaLinkPendiente = emailCambio && !!this.payload.checkoutUrl?.trim();
 
     this.payload = {
       ...this.payload,
-      emailCuenta: email,
-      wompiBody: this.actualizarCuentaEnBody(this.payload.wompiBody, email, clienteId),
-      wompiBodyRespaldo: this.actualizarCuentaEnBody(
-        this.payload.wompiBodyRespaldo,
-        email,
-        clienteId,
-      ),
+      emailCuenta: email || emailActual,
+      documentoIdentidad: documento || documentoActual,
+      ...(emailCambio
+        ? {
+            wompiBody: this.actualizarCuentaEnBody(this.payload.wompiBody, email, clienteId),
+            wompiBodyRespaldo: this.actualizarCuentaEnBody(
+              this.payload.wompiBodyRespaldo,
+              email,
+              clienteId,
+            ),
+          }
+        : {}),
     };
 
     if (teniaLinkPendiente) {
@@ -608,6 +626,7 @@ export class PagoWompi implements OnInit, OnDestroy {
       valorServicio: payload.valorServicio,
       vinculo: payload.vinculo,
       emailCuenta: payload.emailCuenta,
+      documentoIdentidad: payload.documentoIdentidad,
       eventoTitulo: payload.eventoTitulo,
       totalPago: payload.totalPago,
       checkoutUrl: payload.checkoutUrl,
@@ -674,6 +693,8 @@ export class PagoWompi implements OnInit, OnDestroy {
             ? Number(parsed.valorServicio)
             : undefined,
         emailCuenta: typeof parsed.emailCuenta === 'string' ? parsed.emailCuenta.trim() : '',
+        documentoIdentidad:
+          typeof parsed.documentoIdentidad === 'string' ? parsed.documentoIdentidad.trim() : '',
         totalPago: Number(parsed.totalPago) || 0,
         eventoTitulo:
           typeof parsed.eventoTitulo === 'string' ? parsed.eventoTitulo.trim() : null,

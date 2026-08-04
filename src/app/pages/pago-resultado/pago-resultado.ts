@@ -439,6 +439,10 @@ export class PagoResultado implements OnInit {
     return (this.authService.getUsuario()?.email || '').trim();
   }
 
+  get documentoIdentidadEventum(): string {
+    return (this.authService.getUsuario()?.documento_identidad || '').trim();
+  }
+
   get mostrarAvisoCuentaEventum(): boolean {
     const estado = this.getEstadoPagoReferencia();
     return !!this.emailCuentaEventum && (estado === 'completado' || estado === 'pendiente');
