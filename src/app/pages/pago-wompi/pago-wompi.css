@@ -280,6 +280,35 @@
   color: var(--ec-text, #334155);
 }
 
+.pago-wompi-vence-aviso__cancelar {
+  display: inline-flex;
+  align-self: flex-start;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #b91c1c;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.pago-wompi-vence-aviso__cancelar:hover:not(:disabled) {
+  color: #7f1d1d;
+}
+
+.pago-wompi-vence-aviso__cancelar:disabled {
+  opacity: 0.65;
+  cursor: wait;
+  text-decoration: none;
+}
+
 .pago-wompi-panel__actions {
   display: flex;
   flex-direction: column;

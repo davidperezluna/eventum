@@ -83,7 +83,14 @@
           >
             Vence en <strong>{{ getCountdownLabel() }}</strong>
           </p>
-          <p class="pago-wompi-vence-aviso__hint">{{ compraCopy.pagoWompiLinkVenceHint }}</p>
+          <button
+            type="button"
+            class="pago-wompi-vence-aviso__cancelar"
+            (click)="cancelarPagoPendiente()"
+            [disabled]="cancelandoPago || redirigiendo || expirandoLink"
+          >
+            {{ cancelandoPago ? 'Cancelando…' : compraCopy.pagoWompiCancelarPago }}
+          </button>
         </div>
       </div>
 

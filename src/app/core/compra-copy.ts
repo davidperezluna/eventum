@@ -14,7 +14,7 @@ export const COMPRA_COPY = {
   pagoWompiContinuar: 'Continuar a la pasarela',
   pagoWompiContinuarRecuperacion: 'Continuar al pago pendiente',
   pagoWompiGenerarNuevoLink: 'Generar nuevo link de pago',
-  pagoWompiLinkVenceHint: 'Completa el pago antes de que venza el link.',
+  pagoWompiCancelarPago: 'Cancelar pago',
   pagoWompiLinkExpiradoHint: 'El link de pago venció. Al continuar generamos uno nuevo.',
   pagoWompiAbriendo: 'Abriendo la pasarela…',
   loginContextoPagar:

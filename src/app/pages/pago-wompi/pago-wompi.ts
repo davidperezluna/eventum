@@ -69,6 +69,7 @@ export class PagoWompi implements OnInit, OnDestroy {
   volviendoCarrito = false;
   nowMs = Date.now();
   expirandoLink = false;
+  cancelandoPago = false;
   readonly compraCopy = COMPRA_COPY;
   private countdownTimer: ReturnType<typeof setInterval> | null = null;
   private unsubscribeAuth?: () => void;
@@ -263,6 +264,38 @@ export class PagoWompi implements OnInit, OnDestroy {
     }
     this.volviendoCarrito = true;
     void this.router.navigate(['/carrito']);
+  }
+
+  async cancelarPagoPendiente(): Promise<void> {
+    if (this.cancelandoPago || this.redirigiendo || !this.payload) {
+      return;
+    }
+
+    this.cancelandoPago = true;
+    this.cdr.detectChanges();
+    try {
+      const transaccionCheckoutId = this.payload.transaccionCheckoutId;
+      if (transaccionCheckoutId) {
+        const ok = await this.comprasProductoService.cancelarCheckoutPendiente(transaccionCheckoutId);
+        if (!ok) {
+          void this.alertService.warning(
+            'No se pudo cancelar el pago',
+            'Intenta de nuevo en unos segundos o desde el carrito.',
+          );
+          return;
+        }
+      }
+
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem(PAGO_PENDIENTE_STORAGE_KEY);
+        sessionStorage.removeItem(WOMPI_CHECKOUT_STORAGE_KEY);
+      }
+
+      void this.router.navigate(['/carrito']);
+    } finally {
+      this.cancelandoPago = false;
+      this.cdr.detectChanges();
+    }
   }
 
   formatCurrency(value: number): string {
