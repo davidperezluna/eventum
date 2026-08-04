@@ -13,6 +13,11 @@ import { coversEventumEnabled } from '../../core/covers-feature';
 import { CUPOS_LABELS } from '../../core/cupos-labels';
 import { COVERS_LABELS } from '../../core/covers-labels';
 import { forceUnlockBodyScroll, lockBodyScroll, unlockBodyScroll } from '../../core/body-scroll-lock';
+import {
+  esClienteConPerfilIncompleto,
+  esRutaExentaCompletarPerfil,
+  urlDestinoClienteConPerfil,
+} from '../../core/perfil-completo';
 import { ClientConfirmDialog } from '../client-confirm-dialog/client-confirm-dialog';
 
 type ClientNavItem = {
@@ -60,6 +65,7 @@ export class Layout implements OnInit, OnDestroy {
   subtotalCarrito = 0;
   enRutaCarrito = false;
   mostrarNavAccesosPuerta = false;
+  clientePerfilIncompleto = false;
 
   readonly cuposEventumEnabled = cuposEventumEnabled;
   readonly coversEventumEnabled = coversEventumEnabled;
@@ -78,7 +84,7 @@ export class Layout implements OnInit, OnDestroy {
     private misComprasStateService: MisComprasStateService,
     private trasladosBoletaService: TrasladosBoletaService,
     private accesosPuertaService: AccesosPuertaService,
-    private router: Router,
+    public router: Router,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -102,6 +108,7 @@ export class Layout implements OnInit, OnDestroy {
         } else if (usuario.tipo_usuario_id === 1) {
           this.userRole = 'Cliente';
           this.loadMenuCliente();
+          this.clientePerfilIncompleto = esClienteConPerfilIncompleto(usuario);
           this.misComprasStateService.hydrateTrasladosPendientesCountFromState(usuario.id);
           void this.refreshTrasladosPendientesNavBadge(usuario.id);
           if (this.coversEventumEnabled) {
@@ -122,6 +129,7 @@ export class Layout implements OnInit, OnDestroy {
         this.clientNavItems = [];
         this.userRole = '';
         this.mostrarNavAccesosPuerta = false;
+        this.clientePerfilIncompleto = false;
         this.accesosPuertaService.clear();
       }
       this.cdr.detectChanges();
@@ -129,11 +137,13 @@ export class Layout implements OnInit, OnDestroy {
 
     // Cerrar sidebar / menú móvil al cambiar de ruta
     this.syncRutaCarrito(this.router.url);
+    this.verificarRedireccionCompletarPerfil(this.router.url);
     this.routerSubscription = this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event) => {
         if (event instanceof NavigationEnd) {
           this.syncRutaCarrito(event.urlAfterRedirects);
+          this.verificarRedireccionCompletarPerfil(event.urlAfterRedirects);
         }
         if (window.innerWidth <= 768) {
           this.closeSidebar();
@@ -201,6 +211,28 @@ export class Layout implements OnInit, OnDestroy {
   private syncRutaCarrito(url: string): void {
     const path = (url || '').split('?')[0];
     this.enRutaCarrito = path === '/carrito' || path.startsWith('/carrito/');
+  }
+
+  private verificarRedireccionCompletarPerfil(url: string): void {
+    if (!this.isCliente()) {
+      return;
+    }
+
+    const path = (url || '').split('?')[0];
+    if (esRutaExentaCompletarPerfil(path)) {
+      return;
+    }
+
+    const usuario = this.authService.getUsuario();
+    this.clientePerfilIncompleto = esClienteConPerfilIncompleto(usuario);
+    if (!this.clientePerfilIncompleto) {
+      return;
+    }
+
+    const destino = urlDestinoClienteConPerfil(usuario, path || '/eventos-cliente');
+    if (destino.startsWith('/completar-perfil')) {
+      void this.router.navigateByUrl(destino);
+    }
   }
 
   private refreshCarritoFabState(): void {

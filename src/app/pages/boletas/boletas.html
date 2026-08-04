@@ -516,9 +516,12 @@
           <label>Número de Cédula</label>
           <div class="input-with-button">
             <input 
-              type="text" 
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              maxlength="12"
               [(ngModel)]="documentoValidar" 
-              placeholder="Ingresa el número de cédula"
+              placeholder="Cédula (6 a 10 dígitos)"
               class="select-input"
               (keyup.enter)="buscarBoletasPorDocumento()"
             />

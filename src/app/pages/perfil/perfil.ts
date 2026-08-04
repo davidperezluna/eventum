@@ -5,14 +5,17 @@ import { AuthService } from '../../services/auth.service';
 import { UsuariosService } from '../../services/usuarios.service';
 import { StorageService } from '../../services/storage.service';
 import { ImageOptimizationService } from '../../services/image-optimization.service';
-import { TimezoneService } from '../../services/timezone.service';
 import { AlertService } from '../../services/alert.service';
 import { PerfilStateService } from '../../services/perfil-state.service';
 import { Usuario, TipoGenero } from '../../types';
+import { validarDocumentoIdentidadColombia } from '../../core/documento-identidad';
+import { validarTelefonoColombia, normalizarTelefonoColombia } from '../../core/telefono-colombia';
+import { formatFechaNacimientoParaInput } from '../../core/fecha-nacimiento';
+import { TelefonoColombiaInputComponent } from '../../components/telefono-colombia-input/telefono-colombia-input';
 
 @Component({
   selector: 'app-perfil',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TelefonoColombiaInputComponent],
   templateUrl: './perfil.html',
   styleUrl: './perfil.css',
 })
@@ -60,7 +63,6 @@ export class Perfil implements OnInit, OnDestroy {
     private usuariosService: UsuariosService,
     private storageService: StorageService,
     private imageOptimizationService: ImageOptimizationService,
-    private timezoneService: TimezoneService,
     private alertService: AlertService,
     private perfilStateService: PerfilStateService,
     private cdr: ChangeDetectorRef
@@ -145,10 +147,8 @@ export class Perfil implements OnInit, OnDestroy {
       this.formData = {
         nombre: usuario.nombre || '',
         apellido: usuario.apellido || '',
-        telefono: usuario.telefono || '',
-        fecha_nacimiento: usuario.fecha_nacimiento 
-          ? this.formatDateForInput(usuario.fecha_nacimiento) 
-          : '',
+        telefono: normalizarTelefonoColombia(usuario.telefono || ''),
+        fecha_nacimiento: formatFechaNacimientoParaInput(usuario.fecha_nacimiento),
         genero: usuario.genero || TipoGenero.NO_ESPECIFICADO,
         documento_identidad: usuario.documento_identidad || '',
         direccion: usuario.direccion || '',
@@ -170,18 +170,6 @@ export class Perfil implements OnInit, OnDestroy {
       this.endSilentRefreshCycle();
       this.cdr.detectChanges();
     }
-  }
-
-  formatDateForInput(date: Date | string | undefined): string {
-    if (!date) return '';
-    // Para fecha de nacimiento (solo fecha, sin hora), extraer solo la parte de fecha
-    const dateStr = typeof date === 'string' ? date : date.toISOString();
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return '';
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
   }
 
   selectImage() {
@@ -266,13 +254,44 @@ export class Perfil implements OnInit, OnDestroy {
         fotoPerfilUrl = uploadedUrl;
       }
 
+      const documentoPerfil = String(this.formData.documento_identidad ?? '').trim();
+      const nombrePerfil = String(this.formData.nombre ?? '').trim();
+      const apellidoPerfil = String(this.formData.apellido ?? '').trim();
+
+      if (!nombrePerfil || !apellidoPerfil) {
+        this.error = 'Nombre y apellido son obligatorios.';
+        this.saving = false;
+        this.cdr.detectChanges();
+        return;
+      }
+
+      if (documentoPerfil) {
+        const validacionDocumento = validarDocumentoIdentidadColombia(documentoPerfil);
+        if (!validacionDocumento.valido) {
+          this.error = validacionDocumento.mensaje ?? 'Documento de identidad inválido.';
+          this.saving = false;
+          this.cdr.detectChanges();
+          return;
+        }
+        this.formData.documento_identidad = validacionDocumento.normalizado;
+      }
+
+      const validacionTelefono = validarTelefonoColombia(String(this.formData.telefono ?? ''));
+      if (!validacionTelefono.valido) {
+        this.error = validacionTelefono.mensaje ?? 'Teléfono inválido.';
+        this.saving = false;
+        this.cdr.detectChanges();
+        return;
+      }
+      this.formData.telefono = validacionTelefono.normalizado;
+
       // Preparar datos para actualizar
       const updateData: Partial<Usuario> = {
-        nombre: this.formData.nombre || undefined,
-        apellido: this.formData.apellido || undefined,
-        telefono: this.formData.telefono || undefined,
-        fecha_nacimiento: this.formData.fecha_nacimiento 
-          ? this.timezoneService.datetimeLocalToISO(this.formData.fecha_nacimiento as string + 'T00:00')
+        nombre: nombrePerfil || undefined,
+        apellido: apellidoPerfil || undefined,
+        telefono: validacionTelefono.normalizado,
+        fecha_nacimiento: this.formData.fecha_nacimiento
+          ? String(this.formData.fecha_nacimiento).trim()
           : undefined,
         genero: this.formData.genero,
         documento_identidad: this.formData.documento_identidad || undefined,

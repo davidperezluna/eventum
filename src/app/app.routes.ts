@@ -15,6 +15,7 @@ import { MisComprasGuia } from './pages/mis-compras-guia/mis-compras-guia';
 import { AccesosPuerta } from './pages/accesos-puerta/accesos-puerta';
 import { Boletas } from './pages/boletas/boletas';
 import { Perfil } from './pages/perfil/perfil';
+import { CompletarPerfil } from './pages/completar-perfil/completar-perfil';
 import { PagoResultado } from './pages/pago-resultado/pago-resultado';
 import { Ventas } from './pages/ventas/ventas';
 import { VentasPalcos } from './pages/ventas-palcos/ventas-palcos';
@@ -181,6 +182,7 @@ const appRoutes: Routes = [
       { path: 'reportes', component: Reportes },
       { path: 'reportes/ventas-completadas', component: ReporteVentasCompletadas },
       { path: 'perfil', component: Perfil },
+      { path: 'completar-perfil', component: CompletarPerfil },
     ]
   },
   {

@@ -4,8 +4,11 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import {
   guardarReturnUrlLogin,
+  leerReturnUrlLogin,
+  limpiarReturnUrlLogin,
   LOGIN_MOTIVO_TEXTO,
 } from '../../core/login-redirect';
+import { urlDestinoClienteConPerfil } from '../../core/perfil-completo';
 
 /** Acceso público para clientes (Google). Personal usa `/login-admin`. */
 @Component({
@@ -53,7 +56,10 @@ export class Login implements OnInit {
       return;
     }
 
-    await this.router.navigateByUrl(this.authService.getHomeRouteForUsuario(usuario), {
+    const returnUrlGuardado = leerReturnUrlLogin();
+    const destino = this.authService.resolvePostLoginUrl(usuario, returnUrlGuardado);
+    limpiarReturnUrlLogin();
+    await this.router.navigateByUrl(urlDestinoClienteConPerfil(usuario, destino), {
       replaceUrl: true,
     });
   }

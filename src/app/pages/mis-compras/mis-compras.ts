@@ -61,6 +61,10 @@ import {
   nombreAsistenteBoletaEscaneo,
   nombreDisplayUsuario,
 } from '../../core/lector-scan-display';
+import {
+  esDocumentoIdentidadColombiaValido,
+  validarDocumentoIdentidadColombia,
+} from '../../core/documento-identidad';
 import { DateTimeUtil } from '../../utils/date-time.util';
 import { BoletaCoverCliente, CompraCoverCliente } from '../../types/covers';
 import {
@@ -3508,11 +3512,15 @@ export class MisCompras implements OnInit, OnDestroy {
 
   private usuarioTieneDocumentoPerfil(): boolean {
     const doc = String(this.authService.getUsuario()?.documento_identidad ?? '').trim();
-    return doc.length > 0;
+    return esDocumentoIdentidadColombiaValido(doc);
   }
 
   get yoAsistoRequiereDocumento(): boolean {
     return this.showYoAsistoModal && !this.usuarioTieneDocumentoPerfil();
+  }
+
+  get yoAsistoDocumentoInputValido(): boolean {
+    return validarDocumentoIdentidadColombia(this.yoAsistoDocumentoInput).valido;
   }
 
   private listarBoletasParaVincularPerfil(
@@ -3619,15 +3627,16 @@ export class MisCompras implements OnInit, OnDestroy {
     if (this.usuarioTieneDocumentoPerfil()) {
       return true;
     }
-    const documento = this.yoAsistoDocumentoInput.trim();
-    if (!documento) {
+    const validacionDocumento = validarDocumentoIdentidadColombia(this.yoAsistoDocumentoInput);
+    if (!validacionDocumento.valido) {
       this.asignacionError = {
         boletaId: this.yoAsistoBoleta?.id ?? 0,
-        mensaje: 'Ingresa tu documento de identidad para vincular la entrada a tu perfil.',
+        mensaje: validacionDocumento.mensaje ?? 'Ingresa tu documento de identidad para vincular la entrada a tu perfil.',
       };
       this.cdr.detectChanges();
       return false;
     }
+    const documento = validacionDocumento.normalizado;
     const usuarioId = this.authService.getUsuarioId();
     if (!usuarioId) {
       this.asignacionError = {

@@ -1,0 +1,115 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.telefono-input-group {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.telefono-input-group:focus-within {
+  border-color: #8b9aef;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.22);
+}
+
+.telefono-input-group__country {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 0.75rem;
+  border-right: 1px solid #e2e8f0;
+  background: #fff;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.telefono-input-group__flag {
+  display: block;
+  width: 1.25rem;
+  height: 0.875rem;
+  border-radius: 2px;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.1);
+}
+
+.telefono-input-group__code {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #334155;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+.telefono-input-group__input {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0.8rem 1rem;
+  border: none;
+  border-radius: 0;
+  font-size: 1rem;
+  color: #0f172a;
+  background: transparent;
+  font-family: inherit;
+}
+
+.telefono-input-group__input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.telefono-input-group__input::placeholder {
+  color: #94a3b8;
+}
+
+.telefono-input-group__input:disabled {
+  cursor: not-allowed;
+  color: #94a3b8;
+}
+
+.telefono-input-group--error {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.telefono-input-group--error .telefono-input-group__country {
+  background: #fef2f2;
+  border-right-color: #fca5a5;
+}
+
+.telefono-input-group--error:focus-within {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+}
+
+.telefono-input-group--disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+:host-context(.perfil-field) .telefono-input-group {
+  border-radius: var(--ec-radius-control, 8px);
+}
+
+:host-context(.perfil-field) .telefono-input-group__input,
+:host-context(.perfil-field) .telefono-input-group__code {
+  font-size: 0.88rem;
+}
+
+:host-context(.perfil-field) .telefono-input-group__input {
+  padding: 0.62rem 0.75rem;
+}
+
+:host-context(.perfil-field) .telefono-input-group:focus-within {
+  border-color: var(--ec-accent, #8b9aef);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
+}

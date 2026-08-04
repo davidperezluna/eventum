@@ -128,15 +128,13 @@
               <small class="perfil-field-hint">El email no se puede cambiar.</small>
             </div>
             <div class="perfil-field">
-              <label for="perfil-telefono">Teléfono</label>
-              <input
-                id="perfil-telefono"
-                type="tel"
+              <label for="perfil-telefono">Teléfono *</label>
+              <app-telefono-colombia-input
+                inputId="perfil-telefono"
                 [(ngModel)]="formData.telefono"
                 name="telefono"
-                placeholder="+57 300 123 4567"
-                autocomplete="tel"
               />
+              <small class="perfil-field-hint">Ingresa los 10 dígitos de tu número móvil o fijo.</small>
             </div>
           </div>
 
@@ -186,10 +184,14 @@
                   <input
                     id="perfil-documento"
                     type="text"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    maxlength="12"
                     [(ngModel)]="formData.documento_identidad"
                     name="documento_identidad"
-                    placeholder="Número de documento"
+                    placeholder="Cédula (6 a 10 dígitos)"
                   />
+                  <p class="perfil-field-hint">Solo números. Ej: 1234567890</p>
                 </div>
 
                 <div class="perfil-field">

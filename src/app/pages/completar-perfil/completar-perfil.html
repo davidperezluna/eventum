@@ -1,0 +1,23 @@
+<div class="completar-perfil-page">
+  <header class="client-page-header client-page-header--compact client-page-header--subpage completar-perfil-page__header">
+    <h1 class="client-page-header__title">Completa tu perfil</h1>
+    <p class="client-page-header__subtitle client-page-header__subtitle--full">
+      Necesitamos algunos datos para vincular tus compras y entradas a tu cuenta.
+    </p>
+  </header>
+
+  <div *ngIf="loading" class="completar-perfil-page__loading">
+    <div class="completar-perfil-page__spinner" aria-hidden="true"></div>
+    <p>Cargando…</p>
+  </div>
+
+  <section *ngIf="!loading && usuario" class="completar-perfil-card" aria-label="Formulario de datos personales">
+    <p class="completar-perfil-card__intro">
+      Hola{{ usuario.nombre ? ', ' + usuario.nombre : '' }}. Confirma tu nombre, apellido, cédula, teléfono, fecha de nacimiento y género para continuar.
+    </p>
+    <app-completar-perfil-form
+      textoBotonPrimario="Guardar y continuar"
+      (guardado)="onPerfilGuardado($event)"
+    ></app-completar-perfil-form>
+  </section>
+</div>

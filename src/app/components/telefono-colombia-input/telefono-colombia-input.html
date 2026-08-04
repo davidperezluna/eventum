@@ -1,0 +1,35 @@
+<div
+  class="telefono-input-group"
+  [class.telefono-input-group--error]="hasError"
+  [class.telefono-input-group--disabled]="disabled"
+>
+  <div class="telefono-input-group__country" aria-hidden="true">
+    <svg
+      class="telefono-input-group__flag"
+      viewBox="0 0 24 16"
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-label="Colombia"
+    >
+      <rect width="24" height="8" fill="#FCD116" />
+      <rect y="8" width="24" height="4" fill="#003893" />
+      <rect y="12" width="24" height="4" fill="#CE1126" />
+    </svg>
+    <span class="telefono-input-group__code">{{ indicativo }}</span>
+  </div>
+  <input
+    class="telefono-input-group__input"
+    type="tel"
+    inputmode="tel"
+    autocomplete="tel-national"
+    maxlength="14"
+    [id]="inputId"
+    [name]="name"
+    [placeholder]="placeholder"
+    [disabled]="disabled"
+    [attr.aria-describedby]="describedBy || null"
+    [value]="value"
+    (input)="onInput($event)"
+    (blur)="onBlur()"
+  />
+</div>

@@ -1122,10 +1122,12 @@
           id="yo-asisto-documento"
           type="text"
           inputmode="numeric"
-          [(ngModel)]="yoAsistoDocumentoInput"
-          placeholder="Número de documento"
           autocomplete="off"
+          maxlength="12"
+          [(ngModel)]="yoAsistoDocumentoInput"
+          placeholder="Cédula (6 a 10 dígitos)"
         />
+        <p class="legal-modal__hint legal-modal__hint--field">Solo números, sin correo ni letras.</p>
       </div>
 
       <label
@@ -1156,7 +1158,7 @@
         Cancelar
       </button>
       <button type="button" class="legal-modal__btn legal-modal__btn-primary" (click)="confirmarYoAsisto()"
-        [disabled]="rellenarPerfilBoletaId != null || (yoAsistoRequiereDocumento && !yoAsistoDocumentoInput.trim())">
+        [disabled]="rellenarPerfilBoletaId != null || (yoAsistoRequiereDocumento && !yoAsistoDocumentoInputValido)">
         {{ rellenarPerfilBoletaId != null ? labelUsarPerfilBoletaAplicando : confirmarUsarPerfilBoleta }}
       </button>
     </footer>

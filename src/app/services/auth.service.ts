@@ -822,6 +822,7 @@ export class AuthService {
       'mis-cupos',
       'mis-compras',
       'perfil',
+      'completar-perfil',
       'pago-resultado',
       'detalle-evento',
       'cupos-evento',

@@ -1,0 +1,169 @@
+<form (ngSubmit)="guardar()" class="completar-perfil-form" novalidate>
+  <section class="completar-perfil-form__section" aria-label="Nombre">
+    <div class="completar-perfil-form__row">
+      <div
+        class="legal-modal__field"
+        [class.completar-perfil-form__field--error]="mostrarErrorCampo('nombre') && errorNombre()"
+      >
+        <label for="completar-perfil-nombre">Nombre *</label>
+        <input
+          id="completar-perfil-nombre"
+          type="text"
+          [(ngModel)]="nombre"
+          name="nombre"
+          placeholder="Tu nombre"
+          autocomplete="given-name"
+          [disabled]="guardando"
+          (blur)="marcarTocado('nombre')"
+        />
+        <p class="completar-perfil-form__field-error" *ngIf="mostrarErrorCampo('nombre') && errorNombre()" role="alert">
+          {{ errorNombre() }}
+        </p>
+      </div>
+      <div
+        class="legal-modal__field"
+        [class.completar-perfil-form__field--error]="mostrarErrorCampo('apellido') && errorApellido()"
+      >
+        <label for="completar-perfil-apellido">Apellido *</label>
+        <input
+          id="completar-perfil-apellido"
+          type="text"
+          [(ngModel)]="apellido"
+          name="apellido"
+          placeholder="Tu apellido"
+          autocomplete="family-name"
+          [disabled]="guardando"
+          (blur)="marcarTocado('apellido')"
+        />
+        <p class="completar-perfil-form__field-error" *ngIf="mostrarErrorCampo('apellido') && errorApellido()" role="alert">
+          {{ errorApellido() }}
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="completar-perfil-form__section" aria-label="Identificación y contacto">
+    <div
+      class="legal-modal__field"
+      [class.completar-perfil-form__field--error]="mostrarErrorCampo('documento') && errorDocumento()"
+    >
+      <label for="completar-perfil-documento">Documento de identidad *</label>
+      <input
+        id="completar-perfil-documento"
+        type="text"
+        inputmode="numeric"
+        autocomplete="off"
+        maxlength="12"
+        [(ngModel)]="documento"
+        name="documento"
+        placeholder="Cédula (6 a 10 dígitos)"
+        [disabled]="guardando"
+        (blur)="marcarTocado('documento')"
+      />
+      <p
+        class="completar-perfil-form__field-error"
+        *ngIf="mostrarErrorCampo('documento') && errorDocumento()"
+        role="alert"
+      >
+        {{ errorDocumento() }}
+      </p>
+    </div>
+
+    <div
+      class="legal-modal__field"
+      [class.completar-perfil-form__field--error]="mostrarErrorCampo('telefono') && errorTelefono()"
+    >
+      <label for="completar-perfil-telefono">Teléfono *</label>
+      <app-telefono-colombia-input
+        inputId="completar-perfil-telefono"
+        [(ngModel)]="telefono"
+        name="telefono"
+        [hasError]="mostrarErrorCampo('telefono') && !!errorTelefono()"
+        [disabled]="guardando"
+        (blurred)="marcarTocado('telefono')"
+      />
+      <p
+        class="completar-perfil-form__field-error"
+        *ngIf="mostrarErrorCampo('telefono') && errorTelefono()"
+        role="alert"
+      >
+        {{ errorTelefono() }}
+      </p>
+    </div>
+
+    <div
+      class="legal-modal__field"
+      [class.completar-perfil-form__field--error]="mostrarErrorCampo('fechaNacimiento') && errorFechaNacimiento()"
+    >
+      <label for="completar-perfil-fecha">Fecha de nacimiento *</label>
+      <input
+        id="completar-perfil-fecha"
+        type="date"
+        [(ngModel)]="fechaNacimiento"
+        name="fechaNacimiento"
+        autocomplete="bday"
+        [disabled]="guardando"
+        (blur)="marcarTocado('fechaNacimiento')"
+      />
+      <p
+        class="completar-perfil-form__field-error"
+        *ngIf="mostrarErrorCampo('fechaNacimiento') && errorFechaNacimiento()"
+        role="alert"
+      >
+        {{ errorFechaNacimiento() }}
+      </p>
+    </div>
+
+    <div
+      class="legal-modal__field"
+      [class.completar-perfil-form__field--error]="mostrarErrorCampo('genero') && errorGenero()"
+    >
+      <span class="completar-perfil-form__genero-label" id="completar-perfil-genero-label">Género *</span>
+      <div
+        class="completar-perfil-form__genero"
+        role="radiogroup"
+        aria-labelledby="completar-perfil-genero-label"
+      >
+        <button
+          type="button"
+          *ngFor="let generoOpcion of generosOpciones"
+          class="completar-perfil-form__genero-btn"
+          [class.completar-perfil-form__genero-btn--active]="genero === generoOpcion.value"
+          [attr.aria-pressed]="genero === generoOpcion.value"
+          [disabled]="guardando"
+          (click)="seleccionarGenero(generoOpcion.value)"
+        >
+          {{ generoOpcion.label }}
+        </button>
+      </div>
+      <p
+        class="completar-perfil-form__field-error"
+        *ngIf="mostrarErrorCampo('genero') && errorGenero()"
+        role="alert"
+      >
+        {{ errorGenero() }}
+      </p>
+    </div>
+  </section>
+
+  <p class="legal-modal__error" *ngIf="error" role="alert">{{ error }}</p>
+
+  <footer class="completar-perfil-form__footer">
+    <button
+      type="button"
+      class="legal-modal__btn legal-modal__btn-secondary"
+      *ngIf="mostrarCancelar"
+      (click)="cancelado.emit()"
+      [disabled]="guardando"
+    >
+      Cancelar
+    </button>
+    <button
+      type="submit"
+      class="legal-modal__btn legal-modal__btn-primary"
+      [disabled]="guardando"
+    >
+      {{ guardando ? 'Guardando…' : textoBotonPrimario }}
+    </button>
+  </footer>
+</form>

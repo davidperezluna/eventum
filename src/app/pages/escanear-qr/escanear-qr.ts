@@ -34,6 +34,7 @@ import {
   nombreAsistenteCoverEscaneo,
   nombreAsistenteProductoEscaneo,
 } from '../../core/lector-scan-display';
+import { validarDocumentoIdentidadColombia } from '../../core/documento-identidad';
 import {
   AccesoPuertaToastComponent,
   AccesoPuertaToastProducto,
@@ -424,11 +425,16 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async buscarPorDocumento(): Promise<void> {
-    const doc = this.documento.trim();
-    if (!doc) {
-      await this.alertService.warning('Campo requerido', 'Ingresa el numero de documento.');
+    const validacionDocumento = validarDocumentoIdentidadColombia(this.documento);
+    if (!validacionDocumento.valido) {
+      await this.alertService.warning(
+        'Cédula inválida',
+        validacionDocumento.mensaje ?? 'Ingresa el número de cédula del asistente.'
+      );
       return;
     }
+    const doc = validacionDocumento.normalizado;
+    this.documento = doc;
     if (this.requierePermisosLector && this.permisos.length === 0) {
       await this.alertService.warning('Sin acceso', 'No tienes eventos ni covers asignados para escanear.');
       return;

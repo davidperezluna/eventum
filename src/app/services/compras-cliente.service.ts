@@ -9,6 +9,7 @@ import { TimezoneService } from './timezone.service';
 import { EventosService } from './eventos.service';
 import { AuthService } from './auth.service';
 import { Compra, BoletaComprada, TipoBoleta, MetodoPago, TipoEstadoPago, TipoEstadoCompra, TipoEstadoBoleta, TipoEstadoEvento } from '../types';
+import { asistenteDesdeComprador } from '../core/asistente-desde-comprador';
 
 export interface ItemCompra {
   tipo_boleta_id: number;
@@ -325,6 +326,7 @@ export class ComprasClienteService {
 
       const now = this.timezoneService.getCurrentDateISO();
       const boletasRows: Partial<BoletaComprada>[] = [];
+      const asistenteComprador = await this.obtenerAsistenteComprador(datosCompra.cliente_id);
 
       for (const item of datosCompra.items) {
         const cupos = cuposPorTipo.get(item.tipo_boleta_id) ?? 1;
@@ -359,12 +361,7 @@ export class ComprasClienteService {
               tipo_boleta_id: item.tipo_boleta_id,
               codigo_qr: this.generarCodigoQR(),
               precio_unitario: item.precio_unitario,
-              // Boleta normal: se compra sin asistente asignado.
-              // La asignación queda para Mis Boletas.
-              nombre_asistente: undefined,
-              documento_asistente: undefined,
-              email_asistente: undefined,
-              telefono_asistente: undefined,
+              ...asistenteComprador,
               estado: TipoEstadoBoleta.PENDIENTE,
               fecha_creacion: now,
               consume_inventario: true
@@ -394,6 +391,21 @@ export class ComprasClienteService {
       console.error('Error procesando compra:', error);
       throw error;
     }
+  }
+
+  private async obtenerAsistenteComprador(clienteId: number) {
+    const { data, error } = await this.supabase
+      .from('usuarios')
+      .select('nombre, apellido, email, telefono, documento_identidad')
+      .eq('id', clienteId)
+      .maybeSingle();
+
+    if (error) {
+      console.warn('No se pudo cargar el perfil del comprador para asignar asistente:', error);
+      return {};
+    }
+
+    return asistenteDesdeComprador(data);
   }
 
   private async obtenerPorcentajeServicioEvento(eventoId: number): Promise<number> {

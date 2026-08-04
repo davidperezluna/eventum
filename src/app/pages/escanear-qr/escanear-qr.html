@@ -72,8 +72,11 @@
           id="doc-buscar"
           type="text"
           class="form-control"
+          inputmode="numeric"
+          autocomplete="off"
+          maxlength="12"
           [(ngModel)]="documento"
-          placeholder="Numero de documento del asistente"
+          placeholder="Cédula del asistente (6 a 10 dígitos)"
           (keyup.enter)="buscarPorDocumento()"
           [disabled]="buscando || validando || (requierePermisosLector && permisos.length === 0)"
         />

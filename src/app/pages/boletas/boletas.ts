@@ -13,6 +13,7 @@ import { StorageService } from '../../services/storage.service';
 import { AuthService } from '../../services/auth.service';
 import { BoletaComprada, TipoBoleta, PaginatedResponse, TipoEstadoBoleta, Evento } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
+import { validarDocumentoIdentidadColombia } from '../../core/documento-identidad';
 
 @Component({
   selector: 'app-boletas',
@@ -379,11 +380,16 @@ export class Boletas implements OnInit, OnDestroy {
   }
 
   async buscarBoletasPorDocumento() {
-    if (!this.documentoValidar.trim()) {
-      this.alertService.warning('Campo requerido', 'Por favor ingresa un número de cédula');
+    const validacionDocumento = validarDocumentoIdentidadColombia(this.documentoValidar);
+    if (!validacionDocumento.valido) {
+      this.alertService.warning(
+        'Cédula inválida',
+        validacionDocumento.mensaje ?? 'Por favor ingresa un número de cédula válido.'
+      );
       return;
     }
 
+    this.documentoValidar = validacionDocumento.normalizado;
     this.validandoBoleta = true;
     this.boletaEncontrada = null;
     this.boletasEncontradasPorDocumento = [];
