@@ -122,6 +122,7 @@ export class Carrito implements OnInit, OnDestroy {
           ...item,
           palco_ids: item.palco_ids ? [...item.palco_ids] : undefined
         }));
+        this.limpiarCuponSiCompraMixta();
         void this.refrescarPalcosDisponibles();
       })
     );
@@ -146,6 +147,7 @@ export class Carrito implements OnInit, OnDestroy {
           ...item,
           producto: { ...item.producto }
         }));
+        this.limpiarCuponSiCompraMixta();
       })
     );
 
@@ -195,7 +197,51 @@ export class Carrito implements OnInit, OnDestroy {
 
   get mostrarCupon(): boolean {
     if (this.itemsCompra.length === 0) return false;
+    if (this.esCompraMixtaBoletasProductos) return false;
     return !!this.usuario || !!this.authService.getCurrentUser();
+  }
+
+  /** El cupón solo aplica a boletas; en compra mixta se descarta. */
+  private limpiarCuponSiCompraMixta(): void {
+    if (!this.esCompraMixtaBoletasProductos) return;
+    if (this.cuponAplicado || this.codigoCupon.trim() || this.cuponAbierto) {
+      this.carritoCompraService.clearCupon();
+      this.cuponRestaurado = false;
+    }
+  }
+
+  /** Correo de la cuenta Eventum a la que se vincularán boletas/productos tras pagar. */
+  get emailCuentaCompra(): string {
+    return (this.usuario?.email || this.authService.getCurrentUser()?.email || '').trim();
+  }
+
+  get tieneSesionParaVinculo(): boolean {
+    return !!this.emailCuentaCompra;
+  }
+
+  totalUnidadesBoletasEnCarrito(): number {
+    return this.itemsCompra.reduce((acc, item) => acc + item.cantidad, 0);
+  }
+
+  totalUnidadesProductosEnCarrito(): number {
+    return this.itemsProductos.reduce((acc, item) => acc + item.cantidad, 0);
+  }
+
+  get tieneBoletasEnCarrito(): boolean {
+    return this.itemsCompra.length > 0;
+  }
+
+  get tieneProductosEnCarrito(): boolean {
+    return this.itemsProductos.length > 0;
+  }
+
+  /** Boletas + productos en el mismo checkout de evento. */
+  get esCompraMixtaBoletasProductos(): boolean {
+    return this.tieneBoletasEnCarrito && this.tieneProductosEnCarrito;
+  }
+
+  get mostrarAvisoVinculoCompra(): boolean {
+    return this.tieneBoletasEnCarrito || this.tieneProductosEnCarrito;
   }
 
   tieneLicor(): boolean {
@@ -658,7 +704,7 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   getDescuento(): number {
-    if (!this.cuponAplicado) return 0;
+    if (!this.cuponAplicado || this.esCompraMixtaBoletasProductos) return 0;
     return (this.getSubtotalBoletas() * this.cuponAplicado.porcentaje_descuento) / 100;
   }
 
@@ -798,6 +844,10 @@ export class Carrito implements OnInit, OnDestroy {
 
   private async restaurarCuponDesdeCache(): Promise<void> {
     if (!this.usuario || !this.evento?.id || this.cuponRestaurado) return;
+    if (this.esCompraMixtaBoletasProductos) {
+      this.limpiarCuponSiCompraMixta();
+      return;
+    }
 
     const cuponCache = this.carritoCompraService.getCuponSnapshot();
     if (cuponCache.eventoId !== this.evento.id) return;
@@ -834,6 +884,13 @@ export class Carrito implements OnInit, OnDestroy {
 
   async aplicarCupon(): Promise<void> {
     if (!this.usuario) return;
+    if (this.esCompraMixtaBoletasProductos) {
+      void this.alertService.warning(
+        'Cupón no disponible',
+        'Los cupones solo aplican cuando compras boletas sin productos en el mismo pedido.'
+      );
+      return;
+    }
 
     const codigoNormalizado = this.codigoCupon.trim().toUpperCase();
     if (!codigoNormalizado || !this.evento) return;

@@ -107,6 +107,65 @@
         </header>
 
         <div class="carrito-items">
+          <div
+            *ngIf="mostrarAvisoVinculoCompra"
+            class="carrito-vinculo-aviso"
+            [class.carrito-vinculo-aviso--mixto]="esCompraMixtaBoletasProductos"
+            [class.carrito-vinculo-aviso--boletas]="tieneBoletasEnCarrito && !esCompraMixtaBoletasProductos"
+            [class.carrito-vinculo-aviso--productos]="tieneProductosEnCarrito && !esCompraMixtaBoletasProductos"
+            role="note"
+            aria-label="Vinculación de la compra"
+          >
+            <span class="material-icons carrito-vinculo-aviso__icon" aria-hidden="true">
+              {{ esCompraMixtaBoletasProductos ? 'link' : (tieneBoletasEnCarrito ? 'confirmation_number' : 'storefront') }}
+            </span>
+            <div class="carrito-vinculo-aviso__copy">
+              <p class="carrito-vinculo-aviso__title">
+                {{
+                  esCompraMixtaBoletasProductos
+                    ? 'Tu compra'
+                    : (tieneBoletasEnCarrito ? 'Boletas y palcos' : 'Productos')
+                }}
+              </p>
+              <p class="carrito-vinculo-aviso__text" *ngIf="tieneSesionParaVinculo; else avisoVinculoSinSesion">
+                <ng-container *ngIf="esCompraMixtaBoletasProductos">
+                  Esta compra quedará vinculada a tu cuenta Eventum con el correo
+                  <strong>{{ emailCuentaCompra }}</strong>:
+                </ng-container>
+                <ng-container *ngIf="!esCompraMixtaBoletasProductos && tieneBoletasEnCarrito">
+                  {{ totalUnidadesBoletasEnCarrito() }} entrada(s) quedarán vinculadas a tu cuenta Eventum con el correo
+                  <strong>{{ emailCuentaCompra }}</strong>.
+                  Las verás en <strong>Mis compras</strong> con ese usuario.
+                </ng-container>
+                <ng-container *ngIf="!esCompraMixtaBoletasProductos && tieneProductosEnCarrito">
+                  {{ totalUnidadesProductosEnCarrito() }} producto(s) quedarán vinculados a tu cuenta Eventum con el correo
+                  <strong>{{ emailCuentaCompra }}</strong>.
+                  Los retiras en el evento desde <strong>Mis compras</strong> con el código QR.
+                </ng-container>
+              </p>
+              <ul
+                *ngIf="tieneSesionParaVinculo && esCompraMixtaBoletasProductos"
+                class="carrito-vinculo-aviso__lista"
+              >
+                <li>
+                  <strong>{{ totalUnidadesBoletasEnCarrito() }}</strong>
+                  entrada(s) → las verás en <strong>Mis compras</strong>.
+                </li>
+                <li>
+                  <strong>{{ totalUnidadesProductosEnCarrito() }}</strong>
+                  producto(s) → los retiras en el evento con el QR de <strong>Mis compras</strong>.
+                </li>
+              </ul>
+              <ng-template #avisoVinculoSinSesion>
+                <p class="carrito-vinculo-aviso__text">
+                  Al pagar, todo quedará vinculado al correo de tu cuenta Eventum.
+                  <a routerLink="/login" [queryParams]="{ returnUrl: '/carrito', motivo: 'pagar' }">Inicia sesión</a>
+                  para continuar.
+                </p>
+              </ng-template>
+            </div>
+          </div>
+
           <div *ngFor="let item of itemsCover" class="carrito-item">
             <div class="carrito-item-info">
               <div class="carrito-item-top">
@@ -452,7 +511,7 @@
             <span>Valor productos:</span>
             <span>{{ formatCurrency(getSubtotalProductos()) }}</span>
           </div>
-          <div class="total-row descuento" *ngIf="usuario && cuponAplicado">
+          <div class="total-row descuento" *ngIf="usuario && cuponAplicado && !esCompraMixtaBoletasProductos">
             <span>Descuento (boletas):</span>
             <span>-{{ formatCurrency(getDescuento()) }}</span>
           </div>
