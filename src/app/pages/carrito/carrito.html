@@ -72,23 +72,7 @@
       </p>
     </section>
 
-    <div class="empty-state" *ngIf="mostrarEstadoCarritoVacio">
-      <div class="empty-state-icon-box">
-        <span class="material-icons">shopping_cart</span>
-      </div>
-      <h2>Tu carrito está vacío</h2>
-      <p>Agrega boletas, palcos, productos o covers desde el detalle del evento o club.</p>
-      <div class="empty-state__actions">
-        <a routerLink="/eventos-cliente" class="empty-state__cta">
-          <span class="material-icons" aria-hidden="true">event</span>
-          Ver eventos
-        </a>
-        <a *ngIf="coversEventumEnabled" routerLink="/clubes" class="empty-state__cta empty-state__cta--secondary">
-          <span class="material-icons" aria-hidden="true">nightlife</span>
-          Explorar clubes
-        </a>
-      </div>
-    </div>
+    <app-carrito-empty-card *ngIf="mostrarEstadoCarritoVacio" />
 
     <ng-container *ngIf="!carritoVacio">
       <section class="carrito-evento-block">
@@ -101,53 +85,6 @@
         </header>
 
         <div class="carrito-items">
-          <div
-            *ngIf="mostrarAvisoVinculoCompra"
-            class="carrito-vinculo-aviso"
-            [class.carrito-vinculo-aviso--mixto]="esCompraMixtaBoletasProductos"
-            [class.carrito-vinculo-aviso--boletas]="tieneBoletasEnCarrito && !esCompraMixtaBoletasProductos"
-            [class.carrito-vinculo-aviso--productos]="tieneProductosEnCarrito && !esCompraMixtaBoletasProductos"
-            role="note"
-            aria-label="Vinculación de la compra"
-          >
-            <span class="material-icons carrito-vinculo-aviso__icon" aria-hidden="true">
-              {{ esCompraMixtaBoletasProductos ? 'link' : (tieneBoletasEnCarrito ? 'confirmation_number' : 'storefront') }}
-            </span>
-            <div class="carrito-vinculo-aviso__copy">
-              <p class="carrito-vinculo-aviso__email-label" *ngIf="tieneSesionParaVinculo; else avisoVinculoSinSesion">
-                {{ compraCopy.emailHeroLabel }}
-              </p>
-              <p *ngIf="tieneSesionParaVinculo" class="carrito-vinculo-aviso__email">
-                <strong>{{ emailCuentaCompra }}</strong>
-              </p>
-              <ul
-                *ngIf="tieneSesionParaVinculo && lineasDetalleVinculo.length"
-                class="carrito-vinculo-aviso__lista"
-              >
-                <li *ngFor="let linea of lineasDetalleVinculo">{{ linea }}</li>
-              </ul>
-              <p *ngIf="tieneSesionParaVinculo" class="carrito-vinculo-aviso__wompi-hint">
-                {{ compraCopy.wompiReciboNota }}
-              </p>
-              <button
-                *ngIf="tieneSesionParaVinculo"
-                type="button"
-                class="carrito-vinculo-aviso__cambiar-cuenta"
-                (click)="cambiarCuentaGoogleParaCompra()"
-                [disabled]="cambiandoCuentaGoogle"
-              >
-                {{ cambiandoCuentaGoogle ? 'Abriendo Google…' : '¿Este no es tu correo? Cambiar cuenta' }}
-              </button>
-              <ng-template #avisoVinculoSinSesion>
-                <p class="carrito-vinculo-aviso__text">
-                  {{ compraCopy.sinSesionVinculo }}
-                  <a routerLink="/login" [queryParams]="{ returnUrl: '/carrito', motivo: 'pagar' }">Inicia sesión</a>
-                  para continuar.
-                </p>
-              </ng-template>
-            </div>
-          </div>
-
           <div
             *ngIf="esCompraMixtaBoletasProductos"
             class="carrito-info-note carrito-info-note--mixto"
@@ -574,10 +511,10 @@
           type="button"
           class="carrito-checkout-bar__btn carrito-checkout-bar__btn--recover"
           (click)="recuperarCheckoutPendiente()"
-          [disabled]="cancelandoCheckoutPendiente"
+          [disabled]="cancelandoCheckoutPendiente || recuperandoCheckoutPendiente"
         >
           <span class="material-icons" aria-hidden="true">restore</span>
-          {{ pendiente.expiro ? 'Revisar estado' : 'Recuperar pago' }}
+          {{ recuperandoCheckoutPendiente ? 'Abriendo…' : (pendiente.expiro ? 'Revisar estado' : 'Recuperar pago') }}
         </button>
         <button
           type="button"

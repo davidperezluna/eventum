@@ -1,6 +1,10 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { PaginatedResponse } from '../types';
+import {
+  CompraVinculoPayload,
+  PagoWompiResumenLinea,
+} from '../pages/pago-wompi/pago-wompi';
 
 export interface TransaccionCheckout {
   id: number;
@@ -302,5 +306,95 @@ export class TransaccionesCheckoutService {
       }
     }
     return map;
+  }
+
+  async getResumenUiForCheckout(transaccionCheckoutId: number): Promise<{
+    itemsResumen: PagoWompiResumenLinea[];
+    subtotalCompra: number;
+    valorServicio: number;
+    vinculo: CompraVinculoPayload;
+  } | null> {
+    const { data, error } = await this.supabase
+      .from('transacciones_checkout')
+      .select('tipo, subtotal, valor_servicio, total, request_payload')
+      .eq('id', transaccionCheckoutId)
+      .maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+
+    const tipo = String((data as Record<string, unknown>)['tipo'] || '');
+    const valorServicio = Number((data as Record<string, unknown>)['valor_servicio']) || 0;
+    const total = Number((data as Record<string, unknown>)['total']) || 0;
+    const subtotalCompra = Math.max(0, total - valorServicio);
+    const payload = (data as Record<string, unknown>)['request_payload'] as Record<string, unknown> | null;
+
+    const pedidoBoletas = payload?.['pedido_boletas'] as Record<string, unknown> | undefined;
+    const pedidoProductos = payload?.['pedido_productos'] as Record<string, unknown> | undefined;
+    const boletaItems = Array.isArray(pedidoBoletas?.['items'])
+      ? (pedidoBoletas['items'] as Array<Record<string, unknown>>)
+      : [];
+    const productoItems = Array.isArray(pedidoProductos?.['items'])
+      ? (pedidoProductos['items'] as Array<Record<string, unknown>>)
+      : [];
+
+    const tipoBoletaIds = boletaItems
+      .map((item) => Number(item['tipo_boleta_id']))
+      .filter((id) => Number.isFinite(id) && id > 0);
+    const productoIds = productoItems
+      .map((item) => Number(item['producto_id']))
+      .filter((id) => Number.isFinite(id) && id > 0);
+
+    const [nombresBoletas, nombresProductos] = await Promise.all([
+      this.getNombresTiposBoleta(tipoBoletaIds),
+      this.getNombresProductos(productoIds),
+    ]);
+
+    const itemsResumen: PagoWompiResumenLinea[] = [];
+
+    for (const item of boletaItems) {
+      const tipoBoletaId = Number(item['tipo_boleta_id']);
+      const cantidad = Number(item['cantidad']);
+      const precioUnitario = Number(item['precio_unitario']);
+      if (!Number.isFinite(cantidad) || cantidad <= 0) {
+        continue;
+      }
+      itemsResumen.push({
+        nombre: nombresBoletas.get(tipoBoletaId) || `Entrada #${tipoBoletaId}`,
+        cantidad,
+        precioUnitario: Number.isFinite(precioUnitario) ? precioUnitario : 0,
+        subtotal: (Number.isFinite(precioUnitario) ? precioUnitario : 0) * cantidad,
+      });
+    }
+
+    for (const item of productoItems) {
+      const productoId = Number(item['producto_id']);
+      const cantidad = Number(item['cantidad']);
+      const precioUnitario = Number(item['precio_unitario']);
+      if (!Number.isFinite(cantidad) || cantidad <= 0) {
+        continue;
+      }
+      itemsResumen.push({
+        nombre: nombresProductos.get(productoId) || `Producto #${productoId}`,
+        cantidad,
+        precioUnitario: Number.isFinite(precioUnitario) ? precioUnitario : 0,
+        subtotal: (Number.isFinite(precioUnitario) ? precioUnitario : 0) * cantidad,
+      });
+    }
+
+    const tieneBoletas = boletaItems.length > 0 || tipo === 'boletas';
+    const tieneProductos = productoItems.length > 0 || tipo === 'productos';
+    const esMixto =
+      tipo === 'mixto' ||
+      tipo === 'cover_mixto' ||
+      (tieneBoletas && tieneProductos);
+
+    return {
+      itemsResumen,
+      subtotalCompra,
+      valorServicio,
+      vinculo: { esMixto, tieneBoletas, tieneProductos },
+    };
   }
 }

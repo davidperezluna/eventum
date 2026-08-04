@@ -1,0 +1,40 @@
+<div
+  class="compra-vinculo-aviso"
+  [class.compra-vinculo-aviso--mixto]="esMixto"
+  [class.compra-vinculo-aviso--boletas]="tieneBoletas && !esMixto"
+  [class.compra-vinculo-aviso--productos]="tieneProductos && !esMixto"
+  role="note"
+  aria-label="Vinculación de la compra"
+>
+  <span class="material-icons compra-vinculo-aviso__icon" aria-hidden="true">{{ iconoVinculo }}</span>
+  <div class="compra-vinculo-aviso__copy">
+    <p class="compra-vinculo-aviso__email-label" *ngIf="tieneSesion; else avisoSinSesion">
+      {{ compraCopy.emailHeroLabel }}
+    </p>
+    <p *ngIf="tieneSesion" class="compra-vinculo-aviso__email">
+      <strong>{{ emailCuenta }}</strong>
+    </p>
+    <button
+      *ngIf="tieneSesion"
+      type="button"
+      class="compra-vinculo-aviso__cambiar-cuenta"
+      (click)="cambiarCuenta()"
+      [disabled]="cambiandoCuenta"
+    >
+      {{ cambiandoCuenta ? 'Abriendo Google…' : '¿Este no es tu correo? Cambiar cuenta' }}
+    </button>
+    <p *ngIf="tieneSesion" class="compra-vinculo-aviso__compra-nota">
+      {{ compraCopy.compraAppNota }}
+    </p>
+    <p *ngIf="tieneSesion" class="compra-vinculo-aviso__wompi-hint">
+      {{ compraCopy.wompiReciboNota }}
+    </p>
+    <ng-template #avisoSinSesion>
+      <p class="compra-vinculo-aviso__text">
+        {{ compraCopy.sinSesionVinculo }}
+        <a routerLink="/login" [queryParams]="{ returnUrl: returnUrlLogin, motivo: 'pagar' }">Inicia sesión</a>
+        para continuar.
+      </p>
+    </ng-template>
+  </div>
+</div>

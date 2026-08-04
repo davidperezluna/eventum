@@ -125,10 +125,13 @@ export class ComprasProductoService {
   }
 
   /**
-   * Inicia el checkout unificado (boletas/productos/mixto) vía Edge Function.
-   * Se mantiene para compatibilidad con flujos legacy como ventas-manual.
+   * Inicia el checkout unificado (boletas/productos/mixto/covers) vía Edge Function.
    */
   async iniciarCheckout(params: IniciarCheckoutParams): Promise<IniciarCheckoutResult> {
+    return this.iniciarCheckoutDesdeBody(params as Record<string, unknown>);
+  }
+
+  async iniciarCheckoutDesdeBody(body: Record<string, unknown>): Promise<IniciarCheckoutResult> {
     try {
       const {
         data: { session }
@@ -146,7 +149,7 @@ export class ComprasProductoService {
           Authorization: `Bearer ${accessToken}`,
           apikey: supabaseConfig.anonKey
         },
-        body: JSON.stringify(params)
+        body: JSON.stringify(body)
       });
 
       const payload = (await response.json()) as Record<string, unknown>;
@@ -1011,6 +1014,32 @@ export class ComprasProductoService {
     } finally {
       clearTimeout(timeout);
     }
+  }
+
+  async getWompiBodyRespaldoFromCheckout(
+    transaccionCheckoutId: number,
+  ): Promise<Record<string, unknown> | null> {
+    if (!Number.isFinite(transaccionCheckoutId) || transaccionCheckoutId <= 0) {
+      return null;
+    }
+
+    const { data, error } = await this.supabase
+      .from('transacciones_checkout')
+      .select('request_payload')
+      .eq('id', transaccionCheckoutId)
+      .maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+
+    const requestPayload = (data.request_payload ?? {}) as Record<string, unknown>;
+    const requestBody = requestPayload['request_body'];
+    if (requestBody && typeof requestBody === 'object') {
+      return requestBody as Record<string, unknown>;
+    }
+
+    return null;
   }
 
   async cancelarCheckoutPendiente(transaccionCheckoutId: number): Promise<boolean> {

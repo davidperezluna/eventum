@@ -1,0 +1,23 @@
+<article class="carrito-vacio-card" aria-label="Carrito vacío">
+  <div class="carrito-vacio-card__icon" aria-hidden="true">
+    <span class="material-icons">shopping_cart</span>
+  </div>
+  <h2 class="carrito-vacio-card__title">Tu carrito está vacío</h2>
+  <p class="carrito-vacio-card__text">
+    Agrega boletas, palcos, productos o covers desde el detalle del evento o club.
+  </p>
+  <div class="carrito-vacio-card__actions">
+    <a routerLink="/eventos-cliente" class="carrito-vacio-card__btn">
+      <span class="material-icons" aria-hidden="true">event</span>
+      Ver eventos
+    </a>
+    <a
+      *ngIf="coversEventumEnabled"
+      routerLink="/clubes"
+      class="carrito-vacio-card__btn"
+    >
+      <span class="material-icons" aria-hidden="true">nightlife</span>
+      Explorar clubes
+    </a>
+  </div>
+</article>

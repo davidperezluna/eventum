@@ -10,30 +10,53 @@
         <span class="material-icons">lock</span>
       </div>
 
-      <span class="pago-wompi-chip">{{ compraCopy.pagoWompiChip }}</span>
-
       <h1 class="pago-wompi-panel__title">Confirma tu cuenta antes de pagar</h1>
       <p class="pago-wompi-panel__lead">{{ compraCopy.pagoWompiLead }}</p>
 
-      <div class="pago-wompi-email-hero" role="note">
-        <span class="material-icons pago-wompi-email-hero__icon" aria-hidden="true">mail</span>
-        <div class="pago-wompi-email-hero__body">
-          <p class="pago-wompi-email-hero__label">{{ compraCopy.emailHeroLabel }}</p>
-          <p class="pago-wompi-email-hero__email">{{ p.emailCuenta || 'tu cuenta Eventum' }}</p>
-        </div>
-      </div>
-
-      <div class="pago-wompi-note" role="note">
-        <span class="material-icons" aria-hidden="true">info</span>
-        <p>{{ compraCopy.wompiReciboNota }}</p>
-      </div>
+      <app-compra-vinculo-aviso
+        class="pago-wompi-vinculo"
+        [emailCuenta]="p.emailCuenta"
+        [esMixto]="p.vinculo?.esMixto ?? false"
+        [tieneBoletas]="p.vinculo?.tieneBoletas ?? false"
+        [tieneProductos]="p.vinculo?.tieneProductos ?? false"
+        returnUrlLogin="/pago-wompi"
+        returnUrlCambiarCuenta="/pago-wompi"
+      />
 
       <section class="pago-wompi-summary" aria-labelledby="pago-wompi-summary-heading">
         <h2 id="pago-wompi-summary-heading" class="pago-wompi-summary__heading">Resumen</h2>
-        <dl class="pago-wompi-summary__grid">
-          <div class="pago-wompi-summary-row" *ngIf="p.eventoTitulo">
+
+        <dl class="pago-wompi-summary__grid pago-wompi-summary__grid--evento" *ngIf="p.eventoTitulo">
+          <div class="pago-wompi-summary-row">
             <dt>Compra</dt>
             <dd>{{ p.eventoTitulo }}</dd>
+          </div>
+        </dl>
+
+        <ul class="pago-wompi-summary__items" *ngIf="p.itemsResumen?.length">
+          <li class="pago-wompi-summary-item" *ngFor="let item of p.itemsResumen">
+            <div class="pago-wompi-summary-item__main">
+              <span class="pago-wompi-summary-item__name">{{ item.nombre }}</span>
+              <span class="pago-wompi-summary-item__subtotal">{{ formatCurrency(item.subtotal) }}</span>
+            </div>
+            <p class="pago-wompi-summary-item__meta" *ngIf="item.detalle">{{ item.detalle }}</p>
+            <p class="pago-wompi-summary-item__meta">
+              {{ formatCurrency(item.precioUnitario) }} × {{ item.cantidad }}
+            </p>
+          </li>
+        </ul>
+
+        <dl class="pago-wompi-summary__grid">
+          <div
+            class="pago-wompi-summary-row"
+            *ngIf="p.subtotalCompra != null && p.valorServicio != null && p.valorServicio > 0"
+          >
+            <dt>Subtotal</dt>
+            <dd>{{ formatCurrency(p.subtotalCompra) }}</dd>
+          </div>
+          <div class="pago-wompi-summary-row" *ngIf="p.valorServicio != null && p.valorServicio > 0">
+            <dt>Servicio</dt>
+            <dd>{{ formatCurrency(p.valorServicio) }}</dd>
           </div>
           <div class="pago-wompi-summary-row pago-wompi-summary-row--accent" *ngIf="p.totalPago > 0">
             <dt>Total a pagar</dt>
@@ -42,15 +65,49 @@
         </dl>
       </section>
 
+      <div
+        *ngIf="mostrarCountdownRecuperacion()"
+        class="pago-wompi-vence-aviso"
+        [class.pago-wompi-vence-aviso--urgent]="countdownUrgente()"
+        role="note"
+        aria-live="polite"
+      >
+        <span class="material-icons pago-wompi-vence-aviso__icon" aria-hidden="true">timer</span>
+        <div class="pago-wompi-vence-aviso__copy">
+          <p class="pago-wompi-vence-aviso__label">Link de pago pendiente</p>
+          <p
+            class="pago-wompi-vence-aviso__time"
+            role="timer"
+            [attr.aria-label]="'Vence en ' + getCountdownLabel()"
+          >
+            Vence en <strong>{{ getCountdownLabel() }}</strong>
+          </p>
+          <p class="pago-wompi-vence-aviso__hint">{{ compraCopy.pagoWompiLinkVenceHint }}</p>
+        </div>
+      </div>
+
+      <div
+        *ngIf="p.linkExpiro && !mostrarCountdownRecuperacion()"
+        class="pago-wompi-vence-aviso pago-wompi-vence-aviso--expired"
+        role="note"
+        aria-live="polite"
+      >
+        <span class="material-icons pago-wompi-vence-aviso__icon" aria-hidden="true">event_busy</span>
+        <div class="pago-wompi-vence-aviso__copy">
+          <p class="pago-wompi-vence-aviso__label">Link vencido</p>
+          <p class="pago-wompi-vence-aviso__hint">{{ compraCopy.pagoWompiLinkExpiradoHint }}</p>
+        </div>
+      </div>
+
       <div class="pago-wompi-panel__actions">
         <button
           type="button"
           class="btn btn-primary"
           (click)="continuarAWompi()"
-          [disabled]="redirigiendo"
+          [disabled]="redirigiendo || expirandoLink"
         >
-          <span class="material-icons" aria-hidden="true">{{ redirigiendo ? 'hourglass_empty' : 'arrow_forward' }}</span>
-          {{ redirigiendo ? compraCopy.pagoWompiAbriendo : compraCopy.pagoWompiContinuar }}
+          <span class="material-icons" aria-hidden="true">{{ redirigiendo ? 'hourglass_empty' : 'payment' }}</span>
+          {{ labelBotonContinuar }}
         </button>
         <button type="button" class="btn btn-secondary" (click)="volverAlCarrito()" [disabled]="redirigiendo || volviendoCarrito">
           <span class="material-icons" aria-hidden="true">{{ volviendoCarrito ? 'hourglass_empty' : 'arrow_back' }}</span>

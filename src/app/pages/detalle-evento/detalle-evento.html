@@ -223,17 +223,22 @@
           </div>
           <div class="tipo-actions">
             <div class="cantidad-controls" *ngIf="getCantidadEnCarrito(tipo) > 0">
-              <button class="btn-cantidad" (click)="quitarDelCarrito(tipo)">-</button>
+              <button type="button" class="btn-cantidad" (click)="quitarDelCarrito(tipo)" aria-label="Quitar uno">−</button>
               <span class="cantidad">{{ getCantidadEnCarrito(tipo) }}</span>
-              <button class="btn-cantidad" (click)="agregarAlCarrito(tipo)"
-                [disabled]="!puedeAgregarMasBoletas(tipo)">+</button>
-              <button class="btn-remove" (click)="eliminarDelCarrito(tipo)">
-                <span class="material-icons">delete</span>
+              <button
+                type="button"
+                class="btn-cantidad"
+                (click)="agregarAlCarrito(tipo)"
+                [disabled]="!puedeAgregarMasBoletas(tipo)"
+                aria-label="Agregar uno"
+              >+</button>
+              <button type="button" class="btn-remove" (click)="eliminarDelCarrito(tipo)" aria-label="Quitar del carrito">
+                <span class="material-icons">delete_outline</span>
               </button>
             </div>
-            <button *ngIf="getCantidadEnCarrito(tipo) === 0" class="btn-add" (click)="agregarAlCarrito(tipo)">
-              <span class="material-icons">add_shopping_cart</span>
-              Agregar
+            <button *ngIf="getCantidadEnCarrito(tipo) === 0" type="button" class="btn-add" (click)="agregarAlCarrito(tipo)">
+              <span class="material-icons">add</span>
+              Agregar al carrito
             </button>
           </div>
         </div>

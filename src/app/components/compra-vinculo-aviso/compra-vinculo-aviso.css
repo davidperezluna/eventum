@@ -1,0 +1,125 @@
+.compra-vinculo-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.85rem 0.95rem;
+  border-radius: var(--ec-radius-card, 12px);
+  border: 1px solid var(--ec-border, #e2e8f0);
+  background: var(--ec-surface, #fff);
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.compra-vinculo-aviso--boletas {
+  border-left: 3px solid #2563eb;
+}
+
+.compra-vinculo-aviso--productos {
+  border-left: 3px solid #059669;
+}
+
+.compra-vinculo-aviso--mixto {
+  border-left: 3px solid var(--ec-accent, #8b5cf6);
+}
+
+.compra-vinculo-aviso--mixto .compra-vinculo-aviso__icon {
+  color: var(--ec-accent, #8b5cf6);
+}
+
+.compra-vinculo-aviso__icon {
+  flex-shrink: 0;
+  font-size: 1.35rem;
+  margin-top: 0.05rem;
+}
+
+.compra-vinculo-aviso--boletas .compra-vinculo-aviso__icon {
+  color: #2563eb;
+}
+
+.compra-vinculo-aviso--productos .compra-vinculo-aviso__icon {
+  color: #059669;
+}
+
+.compra-vinculo-aviso__copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.compra-vinculo-aviso__email-label {
+  margin: 0 0 0.25rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ec-accent-strong, #7c3aed);
+}
+
+.compra-vinculo-aviso__email {
+  margin: 0 0 0.35rem;
+  font-size: 0.98rem;
+  line-height: 1.35;
+  word-break: break-word;
+  color: var(--ec-text-strong, #0f172a);
+}
+
+.compra-vinculo-aviso__email strong {
+  font-weight: 800;
+}
+
+.compra-vinculo-aviso__cambiar-cuenta {
+  display: inline-flex;
+  align-self: flex-start;
+  margin: 0 0 0.55rem;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ec-accent, #8b5cf6);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.compra-vinculo-aviso__cambiar-cuenta:hover:not(:disabled) {
+  color: var(--ec-accent-strong, #7c3aed);
+}
+
+.compra-vinculo-aviso__cambiar-cuenta:disabled {
+  opacity: 0.65;
+  cursor: wait;
+  text-decoration: none;
+}
+
+.compra-vinculo-aviso__compra-nota {
+  margin: 0 0 0.45rem;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  font-weight: 600;
+  color: var(--ec-text, #334155);
+}
+
+.compra-vinculo-aviso__wompi-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--ec-text-muted, #64748b);
+}
+
+.compra-vinculo-aviso__text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--ec-text, #334155);
+}
+
+.compra-vinculo-aviso__text a {
+  color: var(--ec-accent, #8b5cf6);
+  font-weight: 600;
+  text-decoration: underline;
+}

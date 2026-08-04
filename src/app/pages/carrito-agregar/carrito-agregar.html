@@ -63,21 +63,22 @@
           </div>
           <div class="tipo-actions">
             <div class="cantidad-controls" *ngIf="getCantidadBoleta(tipo.id) > 0">
-              <button type="button" class="btn-cantidad" (click)="quitarBoleta(tipo)">-</button>
+              <button type="button" class="btn-cantidad" (click)="quitarBoleta(tipo)" aria-label="Quitar uno">−</button>
               <span class="cantidad">{{ getCantidadBoleta(tipo.id) }}</span>
               <button
                 type="button"
                 class="btn-cantidad"
                 (click)="agregarBoleta(tipo)"
                 [disabled]="!puedeAgregarMasBoletas(tipo)"
+                aria-label="Agregar uno"
               >+</button>
-              <button type="button" class="btn-remove" (click)="eliminarBoleta(tipo)">
-                <span class="material-icons">delete</span>
+              <button type="button" class="btn-remove" (click)="eliminarBoleta(tipo)" aria-label="Quitar del carrito">
+                <span class="material-icons">delete_outline</span>
               </button>
             </div>
             <button *ngIf="getCantidadBoleta(tipo.id) === 0" type="button" class="btn-add" (click)="agregarBoleta(tipo)">
-              <span class="material-icons">add_shopping_cart</span>
-              Agregar
+              <span class="material-icons">add</span>
+              Agregar al carrito
             </button>
           </div>
         </div>

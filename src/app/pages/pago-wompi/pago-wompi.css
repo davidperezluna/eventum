@@ -26,7 +26,7 @@
 .pago-wompi-panel {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   text-align: center;
   width: 100%;
   position: relative;
@@ -43,7 +43,7 @@
   justify-content: center;
   width: 3.5rem;
   height: 3.5rem;
-  margin-bottom: 0.75rem;
+  margin: 0 auto 0.75rem;
   border-radius: 999px;
   background: var(--ec-accent-soft, #f5f3ff);
   border: 1px solid var(--ec-accent-border, #ddd6fe);
@@ -55,25 +55,10 @@
   color: var(--ec-accent, #8b5cf6);
 }
 
-.pago-wompi-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.85rem;
-  padding: 0.18rem 0.55rem;
-  border-radius: var(--ec-radius-badge, 6px);
-  border: 1px solid var(--ec-badge-info-border, rgba(139, 92, 246, 0.34));
-  background: var(--ec-badge-info-bg, #ede9fe);
-  color: var(--ec-badge-info-text, #7c3aed);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
 .pago-wompi-panel__title {
   margin: 0 0 0.65rem;
   max-width: 22rem;
+  align-self: center;
   font-size: clamp(1.2rem, 4vw, 1.45rem);
   font-weight: 800;
   letter-spacing: -0.03em;
@@ -85,86 +70,15 @@
 .pago-wompi-panel__lead {
   margin: 0 0 1.15rem;
   max-width: 26rem;
+  align-self: center;
   font-size: 0.9rem;
   line-height: 1.55;
   color: var(--ec-text-muted, #64748b);
   text-wrap: balance;
 }
 
-.pago-wompi-email-hero {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  width: 100%;
-  margin-bottom: 0.85rem;
-  padding: 1rem;
-  border-radius: var(--ec-radius-control, 8px);
-  border: 1px solid var(--ec-accent-border, #ddd6fe);
-  background: linear-gradient(135deg, #faf5ff 0%, #f5f3ff 100%);
-  text-align: left;
-  box-sizing: border-box;
-}
-
-.pago-wompi-email-hero__icon {
-  flex-shrink: 0;
-  font-size: 1.35rem;
-  color: var(--ec-accent, #8b5cf6);
-  margin-top: 0.1rem;
-}
-
-.pago-wompi-email-hero__body {
-  min-width: 0;
-  flex: 1;
-}
-
-.pago-wompi-email-hero__label {
-  margin: 0 0 0.35rem;
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ec-accent-strong, #7c3aed);
-}
-
-.pago-wompi-email-hero__email {
-  margin: 0;
-  font-size: clamp(1rem, 4.2vw, 1.15rem);
-  font-weight: 800;
-  line-height: 1.35;
-  word-break: break-word;
-  color: var(--ec-text-primary, #0f172a);
-}
-
-.pago-wompi-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.55rem;
-  width: 100%;
+.pago-wompi-vinculo {
   margin-bottom: 1rem;
-  padding: 0.75rem 0.85rem;
-  border-radius: var(--ec-radius-control, 8px);
-  border: 1px solid var(--ec-border, #e2e8f0);
-  background: var(--ec-surface-muted, #f1f5f9);
-  text-align: left;
-  box-sizing: border-box;
-}
-
-.pago-wompi-note .material-icons {
-  flex-shrink: 0;
-  font-size: 1.1rem;
-  color: var(--ec-text-muted, #64748b);
-  margin-top: 0.05rem;
-}
-
-.pago-wompi-note p {
-  margin: 0;
-  font-size: 0.84rem;
-  line-height: 1.45;
-  color: var(--ec-text, #334155);
-}
-
-.pago-wompi-note strong {
-  color: var(--ec-text-primary, #0f172a);
 }
 
 .pago-wompi-summary {
@@ -184,6 +98,65 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  color: var(--ec-text-muted, #64748b);
+}
+
+.pago-wompi-summary__items {
+  list-style: none;
+  margin: 0 0 0.85rem;
+  padding: 0 0 0.85rem;
+  border-bottom: 1px solid var(--ec-border, #e2e8f0);
+}
+
+.pago-wompi-summary__grid--evento {
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--ec-border, #e2e8f0);
+}
+
+.pago-wompi-summary__grid--evento .pago-wompi-summary-row {
+  border-bottom: none;
+  padding: 0;
+}
+
+.pago-wompi-summary-item {
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--ec-border, #e2e8f0);
+}
+
+.pago-wompi-summary-item:first-child {
+  padding-top: 0;
+}
+
+.pago-wompi-summary-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.pago-wompi-summary-item__main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pago-wompi-summary-item__name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ec-text-primary, #0f172a);
+  word-break: break-word;
+}
+
+.pago-wompi-summary-item__subtotal {
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ec-text-primary, #0f172a);
+}
+
+.pago-wompi-summary-item__meta {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
   color: var(--ec-text-muted, #64748b);
 }
 
@@ -229,6 +202,82 @@
   font-size: 1.05rem;
   font-weight: 800;
   color: var(--color-secondary, #8b5cf6);
+}
+
+.pago-wompi-vence-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: var(--ec-radius-card, 12px);
+  border: 1px solid var(--ec-border, #e2e8f0);
+  border-left: 3px solid #dc2626;
+  background: var(--ec-surface, #fff);
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.pago-wompi-vence-aviso--urgent {
+  border-left-color: #b91c1c;
+  background: #fffbfb;
+}
+
+.pago-wompi-vence-aviso--expired {
+  border-left-color: #b91c1c;
+  background: #fffbfb;
+}
+
+.pago-wompi-vence-aviso__icon {
+  flex-shrink: 0;
+  font-size: 1.35rem;
+  margin-top: 0.05rem;
+  color: #dc2626;
+}
+
+.pago-wompi-vence-aviso--urgent .pago-wompi-vence-aviso__icon,
+.pago-wompi-vence-aviso--expired .pago-wompi-vence-aviso__icon {
+  color: #b91c1c;
+}
+
+.pago-wompi-vence-aviso__copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.pago-wompi-vence-aviso__label {
+  margin: 0 0 0.25rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #b91c1c;
+}
+
+.pago-wompi-vence-aviso__time {
+  margin: 0 0 0.35rem;
+  font-size: 0.98rem;
+  line-height: 1.35;
+  color: var(--ec-text-strong, #0f172a);
+}
+
+.pago-wompi-vence-aviso__time strong {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #991b1b;
+}
+
+.pago-wompi-vence-aviso--urgent .pago-wompi-vence-aviso__time strong {
+  color: #7f1d1d;
+}
+
+.pago-wompi-vence-aviso__hint {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  font-weight: 600;
+  color: var(--ec-text, #334155);
 }
 
 .pago-wompi-panel__actions {

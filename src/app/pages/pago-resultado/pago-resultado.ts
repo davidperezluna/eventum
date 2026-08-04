@@ -451,6 +451,9 @@ export class PagoResultado implements OnInit {
   }
 
   get notaAvisoCuentaEventum(): string {
+    if (this.compra) {
+      return COMPRA_COPY.wompiReciboNotaPostPagoBoletas;
+    }
     return COMPRA_COPY.wompiReciboNotaPostPago;
   }
 

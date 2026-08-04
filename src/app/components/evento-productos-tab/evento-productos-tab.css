@@ -292,13 +292,13 @@
 /* ── Footer / actions ── */
 .pc-card__footer {
   padding: 0.55rem 0.85rem 0.85rem;
-  background: linear-gradient(180deg, #fafbfc 0%, #f8fafc 100%);
-  border-top: 1px solid #f1f5f9;
+  background: var(--ec-surface, #fff);
+  border-top: 1px solid var(--ec-border, #e8edf3);
 }
 
 .pc-card--en-carrito .pc-card__footer {
-  background: #fafbfc;
-  border-top-color: #eef2f6;
+  background: var(--ec-surface, #fff);
+  border-top-color: var(--ec-border, #e8edf3);
 }
 
 .pc-add-btn {
