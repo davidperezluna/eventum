@@ -15,7 +15,7 @@
       <strong>{{ emailCuenta }}</strong>
     </p>
     <button
-      *ngIf="tieneSesion"
+      *ngIf="tieneSesion && !ocultarCambiarCuenta"
       type="button"
       class="compra-vinculo-aviso__cambiar-cuenta"
       (click)="cambiarCuenta()"

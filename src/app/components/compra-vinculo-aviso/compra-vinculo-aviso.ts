@@ -18,6 +18,7 @@ export class CompraVinculoAviso {
   @Input() tieneProductos = false;
   @Input() returnUrlLogin = '/carrito';
   @Input() returnUrlCambiarCuenta = '/pago-wompi';
+  @Input() ocultarCambiarCuenta = false;
 
   cambiandoCuenta = false;
   readonly compraCopy = COMPRA_COPY;
