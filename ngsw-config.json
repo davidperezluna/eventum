@@ -12,7 +12,6 @@
           "/index.csr.html",
           "/index.html",
           "/manifest.webmanifest",
-          "/pwa-cache-bust.js",
           "/*.css",
           "/*.js"
         ]

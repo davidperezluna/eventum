@@ -22,9 +22,18 @@
   # Habilitar CORS si es necesario
   Header set Access-Control-Allow-Origin "*"
   
-  # Cache para assets estáticos
-  <FilesMatch "\.(ico|jpg|jpeg|png|gif|css|js|woff|woff2|ttf|svg)$">
+  # Cache largo para assets con hash; excluir HTML, SW y script de update (Safari / GitHub Pages).
+  <FilesMatch "\.(ico|jpg|jpeg|png|gif|woff|woff2|ttf|svg)$">
     Header set Cache-Control "max-age=31536000, public"
+  </FilesMatch>
+  <FilesMatch "^(chunk-|main-|styles-).*\.(js|css)$">
+    Header set Cache-Control "max-age=31536000, public, immutable"
+  </FilesMatch>
+  <FilesMatch "^(index\.html|404\.html|ngsw\.json|ngsw-worker\.js|safety-worker\.js|worker-basic\.min\.js)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </FilesMatch>
+  <FilesMatch "^update/pwa-cache-bust\.js$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
   </FilesMatch>
 </IfModule>
 

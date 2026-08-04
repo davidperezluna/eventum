@@ -336,16 +336,12 @@ export class ComprasClienteService {
             const grupoId = crypto.randomUUID();
             const palcoId = item.palco_ids![u];
             for (let p = 0; p < cupos; p++) {
-              const a = item.asistentes?.[u * cupos + p];
               boletasRows.push({
                 compra_id: compraId,
                 tipo_boleta_id: item.tipo_boleta_id,
                 codigo_qr: this.generarCodigoQR(),
                 precio_unitario: p === 0 ? item.precio_unitario : 0,
-                nombre_asistente: a?.nombre?.trim() || undefined,
-                documento_asistente: a?.documento?.trim() || undefined,
-                email_asistente: a?.email?.trim() || undefined,
-                telefono_asistente: a?.telefono?.trim() || undefined,
+                ...asistenteComprador,
                 estado: TipoEstadoBoleta.PENDIENTE,
                 fecha_creacion: now,
                 grupo_palco_id: grupoId,

@@ -47,6 +47,18 @@ try {
   // Escribir 404.html con el mismo contenido
   fs.writeFileSync(notFoundPath, indexContent, 'utf8');
 
+  // Cada build lleva id único al script de update (GitHub Pages no permite Cache-Control).
+  const buildId = process.env.GITHUB_RUN_ID || process.env.GITHUB_SHA?.slice(0, 12) || String(Date.now());
+  const pattern = /update\/pwa-cache-bust\.js(\?v=[^"']*)?/g;
+  const replacement = `update/pwa-cache-bust.js?v=${buildId}`;
+  for (const fileName of ['index.html', '404.html']) {
+    const filePath = path.join(distPath, fileName);
+    if (!fs.existsSync(filePath)) continue;
+    const html = fs.readFileSync(filePath, 'utf8');
+    fs.writeFileSync(filePath, html.replace(pattern, replacement), 'utf8');
+  }
+  console.log(`🔖 pwa-cache-bust version: ${buildId}`);
+
   console.log('✅ 404.html creado exitosamente');
   console.log(`📁 Ubicación: ${notFoundPath}`);
   console.log('🚀 Listo para desplegar en GitHub Pages');

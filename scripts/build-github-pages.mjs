@@ -52,3 +52,5 @@ const copy = spawnSync(process.execPath, [join(root, 'scripts', 'copy-404.js')],
 if (copy.status !== 0) {
   process.exit(copy.status ?? 1);
 }
+
+console.log('[build-github-pages] Listo para GitHub Pages (push a master/main → Actions).');

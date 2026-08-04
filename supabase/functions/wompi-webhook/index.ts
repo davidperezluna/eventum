@@ -736,6 +736,7 @@ async function crearCompraBoletasDesdeCheckout(
               tipo_boleta_id: tipoBoletaId,
               codigo_qr: generarCodigoQrBoleta(),
               precio_unitario: p === 0 ? precioUnitario : 0,
+              ...asistenteComprador,
               estado: 'pendiente',
               fecha_creacion: now,
               grupo_palco_id: grupoId,
