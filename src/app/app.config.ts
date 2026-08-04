@@ -21,9 +21,8 @@ export const appConfig: ApplicationConfig = {
       })
     ),
     provideServiceWorker('ngsw-worker.js', {
-      // Solo producción: el build `dev` en Vercel no genera ngsw; registrarlo en staging dejaba F5 sirviendo builds viejos.
       enabled: environment.production && (environment.pwa?.serviceWorkerEnabled ?? true),
-      registrationStrategy: 'registerWhenStable:3000',
+      registrationStrategy: 'registerImmediately',
     }),
     // GoogleAnalyticsService se inicializa automáticamente cuando se inyecta por primera vez
   ]

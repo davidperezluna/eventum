@@ -45,9 +45,8 @@ export const environment = {
   /** PWA (ngsw): solo activo en producción. */
   pwa: {
     serviceWorkerEnabled: true,
-    /** Cada cuánto comprobar si hay build nuevo (ms). */
-    updateCheckIntervalMs: 5 * 60 * 1000,
-    /** `false` = recarga silenciosa al detectar VERSION_READY (recomendado en PWAs instaladas). */
+    /** Comprobación frecuente: Safari/iOS PWA no refresca sola. */
+    updateCheckIntervalMs: 60 * 1000,
     showUpdateNotification: false,
   },
 
