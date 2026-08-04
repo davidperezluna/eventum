@@ -71,6 +71,7 @@ export class PagoWompi implements OnInit, OnDestroy {
   expirandoLink = false;
   readonly compraCopy = COMPRA_COPY;
   private countdownTimer: ReturnType<typeof setInterval> | null = null;
+  private unsubscribeAuth?: () => void;
   private readonly onPageShow = (event: PageTransitionEvent): void => {
     if (event.persisted) {
       this.restaurarEstadoTrasRetornoPasarela();
@@ -99,11 +100,21 @@ export class PagoWompi implements OnInit, OnDestroy {
       });
       return;
     }
+    this.sincronizarEmailCuentaDesdeSesion();
+    this.unsubscribeAuth = this.authService.onAuthStateChange((_user, usuario) => {
+      if (usuario?.email) {
+        this.sincronizarEmailCuentaDesdeSesion();
+      }
+    });
     void this.hidratarRecuperacionPendiente();
   }
 
   ngOnDestroy(): void {
     this.stopCountdownTicker();
+    if (this.unsubscribeAuth) {
+      this.unsubscribeAuth();
+      this.unsubscribeAuth = undefined;
+    }
     if (typeof window !== 'undefined') {
       window.removeEventListener('pageshow', this.onPageShow);
     }
@@ -301,7 +312,72 @@ export class PagoWompi implements OnInit, OnDestroy {
 
     this.guardarPayload();
     this.startCountdownTicker();
+    this.sincronizarEmailCuentaDesdeSesion();
     this.cdr.detectChanges();
+  }
+
+  private sincronizarEmailCuentaDesdeSesion(): void {
+    if (!this.payload) {
+      return;
+    }
+
+    const email = (
+      this.authService.getUsuario()?.email ||
+      this.authService.getCurrentUser()?.email ||
+      ''
+    ).trim();
+    if (!email || email === this.payload.emailCuenta) {
+      return;
+    }
+
+    const clienteId = this.authService.getUsuarioId();
+    const teniaLinkPendiente = !!this.payload.checkoutUrl?.trim();
+
+    this.payload = {
+      ...this.payload,
+      emailCuenta: email,
+      wompiBody: this.actualizarCuentaEnBody(this.payload.wompiBody, email, clienteId),
+      wompiBodyRespaldo: this.actualizarCuentaEnBody(
+        this.payload.wompiBodyRespaldo,
+        email,
+        clienteId,
+      ),
+    };
+
+    if (teniaLinkPendiente) {
+      this.payload = {
+        ...this.payload,
+        checkoutUrl: null,
+        transaccionCheckoutId: null,
+        expiresAtMs: null,
+        linkExpiro: false,
+        wompiBody: this.payload.wompiBody ?? this.payload.wompiBodyRespaldo,
+      };
+    }
+
+    this.guardarPayload();
+    this.cdr.detectChanges();
+  }
+
+  private actualizarCuentaEnBody(
+    body: Record<string, unknown> | null | undefined,
+    email: string,
+    clienteId: number | null,
+  ): Record<string, unknown> | null {
+    if (!body || typeof body !== 'object') {
+      return body ?? null;
+    }
+
+    const next: Record<string, unknown> = { ...body, customer_email: email };
+    if (clienteId) {
+      for (const key of ['pedido_boletas', 'pedido_productos', 'pedido_covers'] as const) {
+        const pedido = next[key];
+        if (pedido && typeof pedido === 'object') {
+          next[key] = { ...(pedido as Record<string, unknown>), cliente_id: clienteId };
+        }
+      }
+    }
+    return next;
   }
 
   private getRemainingMs(): number {
