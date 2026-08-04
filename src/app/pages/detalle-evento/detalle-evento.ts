@@ -163,6 +163,20 @@ export class DetalleEvento implements OnInit, OnDestroy {
     return this.maxCantidadPermitida(tipo) > 0;
   }
 
+  /** Descripción del tipo solo si aporta algo distinto al nombre (evita repetir «Preventa», etc.). */
+  descripcionTipoVisible(tipo: TipoBoleta): boolean {
+    const descripcion = (tipo.descripcion || '').trim();
+    if (!descripcion) return false;
+    const nombre = (tipo.nombre || '').trim();
+    return descripcion.localeCompare(nombre, 'es', { sensitivity: 'accent' }) !== 0;
+  }
+
+  /** Fin de venta por etapa: ya está en la ficha del evento («Venta en línea»). */
+  mostrarFinVentaTipo(_tipo: TipoBoleta): boolean {
+    if (!this.evento) return false;
+    return !this.evento.fecha_venta_inicio && !this.evento.fecha_venta_fin;
+  }
+
   get tiposBoletaDisponibles(): TipoBoleta[] {
     return this.tiposBoleta.filter((t) => this.tieneExistencias(t));
   }

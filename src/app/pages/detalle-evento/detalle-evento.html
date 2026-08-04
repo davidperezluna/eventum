@@ -201,7 +201,7 @@
             <h3>{{ tipo.nombre }}</h3>
             <span class="precio">{{ formatCurrency(tipo.precio) }}</span>
           </div>
-          <p *ngIf="tipo.descripcion" class="tipo-descripcion">{{ tipo.descripcion }}</p>
+          <p *ngIf="descripcionTipoVisible(tipo)" class="tipo-descripcion">{{ tipo.descripcion }}</p>
           <div class="tipo-info">
             <div class="tipo-info-metricas" *ngIf="mostrarMetricasEntradasDisponibles">
               <span class="disponibles">{{ tipo.cantidad_disponibles }} disponibles</span>
@@ -214,7 +214,7 @@
             <span *ngIf="esLineaPalcoMultipersona(tipo)" class="palco-badge">
               Palco: {{ cuposPorPalco(tipo) }} pers. por unidad · inventario en palcos
             </span>
-            <div *ngIf="tipo.fecha_venta_fin" class="fin-venta-block">
+            <div *ngIf="mostrarFinVentaTipo(tipo) && tipo.fecha_venta_fin" class="fin-venta-block">
               <span class="fin-venta-tipo">Fin de venta: {{ tipo.fecha_venta_fin | dateFormat:'short' }}</span>
               <span class="fin-venta-nota">Hasta agotar existencias por etapa</span>
             </div>
@@ -269,13 +269,13 @@
                   <h3>{{ tipo.nombre }}</h3>
                   <span class="precio precio--agotado">{{ formatCurrency(tipo.precio) }}</span>
                 </div>
-                <p *ngIf="tipo.descripcion" class="tipo-descripcion">{{ tipo.descripcion }}</p>
+                <p *ngIf="descripcionTipoVisible(tipo)" class="tipo-descripcion">{{ tipo.descripcion }}</p>
                 <div class="tipo-info">
                   <div class="tipo-info-metricas">
                     <span *ngIf="tipo.cantidad_vendidas !== undefined && tipo.cantidad_vendidas > 0" class="vendidas">
                       {{ tipo.cantidad_vendidas }} vendidas de {{ tipo.cantidad_total }} totales
                     </span>
-                    <span *ngIf="tipo.fecha_venta_fin" class="fin-venta-tipo">
+                    <span *ngIf="mostrarFinVentaTipo(tipo) && tipo.fecha_venta_fin" class="fin-venta-tipo">
                       Fin de venta: {{ tipo.fecha_venta_fin | dateFormat:'short' }}
                     </span>
                   </div>
