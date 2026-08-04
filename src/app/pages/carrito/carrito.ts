@@ -2,6 +2,7 @@ import { ChangeDetectorRef, Component, NgZone, OnDestroy, OnInit } from '@angula
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { WOMPI_CHECKOUT_STORAGE_KEY } from '../pago-wompi/pago-wompi';
 import { Subscription } from 'rxjs';
 import { BoletasService } from '../../services/boletas.service';
 import {
@@ -1213,6 +1214,8 @@ export class Carrito implements OnInit, OnDestroy {
       return;
     }
 
+    const totalPago = this.getTotal();
+
     if (!esSoloCover && this.evento) {
       const ahora = new Date();
       const fechaFin = new Date(this.evento.fecha_fin);
@@ -1468,10 +1471,20 @@ export class Carrito implements OnInit, OnDestroy {
         if (Object.keys(pending).length > 0) {
           sessionStorage.setItem('eventum_pago_pendiente', JSON.stringify(pending));
         }
+
+        sessionStorage.setItem(
+          WOMPI_CHECKOUT_STORAGE_KEY,
+          JSON.stringify({
+            checkoutUrl,
+            emailCuenta: this.emailCuentaCompra,
+            totalPago,
+            eventoTitulo: this.evento?.titulo || this.lugarCover?.nombre || null,
+          }),
+        );
       }
 
       this.carritoCompraService.vaciarCarrito();
-      window.location.href = checkoutUrl;
+      await this.router.navigate(['/pago-wompi']);
     } catch (error: any) {
       console.error('Error procesando compra:', error);
       if (this.authService.isAuthOrRlsError(error?.message)) {

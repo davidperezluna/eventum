@@ -17,6 +17,7 @@ import { Boletas } from './pages/boletas/boletas';
 import { Perfil } from './pages/perfil/perfil';
 import { CompletarPerfil } from './pages/completar-perfil/completar-perfil';
 import { PagoResultado } from './pages/pago-resultado/pago-resultado';
+import { PagoWompi } from './pages/pago-wompi/pago-wompi';
 import { Ventas } from './pages/ventas/ventas';
 import { VentasPalcos } from './pages/ventas-palcos/ventas-palcos';
 import { VentasProductos } from './pages/ventas-productos/ventas-productos';
@@ -135,6 +136,7 @@ const appRoutes: Routes = [
       ...(cuposEventumEnabled ? [{ path: 'mis-cupos', component: MisCupos, canActivate: [cuposFeatureGuard] }] : []),
       { path: 'carrito', component: Carrito },
       { path: 'carrito-productos', redirectTo: 'carrito', pathMatch: 'full' },
+      { path: 'pago-wompi', component: PagoWompi },
       { path: 'pago-resultado', component: PagoResultado },
       { path: 'pago-resultado-producto', redirectTo: 'pago-resultado', pathMatch: 'full' },
     ]

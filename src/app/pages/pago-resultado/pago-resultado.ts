@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ComprasClienteService } from '../../services/compras-cliente.service';
 import { ComprasProductoService } from '../../services/compras-producto.service';
 import { CarritoCompraService } from '../../services/carrito-compra.service';
+import { AuthService } from '../../services/auth.service';
 import { Compra, CompraProducto, TransaccionProducto } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
@@ -49,6 +50,7 @@ export class PagoResultado implements OnInit {
     private comprasClienteService: ComprasClienteService,
     private comprasProductoService: ComprasProductoService,
     private carritoCompraService: CarritoCompraService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -406,16 +408,29 @@ export class PagoResultado implements OnInit {
   }
 
   getEstadoPagoLead(): string {
+    const emailCuenta = this.emailCuentaEventum;
     switch (this.getEstadoPagoReferencia()) {
       case 'completado':
-        return 'Tu compra quedó registrada. Revisa Mis compras para boletas; los productos se entregan en el evento.';
+        return emailCuenta
+          ? `Compra registrada en la cuenta Eventum ${emailCuenta}. Si Wompi te envió el comprobante a otro correo, es solo el recibo del banco: entra con ${emailCuenta} para ver tus entradas en Mis compras.`
+          : 'Tu compra quedó registrada. Revisa Mis compras para boletas; los productos se entregan en el evento.';
       case 'pendiente':
-        return 'Tu banco o Wompi aún pueden estar procesando el cobro. En unos minutos debería actualizarse aquí y en Mis compras.';
+        return emailCuenta
+          ? `Tu banco o Wompi aún pueden estar procesando el cobro. Cuando se confirme, verás todo en Mis compras con la cuenta ${emailCuenta}.`
+          : 'Tu banco o Wompi aún pueden estar procesando el cobro. En unos minutos debería actualizarse aquí y en Mis compras.';
       case 'fallido':
         return 'No se aplicó ningún cobro válido desde esta solicitud. Puedes volver al evento e intentarlo con otro medio de pago.';
       default:
         return 'Revisa Mis compras o contacta soporte si el problema continúa.';
     }
+  }
+
+  get emailCuentaEventum(): string {
+    return (this.authService.getUsuario()?.email || '').trim();
+  }
+
+  get mostrarAvisoCuentaEventum(): boolean {
+    return !!this.emailCuentaEventum && this.getEstadoPagoReferencia() === 'completado';
   }
 
   getTotalMostrado(): number {

@@ -156,6 +156,9 @@
                   producto(s) → los retiras en el evento con el QR de <strong>Mis compras</strong>.
                 </li>
               </ul>
+              <p *ngIf="tieneSesionParaVinculo" class="carrito-vinculo-aviso__wompi-hint">
+                En Wompi puedes poner otro correo para el recibo del banco; tus entradas siguen en la cuenta Eventum indicada arriba.
+              </p>
               <button
                 *ngIf="tieneSesionParaVinculo"
                 type="button"

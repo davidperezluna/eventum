@@ -3,6 +3,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 /** Versión desplegada — checkout unificado + covers independientes (pedido_covers). */
 const WOMPI_PAYMENT_VERSION = '3.1.0-covers-independiente'
+// Payment Links (POST /v1/payment_links) NO permiten prellenar email del pagador.
+// Solo Widget/Checkout Web (checkout.wompi.co/p/) admite customer-data:email.
+// Docs: https://docs.wompi.co/en/docs/colombia/links-de-pago/
+//       https://docs.wompi.co/en/docs/colombia/widget-checkout-web/
 // Secret opcional en Supabase (Edge Functions → Secrets): PUBLIC_APP_URL=https://dev.eventumcol.com
 
 const corsHeaders = {
@@ -91,6 +95,43 @@ function inferirTipoPago(body: Record<string, unknown>): TipoPago {
 
 function buildReference(transaccionCheckoutId: number): string {
   return `EVENTUM-CHK-TXN-${transaccionCheckoutId}-${Date.now()}`
+}
+
+function truncateText(text: string, maxLength: number): string {
+  const trimmed = String(text || '').trim()
+  if (trimmed.length <= maxLength) return trimmed
+  return `${trimmed.slice(0, Math.max(0, maxLength - 1))}…`
+}
+
+/** Payment Links: texto corto; Wompi trunca y oculta el bloque en un acordeón cerrado. */
+function buildPaymentLinkName(
+  tipo: TipoPago,
+  eventoTitulo: string,
+  transaccionCheckoutId: number | null,
+  transaccionProductoId: number | null,
+): string {
+  const titulo = truncateText(eventoTitulo || 'Eventum', 48)
+  if (tipoEsMixto(tipo)) {
+    const etiqueta = tipo === 'cover_mixto' ? 'Cover + productos' : 'Boletas + productos'
+    return truncateText(`${etiqueta} · ${titulo}`, 64)
+  }
+  if (tipo === 'productos') return truncateText(`Productos · ${titulo}`, 64)
+  if (tipo === 'cover') return truncateText(`Cover · ${titulo}`, 64)
+  return truncateText(`Boletas · ${titulo}`, 64)
+}
+
+function buildPaymentLinkDescription(
+  transaccionCheckoutId: number | null,
+  transaccionProductoId: number | null,
+  tipo: TipoPago,
+): string {
+  if (tipo === 'productos' && transaccionProductoId != null) {
+    return `Ref. TXN-${transaccionProductoId}`
+  }
+  if (transaccionCheckoutId != null) {
+    return `Ref. CHK-${transaccionCheckoutId}`
+  }
+  return 'Compra Eventum'
 }
 
 interface PedidoProductosPayload {
@@ -635,29 +676,18 @@ serve(async (req) => {
       : `http://localhost:4200/pago-resultado?${query.toString()}`
     const redirectUrlFinal = resolveRedirectUrl(redirectUrl, fallbackRedirectUrl)
 
-    const paymentName = (() => {
-      if (tipoEsMixto(tipo)) {
-        const etiqueta = tipo === 'cover_mixto' ? 'mixta cover + productos' : 'mixta'
-        return `Compra ${etiqueta} CHK-${transaccionCheckoutId ?? 'NEW'}/TXN-${transaccionProductoId ?? 'NEW'} - ${eventoTitulo}`
-      }
-      if (tipo === 'productos') return `Pedido productos TXN-${transaccionProductoId ?? 'CHK'} - ${eventoTitulo}`
-      if (tipo === 'cover') return `Compra cover CHK-${transaccionCheckoutId ?? 'NEW'} - ${eventoTitulo}`
-      return `Compra boletas CHK-${transaccionCheckoutId ?? 'NEW'} - ${eventoTitulo}`
-    })()
+    const paymentName = buildPaymentLinkName(
+      tipo,
+      eventoTitulo,
+      transaccionCheckoutId,
+      transaccionProductoId,
+    )
 
-    const paymentDescription = (() => {
-      if (tipoEsMixto(tipo)) {
-        const etiqueta = tipo === 'cover_mixto' ? 'cover + productos' : 'boletas + productos'
-        return `Pago combinado ${etiqueta} (CHK ${transaccionCheckoutId ?? 'NEW'})`
-      }
-      if (tipo === 'productos') {
-        return `Pago pedido productos (TXN ${transaccionProductoId ?? 'CHK'})`
-      }
-      if (tipo === 'cover') {
-        return `Pago cover (CHK ${transaccionCheckoutId ?? 'NEW'})`
-      }
-      return `Pago boletas (CHK ${transaccionCheckoutId ?? 'NEW'})`
-    })()
+    const paymentDescription = buildPaymentLinkDescription(
+      transaccionCheckoutId,
+      transaccionProductoId,
+      tipo,
+    )
 
     const paymentLinkRequest: Record<string, unknown> = {
       name: paymentName,

@@ -1,0 +1,60 @@
+<div class="pago-wompi-page" *ngIf="payload as p">
+  <section class="pago-wompi-shell">
+    <article class="pago-wompi-panel">
+      <div class="pago-wompi-panel__icon" aria-hidden="true">
+        <span class="material-icons">lock</span>
+      </div>
+
+      <span class="pago-wompi-chip">Confirmación</span>
+
+      <h1 class="pago-wompi-panel__title">Confirma tu cuenta antes de pagar</h1>
+      <p class="pago-wompi-panel__lead">
+        Revisa el correo de abajo. Tus entradas y productos quedarán en Eventum con esa cuenta.
+      </p>
+
+      <div class="pago-wompi-email-hero" role="note">
+        <span class="material-icons pago-wompi-email-hero__icon" aria-hidden="true">mail</span>
+        <div class="pago-wompi-email-hero__body">
+          <p class="pago-wompi-email-hero__label">Su compra se ligará a este correo</p>
+          <p class="pago-wompi-email-hero__email">{{ p.emailCuenta || 'tu cuenta Eventum' }}</p>
+        </div>
+      </div>
+
+      <div class="pago-wompi-note" role="note">
+        <span class="material-icons" aria-hidden="true">info</span>
+        <p>
+          En Wompi puedes usar otro correo solo para el <strong>recibo del banco</strong>.
+          Eso no mueve tus entradas: para verlas entra con el correo de arriba en <strong>Mis compras</strong>.
+        </p>
+      </div>
+
+      <section class="pago-wompi-summary" aria-labelledby="pago-wompi-summary-heading">
+        <h2 id="pago-wompi-summary-heading" class="pago-wompi-summary__heading">Resumen</h2>
+        <dl class="pago-wompi-summary__grid">
+          <div class="pago-wompi-summary-row" *ngIf="p.eventoTitulo">
+            <dt>Compra</dt>
+            <dd>{{ p.eventoTitulo }}</dd>
+          </div>
+          <div class="pago-wompi-summary-row pago-wompi-summary-row--accent" *ngIf="p.totalPago > 0">
+            <dt>Total a pagar</dt>
+            <dd>{{ formatCurrency(p.totalPago) }}</dd>
+          </div>
+          <div class="pago-wompi-summary-row">
+            <dt>Pasarela</dt>
+            <dd>Wompi</dd>
+          </div>
+        </dl>
+      </section>
+
+      <div class="pago-wompi-panel__actions">
+        <button type="button" class="btn btn-primary" (click)="continuarAWompi()">
+          <span class="material-icons" aria-hidden="true">arrow_forward</span>
+          Continuar a Wompi
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="router.navigate(['/eventos-cliente'])">
+          Volver a eventos
+        </button>
+      </div>
+    </article>
+  </section>
+</div>

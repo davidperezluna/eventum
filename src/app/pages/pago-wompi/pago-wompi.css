@@ -1,36 +1,34 @@
-﻿/* ============================================
-   PAGO RESULTADO — UI cliente
+/* ============================================
+   PAGO WOMPI — confirmación previa al checkout
    ============================================ */
 
-.pago-resultado-page {
+.pago-wompi-page {
   font-family: inherit;
   color: var(--ec-text-body, #1e293b);
   background: var(--ec-page-bg, #f8fafc);
   min-height: calc(100vh - 73px);
   padding-bottom: 2.5rem;
-  --pago-gutter: var(--ec-content-pad, clamp(0.75rem, 4vw, 1rem));
-  --pago-max: 32rem;
+  --pago-wompi-gutter: var(--ec-content-pad, clamp(0.75rem, 4vw, 1rem));
+  --pago-wompi-max: 32rem;
 }
 
-.pago-resultado-shell {
-  max-width: var(--pago-max);
+.pago-wompi-shell {
+  max-width: var(--pago-wompi-max);
   margin: 0 auto;
-  padding: clamp(1rem, 4vw, 1.5rem) var(--pago-gutter) 2rem;
+  padding: clamp(1rem, 4vw, 1.5rem) var(--pago-wompi-gutter) 2rem;
   box-sizing: border-box;
+  min-height: calc(100vh - 73px - 2.5rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.pago-panel--loading .loading-state--embedded {
-  margin-bottom: 0.35rem;
-  min-height: auto;
-  padding: 0;
-}
-
-/* Panel principal */
-.pago-panel {
+.pago-wompi-panel {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
+  width: 100%;
   border: 1px solid var(--ec-border, #e2e8f0);
   border-radius: var(--ec-radius-card, 12px);
   background: var(--ec-surface, #fff);
@@ -38,78 +36,53 @@
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
-.pago-panel__icon {
-  margin-bottom: 0.55rem;
+.pago-wompi-panel__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin-bottom: 0.75rem;
+  border-radius: 999px;
+  background: var(--ec-accent-soft, #f5f3ff);
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
 }
 
-.pago-panel__icon .material-icons {
-  font-size: clamp(2.6rem, 9vw, 3.25rem);
+.pago-wompi-panel__icon .material-icons {
+  font-size: 1.75rem;
   line-height: 1;
+  color: var(--ec-accent, #8b5cf6);
 }
 
-.pago-panel--success .pago-panel__icon .material-icons {
-  color: var(--ec-badge-success-icon, #16a34a);
-}
-
-.pago-panel--warning .pago-panel__icon .material-icons {
-  color: var(--ec-badge-warning-icon, #b45309);
-}
-
-.pago-panel--error .pago-panel__icon .material-icons {
-  color: var(--ec-badge-danger-text, #b91c1c);
-}
-
-.pago-estado-chip {
+.pago-wompi-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 0.85rem;
   padding: 0.18rem 0.55rem;
   border-radius: var(--ec-radius-badge, 6px);
-  border: 1px solid var(--ec-border, #e2e8f0);
-  background: var(--ec-surface-muted, #f1f5f9);
-  color: var(--ec-text-muted, #64748b);
+  border: 1px solid var(--ec-badge-info-border, rgba(139, 92, 246, 0.34));
+  background: var(--ec-badge-info-bg, #ede9fe);
+  color: var(--ec-badge-info-text, #7c3aed);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
-.pago-estado-chip--success {
-  border-color: var(--ec-badge-success-border, rgba(22, 163, 74, 0.38));
-  background: var(--ec-badge-success-bg, #dcfce7);
-  color: var(--ec-badge-success-text, #15803d);
-}
-
-.pago-estado-chip--warning {
-  border-color: var(--ec-badge-warning-border, rgba(180, 83, 9, 0.32));
-  background: var(--ec-badge-warning-bg, #fef3c7);
-  color: var(--ec-badge-warning-text, #92400e);
-}
-
-.pago-estado-chip--error {
-  border-color: rgba(185, 28, 28, 0.28);
-  background: var(--ec-badge-danger-bg, #fee2e2);
-  color: var(--ec-badge-danger-text, #b91c1c);
-}
-
-.pago-estado-chip--info {
-  border-color: var(--ec-badge-info-border, rgba(139, 92, 246, 0.34));
-  background: var(--ec-badge-info-bg, #ede9fe);
-  color: var(--ec-badge-info-text, #7c3aed);
-}
-
-.pago-panel__title {
+.pago-wompi-panel__title {
   margin: 0 0 0.65rem;
+  max-width: 22rem;
   font-size: clamp(1.2rem, 4vw, 1.45rem);
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.2;
   color: var(--ec-text-primary, #0f172a);
+  text-wrap: balance;
 }
 
-.pago-panel__lead {
-  margin: 0 0 1.35rem;
+.pago-wompi-panel__lead {
+  margin: 0 0 1.15rem;
   max-width: 26rem;
   font-size: 0.9rem;
   line-height: 1.55;
@@ -117,51 +90,94 @@
   text-wrap: balance;
 }
 
-.pago-cuenta-eventum {
+.pago-wompi-email-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  margin-bottom: 0.85rem;
+  padding: 1rem;
+  border-radius: var(--ec-radius-control, 8px);
+  border: 1px solid var(--ec-accent-border, #ddd6fe);
+  background: linear-gradient(135deg, #faf5ff 0%, #f5f3ff 100%);
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.pago-wompi-email-hero__icon {
+  flex-shrink: 0;
+  font-size: 1.35rem;
+  color: var(--ec-accent, #8b5cf6);
+  margin-top: 0.1rem;
+}
+
+.pago-wompi-email-hero__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.pago-wompi-email-hero__label {
+  margin: 0 0 0.35rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ec-accent-strong, #7c3aed);
+}
+
+.pago-wompi-email-hero__email {
+  margin: 0;
+  font-size: clamp(1rem, 4.2vw, 1.15rem);
+  font-weight: 800;
+  line-height: 1.35;
+  word-break: break-word;
+  color: var(--ec-text-primary, #0f172a);
+}
+
+.pago-wompi-note {
   display: flex;
   align-items: flex-start;
   gap: 0.55rem;
   width: 100%;
-  max-width: 26rem;
-  margin: -0.5rem 0 1.1rem;
+  margin-bottom: 1rem;
   padding: 0.75rem 0.85rem;
   border-radius: var(--ec-radius-control, 8px);
-  border: 1px solid var(--ec-accent-border, #ddd6fe);
-  background: var(--ec-accent-soft, #f5f3ff);
+  border: 1px solid var(--ec-border, #e2e8f0);
+  background: var(--ec-surface-muted, #f1f5f9);
   text-align: left;
+  box-sizing: border-box;
 }
 
-.pago-cuenta-eventum .material-icons {
+.pago-wompi-note .material-icons {
   flex-shrink: 0;
-  font-size: 1.2rem;
-  color: var(--ec-accent, #8b5cf6);
+  font-size: 1.1rem;
+  color: var(--ec-text-muted, #64748b);
   margin-top: 0.05rem;
 }
 
-.pago-cuenta-eventum p {
+.pago-wompi-note p {
   margin: 0;
   font-size: 0.84rem;
   line-height: 1.45;
   color: var(--ec-text, #334155);
 }
 
-.pago-cuenta-eventum strong {
-  color: var(--ec-text-strong, #0f172a);
+.pago-wompi-note strong {
+  color: var(--ec-text-primary, #0f172a);
 }
 
-/* Resumen */
-.pago-summary {
+.pago-wompi-summary {
   width: 100%;
   text-align: left;
-  margin-top: 0.15rem;
   margin-bottom: 1.35rem;
   padding: 0.95rem 1rem;
   border-radius: var(--ec-radius-control, 8px);
   background: var(--ec-surface-muted, #f1f5f9);
   border: 1px solid var(--ec-border, #e2e8f0);
+  box-sizing: border-box;
 }
 
-.pago-summary__heading {
+.pago-wompi-summary__heading {
   margin: 0 0 0.75rem;
   font-size: 0.75rem;
   font-weight: 700;
@@ -170,11 +186,11 @@
   color: var(--ec-text-muted, #64748b);
 }
 
-.pago-summary__grid {
+.pago-wompi-summary__grid {
   margin: 0;
 }
 
-.pago-summary-row {
+.pago-wompi-summary-row {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.15rem;
@@ -182,16 +198,16 @@
   border-bottom: 1px solid var(--ec-border, #e2e8f0);
 }
 
-.pago-summary-row:last-child {
+.pago-wompi-summary-row:last-child {
   border-bottom: none;
   padding-bottom: 0;
 }
 
-.pago-summary-row:first-of-type {
+.pago-wompi-summary-row:first-of-type {
   padding-top: 0;
 }
 
-.pago-summary-row dt {
+.pago-wompi-summary-row dt {
   margin: 0;
   font-size: 0.74rem;
   font-weight: 600;
@@ -200,7 +216,7 @@
   color: var(--ec-text-subtle, #94a3b8);
 }
 
-.pago-summary-row dd {
+.pago-wompi-summary-row dd {
   margin: 0;
   font-size: 0.92rem;
   font-weight: 600;
@@ -208,14 +224,13 @@
   word-break: break-word;
 }
 
-.pago-summary-row--accent dd {
+.pago-wompi-summary-row--accent dd {
   font-size: 1.05rem;
   font-weight: 800;
   color: var(--color-secondary, #8b5cf6);
 }
 
-/* Acciones */
-.pago-panel__actions {
+.pago-wompi-panel__actions {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
@@ -228,24 +243,35 @@
   justify-content: center;
   gap: 0.45rem;
   width: 100%;
-  min-height: 42px;
+  min-height: 44px;
   padding: 0.65rem 1.1rem;
   border-radius: var(--ec-radius-control, 8px);
   font-size: 0.9rem;
   font-weight: 700;
   font-family: inherit;
+  line-height: 1.2;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.btn .material-icons {
+  font-size: 1.1rem;
 }
 
 .btn-primary {
   border: none;
   background: var(--color-secondary, #8b5cf6);
   color: #fff;
+  box-shadow: 0 1px 2px rgba(124, 58, 237, 0.24);
 }
 
 .btn-primary:hover {
   background: var(--color-secondary-dark, #7c3aed);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
 }
 
 .btn-secondary {
@@ -260,25 +286,25 @@
 }
 
 @media (min-width: 540px) {
-  .pago-panel__actions {
+  .pago-wompi-panel__actions {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
   }
 
-  .pago-panel__actions .btn {
+  .pago-wompi-panel__actions .btn {
     width: auto;
     min-width: 11.5rem;
     flex: 1 1 auto;
   }
 
-  .pago-summary-row {
+  .pago-wompi-summary-row {
     grid-template-columns: minmax(7rem, 38%) 1fr;
     align-items: baseline;
     gap: 0.85rem;
   }
 
-  .pago-summary-row dt {
+  .pago-wompi-summary-row dt {
     padding-top: 0.1rem;
   }
 }
@@ -286,5 +312,9 @@
 @media (prefers-reduced-motion: reduce) {
   .btn {
     transition: none;
+  }
+
+  .btn-primary:active {
+    transform: none;
   }
 }

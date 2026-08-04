@@ -54,6 +54,14 @@
       <h1 class="pago-panel__title">{{ getEstadoPagoLabel() }}</h1>
       <p class="pago-panel__lead">{{ getEstadoPagoLead() }}</p>
 
+      <div *ngIf="mostrarAvisoCuentaEventum" class="pago-cuenta-eventum" role="note">
+        <span class="material-icons" aria-hidden="true">account_circle</span>
+        <p>
+          Entra a Eventum con <strong>{{ emailCuentaEventum }}</strong> para ver boletas y productos.
+          El correo que Wompi te envió puede ser distinto: es el comprobante de pago, no tu cuenta Eventum.
+        </p>
+      </div>
+
       <section class="pago-summary" aria-labelledby="pago-summary-heading">
         <h3 id="pago-summary-heading" class="pago-summary__heading">Resumen de la operación</h3>
         <dl class="pago-summary__grid">

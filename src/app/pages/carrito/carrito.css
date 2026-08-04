@@ -188,6 +188,21 @@
   cursor: wait;
 }
 
+.carrito-vinculo-aviso__wompi-hint {
+  margin: 0.45rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--ec-text-muted, #64748b);
+}
+
+.carrito-wompi-aviso-modal {
+  margin: 0.75rem 0 0;
+  text-align: left;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
 .carrito-vinculo-aviso__icon {
   flex-shrink: 0;
   font-size: 1.35rem;
