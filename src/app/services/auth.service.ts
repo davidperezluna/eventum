@@ -9,6 +9,7 @@ import { OneSignalIdentityService } from './onesignal-identity.service';
 import { User, Session } from '@supabase/supabase-js';
 import { Usuario } from '../types/entities';
 import { environment } from '../../environments/environment';
+import { guardarReturnUrlLogin } from '../core/login-redirect';
 
 export interface LoginCredentials {
   email: string;
@@ -552,7 +553,7 @@ export class AuthService {
   /**
    * Inicia sesión con Google OAuth
    */
-  async signInWithGoogle(): Promise<{ error: any }> {
+  async signInWithGoogle(options?: { prompt?: 'consent' | 'select_account' }): Promise<{ error: any }> {
     try {
       const { error } = await this.supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -560,15 +561,29 @@ export class AuthService {
           redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent'
-          }
-        }
+            prompt: options?.prompt ?? 'consent',
+          },
+        },
       });
-      
+
       return { error };
     } catch (error: any) {
       return { error };
     }
+  }
+
+  /**
+   * Cierra la sesión local y abre el selector de cuentas de Google (vuelve vía auth/callback).
+   */
+  async cambiarCuentaGoogle(returnPath = '/carrito'): Promise<{ error: any }> {
+    guardarReturnUrlLogin(returnPath);
+    try {
+      await this.supabase.auth.signOut({ scope: 'local' });
+      this.clearInMemoryAuthState();
+    } catch {
+      /* continuar hacia OAuth aunque falle el cierre local */
+    }
+    return this.signInWithGoogle({ prompt: 'select_account' });
   }
 
   /**

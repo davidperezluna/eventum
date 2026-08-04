@@ -74,6 +74,7 @@ export class Carrito implements OnInit, OnDestroy {
     expiresAtMs: number | null;
   } | null = null;
   cancelandoCheckoutPendiente = false;
+  cambiandoCuentaGoogle = false;
   private cancelacionCheckoutSeq = 0;
   mapaAmpliado: { url: string; titulo: string } | null = null;
   private subscriptions = new Subscription();
@@ -188,6 +189,16 @@ export class Carrito implements OnInit, OnDestroy {
     return this.carritoCompraService.estaVacio();
   }
 
+  /** Vacío real: sin ítems y sin checkout pendiente. */
+  get mostrarEstadoCarritoVacio(): boolean {
+    return this.carritoVacio && !this.checkoutPendienteEnCurso;
+  }
+
+  /** Barra inferior / cabecera con contenido activo (ítems o pago pendiente). */
+  get tieneContenidoCarritoVisible(): boolean {
+    return !this.carritoVacio || !!this.checkoutPendienteEnCurso;
+  }
+
   get mostrarInvitacionProductos(): boolean {
     return !!this.evento &&
       this.itemsCompra.length > 0 &&
@@ -217,6 +228,21 @@ export class Carrito implements OnInit, OnDestroy {
 
   get tieneSesionParaVinculo(): boolean {
     return !!this.emailCuentaCompra;
+  }
+
+  async cambiarCuentaGoogleParaCompra(): Promise<void> {
+    if (this.cambiandoCuentaGoogle) return;
+    this.cambiandoCuentaGoogle = true;
+    this.cdr.detectChanges();
+    const { error } = await this.authService.cambiarCuentaGoogle('/carrito');
+    if (error) {
+      this.cambiandoCuentaGoogle = false;
+      this.cdr.detectChanges();
+      void this.alertService.warning(
+        'No se pudo cambiar de cuenta',
+        'Intenta de nuevo o cierra sesión desde Mi perfil.'
+      );
+    }
   }
 
   totalUnidadesBoletasEnCarrito(): number {

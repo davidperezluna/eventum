@@ -1,7 +1,7 @@
 <div class="carrito-page">
   <header
     class="client-page-header client-page-header--compact client-page-header--in-nav carrito-page-header"
-    [class.carrito-page-header--has-items]="!carritoVacio"
+    [class.carrito-page-header--has-items]="tieneContenidoCarritoVisible"
   >
     <h1 class="client-page-header__title">Mi carrito</h1>
     <p class="client-page-header__subtitle client-page-header__subtitle--full">
@@ -84,7 +84,7 @@
       </div>
     </section>
 
-    <div class="empty-state" *ngIf="carritoVacio">
+    <div class="empty-state" *ngIf="mostrarEstadoCarritoVacio">
       <div class="empty-state-icon-box">
         <span class="material-icons">shopping_cart</span>
       </div>
@@ -156,6 +156,15 @@
                   producto(s) → los retiras en el evento con el QR de <strong>Mis compras</strong>.
                 </li>
               </ul>
+              <button
+                *ngIf="tieneSesionParaVinculo"
+                type="button"
+                class="carrito-vinculo-aviso__cambiar-cuenta"
+                (click)="cambiarCuentaGoogleParaCompra()"
+                [disabled]="cambiandoCuentaGoogle"
+              >
+                {{ cambiandoCuentaGoogle ? 'Abriendo Google…' : '¿Este no es tu correo? Cambiar cuenta' }}
+              </button>
               <ng-template #avisoVinculoSinSesion>
                 <p class="carrito-vinculo-aviso__text">
                   Al pagar, todo quedará vinculado al correo de tu cuenta Eventum.
@@ -540,8 +549,8 @@
     </ng-container>
   </section>
 
-  <div class="carrito-checkout-bar" *ngIf="!carritoVacio" aria-label="Resumen de pago">
-    <div class="carrito-checkout-bar__total">
+  <div class="carrito-checkout-bar" *ngIf="tieneContenidoCarritoVisible" aria-label="Resumen de pago">
+    <div class="carrito-checkout-bar__total" *ngIf="!carritoVacio || !checkoutPendienteEnCurso">
       <span class="carrito-checkout-bar__label">Total</span>
       <span class="carrito-checkout-bar__amount">{{ formatCurrency(getTotal()) }}</span>
       <span

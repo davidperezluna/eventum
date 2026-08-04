@@ -163,6 +163,31 @@
   color: var(--ec-text-strong, #0f172a);
 }
 
+.carrito-vinculo-aviso__cambiar-cuenta {
+  margin-top: 0.55rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--ec-border, #e2e8f0);
+  border-radius: 999px;
+  background: var(--ec-chip-hover, #f8fafc);
+  color: var(--ec-text-muted, #64748b);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.carrito-vinculo-aviso__cambiar-cuenta:hover:not(:disabled) {
+  background: #fff;
+  border-color: var(--ec-accent-border, #ddd6fe);
+  color: var(--ec-accent, #8b5cf6);
+}
+
+.carrito-vinculo-aviso__cambiar-cuenta:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
 .carrito-vinculo-aviso__icon {
   flex-shrink: 0;
   font-size: 1.35rem;
