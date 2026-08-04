@@ -614,7 +614,6 @@ export class Carrito implements OnInit, OnDestroy {
       this.carritoCompraService.vaciarCarrito();
       this.terminosAceptados = false;
       this.checkoutPendienteEnCurso = null;
-      this.alertService.snackbar('Carrito vaciado');
     } finally {
       this.vaciandoCarrito = false;
       this.cdr.detectChanges();

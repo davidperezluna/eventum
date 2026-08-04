@@ -141,13 +141,13 @@
     </section>
 
     <footer class="catalogo-footer">
-      <div class="catalogo-footer__summary" *ngIf="totalItemsCarrito > 0">
-        <span class="catalogo-footer__count">{{ totalItemsCarrito }} en tu carrito</span>
-        <strong class="catalogo-footer__total">{{ formatCurrency(subtotalCarrito) }}</strong>
+      <div class="catalogo-footer__total" *ngIf="totalItemsCarrito > 0">
+        <span class="catalogo-footer__label">Total</span>
+        <span class="catalogo-footer__amount">{{ formatCurrency(subtotalCarrito) }}</span>
       </div>
-      <button type="button" class="catalogo-footer__cta" (click)="volverAlCarrito()">
-        <span class="material-icons" aria-hidden="true">shopping_cart_checkout</span>
-        {{ totalItemsCarrito > 0 ? 'Listo, volver al carrito' : 'Volver al carrito' }}
+      <button type="button" class="catalogo-footer__btn" (click)="volverAlCarrito()">
+        <span class="material-icons" aria-hidden="true">shopping_cart</span>
+        Volver al carrito
       </button>
     </footer>
   </ng-container>
