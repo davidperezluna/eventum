@@ -1,18 +1,20 @@
 <div class="recibidos-page">
   <header class="recibidos-header">
-    <div class="recibidos-header__top">
-      <h1 class="recibidos-header__title">Recibidos</h1>
-      <span
-        *ngIf="!loading && totalPendientes > 0"
-        class="recibidos-header__count"
-        aria-label="Solicitudes pendientes"
-      >
-        {{ totalPendientes }}
-      </span>
+    <div class="recibidos-header__main">
+      <div class="recibidos-header__top">
+        <h1 class="recibidos-header__title">Recibidos</h1>
+        <span
+          *ngIf="!loading && totalPendientes > 0"
+          class="recibidos-header__count"
+          aria-label="Solicitudes pendientes"
+        >
+          {{ totalPendientes }}
+        </span>
+      </div>
+      <p class="recibidos-header__subtitle">
+        Entradas y covers que alguien te envió a tu cuenta Eventum.
+      </p>
     </div>
-    <p class="recibidos-header__subtitle">
-      Entradas y covers que alguien te envió a tu cuenta Eventum.
-    </p>
     <a
       routerLink="/mis-compras/actividad"
       class="recibidos-historial-bar"
@@ -33,62 +35,85 @@
   </div>
 
   <ng-container *ngIf="!loading && totalPendientes > 0">
-    <div class="recibidos-tip" role="note">
-      <span class="material-icons recibidos-tip__icon" aria-hidden="true">info</span>
-      <p>
-        No llega correo: las solicitudes aparecen aquí. Antes de aceptar, guarda tu
-        <strong>documento</strong> en <a routerLink="/perfil">Mi perfil</a>.
+    <div class="recibidos-body">
+      <section class="recibidos-panel" aria-label="Solicitudes pendientes">
+        <div class="recibidos-toolbar">
+          <div class="recibidos-tip" role="note">
+            <span class="material-icons recibidos-tip__icon" aria-hidden="true">info</span>
+            <p>
+              No llega correo: las solicitudes aparecen aquí. Antes de aceptar, guarda tu
+              <strong>documento</strong> en <a routerLink="/perfil">Mi perfil</a>.
+            </p>
+          </div>
+
+          <div class="recibidos-bulk" *ngIf="totalPendientes > 1">
+            <button
+              type="button"
+              class="recibidos-btn recibidos-btn--soft recibidos-btn--bulk"
+              (click)="aceptarTodas()"
+              [disabled]="procesando"
+            >
+              {{
+                aceptandoTodas
+                  ? 'Aceptando…'
+                  : 'Aceptar todas (' + totalPendientes + ')'
+              }}
+            </button>
+          </div>
+        </div>
+
+        <ul class="recibidos-list" aria-label="Solicitudes por aceptar">
+          <li
+            *ngFor="let t of solicitudes"
+            class="recibidos-card"
+            [class.recibidos-card--cover]="esCover(t)"
+          >
+            <div class="recibidos-card__content">
+              <div class="recibidos-card__head">
+                <span class="recibidos-card__badge">Pendiente</span>
+                <span class="recibidos-card__tipo">{{ tipo(t) }}</span>
+              </div>
+
+              <h2 class="recibidos-card__title">{{ titulo(t) }}</h2>
+              <p class="recibidos-card__detalle" *ngIf="detalle(t) as d">{{ d }}</p>
+
+              <p class="recibidos-card__from">
+                <span class="material-icons" aria-hidden="true">mail_outline</span>
+                <span>De {{ remitente(t) }}</span>
+              </p>
+
+              <p class="recibidos-card__hint">
+                El código QR se habilita después de <strong>aceptar</strong>.
+              </p>
+            </div>
+
+            <div class="recibidos-card__actions">
+              <button
+                type="button"
+                class="recibidos-btn recibidos-btn--text"
+                (click)="rechazar(t)"
+                [disabled]="procesando"
+              >
+                Rechazar
+              </button>
+              <button
+                type="button"
+                class="recibidos-btn recibidos-btn--soft"
+                (click)="aceptar(t)"
+                [disabled]="procesando"
+              >
+                {{ procesandoId === t.id ? 'Procesando…' : labelAceptar(t) }}
+              </button>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <p class="recibidos-footer-hint">
+        ¿Buscas envíos anteriores?
+        <a routerLink="/mis-compras/actividad">Ver historial de traslados</a>
       </p>
     </div>
-
-    <ul class="recibidos-list" aria-label="Solicitudes por aceptar">
-      <li
-        *ngFor="let t of solicitudes"
-        class="recibidos-card"
-        [class.recibidos-card--cover]="esCover(t)"
-      >
-        <div class="recibidos-card__head">
-          <span class="recibidos-card__badge">Pendiente</span>
-          <span class="recibidos-card__tipo">{{ tipo(t) }}</span>
-        </div>
-
-        <h2 class="recibidos-card__title">{{ titulo(t) }}</h2>
-        <p class="recibidos-card__detalle" *ngIf="detalle(t) as d">{{ d }}</p>
-
-        <p class="recibidos-card__from">
-          <span class="material-icons" aria-hidden="true">mail_outline</span>
-          <span>De {{ remitente(t) }}</span>
-        </p>
-
-        <p class="recibidos-card__hint">
-          El código QR se habilita después de <strong>aceptar</strong>.
-        </p>
-
-        <div class="recibidos-card__actions">
-          <button
-            type="button"
-            class="recibidos-btn recibidos-btn--ghost"
-            (click)="rechazar(t)"
-            [disabled]="procesandoId != null"
-          >
-            Rechazar
-          </button>
-          <button
-            type="button"
-            class="recibidos-btn recibidos-btn--primary"
-            (click)="aceptar(t)"
-            [disabled]="procesandoId != null"
-          >
-            {{ procesandoId === t.id ? 'Procesando…' : labelAceptar(t) }}
-          </button>
-        </div>
-      </li>
-    </ul>
-
-    <p class="recibidos-footer-hint">
-      ¿Buscas envíos anteriores?
-      <a routerLink="/mis-compras/actividad">Ver historial de traslados</a>
-    </p>
   </ng-container>
 
   <div *ngIf="!loading && totalPendientes === 0" class="recibidos-empty">

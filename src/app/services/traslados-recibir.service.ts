@@ -148,6 +148,57 @@ export class TrasladosRecibirService {
       : this.trasladosBoletaService.rechazar(t.id);
   }
 
+  /** Ruta de Mis compras donde queda visible el ítem recién aceptado. */
+  rutaMisComprasTrasAceptar(t: TrasladoRecibirEntrada | TrasladoRecibirCover): string[] {
+    return this.rutaMisComprasTrasAceptarVarios([t]);
+  }
+
+  /** Tras aceptar varias: mismo evento/club → detalle; mezcla o varios destinos → listado. */
+  rutaMisComprasTrasAceptarVarios(
+    solicitudes: Array<TrasladoRecibirEntrada | TrasladoRecibirCover>
+  ): string[] {
+    if (!solicitudes.length) {
+      return ['/mis-compras'];
+    }
+
+    const entradas = solicitudes.filter((t) => !this.esTrasladoCover(t)) as TrasladoRecibirEntrada[];
+    const covers = solicitudes.filter((t) => this.esTrasladoCover(t)) as TrasladoRecibirCover[];
+
+    if (entradas.length > 0 && covers.length > 0) {
+      return ['/mis-compras'];
+    }
+
+    if (entradas.length > 0) {
+      const eventoIds = entradas.map((t) => this.eventoIdTraslado(t));
+      if (eventoIds.every((id) => id != null) && new Set(eventoIds).size === 1) {
+        return ['/mis-compras/evento', String(eventoIds[0])];
+      }
+      return ['/mis-compras'];
+    }
+
+    const lugarIds = covers.map((t) => this.lugarIdTraslado(t));
+    if (lugarIds.every((id) => id != null) && new Set(lugarIds).size === 1) {
+      return ['/mis-compras/club', String(lugarIds[0])];
+    }
+    return ['/mis-compras'];
+  }
+
+  eventoIdTraslado(t: TrasladoRecibirEntrada): number | null {
+    const id = t.evento_id ?? t.boletaDetail?.evento?.id ?? null;
+    if (id == null || Number(id) <= 0) {
+      return null;
+    }
+    return Number(id);
+  }
+
+  lugarIdTraslado(t: TrasladoRecibirCover): number | null {
+    const id = t.lugar_id ?? t.coverDetail?.lugar_id ?? null;
+    if (id == null || Number(id) <= 0) {
+      return null;
+    }
+    return Number(id);
+  }
+
   invalidarCacheMisCompras(): void {
     const uid = this.authService.getUsuarioId();
     if (uid) {

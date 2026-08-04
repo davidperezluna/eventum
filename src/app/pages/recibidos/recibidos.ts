@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import {
   BandejaRecibidosData,
   TrasladoRecibirCover,
@@ -22,12 +22,14 @@ export class Recibidos implements OnInit {
 
   loading = true;
   procesandoId: number | null = null;
+  aceptandoTodas = false;
   entradas: TrasladoRecibirEntrada[] = [];
   covers: TrasladoRecibirCover[] = [];
 
   constructor(
     private trasladosRecibirService: TrasladosRecibirService,
     private alertService: AlertService,
+    private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -41,6 +43,10 @@ export class Recibidos implements OnInit {
 
   get solicitudes(): Array<TrasladoRecibirEntrada | TrasladoRecibirCover> {
     return [...this.entradas, ...(this.coversEventumEnabled ? this.covers : [])];
+  }
+
+  get procesando(): boolean {
+    return this.procesandoId != null || this.aceptandoTodas;
   }
 
   esCover(t: TrasladoBoleta): boolean {
@@ -82,8 +88,8 @@ export class Recibidos implements OnInit {
     return this.trasladosRecibirService.tipoTrasladoRecibir(t);
   }
 
-  async aceptar(t: TrasladoBoleta): Promise<void> {
-    if (this.procesandoId != null) return;
+  async aceptar(t: TrasladoRecibirEntrada | TrasladoRecibirCover): Promise<void> {
+    if (this.procesando) return;
     this.procesandoId = t.id;
     this.cdr.detectChanges();
     try {
@@ -93,16 +99,48 @@ export class Recibidos implements OnInit {
         return;
       }
       this.trasladosRecibirService.invalidarCacheMisCompras();
-      const data = await this.trasladosRecibirService.cargarPendientes();
-      this.aplicarData(data);
+      const ruta = this.trasladosRecibirService.rutaMisComprasTrasAceptar(t);
+      await this.router.navigate(ruta);
     } finally {
       this.procesandoId = null;
       this.cdr.detectChanges();
     }
   }
 
+  async aceptarTodas(): Promise<void> {
+    if (this.procesando || this.totalPendientes < 2) return;
+
+    const pendientes = [...this.solicitudes];
+    const confirmado = await this.alertService.confirm(
+      'Aceptar todas',
+      `¿Aceptar las ${pendientes.length} solicitudes pendientes?`
+    );
+    if (!confirmado) return;
+
+    this.aceptandoTodas = true;
+    this.cdr.detectChanges();
+    try {
+      for (const t of pendientes) {
+        const res = await this.trasladosRecibirService.aceptar(t);
+        if (!res.ok) {
+          await this.alertService.error('Error', res.error || 'No se pudo aceptar una solicitud.');
+          this.trasladosRecibirService.invalidarCacheMisCompras();
+          const data = await this.trasladosRecibirService.cargarPendientes();
+          this.aplicarData(data);
+          return;
+        }
+      }
+      this.trasladosRecibirService.invalidarCacheMisCompras();
+      const ruta = this.trasladosRecibirService.rutaMisComprasTrasAceptarVarios(pendientes);
+      await this.router.navigate(ruta);
+    } finally {
+      this.aceptandoTodas = false;
+      this.cdr.detectChanges();
+    }
+  }
+
   async rechazar(t: TrasladoBoleta): Promise<void> {
-    if (this.procesandoId != null) return;
+    if (this.procesando) return;
     const esCover = this.trasladosRecibirService.esTrasladoCover(t);
     const confirmado = await this.alertService.confirm(
       esCover ? 'Rechazar cover' : 'Rechazar entrada',
