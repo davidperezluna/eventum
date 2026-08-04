@@ -96,6 +96,11 @@ import {
   RESUMEN_YO_ASISTO_SUBTITULO,
   RESUMEN_YO_ASISTO_TITULO,
   RESUMEN_YO_ASISTO_VINCULAR_TODAS_HINT,
+  LABEL_TRASLADO_ENVIO_PENDIENTE,
+  MENSAJE_TRASLADO_ENTRADA_SALIENTE,
+  MENSAJE_TRASLADO_COVER_SALIENTE,
+  SNACKBAR_TRASLADO_ENTRADA_ENVIADO,
+  SNACKBAR_TRASLADO_COVER_ENVIADO,
 } from '../../constants/traslados.constants';
 
 interface BoletaConCompra {
@@ -488,8 +493,6 @@ export class MisCompras implements OnInit, OnDestroy {
     return (
       this.eventosConBoletas.length > 0 ||
       this.lugaresConCovers.length > 0 ||
-      this.trasladosPendientesRecibir.length > 0 ||
-      this.trasladosPendientesRecibirCover.length > 0 ||
       this.loadingCovers ||
       this.loading
     );
@@ -511,24 +514,12 @@ export class MisCompras implements OnInit, OnDestroy {
     return this.totalEntradasMisCompras();
   }
 
-  badgeEventosTabPendientes(): number {
-    return this.trasladosPendientesRecibir.length;
-  }
-
   badgeCoversTabPendientes(): number {
     return this.trasladosPendientesRecibirCover.length;
   }
 
   totalTrasladosPendientesRecibir(): number {
     return this.trasladosPendientesRecibir.length + this.trasladosPendientesRecibirCover.length;
-  }
-
-  badgePendientesRecibirEnEvento(grupo: EventoBoletasGrupo): number {
-    return this.trasladosPendientesRecibirEnEvento(grupo).length;
-  }
-
-  badgePendientesRecibirEnClub(grupo: LugarCoverGrupo): number {
-    return this.trasladosPendientesRecibirCoverEnClub(grupo).length;
   }
 
   private syncTrasladosPendientesNavBadge(): void {
@@ -2327,12 +2318,12 @@ export class MisCompras implements OnInit, OnDestroy {
         : undefined,
       traslado: traslado
         ? {
-            badgeLabel: 'Traslado enviado',
-            badgeIcon: 'confirmation_number',
+            badgeLabel: LABEL_TRASLADO_ENVIO_PENDIENTE,
+            badgeIcon: 'forward_to_inbox',
             badgeVariant: 'entrada',
-            destinationLabel: 'Destino',
+            destinationLabel: 'Para',
             email: traslado.email_destino,
-            message: 'No puedes usar el QR hasta que acepten, rechacen o canceles el envío.',
+            message: MENSAJE_TRASLADO_ENTRADA_SALIENTE,
             cancellable: traslado.estado === 'enviado',
           }
         : undefined,
@@ -2443,12 +2434,12 @@ export class MisCompras implements OnInit, OnDestroy {
       dateSubtitle: this.horarioSesionCoverBoleta(item.boleta),
       traslado: traslado
         ? {
-            badgeLabel: 'Traslado enviado',
+            badgeLabel: LABEL_TRASLADO_ENVIO_PENDIENTE,
             badgeIcon: 'swap_horiz',
             badgeVariant: 'cover',
-            destinationLabel: 'Cuenta destino',
+            destinationLabel: 'Para',
             email: traslado.email_destino,
-            message: 'La transferencia queda pendiente en Mis Compras → Covers. No verás el QR hasta que acepte, rechace o canceles.',
+            message: MENSAJE_TRASLADO_COVER_SALIENTE,
             cancellable: traslado.estado === 'enviado',
           }
         : undefined,
@@ -3333,28 +3324,6 @@ export class MisCompras implements OnInit, OnDestroy {
     return this.trasladoSalientePorBoletaCoverId.get(Number(boletaCoverId));
   }
 
-  trasladosPendientesRecibirEnEvento(detalle: EventoBoletasGrupo): Array<
-    TrasladoBoleta & { boletaDetail?: BoletaComprada }
-  > {
-    const eventoId = Number(detalle.key);
-    if (!Number.isFinite(eventoId)) return [];
-    return this.trasladosPendientesRecibir.filter((t) => {
-      const eid = t.boletaDetail?.evento?.id ?? t.evento_id;
-      return Number(eid) === eventoId;
-    });
-  }
-
-  trasladosPendientesRecibirCoverEnClub(club: LugarCoverGrupo): Array<
-    TrasladoBoleta & { coverDetail?: BoletaCoverCliente }
-  > {
-    const lugarId = Number(club.key);
-    if (!Number.isFinite(lugarId)) return [];
-    return this.trasladosPendientesRecibirCover.filter((t) => {
-      const lid = t.coverDetail?.lugar_id ?? t.lugar_id;
-      return Number(lid) === lugarId;
-    });
-  }
-
   /**
    * Boletas que siguen contándose como “tuyas” en el listado: excluye las que enviaste
    * por correo con traslado pendiente (aún eres titular pero no disponibles como el resto).
@@ -3901,9 +3870,7 @@ export class MisCompras implements OnInit, OnDestroy {
         );
         return;
       }
-      void this.alertService.snackbar(
-        'Traslado enviado. Aparece en trámite en tu entrada hasta que acepten o canceles.'
-      );
+      void this.alertService.snackbar(SNACKBAR_TRASLADO_ENTRADA_ENVIADO);
     } finally {
       this.enviandoTraslado = false;
       this.ngZone.run(() => {
@@ -3931,7 +3898,7 @@ export class MisCompras implements OnInit, OnDestroy {
       }
       this.cerrarModalTraslado();
       await this.recargarBoletasYTraslados();
-      void this.alertService.snackbar('Transferencia iniciada. La otra persona debe aceptar en Mis Compras → Covers.');
+      void this.alertService.snackbar(SNACKBAR_TRASLADO_COVER_ENVIADO);
     } finally {
       this.enviandoTraslado = false;
       this.ngZone.run(() => this.cdr.detectChanges());
@@ -4069,46 +4036,7 @@ export class MisCompras implements OnInit, OnDestroy {
       return;
     }
     await this.recargarBoletasYTraslados();
-    void this.alertService.snackbar('Marcado como recibido. Puedes aceptar o rechazar.');
-  }
-
-  async aceptarTraslado(t: TrasladoBoleta): Promise<void> {
-    const esCover = this.esTrasladoCover(t);
-    const res = esCover
-      ? await this.trasladosBoletaService.aceptarCover(t.id)
-      : await this.trasladosBoletaService.aceptar(t.id);
-    if (!res.ok) {
-      await this.alertService.error('Error', res.error || '');
-      return;
-    }
-    await this.recargarBoletasYTraslados();
-    if (esCover) {
-      this.tabMisComprasPrincipal = 'covers';
-      this.persistState(Date.now());
-    }
-    void this.alertService.snackbar(
-      esCover
-        ? 'Cover aceptado. Ya está en Mis Compras → Covers. El QR se habilita el día de la noche.'
-        : 'Entrada aceptada. Ya está en Mis Compras. El QR se habilita el día del evento.'
-    );
-    this.cdr.detectChanges();
-  }
-
-  async rechazarTraslado(t: TrasladoBoleta): Promise<void> {
-    const esCover = this.esTrasladoCover(t);
-    const res = esCover
-      ? await this.trasladosBoletaService.rechazarCover(t.id)
-      : await this.trasladosBoletaService.rechazar(t.id);
-    if (!res.ok) {
-      await this.alertService.error('Error', res.error || '');
-      return;
-    }
-    await this.recargarBoletasYTraslados();
-    void this.alertService.snackbar(
-      esCover
-        ? 'Transferencia rechazada. El remitente recupera el cover.'
-        : 'Entrada rechazada. El remitente recupera el uso.'
-    );
+    void this.alertService.snackbar('Marcado como recibido. Revisa Recibidos para aceptar o rechazar.');
   }
 
   async confirmarCancelarTraslado(): Promise<void> {
@@ -4173,10 +4101,8 @@ export class MisCompras implements OnInit, OnDestroy {
     return (
       this.eventosConBoletas.length > 0 ||
       this.entradasCedidas.length > 0 ||
-      this.trasladosPendientesRecibir.length > 0 ||
       (coversEventumEnabled && this.lugaresConCovers.length > 0) ||
-      this.coverCedidas.length > 0 ||
-      this.trasladosPendientesRecibirCover.length > 0
+      this.coverCedidas.length > 0
     );
   }
 
@@ -5357,8 +5283,8 @@ export class MisCompras implements OnInit, OnDestroy {
 
     if (this.tieneTrasladoSalienteActivo(boleta.id)) {
       this.alertService.warning(
-        'Traslado enviado',
-        'No puedes ver el QR mientras el destinatario no acepte o rechace. Puedes cancelar el envío si sigue en estado enviado.'
+        LABEL_TRASLADO_ENVIO_PENDIENTE,
+        'No puedes ver el QR mientras el destinatario no acepte o rechace. Puedes cancelar el envío si sigue pendiente.'
       );
       return;
     }

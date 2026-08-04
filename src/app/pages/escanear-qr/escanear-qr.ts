@@ -58,10 +58,18 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
   productoItem: ItemProductoEscaneo | null = null;
   boletaCover: BoletaCoverEscaneo | null = null;
   boletasEncontradas: BoletaComprada[] = [];
+  productosEncontrados: ItemProductoEscaneo[] = [];
   modalVisible = false;
   nombreTipoBoleta = '';
   tituloEvento = '';
   errorPermiso: string | null = null;
+  /** Aviso persistente en búsqueda por cédula (permisos). */
+  avisoBusquedaDocumento: string | null = null;
+
+  readonly mensajeSinPermisosEscaneo =
+    'No tienes eventos ni covers asignados para escanear. Pide al administrador que te configure en Lectores → Parametrización.';
+  readonly mensajeEntradasFueraDePermiso =
+    'Hay entradas o productos con esa cédula, pero ninguno corresponde a los eventos que tienes asignados para escanear. No puedes validarlos.';
 
   modoApp: 'admin' | 'lector' = 'admin';
   volverLink = '/lectores-parametrizacion';
@@ -229,6 +237,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.removerEventosCicloVida();
+    this.syncBloqueoScrollModal(false);
     if (this.restartTimer) {
       clearTimeout(this.restartTimer);
       this.restartTimer = null;
@@ -304,6 +313,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     if (this.modoBusqueda === modo) return;
     this.modoBusqueda = modo;
     this.limpiarAutoAvance();
+    this.limpiarAvisoBusquedaDocumento();
     this.cerrarModal();
     if (modo === 'scanner') {
       this.cameraDomRetries = 0;
@@ -424,7 +434,50 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     await this.procesarCodigo(codigo);
   }
 
+  get sinPermisosEscaneoAsignados(): boolean {
+    return this.requierePermisosLector && this.permisos.length === 0;
+  }
+
+  get totalResultadosDocumentoBusqueda(): number {
+    return this.boletasEncontradas.length + this.productosEncontrados.length;
+  }
+
+  mantenerListaBusquedaDocumento(): boolean {
+    return this.totalResultadosDocumentoBusqueda > 1;
+  }
+
+  limpiarAvisoBusquedaDocumento(): void {
+    this.avisoBusquedaDocumento = null;
+  }
+
+  private filtrarProductosConPermisos(items: ItemProductoEscaneo[]): ItemProductoEscaneo[] {
+    if (!this.requierePermisosLector) {
+      return items;
+    }
+    return items.filter((item) => {
+      const eventoId = item.compra?.evento_id;
+      return eventoId != null && this.permisoEventoProductoIds.has(eventoId);
+    });
+  }
+
+  private limpiarResultadosDocumentoBusqueda(): void {
+    this.boletasEncontradas = [];
+    this.productosEncontrados = [];
+  }
+
+  etiquetaProductoLista(item: ItemProductoEscaneo): string {
+    const nombre = item.producto?.nombre || 'Producto';
+    const cantidad = item.cantidad || 1;
+    return cantidad > 1 ? `${nombre} x${cantidad}` : nombre;
+  }
+
+  private marcarAvisoPermisoDocumento(mensaje: string): void {
+    this.avisoBusquedaDocumento = mensaje;
+    this.errorPermiso = mensaje;
+  }
+
   async buscarPorDocumento(): Promise<void> {
+    this.limpiarAvisoBusquedaDocumento();
     const validacionDocumento = validarDocumentoIdentidadColombia(this.documento);
     if (!validacionDocumento.valido) {
       await this.alertService.warning(
@@ -435,32 +488,53 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     }
     const doc = validacionDocumento.normalizado;
     this.documento = doc;
-    if (this.requierePermisosLector && this.permisos.length === 0) {
-      await this.alertService.warning('Sin acceso', 'No tienes eventos ni covers asignados para escanear.');
+    if (this.sinPermisosEscaneoAsignados) {
+      this.marcarAvisoPermisoDocumento(this.mensajeSinPermisosEscaneo);
       return;
     }
 
     this.buscando = true;
     this.boleta = null;
     this.productoItem = null;
-    this.boletasEncontradas = [];
+    this.limpiarResultadosDocumentoBusqueda();
     this.modalVisible = false;
     this.cdr.markForCheck();
 
     try {
-      let boletas = await this.boletasService.buscarBoletasPendientesPorDocumento(doc);
+      const [boletasRaw, productosRaw] = await Promise.all([
+        this.boletasService.buscarBoletasPendientesPorDocumento(doc),
+        this.comprasProductoService.buscarItemsPendientesPorDocumentoCliente(doc),
+      ]);
+
+      const totalBoletasAntes = boletasRaw.length;
+      const totalProductosAntes = productosRaw.length;
+      const totalAntesPermisos = totalBoletasAntes + totalProductosAntes;
+
+      let boletas = boletasRaw;
       if (this.requierePermisosLector) {
         boletas = await this.lectorPermisos.filtrarBoletasConPermisos(boletas, this.permisoKeys);
       }
-      if (boletas.length === 0) {
-        await this.alertService.info(
-          'Sin entradas',
-          'No hay boletas pendientes con ese documento en tus eventos asignados.'
-        );
-      } else if (boletas.length === 1) {
-        await this.mostrarBoletaEnModal(boletas[0]);
+      const productos = this.filtrarProductosConPermisos(productosRaw);
+      const totalResultados = boletas.length + productos.length;
+
+      if (totalResultados === 0) {
+        if (this.requierePermisosLector && totalAntesPermisos > 0) {
+          this.marcarAvisoPermisoDocumento(this.mensajeEntradasFueraDePermiso);
+        } else {
+          await this.alertService.info(
+            'Sin resultados',
+            'No hay entradas ni productos pendientes con ese documento en tus eventos asignados.'
+          );
+        }
+      } else if (totalResultados === 1) {
+        if (boletas.length === 1) {
+          await this.mostrarBoletaEnModal(boletas[0]);
+        } else {
+          await this.mostrarProductoEnModal(productos[0]);
+        }
       } else {
         this.boletasEncontradas = boletas;
+        this.productosEncontrados = productos;
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al buscar';
@@ -473,6 +547,10 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
 
   async seleccionarBoletaLista(b: BoletaComprada): Promise<void> {
     await this.mostrarBoletaEnModal(b);
+  }
+
+  async seleccionarProductoLista(item: ItemProductoEscaneo): Promise<void> {
+    await this.mostrarProductoEnModal(item);
   }
 
   private async procesarCodigo(codigo: string): Promise<void> {
@@ -550,6 +628,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     this.productoItem = null;
     this.boletaCover = null;
     this.modalVisible = true;
+    this.syncBloqueoScrollModal(true);
     this.programarAutoAvanceModalSiAplica();
     this.cdr.markForCheck();
   }
@@ -559,8 +638,12 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
       const eventoId = item.compra?.evento_id;
       if (!eventoId || !this.permisoEventoProductoIds.has(eventoId)) {
         this.errorPermiso = 'Este producto no corresponde a un evento asignado para escanear.';
-        await this.alertService.warning('Sin permiso', this.errorPermiso);
-        await this.reiniciarEscaneo();
+        if (this.modoBusqueda === 'manual') {
+          this.marcarAvisoPermisoDocumento(this.mensajeEntradasFueraDePermiso);
+        } else {
+          await this.alertService.warning('Sin permiso', this.errorPermiso);
+          await this.reiniciarEscaneo();
+        }
         return;
       }
     }
@@ -568,6 +651,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     this.productoItem = item;
     this.boletaCover = null;
     this.modalVisible = true;
+    this.syncBloqueoScrollModal(true);
     this.programarAutoAvanceModalSiAplica();
     this.cdr.markForCheck();
   }
@@ -601,20 +685,29 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     this.productoItem = null;
     this.boletaCover = cover;
     this.modalVisible = true;
+    this.syncBloqueoScrollModal(true);
     this.programarAutoAvanceModalSiAplica();
     this.cdr.markForCheck();
+  }
+
+  private syncBloqueoScrollModal(abierto: boolean): void {
+    if (typeof document === 'undefined') {
+      return;
+    }
+    document.body.style.overflow = abierto ? 'hidden' : '';
   }
 
   cerrarModal(mantenerLista = false): void {
     this.limpiarAutoAvance();
     this.modalVisible = false;
+    this.syncBloqueoScrollModal(false);
     this.boleta = null;
     this.productoItem = null;
     this.boletaCover = null;
     this.nombreTipoBoleta = '';
     this.tituloEvento = '';
     if (!mantenerLista) {
-      this.boletasEncontradas = [];
+      this.limpiarResultadosDocumentoBusqueda();
     }
     this.cdr.markForCheck();
 
@@ -635,6 +728,9 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
 
       if (error || !tipoBoleta) {
         this.errorPermiso = 'No se pudo verificar el evento de esta boleta.';
+        if (this.modoBusqueda === 'manual') {
+          this.avisoBusquedaDocumento = this.errorPermiso;
+        }
         return false;
       }
 
@@ -642,12 +738,19 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
       if (!this.permisoKeys.has(key)) {
         this.errorPermiso =
           'Esta boleta no corresponde a un evento o tipo que tengas asignado para escanear.';
-        await this.alertService.warning('Sin permiso', this.errorPermiso);
+        if (this.modoBusqueda === 'manual') {
+          this.marcarAvisoPermisoDocumento(this.mensajeEntradasFueraDePermiso);
+        } else {
+          await this.alertService.warning('Sin permiso', this.errorPermiso);
+        }
         return false;
       }
       return true;
     } catch {
       this.errorPermiso = 'Error al verificar permisos de escaneo.';
+      if (this.modoBusqueda === 'manual') {
+        this.avisoBusquedaDocumento = this.errorPermiso;
+      }
       return false;
     }
   }

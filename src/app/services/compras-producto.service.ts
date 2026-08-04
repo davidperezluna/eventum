@@ -3,6 +3,7 @@ import { SupabaseService } from './supabase.service';
 import { TimezoneService } from './timezone.service';
 import { AuthService } from './auth.service';
 import { supabaseConfig } from '../config/supabase.config';
+import { normalizarDocumentoIdentidad } from '../core/documento-identidad';
 import {
   CompraProducto,
   CompraProductoFilters,
@@ -482,27 +483,131 @@ export class ComprasProductoService {
     return data as CompraProducto;
   }
 
+  private readonly selectItemProductoEscaneo = `
+    id,
+    codigo_qr,
+    estado,
+    cantidad,
+    precio_unitario,
+    fecha_redencion,
+    validado_por_usuario_id,
+    compra:compras_productos(
+      id,
+      evento_id,
+      estado_pago,
+      numero_pedido,
+      eventos(titulo),
+      cliente:usuarios(nombre, apellido, email, documento_identidad)
+    ),
+    producto:productos(id, nombre)
+  `;
+
+  private mapItemProductoEscaneoRow(
+    data: Record<string, unknown>,
+    scope: 'item' | 'compra' = 'item'
+  ): ItemProductoEscaneo {
+    const compraRaw = Array.isArray(data['compra']) ? data['compra'][0] : data['compra'];
+    const compra = compraRaw as Record<string, unknown> | null | undefined;
+    const eventoRel = Array.isArray(compra?.['eventos']) ? compra?.['eventos'][0] : compra?.['eventos'];
+    const clienteRel = Array.isArray(compra?.['cliente']) ? compra?.['cliente'][0] : compra?.['cliente'];
+    const cliente = clienteRel as Record<string, unknown> | null | undefined;
+    const nombreCliente = [cliente?.['nombre'], cliente?.['apellido']]
+      .filter((p) => !!String(p ?? '').trim())
+      .join(' ')
+      .trim() || String(cliente?.['email'] ?? '').trim();
+    const productoRaw = data['producto'];
+
+    return {
+      id: Number(data['id']),
+      codigo_qr: String(data['codigo_qr'] || ''),
+      estado: String(data['estado'] || TipoEstadoItemProducto.PENDIENTE),
+      scope,
+      cantidad: Number(data['cantidad'] || 0),
+      precio_unitario: Number(data['precio_unitario'] || 0),
+      fecha_redencion: (data['fecha_redencion'] as string | undefined) || undefined,
+      validado_por_usuario_id: (data['validado_por_usuario_id'] as number | undefined) || undefined,
+      compra: compra
+        ? {
+            id: Number(compra['id']),
+            evento_id: Number(compra['evento_id']),
+            estado_pago: String(compra['estado_pago'] || ''),
+            numero_pedido: String(compra['numero_pedido'] || ''),
+            evento_titulo: String((eventoRel as Record<string, unknown> | undefined)?.['titulo'] || ''),
+            documento_cliente: String(cliente?.['documento_identidad'] || ''),
+            nombre_cliente: nombreCliente || undefined,
+          }
+        : null,
+      producto: Array.isArray(productoRaw)
+        ? (productoRaw[0] as ItemProductoEscaneo['producto'])
+        : (productoRaw as ItemProductoEscaneo['producto']),
+    };
+  }
+
+  /** Ítems de producto pendientes de redimir para clientes con esa cédula en perfil. */
+  async buscarItemsPendientesPorDocumentoCliente(documento: string): Promise<ItemProductoEscaneo[]> {
+    const doc = normalizarDocumentoIdentidad(documento);
+    if (!doc) {
+      return [];
+    }
+
+    const { data: usuarios, error: usuariosError } = await this.supabase
+      .from('usuarios')
+      .select('id')
+      .eq('documento_identidad', doc);
+
+    if (usuariosError) {
+      throw usuariosError;
+    }
+
+    const clienteIds = [
+      ...new Set(
+        (usuarios || [])
+          .map((u) => Number(u.id))
+          .filter((id) => Number.isFinite(id) && id > 0)
+      ),
+    ];
+    if (clienteIds.length === 0) {
+      return [];
+    }
+
+    const { data: compras, error: comprasError } = await this.supabase
+      .from('compras_productos')
+      .select('id')
+      .in('cliente_id', clienteIds)
+      .eq('estado_pago', TipoEstadoPago.COMPLETADO)
+      .neq('estado_compra', TipoEstadoCompra.CANCELADA);
+
+    if (comprasError) {
+      throw comprasError;
+    }
+
+    const compraIds = (compras || [])
+      .map((c) => Number(c.id))
+      .filter((id) => Number.isFinite(id) && id > 0);
+    if (compraIds.length === 0) {
+      return [];
+    }
+
+    const { data, error } = await this.supabase
+      .from('compras_productos_items')
+      .select(this.selectItemProductoEscaneo)
+      .in('compra_producto_id', compraIds)
+      .neq('estado', TipoEstadoItemProducto.ENTREGADO)
+      .order('id', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    return ((data as Record<string, unknown>[]) || []).map((row) =>
+      this.mapItemProductoEscaneoRow(row, 'item')
+    );
+  }
+
   async buscarItemPorCodigoQR(codigoQR: string): Promise<ItemProductoEscaneo | null> {
     const { data, error } = await this.supabase
       .from('compras_productos_items')
-      .select(`
-        id,
-        codigo_qr,
-        estado,
-        cantidad,
-        precio_unitario,
-        fecha_redencion,
-        validado_por_usuario_id,
-        compra:compras_productos(
-          id,
-          evento_id,
-          estado_pago,
-          numero_pedido,
-          eventos(titulo),
-          cliente:usuarios(nombre, apellido, email, documento_identidad)
-        ),
-        producto:productos(id, nombre)
-      `)
+      .select(this.selectItemProductoEscaneo)
       .eq('codigo_qr', codigoQR)
       .maybeSingle();
 
@@ -511,34 +616,7 @@ export class ComprasProductoService {
     }
     if (!data) return null;
 
-    const compraRaw = Array.isArray(data.compra) ? data.compra[0] : data.compra;
-    const eventoRel = Array.isArray(compraRaw?.eventos) ? compraRaw?.eventos[0] : compraRaw?.eventos;
-    const clienteRel = Array.isArray(compraRaw?.cliente) ? compraRaw?.cliente[0] : compraRaw?.cliente;
-    const nombreCliente = [clienteRel?.nombre, clienteRel?.apellido]
-      .filter((p) => !!String(p ?? '').trim())
-      .join(' ')
-      .trim() || String(clienteRel?.email ?? '').trim();
-
-    return {
-      id: data.id,
-      codigo_qr: data.codigo_qr,
-      estado: data.estado || TipoEstadoItemProducto.PENDIENTE,
-      scope: 'item',
-      cantidad: data.cantidad || 0,
-      precio_unitario: Number(data.precio_unitario || 0),
-      fecha_redencion: data.fecha_redencion || undefined,
-      validado_por_usuario_id: data.validado_por_usuario_id || undefined,
-      compra: compraRaw ? {
-        id: Number(compraRaw.id),
-        evento_id: Number(compraRaw.evento_id),
-        estado_pago: String(compraRaw.estado_pago || ''),
-        numero_pedido: String(compraRaw.numero_pedido || ''),
-        evento_titulo: String(eventoRel?.titulo || ''),
-        documento_cliente: String(clienteRel?.documento_identidad || ''),
-        nombre_cliente: nombreCliente || undefined,
-      } : null,
-      producto: Array.isArray(data.producto) ? (data.producto[0] as ItemProductoEscaneo['producto']) : (data.producto as ItemProductoEscaneo['producto']),
-    };
+    return this.mapItemProductoEscaneoRow(data as Record<string, unknown>, 'item');
   }
 
   private extraerNumeroPedidoDesdeCodigoQR(codigoQR: string): string | null {

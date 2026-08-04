@@ -59,6 +59,7 @@ import { CoversConfig } from './pages/covers-config/covers-config';
 import { CoversConfigDetalle } from './pages/covers-config-detalle/covers-config-detalle';
 import { ClubesExplorar } from './pages/clubes-explorar/clubes-explorar';
 import { ClubDetalle } from './pages/club-detalle/club-detalle';
+import { Recibidos } from './pages/recibidos/recibidos';
 
 const cuposPublicRoutes: Routes = cuposEventumEnabled
   ? [
@@ -157,6 +158,7 @@ const appRoutes: Routes = [
       ...cuposProtectedRoutes,
       { path: 'mis-compras/actividad', component: MisCompras }, // Cliente: traslados / actividad
       { path: 'mis-compras/guia', component: MisComprasGuia }, // Cliente: guía de uso de entradas
+      { path: 'recibidos', component: Recibidos },
       { path: 'mis-compras/evento/:id', component: MisCompras }, // Cliente: detalle de boletas por evento
       { path: 'mis-compras/club/:id', component: MisCompras }, // Cliente: detalle de covers por club
       { path: 'accesos-puerta', component: AccesosPuerta, canActivate: [coversFeatureGuard] },

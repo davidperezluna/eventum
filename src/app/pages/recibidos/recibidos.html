@@ -1,0 +1,111 @@
+<div class="recibidos-page">
+  <header class="recibidos-header">
+    <div class="recibidos-header__top">
+      <h1 class="recibidos-header__title">Recibidos</h1>
+      <span
+        *ngIf="!loading && totalPendientes > 0"
+        class="recibidos-header__count"
+        aria-label="Solicitudes pendientes"
+      >
+        {{ totalPendientes }}
+      </span>
+    </div>
+    <p class="recibidos-header__subtitle">
+      Entradas y covers que alguien te envió a tu cuenta Eventum.
+    </p>
+    <a
+      routerLink="/mis-compras/actividad"
+      class="recibidos-historial-bar"
+      aria-label="Ver historial de traslados"
+    >
+      <span class="material-icons recibidos-historial-bar__icon" aria-hidden="true">history</span>
+      <span class="recibidos-historial-bar__label">Ver historial de traslados</span>
+      <span class="material-icons recibidos-historial-bar__chevron" aria-hidden="true">chevron_right</span>
+    </a>
+  </header>
+
+  <div *ngIf="loading" class="recibidos-loading" aria-busy="true" aria-label="Cargando solicitudes">
+    <div class="recibidos-loading__skeleton" *ngFor="let i of [1, 2]">
+      <span class="recibidos-loading__line recibidos-loading__line--short"></span>
+      <span class="recibidos-loading__line"></span>
+      <span class="recibidos-loading__line recibidos-loading__line--actions"></span>
+    </div>
+  </div>
+
+  <ng-container *ngIf="!loading && totalPendientes > 0">
+    <div class="recibidos-tip" role="note">
+      <span class="material-icons recibidos-tip__icon" aria-hidden="true">info</span>
+      <p>
+        No llega correo: las solicitudes aparecen aquí. Antes de aceptar, guarda tu
+        <strong>documento</strong> en <a routerLink="/perfil">Mi perfil</a>.
+      </p>
+    </div>
+
+    <ul class="recibidos-list" aria-label="Solicitudes por aceptar">
+      <li
+        *ngFor="let t of solicitudes"
+        class="recibidos-card"
+        [class.recibidos-card--cover]="esCover(t)"
+      >
+        <div class="recibidos-card__head">
+          <span class="recibidos-card__badge">Pendiente</span>
+          <span class="recibidos-card__tipo">{{ tipo(t) }}</span>
+        </div>
+
+        <h2 class="recibidos-card__title">{{ titulo(t) }}</h2>
+        <p class="recibidos-card__detalle" *ngIf="detalle(t) as d">{{ d }}</p>
+
+        <p class="recibidos-card__from">
+          <span class="material-icons" aria-hidden="true">mail_outline</span>
+          <span>De {{ remitente(t) }}</span>
+        </p>
+
+        <p class="recibidos-card__hint">
+          El código QR se habilita después de <strong>aceptar</strong>.
+        </p>
+
+        <div class="recibidos-card__actions">
+          <button
+            type="button"
+            class="recibidos-btn recibidos-btn--ghost"
+            (click)="rechazar(t)"
+            [disabled]="procesandoId != null"
+          >
+            Rechazar
+          </button>
+          <button
+            type="button"
+            class="recibidos-btn recibidos-btn--primary"
+            (click)="aceptar(t)"
+            [disabled]="procesandoId != null"
+          >
+            {{ procesandoId === t.id ? 'Procesando…' : labelAceptar(t) }}
+          </button>
+        </div>
+      </li>
+    </ul>
+
+    <p class="recibidos-footer-hint">
+      ¿Buscas envíos anteriores?
+      <a routerLink="/mis-compras/actividad">Ver historial de traslados</a>
+    </p>
+  </ng-container>
+
+  <div *ngIf="!loading && totalPendientes === 0" class="recibidos-empty">
+    <div class="recibidos-empty__icon-wrap" aria-hidden="true">
+      <span class="material-icons">inbox</span>
+    </div>
+    <p class="recibidos-empty__title">Bandeja vacía</p>
+    <p class="recibidos-empty__text">
+      Cuando alguien te envíe una entrada o cover, la verás aquí para aceptarla o rechazarla.
+    </p>
+    <div class="recibidos-empty__actions">
+      <a routerLink="/mis-compras" class="recibidos-btn recibidos-btn--primary recibidos-btn--link">
+        Ir a Mis compras
+      </a>
+      <a routerLink="/eventos-cliente" class="recibidos-empty__secondary">
+        Explorar eventos
+      </a>
+    </div>
+  </div>
+</div>

@@ -30,15 +30,10 @@
       [class.pc-card--agotado]="!tieneExistencias(producto)"
       [class.pc-card--en-carrito]="cantidadEnCarrito(producto.id) > 0"
     >
-      <div class="pc-card__inner">
-        <div class="pc-card__visual" *ngIf="producto.imagen_url; else pcPlaceholder">
+      <div class="pc-card__inner" [class.pc-card__inner--sin-imagen]="!producto.imagen_url">
+        <div class="pc-card__visual" *ngIf="producto.imagen_url">
           <img [src]="producto.imagen_url" [alt]="producto.nombre" loading="lazy" />
         </div>
-        <ng-template #pcPlaceholder>
-          <div class="pc-card__visual pc-card__visual--placeholder" aria-hidden="true">
-            <span class="material-icons">{{ producto.es_licor ? 'local_bar' : 'inventory_2' }}</span>
-          </div>
-        </ng-template>
 
         <div class="pc-card__content">
           <div class="pc-card__head">

@@ -363,11 +363,17 @@ export class Layout implements OnInit, OnDestroy {
         ? [{ path: '/clubes', label: COVERS_LABELS.explorar, icon: 'local_bar', exact: true }]
         : []),
       {
+        path: '/recibidos',
+        label: 'Recibidos',
+        icon: 'move_to_inbox',
+        exact: true,
+        badge: 'traslados-pendientes',
+      },
+      {
         path: '/mis-compras',
         label: 'Mis compras',
         icon: 'confirmation_number',
         exact: true,
-        badge: 'traslados-pendientes',
       },
       ...(this.coversEventumEnabled && this.mostrarNavAccesosPuerta
         ? [{

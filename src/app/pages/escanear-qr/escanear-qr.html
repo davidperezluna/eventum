@@ -66,55 +66,125 @@
     </section>
 
     <section *ngIf="modoBusqueda === 'manual'" class="manual-section content-card">
-      <label for="doc-buscar">Buscar por documento</label>
-      <div class="manual-row">
-        <input
-          id="doc-buscar"
-          type="text"
-          class="form-control"
-          inputmode="numeric"
-          autocomplete="off"
-          maxlength="12"
-          [(ngModel)]="documento"
-          placeholder="Cédula del asistente (6 a 10 dígitos)"
-          (keyup.enter)="buscarPorDocumento()"
-          [disabled]="buscando || validando || (requierePermisosLector && permisos.length === 0)"
-        />
-        <button
-          type="button"
-          class="btn-primary"
-          (click)="buscarPorDocumento()"
-          [disabled]="buscando || validando || !documento.trim() || (requierePermisosLector && permisos.length === 0)"
-        >
-          <span class="material-icons">search</span>
-        </button>
+      <div
+        *ngIf="sinPermisosEscaneoAsignados"
+        class="alert-box warn manual-permiso-aviso"
+        role="alert"
+      >
+        <span class="material-icons" aria-hidden="true">lock</span>
+        <div>
+          <strong>Sin permisos de escaneo</strong>
+          <p>{{ mensajeSinPermisosEscaneo }}</p>
+        </div>
       </div>
-      <p class="manual-hint">Si el QR no funciona, busca por cedula o documento.</p>
 
-      <div *ngIf="boletasEncontradas.length > 1" class="lista-boletas">
-        <h3>{{ boletasEncontradas.length }} entradas encontradas</h3>
-        <button
-          type="button"
-          class="result-card"
-          *ngFor="let b of boletasEncontradas"
-          (click)="seleccionarBoletaLista(b)"
-        >
-          <div>
-            <strong>{{ nombreAsistenteBoleta(b) }}</strong>
-            <span class="result-hint">{{ documentoAsistenteBoleta(b) }}</span>
-          </div>
-          <span class="material-icons">chevron_right</span>
-        </button>
+      <div
+        *ngIf="avisoBusquedaDocumento && !sinPermisosEscaneoAsignados"
+        class="alert-box error manual-permiso-aviso"
+        role="alert"
+      >
+        <span class="material-icons" aria-hidden="true">block</span>
+        <div>
+          <strong>Sin permiso para validar</strong>
+          <p>{{ avisoBusquedaDocumento }}</p>
+        </div>
+      </div>
+
+      <div class="manual-search">
+        <label for="doc-buscar" class="manual-search__label">Buscar por documento</label>
+        <p class="manual-search__lead">Entradas del asistente o productos pendientes del comprador.</p>
+
+        <div class="manual-row">
+          <input
+            id="doc-buscar"
+            type="text"
+            class="form-control manual-search__input"
+            inputmode="numeric"
+            autocomplete="off"
+            maxlength="12"
+            [(ngModel)]="documento"
+            placeholder="Número de cédula"
+            aria-describedby="doc-buscar-hint"
+            (keyup.enter)="buscarPorDocumento()"
+            (input)="limpiarAvisoBusquedaDocumento()"
+            [disabled]="buscando || validando || sinPermisosEscaneoAsignados"
+          />
+          <button
+            type="button"
+            class="btn-primary manual-search__btn"
+            (click)="buscarPorDocumento()"
+            [disabled]="buscando || validando || !documento.trim() || sinPermisosEscaneoAsignados"
+            aria-label="Buscar por documento"
+          >
+            <span class="material-icons" aria-hidden="true">{{ buscando ? 'hourglass_top' : 'search' }}</span>
+            <span class="manual-search__btn-text">{{ buscando ? 'Buscando…' : 'Buscar' }}</span>
+          </button>
+        </div>
+
+        <p id="doc-buscar-hint" class="manual-hint">Ingresa la cédula del asistente o del comprador (6 a 10 dígitos).</p>
+      </div>
+
+      <div *ngIf="totalResultadosDocumentoBusqueda > 1" class="lista-boletas">
+        <h3>{{ totalResultadosDocumentoBusqueda }} resultados encontrados</h3>
+
+        <ng-container *ngIf="boletasEncontradas.length > 0">
+          <p class="lista-boletas__section-label">Entradas</p>
+          <button
+            type="button"
+            class="result-card"
+            *ngFor="let b of boletasEncontradas"
+            (click)="seleccionarBoletaLista(b)"
+          >
+            <div>
+              <strong>{{ nombreAsistenteBoleta(b) }}</strong>
+              <span class="result-hint">{{ documentoAsistenteBoleta(b) }}</span>
+            </div>
+            <span class="material-icons">chevron_right</span>
+          </button>
+        </ng-container>
+
+        <ng-container *ngIf="productosEncontrados.length > 0">
+          <p class="lista-boletas__section-label">Productos</p>
+          <button
+            type="button"
+            class="result-card"
+            *ngFor="let item of productosEncontrados"
+            (click)="seleccionarProductoLista(item)"
+          >
+            <div>
+              <strong>{{ etiquetaProductoLista(item) }}</strong>
+              <span class="result-hint">
+                {{ nombreAsistenteProducto(item) }}
+                <ng-container *ngIf="item.compra?.documento_cliente">
+                  · {{ item.compra?.documento_cliente }}
+                </ng-container>
+              </span>
+            </div>
+            <span class="material-icons">chevron_right</span>
+          </button>
+        </ng-container>
       </div>
     </section>
   </ng-container>
+</div>
 
-  <div *ngIf="modalVisible && (boleta || productoItem || boletaCover)" class="modal-overlay" (click)="cerrarModal(boletasEncontradas.length > 1)">
-    <div class="modal-sheet" (click)="$event.stopPropagation()">
-      <button type="button" class="modal-close" (click)="cerrarModal(boletasEncontradas.length > 1)">
-        <span class="material-icons">close</span>
-      </button>
+<div
+  *ngIf="modalVisible && (boleta || productoItem || boletaCover)"
+  class="modal-overlay"
+  [class.modal-overlay--manual]="modoBusqueda === 'manual'"
+  (click)="cerrarModal(mantenerListaBusquedaDocumento())"
+>
+  <div
+    class="modal-sheet"
+    role="dialog"
+    aria-modal="true"
+    (click)="$event.stopPropagation()"
+  >
+    <button type="button" class="modal-close" (click)="cerrarModal(mantenerListaBusquedaDocumento())">
+      <span class="material-icons">close</span>
+    </button>
 
+    <div class="modal-sheet__body">
       <ng-container *ngIf="boleta">
       <ng-container *ngIf="boleta.estado === 'usada'">
         <div class="modal-center">
@@ -125,7 +195,7 @@
             Asistente: <strong>{{ nombreAsistenteBoleta(boleta) }}</strong>
           </p>
           <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
-          <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1); reiniciarEscaneo()">
+          <button type="button" class="btn-primary" (click)="cerrarModal(mantenerListaBusquedaDocumento()); reiniciarEscaneo()">
             Siguiente
           </button>
         </div>
@@ -140,7 +210,7 @@
             Asistente: <strong>{{ nombreAsistenteBoleta(boleta) }}</strong>
           </p>
           <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
-          <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1)">Cerrar</button>
+          <button type="button" class="btn-primary" (click)="cerrarModal(mantenerListaBusquedaDocumento())">Cerrar</button>
         </div>
       </ng-container>
 
@@ -170,7 +240,7 @@
             Asistente: <strong>{{ nombreAsistenteBoleta(boleta) }}</strong>
           </p>
           <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
-          <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1)">Cerrar</button>
+          <button type="button" class="btn-primary" (click)="cerrarModal(mantenerListaBusquedaDocumento())">Cerrar</button>
         </div>
       </ng-container>
       </ng-container>
@@ -185,7 +255,7 @@
               Cliente: <strong>{{ nombreAsistenteProducto(productoItem) }}</strong>
             </p>
             <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
-            <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1); reiniciarEscaneo()">
+            <button type="button" class="btn-primary" (click)="cerrarModal(mantenerListaBusquedaDocumento()); reiniciarEscaneo()">
               Siguiente
             </button>
           </div>
@@ -229,7 +299,7 @@
               Cliente: <strong>{{ nombreAsistenteProducto(productoItem) }}</strong>
             </p>
             <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
-            <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1)">Cerrar</button>
+            <button type="button" class="btn-primary" (click)="cerrarModal(mantenerListaBusquedaDocumento())">Cerrar</button>
           </div>
         </ng-container>
       </ng-container>
@@ -244,7 +314,7 @@
               Asistente: <strong>{{ nombreAsistenteCover(boletaCover) }}</strong>
             </p>
             <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
-            <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1); reiniciarEscaneo()">
+            <button type="button" class="btn-primary" (click)="cerrarModal(mantenerListaBusquedaDocumento()); reiniciarEscaneo()">
               Siguiente
             </button>
           </div>
@@ -259,7 +329,7 @@
               Asistente: <strong>{{ nombreAsistenteCover(boletaCover) }}</strong>
             </p>
             <p class="modal-auto-next" *ngIf="requierePermisosLector && modoBusqueda === 'scanner'">Continuando automaticamente...</p>
-            <button type="button" class="btn-primary" (click)="cerrarModal(boletasEncontradas.length > 1)">Cerrar</button>
+            <button type="button" class="btn-primary" (click)="cerrarModal(mantenerListaBusquedaDocumento())">Cerrar</button>
           </div>
         </ng-container>
 

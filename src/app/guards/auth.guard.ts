@@ -19,7 +19,7 @@ function segmentosDesdeUrl(router: Router, url: string): string[] {
  * El resto (dashboard, eventos admin, usuarios, etc.) queda bloqueado.
  * Públicas (sin este guard): eventos-cliente, conocenos, detalle-evento/:id.
  * Rutas cupos (/cupos, /cupos-evento, /mis-cupos) solo si `environment.cuposEventumEnabled`.
- * Cliente en rutas protegidas: mis-compras, mis-compras/evento/:id, mis-compras/club/:id, perfil, pago-resultado.
+ * Cliente en rutas protegidas: mis-compras, recibidos, mis-compras/evento/:id, mis-compras/club/:id, perfil, pago-resultado.
  */
 function clienteTienePermisoParaRuta(router: Router, url: string): boolean {
   const segments = segmentosDesdeUrl(router, url);
@@ -28,6 +28,8 @@ function clienteTienePermisoParaRuta(router: Router, url: string): boolean {
   const [a, b, c] = segments;
 
   if (a === 'mis-cupos' && segments.length === 1) return true;
+
+  if (a === 'recibidos' && segments.length === 1) return true;
 
   if (a === 'mis-compras') {
     if (segments.length === 1) return true;
@@ -58,6 +60,7 @@ function esRutaLoginCliente(router: Router, url: string): boolean {
     'cupos',
     'mis-cupos',
     'mis-compras',
+    'recibidos',
     'perfil',
     'completar-perfil',
     'pago-resultado',
