@@ -4,7 +4,7 @@ export const COMPRA_COPY = {
   emailHeroLabelConfirmado: 'Tu compra quedó en esta cuenta',
   emailHeroLabelPendiente: 'Cuando se confirme, verás tu compra en esta cuenta',
   wompiReciboNota:
-    'En la pasarela puedes usar otro correo solo para el recibo del banco. Eso no mueve tus entradas: entrarás con el correo de arriba en Mis compras.',
+    'En la pasarela puedes usar otro correo solo para el recibo del banco.',
   wompiReciboNotaPostPago:
     'Si el recibo de la pasarela llegó a otro correo, es solo el comprobante del banco.',
   pagoWompiChip: 'Paso 2 · Confirmación antes de la pasarela',
