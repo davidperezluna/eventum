@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 /** Versión desplegada — sync Wompi (boletas, productos, mixto, cover independiente). */
-const WOMPI_SYNC_STATUS_VERSION = '2.7.0-covers-independiente'
+const WOMPI_SYNC_STATUS_VERSION = '2.8.0-approved-rematerialize'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -69,6 +69,28 @@ async function resolveWompiPrivateKey(
 
 function isFinalWompiStatus(status: string | null | undefined): boolean {
   return ['APPROVED', 'DECLINED', 'VOIDED', 'ERROR'].includes(String(status || '').toUpperCase())
+}
+
+function checkoutNeedsMaterialization(row: {
+  compra_id?: number | null
+  compra_producto_id?: number | null
+  compra_cover_id?: number | null
+  materializado?: boolean | null
+}): boolean {
+  if (row.materializado === true) return false
+  return (
+    Number(row.compra_id ?? 0) <= 0 &&
+    Number(row.compra_producto_id ?? 0) <= 0 &&
+    Number(row.compra_cover_id ?? 0) <= 0
+  )
+}
+
+function productoTxnNeedsMaterialization(compraProductoId: number | null): boolean {
+  return compraProductoId == null || compraProductoId <= 0
+}
+
+function isWompiApproved(estado: unknown, wompiStatus: unknown): boolean {
+  return estado === 'aprobada' || String(wompiStatus || '').toUpperCase() === 'APPROVED'
 }
 
 function isMissingRpcError(error: unknown): boolean {
@@ -347,7 +369,7 @@ serve(async (req) => {
         const { data } = await supabaseClient
           .from('transacciones_checkout')
           .select(
-            'id, evento_id, lugar_id, wompi_cuenta_id, compra_id, compra_producto_id, compra_cover_id, estado, wompi_status, wompi_reference, wompi_transaction_id, fecha_creacion, es_activa, metadata',
+            'id, evento_id, lugar_id, wompi_cuenta_id, compra_id, compra_producto_id, compra_cover_id, estado, wompi_status, wompi_reference, wompi_transaction_id, fecha_creacion, es_activa, materializado, metadata',
           )
           .eq('id', transaccionCheckoutId)
           .maybeSingle()
@@ -360,7 +382,15 @@ serve(async (req) => {
         throw new Error(`Transacción checkout ${transaccionCheckoutId} no encontrada`)
       }
 
-      if (checkout.estado === 'aprobada' || checkout.wompi_status === 'APPROVED') {
+      if (
+        isWompiApproved(checkout.estado, checkout.wompi_status) &&
+        !checkoutNeedsMaterialization({
+          compra_id: checkout.compra_id != null ? Number(checkout.compra_id) : null,
+          compra_producto_id: checkout.compra_producto_id != null ? Number(checkout.compra_producto_id) : null,
+          compra_cover_id: checkout.compra_cover_id != null ? Number(checkout.compra_cover_id) : null,
+          materializado: checkout.materializado != null ? !!checkout.materializado : null,
+        })
+      ) {
         return new Response(
           JSON.stringify({ success: true, version: WOMPI_SYNC_STATUS_VERSION, already_synced: true, status: 'APPROVED' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
@@ -414,7 +444,11 @@ serve(async (req) => {
         throw new Error(`Transacción producto ${transaccionProductoId} no encontrada`)
       }
 
-      if (txn.estado === 'aprobada' || txn.wompi_status === 'APPROVED') {
+      const txnCompraProductoId = txn.compra_producto_id ? Number(txn.compra_producto_id) : null
+      if (
+        isWompiApproved(txn.estado, txn.wompi_status) &&
+        !productoTxnNeedsMaterialization(txnCompraProductoId)
+      ) {
         return new Response(
           JSON.stringify({ success: true, version: WOMPI_SYNC_STATUS_VERSION, already_synced: true, status: 'APPROVED' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },

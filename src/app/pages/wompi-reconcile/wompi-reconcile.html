@@ -1,0 +1,198 @@
+<div class="wompi-reconcile-page">
+  <header class="page-header">
+    <div>
+      <h1>
+        <span class="material-icons">compare_arrows</span>
+        Reconciliación Wompi
+      </h1>
+      <p>Consulta pagos en Wompi cruzados con checkout y compras en Eventum.</p>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button type="button" class="tab" [class.tab--active]="activeTab === 'buscar'" (click)="setTab('buscar')">
+      Buscar
+    </button>
+    <button type="button" class="tab" [class.tab--active]="activeTab === 'huerfanos'" (click)="setTab('huerfanos')">
+      Requieren acción
+      <span *ngIf="orphans.length > 0" class="tab-badge">{{ orphans.length }}</span>
+    </button>
+  </div>
+
+  <ng-container *ngIf="activeTab === 'buscar'">
+    <div class="filters-card">
+      <input
+        [(ngModel)]="searchReference"
+        (keyup.enter)="buscar()"
+        type="text"
+        class="select-input"
+        placeholder="Reference Wompi (EVENTUM-CHK-TXN-...)"
+      />
+      <input
+        [(ngModel)]="searchWompiTxId"
+        (keyup.enter)="buscar()"
+        type="text"
+        class="select-input"
+        placeholder="Wompi transaction ID"
+      />
+      <input
+        [(ngModel)]="searchCheckoutId"
+        (keyup.enter)="buscar()"
+        type="number"
+        class="select-input"
+        placeholder="Checkout ID"
+      />
+      <input
+        [(ngModel)]="searchCompraId"
+        (keyup.enter)="buscar()"
+        type="number"
+        class="select-input"
+        placeholder="Compra ID (boletas)"
+      />
+      <button type="button" class="btn-primary" [disabled]="loading" (click)="buscar()">
+        <span class="material-icons">search</span>
+        {{ loading ? 'Consultando…' : 'Consultar' }}
+      </button>
+    </div>
+
+    <div *ngIf="loading" class="content-card loading-state">Consultando Wompi y base de datos…</div>
+
+    <div *ngIf="!loading && result?.success" class="result-grid">
+      <section class="content-card panel">
+        <h2>
+          <span class="material-icons">account_balance</span>
+          Wompi
+          <span class="env-badge">{{ result?.wompi_environment || '—' }}</span>
+        </h2>
+        <ng-container *ngIf="result?.wompi; else noWompi">
+          <dl class="kv">
+            <dt>Status</dt><dd><strong>{{ result?.wompi?.status }}</strong></dd>
+            <dt>Reference</dt><dd class="mono">{{ result?.wompi?.reference }}</dd>
+            <dt>Transaction ID</dt><dd class="mono">{{ result?.wompi?.id }}</dd>
+            <dt>Monto</dt><dd>{{ formatWompiAmount(result?.wompi?.amount_in_cents, result?.wompi?.currency) }}</dd>
+            <dt>Email cliente</dt><dd>{{ result?.wompi?.customer_email || '—' }}</dd>
+            <dt>Método</dt><dd>{{ result?.wompi?.payment_method_type || '—' }}</dd>
+            <dt>Creado</dt><dd>{{ result?.wompi?.created_at || '—' }}</dd>
+          </dl>
+          <p class="lookup-hint" *ngIf="result?.lookup_source">Fuente: {{ result?.lookup_source }}</p>
+        </ng-container>
+        <ng-template #noWompi>
+          <p class="empty-inline">No se encontró transacción en Wompi con los criterios dados.</p>
+        </ng-template>
+      </section>
+
+      <section class="content-card panel">
+        <h2>
+          <span class="material-icons">receipt_long</span>
+          Eventum — Checkout
+        </h2>
+        <ng-container *ngIf="result?.checkout; else noCheckout">
+          <dl class="kv">
+            <dt>ID</dt><dd>{{ result?.checkout?.id }}</dd>
+            <dt>Tipo</dt><dd>{{ result?.checkout?.tipo }}</dd>
+            <dt>Estado</dt><dd>{{ result?.checkout?.estado }}</dd>
+            <dt>Wompi status</dt><dd>{{ result?.checkout?.wompi_status || '—' }}</dd>
+            <dt>Materializado</dt><dd>{{ result?.checkout?.materializado ? 'Sí' : 'No' }}</dd>
+            <dt>Cliente</dt><dd>{{ getClienteLabel(result!.checkout!) }}</dd>
+            <dt>Evento</dt><dd>{{ result?.checkout?.evento?.titulo || '—' }}</dd>
+            <dt>Total BD</dt><dd>{{ formatCurrency(result?.checkout?.total, result?.checkout?.moneda) }}</dd>
+            <dt>Compra boletas</dt><dd>{{ result?.checkout?.compra_id || '—' }}</dd>
+            <dt>Compra productos</dt><dd>{{ result?.checkout?.compra_producto_id || '—' }}</dd>
+            <dt>Compra cover</dt><dd>{{ result?.checkout?.compra_cover_id || '—' }}</dd>
+          </dl>
+          <div class="panel-actions">
+            <a
+              class="btn-secondary btn-link"
+              [routerLink]="['/transacciones-checkout']"
+              [queryParams]="{ tx_id: result?.checkout?.id }"
+            >
+              Ver en transacciones
+            </a>
+            <button
+              *ngIf="result?.requiere_accion"
+              type="button"
+              class="btn-primary"
+              [disabled]="syncingId === result?.checkout?.id"
+              (click)="sincronizar(result!.checkout!.id)"
+            >
+              {{ syncingId === result?.checkout?.id ? 'Sincronizando…' : 'Sincronizar' }}
+            </button>
+          </div>
+        </ng-container>
+        <ng-template #noCheckout>
+          <p class="empty-inline">No hay checkout en Eventum para este criterio.</p>
+        </ng-template>
+      </section>
+
+      <section class="content-card panel panel--full" *ngIf="result?.compras && (result?.compras?.['compra_boletas'] || result?.compras?.['compra_productos'] || result?.compras?.['compra_cover'])">
+        <h2><span class="material-icons">shopping_bag</span> Compras materializadas</h2>
+        <pre class="json-block">{{ result?.compras | json }}</pre>
+      </section>
+
+      <section class="content-card panel panel--full">
+        <h2><span class="material-icons">rule</span> Diagnóstico</h2>
+        <ul class="diag-list">
+          <li *ngFor="let item of result?.diagnostico" [class]="diagnosticoClass(item)">
+            <strong>{{ item.codigo }}</strong> — {{ item.mensaje }}
+          </li>
+        </ul>
+      </section>
+    </div>
+  </ng-container>
+
+  <ng-container *ngIf="activeTab === 'huerfanos'">
+    <div class="content-card">
+      <div class="panel-toolbar">
+        <p>Checkouts aprobados en BD sin compra materializada. El cron también los procesa automáticamente.</p>
+        <button type="button" class="btn-secondary" [disabled]="orphansLoading" (click)="loadOrphans()">
+          <span class="material-icons">refresh</span>
+          Actualizar
+        </button>
+      </div>
+
+      <div *ngIf="orphansLoading" class="loading-state">Cargando…</div>
+
+      <div *ngIf="!orphansLoading && orphans.length === 0" class="empty-state">
+        <span class="material-icons">check_circle</span>
+        <p>No hay checkouts huérfanos pendientes.</p>
+      </div>
+
+      <div *ngIf="!orphansLoading && orphans.length > 0" class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Cliente</th>
+              <th>Evento</th>
+              <th>Tipo</th>
+              <th>Reference</th>
+              <th>Fecha</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of orphans">
+              <td>{{ row.id }}</td>
+              <td>{{ getClienteLabel(row) }}</td>
+              <td>{{ row.evento?.titulo || '—' }}</td>
+              <td>{{ row.tipo }}</td>
+              <td class="mono cell-truncate" [attr.title]="row.wompi_reference || ''">{{ row.wompi_reference || '—' }}</td>
+              <td>{{ row.fecha_creacion | dateFormat:'short' }}</td>
+              <td class="actions">
+                <button type="button" class="btn-venta-action btn-venta-action--text" (click)="verEnBuscar(row)">Analizar</button>
+                <button
+                  type="button"
+                  class="btn-venta-action btn-venta-action--text btn-venta-action--primary"
+                  [disabled]="syncingId === row.id"
+                  (click)="sincronizar(row.id)"
+                >
+                  {{ syncingId === row.id ? '…' : 'Sync' }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+</div>

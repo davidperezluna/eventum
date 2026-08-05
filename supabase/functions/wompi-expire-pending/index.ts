@@ -1,8 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-/** Expira checkouts pendientes — boletas, productos, mixto y cover independiente. */
-const WOMPI_EXPIRE_PENDING_VERSION = '2.4.0-covers-independiente'
+/** Expira checkouts pendientes y reconcilia aprobados sin materializar. */
+const WOMPI_EXPIRE_PENDING_VERSION = '2.6.0-approved-orphan-reconcile'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -180,6 +180,80 @@ function extractTransactionIds(payload: unknown): string[] {
   }
 
   return Array.from(result)
+}
+
+function checkoutNeedsMaterialization(row: {
+  compra_id?: number | null
+  compra_producto_id?: number | null
+  compra_cover_id?: number | null
+  materializado?: boolean | null
+}): boolean {
+  if (row.materializado === true) return false
+  return (
+    Number(row.compra_id ?? 0) <= 0 &&
+    Number(row.compra_producto_id ?? 0) <= 0 &&
+    Number(row.compra_cover_id ?? 0) <= 0
+  )
+}
+
+function productoTxnNeedsMaterialization(compraProductoId: number | null): boolean {
+  return compraProductoId == null || compraProductoId <= 0
+}
+
+function isDbWompiApproved(estado: unknown, wompiStatus: unknown): boolean {
+  return (
+    String(estado || '').toLowerCase() === 'aprobada' ||
+    String(wompiStatus || '').toUpperCase() === 'APPROVED'
+  )
+}
+
+function mergeRowsById<T extends { id: unknown; fecha_creacion?: unknown }>(
+  ...lists: Array<Array<T> | null | undefined>
+): T[] {
+  const byId = new Map<number, T>()
+  for (const list of lists) {
+    for (const row of list ?? []) {
+      byId.set(Number(row.id), row)
+    }
+  }
+  return Array.from(byId.values()).sort((a, b) =>
+    String(a.fecha_creacion ?? '').localeCompare(String(b.fecha_creacion ?? ''))
+  )
+}
+
+async function runSyntheticWebhook(
+  supabaseUrl: string,
+  supabaseServiceKey: string,
+  environment: string,
+  transaction: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const syntheticWebhook = {
+    event: 'transaction.updated',
+    data: { transaction },
+    environment: environment === 'production' ? 'prod' : 'test',
+    timestamp: Math.floor(Date.now() / 1000),
+    sent_at: new Date().toISOString(),
+    source: 'wompi-expire-pending',
+  }
+
+  const webhookResponse = await fetch(`${supabaseUrl}/functions/v1/wompi-webhook`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${supabaseServiceKey}`,
+      apikey: supabaseServiceKey,
+    },
+    body: JSON.stringify(syntheticWebhook),
+  })
+
+  const webhookResult = await webhookResponse.json()
+  if (!webhookResponse.ok) {
+    throw new Error(webhookResult?.error || `wompi-webhook respondió ${webhookResponse.status}`)
+  }
+  if (webhookResult?.success === false || webhookResult?.error) {
+    throw new Error(String(webhookResult.error || 'wompi-webhook no procesó la materialización'))
+  }
+  return webhookResult as Record<string, unknown>
 }
 
 async function closeTransaccionProducto(
@@ -402,23 +476,55 @@ serve(async (req) => {
     const summary = {
       ttl_minutes: ttlMinutes,
       cutoff: cutoffIso,
-      found: pendientes?.length || 0,
+      found: 0,
+      found_orphan: 0,
       processed: 0,
       expired: 0,
       rejected_or_voided: 0,
       approved_skipped: 0,
+      approved_materialized: 0,
+      approved_already_materialized: 0,
+      approved_orphan_skipped: 0,
       errors: 0,
       error_details: [] as string[],
       checkout_found: 0,
+      checkout_orphan_found: 0,
       checkout_processed: 0,
       checkout_expired: 0,
       checkout_rejected_or_voided: 0,
       checkout_approved_skipped: 0,
+      checkout_approved_materialized: 0,
+      checkout_approved_already_materialized: 0,
+      checkout_approved_orphan_skipped: 0,
     }
+
+    let productoOrphans: typeof pendientes = []
+    const { data: productoOrphansRaw, error: productoOrphansError } = await supabaseClient
+      .from('transacciones_producto')
+      .select(
+        'id, evento_id, compra_producto_id, wompi_cuenta_id, wompi_transaction_id, wompi_reference, estado, wompi_status, es_activa, fecha_creacion, response_payload, webhook_payload',
+      )
+      .or('estado.eq.aprobada,wompi_status.eq.APPROVED')
+      .is('compra_producto_id', null)
+      .order('fecha_creacion', { ascending: true })
+      .limit(batchLimit)
+
+    if (productoOrphansError) {
+      if (!isMissingTableError(productoOrphansError)) {
+        summary.errors += 1
+        summary.error_details.push(`producto_orphan_query -> ${productoOrphansError.message}`)
+      }
+    } else {
+      productoOrphans = productoOrphansRaw
+    }
+
+    const productoRows = mergeRowsById(pendientes, productoOrphans)
+    summary.found = productoRows.length
+    summary.found_orphan = productoOrphans?.length || 0
 
     const credentialCache = new Map<string, WompiAccountCache>()
 
-    for (const txn of pendientes || []) {
+    for (const txn of productoRows) {
       summary.processed += 1
       try {
         const eventoId = txn.evento_id ? Number(txn.evento_id) : null
@@ -456,8 +562,31 @@ serve(async (req) => {
         }
 
         const wompiStatus = String(transaction?.status || '').toUpperCase()
+        const dbApproved = isDbWompiApproved(txn.estado, txn.wompi_status)
+        const needsMaterialization = productoTxnNeedsMaterialization(compraProductoId)
+        const approvedOrphan = dbApproved && needsMaterialization
+
         if (wompiStatus === 'APPROVED') {
-          summary.approved_skipped += 1
+          if (!transaction) {
+            summary.approved_skipped += 1
+            continue
+          }
+          if (!productoTxnNeedsMaterialization(compraProductoId)) {
+            summary.approved_already_materialized += 1
+            continue
+          }
+          await runSyntheticWebhook(
+            supabaseUrl,
+            supabaseServiceKey,
+            credentials.environment,
+            transaction,
+          )
+          summary.approved_materialized += 1
+          continue
+        }
+
+        if (approvedOrphan) {
+          summary.approved_orphan_skipped += 1
           continue
         }
 
@@ -491,25 +620,56 @@ serve(async (req) => {
     }
 
     {
-      const { data: checkouts, error: checkoutError } = await supabaseClient
+      const checkoutSelect =
+        'id, evento_id, compra_id, compra_producto_id, compra_cover_id, wompi_cuenta_id, wompi_transaction_id, wompi_reference, estado, wompi_status, es_activa, materializado, fecha_creacion, response_payload, webhook_payload, metadata'
+
+      const { data: checkoutsPending, error: checkoutPendingError } = await supabaseClient
         .from('transacciones_checkout')
-        .select(
-          'id, evento_id, compra_id, compra_producto_id, compra_cover_id, wompi_cuenta_id, wompi_transaction_id, wompi_reference, estado, wompi_status, es_activa, fecha_creacion, response_payload, webhook_payload, metadata',
-        )
+        .select(checkoutSelect)
         .eq('estado', 'pendiente')
         .eq('es_activa', true)
         .lte('fecha_creacion', cutoffIso)
         .order('fecha_creacion', { ascending: true })
         .limit(batchLimit)
 
-      if (checkoutError) {
-        if (!isMissingTableError(checkoutError)) {
+      const { data: checkoutsOrphanRaw, error: checkoutOrphanError } = await supabaseClient
+        .from('transacciones_checkout')
+        .select(checkoutSelect)
+        .or('estado.eq.aprobada,wompi_status.eq.APPROVED')
+        .or('materializado.eq.false,materializado.is.null')
+        .is('compra_id', null)
+        .is('compra_producto_id', null)
+        .is('compra_cover_id', null)
+        .order('fecha_creacion', { ascending: true })
+        .limit(batchLimit)
+
+      let checkoutsPendingSafe = checkoutsPending
+      if (checkoutPendingError) {
+        if (isMissingTableError(checkoutPendingError)) {
+          checkoutsPendingSafe = []
+        } else {
           summary.errors += 1
-          summary.error_details.push(`checkout_query -> ${checkoutError.message}`)
+          summary.error_details.push(`checkout_query -> ${checkoutPendingError.message}`)
+          checkoutsPendingSafe = []
         }
-      } else {
-        summary.checkout_found = checkouts?.length || 0
-        for (const row of checkouts || []) {
+      }
+
+      let checkoutsOrphanSafe = checkoutsOrphanRaw
+      if (checkoutOrphanError) {
+        if (isMissingTableError(checkoutOrphanError)) {
+          checkoutsOrphanSafe = []
+        } else {
+          summary.errors += 1
+          summary.error_details.push(`checkout_orphan_query -> ${checkoutOrphanError.message}`)
+          checkoutsOrphanSafe = []
+        }
+      }
+
+      const checkouts = mergeRowsById(checkoutsPendingSafe, checkoutsOrphanSafe)
+      summary.checkout_found = checkouts.length
+      summary.checkout_orphan_found = checkoutsOrphanSafe?.length || 0
+
+      for (const row of checkouts) {
           summary.checkout_processed += 1
           try {
             const eventoId = row.evento_id ? Number(row.evento_id) : null
@@ -553,8 +713,31 @@ serve(async (req) => {
             }
 
             const wompiStatus = String(transaction?.status || '').toUpperCase()
+            const dbApproved = isDbWompiApproved(row.estado, row.wompi_status)
+            const needsMaterialization = checkoutNeedsMaterialization(row)
+            const approvedOrphan = dbApproved && needsMaterialization
+
             if (wompiStatus === 'APPROVED') {
-              summary.checkout_approved_skipped += 1
+              if (!transaction) {
+                summary.checkout_approved_skipped += 1
+                continue
+              }
+              if (!checkoutNeedsMaterialization(row)) {
+                summary.checkout_approved_already_materialized += 1
+                continue
+              }
+              await runSyntheticWebhook(
+                supabaseUrl,
+                supabaseServiceKey,
+                credentials.environment,
+                transaction,
+              )
+              summary.checkout_approved_materialized += 1
+              continue
+            }
+
+            if (approvedOrphan) {
+              summary.checkout_approved_orphan_skipped += 1
               continue
             }
 
@@ -592,7 +775,6 @@ serve(async (req) => {
             summary.error_details.push(`checkout:${row.id} -> ${err instanceof Error ? err.message : String(err)}`)
           }
         }
-      }
     }
 
     return new Response(

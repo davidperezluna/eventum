@@ -326,6 +326,7 @@ export class Layout implements OnInit, OnDestroy {
           { path: '/ventas-productos', label: 'Ventas productos', icon: 'inventory_2' },
           { path: '/ventas-palcos', label: 'Ventas palcos', icon: 'weekend' },
           { path: '/transacciones-checkout', label: 'Transacciones', icon: 'receipt_long' },
+          { path: '/wompi-reconcile', label: 'Reconciliación Wompi', icon: 'compare_arrows' },
         ]
       },
       { path: '/probar-compras', label: 'Probar compras', icon: 'storefront' },
