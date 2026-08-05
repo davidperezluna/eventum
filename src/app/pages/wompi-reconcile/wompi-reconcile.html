@@ -5,7 +5,7 @@
         <span class="material-icons">compare_arrows</span>
         Reconciliación Wompi
       </h1>
-      <p>Consulta pagos en Wompi cruzados con checkout y compras en Eventum.</p>
+      <p>Busca con los datos del comprobante Wompi (referencia y transacción) y compara con Eventum.</p>
     </div>
   </header>
 
@@ -20,42 +20,79 @@
   </div>
 
   <ng-container *ngIf="activeTab === 'buscar'">
-    <div class="filters-card">
-      <input
-        [(ngModel)]="searchReference"
-        (keyup.enter)="buscar()"
-        type="text"
-        class="select-input"
-        placeholder="Reference Wompi (EVENTUM-CHK-TXN-...)"
-      />
-      <input
-        [(ngModel)]="searchWompiTxId"
-        (keyup.enter)="buscar()"
-        type="text"
-        class="select-input"
-        placeholder="Wompi transaction ID"
-      />
-      <input
-        [(ngModel)]="searchCheckoutId"
-        (keyup.enter)="buscar()"
-        type="number"
-        class="select-input"
-        placeholder="Checkout ID"
-      />
-      <input
-        [(ngModel)]="searchCompraId"
-        (keyup.enter)="buscar()"
-        type="number"
-        class="select-input"
-        placeholder="Compra ID (boletas)"
-      />
-      <button type="button" class="btn-primary" [disabled]="loading" (click)="buscar()">
+    <div class="filters-card filters-card--comprobante">
+      <p class="filters-hint">
+        En el comprobante del cliente suelen aparecer solo <strong>Referencia de pago</strong> y
+        <strong>Transacción #</strong>. Con uno de los dos basta para consultar.
+      </p>
+
+      <label class="field">
+        <span class="field-label">Referencia de pago</span>
+        <input
+          [(ngModel)]="searchReference"
+          (keyup.enter)="buscar()"
+          type="text"
+          class="select-input"
+          placeholder="Ej. EVENTUM-CHK-TXN-1939-…"
+          autocomplete="off"
+        />
+      </label>
+
+      <label class="field">
+        <span class="field-label">Transacción #</span>
+        <input
+          [(ngModel)]="searchWompiTxId"
+          (keyup.enter)="buscar()"
+          type="text"
+          class="select-input"
+          placeholder="ID que muestra Wompi en el comprobante"
+          autocomplete="off"
+        />
+      </label>
+
+      <button type="button" class="btn-primary btn-search" [disabled]="loading" (click)="buscar()">
         <span class="material-icons">search</span>
         {{ loading ? 'Consultando…' : 'Consultar' }}
       </button>
+
+      <button type="button" class="btn-advanced-toggle" (click)="toggleAdvancedSearch()">
+        <span class="material-icons">{{ showAdvancedSearch ? 'expand_less' : 'expand_more' }}</span>
+        {{ showAdvancedSearch ? 'Ocultar IDs internos' : 'Búsqueda avanzada (IDs Eventum)' }}
+      </button>
+
+      <div *ngIf="showAdvancedSearch" class="advanced-fields">
+        <label class="field">
+          <span class="field-label">Checkout ID</span>
+          <input [(ngModel)]="searchCheckoutId" (keyup.enter)="buscar()" type="text" inputmode="numeric" class="select-input" placeholder="Ej. 1939" />
+        </label>
+        <label class="field">
+          <span class="field-label">Compra boletas ID</span>
+          <input [(ngModel)]="searchCompraId" (keyup.enter)="buscar()" type="text" inputmode="numeric" class="select-input" placeholder="Ej. 2079" />
+        </label>
+        <label class="field">
+          <span class="field-label">Compra productos ID</span>
+          <input [(ngModel)]="searchCompraProductoId" (keyup.enter)="buscar()" type="text" inputmode="numeric" class="select-input" placeholder="ID compras_productos" />
+        </label>
+        <label class="field">
+          <span class="field-label">Transacción producto ID</span>
+          <input [(ngModel)]="searchTransaccionProductoId" (keyup.enter)="buscar()" type="text" inputmode="numeric" class="select-input" placeholder="ID transacciones_producto" />
+        </label>
+        <button type="button" class="btn-primary btn-search-advanced" [disabled]="loading" (click)="buscar()">
+          <span class="material-icons">search</span>
+          {{ loading ? 'Consultando…' : 'Consultar por ID' }}
+        </button>
+      </div>
     </div>
 
     <div *ngIf="loading" class="content-card loading-state">Consultando Wompi y base de datos…</div>
+
+    <div *ngIf="!loading && searchError && !result?.success" class="content-card error-state">
+      <span class="material-icons">error_outline</span>
+      <p>{{ searchError }}</p>
+      <p class="error-hint" *ngIf="searchError.includes('404') || searchError.includes('Failed')">
+        ¿Desplegaste la función? <code>supabase functions deploy wompi-reconcile-lookup</code>
+      </p>
+    </div>
 
     <div *ngIf="!loading && result?.success" class="result-grid">
       <section class="content-card panel">
@@ -124,6 +161,21 @@
         </ng-template>
       </section>
 
+      <section class="content-card panel" *ngIf="result?.transaccion_producto as txnProd">
+        <h2>
+          <span class="material-icons">inventory_2</span>
+          Eventum — Transacción producto
+        </h2>
+        <dl class="kv">
+          <dt>ID</dt><dd>{{ txnProd['id'] }}</dd>
+          <dt>Estado</dt><dd>{{ txnProd['estado'] }}</dd>
+          <dt>Wompi status</dt><dd>{{ txnProd['wompi_status'] || '—' }}</dd>
+          <dt>Compra producto</dt><dd>{{ txnProd['compra_producto_id'] || '—' }}</dd>
+          <dt>Reference</dt><dd class="mono">{{ txnProd['wompi_reference'] || '—' }}</dd>
+          <dt>Wompi Tx</dt><dd class="mono">{{ txnProd['wompi_transaction_id'] || '—' }}</dd>
+        </dl>
+      </section>
+
       <section class="content-card panel panel--full" *ngIf="result?.compras && (result?.compras?.['compra_boletas'] || result?.compras?.['compra_productos'] || result?.compras?.['compra_cover'])">
         <h2><span class="material-icons">shopping_bag</span> Compras materializadas</h2>
         <pre class="json-block">{{ result?.compras | json }}</pre>
@@ -143,7 +195,10 @@
   <ng-container *ngIf="activeTab === 'huerfanos'">
     <div class="content-card">
       <div class="panel-toolbar">
-        <p>Checkouts aprobados en BD sin compra materializada. El cron también los procesa automáticamente.</p>
+        <p>
+          Checkouts sin compra materializada: aprobados en BD o pendientes vencidos (más de ~10 min) con link Wompi.
+          El cron también los procesa automáticamente.
+        </p>
         <button type="button" class="btn-secondary" [disabled]="orphansLoading" (click)="loadOrphans()">
           <span class="material-icons">refresh</span>
           Actualizar
@@ -162,9 +217,10 @@
           <thead>
             <tr>
               <th>ID</th>
+              <th>Problema</th>
+              <th>Estado BD</th>
               <th>Cliente</th>
               <th>Evento</th>
-              <th>Tipo</th>
               <th>Reference</th>
               <th>Fecha</th>
               <th>Acciones</th>
@@ -173,9 +229,10 @@
           <tbody>
             <tr *ngFor="let row of orphans">
               <td>{{ row.id }}</td>
+              <td><span [class]="orphanTipoClass(row)">{{ getOrphanTipoLabel(row) }}</span></td>
+              <td>{{ row.estado }}</td>
               <td>{{ getClienteLabel(row) }}</td>
               <td>{{ row.evento?.titulo || '—' }}</td>
-              <td>{{ row.tipo }}</td>
               <td class="mono cell-truncate" [attr.title]="row.wompi_reference || ''">{{ row.wompi_reference || '—' }}</td>
               <td>{{ row.fecha_creacion | dateFormat:'short' }}</td>
               <td class="actions">

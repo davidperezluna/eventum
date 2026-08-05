@@ -26,10 +26,14 @@ export class WompiReconcile implements OnInit {
   searchWompiTxId = '';
   searchCheckoutId = '';
   searchCompraId = '';
+  searchCompraProductoId = '';
+  searchTransaccionProductoId = '';
+  showAdvancedSearch = false;
 
   loading = false;
   syncingId: number | null = null;
   result: WompiReconcileLookupResult | null = null;
+  searchError: string | null = null;
 
   orphansLoading = false;
   orphans: WompiReconcileOrphanRow[] = [];
@@ -51,19 +55,29 @@ export class WompiReconcile implements OnInit {
     }
   }
 
+  toggleAdvancedSearch(): void {
+    this.showAdvancedSearch = !this.showAdvancedSearch;
+  }
+
   async buscar(): Promise<void> {
     const reference = this.searchReference.trim();
     const wompiTx = this.searchWompiTxId.trim();
     const checkoutId = this.parsePositiveInt(this.searchCheckoutId);
     const compraId = this.parsePositiveInt(this.searchCompraId);
+    const compraProductoId = this.parsePositiveInt(this.searchCompraProductoId);
+    const transaccionProductoId = this.parsePositiveInt(this.searchTransaccionProductoId);
 
-    if (!reference && !wompiTx && !checkoutId && !compraId) {
-      this.alertService.warning('Búsqueda', 'Indica al menos un criterio de búsqueda.');
+    if (!reference && !wompiTx && !checkoutId && !compraId && !compraProductoId && !transaccionProductoId) {
+      this.alertService.warning(
+        'Búsqueda',
+        'Indica referencia, transacción # del comprobante, o un ID en búsqueda avanzada.',
+      );
       return;
     }
 
     this.loading = true;
     this.result = null;
+    this.searchError = null;
     this.cdr.detectChanges();
 
     try {
@@ -72,12 +86,19 @@ export class WompiReconcile implements OnInit {
         wompi_transaction_id: wompiTx || undefined,
         transaccion_checkout_id: checkoutId ?? undefined,
         compra_id: compraId ?? undefined,
+        compra_producto_id: compraProductoId ?? undefined,
+        transaccion_producto_id: transaccionProductoId ?? undefined,
       });
       if (!this.result.success) {
-        this.alertService.error('Sin resultados', this.result.error || 'No se pudo consultar.');
+        this.searchError = this.result.error || 'No se pudo consultar.';
+        this.alertService.error('Consulta fallida', this.searchError);
+      } else {
+        this.searchError = null;
+        void this.loadOrphans();
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error inesperado';
+      this.searchError = message;
       this.alertService.error('Error', message);
     } finally {
       this.loading = false;
@@ -134,10 +155,13 @@ export class WompiReconcile implements OnInit {
 
   verEnBuscar(row: WompiReconcileOrphanRow): void {
     this.activeTab = 'buscar';
+    this.showAdvancedSearch = true;
     this.searchCheckoutId = String(row.id);
     this.searchReference = '';
     this.searchWompiTxId = '';
     this.searchCompraId = '';
+    this.searchCompraProductoId = '';
+    this.searchTransaccionProductoId = '';
     void this.buscar();
   }
 
@@ -151,6 +175,22 @@ export class WompiReconcile implements OnInit {
       this.loading = false;
       this.cdr.detectChanges();
     }
+  }
+
+  getOrphanTipoLabel(row: WompiReconcileOrphanRow): string {
+    if (row.orphan_tipo === 'pendiente_vencida') {
+      return 'Pendiente vencida';
+    }
+    if (row.orphan_tipo === 'aprobada_sin_compra') {
+      return 'Aprobada sin compra';
+    }
+    return row.estado === 'pendiente' ? 'Pendiente' : 'Sin compra';
+  }
+
+  orphanTipoClass(row: WompiReconcileOrphanRow): string {
+    return row.estado === 'pendiente' || row.orphan_tipo === 'pendiente_vencida'
+      ? 'badge-warning'
+      : 'badge-danger';
   }
 
   getClienteLabel(checkout: { cliente?: { nombre?: string | null; apellido?: string | null; email?: string | null } | null; id?: number }): string {
@@ -186,8 +226,11 @@ export class WompiReconcile implements OnInit {
     }).format(Number(value || 0));
   }
 
-  private parsePositiveInt(value: string): number | null {
-    const n = Number(value.trim());
+  private parsePositiveInt(value: string | number | null | undefined): number | null {
+    if (value == null || value === '') {
+      return null;
+    }
+    const n = typeof value === 'number' ? value : Number(String(value).trim());
     return Number.isInteger(n) && n > 0 ? n : null;
   }
 }

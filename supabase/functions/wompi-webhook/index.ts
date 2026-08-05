@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 /** Webhook Wompi — boletas, productos, mixto y cover independiente (pedido_covers). */
-const WOMPI_WEBHOOK_VERSION = '3.1.0-covers-independiente'
+const WOMPI_WEBHOOK_VERSION = '3.3.0-early-checkout-claim'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -127,8 +127,22 @@ type CheckoutIntent = {
   compra_id?: number | null
   compra_cover_id?: number | null
   compra_producto_id?: number | null
+  materializado?: boolean | null
+  estado?: string | null
   request_payload?: Record<string, unknown> | null
   metadata?: Record<string, unknown> | null
+}
+
+type MaterializationSnapshot = {
+  wompiStatus: string
+  transaccionCheckout: CheckoutIntent | null
+  transaccionProductoId: number | null
+  checkoutTieneBoletas: boolean
+  checkoutTieneProductos: boolean
+  checkoutTieneCovers: boolean
+  compraBoletasId: number | null
+  compraProductoId: number | null
+  compraCoverId: number | null
 }
 
 function parseReference(reference: string | null | undefined): {
@@ -208,6 +222,45 @@ function mapEstadoCheckout(wompiStatus: string | undefined): string {
 function isFailedWompiStatus(status: unknown): boolean {
   const normalized = String(status || '').toUpperCase()
   return normalized === 'DECLINED' || normalized === 'VOIDED' || normalized === 'ERROR'
+}
+
+function isWompiApproved(status: unknown): boolean {
+  return String(status || '').toUpperCase() === 'APPROVED'
+}
+
+function getApprovedMaterializationFailures(snapshot: MaterializationSnapshot): string[] {
+  if (!isWompiApproved(snapshot.wompiStatus)) {
+    return []
+  }
+
+  const failures: string[] = []
+
+  if (!snapshot.transaccionCheckout && snapshot.transaccionProductoId) {
+    if (!snapshot.compraProductoId) {
+      failures.push('APPROVED sin compra_producto_id (transacción producto)')
+    }
+    return failures
+  }
+
+  if (!snapshot.transaccionCheckout) {
+    return failures
+  }
+
+  if (snapshot.checkoutTieneCovers && !snapshot.compraCoverId) {
+    failures.push('APPROVED sin compra_cover_id')
+  }
+  if (snapshot.checkoutTieneBoletas && !snapshot.compraBoletasId) {
+    failures.push('APPROVED sin compra_id (boletas)')
+  }
+  if (snapshot.checkoutTieneProductos && !snapshot.compraProductoId) {
+    failures.push('APPROVED sin compra_producto_id')
+  }
+
+  return failures
+}
+
+function isApprovedFullyMaterialized(snapshot: MaterializationSnapshot): boolean {
+  return getApprovedMaterializationFailures(snapshot).length === 0
 }
 
 function isMissingRpcError(error: unknown): boolean {
@@ -446,6 +499,25 @@ async function crearCompraProductoDesdeCheckout(
   }
 
   const compraProductoId = Number(compra.id)
+
+  if (checkout.id) {
+    const claim = await claimCheckoutForeignId(
+      supabaseClient,
+      checkout.id,
+      'compra_producto_id',
+      compraProductoId,
+    )
+    if (claim === 'lost') {
+      return await resolveLostCheckoutClaim(
+        supabaseClient,
+        checkout.id,
+        'compra_producto_id',
+        'compras_productos',
+        compraProductoId,
+      )
+    }
+  }
+
   const rows = (pedido.items as Array<Record<string, unknown>>).map((item) => ({
     compra_producto_id: compraProductoId,
     producto_id: Number(item.producto_id),
@@ -456,6 +528,13 @@ async function crearCompraProductoDesdeCheckout(
 
   const { error: itemsError } = await supabaseClient.from('compras_productos_items').insert(rows)
   if (itemsError) {
+    if (checkout.id) {
+      await supabaseClient
+        .from('transacciones_checkout')
+        .update({ compra_producto_id: null })
+        .eq('id', checkout.id)
+        .eq('compra_producto_id', compraProductoId)
+    }
     await supabaseClient.from('compras_productos').delete().eq('id', compraProductoId)
     throw itemsError
   }
@@ -596,6 +675,19 @@ async function crearCompraBoletasDesdeCheckout(
 
   const compraId = Number(compra.id)
 
+  if (checkout.id) {
+    const claim = await claimCheckoutForeignId(supabaseClient, checkout.id, 'compra_id', compraId)
+    if (claim === 'lost') {
+      return await resolveLostCheckoutClaim(
+        supabaseClient,
+        checkout.id,
+        'compra_id',
+        'compras',
+        compraId,
+      )
+    }
+  }
+
   try {
     const tipoIds = [...new Set(items.map((item) => Number(item.tipo_boleta_id)))]
     const { data: tiposMeta, error: tiposMetaError } = await supabaseClient
@@ -716,6 +808,13 @@ async function crearCompraBoletasDesdeCheckout(
     return compraId
   } catch (e) {
     await supabaseClient.rpc('cancelar_reserva_palcos_compra', { p_compra_id: compraId })
+    if (checkout.id) {
+      await supabaseClient
+        .from('transacciones_checkout')
+        .update({ compra_id: null })
+        .eq('id', checkout.id)
+        .eq('compra_id', compraId)
+    }
     await supabaseClient.from('compras').delete().eq('id', compraId)
     throw e
   }
@@ -742,6 +841,20 @@ async function crearCompraCoverDesdeCheckout(
     throw new Error('pedido_covers.items está vacío')
   }
 
+  if (checkout.id) {
+    const { data: existingByCheckout } = await supabaseClient
+      .from('compras_cover')
+      .select('id')
+      .eq('transaccion_checkout_id', checkout.id)
+      .maybeSingle()
+
+    if (existingByCheckout?.id) {
+      const existingId = Number(existingByCheckout.id)
+      await claimCheckoutForeignId(supabaseClient, checkout.id, 'compra_cover_id', existingId)
+      return existingId
+    }
+  }
+
   const { data, error } = await supabaseClient.rpc('crear_compra_cover_desde_pedido', {
     p_cliente_id: Number(pedido.cliente_id),
     p_lugar_id: Number(pedido.lugar_id),
@@ -765,6 +878,25 @@ async function crearCompraCoverDesdeCheckout(
   if (!Number.isFinite(compraCoverId) || compraCoverId <= 0) {
     throw new Error('No se pudo materializar compra_cover desde checkout')
   }
+
+  if (checkout.id) {
+    const claim = await claimCheckoutForeignId(
+      supabaseClient,
+      checkout.id,
+      'compra_cover_id',
+      compraCoverId,
+    )
+    if (claim === 'lost') {
+      return await resolveLostCheckoutClaim(
+        supabaseClient,
+        checkout.id,
+        'compra_cover_id',
+        'compras_cover',
+        compraCoverId,
+      )
+    }
+  }
+
   return compraCoverId
 }
 
@@ -925,6 +1057,84 @@ async function procesarTransaccionProducto(
   return compraProductoId
 }
 
+async function reloadTransaccionCheckout(
+  supabaseClient: ReturnType<typeof createClient>,
+  checkoutId: number,
+): Promise<CheckoutIntent | null> {
+  const { data } = await supabaseClient
+    .from('transacciones_checkout')
+    .select('*')
+    .eq('id', checkoutId)
+    .maybeSingle()
+  return data ? (data as CheckoutIntent) : null
+}
+
+type CheckoutClaimColumn = 'compra_id' | 'compra_producto_id' | 'compra_cover_id'
+
+async function claimCheckoutForeignId(
+  supabaseClient: ReturnType<typeof createClient>,
+  checkoutId: number,
+  column: CheckoutClaimColumn,
+  foreignId: number,
+): Promise<'claimed' | 'lost'> {
+  const { data, error } = await supabaseClient
+    .from('transacciones_checkout')
+    .update({ [column]: foreignId })
+    .eq('id', checkoutId)
+    .is(column, null)
+    .select('id')
+    .maybeSingle()
+
+  if (error) throw error
+  return data ? 'claimed' : 'lost'
+}
+
+async function readCheckoutForeignId(
+  supabaseClient: ReturnType<typeof createClient>,
+  checkoutId: number,
+  column: CheckoutClaimColumn,
+): Promise<number | null> {
+  const { data, error } = await supabaseClient
+    .from('transacciones_checkout')
+    .select(column)
+    .eq('id', checkoutId)
+    .maybeSingle()
+
+  if (error) throw error
+  const value = Number((data as Record<string, unknown> | null)?.[column] ?? 0)
+  return Number.isFinite(value) && value > 0 ? value : null
+}
+
+async function resolveLostCheckoutClaim(
+  supabaseClient: ReturnType<typeof createClient>,
+  checkoutId: number,
+  column: CheckoutClaimColumn,
+  orphanTable: 'compras' | 'compras_productos' | 'compras_cover',
+  orphanId: number,
+  cleanupBeforeDelete?: () => Promise<void>,
+): Promise<number> {
+  if (cleanupBeforeDelete) {
+    try {
+      await cleanupBeforeDelete()
+    } catch (e) {
+      console.warn(`Cleanup orphan ${orphanTable}:${orphanId} antes de resolver claim perdido:`, e)
+    }
+  }
+
+  const { error: deleteError } = await supabaseClient.from(orphanTable).delete().eq('id', orphanId)
+  if (deleteError) {
+    console.error(`No se pudo borrar orphan ${orphanTable}:${orphanId}:`, deleteError.message)
+  }
+
+  const existingId = await readCheckoutForeignId(supabaseClient, checkoutId, column)
+  if (!existingId) {
+    throw new Error(`Conflicto de materialización: checkout ${checkoutId} reclamado sin ${column}`)
+  }
+
+  console.log(`Claim perdido en checkout ${checkoutId}; usando ${column}=${existingId}`)
+  return existingId
+}
+
 async function findTransaccionCheckout(
   supabaseClient: ReturnType<typeof createClient>,
   paymentLinkId: string | undefined,
@@ -1021,6 +1231,8 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  let wompiStatus = ''
+
   try {
     const bodyText = await req.text()
     let webhookData: Record<string, unknown>
@@ -1037,6 +1249,7 @@ serve(async (req) => {
 
     const normalized = normalizeWebhookPayload(webhookData)
     const transaction = normalized.transaction
+    wompiStatus = String(transaction.status || '').toUpperCase()
 
     console.log('=== Webhook recibido de Wompi ===', WOMPI_WEBHOOK_VERSION, {
       event: normalized.event,
@@ -1211,15 +1424,57 @@ serve(async (req) => {
       (checkoutTipoTieneBoletas(checkoutTipo) || hasPedidoBoletas(transaccionCheckout))
     const checkoutTieneProductos = !!transaccionCheckout && (checkoutTipoTieneProductos(checkoutTipo) || hasPedidoProductos(transaccionCheckout))
 
+    if (transaccionCheckout?.id) {
+      const reloadedCheckout = await reloadTransaccionCheckout(supabaseClient, Number(transaccionCheckout.id))
+      if (reloadedCheckout) {
+        transaccionCheckout = reloadedCheckout
+      }
+    }
+
     let compraCoverId: number | null = transaccionCheckout?.compra_cover_id
-      ? Number((transaccionCheckout as Record<string, unknown>).compra_cover_id)
+      ? Number(transaccionCheckout.compra_cover_id)
       : null
+
+    if (transaccionCheckout?.compra_id && !compraBoletas) {
+      const { data: compraData } = await supabaseClient
+        .from('compras')
+        .select('id, evento_id, wompi_cuenta_id, wompi_reference, wompi_transaction_id, estado_pago, estado_compra')
+        .eq('id', Number(transaccionCheckout.compra_id))
+        .maybeSingle()
+      compraBoletas = compraData
+    }
+
+    if (transaccionCheckout?.compra_producto_id && !compraProductoId) {
+      compraProductoId = Number(transaccionCheckout.compra_producto_id)
+    }
+
+    const materializationBefore: MaterializationSnapshot = {
+      wompiStatus,
+      transaccionCheckout,
+      transaccionProductoId: transaccionProductoId ?? null,
+      checkoutTieneBoletas,
+      checkoutTieneProductos,
+      checkoutTieneCovers,
+      compraBoletasId: compraBoletas?.id ? Number(compraBoletas.id) : null,
+      compraProductoId,
+      compraCoverId,
+    }
+
+    const alreadyMaterialized = isWompiApproved(wompiStatus) && isApprovedFullyMaterialized(materializationBefore)
+    if (alreadyMaterialized) {
+      console.log('Webhook idempotente: pago APPROVED ya materializado', {
+        transaccion_checkout_id: transaccionCheckout?.id ?? null,
+        compra_id: materializationBefore.compraBoletasId,
+        compra_producto_id: materializationBefore.compraProductoId,
+        compra_cover_id: materializationBefore.compraCoverId,
+      })
+    }
 
     if (
       !compraCoverId &&
       transaccionCheckout &&
       checkoutTieneCovers &&
-      String(transaction.status || '').toUpperCase() === 'APPROVED'
+      isWompiApproved(wompiStatus)
     ) {
       compraCoverId = await crearCompraCoverDesdeCheckout(
         supabaseClient,
@@ -1239,7 +1494,7 @@ serve(async (req) => {
       !compraBoletas?.id &&
       transaccionCheckout &&
       checkoutTieneBoletas &&
-      String(transaction.status || '').toUpperCase() === 'APPROVED'
+      isWompiApproved(wompiStatus)
     ) {
       const compraIdMaterializada = await crearCompraBoletasDesdeCheckout(
         supabaseClient,
@@ -1281,7 +1536,7 @@ serve(async (req) => {
       !compraProductoId &&
       transaccionCheckout &&
       checkoutTieneProductos &&
-      String(transaction.status || '').toUpperCase() === 'APPROVED'
+      isWompiApproved(wompiStatus)
     ) {
       compraProductoId = await crearCompraProductoDesdeCheckout(
         supabaseClient,
@@ -1306,6 +1561,35 @@ serve(async (req) => {
       console.log(`✅ Palcos checkout liberados para intento ${transaccionCheckout.id}`)
     }
 
+    const materializationSnapshot: MaterializationSnapshot = {
+      wompiStatus,
+      transaccionCheckout,
+      transaccionProductoId: transaccionProductoId ?? null,
+      checkoutTieneBoletas,
+      checkoutTieneProductos,
+      checkoutTieneCovers,
+      compraBoletasId: compraBoletas?.id ? Number(compraBoletas.id) : null,
+      compraProductoId,
+      compraCoverId,
+    }
+
+    const materializationFailures = getApprovedMaterializationFailures(materializationSnapshot)
+    if (materializationFailures.length > 0) {
+      console.error('Materialización incompleta para APPROVED — respondiendo 500 para reintento Wompi:', {
+        failures: materializationFailures,
+        transaccion_checkout_id: transaccionCheckout?.id ?? null,
+        transaccion_producto_id: transaccionProductoId ?? null,
+      })
+      return jsonWebhookResponse({
+        received: true,
+        success: false,
+        retryable: true,
+        error: materializationFailures.join('; '),
+        transaccion_checkout_id: transaccionCheckout?.id ?? null,
+        transaccion_producto_id: transaccionProductoId ?? null,
+      }, 500)
+    }
+
     if (transaccionCheckout) {
       await actualizarTransaccionCheckout(
         supabaseClient,
@@ -1325,6 +1609,7 @@ serve(async (req) => {
     return jsonWebhookResponse({
       received: true,
       success: true,
+      already_materialized: alreadyMaterialized,
       transaccion_checkout_id: transaccionCheckout?.id ? Number(transaccionCheckout.id) : null,
       compra_id: compraBoletas?.id ?? null,
       compra_cover_id: compraCoverId,
@@ -1335,6 +1620,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('=== Error procesando webhook ===', error)
     const errorMessage = error instanceof Error ? error.message : String(error)
-    return jsonWebhookResponse({ received: true, success: false, error: errorMessage })
+    const retryable = isWompiApproved(wompiStatus)
+    return jsonWebhookResponse(
+      { received: true, success: false, retryable, error: errorMessage },
+      retryable ? 500 : 200,
+    )
   }
 })

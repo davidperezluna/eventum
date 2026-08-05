@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const WOMPI_RECONCILE_LOOKUP_VERSION = '1.0.0-cross-ref'
+const WOMPI_RECONCILE_LOOKUP_VERSION = '1.1.0-orphan-pending-list'
 const ADMIN_TIPO_USUARIO_ID = 3
 
 const corsHeaders = {
@@ -80,6 +80,33 @@ function isDbWompiApproved(estado: unknown, wompiStatus: unknown): boolean {
     String(estado || '').toLowerCase() === 'aprobada' ||
     String(wompiStatus || '').toUpperCase() === 'APPROVED'
   )
+}
+
+function resolvePendingTtlMinutes(): number {
+  const raw = Number(Deno.env.get('WOMPI_PRODUCT_PENDING_TTL_MINUTES') || 30)
+  if (!Number.isFinite(raw)) return 30
+  return Math.min(1440, Math.max(5, Math.floor(raw)))
+}
+
+function mergeRowsById<T extends { id: unknown; fecha_creacion?: unknown }>(
+  ...lists: Array<Array<T> | null | undefined>
+): T[] {
+  const byId = new Map<number, T>()
+  for (const list of lists) {
+    for (const row of list ?? []) {
+      byId.set(Number(row.id), row)
+    }
+  }
+  return Array.from(byId.values()).sort((a, b) =>
+    String(b.fecha_creacion ?? '').localeCompare(String(a.fecha_creacion ?? ''))
+  )
+}
+
+function classifyOrphanTipo(row: Record<string, unknown>): 'aprobada_sin_compra' | 'pendiente_vencida' {
+  if (isDbWompiApproved(row.estado, row.wompi_status)) {
+    return 'aprobada_sin_compra'
+  }
+  return 'pendiente_vencida'
 }
 
 async function assertAdminCaller(
@@ -272,7 +299,20 @@ function buildDiagnostico(params: {
       items.push({
         nivel: 'warning',
         codigo: 'WOMPI_APPROVED_CHECKOUT_PENDING',
-        mensaje: 'Wompi APPROVED pero checkout sigue pendiente en Eventum.',
+        mensaje: 'Wompi APPROVED pero checkout sigue pendiente en Eventum — usar Sincronizar.',
+      })
+    }
+
+    if (dbEstado === 'pendiente' && checkoutNeedsMaterialization({
+      compra_id: checkout.compra_id as number | null,
+      compra_producto_id: checkout.compra_producto_id as number | null,
+      compra_cover_id: checkout.compra_cover_id as number | null,
+      materializado: checkout.materializado as boolean | null,
+    })) {
+      items.push({
+        nivel: 'warning',
+        codigo: 'PENDING_UNMATERIALIZED',
+        mensaje: 'Checkout pendiente sin compra — puede haber pago APPROVED en Wompi; consultar o sincronizar.',
       })
     }
 
@@ -399,7 +439,10 @@ serve(async (req) => {
     const action = body.action === 'list_orphans' ? 'list_orphans' : 'lookup'
 
     if (action === 'list_orphans') {
-      const { data: orphans, error } = await supabaseClient
+      const ttlMinutes = resolvePendingTtlMinutes()
+      const cutoffIso = new Date(Date.now() - ttlMinutes * 60_000).toISOString()
+
+      const { data: approvedOrphans, error: approvedError } = await supabaseClient
         .from('transacciones_checkout')
         .select(CHECKOUT_SELECT)
         .or('estado.eq.aprobada,wompi_status.eq.APPROVED')
@@ -410,17 +453,47 @@ serve(async (req) => {
         .order('fecha_creacion', { ascending: false })
         .limit(50)
 
-      if (error) {
-        throw error
+      if (approvedError) {
+        throw approvedError
       }
 
-      const rows = (orphans || []).map((row) => ({
+      const { data: pendingOrphans, error: pendingError } = await supabaseClient
+        .from('transacciones_checkout')
+        .select(CHECKOUT_SELECT)
+        .eq('estado', 'pendiente')
+        .or('materializado.eq.false,materializado.is.null')
+        .is('compra_id', null)
+        .is('compra_producto_id', null)
+        .is('compra_cover_id', null)
+        .not('wompi_reference', 'is', null)
+        .lte('fecha_creacion', cutoffIso)
+        .order('fecha_creacion', { ascending: false })
+        .limit(50)
+
+      if (pendingError) {
+        throw pendingError
+      }
+
+      const merged = mergeRowsById(approvedOrphans, pendingOrphans).slice(0, 50)
+
+      const rows = merged.map((row) => ({
         ...row,
-        diagnostico: buildDiagnostico({ checkout: row as Record<string, unknown>, wompiTransaction: null, transaccionProducto: null }),
+        orphan_tipo: classifyOrphanTipo(row as Record<string, unknown>),
+        diagnostico: buildDiagnostico({
+          checkout: row as Record<string, unknown>,
+          wompiTransaction: null,
+          transaccionProducto: null,
+        }),
         requiere_accion: true,
       }))
 
-      return jsonResponse({ success: true, orphans: rows, total: rows.length })
+      return jsonResponse({
+        success: true,
+        orphans: rows,
+        total: rows.length,
+        ttl_minutes: ttlMinutes,
+        cutoff: cutoffIso,
+      })
     }
 
     const reference = body.reference?.trim() || null
@@ -569,7 +642,13 @@ serve(async (req) => {
     const compras = await loadCompraResumen(supabaseClient, checkout)
     const diagnostico = buildDiagnostico({ checkout, wompiTransaction, transaccionProducto })
     const requiereAccion = diagnostico.some((d) =>
-      ['NEEDS_MATERIALIZATION', 'PRODUCTO_NEEDS_MATERIALIZATION', 'WOMPI_APPROVED_CHECKOUT_PENDING', 'CHECKOUT_NOT_FOUND'].includes(d.codigo)
+      [
+        'NEEDS_MATERIALIZATION',
+        'PRODUCTO_NEEDS_MATERIALIZATION',
+        'WOMPI_APPROVED_CHECKOUT_PENDING',
+        'PENDING_UNMATERIALIZED',
+        'CHECKOUT_NOT_FOUND',
+      ].includes(d.codigo)
     )
 
     const wompiSummary = wompiTransaction

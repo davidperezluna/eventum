@@ -63,6 +63,7 @@ export interface WompiReconcileLookupResult {
 
 export interface WompiReconcileOrphanRow extends WompiReconcileCheckout {
   requiere_accion?: boolean;
+  orphan_tipo?: 'aprobada_sin_compra' | 'pendiente_vencida';
   diagnostico?: WompiDiagnosticoItem[];
 }
 
@@ -148,11 +149,21 @@ export class WompiReconcileService {
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
+    let data: WompiReconcileLookupResult;
+    try {
+      data = await response.json();
+    } catch {
+      return {
+        success: false,
+        error: response.ok
+          ? 'Respuesta inválida del servidor'
+          : `HTTP ${response.status} — ¿está desplegada wompi-reconcile-lookup?`,
+      };
+    }
     if (!response.ok) {
       return { success: false, error: data.error || `HTTP ${response.status}` };
     }
-    return data as WompiReconcileLookupResult;
+    return data;
   }
 
   private async getAccessToken(): Promise<string | null> {
