@@ -5,6 +5,7 @@ import { DashboardOrganizador } from './pages/dashboard-organizador/dashboard-or
 import { Eventos } from './pages/eventos/eventos';
 import { EventosCliente } from './pages/eventos-cliente/eventos-cliente';
 import { ConocenosContacto } from './pages/conocenos-contacto/conocenos-contacto';
+import { Organizadores } from './pages/organizadores/organizadores';
 import { DetalleEvento } from './pages/detalle-evento/detalle-evento';
 import { CuposEvento } from './pages/cupos-evento/cupos-evento';
 import { CuposExplorar } from './pages/cupos-explorar/cupos-explorar';
@@ -131,6 +132,7 @@ const appRoutes: Routes = [
     children: [
       { path: '', redirectTo: 'eventos-cliente', pathMatch: 'full' },
       { path: 'eventos-cliente', component: EventosCliente }, // Página principal pública
+      { path: 'organizadores', component: Organizadores }, // Landing comercial organizadores
       { path: 'conocenos', component: ConocenosContacto }, // Conócenos y contacto (público)
       { path: 'detalle-evento/:id', component: DetalleEvento }, // Público: detalle de evento
       { path: 'cupos', component: CuposExplorar },

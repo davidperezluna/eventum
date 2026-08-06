@@ -298,6 +298,10 @@
   overflow: hidden;
 }
 
+.conocenos-card > .alianza-cta {
+  margin-top: 1rem;
+}
+
 .conocenos-card--tilt {
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }

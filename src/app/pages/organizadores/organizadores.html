@@ -1,0 +1,421 @@
+<div class="org-page">
+  <!-- HERO -->
+  <section class="org-hero" aria-labelledby="org-hero-title">
+    <div class="org-hero__glow" aria-hidden="true"></div>
+    <div class="org-hero__inner">
+      <div class="org-hero__copy org-reveal">
+        <p class="org-eyebrow">Operación de eventos</p>
+        <h1 id="org-hero-title">La plataforma que opera tus eventos de principio a fin.</h1>
+        <p class="org-hero__lead">
+          No solo vendemos entradas.
+          Centralizamos en un solo lugar la venta de boletas, los pagos, el control de acceso, los productos,
+          los reportes y el soporte operativo para que puedas concentrarte en crear un evento inolvidable.
+        </p>
+        <div class="org-cta-row">
+          <a
+            class="org-btn org-btn--primary"
+            [href]="demoWhatsappUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Agenda una demostración
+          </a>
+          <a class="org-btn org-btn--ghost" href="#como-funciona" (click)="scrollToComoFunciona($event)">
+            Ver cómo funciona
+          </a>
+        </div>
+        <ul class="org-promises" aria-label="Promesas de Eventum">
+          <li *ngFor="let promise of promises">
+            <span class="org-promises__icon" aria-hidden="true">
+              <span class="material-icons">{{ promise.icon }}</span>
+            </span>
+            <div class="org-promises__copy">
+              <strong>{{ promise.title }}</strong>
+              <p>{{ promise.description }}</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="org-hero__visual org-reveal" aria-hidden="true">
+        <div class="org-mock-stage">
+          <div class="org-mock-stage__blur"></div>
+          <div class="org-mock-chip org-mock-chip--live">
+            <span class="org-mock-chip__pulse"></span>
+            Operación en vivo
+          </div>
+          <div class="org-mock org-mock--hero">
+            <div class="org-mock__chrome">
+              <span class="org-mock__dot"></span>
+              <span class="org-mock__dot"></span>
+              <span class="org-mock__dot"></span>
+              <span class="org-mock__url">eventum · Centro de control</span>
+              <span class="org-mock__chrome-status">En línea</span>
+            </div>
+            <div class="org-mock__body">
+              <div class="org-mock__sidebar">
+                <div class="org-mock__nav-item is-active"></div>
+                <div class="org-mock__nav-item"></div>
+                <div class="org-mock__nav-item"></div>
+                <div class="org-mock__nav-item"></div>
+              </div>
+              <div class="org-mock__main">
+                <div class="org-mock__toolbar">
+                  <span>Resumen de hoy</span>
+                  <span class="org-mock__toolbar-meta">Actualizado hace 12 s</span>
+                </div>
+                <div class="org-mock__kpis">
+                  <div class="org-mock__kpi">
+                    <span class="org-mock__kpi-label">Ingresos</span>
+                    <strong>$18.420.500</strong>
+                    <em class="org-mock__kpi-delta">+12%</em>
+                  </div>
+                  <div class="org-mock__kpi">
+                    <span class="org-mock__kpi-label">Boletas</span>
+                    <strong>1.284</strong>
+                    <em class="org-mock__kpi-delta">+86</em>
+                  </div>
+                  <div class="org-mock__kpi">
+                    <span class="org-mock__kpi-label">Accesos</span>
+                    <strong>96,4%</strong>
+                    <em class="org-mock__kpi-delta org-mock__kpi-delta--ok">OK</em>
+                  </div>
+                </div>
+                <div class="org-mock__chart">
+                  <div class="org-mock__bars">
+                    <span style="--h: 38%"></span>
+                    <span style="--h: 52%"></span>
+                    <span style="--h: 44%"></span>
+                    <span style="--h: 68%"></span>
+                    <span style="--h: 61%"></span>
+                    <span style="--h: 84%"></span>
+                    <span style="--h: 73%"></span>
+                  </div>
+                  <div class="org-mock__chart-meta">
+                    <span>Ventas · últimos 7 días</span>
+                    <strong>+24%</strong>
+                  </div>
+                </div>
+                <div class="org-mock__list">
+                  <div class="org-mock__row">
+                    <span class="org-mock__pill">VIP</span>
+                    <span>Orden #4821 · hace 2 min</span>
+                    <strong>$240.000</strong>
+                  </div>
+                  <div class="org-mock__row">
+                    <span class="org-mock__pill org-mock__pill--teal">Producto</span>
+                    <span>Orden #4820 · hace 4 min</span>
+                    <strong>$86.000</strong>
+                  </div>
+                  <div class="org-mock__row">
+                    <span class="org-mock__pill">General</span>
+                    <span>Orden #4819 · hace 6 min</span>
+                    <strong>$120.000</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BENEFITS -->
+  <section class="org-section" aria-labelledby="org-why-title">
+    <div class="org-container">
+      <header class="org-section__head org-reveal">
+        <p class="org-eyebrow">Operación completa</p>
+        <h2 id="org-why-title">Todo lo que necesitas para operar un evento, en una sola plataforma.</h2>
+        <p class="org-section__lead">
+          Mientras otras soluciones resuelven una parte del proceso, Eventum integra toda la operación
+          para que trabajes con menos herramientas y más control.
+        </p>
+      </header>
+      <div class="org-benefits">
+        <article class="org-benefit org-reveal" *ngFor="let b of benefits">
+          <div class="org-benefit__icon" aria-hidden="true">
+            <span class="material-icons">{{ b.icon }}</span>
+          </div>
+          <h3>{{ b.title }}</h3>
+          <p class="org-benefit__desc">{{ b.description }}</p>
+        </article>
+      </div>
+
+      <div class="org-soft-cta org-reveal">
+        <p>¿Quieres ver cómo se opera tu evento de principio a fin?</p>
+        <a class="org-soft-cta__link" [href]="demoWhatsappUrl" target="_blank" rel="noopener noreferrer">
+          Agenda una demostración
+          <span class="material-icons" aria-hidden="true">arrow_forward</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="org-section org-section--muted" id="como-funciona" aria-labelledby="org-how-title">
+    <div class="org-container">
+      <header class="org-section__head org-reveal">
+        <p class="org-eyebrow">De principio a fin</p>
+        <h2 id="org-how-title">Así se opera un evento con Eventum</h2>
+        <p class="org-section__lead">
+          Cuatro pasos claros. Menos piezas sueltas. Más tranquilidad el día del evento.
+        </p>
+      </header>
+      <ol class="org-timeline">
+        <li class="org-timeline__item org-reveal" *ngFor="let step of steps">
+          <div class="org-timeline__marker" aria-hidden="true">
+            <span class="org-timeline__num">{{ step.step }}</span>
+            <span class="material-icons">{{ step.icon }}</span>
+          </div>
+          <div class="org-timeline__copy">
+            <h3>{{ step.title }}</h3>
+            <p>{{ step.description }}</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- BIG DASHBOARD MOCK -->
+  <section class="org-section" aria-labelledby="org-dashboard-title">
+    <div class="org-container">
+      <header class="org-section__head org-reveal">
+        <p class="org-eyebrow">Control</p>
+        <h2 id="org-dashboard-title">Todo lo importante, en una sola vista</h2>
+        <p class="org-section__lead">
+          Sabes qué se vende, quién entra por puerta y dónde poner atención — sin pedir información a tres personas distintas.
+        </p>
+      </header>
+
+      <div class="org-dash-wrap org-reveal" aria-hidden="true">
+        <div class="org-mock-stage org-mock-stage--wide">
+          <div class="org-mock-stage__blur org-mock-stage__blur--wide"></div>
+          <div class="org-mock org-mock--wide">
+            <div class="org-mock__chrome">
+              <span class="org-mock__dot"></span>
+              <span class="org-mock__dot"></span>
+              <span class="org-mock__dot"></span>
+              <span class="org-mock__url">Centro de control · Evento en curso</span>
+              <span class="org-mock__chrome-status">En vivo</span>
+            </div>
+            <div class="org-mock__wide-grid">
+              <div class="org-mock__panel">
+                <span class="org-mock__panel-label">Ingresos totales</span>
+                <strong class="org-mock__panel-value">$42.860.000</strong>
+                <div class="org-mock__spark">
+                  <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                </div>
+              </div>
+              <div class="org-mock__panel">
+                <span class="org-mock__panel-label">Eventos activos</span>
+                <strong class="org-mock__panel-value">6</strong>
+                <p class="org-mock__panel-note">3 esta semana</p>
+              </div>
+              <div class="org-mock__panel">
+                <span class="org-mock__panel-label">Productos</span>
+                <strong class="org-mock__panel-value">$7.140.000</strong>
+                <p class="org-mock__panel-note">+18% vs mes anterior</p>
+              </div>
+              <div class="org-mock__panel org-mock__panel--span">
+                <div class="org-mock__panel-head">
+                  <span>Accesos en vivo</span>
+                  <strong>1.842 / 2.000</strong>
+                </div>
+                <div class="org-mock__progress">
+                  <div class="org-mock__progress-bar" style="width: 92%"></div>
+                </div>
+                <div class="org-mock__mini-rows">
+                  <div><span>Puerta A</span><strong>98%</strong></div>
+                  <div><span>Puerta B</span><strong>91%</strong></div>
+                  <div><span>VIP</span><strong>100%</strong></div>
+                </div>
+              </div>
+              <div class="org-mock__panel org-mock__panel--span">
+                <div class="org-mock__panel-head">
+                  <span>Actividad reciente</span>
+                  <span class="org-mock__live">En vivo</span>
+                </div>
+                <div class="org-mock__list org-mock__list--compact">
+                  <div class="org-mock__row">
+                    <span class="org-mock__pill">Entrada</span>
+                    <span>General · Orden #5102</span>
+                    <strong>$95.000</strong>
+                  </div>
+                  <div class="org-mock__row">
+                    <span class="org-mock__pill org-mock__pill--teal">Producto</span>
+                    <span>Combo + bebida</span>
+                    <strong>$48.000</strong>
+                  </div>
+                  <div class="org-mock__row">
+                    <span class="org-mock__pill org-mock__pill--blue">Acceso</span>
+                    <span>Puerta A · OK</span>
+                    <strong>Ahora</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- METRICS / CASE -->
+  <section class="org-metrics" aria-labelledby="org-metrics-title">
+    <div class="org-metrics__bg" aria-hidden="true"></div>
+    <div class="org-container org-metrics__inner">
+      <header class="org-section__head org-section__head--light org-reveal">
+        <p class="org-eyebrow org-eyebrow--light">Resultados reales</p>
+        <h2 id="org-metrics-title">Probado en eventos reales.</h2>
+        <p class="org-section__lead org-section__lead--light">
+          Ya confiaron en Eventum para operar eventos reales.
+          Desde la venta de entradas hasta el control de acceso, nuestra operación ya ha acompañado
+          eventos con miles de asistentes.
+        </p>
+      </header>
+      <div class="org-metrics__grid">
+        <div class="org-metric org-reveal" *ngFor="let m of metricas">
+          <p class="org-metric__value">{{ m.value }}</p>
+          <p class="org-metric__label">{{ m.label }}</p>
+          <p class="org-metric__hint" *ngIf="m.hint">{{ m.hint }}</p>
+        </div>
+      </div>
+
+      <div class="org-soft-cta org-soft-cta--on-dark org-reveal">
+        <p>¿Quieres ese mismo nivel de control en tu próximo evento?</p>
+        <a class="org-soft-cta__link" [href]="demoWhatsappUrl" target="_blank" rel="noopener noreferrer">
+          Agenda una demostración
+          <span class="material-icons" aria-hidden="true">arrow_forward</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPARISON -->
+  <section class="org-section org-section--muted" aria-labelledby="org-diff-title">
+    <div class="org-container">
+      <header class="org-section__head org-reveal">
+        <p class="org-eyebrow">La diferencia</p>
+        <h2 id="org-diff-title">No somos solo otra ticketera.</h2>
+        <p class="org-section__lead">
+          Mientras otras soluciones terminan cuando venden una entrada, Eventum continúa acompañando
+          toda la operación del evento.
+        </p>
+      </header>
+
+      <div class="org-compare org-reveal" role="table" aria-label="Comparación Eventum vs otras soluciones">
+        <div class="org-compare__head" role="row">
+          <div class="org-compare__cell org-compare__cell--label" role="columnheader">Capacidad</div>
+          <div class="org-compare__cell" role="columnheader">Otras soluciones</div>
+          <div class="org-compare__cell org-compare__cell--accent" role="columnheader">Eventum</div>
+        </div>
+        <div class="org-compare__row" role="row" *ngFor="let row of compareRows">
+          <div class="org-compare__cell org-compare__cell--label" role="rowheader">{{ row.feature }}</div>
+          <div
+            class="org-compare__cell"
+            role="cell"
+            [attr.aria-label]="compareLabel(row.others)"
+            [class.is-yes]="row.others === true"
+            [class.is-partial]="row.others === 'partial'"
+            [class.is-no]="row.others === false"
+          >
+            <span class="material-icons" aria-hidden="true">{{ compareIcon(row.others) }}</span>
+            <span class="org-compare__status">{{ compareLabel(row.others) }}</span>
+          </div>
+          <div
+            class="org-compare__cell org-compare__cell--accent is-yes"
+            role="cell"
+            [attr.aria-label]="compareLabel(row.eventum)"
+          >
+            <span class="material-icons" aria-hidden="true">{{ compareIcon(row.eventum) }}</span>
+            <span class="org-compare__status">{{ compareLabel(row.eventum) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="org-soft-cta org-reveal">
+        <p>Si buscas operar el evento completo, hablemos.</p>
+        <a class="org-soft-cta__link" [href]="demoWhatsappUrl" target="_blank" rel="noopener noreferrer">
+          Agenda una demostración
+          <span class="material-icons" aria-hidden="true">arrow_forward</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="org-section" aria-labelledby="org-faq-title">
+    <div class="org-container org-container--narrow">
+      <header class="org-section__head org-reveal">
+        <p class="org-eyebrow">Antes de decidir</p>
+        <h2 id="org-faq-title">Preguntas que suele hacer un organizador</h2>
+        <p class="org-section__lead">Respuestas claras, sin rodeos.</p>
+      </header>
+      <div class="org-reveal">
+        <app-faq-accordion [items]="faqs" ariaLabel="Preguntas frecuentes para organizadores" />
+      </div>
+
+      <div class="org-soft-cta org-reveal">
+        <p>¿Quedó alguna duda? La resolvemos en la demostración.</p>
+        <a class="org-soft-cta__link" [href]="demoWhatsappUrl" target="_blank" rel="noopener noreferrer">
+          Agenda una demostración
+          <span class="material-icons" aria-hidden="true">arrow_forward</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="org-final-cta" aria-labelledby="org-final-title">
+    <div class="org-final-cta__glow" aria-hidden="true"></div>
+    <div class="org-container org-final-cta__inner org-reveal">
+      <h2 id="org-final-title">¿Listo para operar tu próximo evento de principio a fin?</h2>
+      <p>
+        En una demostración corta te mostramos cómo Eventum se adapta a tu aforo, tu venta y tu operación en puerta.
+      </p>
+      <div class="org-cta-row org-cta-row--center">
+        <a
+          class="org-btn org-btn--primary org-btn--lg"
+          [href]="demoWhatsappUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Agenda una demostración
+        </a>
+        <a
+          class="org-btn org-btn--whatsapp org-btn--lg"
+          [href]="whatsappUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <ion-icon name="logo-whatsapp" aria-hidden="true"></ion-icon>
+          Hablar por WhatsApp
+        </a>
+      </div>
+      <a class="org-final-cta__mail" [href]="demoEmailUrl" target="_blank" rel="noopener noreferrer">
+        Prefieres correo? Escríbenos
+      </a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="org-footer" role="contentinfo">
+    <div class="org-container org-footer__inner">
+      <div class="org-footer__brand">
+        <img src="logo-eventum.svg" alt="Eventum" class="org-footer__logo" width="120" height="28" loading="lazy" />
+        <p>&copy; {{ currentYear }} Eventum</p>
+      </div>
+      <nav class="org-footer__nav" aria-label="Enlaces rápidos">
+        <a routerLink="/eventos-cliente">Eventos</a>
+        <a *ngIf="cuposEventumEnabled" routerLink="/cupos">{{ cuposLabels.module }}</a>
+        <a routerLink="/organizadores" aria-current="page">Para Organizadores</a>
+        <a routerLink="/conocenos">Contacto</a>
+        <a [href]="whatsappUrl" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+        <a [href]="instagramUrl" target="_blank" rel="noopener noreferrer">Instagram</a>
+        <a href="#" aria-disabled="true" title="Próximamente">Política de privacidad</a>
+        <a href="#" aria-disabled="true" title="Próximamente">Términos y condiciones</a>
+      </nav>
+    </div>
+  </footer>
+</div>

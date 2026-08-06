@@ -191,14 +191,112 @@
 
   <!-- Header público para usuarios no autenticados -->
   <ng-container *ngIf="!currentUser || !usuario">
+    <div
+      class="client-menu-overlay"
+      [class.is-open]="clientMenuOpen"
+      (click)="closeClientMenu()"
+      [attr.aria-hidden]="!clientMenuOpen"
+    ></div>
+
+    <aside
+      class="client-mobile-menu public-mobile-menu"
+      [class.open]="clientMenuOpen"
+      [attr.aria-hidden]="!clientMenuOpen"
+    >
+      <div class="sidebar-header">
+        <div class="sidebar-header-content">
+          <h1 class="sidebar-logo">
+            <img src="logo-eventum.svg" alt="Eventum" class="logo-img" />
+          </h1>
+          <button type="button" class="sidebar-close" (click)="closeClientMenu()" aria-label="Cerrar menú">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+      </div>
+      <nav class="client-mobile-nav" aria-label="Navegación pública">
+        <a routerLink="/eventos-cliente" class="nav-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeClientMenu()">
+          <span class="material-icons nav-icon">event</span>
+          <span class="nav-label">Eventos</span>
+        </a>
+        <a
+          *ngIf="cuposEventumEnabled"
+          routerLink="/cupos"
+          class="nav-item"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          (click)="closeClientMenu()"
+        >
+          <span class="material-icons nav-icon">groups</span>
+          <span class="nav-label">{{ cuposLabels.module }}</span>
+        </a>
+        <a
+          *ngIf="coversEventumEnabled"
+          routerLink="/clubes"
+          class="nav-item"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          (click)="closeClientMenu()"
+        >
+          <span class="material-icons nav-icon">nightlife</span>
+          <span class="nav-label">{{ coversLabels.explorar }}</span>
+        </a>
+        <a routerLink="/organizadores" class="nav-item" routerLinkActive="active" (click)="closeClientMenu()">
+          <span class="material-icons nav-icon">business_center</span>
+          <span class="nav-label">Para Organizadores</span>
+        </a>
+        <a routerLink="/carrito" class="nav-item nav-item--with-badge" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeClientMenu()">
+          <span class="material-icons nav-icon">shopping_cart</span>
+          <span class="nav-label">Carrito</span>
+          <span *ngIf="totalItemsCarrito > 0" class="menu-badge">{{ totalItemsCarrito }}</span>
+        </a>
+        <a routerLink="/conocenos" class="nav-item" routerLinkActive="active" (click)="closeClientMenu()">
+          <span class="material-icons nav-icon">info</span>
+          <span class="nav-label">Conócenos</span>
+        </a>
+      </nav>
+      <div class="client-menu-footer">
+        <a
+          routerLink="/login"
+          [queryParams]="headerLoginQueryParams"
+          class="nav-item"
+          (click)="closeClientMenu()"
+        >
+          <span class="material-icons nav-icon">login</span>
+          <span class="nav-label">Entrar</span>
+        </a>
+        <p class="client-menu-copyright">&copy; {{ currentYear }} Eventum</p>
+      </div>
+    </aside>
+
     <header class="client-header public-header">
       <div class="header-container">
+        <button
+          type="button"
+          class="client-menu-toggle public-menu-toggle"
+          (click)="toggleClientMenu()"
+          [attr.aria-label]="clientMenuOpen ? 'Cerrar menú' : 'Abrir menú'"
+          [attr.aria-expanded]="clientMenuOpen"
+        >
+          <span class="material-icons">{{ clientMenuOpen ? 'close' : 'menu' }}</span>
+        </button>
         <a routerLink="/eventos-cliente" class="brand-logo">
           <img src="logo-eventum.svg" alt="Eventum" class="brand-logo-img" />
         </a>
-        <nav class="client-nav">
+        <nav class="client-nav" aria-label="Navegación pública">
           <a routerLink="/eventos-cliente" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="client-nav-item">
             Eventos
+          </a>
+          <a
+            *ngIf="cuposEventumEnabled"
+            routerLink="/cupos"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="client-nav-item"
+          >
+            {{ cuposLabels.module }}
+          </a>
+          <a routerLink="/organizadores" routerLinkActive="active" class="client-nav-item">
+            Para Organizadores
           </a>
           <a
             *ngIf="coversEventumEnabled"
@@ -212,18 +310,6 @@
           <a routerLink="/carrito" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="client-nav-item client-nav-item--with-badge">
             Carrito
             <span *ngIf="totalItemsCarrito > 0" class="menu-badge">{{ totalItemsCarrito }}</span>
-          </a>
-          <a
-            *ngIf="cuposEventumEnabled"
-            routerLink="/cupos"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            class="client-nav-item"
-          >
-            {{ cuposLabels.explorar }}
-          </a>
-          <a routerLink="/conocenos" routerLinkActive="active" class="client-nav-item">
-            Conócenos
           </a>
         </nav>
         <div class="client-user-menu">

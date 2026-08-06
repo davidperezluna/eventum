@@ -1209,6 +1209,34 @@
   .public-header .header-container {
     align-items: center;
     gap: 0.5rem;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .public-header .public-menu-toggle {
+    display: inline-flex;
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    z-index: 2;
+  }
+
+  .public-header .brand-logo {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    justify-self: center;
+    z-index: 1;
+  }
+
+  .public-header .client-user-menu {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    z-index: 2;
+  }
+
+  .public-header {
+    z-index: 1100;
   }
 
   .client-header .brand-logo span {

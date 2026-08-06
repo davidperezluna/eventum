@@ -1,0 +1,28 @@
+<div class="faq-accordion" role="list" [attr.aria-label]="ariaLabel">
+  <div class="faq-accordion__item" role="listitem" *ngFor="let item of items; let i = index">
+    <h3 class="faq-accordion__heading">
+      <button
+        type="button"
+        class="faq-accordion__trigger"
+        [id]="buttonId(i)"
+        [attr.aria-expanded]="isOpen(i)"
+        [attr.aria-controls]="panelId(i)"
+        (click)="toggle(i)"
+      >
+        <span class="faq-accordion__question">{{ item.question }}</span>
+        <span class="material-icons faq-accordion__icon" [class.is-open]="isOpen(i)" aria-hidden="true">
+          expand_more
+        </span>
+      </button>
+    </h3>
+    <div
+      class="faq-accordion__panel"
+      [id]="panelId(i)"
+      role="region"
+      [attr.aria-labelledby]="buttonId(i)"
+      [hidden]="!isOpen(i)"
+    >
+      <p class="faq-accordion__answer">{{ item.answer }}</p>
+    </div>
+  </div>
+</div>
