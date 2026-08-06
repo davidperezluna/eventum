@@ -5,6 +5,8 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { TimezoneService } from './timezone.service';
+import { AuthService } from './auth.service';
+import { applyShowcaseEventoPolicy } from '../core/showcase-policy';
 import { Evento, EventoFilters, ApiResponse, PaginatedResponse, TipoEstadoEvento } from '../types';
 
 @Injectable({
@@ -13,7 +15,8 @@ import { Evento, EventoFilters, ApiResponse, PaginatedResponse, TipoEstadoEvento
 export class EventosService {
   constructor(
     private supabase: SupabaseService,
-    private timezoneService: TimezoneService
+    private timezoneService: TimezoneService,
+    private authService: AuthService
   ) { }
   private tableName = 'eventos';
 
@@ -135,11 +138,14 @@ export class EventosService {
    */
   async createEvento(evento: Partial<Evento>): Promise<Evento> {
     try {
+      const payload = this.authService.isShowcaseOrganizador()
+        ? applyShowcaseEventoPolicy(evento)
+        : evento;
       const now = this.timezoneService.getCurrentDateISO();
       const { data, error } = await this.supabase
         .from(this.tableName)
         .insert({ 
-          ...evento, 
+          ...payload, 
           fecha_creacion: now,
           fecha_actualizacion: now 
         })
@@ -158,9 +164,12 @@ export class EventosService {
    */
   async updateEvento(id: number, evento: Partial<Evento>): Promise<Evento> {
     try {
+      const payload = this.authService.isShowcaseOrganizador()
+        ? applyShowcaseEventoPolicy(evento)
+        : evento;
       const { data, error } = await this.supabase
         .from(this.tableName)
-        .update({ ...evento, fecha_actualizacion: this.timezoneService.getCurrentDateISO() })
+        .update({ ...payload, fecha_actualizacion: this.timezoneService.getCurrentDateISO() })
         .eq('id', id)
         .select()
         .single();

@@ -1,0 +1,22 @@
+:host {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+:host(.ev-select-host--toolbar) {
+  width: auto;
+  min-width: 8.75rem;
+  max-width: 12rem;
+  flex: 0 0 auto;
+}
+
+:host(.ev-select-host--toolbar.ev-select-host--full) {
+  width: 100%;
+  max-width: none;
+  margin-bottom: 0.65rem;
+}
+
+:host(.ev-select-host--form) .ev-select.ng-select {
+  width: 100%;
+}

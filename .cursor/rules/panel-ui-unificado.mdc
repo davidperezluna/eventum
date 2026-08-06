@@ -1,0 +1,50 @@
+---
+description: Estilos unificados del panel admin/organizador — misma UI por rol, design system Eventum
+globs: src/app/pages/**/*.html,src/app/pages/**/*.css,src/app/pages/**/*.ts,src/app/components/ev-*/**,src/styles/ev-*.css
+alwaysApply: true
+---
+
+# Panel admin/organizador — UI unificada
+
+**Regla principal:** admin y organizador deben ver **la misma interfaz** en las mismas pantallas. Los roles pueden cambiar permisos o datos visibles, **no** el diseño, layout ni componentes base.
+
+## Design system obligatorio
+
+Reutilizar antes de inventar estilos nuevos:
+
+| Área | Referencia |
+|------|------------|
+| Formularios y modales | `src/styles/ev-form-system.css`, `ev-form-modal`, `ev-form-section`, `ev-form-wizard` |
+| Selects | `ev-select` + `src/styles/ev-select-theme.css` (no `<select>` nativo en formularios nuevos) |
+| Botones | `ev-btn-primary`, `ev-btn-ghost`, `ev-btn-sm` |
+| Listados / tarjetas | clases `ev-card`, `ev-grid`, `ev-toolbar`, `ev-pill` (ver `eventos.css`) |
+
+## Prohibido por rol
+
+- ❌ CSS distinto para admin vs organizador en la misma página (`*ngIf="isAdmin"` solo para **ocultar campos**, no para cambiar clases o layout).
+- ❌ Duplicar componentes visuales “versión admin” y “versión organizador”.
+- ❌ Estilos inline o one-off que rompan tokens (`--ev-accent`, `--gradient-button`, `--ev-card-*`).
+
+## Patrones visuales fijos
+
+**Tarjetas con imagen** (`ev-card__media`):
+- Imagen con `object-fit: cover`; la imagen **no** define la altura de la tarjeta.
+- Desktop: columna thumbnail fija; móvil: `aspect-ratio: 16 / 9`.
+
+**Botones primarios** (violeta):
+- Hover mantiene fondo oscuro/violeta y texto blanco; nunca fondo blanco con texto blanco.
+
+**Formularios / wizard:**
+- Mismos pasos, preview y footer para crear y editar.
+- Validación y campos iguales; showcase puede deshabilitar acciones reales, pero el campo sigue visible cuando aplique al flujo demo.
+
+## Al tocar una pantalla del panel
+
+1. ¿Admin y organizador comparten el mismo HTML/CSS?
+2. ¿Se usan componentes `ev-*` del design system?
+3. ¿Hay divergencia visual solo por rol? → unificar.
+4. ¿Imágenes o selects se comportan distinto entre roles? → corregir en el componente base, no con parches locales.
+
+## Referencia canónica
+
+Pantalla modelo: **`src/app/pages/eventos/`** (listado, wizard, pantalla de éxito, tarjetas).

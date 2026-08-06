@@ -29,16 +29,21 @@
 
   <ng-container *ngIf="!cargandoPermisos">
     <section *ngIf="modoBusqueda === 'scanner'" class="scanner-section">
-      <div *ngIf="requierePermisosLector && permisos.length === 0" class="alert-box warn">
-        <span class="material-icons">info</span>
-        <p>No tienes eventos ni covers asignados. Contacta al administrador.</p>
-      </div>
+      <ev-notice
+        *ngIf="requierePermisosLector && permisos.length === 0"
+        variant="warning"
+        icon="info"
+        message="No tienes eventos ni covers asignados. Contacta al administrador."
+      />
 
-      <div *ngIf="cameraError" class="alert-box error">
-        <span class="material-icons">videocam_off</span>
-        <p>{{ cameraError }}</p>
-        <button type="button" class="btn-secondary btn-sm" (click)="cambiarModo('manual')">Buscar por documento</button>
-      </div>
+      <ev-notice
+        *ngIf="cameraError"
+        variant="danger"
+        icon="videocam_off"
+        [message]="cameraError"
+        actionLabel="Buscar por documento"
+        (actionClick)="cambiarModo('manual')"
+      />
 
       <div class="scanner-wrap" [class.hidden]="cameraError && !scannerActivo">
         <div [id]="readerId" class="qr-reader"></div>
@@ -66,29 +71,21 @@
     </section>
 
     <section *ngIf="modoBusqueda === 'manual'" class="manual-section content-card">
-      <div
+      <ev-notice
         *ngIf="sinPermisosEscaneoAsignados"
-        class="alert-box warn manual-permiso-aviso"
-        role="alert"
-      >
-        <span class="material-icons" aria-hidden="true">lock</span>
-        <div>
-          <strong>Sin permisos de escaneo</strong>
-          <p>{{ mensajeSinPermisosEscaneo }}</p>
-        </div>
-      </div>
+        variant="warning"
+        icon="lock"
+        title="Sin permisos de escaneo"
+        [message]="mensajeSinPermisosEscaneo"
+      />
 
-      <div
+      <ev-notice
         *ngIf="avisoBusquedaDocumento && !sinPermisosEscaneoAsignados"
-        class="alert-box error manual-permiso-aviso"
-        role="alert"
-      >
-        <span class="material-icons" aria-hidden="true">block</span>
-        <div>
-          <strong>Sin permiso para validar</strong>
-          <p>{{ avisoBusquedaDocumento }}</p>
-        </div>
-      </div>
+        variant="danger"
+        icon="block"
+        title="Sin permiso para validar"
+        [message]="avisoBusquedaDocumento"
+      />
 
       <div class="manual-search">
         <label for="doc-buscar" class="manual-search__label">Buscar por documento</label>

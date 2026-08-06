@@ -1,0 +1,139 @@
+<div class="ev-form-modal" role="dialog" aria-modal="true" [attr.aria-label]="title">
+
+  <div class="ev-form-modal__backdrop" (click)="onBackdropClick()" aria-hidden="true"></div>
+
+  <div [class]="panelClass" (click)="$event.stopPropagation()">
+
+    <header class="ev-form-modal__header">
+
+      <div class="ev-form-modal__header-copy">
+
+        <h2 class="ev-form-modal__title" id="ev-form-modal-title">{{ title }}</h2>
+
+        <p *ngIf="description" class="ev-form-modal__description">{{ description }}</p>
+
+      </div>
+
+      <button type="button" class="ev-form-modal__close" (click)="onClose()" aria-label="Cerrar">
+
+        <span class="material-icons" aria-hidden="true">close</span>
+
+      </button>
+
+    </header>
+
+
+
+    <div class="ev-form-modal__body">
+
+      <ng-content />
+
+    </div>
+
+
+
+    <footer *ngIf="showFooter" class="ev-form-modal__footer" [class.ev-form-modal__footer--wizard]="wizardMode">
+
+      <button
+
+        type="button"
+
+        class="ev-form-modal__btn ev-form-modal__btn--ghost"
+
+        (click)="onCancel()"
+
+      >
+
+        {{ cancelLabel }}
+
+      </button>
+
+
+
+      <div class="ev-form-modal__footer-actions">
+
+        <button
+
+          *ngIf="showDraftButton"
+
+          type="button"
+
+          class="ev-form-modal__btn ev-form-modal__btn--secondary"
+
+          [disabled]="draftDisabled"
+
+          (click)="draftAction.emit()"
+
+        >
+
+          {{ draftLabel }}
+
+        </button>
+
+
+
+        <button
+
+          *ngIf="showWizardPrev"
+
+          type="button"
+
+          class="ev-form-modal__btn ev-form-modal__btn--secondary"
+
+          (click)="wizardPrev.emit()"
+
+        >
+
+          {{ prevLabel }}
+
+        </button>
+
+
+
+        <button
+
+          *ngIf="showWizardNext"
+
+          type="button"
+
+          class="ev-form-modal__btn ev-form-modal__btn--primary"
+
+          [disabled]="nextDisabled"
+
+          (click)="wizardNext.emit()"
+
+        >
+
+          {{ nextLabel }}
+
+        </button>
+
+
+
+        <button
+
+          *ngIf="showWizardPrimary"
+
+          type="button"
+
+          class="ev-form-modal__btn ev-form-modal__btn--primary"
+
+          [disabled]="primaryDisabled"
+
+          (click)="primaryAction.emit()"
+
+        >
+
+          {{ primaryLabel }}
+
+        </button>
+
+      </div>
+
+    </footer>
+
+  </div>
+
+</div>
+
+

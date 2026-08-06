@@ -100,6 +100,7 @@ export interface BoletaFilters extends BaseFilters {
 /** Filtros para productos */
 export interface ProductoFilters extends BaseFilters {
   evento_id?: number;
+  evento_ids?: number[];
   activo?: boolean;
   es_licor?: boolean;
 }

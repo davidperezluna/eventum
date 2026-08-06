@@ -3,6 +3,8 @@ import { Layout } from './components/layout/layout';
 import { Dashboard } from './pages/dashboard/dashboard';
 import { DashboardOrganizador } from './pages/dashboard-organizador/dashboard-organizador';
 import { Eventos } from './pages/eventos/eventos';
+import { EventoOperaciones } from './pages/evento-operaciones/evento-operaciones';
+import { EventoInteligencia } from './pages/evento-inteligencia/evento-inteligencia';
 import { EventosCliente } from './pages/eventos-cliente/eventos-cliente';
 import { ConocenosContacto } from './pages/conocenos-contacto/conocenos-contacto';
 import { Organizadores } from './pages/organizadores/organizadores';
@@ -158,6 +160,8 @@ const appRoutes: Routes = [
       { path: 'dashboard-eventos', component: DashboardEventos }, // Dashboard completo de eventos
       { path: 'usuarios', component: Usuarios },
       { path: 'eventos', component: Eventos },
+      { path: 'eventos/:id/operaciones', component: EventoOperaciones },
+      { path: 'eventos/:id/inteligencia', component: EventoInteligencia },
       ...cuposProtectedRoutes,
       { path: 'mis-compras/actividad', component: MisCompras }, // Cliente: traslados / actividad
       { path: 'mis-compras/guia', component: MisComprasGuia }, // Cliente: guía de uso de entradas

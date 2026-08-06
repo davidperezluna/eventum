@@ -1,0 +1,37 @@
+<ng-select
+  class="ev-select"
+  [class.ev-select--open]="isOpen"
+  [id]="inputId"
+  [items]="options"
+  bindLabel="label"
+  bindValue="value"
+  [placeholder]="placeholder"
+  [searchable]="isSearchable"
+  [clearable]="clearable"
+  [appendTo]="appendTo || 'body'"
+  [notFoundText]="notFoundText"
+  [typeToSearchText]="searchPlaceholder"
+  [labelForId]="inputId"
+  [ariaLabel]="ariaLabel || placeholder"
+  [selectOnTab]="true"
+  [openOnEnter]="true"
+  [closeOnSelect]="true"
+  [markFirst]="true"
+  [trackByFn]="trackByOption"
+  dropdownPosition="auto"
+  outsideClickEvent="mousedown"
+  [ngModel]="currentValue"
+  [ngModelOptions]="{ standalone: true }"
+  (ngModelChange)="onModelChange($event)"
+  (clear)="onClearSelection()"
+  (blur)="onBlur()"
+  (open)="onOpen()"
+  (close)="onClose()"
+>
+  <ng-template ng-option-tmp let-item="item">
+    <div class="ev-select__option" [class.ev-select__option--selected]="isSelectedOption(item)">
+      <span class="ev-select__option-label">{{ item.label }}</span>
+      <span class="ev-select__option-check material-icons" aria-hidden="true">check</span>
+    </div>
+  </ng-template>
+</ng-select>

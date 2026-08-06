@@ -59,4 +59,8 @@ export const environment = {
     chromeWebIcon: '/icons/push/chrome-notification-256.png',
     chromeWebBadge: '/icons/push/badge-monochrome-96.png',
   },
+
+  showcaseModeEnabled: true,
+  showcaseOrganizadorId: 0,
+  showcaseOrganizadorEmail: 'showcase@eventumcol.com',
 };

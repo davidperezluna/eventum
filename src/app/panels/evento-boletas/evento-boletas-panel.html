@@ -1,0 +1,380 @@
+<div class="ev-panel" (click)="closeMenu()">
+  <div class="ev-panel__body">
+    <div *ngIf="view !== 'dashboard'" class="ev-panel__subnav">
+      <button type="button" class="ev-panel__back" (click)="goToDashboard()">
+        <span class="material-icons" aria-hidden="true">arrow_back</span>
+        Volver al resumen
+      </button>
+    </div>
+
+    <div
+      *ngIf="view === 'dashboard'"
+      class="ev-panel__view ev-panel__dashboard"
+      [class.ev-panel__view--back]="viewDirection === 'back'"
+    >
+      <ev-panel-summary label="Resumen" [metrics]="summaryMetrics" />
+
+      <div *ngIf="tipos.length > 0" class="ev-panel__cta-wrap">
+        <ev-button variant="primary" [fullWidth]="true" (click)="openCreateForm()">
+          <span class="material-icons" aria-hidden="true">add</span>
+          Crear nuevo tipo de boleta
+        </ev-button>
+      </div>
+
+      <ev-notice
+        *ngIf="panelInsight as insight"
+        variant="warning"
+        [message]="insight.message"
+        [actionLabel]="insight.ctaLabel"
+        (actionClick)="openCreateForm()"
+      />
+
+      <ev-empty-state
+        *ngIf="tipos.length === 0"
+        icon="confirmation_number"
+        title="Aún no hay entradas"
+        description="Crea tu primer tipo de boleta para empezar a vender."
+      >
+        <ev-button emptyCta variant="primary" [fullWidth]="true" (click)="openCreateForm()">
+          <span class="material-icons" aria-hidden="true">add</span>
+          Crear primer tipo
+        </ev-button>
+      </ev-empty-state>
+
+      <div *ngIf="tipos.length > 0" class="ev-panel__grid">
+        <ev-panel-card *ngFor="let tipo of tipos" [inactive]="tipo.activo === false">
+          <header class="ev-panel-card__head">
+            <div class="ev-panel-card__meta">
+              <h3 class="ev-panel-card__name">{{ tipo.nombre }}</h3>
+              <p class="ev-panel-card__price">${{ formatPrecio(tipo.precio) }}</p>
+            </div>
+            <div class="ev-panel-card__badges">
+              <ev-badge *ngIf="getTipoBoletaBadge(tipo) as badge" [variant]="badgeVariant(badge)">
+                {{ badgeLabel(badge) }}
+              </ev-badge>
+              <ev-badge *ngIf="getPalcoLabel(tipo) as palco" variant="accent">{{ palco }}</ev-badge>
+            </div>
+          </header>
+
+          <div class="ev-panel-card__metrics">
+            <span>{{ tipo.cantidad_disponibles }} disponibles</span>
+            <span class="ev-panel-card__dot" aria-hidden="true">·</span>
+            <span>{{ tipo.cantidad_vendidas ?? 0 }} vendidas</span>
+          </div>
+
+          <div class="ev-panel-card__progress" role="presentation">
+            <div
+              class="ev-panel-card__progress-fill"
+              [style.width.%]="getOcupacionPct(tipo)"
+              [class.ev-panel-card__progress-fill--high]="getOcupacionPct(tipo) >= 80"
+              [class.ev-panel-card__progress-fill--full]="getOcupacionPct(tipo) >= 100"
+            ></div>
+          </div>
+          <p class="ev-panel-card__pct">{{ getOcupacionPct(tipo) }}% ocupación</p>
+
+          <p class="ev-panel-card__status">
+            <span class="ev-panel-card__status-dot" [ngClass]="statusDotClass(isVentaActiva(tipo))"></span>
+            {{ isVentaActiva(tipo) ? 'Venta activa' : 'Sin venta activa' }}
+          </p>
+
+          <footer class="ev-panel-card__actions">
+            <button type="button" class="ev-panel-card__action" (click)="openForm(tipo)">Editar</button>
+            <button type="button" class="ev-panel-card__action" (click)="openInventory(tipo)">Inventario</button>
+            <div class="ev-panel-card__more-wrap">
+              <button
+                type="button"
+                class="ev-panel-card__action ev-panel-card__action--icon"
+                (click)="toggleMenu(tipo.id, $event)"
+                aria-label="Más opciones"
+              >
+                <span class="material-icons" aria-hidden="true">more_horiz</span>
+              </button>
+              <div *ngIf="menuOpenTipoId === tipo.id" class="ev-panel-card__menu" (click)="$event.stopPropagation()">
+                <button type="button" (click)="desactivarTipo(tipo)" [disabled]="tipo.activo === false">
+                  Desactivar
+                </button>
+              </div>
+            </div>
+          </footer>
+        </ev-panel-card>
+      </div>
+    </div>
+
+    <div
+      *ngIf="view === 'form'"
+      class="ev-panel__view"
+      [class.ev-panel__view--forward]="viewDirection === 'forward'"
+    >
+      <ev-panel-form>
+        <div class="ev-form">
+          <ev-form-section title="Datos básicos" description="Nombre, descripción y precio del tipo de entrada.">
+            <div class="ev-form-grid ev-form-grid--2">
+              <div class="ev-field ev-form-span-2">
+                <label class="ev-field__label" for="boleta-nombre">
+                  Nombre<span class="ev-field__required" aria-hidden="true">*</span>
+                </label>
+                <input
+                  id="boleta-nombre"
+                  type="text"
+                  class="ev-input"
+                  [(ngModel)]="formData.nombre"
+                  (ngModelChange)="onFormChange()"
+                  placeholder="Ej: VIP, General, Palco"
+                  [disabled]="saving"
+                />
+              </div>
+
+              <div class="ev-field ev-form-span-2">
+                <label class="ev-field__label" for="boleta-descripcion">Descripción</label>
+                <textarea
+                  id="boleta-descripcion"
+                  class="ev-textarea ev-textarea--sm"
+                  rows="3"
+                  [(ngModel)]="formData.descripcion"
+                  (ngModelChange)="onFormChange()"
+                  placeholder="Beneficios, restricciones o detalles para el comprador"
+                  [disabled]="saving"
+                ></textarea>
+              </div>
+
+              <div class="ev-field">
+                <label class="ev-field__label" for="boleta-precio">
+                  Precio<span class="ev-field__required" aria-hidden="true">*</span>
+                </label>
+                <ev-number-input
+                  id="boleta-precio"
+                  mode="integer"
+                  [min]="0"
+                  [(ngModel)]="formData.precio"
+                  (ngModelChange)="onFormChange()"
+                  placeholder="0"
+                  [disabled]="saving"
+                />
+              </div>
+
+              <div *ngIf="isCreateMode" class="ev-field">
+                <label class="ev-field__label" for="boleta-cantidad">
+                  {{ cantidadTotalFieldLabel }}<span class="ev-field__required" aria-hidden="true">*</span>
+                </label>
+                <ev-number-input
+                  id="boleta-cantidad"
+                  mode="integer"
+                  [min]="1"
+                  [(ngModel)]="formData.cantidad_total"
+                  (ngModelChange)="calcularCantidadesTipoBoleta()"
+                  placeholder="100"
+                  [disabled]="saving"
+                />
+              </div>
+            </div>
+          </ev-form-section>
+
+          <ev-form-section title="Periodo de venta" description="Opcional. Limita cuándo se puede comprar este tipo.">
+            <div class="ev-form-grid ev-form-grid--2">
+              <div class="ev-field">
+                <label class="ev-field__label" for="boleta-venta-inicio">Venta inicio</label>
+                <input
+                  id="boleta-venta-inicio"
+                  type="datetime-local"
+                  class="ev-input"
+                  [(ngModel)]="formData.fecha_venta_inicio"
+                  (ngModelChange)="onFormChange()"
+                  [disabled]="saving"
+                />
+              </div>
+              <div class="ev-field">
+                <label class="ev-field__label" for="boleta-venta-fin">Venta fin</label>
+                <input
+                  id="boleta-venta-fin"
+                  type="datetime-local"
+                  class="ev-input"
+                  [(ngModel)]="formData.fecha_venta_fin"
+                  (ngModelChange)="onFormChange()"
+                  [disabled]="saving"
+                />
+              </div>
+            </div>
+          </ev-form-section>
+
+          <ev-form-section title="Palcos y capacidad" description="Entradas individuales o paquetes grupales con mapa opcional.">
+            <div class="ev-check-row">
+              <label class="ev-check">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="formData.es_palco"
+                  (ngModelChange)="onFormChange()"
+                  [disabled]="saving"
+                />
+                Es palco / paquete grupal
+              </label>
+            </div>
+
+            <div class="ev-form-grid ev-form-grid--2">
+              <div class="ev-field">
+                <label class="ev-field__label" for="boleta-personas">
+                  Personas por unidad<span class="ev-field__required" aria-hidden="true">*</span>
+                </label>
+                <ev-number-input
+                  id="boleta-personas"
+                  mode="integer"
+                  [min]="1"
+                  [(ngModel)]="formData.personas_por_unidad"
+                  (ngModelChange)="onFormChange()"
+                  [disabled]="saving"
+                />
+                <p class="ev-field__hint">Cuántas personas incluye cada unidad vendida.</p>
+              </div>
+            </div>
+
+            <div *ngIf="mostrarCampoMapaPalcos" class="ev-field">
+              <label class="ev-field__label">Mapa de palcos</label>
+              <p class="ev-field__hint">Opcional · Máx. 10 MB · JPG o PNG</p>
+              <input
+                #mapaPalcoInput
+                type="file"
+                accept="image/*"
+                class="ev-panel__file-input"
+                (change)="onMapaPalcoFileChange($event)"
+              />
+              <div class="ev-upload">
+                <button
+                  type="button"
+                  class="ev-upload__trigger"
+                  (click)="triggerMapaSelect()"
+                  [disabled]="saving || uploadingMapaPalco"
+                >
+                  <span class="material-icons" aria-hidden="true">image</span>
+                  Elegir imagen
+                </button>
+                <button
+                  *ngIf="previewMapaPalco || selectedMapaPalcoFile"
+                  type="button"
+                  class="ev-panel-link"
+                  (click)="quitarImagenMapaPalco()"
+                  [disabled]="saving"
+                >
+                  Quitar imagen
+                </button>
+                <span *ngIf="uploadingMapaPalco" class="ev-field__hint">Subiendo…</span>
+                <div *ngIf="previewMapaPalco" class="ev-upload__preview">
+                  <img [src]="previewMapaPalco" alt="Vista previa mapa de palcos" />
+                </div>
+              </div>
+            </div>
+          </ev-form-section>
+
+          <ev-form-section title="Límites y estado" description="Control de compra por persona y disponibilidad en venta.">
+            <div class="ev-form-grid ev-form-grid--2">
+              <div class="ev-field">
+                <label class="ev-field__label" for="boleta-limite">Límite por persona</label>
+                <ev-number-input
+                  id="boleta-limite"
+                  mode="integer"
+                  [min]="1"
+                  [(ngModel)]="formData.limite_por_persona"
+                  (ngModelChange)="onFormChange()"
+                  placeholder="Sin límite"
+                  [disabled]="saving"
+                />
+                <p class="ev-field__hint">Máximo de boletas de este tipo por comprador.</p>
+              </div>
+            </div>
+
+            <div *ngIf="editingTipo" class="ev-panel-readonly">
+              <p class="ev-panel-readonly__title">Inventario actual</p>
+              <div class="ev-panel-readonly__grid">
+                <div class="ev-panel-readonly__stat">
+                  <span class="ev-panel-readonly__value">{{ editingTipo.cantidad_total }}</span>
+                  <span class="ev-panel-readonly__label">Total</span>
+                </div>
+                <div class="ev-panel-readonly__stat">
+                  <span class="ev-panel-readonly__value">{{ editingTipo.cantidad_vendidas ?? 0 }}</span>
+                  <span class="ev-panel-readonly__label">Vendidas</span>
+                </div>
+                <div class="ev-panel-readonly__stat">
+                  <span class="ev-panel-readonly__value">{{ editingTipo.cantidad_disponibles }}</span>
+                  <span class="ev-panel-readonly__label">Disponibles</span>
+                </div>
+              </div>
+              <button type="button" class="ev-panel-link" (click)="openInventory(editingTipo)">
+                Gestionar inventario →
+              </button>
+            </div>
+
+            <div class="ev-check-row">
+              <label class="ev-check">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="formData.activo"
+                  (ngModelChange)="onFormChange()"
+                  [disabled]="saving"
+                />
+                Tipo activo
+              </label>
+            </div>
+            <p class="ev-field__hint">Los tipos inactivos no aparecen en la venta pública.</p>
+          </ev-form-section>
+        </div>
+      </ev-panel-form>
+    </div>
+
+    <div
+      *ngIf="view === 'inventory' && inventarioTipo"
+      class="ev-panel__view"
+      [class.ev-panel__view--forward]="viewDirection === 'forward'"
+    >
+      <ev-panel-form>
+        <div class="ev-form">
+          <ev-form-section [title]="inventarioTipo.nombre" description="Estado actual del inventario">
+            <div class="ev-panel-readonly__grid">
+              <div class="ev-panel-readonly__stat">
+                <span class="ev-panel-readonly__value">{{ inventarioTipo.cantidad_total }}</span>
+                <span class="ev-panel-readonly__label">Total</span>
+              </div>
+              <div class="ev-panel-readonly__stat">
+                <span class="ev-panel-readonly__value">{{ inventarioTipo.cantidad_vendidas ?? 0 }}</span>
+                <span class="ev-panel-readonly__label">Vendidas</span>
+              </div>
+              <div class="ev-panel-readonly__stat">
+                <span class="ev-panel-readonly__value">{{ inventarioTipo.cantidad_disponibles }}</span>
+                <span class="ev-panel-readonly__label">Disponibles</span>
+              </div>
+            </div>
+            <div class="ev-panel-card__progress ev-panel__inv-bar" role="presentation">
+              <div class="ev-panel-card__progress-fill" [style.width.%]="getOcupacionPct(inventarioTipo)"></div>
+            </div>
+            <p class="ev-panel-card__pct">{{ getOcupacionPct(inventarioTipo) }}% ocupación</p>
+          </ev-form-section>
+
+          <ev-form-section title="Agregar inventario" description="Suma unidades disponibles para la venta.">
+            <div class="ev-field">
+              <label class="ev-field__label" for="boleta-inv-cantidad">
+                Unidades a agregar<span class="ev-field__required" aria-hidden="true">*</span>
+              </label>
+              <ev-number-input
+                id="boleta-inv-cantidad"
+                mode="integer"
+                [min]="1"
+                [(ngModel)]="cantidadAgregarInventario"
+                (ngModelChange)="onInventoryChange()"
+                placeholder="10"
+                [disabled]="saving"
+              />
+            </div>
+          </ev-form-section>
+        </div>
+      </ev-panel-form>
+    </div>
+  </div>
+
+  <ev-drawer-footer *ngIf="showFooter">
+    <ev-button variant="ghost" [disabled]="saving" (click)="goToDashboard()">Cancelar</ev-button>
+    <ev-button variant="primary" [disabled]="view === 'form' ? !canSaveForm : !canSaveInventory" [loading]="saving" (click)="view === 'form' ? saveForm() : saveInventory()">
+      Guardar
+    </ev-button>
+  </ev-drawer-footer>
+
+  <ev-drawer-footer *ngIf="view === 'dashboard'">
+    <ev-button variant="ghost" (click)="closePanel()">Cerrar</ev-button>
+  </ev-drawer-footer>
+</div>

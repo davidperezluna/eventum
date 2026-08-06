@@ -894,6 +894,15 @@ export class AuthService {
     return usuario?.tipo_usuario_id === RolesPermitidos.ORGANIZADOR;
   }
 
+  /** Cuenta organizador dedicada al modo demostración comercial. */
+  isShowcaseOrganizador(): boolean {
+    const id = this.getUsuarioId();
+    return environment.showcaseModeEnabled
+      && id != null
+      && id > 0
+      && id === environment.showcaseOrganizadorId;
+  }
+
   /**
    * Obtiene el ID del usuario actual (útil para organizador_id)
    */

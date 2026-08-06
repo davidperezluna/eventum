@@ -19,6 +19,8 @@ import {
   urlDestinoClienteConPerfil,
 } from '../../core/perfil-completo';
 import { ClientConfirmDialog } from '../client-confirm-dialog/client-confirm-dialog';
+import { EvDrawerHost } from '../ev-drawer/ev-drawer-host';
+import { EvNotice } from '../ev-notice';
 import { LOGIN_QUERY_CARRITO_PAGAR } from '../../core/login-redirect';
 
 type ClientNavItem = {
@@ -35,7 +37,7 @@ type ClientNavItem = {
 
 @Component({
   selector: 'app-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, ClientConfirmDialog],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, ClientConfirmDialog, EvDrawerHost, EvNotice],
   templateUrl: './layout.html',
   styleUrl: './layout.css',
 })
@@ -87,7 +89,7 @@ export class Layout implements OnInit, OnDestroy {
   private unsubscribeAuthState?: () => void;
 
   constructor(
-    private authService: AuthService,
+    public authService: AuthService,
     private carritoCompraService: CarritoCompraService,
     private misComprasStateService: MisComprasStateService,
     private trasladosBoletaService: TrasladosBoletaService,
@@ -112,7 +114,11 @@ export class Layout implements OnInit, OnDestroy {
         } else if (usuario.tipo_usuario_id === 2) {
           this.userRole = 'Organizador';
           this.clientNavItems = [];
-          this.loadMenuOrganizador();
+          if (this.authService.isShowcaseOrganizador()) {
+            this.loadMenuShowcase();
+          } else {
+            this.loadMenuOrganizador();
+          }
         } else if (usuario.tipo_usuario_id === 1) {
           this.userRole = 'Cliente';
           this.loadMenuCliente();
@@ -355,6 +361,20 @@ export class Layout implements OnInit, OnDestroy {
       { path: '/ventas', label: 'Mis Ventas', icon: 'attach_money' },
       { path: '/perfil', label: 'Mi Perfil', icon: 'person' },
     */
+  }
+
+  loadMenuShowcase() {
+    this.menuItems = [
+      { path: '/dashboard-organizador', label: 'Dashboard', icon: 'dashboard' },
+      { path: '/eventos', label: 'Mis Eventos', icon: 'event' },
+      { path: '/boletas', label: 'Boletas sin usar', icon: 'confirmation_number' },
+      { path: '/boletas-usadas', label: 'Boletas usadas', icon: 'how_to_reg' },
+      { path: '/palcos', label: 'Palcos', icon: 'event_seat' },
+      { path: '/lectores-parametrizacion', label: 'Lectores', icon: 'qr_code_scanner' },
+      { path: '/escanear-qr', label: 'Escanear QR', icon: 'qr_code_2' },
+      { path: '/productos', label: 'Productos', icon: 'local_mall' },
+      { path: '/perfil', label: 'Mi Perfil', icon: 'person' },
+    ];
   }
 
   loadMenuCliente() {

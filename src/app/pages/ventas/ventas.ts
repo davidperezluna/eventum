@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ComprasService } from '../../services/compras.service';
@@ -102,10 +102,15 @@ export class Ventas implements OnInit, OnDestroy {
     private eventosService: EventosService,
     private boletasService: BoletasService,
     private transaccionesCheckoutService: TransaccionesCheckoutService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit() {
+    const eventoId = Number(this.route.snapshot.queryParamMap.get('eventoId'));
+    if (eventoId > 0) {
+      this.eventoFiltro = eventoId;
+    }
     void this.cargarEventosFiltro();
     this.loadCompras();
   }

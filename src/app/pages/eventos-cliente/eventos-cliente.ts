@@ -219,6 +219,12 @@ export class EventosCliente implements OnInit, OnDestroy {
       let response = await loadEventosWithFallback(filters);
       let eventos = response.data || [];
 
+      if (environment.showcaseModeEnabled && environment.showcaseOrganizadorId > 0) {
+        eventos = eventos.filter(
+          (evento) => evento.organizador_id !== environment.showcaseOrganizadorId
+        );
+      }
+
       if (eventos.length === 0 && !searchTerm) {
         const fallbackFilters: any = { activo: true };
         response = await loadEventosWithFallback(fallbackFilters);
@@ -234,8 +240,13 @@ export class EventosCliente implements OnInit, OnDestroy {
 
   private async procesarEventos(eventos: Evento[]): Promise<void> {
     const ahora = new Date();
+    const showcaseId =
+      environment.showcaseModeEnabled && environment.showcaseOrganizadorId > 0
+        ? environment.showcaseOrganizadorId
+        : null;
     // Filtrar eventos activos y que no hayan finalizado (fecha_fin aún no ha pasado)
     this.eventos = eventos.filter(e => {
+      if (showcaseId != null && e.organizador_id === showcaseId) return false;
       if (e.activo !== true) return false;
 
       // Excluir eventos cuya fecha de finalización ya pasó

@@ -324,35 +324,6 @@
   margin-top: var(--spacing-md);
 }
 
-.alert-box {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md);
-  border-radius: var(--border-radius-sm);
-  margin-bottom: var(--spacing-md);
-}
-
-.alert-box p,
-.alert-box span {
-  margin: 0;
-  flex: 1;
-}
-
-.alert-box.warn {
-  background: #fffbeb;
-  color: #92400e;
-  border: 1px solid #fde68a;
-}
-
-.alert-box.error {
-  background: #fef2f2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
-  flex-direction: column;
-  align-items: stretch;
-}
-
 .manual-permiso-aviso {
   margin-bottom: var(--spacing-md);
 }

@@ -1,9 +1,11 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { EventosService } from '../../services/eventos.service';
+import { DashboardOrganizadorService } from '../../services/dashboard-organizador.service';
 import { CategoriasService } from '../../services/categorias.service';
 import { LugaresService } from '../../services/lugares.service';
 import { UsuariosService } from '../../services/usuarios.service';
@@ -12,16 +14,23 @@ import { StorageService } from '../../services/storage.service';
 import { ImageOptimizationService } from '../../services/image-optimization.service';
 import { TimezoneService } from '../../services/timezone.service';
 import { AlertService } from '../../services/alert.service';
-import { CuponesService } from '../../services/cupones.service';
 import { WompiCuentasService } from '../../services/wompi-cuentas.service';
 import { BoletasService } from '../../services/boletas.service';
-import { Evento, CategoriaEvento, Lugar, Usuario, PaginatedResponse, TipoEstadoEvento, CuponDescuento, WompiCuenta } from '../../types';
-import { TipoBoleta } from '../../types';
+import { DrawerService } from '../../core/drawer';
+import { openEventoCuponesDrawer } from '../../panels/evento-cupones';
+import { openEventoBoletasDrawer } from '../../panels/evento-boletas';
+import { Evento, CategoriaEvento, Lugar, Usuario, PaginatedResponse, TipoEstadoEvento, WompiCuenta } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
+import { EvFormModal } from '../../components/ev-form-modal/ev-form-modal';
+import { EvFormSection } from '../../components/ev-form-section/ev-form-section';
+import { EvFormWizard, EvWizardStep } from '../../components/ev-form-wizard/ev-form-wizard';
+import { EvEventoPreview } from '../../components/ev-evento-preview/ev-evento-preview';
+import { EvSelect, EvSelectOption, mapToEvSelectOptions } from '../../components/ev-select/ev-select';
+import { EvNumberInput } from '../../components/ev-number-input/ev-number-input';
 
 @Component({
   selector: 'app-eventos',
-  imports: [CommonModule, FormsModule, DateFormatPipe],
+  imports: [CommonModule, FormsModule, DateFormatPipe, RouterLink, EvFormModal, EvFormSection, EvFormWizard, EvEventoPreview, EvSelect, EvNumberInput],
   templateUrl: './eventos.html',
   styleUrl: './eventos.css',
 })
@@ -39,38 +48,38 @@ export class Eventos implements OnInit, OnDestroy {
   searchTerm = '';
   categoriaFiltro: number | null = null;
   estadoFiltro: string | null = null;
+  sortOrden: 'fecha_desc' | 'fecha_asc' | 'nombre_asc' | 'nombre_desc' = 'fecha_desc';
+  showFiltersMobile = false;
+  openMenuEventoId: number | null = null;
+  boletasPorEvento = new Map<number, number>();
+  resumenTotalEventos: number | null = null;
+  resumenEventosActivos: number | null = null;
+  resumenBoletasVendidas: number | null = null;
+  private searchSubject = new Subject<string>();
 
   showModal = false;
   editingEvento: Evento | null = null;
   formData: Partial<Evento> = { activo: true, estado: TipoEstadoEvento.BORRADOR };
+  wizardStep = 0;
+  wizardPhase: 'form' | 'success' = 'form';
+  wizardSelectToken = 0;
+  savedEvento: Evento | null = null;
 
-  // Manejo de tipos de boleta por evento
-  showTiposBoletaModal = false;
-  showTipoBoletaFormModal = false;
-  showInventarioModal = false;
-  selectedEventoForTipos: Evento | null = null;
-  tiposBoletaEvento: TipoBoleta[] = [];
-  loadingTiposBoleta = false;
-  editingTipo: TipoBoleta | null = null;
-  tipoInventario: TipoBoleta | null = null;
-  cantidadAgregarInventario = 1;
-  tipoBoletaFormData: Partial<TipoBoleta> = { activo: true };
-  selectedMapaPalcoFile: File | null = null;
-  previewMapaPalco: string | null = null;
-  uploadingMapaPalco = false;
-  
-  // Manejo de Cupones
-  showCuponesModal = false;
-  selectedEventoForCupones: Evento | null = null;
-  cupones: CuponDescuento[] = [];
-  loadingCupones = false;
-  nuevoCupon: Partial<CuponDescuento> = {
-    codigo: '',
-    porcentaje_descuento: 0,
-    max_usos: 1,
-    activo: true
-  };
-  
+  private pendingEditId: number | null = null;
+  private pendingWizardStep = 0;
+  private pendingOpen: string | null = null;
+
+  readonly wizardSteps: EvWizardStep[] = [
+    { id: 'basico', label: 'Información básica' },
+    { id: 'lugar-fecha', label: 'Lugar y fecha' },
+    { id: 'descripcion', label: 'Descripción' },
+    { id: 'configuracion', label: 'Configuración' },
+    { id: 'imagen', label: 'Imagen' },
+    { id: 'revision', label: 'Revisión' },
+  ];
+
+  // Manejo de tipos de boleta por evento (drawer)
+
   // Propiedades para manejo de imágenes
   previewUrl: string | null = null;
   selectedFile: File | null = null;
@@ -84,6 +93,60 @@ export class Eventos implements OnInit, OnDestroy {
     { value: TipoEstadoEvento.CANCELADO, label: 'Cancelado' }
   ];
 
+  get isShowcaseMode(): boolean {
+    return this.authService.isShowcaseOrganizador();
+  }
+
+  get estadosFormulario(): { value: TipoEstadoEvento; label: string }[] {
+    if (this.isShowcaseMode) {
+      return this.estados.filter((estado) => estado.value !== TipoEstadoEvento.PUBLICADO);
+    }
+    return this.estados;
+  }
+
+  readonly sortOptions: EvSelectOption<string>[] = [
+    { value: 'fecha_desc', label: 'Más recientes' },
+    { value: 'fecha_asc', label: 'Más antiguos' },
+    { value: 'nombre_asc', label: 'Nombre A–Z' },
+    { value: 'nombre_desc', label: 'Nombre Z–A' },
+  ];
+
+  categoriaOptions: EvSelectOption<number>[] = [];
+  categoriaFiltroOptions: EvSelectOption<number>[] = [];
+  estadoFiltroOptions: EvSelectOption<string>[] = [];
+  organizadorOptions: EvSelectOption<number>[] = [];
+  lugarOptions: EvSelectOption<number>[] = [];
+  estadoEventoOptions: EvSelectOption<TipoEstadoEvento>[] = [];
+  wompiCuentaOptions: EvSelectOption<number>[] = [];
+
+  private rebuildSelectOptions(): void {
+    this.categoriaOptions = mapToEvSelectOptions(this.categorias, (c) => c.nombre, (c) => c.id);
+    this.categoriaFiltroOptions = this.categoriaOptions;
+    this.estadoFiltroOptions = this.estados.map((estado) => ({
+      value: estado.value,
+      label: estado.label,
+    }));
+    this.organizadorOptions = mapToEvSelectOptions(
+      this.organizadores,
+      (o) => `${o.nombre || ''} ${o.apellido || ''} (${o.email})`.replace(/\s+/g, ' ').trim(),
+      (o) => o.id,
+    );
+    this.lugarOptions = mapToEvSelectOptions(
+      this.lugares,
+      (l) => `${l.nombre} — ${l.ciudad}`,
+      (l) => l.id,
+    );
+    this.estadoEventoOptions = this.estadosFormulario.map((estado) => ({
+      value: estado.value,
+      label: estado.label,
+    }));
+    this.wompiCuentaOptions = mapToEvSelectOptions(
+      this.wompiCuentas,
+      (c) => `${c.nombre} (ID ${c.id})`,
+      (c) => c.id,
+    );
+  }
+
   constructor(
     private eventosService: EventosService,
     private categoriasService: CategoriasService,
@@ -93,25 +156,283 @@ export class Eventos implements OnInit, OnDestroy {
     private timezoneService: TimezoneService,
     private storageService: StorageService,
     private imageOptimizationService: ImageOptimizationService,
-    private cuponesService: CuponesService,
     private wompiCuentasService: WompiCuentasService,
     private boletasService: BoletasService,
+    private drawerService: DrawerService,
     private alertService: AlertService,
-    private cdr: ChangeDetectorRef
+    private dashboardOrganizadorService: DashboardOrganizadorService,
+    private cdr: ChangeDetectorRef,
+    private router: Router,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit() {
+    this.searchSubject
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.page = 1;
+        this.loadEventos();
+      });
+
     this.loadCategorias();
     this.loadLugares();
     this.loadOrganizadores();
     this.loadWompiCuentas();
+    this.rebuildSelectOptions();
+    void this.loadEventos();
+
+    this.route.queryParamMap.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+      const editId = Number(params.get('edit'));
+      if (editId > 0) {
+        this.pendingEditId = editId;
+        this.pendingWizardStep = Number(params.get('step')) || 0;
+        this.pendingOpen = params.get('open');
+        void this.tryOpenPendingEdit();
+      }
+    });
+  }
+
+  private async tryOpenPendingEdit(): Promise<void> {
+    if (!this.pendingEditId) {
+      return;
+    }
+    let evento = this.eventos.find((e) => e.id === this.pendingEditId);
+    if (!evento) {
+      try {
+        evento = await this.eventosService.getEventoById(this.pendingEditId);
+      } catch {
+        return;
+      }
+    }
+    const editId = this.pendingEditId;
+    const open = this.pendingOpen;
+    const step = Math.min(
+      Math.max(this.pendingWizardStep, 0),
+      this.wizardSteps.length - 1,
+    );
+    this.pendingEditId = null;
+    this.pendingOpen = null;
+    void this.router.navigate([], { queryParams: {}, replaceUrl: true });
+
+    if (open === 'boletas') {
+      this.openBoletasDrawer(evento);
+      return;
+    }
+    if (open === 'cupones') {
+      this.openCuponesDrawer(evento);
+      return;
+    }
+    this.openModal(evento);
+    this.wizardStep = step;
+    this.cdr.detectChanges();
+  }
+
+  get pageTitle(): string {
+    return this.authService.isOrganizador() ? 'Mis Eventos' : 'Eventos';
+  }
+
+  get pageSubtitle(): string {
+    return this.authService.isOrganizador()
+      ? 'Gestiona y monitorea tus eventos'
+      : 'Gestiona todos los eventos del sistema';
+  }
+
+  get showResumenStrip(): boolean {
+    return !this.loading && !this.isFirstTimeEmpty;
+  }
+
+  get resumenStripText(): string {
+    if (this.authService.isOrganizador() && this.resumenTotalEventos != null) {
+      const partes = [
+        `${this.resumenTotalEventos} ${this.resumenTotalEventos === 1 ? 'evento' : 'eventos'}`,
+      ];
+      if (this.resumenEventosActivos != null) {
+        partes.push(
+          `${this.resumenEventosActivos} en catálogo`
+        );
+      }
+      if (this.resumenBoletasVendidas != null) {
+        partes.push(
+          `${this.resumenBoletasVendidas} ${this.resumenBoletasVendidas === 1 ? 'boleta vendida' : 'boletas vendidas'}`
+        );
+      }
+      return partes.join(' · ');
+    }
+    return `${this.total} ${this.total === 1 ? 'evento' : 'eventos'}`;
+  }
+
+  get dashboardRoute(): string {
+    return this.authService.isOrganizador() ? '/dashboard-organizador' : '/dashboard';
+  }
+
+  get hasActiveFilters(): boolean {
+    return Boolean(
+      this.searchTerm.trim()
+      || this.categoriaFiltro != null
+      || this.estadoFiltro
+      || this.sortOrden !== 'fecha_desc'
+    );
+  }
+
+  get activeFiltersCount(): number {
+    let count = 0;
+    if (this.searchTerm.trim()) count++;
+    if (this.categoriaFiltro != null) count++;
+    if (this.estadoFiltro) count++;
+    if (this.sortOrden !== 'fecha_desc') count++;
+    return count;
+  }
+
+  get eventosOrdenados(): Evento[] {
+    const list = [...this.eventos];
+    switch (this.sortOrden) {
+      case 'fecha_asc':
+        return list.sort((a, b) => String(a.fecha_inicio).localeCompare(String(b.fecha_inicio)));
+      case 'nombre_asc':
+        return list.sort((a, b) => a.titulo.localeCompare(b.titulo, 'es'));
+      case 'nombre_desc':
+        return list.sort((a, b) => b.titulo.localeCompare(a.titulo, 'es'));
+      case 'fecha_desc':
+      default:
+        return list.sort((a, b) => String(b.fecha_inicio).localeCompare(String(a.fecha_inicio)));
+    }
+  }
+
+  get isFilteredEmpty(): boolean {
+    return !this.loading && this.eventos.length === 0 && this.hasActiveFilters;
+  }
+
+  get isFirstTimeEmpty(): boolean {
+    return !this.loading && this.eventos.length === 0 && !this.hasActiveFilters;
+  }
+
+  get eventoModalTitle(): string {
+    if (this.wizardPhase === 'success') {
+      return this.editingEvento ? '¡Evento actualizado!' : '¡Evento creado!';
+    }
+    return this.editingEvento ? 'Editar evento' : 'Crear evento';
+  }
+
+  get eventoModalDescription(): string {
+    if (this.wizardPhase === 'success') {
+      return 'Tu evento está listo. Elige el siguiente paso para continuar.';
+    }
+    return this.editingEvento
+      ? 'Actualiza la información paso a paso. Los cambios se reflejan en el panel.'
+      : 'Construye tu evento paso a paso.';
+  }
+
+  get wizardEstadoLabel(): string {
+    return this.getEstadoLabel(this.formData.estado);
+  }
+
+  get eventoModalPrimaryLabel(): string {
+    return this.editingEvento ? 'Guardar cambios' : 'Crear evento';
+  }
+
+  onSearchInput(value: string): void {
+    this.searchTerm = value;
+    this.searchSubject.next(value);
+  }
+
+  onFilterChange(): void {
+    this.page = 1;
     this.loadEventos();
+  }
+
+  onSortChange(): void {
+    this.cdr.markForCheck();
+  }
+
+  clearFilters(): void {
+    this.searchTerm = '';
+    this.categoriaFiltro = null;
+    this.estadoFiltro = null;
+    this.sortOrden = 'fecha_desc';
+    this.page = 1;
+    this.showFiltersMobile = false;
+    this.loadEventos();
+  }
+
+  toggleFiltersMobile(): void {
+    this.showFiltersMobile = !this.showFiltersMobile;
+  }
+
+  toggleEventoMenu(event: Event, eventoId: number): void {
+    event.stopPropagation();
+    this.openMenuEventoId = this.openMenuEventoId === eventoId ? null : eventoId;
+  }
+
+  verEvento(evento: Evento): void {
+    window.open(`/detalle-evento/${evento.id}`, '_blank', 'noopener,noreferrer');
+  }
+
+  getBoletasVendidas(eventoId: number): number | null {
+    if (!this.authService.isOrganizador()) return null;
+    return this.boletasPorEvento.get(eventoId) ?? 0;
+  }
+
+  getLugarLabel(evento: Evento): string {
+    const lugar = evento.lugar;
+    if (!lugar?.nombre) return 'Sin lugar asignado';
+    return lugar.ciudad ? `${lugar.nombre}, ${lugar.ciudad}` : lugar.nombre;
+  }
+
+  getEstadoPillClass(estado?: string): string {
+    switch (estado) {
+      case TipoEstadoEvento.PUBLICADO:
+        return 'ev-pill--published';
+      case TipoEstadoEvento.EN_CURSO:
+        return 'ev-pill--live';
+      case TipoEstadoEvento.FINALIZADO:
+        return 'ev-pill--done';
+      case TipoEstadoEvento.CANCELADO:
+        return 'ev-pill--cancelled';
+      default:
+        return 'ev-pill--draft';
+    }
+  }
+
+  showInactivoPill(evento: Evento): boolean {
+    return evento.activo === false;
+  }
+
+  getPrecioMeta(evento: Evento): string {
+    if (evento.es_gratis) return 'Entrada gratis';
+    if (evento.precio_minimo != null) {
+      return `Precio desde ${this.formatCurrency(evento.precio_minimo)}`;
+    }
+    return '';
+  }
+
+  getEventoIniciales(titulo: string): string {
+    const words = titulo.trim().split(/\s+/).filter(Boolean);
+    if (words.length === 0) return 'EV';
+    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+    return `${words[0][0]}${words[1][0]}`.toUpperCase();
+  }
+
+  formatCurrency(value: number | undefined | null): string {
+    const n = Number(value ?? 0);
+    if (!Number.isFinite(n)) return '$0';
+    if (n >= 1_000_000) {
+      return `$${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+    }
+    if (n >= 1_000) {
+      return `$${Math.round(n / 1_000)}K`;
+    }
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      maximumFractionDigits: 0,
+    }).format(n);
   }
 
   async loadCategorias() {
     try {
       const response = await this.categoriasService.getCategorias({ limit: 1000 });
       this.categorias = response.data;
+      this.rebuildSelectOptions();
     } catch (err) {
       console.error('Error cargando categorías:', err);
     }
@@ -121,6 +442,7 @@ export class Eventos implements OnInit, OnDestroy {
     try {
       const response = await this.lugaresService.getLugares({ limit: 1000 });
       this.lugares = response.data;
+      this.rebuildSelectOptions();
     } catch (err) {
       console.error('Error cargando lugares:', err);
     }
@@ -133,11 +455,13 @@ export class Eventos implements OnInit, OnDestroy {
       console.log('Organizadores recibidos en componente:', organizadores);
       console.log('Cantidad de organizadores:', organizadores.length);
       this.organizadores = organizadores || [];
+      this.rebuildSelectOptions();
       this.cdr.detectChanges();
       console.log('Organizadores asignados:', this.organizadores.length);
     } catch (err) {
       console.error('Error cargando organizadores:', err);
       this.organizadores = [];
+      this.rebuildSelectOptions();
       this.cdr.detectChanges();
       this.cdr.detectChanges();
     }
@@ -146,10 +470,12 @@ export class Eventos implements OnInit, OnDestroy {
   async loadWompiCuentas() {
     try {
       this.wompiCuentas = await this.wompiCuentasService.getCuentasActivas();
+      this.rebuildSelectOptions();
       this.cdr.detectChanges();
     } catch (err) {
       console.error('Error cargando cuentas Wompi:', err);
       this.wompiCuentas = [];
+      this.rebuildSelectOptions();
       this.cdr.detectChanges();
     }
   }
@@ -182,11 +508,14 @@ export class Eventos implements OnInit, OnDestroy {
   private async loadEventosInternal(filters: any) {
     try {
       const response: PaginatedResponse<Evento> = await this.eventosService.getEventos(filters);
-      console.log('Response recibida en eventos:', response);
       this.eventos = response.data || [];
       this.total = response.total || 0;
+      await this.loadMetricasOrganizador();
       this.loading = false;
       this.cdr.detectChanges();
+      if (this.pendingEditId) {
+        void this.tryOpenPendingEdit();
+      }
     } catch (err) {
       console.error('Error cargando eventos:', err);
       this.loading = false;
@@ -196,12 +525,48 @@ export class Eventos implements OnInit, OnDestroy {
     }
   }
 
+  private async loadMetricasOrganizador(): Promise<void> {
+    if (!this.authService.isOrganizador()) {
+      this.boletasPorEvento = new Map();
+      this.resumenTotalEventos = null;
+      this.resumenEventosActivos = null;
+      this.resumenBoletasVendidas = null;
+      return;
+    }
+    const organizadorId = this.authService.getUsuarioId();
+    if (!organizadorId) return;
+
+    try {
+      const stats = await this.dashboardOrganizadorService.getStats(organizadorId);
+      const map = new Map<number, number>();
+      for (const item of stats.top_eventos ?? []) {
+        if (item?.id != null) {
+          map.set(Number(item.id), Number(item.boletas_vendidas ?? 0));
+        }
+      }
+      this.boletasPorEvento = map;
+      this.resumenTotalEventos = stats.eventos_totales ?? this.total;
+      this.resumenEventosActivos = stats.eventos_activos ?? null;
+      this.resumenBoletasVendidas = stats.boletas_vendidas ?? null;
+    } catch (err) {
+      console.warn('No se pudieron cargar métricas de eventos:', err);
+      this.boletasPorEvento = new Map();
+      this.resumenTotalEventos = this.total;
+      this.resumenEventosActivos = null;
+      this.resumenBoletasVendidas = null;
+    }
+  }
+
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
   openModal(evento?: Evento) {
+    this.rebuildSelectOptions();
+    this.wizardStep = 0;
+    this.wizardPhase = 'form';
+    this.savedEvento = null;
     this.editingEvento = evento || null;
     const usuario = this.authService.getUsuario();
     
@@ -218,13 +583,21 @@ export class Eventos implements OnInit, OnDestroy {
     }
     
     if (evento) {
-      // Convertir fechas a formato datetime-local
+      const { lugares: _lugares, lugar: _lugar, ...eventoBase } = evento as Evento & {
+        lugares?: unknown;
+        lugar?: unknown;
+      };
+      // Convertir fechas a formato datetime-local y normalizar IDs para los selects
       this.formData = {
-        ...evento,
+        ...eventoBase,
+        categoria_id: evento.categoria_id != null ? Number(evento.categoria_id) : undefined,
+        lugar_id: evento.lugar_id != null ? Number(evento.lugar_id) : undefined,
+        organizador_id: evento.organizador_id != null ? Number(evento.organizador_id) : undefined,
+        wompi_cuenta_id: evento.wompi_cuenta_id != null ? Number(evento.wompi_cuenta_id) : null,
         fecha_inicio: this.formatDateForInput(evento.fecha_inicio),
         fecha_fin: this.formatDateForInput(evento.fecha_fin),
         fecha_venta_inicio: this.formatDateForInput(evento.fecha_venta_inicio),
-        fecha_venta_fin: this.formatDateForInput(evento.fecha_venta_fin)
+        fecha_venta_fin: this.formatDateForInput(evento.fecha_venta_fin),
       };
       // Si hay imagen existente, mostrar preview
       if (evento.imagen_principal) {
@@ -233,7 +606,7 @@ export class Eventos implements OnInit, OnDestroy {
     } else {
       // Nuevo evento - establecer valores por defecto
       this.formData = {
-        activo: true,
+        activo: this.isShowcaseMode ? false : true,
         estado: TipoEstadoEvento.BORRADOR,
         organizador_id: usuario?.id || (this.organizadores.length > 0 ? this.organizadores[0].id : 0),
         wompi_cuenta_id: null,
@@ -243,7 +616,13 @@ export class Eventos implements OnInit, OnDestroy {
         porcentaje_servicio: 0
       };
     }
+    this.wizardSelectToken += 1;
     this.showModal = true;
+    this.cdr.detectChanges();
+  }
+
+  trackByWizardSelectToken(_index: number, token: number): number {
+    return token;
   }
 
   formatDateForInput(date: Date | string | undefined): string {
@@ -258,386 +637,132 @@ export class Eventos implements OnInit, OnDestroy {
     this.formData = {};
     this.previewUrl = null;
     this.selectedFile = null;
+    this.wizardStep = 0;
+    this.wizardPhase = 'form';
+    this.savedEvento = null;
+  }
+
+  wizardGoToStep(step: number): void {
+    if (step >= 0 && step < this.wizardSteps.length) {
+      this.wizardStep = step;
+    }
+  }
+
+  wizardNextStep(): void {
+    if (!this.validateWizardStep(this.wizardStep)) {
+      return;
+    }
+    if (this.wizardStep < this.wizardSteps.length - 1) {
+      this.wizardStep += 1;
+    }
+  }
+
+  wizardPrevStep(): void {
+    if (this.wizardStep > 0) {
+      this.wizardStep -= 1;
+    }
+  }
+
+  validateWizardStep(step: number): boolean {
+    switch (step) {
+      case 0:
+        if (!this.formData.titulo?.trim()) {
+          this.alertService.warning('Campo requerido', 'El título es requerido');
+          return false;
+        }
+        if (!this.formData.categoria_id) {
+          this.alertService.warning('Campo requerido', 'La categoría es requerida');
+          return false;
+        }
+        if (!this.authService.isOrganizador() && !this.formData.organizador_id) {
+          this.alertService.warning('Campo requerido', 'El organizador es requerido');
+          return false;
+        }
+        return true;
+      case 1:
+        if (!this.formData.fecha_inicio || !this.formData.fecha_fin) {
+          this.alertService.warning('Campo requerido', 'Las fechas de inicio y fin del evento son requeridas');
+          return false;
+        }
+        if (!this.formData.fecha_venta_inicio || !this.formData.fecha_venta_fin) {
+          this.alertService.warning('Campo requerido', 'Las fechas de venta son requeridas');
+          return false;
+        }
+        return true;
+      case 3:
+        if (!this.isShowcaseMode && !this.formData.es_gratis && !this.formData.wompi_cuenta_id) {
+          this.alertService.warning('Campo requerido', 'La cuenta Wompi es requerida para eventos de pago');
+          return false;
+        }
+        return true;
+      default:
+        return true;
+    }
+  }
+
+  getCategoriaNombre(id?: number): string {
+    if (!id) return '—';
+    return this.categorias.find((c) => c.id === id)?.nombre ?? '—';
+  }
+
+  getLugarNombreById(id?: number): string {
+    if (!id) return 'Sin lugar';
+    const lugar = this.lugares.find((l) => l.id === id);
+    if (!lugar) return 'Sin lugar';
+    return lugar.ciudad ? `${lugar.nombre}, ${lugar.ciudad}` : lugar.nombre;
+  }
+
+  getOrganizadorNombre(id?: number): string {
+    if (!id) return '—';
+    const org = this.organizadores.find((o) => o.id === id);
+    if (!org) return '—';
+    return `${org.nombre || ''} ${org.apellido || ''}`.trim() || org.email;
+  }
+
+  getWompiCuentaNombre(id?: number | null): string {
+    if (!id) return 'Sin cuenta asignada';
+    return this.wompiCuentas.find((c) => c.id === id)?.nombre ?? `Cuenta #${id}`;
+  }
+
+  formatWizardDate(value?: string | Date): string {
+    if (!value) return '—';
+    return this.formatDateForInput(value) || '—';
+  }
+
+  onSuccessConfigureBoletas(): void {
+    const evento = this.savedEvento;
+    this.closeModal();
+    if (evento) {
+      void this.openBoletasDrawer(evento);
+    }
+  }
+
+  onSuccessAddProductos(): void {
+    const eventoId = this.savedEvento?.id;
+    this.closeModal();
+    void this.router.navigate(['/productos'], {
+      queryParams: eventoId ? { eventoId } : undefined,
+    });
+  }
+
+  onSuccessVerEvento(): void {
+    const evento = this.savedEvento;
+    this.closeModal();
+    if (evento) {
+      this.verEvento(evento);
+    }
+  }
+
+  onSuccessClose(): void {
+    this.closeModal();
   }
   
-  // ========== MÉTODOS PARA MANEJO DE CUPONES ==========
-
-  async openCuponesModal(evento: Evento) {
-    this.selectedEventoForCupones = evento;
-    this.showCuponesModal = true;
-    this.loadCupones(evento.id);
-    this.nuevoCupon = {
-      evento_id: evento.id,
-      codigo: '',
-      porcentaje_descuento: 10,
-      max_usos: 1,
-      activo: true
-    };
+  openCuponesDrawer(evento: Evento): void {
+    void openEventoCuponesDrawer(this.drawerService, evento);
   }
 
-  async loadCupones(eventoId: number) {
-    this.loadingCupones = true;
-    try {
-      this.cupones = await this.cuponesService.getCuponesByEvento(eventoId);
-    } catch (err) {
-      console.error('Error cargando cupones:', err);
-      this.alertService.error('Error', 'No se pudieron cargar los cupones');
-    } finally {
-      this.loadingCupones = false;
-      this.cdr.detectChanges();
-    }
-  }
-
-  async crearCupon() {
-    if (!this.nuevoCupon.codigo || !this.nuevoCupon.porcentaje_descuento) {
-      this.alertService.warning('Campos incompletos', 'El código y el porcentaje son obligatorios');
-      return;
-    }
-
-    try {
-      this.nuevoCupon.codigo = this.nuevoCupon.codigo.toUpperCase().trim();
-      await this.cuponesService.crearCupon(this.nuevoCupon);
-      this.alertService.success('Éxito', 'Cupón creado correctamente');
-      if (this.selectedEventoForCupones) {
-        this.loadCupones(this.selectedEventoForCupones.id);
-      }
-      this.nuevoCupon = {
-        evento_id: this.selectedEventoForCupones?.id,
-        codigo: '',
-        porcentaje_descuento: 10,
-        max_usos: 1,
-        activo: true
-      };
-    } catch (err: any) {
-      console.error('Error creando cupón:', err);
-      this.alertService.error('Error', 'No se pudo crear el cupón: ' + (err.message || 'Error desconocido'));
-    }
-  }
-
-  async toggleCuponActivo(cupon: CuponDescuento) {
-    try {
-      await this.cuponesService.actualizarCupon(cupon.id, { activo: !cupon.activo });
-      if (this.selectedEventoForCupones) {
-        this.loadCupones(this.selectedEventoForCupones.id);
-      }
-    } catch (err) {
-      console.error('Error actualizando cupón:', err);
-      this.alertService.error('Error', 'No se pudo actualizar el cupón');
-    }
-  }
-
-  async eliminarCupon(cupon: CuponDescuento) {
-    if (!confirm(`¿Estás seguro de eliminar el cupón ${cupon.codigo}?`)) return;
-
-    try {
-      await this.cuponesService.eliminarCupon(cupon.id);
-      this.alertService.success('Éxito', 'Cupón eliminado');
-      if (this.selectedEventoForCupones) {
-        this.loadCupones(this.selectedEventoForCupones.id);
-      }
-    } catch (err) {
-      console.error('Error eliminando cupón:', err);
-      this.alertService.error('Error', 'No se pudo eliminar el cupón');
-    }
-  }
-
-  closeCuponesModal() {
-    this.showCuponesModal = false;
-    this.selectedEventoForCupones = null;
-    this.cupones = [];
-  }
-
-  async openTiposBoletaModal(evento: Evento) {
-    this.selectedEventoForTipos = evento;
-    this.showTiposBoletaModal = true;
-    await this.loadTiposBoleta(evento.id);
-  }
-
-  closeTiposBoletaModal() {
-    this.showTiposBoletaModal = false;
-    this.selectedEventoForTipos = null;
-    this.tiposBoletaEvento = [];
-  }
-
-  async loadTiposBoleta(eventoId: number) {
-    this.loadingTiposBoleta = true;
-    try {
-      this.tiposBoletaEvento = await this.boletasService.getTiposBoleta(eventoId);
-    } catch (err) {
-      console.error('Error cargando tipos de boleta:', err);
-      this.alertService.error('Error', 'No se pudieron cargar los tipos de boleta');
-      this.tiposBoletaEvento = [];
-    } finally {
-      this.loadingTiposBoleta = false;
-      this.cdr.detectChanges();
-    }
-  }
-
-  openTipoBoletaFormModal() {
-    if (!this.selectedEventoForTipos) return;
-    this.editingTipo = null;
-    this.selectedMapaPalcoFile = null;
-    this.previewMapaPalco = null;
-    this.tipoBoletaFormData = {
-      evento_id: this.selectedEventoForTipos.id,
-      activo: true,
-      cantidad_vendidas: 0,
-      personas_por_unidad: 1,
-      es_palco: false,
-    };
-    this.showTipoBoletaFormModal = true;
-  }
-
-  async openEditTipoBoletaFormModal(tipo: TipoBoleta) {
-    if (!this.selectedEventoForTipos) return;
-    let fresh = tipo;
-    try {
-      fresh = await this.boletasService.getTipoBoletaById(tipo.id);
-    } catch (err) {
-      console.error('No se pudo cargar el tipo de boleta:', err);
-    }
-    this.editingTipo = fresh;
-    this.selectedMapaPalcoFile = null;
-    this.previewMapaPalco = fresh.imagen_mapa_palcos || null;
-    this.tipoBoletaFormData = {
-      evento_id: this.selectedEventoForTipos.id,
-      nombre: fresh.nombre,
-      descripcion: fresh.descripcion,
-      precio: fresh.precio,
-      fecha_venta_inicio: fresh.fecha_venta_inicio ? this.formatDateForInput(fresh.fecha_venta_inicio) : undefined,
-      fecha_venta_fin: fresh.fecha_venta_fin ? this.formatDateForInput(fresh.fecha_venta_fin) : undefined,
-      limite_por_persona: fresh.limite_por_persona,
-      activo: fresh.activo,
-      personas_por_unidad: fresh.personas_por_unidad ?? 1,
-      es_palco: fresh.es_palco ?? false,
-      imagen_mapa_palcos: fresh.imagen_mapa_palcos,
-    };
-    this.showTipoBoletaFormModal = true;
-    this.cdr.detectChanges();
-  }
-
-  closeTipoBoletaFormModal() {
-    this.showTipoBoletaFormModal = false;
-    this.editingTipo = null;
-    this.tipoBoletaFormData = { activo: true };
-    this.selectedMapaPalcoFile = null;
-    this.previewMapaPalco = null;
-  }
-
-  calcularCantidadesTipoBoleta() {
-    if (!this.editingTipo && this.tipoBoletaFormData.cantidad_total) {
-      this.tipoBoletaFormData.cantidad_disponibles = this.tipoBoletaFormData.cantidad_total;
-      this.tipoBoletaFormData.cantidad_vendidas = 0;
-    }
-  }
-
-  mostrarCampoMapaPalcos(): boolean {
-    const pp = Number(this.tipoBoletaFormData.personas_por_unidad ?? 1);
-    return pp > 1 || !!this.tipoBoletaFormData.es_palco;
-  }
-
-  clickMapaPalcoInput() {
-    const input = document.getElementById('mapaPalcoInputEventos') as HTMLInputElement | null;
-    input?.click();
-  }
-
-  onMapaPalcoFileChange(ev: Event) {
-    const input = ev.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      this.alertService.warning('Archivo grande', 'Máximo 10 MB.');
-      return;
-    }
-    this.selectedMapaPalcoFile = file;
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.previewMapaPalco = reader.result as string;
-      this.cdr.detectChanges();
-    };
-    reader.readAsDataURL(file);
-  }
-
-  quitarImagenMapaPalco() {
-    this.selectedMapaPalcoFile = null;
-    this.previewMapaPalco = null;
-    this.tipoBoletaFormData.imagen_mapa_palcos = undefined;
-    const input = document.getElementById('mapaPalcoInputEventos') as HTMLInputElement | null;
-    if (input) input.value = '';
-    this.cdr.detectChanges();
-  }
-
-  async subirImagenMapaPalcos(): Promise<string | null> {
-    if (!this.selectedMapaPalcoFile) return null;
-    const usuario = this.authService.getUsuario();
-    if (!usuario) {
-      this.alertService.warning('Sesión', 'Debes iniciar sesión para subir el mapa.');
-      return null;
-    }
-    this.uploadingMapaPalco = true;
-    try {
-      const fileName = `palcos/${usuario.id}/mapa_${Date.now()}.jpg`;
-      const { error } = await this.storageService.uploadOptimizedImage('imagenes', fileName, this.selectedMapaPalcoFile);
-      if (error) throw error;
-      return this.storageService.getPublicUrl('imagenes', fileName);
-    } catch (e: any) {
-      console.error(e);
-      this.alertService.error('Error', e?.message || 'No se pudo subir la imagen');
-      return null;
-    } finally {
-      this.uploadingMapaPalco = false;
-      this.cdr.detectChanges();
-    }
-  }
-
-  private buildTipoBoletaUpdatePayload(): Partial<TipoBoleta> {
-    const pp = Number(this.tipoBoletaFormData.personas_por_unidad ?? 1);
-    const payload: Partial<TipoBoleta> = {
-      evento_id: this.selectedEventoForTipos?.id,
-      nombre: this.tipoBoletaFormData.nombre?.trim(),
-      descripcion: this.tipoBoletaFormData.descripcion,
-      precio: this.tipoBoletaFormData.precio,
-      limite_por_persona: this.tipoBoletaFormData.limite_por_persona,
-      activo: this.tipoBoletaFormData.activo,
-      personas_por_unidad: Math.max(1, Math.floor(pp)),
-      es_palco: !!this.tipoBoletaFormData.es_palco,
-      fecha_venta_inicio: this.tipoBoletaFormData.fecha_venta_inicio
-        ? this.timezoneService.datetimeLocalToISO(this.tipoBoletaFormData.fecha_venta_inicio as string)
-        : undefined,
-      fecha_venta_fin: this.tipoBoletaFormData.fecha_venta_fin
-        ? this.timezoneService.datetimeLocalToISO(this.tipoBoletaFormData.fecha_venta_fin as string)
-        : undefined,
-    };
-    if (!payload.descripcion) delete payload.descripcion;
-    if (!payload.limite_por_persona) delete payload.limite_por_persona;
-    if (!payload.fecha_venta_inicio) delete payload.fecha_venta_inicio;
-    if (!payload.fecha_venta_fin) delete payload.fecha_venta_fin;
-    return payload;
-  }
-
-  async saveTipoBoleta() {
-    if (!this.selectedEventoForTipos) {
-      this.alertService.warning('Evento requerido', 'Selecciona un evento para continuar');
-      return;
-    }
-    if (!this.tipoBoletaFormData.nombre || !this.tipoBoletaFormData.nombre.trim()) {
-      this.alertService.warning('Campo requerido', 'El nombre es requerido');
-      return;
-    }
-    if (!this.tipoBoletaFormData.precio || this.tipoBoletaFormData.precio < 0) {
-      this.alertService.warning('Valor inválido', 'El precio debe ser mayor o igual a 0');
-      return;
-    }
-    if (!this.editingTipo && (!this.tipoBoletaFormData.cantidad_total || this.tipoBoletaFormData.cantidad_total <= 0)) {
-      this.alertService.warning('Valor inválido', 'La cantidad total debe ser mayor a 0');
-      return;
-    }
-    const pp = Number(this.tipoBoletaFormData.personas_por_unidad ?? 1);
-    if (!Number.isFinite(pp) || pp < 1) {
-      this.alertService.warning('Valor inválido', 'Personas por palco/unidad debe ser al menos 1');
-      return;
-    }
-
-    let tipoData: Partial<TipoBoleta>;
-    if (this.editingTipo) {
-      tipoData = this.buildTipoBoletaUpdatePayload();
-    } else {
-      this.calcularCantidadesTipoBoleta();
-      tipoData = {
-        ...this.tipoBoletaFormData,
-        evento_id: this.selectedEventoForTipos.id,
-        personas_por_unidad: Math.max(1, Math.floor(pp)),
-        es_palco: !!this.tipoBoletaFormData.es_palco,
-        cantidad_vendidas: 0,
-        cantidad_disponibles: this.tipoBoletaFormData.cantidad_total,
-        fecha_venta_inicio: this.tipoBoletaFormData.fecha_venta_inicio
-          ? this.timezoneService.datetimeLocalToISO(this.tipoBoletaFormData.fecha_venta_inicio as string)
-          : undefined,
-        fecha_venta_fin: this.tipoBoletaFormData.fecha_venta_fin
-          ? this.timezoneService.datetimeLocalToISO(this.tipoBoletaFormData.fecha_venta_fin as string)
-          : undefined,
-      };
-      if (!tipoData.descripcion) delete tipoData.descripcion;
-      if (!tipoData.limite_por_persona) delete tipoData.limite_por_persona;
-      if (!tipoData.fecha_venta_inicio) delete tipoData.fecha_venta_inicio;
-      if (!tipoData.fecha_venta_fin) delete tipoData.fecha_venta_fin;
-    }
-
-    if (this.mostrarCampoMapaPalcos()) {
-      if (this.selectedMapaPalcoFile) {
-        const urlMapa = await this.subirImagenMapaPalcos();
-        if (!urlMapa) return;
-        tipoData.imagen_mapa_palcos = urlMapa;
-      }
-    } else if (this.editingTipo) {
-      tipoData.imagen_mapa_palcos = undefined;
-    } else {
-      delete tipoData.imagen_mapa_palcos;
-    }
-
-    try {
-      if (this.editingTipo) {
-        await this.boletasService.updateTipoBoleta(this.editingTipo.id, tipoData);
-      } else {
-        await this.boletasService.createTipoBoleta(tipoData);
-      }
-      this.closeTipoBoletaFormModal();
-      await this.loadTiposBoleta(this.selectedEventoForTipos.id);
-    } catch (err: any) {
-      console.error('Error guardando tipo de boleta:', err);
-      this.alertService.error('Error', err?.message || 'No se pudo guardar el tipo de boleta');
-    }
-  }
-
-  async deleteTipoBoleta(tipo: TipoBoleta) {
-    const confirmed = await this.alertService.confirm(
-      'Desactivar tipo de boleta',
-      `¿Estás seguro de desactivar el tipo de boleta "${tipo.nombre}"?`
-    );
-    if (!confirmed || !this.selectedEventoForTipos) return;
-    try {
-      await this.boletasService.updateTipoBoleta(tipo.id, { activo: false });
-      await this.loadTiposBoleta(this.selectedEventoForTipos.id);
-    } catch (err: any) {
-      console.error('Error desactivando tipo de boleta:', err);
-      this.alertService.error('Error', err?.message || 'No se pudo desactivar el tipo de boleta');
-    }
-  }
-
-  async openModalAgregarInventario(tipo: TipoBoleta) {
-    try {
-      this.tipoInventario = await this.boletasService.getTipoBoletaById(tipo.id);
-    } catch (err) {
-      console.error('No se pudo cargar inventario del tipo:', err);
-      this.tipoInventario = tipo;
-    }
-    this.cantidadAgregarInventario = 1;
-    this.showInventarioModal = true;
-    this.cdr.detectChanges();
-  }
-
-  closeInventarioModal() {
-    this.showInventarioModal = false;
-    this.tipoInventario = null;
-    this.cantidadAgregarInventario = 1;
-  }
-
-  async saveAgregarInventario() {
-    if (!this.tipoInventario || !this.selectedEventoForTipos) return;
-    const cantidad = Math.floor(Number(this.cantidadAgregarInventario));
-    if (!Number.isFinite(cantidad) || cantidad <= 0) {
-      this.alertService.warning('Valor inválido', 'Indica cuántas unidades quieres agregar al inventario');
-      return;
-    }
-    try {
-      await this.boletasService.agregarInventarioTipoBoleta(this.tipoInventario.id, cantidad);
-      this.closeInventarioModal();
-      await this.loadTiposBoleta(this.selectedEventoForTipos.id);
-      this.alertService.success('Inventario actualizado', `Se agregaron ${cantidad} unidad(es) al inventario.`);
-    } catch (err: any) {
-      console.error('Error agregando inventario:', err);
-      this.alertService.error('Error', err?.message || 'No se pudo agregar inventario');
-    }
+  openBoletasDrawer(evento: Evento): void {
+    void openEventoBoletasDrawer(this.drawerService, evento);
   }
 
   // ========== MÉTODOS PARA MANEJO DE IMÁGENES ==========
@@ -768,6 +893,10 @@ export class Eventos implements OnInit, OnDestroy {
       this.alertService.warning('Porcentaje inválido', 'El porcentaje de servicio debe estar entre 0 y 100');
       return;
     }
+    if (!this.isShowcaseMode && !this.formData.es_gratis && !this.formData.wompi_cuenta_id) {
+      this.alertService.warning('Campo requerido', 'La cuenta Wompi es requerida para eventos de pago');
+      return;
+    }
 
     // Subir imagen primero si hay una seleccionada
     let imagenUrl = this.formData.imagen_principal; // Mantener imagen actual por defecto
@@ -792,8 +921,14 @@ export class Eventos implements OnInit, OnDestroy {
       // Agregar URL de imagen
       imagen_principal: imagenUrl || undefined,
       porcentaje_servicio: porcentajeServicio,
-      wompi_cuenta_id: this.formData.wompi_cuenta_id ?? null
+      wompi_cuenta_id: this.isShowcaseMode ? null : (this.formData.wompi_cuenta_id ?? null)
     };
+
+    if (this.isShowcaseMode) {
+      eventoData.estado = TipoEstadoEvento.BORRADOR;
+      eventoData.activo = false;
+      eventoData.wompi_cuenta_id = null;
+    }
 
     // Limpiar campos vacíos opcionales y propiedades de relación que no existen en la BD
     if (!eventoData.descripcion) delete eventoData.descripcion;
@@ -819,13 +954,16 @@ export class Eventos implements OnInit, OnDestroy {
 
   private async saveEventoInternal(id: number | null, eventoData: Partial<Evento>, isUpdate: boolean) {
     try {
+      let saved: Evento;
       if (isUpdate && id) {
-        await this.eventosService.updateEvento(id, eventoData);
+        saved = await this.eventosService.updateEvento(id, eventoData);
       } else {
-        await this.eventosService.createEvento(eventoData);
+        saved = await this.eventosService.createEvento(eventoData);
       }
+      this.savedEvento = saved;
       this.closeModal();
       this.loadEventos();
+      void this.router.navigate(['/eventos', saved.id, 'operaciones']);
     } catch (err: any) {
       console.error(`Error ${isUpdate ? 'guardando' : 'creando'} evento:`, err);
       this.alertService.error(`Error al ${isUpdate ? 'guardar' : 'crear'}`, `Error al ${isUpdate ? 'guardar' : 'crear'} evento: ` + (err.message || 'Error desconocido'));
@@ -843,6 +981,10 @@ export class Eventos implements OnInit, OnDestroy {
   }
 
   async toggleActivo(evento: Evento) {
+    if (this.isShowcaseMode) {
+      this.alertService.info('Modo demo', 'En modo demo el evento no se publica al catálogo.');
+      return;
+    }
     try {
       await this.eventosService.updateEvento(evento.id, { activo: !evento.activo });
       this.loadEventos();

@@ -8,12 +8,13 @@ import { Evento, Producto } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { resolverConflictoEventoAntesDeAgregar } from '../../core/carrito-conflicto';
 import { ClientConfirmDialogService } from '../../services/client-confirm-dialog.service';
+import { EvNotice } from '../ev-notice';
 
 export type ProductosCompraContexto = 'detalle' | 'carrito';
 
 @Component({
   selector: 'app-evento-productos-tab',
-  imports: [CommonModule, DateFormatPipe],
+  imports: [CommonModule, DateFormatPipe, EvNotice],
   templateUrl: './evento-productos-tab.html',
   styleUrl: './evento-productos-tab.css'
 })

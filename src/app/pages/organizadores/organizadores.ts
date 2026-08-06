@@ -64,6 +64,7 @@ export class Organizadores implements OnInit, AfterViewInit, OnDestroy {
   readonly cuposLabels = CUPOS_LABELS;
   readonly instagramUrl = EVENTUM_CONTACTO.instagramUrl;
   readonly metricas: OrganizadoresMetrica[] = ORGANIZADORES_METRICAS;
+  readonly showcaseModeEnabled = environment.showcaseModeEnabled;
 
   readonly demoWhatsappUrl = buildWhatsappUrl(
     'Hola, quiero agendar una demostración de Eventum para operar mis eventos.'

@@ -22,23 +22,20 @@
       Volver a eventos
     </button>
 
-    <div class="admin-prueba-banner" *ngIf="modoPruebaCompraAdmin" role="note">
-      <span class="material-icons">science</span>
-      <div class="admin-prueba-banner__copy">
-        <span>Modo prueba admin — flujo de compra igual al de un cliente (incluye Wompi).</span>
-        <div class="admin-prueba-banner__links">
-          <button type="button" class="admin-prueba-link" (click)="router.navigate(['/carrito'])">
-            <span class="material-icons">shopping_cart</span>
-            Mi carrito
-            <span *ngIf="getCantidadTotalCarrito() > 0" class="admin-prueba-badge">{{ getCantidadTotalCarrito() }}</span>
-          </button>
-          <button type="button" class="admin-prueba-link" (click)="router.navigate(['/mis-compras'])">
-            <span class="material-icons">confirmation_number</span>
-            Mis compras
-          </button>
-        </div>
+    <ev-notice *ngIf="modoPruebaCompraAdmin" variant="info" icon="science" density="compact">
+      <span>Modo prueba admin — flujo de compra igual al de un cliente (incluye Wompi).</span>
+      <div evNoticeActions class="admin-prueba-banner__links">
+        <button type="button" class="admin-prueba-link" (click)="router.navigate(['/carrito'])">
+          <span class="material-icons">shopping_cart</span>
+          Mi carrito
+          <span *ngIf="getCantidadTotalCarrito() > 0" class="admin-prueba-badge">{{ getCantidadTotalCarrito() }}</span>
+        </button>
+        <button type="button" class="admin-prueba-link" (click)="router.navigate(['/mis-compras'])">
+          <span class="material-icons">confirmation_number</span>
+          Mis compras
+        </button>
       </div>
-    </div>
+    </ev-notice>
 
     <div class="evento-header">
       <button

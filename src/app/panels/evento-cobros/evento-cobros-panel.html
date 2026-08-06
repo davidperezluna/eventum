@@ -1,0 +1,77 @@
+<div class="ev-panel">
+  <div class="ev-panel__scroll">
+    <p class="ev-panel__lead">
+      Define cómo se cobrarán las entradas: evento gratuito o de pago, cuenta Wompi y comisión de servicio.
+    </p>
+
+    <ev-panel-summary label="Configuración de cobros" [metrics]="summaryMetrics" />
+
+    <ev-notice
+      *ngIf="panelInsight as insight"
+      variant="warning"
+      [message]="insight.message"
+      [actionLabel]="insight.ctaLabel"
+    />
+
+    <ev-notice
+      [variant]="configComplete ? 'success' : 'warning'"
+      [icon]="configComplete ? 'check_circle' : 'error_outline'"
+      [title]="statusNoticeTitle"
+      [message]="statusNoticeMessage"
+    />
+
+    <ev-panel-form>
+      <div class="ev-form">
+        <ev-form-section title="Tipo de evento" description="Indica si el evento cobra entradas online.">
+          <div class="ev-check-row">
+            <label class="ev-check">
+              <input type="checkbox" [(ngModel)]="esGratis" (ngModelChange)="onEsGratisChange($event)" [disabled]="saving" />
+              Evento gratis
+            </label>
+          </div>
+          <p class="ev-field__hint">Si está activo, no se requiere cuenta Wompi ni cobro online.</p>
+        </ev-form-section>
+
+        <ev-form-section *ngIf="!esGratis" title="Cobro online" description="Comisión de servicio y cuenta de destino.">
+          <div class="ev-form-grid ev-form-grid--2">
+            <div class="ev-field">
+              <label class="ev-field__label" for="cobros-servicio">Servicio (%)</label>
+              <ev-number-input
+                id="cobros-servicio"
+                mode="decimal"
+                [min]="0"
+                [max]="100"
+                [(ngModel)]="porcentajeServicio"
+                (ngModelChange)="onFormChange()"
+                placeholder="0"
+                [disabled]="saving"
+              />
+              <p class="ev-field__hint">Porcentaje que Eventum cobra sobre cada venta online.</p>
+            </div>
+            <div class="ev-field ev-form-span-2">
+              <label class="ev-field__label" for="cobros-wompi">
+                Cuenta Wompi<span *ngIf="!isShowcaseMode" class="ev-field__required" aria-hidden="true">*</span>
+              </label>
+              <ev-select
+                id="cobros-wompi"
+                [(ngModel)]="wompiCuentaId"
+                (ngModelChange)="onFormChange()"
+                [options]="wompiCuentaOptions"
+                placeholder="Selecciona una cuenta Wompi"
+                [clearable]="isShowcaseMode"
+                [disabled]="saving"
+              />
+              <p *ngIf="!isShowcaseMode" class="ev-field__hint">Define qué cuenta Wompi usará este evento para cobrar.</p>
+              <p *ngIf="isShowcaseMode" class="ev-field__hint">En modo demo puedes elegir una cuenta para ver el flujo; no se vinculará a pagos reales.</p>
+            </div>
+          </div>
+        </ev-form-section>
+      </div>
+    </ev-panel-form>
+  </div>
+
+  <ev-drawer-footer>
+    <ev-button variant="ghost" [disabled]="saving" (click)="closePanel()">Cerrar</ev-button>
+    <ev-button variant="primary" [disabled]="!canSave" [loading]="saving" (click)="save()">Guardar</ev-button>
+  </ev-drawer-footer>
+</div>

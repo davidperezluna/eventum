@@ -1,591 +1,627 @@
 <div class="eventos-page">
-  <header class="page-header">
-    <div>
-      <h1>
-        <span class="material-icons">event</span>
-        {{ authService.isOrganizador() ? 'Mis Eventos' : 'Eventos' }}
-      </h1>
-      <p>{{ authService.isOrganizador() ? 'Gestiona tus eventos' : 'Gestiona todos los eventos del sistema' }}</p>
+  <header class="ev-header">
+    <div class="ev-header__copy">
+      <h1 class="ev-header__title">{{ pageTitle }}</h1>
     </div>
-    <button class="btn-primary" (click)="openModal()">
-      <span class="material-icons">add</span>
-      Nuevo Evento
+    <button type="button" class="ev-btn-primary ev-header__cta" (click)="openModal()">
+      <span class="material-icons" aria-hidden="true">add</span>
+      Nuevo evento
     </button>
   </header>
 
-  <!-- Filtros -->
-  <div class="filters-card">
-    <input
-      type="text"
-      [(ngModel)]="searchTerm"
-      (ngModelChange)="loadEventos()"
-      placeholder="Buscar eventos..."
-      class="search-input"
-    />
-    <select [(ngModel)]="categoriaFiltro" (ngModelChange)="loadEventos()" class="select-input">
-      <option [value]="null">Todas las categorías</option>
-      <option *ngFor="let categoria of categorias" [value]="categoria.id">{{ categoria.nombre }}</option>
-    </select>
-    <select [(ngModel)]="estadoFiltro" (ngModelChange)="loadEventos()" class="select-input">
-      <option [value]="null">Todos los estados</option>
-      <option *ngFor="let estado of estados" [value]="estado.value">{{ estado.label }}</option>
-    </select>
+  <div *ngIf="showResumenStrip" class="ev-resumen">
+    <p class="ev-resumen__text">{{ resumenStripText }}</p>
+    <a *ngIf="authService.isOrganizador()" [routerLink]="dashboardRoute" class="ev-resumen__link">
+      Ver panel
+      <span class="material-icons" aria-hidden="true">arrow_forward</span>
+    </a>
   </div>
 
-  <!-- Lista de eventos -->
-  <div class="content-card">
-    <div *ngIf="loading" class="loading-state">Cargando eventos...</div>
-    
-    <div *ngIf="!loading && eventos.length > 0" class="eventos-grid">
-      <div *ngFor="let evento of eventos" class="evento-card">
-        <div class="evento-header">
-          <div class="evento-badges">
-            <span *ngIf="evento.destacado" class="badge-highlight">Destacado</span>
-            <span [class]="evento.activo ? 'badge-success' : 'badge-danger'">
-              {{ evento.activo ? 'Activo' : 'Inactivo' }}
-            </span>
-            <span class="badge-info">{{ getEstadoLabel(evento.estado) }}</span>
-          </div>
-          <div class="evento-actions">
-            <button class="btn-icon" (click)="openTiposBoletaModal(evento)" title="Gestionar Tipos de Boleta">
-              <span class="material-icons">confirmation_number</span>
-            </button>
-            <button class="btn-icon" (click)="openCuponesModal(evento)" title="Gestionar Cupones">
-              <span class="material-icons">local_offer</span>
-            </button>
-            <button class="btn-icon" (click)="openModal(evento)" title="Editar Evento">
-              <span class="material-icons">edit</span>
-            </button>
-            <button class="btn-icon" (click)="toggleDestacado(evento)" [title]="evento.destacado ? 'Quitar destacado' : 'Marcar destacado'">
-              <span class="material-icons">{{ evento.destacado ? 'star' : 'star_border' }}</span>
-            </button>
-            <button class="btn-icon" (click)="toggleActivo(evento)">
-              <span class="material-icons">{{ evento.activo ? 'block' : 'check_circle' }}</span>
-            </button>
-          </div>
-        </div>
-        <h3>{{ evento.titulo }}</h3>
-        <p *ngIf="evento.descripcion_corta" class="evento-descripcion">{{ evento.descripcion_corta }}</p>
-        <div class="evento-info">
-          <div class="info-item">
-            <span class="material-icons">calendar_today</span>
-            <span>{{ evento.fecha_inicio | dateFormat:'short' }}</span>
-          </div>
-          <div class="info-item" *ngIf="evento.precio_minimo !== undefined">
-            <span class="material-icons">attach_money</span>
-            <span>{{ evento.es_gratis ? 'Gratis' : '$' + evento.precio_minimo }}</span>
-          </div>
-          <div class="info-item" *ngIf="evento.edad_minima && evento.edad_minima > 0">
-            <span class="material-icons">person</span>
-            <span>+{{ evento.edad_minima }} años</span>
-          </div>
-        </div>
-        <div *ngIf="evento.tags" class="evento-tags">
-          <span *ngFor="let tag of evento.tags.split(',')" class="tag">{{ tag.trim() }}</span>
-        </div>
-      </div>
+  <div class="ev-toolbar" role="search">
+    <div class="ev-toolbar__search">
+      <span class="material-icons ev-toolbar__search-icon" aria-hidden="true">search</span>
+      <input
+        type="search"
+        [ngModel]="searchTerm"
+        (ngModelChange)="onSearchInput($event)"
+        placeholder="Buscar eventos..."
+        class="ev-toolbar__input"
+        aria-label="Buscar eventos"
+      />
     </div>
 
-    <div *ngIf="!loading && eventos.length === 0" class="empty-state">
-      <div class="empty-icon-wrapper">
-        <span class="material-icons empty-icon">event</span>
-      </div>
-      <h3 class="empty-title">No se encontraron eventos</h3>
-      <p class="empty-subtitle">Crea tu primer evento y comienza la fiesta.</p>
-      <button class="btn-view-all" (click)="openModal()">Crear Evento</button>
+    <div class="ev-toolbar__filters ev-toolbar__filters--desktop">
+      <ev-select
+        variant="toolbar"
+        [(ngModel)]="categoriaFiltro"
+        (selectionChange)="onFilterChange()"
+        [options]="categoriaFiltroOptions"
+        placeholder="Categoría"
+        [clearable]="true"
+        ariaLabel="Filtrar por categoría"
+      />
+      <ev-select
+        variant="toolbar"
+        [(ngModel)]="estadoFiltro"
+        (selectionChange)="onFilterChange()"
+        [options]="estadoFiltroOptions"
+        placeholder="Estado"
+        [clearable]="true"
+        ariaLabel="Filtrar por estado"
+      />
+      <ev-select
+        variant="toolbar"
+        [(ngModel)]="sortOrden"
+        (selectionChange)="onSortChange()"
+        [options]="sortOptions"
+        placeholder="Ordenar"
+        [searchable]="false"
+        ariaLabel="Ordenar eventos"
+      />
+      <button
+        *ngIf="hasActiveFilters"
+        type="button"
+        class="ev-toolbar__clear"
+        (click)="clearFilters()"
+      >
+        Limpiar
+      </button>
     </div>
 
-    <div *ngIf="total > limit" class="pagination">
-      <button (click)="page = page - 1; loadEventos()" [disabled]="page === 1">Anterior</button>
-      <span>Página {{ page }} de {{ Math.ceil(total / limit) }}</span>
-      <button (click)="page = page + 1; loadEventos()" [disabled]="page >= Math.ceil(total / limit)">Siguiente</button>
-    </div>
+    <button
+      type="button"
+      class="ev-toolbar__mobile-toggle"
+      (click)="toggleFiltersMobile()"
+      [attr.aria-expanded]="showFiltersMobile"
+    >
+      <span class="material-icons" aria-hidden="true">tune</span>
+      Filtros
+      <span *ngIf="activeFiltersCount > 0" class="ev-toolbar__badge">{{ activeFiltersCount }}</span>
+    </button>
   </div>
 
-  <!-- Modal -->
-  <div *ngIf="showModal" class="modal-overlay">
-    <div class="modal-content modal-large" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2>{{ editingEvento ? 'Editar Evento' : 'Nuevo Evento' }}</h2>
-        <button class="btn-close" (click)="closeModal()">
+  <div class="ev-filters-sheet" *ngIf="showFiltersMobile" role="dialog" aria-label="Filtros">
+    <div class="ev-filters-sheet__panel">
+      <div class="ev-filters-sheet__head">
+        <strong>Filtros</strong>
+        <button type="button" class="ev-icon-btn" (click)="toggleFiltersMobile()" aria-label="Cerrar filtros">
           <span class="material-icons">close</span>
         </button>
       </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label>Título *</label>
-          <input type="text" [(ngModel)]="formData.titulo" required placeholder="Ej: Festival de Música 2024" />
-        </div>
-        <div class="form-group">
-          <label>Descripción Corta</label>
-          <input type="text" [(ngModel)]="formData.descripcion_corta" placeholder="Breve descripción para mostrar en listados" maxlength="200" />
-        </div>
-        <div class="form-group">
-          <label>Descripción Completa</label>
-          <textarea [(ngModel)]="formData.descripcion" rows="5" placeholder="Descripción detallada del evento"></textarea>
-        </div>
-        <div class="form-row">
-          <div class="form-group" *ngIf="!authService.isOrganizador()">
-            <label>Organizador *</label>
-            <select [(ngModel)]="formData.organizador_id" required>
-              <option [value]="undefined">Selecciona organizador</option>
-              <option *ngFor="let organizador of organizadores" [value]="organizador.id">
-                {{ organizador.nombre || '' }} {{ organizador.apellido || '' }} ({{ organizador.email }})
-              </option>
-            </select>
-            <small class="form-help" *ngIf="organizadores.length === 0">
-              No hay organizadores disponibles. Crea un usuario con tipo "Organizador" primero.
-            </small>
-            <small class="form-help" *ngIf="organizadores.length > 0">
-              {{ organizadores.length }} organizador(es) disponible(s)
-            </small>
-          </div>
-          <div class="form-group">
-            <label>Categoría *</label>
-            <select [(ngModel)]="formData.categoria_id" required>
-              <option [value]="undefined">Selecciona categoría</option>
-              <option *ngFor="let categoria of categorias" [value]="categoria.id">{{ categoria.nombre }}</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Lugar</label>
-            <select [(ngModel)]="formData.lugar_id">
-              <option [value]="undefined">Sin lugar</option>
-              <option *ngFor="let lugar of lugares" [value]="lugar.id">{{ lugar.nombre }} - {{ lugar.ciudad }}</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Wompi Cuenta</label>
-            <select [(ngModel)]="formData.wompi_cuenta_id">
-              <option [ngValue]="null">Sin cuenta asignada</option>
-              <option *ngFor="let cuenta of wompiCuentas" [ngValue]="cuenta.id">
-                {{ cuenta.nombre }} (ID {{ cuenta.id }})
-              </option>
-            </select>
-            <small class="form-help">
-              Define qué cuenta Wompi usará este evento para cobrar.
-            </small>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Imagen Principal</label>
-            <button type="button" class="btn-secondary" (click)="selectImage()" [disabled]="uploadingImage">
-              <span class="material-icons">image</span>
-              {{ uploadingImage ? 'Subiendo...' : 'Seleccionar Imagen' }}
-            </button>
-            <input 
-              type="file" 
-              id="eventoImageInput" 
-              accept="image/*" 
-              (change)="onFileSelected($event)"
-              style="display: none;">
-            
-            <!-- Preview de imagen -->
-            <div *ngIf="previewUrl" class="image-preview-container">
-              <img [src]="previewUrl" alt="Preview" class="image-preview" />
-              <button type="button" class="btn-remove-image" (click)="removeImage()" title="Eliminar imagen">
-                <span class="material-icons">close</span>
-              </button>
-            </div>
-            
-            <!-- Mostrar URL actual si existe y no hay preview -->
-            <div *ngIf="formData.imagen_principal && !previewUrl && !selectedFile" class="current-image-info">
-              <small>Imagen actual: <a [href]="formData.imagen_principal" target="_blank">Ver imagen</a></small>
-            </div>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Fecha Inicio *</label>
-            <input type="datetime-local" [(ngModel)]="formData.fecha_inicio" required />
-          </div>
-          <div class="form-group">
-            <label>Fecha Fin *</label>
-            <input type="datetime-local" [(ngModel)]="formData.fecha_fin" required />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Venta Inicio *</label>
-            <input type="datetime-local" [(ngModel)]="formData.fecha_venta_inicio" required />
-          </div>
-          <div class="form-group">
-            <label>Venta Fin *</label>
-            <input type="datetime-local" [(ngModel)]="formData.fecha_venta_fin" required />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Estado</label>
-            <select [(ngModel)]="formData.estado">
-              <option *ngFor="let estado of estados" [value]="estado.value">{{ estado.label }}</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Edad Mínima</label>
-            <input type="number" [(ngModel)]="formData.edad_minima" min="0" />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>
-              <input type="checkbox" [(ngModel)]="formData.es_gratis" />
-              Evento Gratis
-            </label>
-          </div>
-          <div class="form-group">
-            <label>
-              <input type="checkbox" [(ngModel)]="formData.destacado" />
-              Destacado
-            </label>
-          </div>
-          <div class="form-group">
-            <label>
-              <input type="checkbox" [(ngModel)]="formData.activo" />
-              Activo
-            </label>
-          </div>
-        </div>
-        <div class="form-row" *ngIf="!formData.es_gratis">
-          <div class="form-group">
-            <label>Precio Mínimo</label>
-            <input type="number" step="0.01" [(ngModel)]="formData.precio_minimo" min="0" placeholder="0.00" />
-          </div>
-          <div class="form-group">
-            <label>Precio Máximo</label>
-            <input type="number" step="0.01" [(ngModel)]="formData.precio_maximo" min="0" placeholder="0.00" />
-          </div>
-        </div>
-        <div class="form-row" *ngIf="!formData.es_gratis">
-          <div class="form-group">
-            <label>Servicio (%)</label>
-            <input
-              type="number"
-              step="0.01"
-              [(ngModel)]="formData.porcentaje_servicio"
-              min="0"
-              max="100"
-              placeholder="0"
-            />
-            <small class="form-help">
-              Se aplica sobre el valor de las boletas/palcos al momento de la compra.
-            </small>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Tags</label>
-          <input type="text" [(ngModel)]="formData.tags" placeholder="música, festival, rock (separados por comas)" />
-          <small class="form-help">Separa los tags con comas</small>
-        </div>
-        <div class="form-group">
-          <label>Términos y Condiciones</label>
-          <textarea [(ngModel)]="formData.terminos_condiciones" rows="4" placeholder="Términos y condiciones del evento"></textarea>
-        </div>
-        <div class="form-group">
-          <label>Política de Reembolso</label>
-          <textarea [(ngModel)]="formData.politica_reembolso" rows="4" placeholder="Política de reembolso y cancelación"></textarea>
-        </div>
-        <div class="form-group">
-          <label>URL del Video (YouTube)</label>
-          <input type="url" [(ngModel)]="formData.url_video" placeholder="https://www.youtube.com/watch?v=..." />
-          <small class="form-help">Pega la URL completa del video de YouTube del evento</small>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" (click)="closeModal()">Cancelar</button>
-        <button class="btn-primary" (click)="saveEvento()">Guardar</button>
+      <label class="ev-filters-sheet__label">Categoría</label>
+      <ev-select
+        variant="toolbar"
+        [fullWidth]="true"
+        [(ngModel)]="categoriaFiltro"
+        (selectionChange)="onFilterChange()"
+        [options]="categoriaFiltroOptions"
+        placeholder="Todas"
+        [clearable]="true"
+        ariaLabel="Filtrar por categoría"
+      />
+      <label class="ev-filters-sheet__label">Estado</label>
+      <ev-select
+        variant="toolbar"
+        [fullWidth]="true"
+        [(ngModel)]="estadoFiltro"
+        (selectionChange)="onFilterChange()"
+        [options]="estadoFiltroOptions"
+        placeholder="Todos"
+        [clearable]="true"
+        ariaLabel="Filtrar por estado"
+      />
+      <label class="ev-filters-sheet__label">Ordenar</label>
+      <ev-select
+        variant="toolbar"
+        [fullWidth]="true"
+        [(ngModel)]="sortOrden"
+        (selectionChange)="onSortChange()"
+        [options]="sortOptions"
+        placeholder="Ordenar"
+        [searchable]="false"
+        ariaLabel="Ordenar eventos"
+      />
+      <div class="ev-filters-sheet__actions">
+        <button type="button" class="ev-btn-ghost" (click)="clearFilters()">Limpiar</button>
+        <button type="button" class="ev-btn-primary" (click)="toggleFiltersMobile()">Aplicar</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal de Cupones -->
-  <div *ngIf="showCuponesModal" class="modal-overlay">
-    <div class="modal-content modal-large" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <div>
-          <h2>Cupones de Descuento</h2>
-          <p class="modal-subtitle">Evento: {{ selectedEventoForCupones?.titulo }}</p>
-        </div>
-        <button class="btn-close" (click)="closeCuponesModal()">
-          <span class="material-icons">close</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <!-- Formulario nuevo cupón -->
-        <div class="nuevo-cupon-card">
-          <h3>Crear Nuevo Cupón</h3>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Código *</label>
-              <input type="text" [(ngModel)]="nuevoCupon.codigo" placeholder="Ej: FIESTA20" style="text-transform: uppercase;" />
-              <small>Mínimo 4 caracteres</small>
-            </div>
-            <div class="form-group">
-              <label>Descuento (%) *</label>
-              <input type="number" [(ngModel)]="nuevoCupon.porcentaje_descuento" min="1" max="100" />
-            </div>
-            <div class="form-group">
-              <label>Límite de Usos *</label>
-              <input type="number" [(ngModel)]="nuevoCupon.max_usos" min="1" />
-              <small>Por defecto 1 (solo un uso)</small>
-            </div>
-            <div class="form-group action-group">
-              <button class="btn-primary btn-full" (click)="crearCupon()">Crear Cupón</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Lista de cupones -->
-        <div class="cupones-list-container">
-          <h3>Cupones Existentes</h3>
-          <div *ngIf="loadingCupones" class="loading-state loading-state--embedded">Cargando cupones...</div>
-          <div *ngIf="!loadingCupones && cupones.length === 0" class="empty-state-small">
-            No hay cupones creados para este evento.
-          </div>
-          <table *ngIf="!loadingCupones && cupones.length > 0" class="data-table">
-            <thead>
-              <tr>
-                <th>Código</th>
-                <th>Descuento</th>
-                <th>Usos</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let cupon of cupones">
-                <td><strong>{{ cupon.codigo }}</strong></td>
-                <td>{{ cupon.porcentaje_descuento }}%</td>
-                <td>{{ cupon.usos_actuales }} / {{ cupon.max_usos }}</td>
-                <td>
-                  <span [class]="cupon.activo ? 'badge-success' : 'badge-danger'">
-                    {{ cupon.activo ? 'Activo' : 'Inactivo' }}
-                  </span>
-                </td>
-                <td>
-                  <div class="table-actions">
-                    <button class="btn-icon" (click)="toggleCuponActivo(cupon)" [title]="cupon.activo ? 'Desactivar' : 'Activar'">
-                      <span class="material-icons">{{ cupon.activo ? 'block' : 'check_circle' }}</span>
-                    </button>
-                    <button class="btn-icon btn-danger" (click)="eliminarCupon(cupon)" title="Eliminar">
-                      <span class="material-icons">delete</span>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" (click)="closeCuponesModal()">Cerrar</button>
-      </div>
+  <section class="ev-content" aria-live="polite" (click)="openMenuEventoId = null">
+    <div *ngIf="loading" class="ev-grid" aria-busy="true">
+      <article *ngFor="let _ of [1,2,3,4,5,6]" class="ev-card ev-card--skeleton">
+        <div class="ev-skeleton ev-skeleton--media"></div>
+        <div class="ev-skeleton ev-skeleton--line ev-skeleton--lg"></div>
+        <div class="ev-skeleton ev-skeleton--line"></div>
+        <div class="ev-skeleton ev-skeleton--metrics"></div>
+      </article>
     </div>
-  </div>
 
-  <!-- Modal de Tipos de Boleta por Evento -->
-  <div *ngIf="showTiposBoletaModal" class="modal-overlay">
-    <div class="modal-content modal-large" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <div>
-          <h2>Tipos de Boleta</h2>
-          <p class="modal-subtitle">Evento: {{ selectedEventoForTipos?.titulo }}</p>
-        </div>
-        <button class="btn-close" (click)="closeTiposBoletaModal()">
-          <span class="material-icons">close</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="modal-actions-header">
-          <button class="btn-primary" (click)="openTipoBoletaFormModal()">
-            <span class="material-icons">add</span>
-            Nuevo Tipo
-          </button>
-        </div>
-
-        <div *ngIf="loadingTiposBoleta" class="loading-state loading-state--embedded">
-          Cargando tipos de boleta...
-        </div>
-
-        <div *ngIf="!loadingTiposBoleta && tiposBoletaEvento.length === 0" class="empty-state-small">
-          No hay tipos de boleta para este evento.
-        </div>
-
-        <div *ngIf="!loadingTiposBoleta && tiposBoletaEvento.length > 0" class="tipos-boleta-grid">
-          <div *ngFor="let tipo of tiposBoletaEvento" class="tipo-boleta-card">
-            <div class="tipo-boleta-header">
-              <h3>{{ tipo.nombre }}</h3>
-              <div class="tipo-boleta-actions">
-                <button class="btn-icon" title="Editar información" (click)="openEditTipoBoletaFormModal(tipo)">
-                  <span class="material-icons">edit</span>
-                </button>
-                <button class="btn-icon" title="Agregar inventario" (click)="openModalAgregarInventario(tipo)">
-                  <span class="material-icons">add_box</span>
-                </button>
-                <button class="btn-icon btn-danger" title="Desactivar" (click)="deleteTipoBoleta(tipo)">
-                  <span class="material-icons">delete</span>
-                </button>
-              </div>
+    <div *ngIf="!loading && eventosOrdenados.length > 0" class="ev-grid">
+      <article *ngFor="let evento of eventosOrdenados" class="ev-card">
+        <div class="ev-card__media">
+          <img
+            *ngIf="evento.imagen_principal; else evPlaceholder"
+            [src]="evento.imagen_principal"
+            [alt]="evento.titulo"
+            loading="lazy"
+          />
+          <ng-template #evPlaceholder>
+            <div class="ev-card__placeholder" aria-hidden="true">
+              <span class="ev-card__initials">{{ getEventoIniciales(evento.titulo) }}</span>
             </div>
-            <p *ngIf="tipo.descripcion" class="tipo-descripcion">{{ tipo.descripcion }}</p>
-            <div class="tipo-info">
-              <div class="info-item">
-                <span class="material-icons">attach_money</span>
-                <span>${{ tipo.precio | number:'1.2-2' }}</span>
-              </div>
-              <div class="info-item">
-                <span class="material-icons">confirmation_number</span>
-                <span>{{ tipo.cantidad_disponibles }} / {{ tipo.cantidad_total }} disponibles</span>
-              </div>
-              <div class="info-item" *ngIf="tipo.cantidad_vendidas !== undefined">
-                <span class="material-icons">shopping_cart</span>
-                <span>{{ tipo.cantidad_vendidas }} vendidas</span>
-              </div>
-              <div class="info-item" *ngIf="(tipo.personas_por_unidad ?? 1) > 1 || tipo.es_palco">
-                <span class="material-icons">groups</span>
-                <span>{{ (tipo.personas_por_unidad ?? 1) > 1 ? (tipo.personas_por_unidad + ' pers./palco') : 'Palco' }}</span>
-              </div>
-              <div class="info-item" *ngIf="tipo.limite_por_persona">
-                <span class="material-icons">person</span>
-                <span>Máx. {{ tipo.limite_por_persona }} por persona</span>
-              </div>
-            </div>
-            <div class="tipo-footer">
-              <span [class]="tipo.activo ? 'badge-success' : 'badge-danger'">
-                {{ tipo.activo ? 'Activo' : 'Inactivo' }}
+          </ng-template>
+          <span *ngIf="evento.destacado" class="ev-card__featured">Destacado</span>
+        </div>
+
+        <div class="ev-card__body">
+          <div class="ev-card__head">
+            <h2 class="ev-card__title">{{ evento.titulo }}</h2>
+            <div class="ev-card__pills">
+              <span class="ev-pill" [ngClass]="getEstadoPillClass(evento.estado)">
+                {{ getEstadoLabel(evento.estado) }}
+              </span>
+              <span *ngIf="showInactivoPill(evento)" class="ev-pill ev-pill--inactive">
+                Inactivo
               </span>
             </div>
           </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" (click)="closeTiposBoletaModal()">Cerrar</button>
-      </div>
-    </div>
-  </div>
 
-  <!-- Modal Formulario Tipo de Boleta -->
-  <div *ngIf="showTipoBoletaFormModal" class="modal-overlay">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2>{{ editingTipo ? 'Editar Tipo de Boleta' : 'Nuevo Tipo de Boleta' }}</h2>
-        <button class="btn-close" (click)="closeTipoBoletaFormModal()">
-          <span class="material-icons">close</span>
+          <ul class="ev-card__meta">
+            <li>
+              <span class="material-icons" aria-hidden="true">calendar_today</span>
+              {{ evento.fecha_inicio | dateFormat:'short' }}
+            </li>
+            <li>
+              <span class="material-icons" aria-hidden="true">place</span>
+              {{ getLugarLabel(evento) }}
+            </li>
+            <li *ngIf="getPrecioMeta(evento) as precioMeta">
+              <span class="material-icons" aria-hidden="true">sell</span>
+              {{ precioMeta }}
+            </li>
+          </ul>
+
+          <div class="ev-card__metrics" *ngIf="authService.isOrganizador()">
+            <div class="ev-metric ev-metric--solo">
+              <span class="ev-metric__value">{{ getBoletasVendidas(evento.id) ?? 0 }}</span>
+              <span class="ev-metric__label">Boletas vendidas</span>
+            </div>
+          </div>
+
+          <div class="ev-card__actions">
+            <div class="ev-hub-pair ev-hub-pair--card">
+              <a
+                [routerLink]="['/eventos', evento.id, 'inteligencia']"
+                class="ev-hub-btn ev-hub-btn--inteligencia"
+              >
+                <span class="material-icons" aria-hidden="true">insights</span>
+                Inteligencia
+              </a>
+              <a
+                [routerLink]="['/eventos', evento.id, 'operaciones']"
+                class="ev-hub-btn ev-hub-btn--operaciones"
+              >
+                <span class="material-icons" aria-hidden="true">settings</span>
+                Operaciones
+              </a>
+            </div>
+            <div class="ev-card__actions-secondary">
+              <button type="button" class="ev-btn-ghost ev-btn-sm" (click)="verEvento(evento)">Ver</button>
+              <div class="ev-card__more">
+              <button
+                type="button"
+                class="ev-icon-btn"
+                (click)="toggleEventoMenu($event, evento.id)"
+                [attr.aria-expanded]="openMenuEventoId === evento.id"
+                aria-label="Más opciones"
+              >
+                <span class="material-icons">more_horiz</span>
+              </button>
+              <div *ngIf="openMenuEventoId === evento.id" class="ev-menu" (click)="$event.stopPropagation()">
+                <a [routerLink]="dashboardRoute" class="ev-menu__link" (click)="openMenuEventoId = null">
+                  <span class="material-icons">dashboard</span>
+                  Ir al panel
+                </a>
+                <button type="button" (click)="openModal(evento); openMenuEventoId = null">
+                  <span class="material-icons">edit</span>
+                  Editar información
+                </button>
+                <button type="button" (click)="openBoletasDrawer(evento); openMenuEventoId = null">
+                  <span class="material-icons">confirmation_number</span>
+                  Tipos de boleta
+                </button>
+                <button type="button" (click)="openCuponesDrawer(evento); openMenuEventoId = null">
+                  <span class="material-icons">local_offer</span>
+                  Cupones
+                </button>
+                <button type="button" (click)="toggleDestacado(evento); openMenuEventoId = null">
+                  <span class="material-icons">{{ evento.destacado ? 'star' : 'star_border' }}</span>
+                  {{ evento.destacado ? 'Quitar destacado' : 'Destacar' }}
+                </button>
+                <button
+                  type="button"
+                  [disabled]="isShowcaseMode"
+                  (click)="toggleActivo(evento); openMenuEventoId = null"
+                >
+                  <span class="material-icons">{{ evento.activo ? 'block' : 'check_circle' }}</span>
+                  {{ evento.activo ? 'Desactivar' : 'Activar' }}
+                </button>
+              </div>
+            </div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div *ngIf="isFirstTimeEmpty" class="ev-empty" role="status">
+      <div class="ev-empty__art" aria-hidden="true">
+        <div class="ev-empty__orb"></div>
+        <span class="material-icons ev-empty__icon">celebration</span>
+      </div>
+      <h2 class="ev-empty__title">Tu primer evento comienza aquí</h2>
+      <p class="ev-empty__text">Crea un evento y empieza a vender entradas en minutos.</p>
+      <button type="button" class="ev-btn-primary ev-empty__cta" (click)="openModal()">
+        Crear mi primer evento
+      </button>
+    </div>
+
+    <div *ngIf="isFilteredEmpty" class="ev-empty ev-empty--filtered" role="status">
+      <span class="material-icons ev-empty__icon ev-empty__icon--muted" aria-hidden="true">search_off</span>
+      <h2 class="ev-empty__title">Sin resultados</h2>
+      <p class="ev-empty__text">Prueba otros filtros o limpia la búsqueda.</p>
+      <button type="button" class="ev-btn-ghost" (click)="clearFilters()">Limpiar filtros</button>
+    </div>
+
+    <nav *ngIf="!loading && total > limit" class="ev-pagination" aria-label="Paginación">
+      <button type="button" (click)="page = page - 1; loadEventos()" [disabled]="page === 1">Anterior</button>
+      <span>Página {{ page }} de {{ Math.ceil(total / limit) }}</span>
+      <button type="button" (click)="page = page + 1; loadEventos()" [disabled]="page >= Math.ceil(total / limit)">Siguiente</button>
+    </nav>
+  </section>
+
+  <button
+    *ngIf="!showModal"
+    type="button"
+    class="ev-fab"
+    (click)="openModal()"
+    aria-label="Crear nuevo evento"
+  >
+    <span class="material-icons">add</span>
+  </button>
+  <ev-form-modal
+    *ngIf="showModal"
+    [title]="eventoModalTitle"
+    [description]="eventoModalDescription"
+    size="xl"
+    [primaryLabel]="eventoModalPrimaryLabel"
+    [showFooter]="wizardPhase === 'form'"
+    [primaryDisabled]="uploadingImage"
+    [wizardMode]="wizardPhase === 'form'"
+    [wizardStep]="wizardStep"
+    [wizardTotalSteps]="wizardSteps.length"
+    (closed)="closeModal()"
+    (cancelled)="closeModal()"
+    (primaryAction)="saveEvento()"
+    (wizardNext)="wizardNextStep()"
+    (wizardPrev)="wizardPrevStep()"
+  >
+    <!-- Pantalla de éxito -->
+    <div *ngIf="wizardPhase === 'success'" class="ev-wizard-success">
+      <div class="ev-wizard-success__icon" aria-hidden="true">
+        <span class="material-icons">celebration</span>
+      </div>
+      <h3 class="ev-wizard-success__title">{{ savedEvento?.titulo }}</h3>
+      <p class="ev-wizard-success__text">
+        {{ editingEvento ? 'Los cambios se guardaron correctamente.' : 'Tu evento fue creado exitosamente.' }}
+        ¿Qué quieres hacer ahora?
+      </p>
+      <div class="ev-wizard-success__actions">
+        <button type="button" class="ev-wizard-success__btn ev-wizard-success__btn--primary" (click)="onSuccessConfigureBoletas()">
+          <span class="material-icons" aria-hidden="true">confirmation_number</span>
+          Configurar boletas
+        </button>
+        <button type="button" class="ev-wizard-success__btn" (click)="onSuccessAddProductos()">
+          <span class="material-icons" aria-hidden="true">inventory_2</span>
+          Agregar productos
+        </button>
+        <button type="button" class="ev-wizard-success__btn" (click)="onSuccessVerEvento()">
+          <span class="material-icons" aria-hidden="true">visibility</span>
+          Ver evento
         </button>
       </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label>Evento</label>
-          <input type="text" [value]="selectedEventoForTipos?.titulo || ''" disabled />
-        </div>
-        <div class="form-group">
-          <label>Nombre *</label>
-          <input type="text" [(ngModel)]="tipoBoletaFormData.nombre" required />
-        </div>
-        <div class="form-group">
-          <label>Descripción</label>
-          <textarea [(ngModel)]="tipoBoletaFormData.descripcion" rows="3"></textarea>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Precio *</label>
-            <input type="number" step="0.01" min="0" [(ngModel)]="tipoBoletaFormData.precio" required />
-          </div>
-          <div class="form-group" *ngIf="!editingTipo">
-            <label *ngIf="!(tipoBoletaFormData.es_palco || (tipoBoletaFormData.personas_por_unidad ?? 1) > 1)">Cantidad Total *</label>
-            <label *ngIf="tipoBoletaFormData.es_palco || (tipoBoletaFormData.personas_por_unidad ?? 1) > 1">Cantidad de palcos *</label>
-            <input type="number" min="1" [(ngModel)]="tipoBoletaFormData.cantidad_total" (ngModelChange)="calcularCantidadesTipoBoleta()" required />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Fecha Venta Inicio</label>
-            <input type="datetime-local" [(ngModel)]="tipoBoletaFormData.fecha_venta_inicio" />
-          </div>
-          <div class="form-group">
-            <label>Fecha Venta Fin</label>
-            <input type="datetime-local" [(ngModel)]="tipoBoletaFormData.fecha_venta_fin" />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>
-              <input type="checkbox" [(ngModel)]="tipoBoletaFormData.es_palco" />
-              Es palco / paquete grupal
-            </label>
-          </div>
-          <div class="form-group">
-            <label>Personas por unidad vendida *</label>
-            <input type="number" min="1" [(ngModel)]="tipoBoletaFormData.personas_por_unidad" required />
-          </div>
-        </div>
-        <div class="form-group" *ngIf="mostrarCampoMapaPalcos()">
-          <label>Mapa / imagen con numeración de palcos</label>
-          <p class="form-help">Opcional. Máx. 10 MB.</p>
-          <input type="file" id="mapaPalcoInputEventos" accept="image/*" (change)="onMapaPalcoFileChange($event)" hidden />
-          <div class="mapa-palco-actions">
-            <button type="button" class="btn-secondary" (click)="clickMapaPalcoInput()">Elegir imagen</button>
-            <button type="button" class="btn-secondary" *ngIf="previewMapaPalco || selectedMapaPalcoFile" (click)="quitarImagenMapaPalco()">Quitar</button>
-            <span *ngIf="uploadingMapaPalco" class="text-muted">Subiendo...</span>
-          </div>
-          <div *ngIf="previewMapaPalco" class="mapa-palco-preview">
-            <img [src]="previewMapaPalco" alt="Vista previa mapa palcos" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Límite por Persona</label>
-          <input type="number" min="1" [(ngModel)]="tipoBoletaFormData.limite_por_persona" />
-        </div>
-        <div class="form-group" *ngIf="editingTipo">
-          <div class="info-box">
-            <p class="info-box-title">Inventario (solo lectura)</p>
-            <p><strong>Total:</strong> {{ editingTipo.cantidad_total }}</p>
-            <p><strong>Vendidas:</strong> {{ editingTipo.cantidad_vendidas || 0 }}</p>
-            <p><strong>Disponibles:</strong> {{ editingTipo.cantidad_disponibles || 0 }}</p>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>
-            <input type="checkbox" [(ngModel)]="tipoBoletaFormData.activo" />
-            Activo
-          </label>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" (click)="closeTipoBoletaFormModal()">Cancelar</button>
-        <button class="btn-primary" (click)="saveTipoBoleta()">Guardar</button>
-      </div>
+      <button type="button" class="ev-wizard-success__skip" (click)="onSuccessClose()">Volver a Mis Eventos</button>
     </div>
-  </div>
 
-  <!-- Modal Agregar Inventario -->
-  <div *ngIf="showInventarioModal && tipoInventario" class="modal-overlay" (click)="closeInventarioModal()">
-    <div class="modal-content inventario-modal" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2>Agregar inventario</h2>
-        <button class="btn-close" type="button" (click)="closeInventarioModal()">
-          <span class="material-icons">close</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <p><strong>{{ tipoInventario.nombre }}</strong></p>
-        <div class="info-box inventario-resumen">
-          <p><strong>Total actual:</strong> {{ tipoInventario.cantidad_total }}</p>
-          <p><strong>Vendidas:</strong> {{ tipoInventario.cantidad_vendidas || 0 }}</p>
-          <p><strong>Disponibles:</strong> {{ tipoInventario.cantidad_disponibles || 0 }}</p>
+    <!-- Wizard -->
+    <div *ngIf="wizardPhase === 'form'" class="ev-wizard">
+      <ev-form-wizard [steps]="wizardSteps" [currentStep]="wizardStep" />
+
+      <div class="ev-wizard__layout">
+        <div class="ev-wizard__main">
+          <ng-container *ngFor="let token of [wizardSelectToken]; trackBy: trackByWizardSelectToken">
+          <div class="ev-form" [ngSwitch]="wizardStep">
+            <!-- Paso 1: Información básica -->
+            <ev-form-section *ngSwitchCase="0" title="Información básica" description="¿Cómo se llama y cómo se clasifica tu evento?">
+              <div class="ev-form-grid ev-form-grid--2">
+                <div class="ev-field ev-form-span-2">
+                  <label class="ev-field__label" for="evento-titulo">
+                    Título<span class="ev-field__required" aria-hidden="true">*</span>
+                  </label>
+                  <input id="evento-titulo" type="text" class="ev-input" [(ngModel)]="formData.titulo" required placeholder="Ej: Festival de Música 2026" />
+                </div>
+                <div class="ev-field">
+                  <label class="ev-field__label" for="evento-categoria">
+                    Categoría<span class="ev-field__required" aria-hidden="true">*</span>
+                  </label>
+                  <ev-select id="evento-categoria" [(ngModel)]="formData.categoria_id" [options]="categoriaOptions" placeholder="Selecciona categoría" />
+                </div>
+                <div class="ev-field">
+                  <label class="ev-field__label" for="evento-tags">Tags</label>
+                  <input id="evento-tags" type="text" class="ev-input" [(ngModel)]="formData.tags" placeholder="música, festival, rock" />
+                </div>
+                <div class="ev-field ev-form-span-2" *ngIf="!authService.isOrganizador()">
+                  <label class="ev-field__label" for="evento-organizador">
+                    Organizador<span class="ev-field__required" aria-hidden="true">*</span>
+                  </label>
+                  <ev-select id="evento-organizador" [(ngModel)]="formData.organizador_id" [options]="organizadorOptions" placeholder="Selecciona organizador" [searchable]="true" />
+                  <p class="ev-field__hint" *ngIf="organizadores.length === 0">No hay organizadores disponibles.</p>
+                </div>
+              </div>
+            </ev-form-section>
+
+            <!-- Paso 2: Lugar y fecha -->
+            <ev-form-section *ngSwitchCase="1" title="Lugar y fecha" description="Define dónde sucede y cuándo ocurre.">
+              <div class="ev-form-grid ev-form-grid--2">
+                <div class="ev-field">
+                  <label class="ev-field__label" for="evento-lugar">Lugar</label>
+                  <ev-select id="evento-lugar" [(ngModel)]="formData.lugar_id" [options]="lugarOptions" placeholder="Sin lugar" [clearable]="true" />
+                </div>
+                <div class="ev-field">
+                  <label class="ev-field__label" for="evento-edad">Edad mínima</label>
+                  <ev-number-input
+                    id="evento-edad"
+                    mode="integer"
+                    [min]="0"
+                    [(ngModel)]="formData.edad_minima"
+                    placeholder="Sin restricción"
+                  />
+                </div>
+              </div>
+              <div class="ev-wizard__subsection">
+                <h4 class="ev-wizard__subsection-title">Fechas del evento</h4>
+                <div class="ev-form-grid ev-form-grid--2">
+                  <div class="ev-field">
+                    <label class="ev-field__label" for="evento-inicio">Inicio<span class="ev-field__required" aria-hidden="true">*</span></label>
+                    <input id="evento-inicio" type="datetime-local" class="ev-input" [(ngModel)]="formData.fecha_inicio" required />
+                  </div>
+                  <div class="ev-field">
+                    <label class="ev-field__label" for="evento-fin">Fin<span class="ev-field__required" aria-hidden="true">*</span></label>
+                    <input id="evento-fin" type="datetime-local" class="ev-input" [(ngModel)]="formData.fecha_fin" required />
+                  </div>
+                </div>
+              </div>
+              <div class="ev-wizard__subsection">
+                <h4 class="ev-wizard__subsection-title">Venta de entradas</h4>
+                <div class="ev-form-grid ev-form-grid--2">
+                  <div class="ev-field">
+                    <label class="ev-field__label" for="evento-venta-inicio">Venta — inicio<span class="ev-field__required" aria-hidden="true">*</span></label>
+                    <input id="evento-venta-inicio" type="datetime-local" class="ev-input" [(ngModel)]="formData.fecha_venta_inicio" required />
+                  </div>
+                  <div class="ev-field">
+                    <label class="ev-field__label" for="evento-venta-fin">Venta — fin<span class="ev-field__required" aria-hidden="true">*</span></label>
+                    <input id="evento-venta-fin" type="datetime-local" class="ev-input" [(ngModel)]="formData.fecha_venta_fin" required />
+                  </div>
+                </div>
+              </div>
+            </ev-form-section>
+
+            <!-- Paso 3: Descripción -->
+            <ev-form-section *ngSwitchCase="2" title="Descripción" description="Cuéntale al público qué vivirá y las condiciones legales.">
+              <div class="ev-form-grid ev-form-grid--2">
+                <div class="ev-field ev-form-span-2">
+                  <label class="ev-field__label" for="evento-desc-corta">Descripción corta</label>
+                  <input id="evento-desc-corta" type="text" class="ev-input" [(ngModel)]="formData.descripcion_corta" placeholder="Para listados y tarjetas" maxlength="200" />
+                </div>
+                <div class="ev-field ev-form-span-2">
+                  <label class="ev-field__label" for="evento-desc-completa">Descripción completa</label>
+                  <textarea id="evento-desc-completa" class="ev-textarea ev-textarea--sm" [(ngModel)]="formData.descripcion" rows="4" placeholder="Detalla la experiencia, artistas e incluye"></textarea>
+                </div>
+                <div class="ev-field ev-form-span-2">
+                  <label class="ev-field__label" for="evento-video">Video (YouTube)</label>
+                  <input id="evento-video" type="url" class="ev-input" [(ngModel)]="formData.url_video" placeholder="https://youtube.com/..." />
+                </div>
+                <div class="ev-field">
+                  <label class="ev-field__label" for="evento-terminos">Términos y condiciones</label>
+                  <textarea id="evento-terminos" class="ev-textarea ev-textarea--sm" [(ngModel)]="formData.terminos_condiciones" rows="3" placeholder="Términos del evento"></textarea>
+                </div>
+                <div class="ev-field">
+                  <label class="ev-field__label" for="evento-reembolso">Política de reembolso</label>
+                  <textarea id="evento-reembolso" class="ev-textarea ev-textarea--sm" [(ngModel)]="formData.politica_reembolso" rows="3" placeholder="Política de cancelación"></textarea>
+                </div>
+              </div>
+            </ev-form-section>
+
+            <!-- Paso 4: Configuración -->
+            <ev-form-section *ngSwitchCase="3" title="Configuración" description="Precios, cobros y opciones de publicación.">
+              <div class="ev-check-row ev-wizard__gratis-toggle">
+                <label class="ev-check">
+                  <input type="checkbox" [(ngModel)]="formData.es_gratis" />
+                  Evento gratis
+                </label>
+              </div>
+              <div class="ev-form-grid ev-form-grid--2" *ngIf="!formData.es_gratis">
+                <div class="ev-field">
+                  <label class="ev-field__label" for="evento-precio-min">Precio mínimo</label>
+                  <ev-number-input
+                    id="evento-precio-min"
+                    mode="integer"
+                    [min]="0"
+                    [(ngModel)]="formData.precio_minimo"
+                    placeholder="0"
+                  />
+                </div>
+                <div class="ev-field">
+                  <label class="ev-field__label" for="evento-precio-max">Precio máximo</label>
+                  <ev-number-input
+                    id="evento-precio-max"
+                    mode="integer"
+                    [min]="0"
+                    [(ngModel)]="formData.precio_maximo"
+                    placeholder="0"
+                  />
+                </div>
+                <div class="ev-field">
+                  <label class="ev-field__label" for="evento-servicio">Servicio (%)</label>
+                  <input id="evento-servicio" type="number" step="0.01" class="ev-input" [(ngModel)]="formData.porcentaje_servicio" min="0" max="100" placeholder="0" />
+                </div>
+              </div>
+              <div class="ev-form-grid ev-form-grid--2">
+                <div class="ev-field ev-form-span-2">
+                  <label class="ev-field__label" for="evento-wompi">
+                    Cuenta Wompi<span *ngIf="!formData.es_gratis && !isShowcaseMode" aria-hidden="true"> *</span>
+                  </label>
+                  <ev-select
+                    id="evento-wompi"
+                    [(ngModel)]="formData.wompi_cuenta_id"
+                    [options]="wompiCuentaOptions"
+                    placeholder="Selecciona una cuenta Wompi"
+                    [clearable]="formData.es_gratis || isShowcaseMode"
+                  />
+                  <p class="ev-field__hint" *ngIf="!isShowcaseMode">Define qué cuenta Wompi usará este evento para cobrar.</p>
+                  <p class="ev-field__hint" *ngIf="isShowcaseMode">En modo demo puedes elegir una cuenta para ver el flujo; no se vinculará a pagos reales.</p>
+                </div>
+              </div>
+              <div class="ev-form-grid ev-form-grid--2">
+                <div class="ev-field">
+                  <label class="ev-field__label" for="evento-estado">Estado</label>
+                  <ev-select id="evento-estado" [(ngModel)]="formData.estado" [options]="estadoEventoOptions" placeholder="Estado del evento" [searchable]="false" />
+                  <p class="ev-field__hint" *ngIf="isShowcaseMode">En modo demo no se publica al catálogo.</p>
+                </div>
+              </div>
+              <div class="ev-check-row">
+                <label class="ev-check">
+                  <input type="checkbox" [(ngModel)]="formData.destacado" />
+                  Destacado
+                </label>
+                <label class="ev-check">
+                  <input type="checkbox" [(ngModel)]="formData.activo" [disabled]="isShowcaseMode" />
+                  Activo
+                </label>
+              </div>
+              <p class="ev-field__hint" *ngIf="isShowcaseMode">Siempre inactivo en modo demo.</p>
+            </ev-form-section>
+
+            <!-- Paso 5: Imagen -->
+            <ev-form-section *ngSwitchCase="4" title="Imagen" description="La imagen principal para listados y detalle público.">
+              <div class="ev-field">
+                <label class="ev-field__label">Imagen principal</label>
+                <div class="ev-upload">
+                  <button type="button" class="ev-upload__trigger" (click)="selectImage()" [disabled]="uploadingImage">
+                    <span class="material-icons" aria-hidden="true">image</span>
+                    {{ uploadingImage ? 'Subiendo…' : 'Seleccionar imagen' }}
+                  </button>
+                  <input type="file" id="eventoImageInput" accept="image/*" (change)="onFileSelected($event)" hidden />
+                  <div *ngIf="previewUrl" class="ev-upload__preview">
+                    <img [src]="previewUrl" alt="Vista previa del evento" />
+                    <button type="button" class="ev-upload__remove" (click)="removeImage()" aria-label="Eliminar imagen">
+                      <span class="material-icons">close</span>
+                    </button>
+                  </div>
+                  <p *ngIf="formData.imagen_principal && !previewUrl && !selectedFile" class="ev-field__hint">
+                    <a class="ev-upload__link" [href]="formData.imagen_principal" target="_blank" rel="noopener noreferrer">Ver imagen actual</a>
+                  </p>
+                </div>
+              </div>
+            </ev-form-section>
+
+            <!-- Paso 6: Revisión -->
+            <ev-form-section *ngSwitchCase="5" title="Revisión y crear" description="Confirma que todo esté correcto antes de guardar.">
+              <div class="ev-wizard-review">
+                <section class="ev-wizard-review__block">
+                  <div class="ev-wizard-review__head">
+                    <h4>Información básica</h4>
+                    <button type="button" class="ev-wizard-review__edit" (click)="wizardGoToStep(0)">Editar</button>
+                  </div>
+                  <dl class="ev-wizard-review__list">
+                    <div><dt>Título</dt><dd>{{ formData.titulo || '—' }}</dd></div>
+                    <div><dt>Categoría</dt><dd>{{ getCategoriaNombre(formData.categoria_id) }}</dd></div>
+                    <div *ngIf="formData.tags"><dt>Tags</dt><dd>{{ formData.tags }}</dd></div>
+                    <div *ngIf="!authService.isOrganizador()"><dt>Organizador</dt><dd>{{ getOrganizadorNombre(formData.organizador_id) }}</dd></div>
+                  </dl>
+                </section>
+
+                <section class="ev-wizard-review__block">
+                  <div class="ev-wizard-review__head">
+                    <h4>Lugar y fecha</h4>
+                    <button type="button" class="ev-wizard-review__edit" (click)="wizardGoToStep(1)">Editar</button>
+                  </div>
+                  <dl class="ev-wizard-review__list">
+                    <div><dt>Lugar</dt><dd>{{ getLugarNombreById(formData.lugar_id) }}</dd></div>
+                    <div><dt>Edad mínima</dt><dd>{{ formData.edad_minima ? formData.edad_minima + ' años' : 'Sin restricción' }}</dd></div>
+                    <div><dt>Evento</dt><dd>{{ formatWizardDate(formData.fecha_inicio) }} → {{ formatWizardDate(formData.fecha_fin) }}</dd></div>
+                    <div><dt>Venta</dt><dd>{{ formatWizardDate(formData.fecha_venta_inicio) }} → {{ formatWizardDate(formData.fecha_venta_fin) }}</dd></div>
+                  </dl>
+                </section>
+
+                <section class="ev-wizard-review__block">
+                  <div class="ev-wizard-review__head">
+                    <h4>Descripción</h4>
+                    <button type="button" class="ev-wizard-review__edit" (click)="wizardGoToStep(2)">Editar</button>
+                  </div>
+                  <dl class="ev-wizard-review__list">
+                    <div *ngIf="formData.descripcion_corta"><dt>Corta</dt><dd>{{ formData.descripcion_corta }}</dd></div>
+                    <div *ngIf="formData.descripcion"><dt>Completa</dt><dd class="ev-wizard-review__multiline">{{ formData.descripcion }}</dd></div>
+                    <div *ngIf="formData.url_video"><dt>Video</dt><dd>{{ formData.url_video }}</dd></div>
+                    <div *ngIf="formData.terminos_condiciones"><dt>Términos</dt><dd class="ev-wizard-review__multiline">{{ formData.terminos_condiciones }}</dd></div>
+                    <div *ngIf="formData.politica_reembolso"><dt>Reembolso</dt><dd class="ev-wizard-review__multiline">{{ formData.politica_reembolso }}</dd></div>
+                  </dl>
+                </section>
+
+                <section class="ev-wizard-review__block">
+                  <div class="ev-wizard-review__head">
+                    <h4>Configuración</h4>
+                    <button type="button" class="ev-wizard-review__edit" (click)="wizardGoToStep(3)">Editar</button>
+                  </div>
+                  <dl class="ev-wizard-review__list">
+                    <div><dt>Tipo</dt><dd>{{ formData.es_gratis ? 'Gratis' : 'De pago' }}</dd></div>
+                    <ng-container *ngIf="!formData.es_gratis">
+                      <div><dt>Precios</dt><dd>{{ formData.precio_minimo ?? 0 }} – {{ formData.precio_maximo ?? 0 }}</dd></div>
+                      <div><dt>Servicio</dt><dd>{{ formData.porcentaje_servicio ?? 0 }}%</dd></div>
+                    </ng-container>
+                    <div><dt>Wompi</dt><dd>{{ getWompiCuentaNombre(formData.wompi_cuenta_id) }}{{ isShowcaseMode && formData.wompi_cuenta_id ? ' (demo)' : '' }}</dd></div>
+                    <div><dt>Estado</dt><dd>{{ getEstadoLabel(formData.estado) }}</dd></div>
+                    <div><dt>Destacado</dt><dd>{{ formData.destacado ? 'Sí' : 'No' }}</dd></div>
+                    <div><dt>Activo</dt><dd>{{ formData.activo ? 'Sí' : 'No' }}</dd></div>
+                  </dl>
+                </section>
+
+                <section class="ev-wizard-review__block">
+                  <div class="ev-wizard-review__head">
+                    <h4>Imagen</h4>
+                    <button type="button" class="ev-wizard-review__edit" (click)="wizardGoToStep(4)">Editar</button>
+                  </div>
+                  <dl class="ev-wizard-review__list">
+                    <div><dt>Imagen</dt><dd>{{ previewUrl || formData.imagen_principal ? 'Configurada' : 'Sin imagen' }}</dd></div>
+                  </dl>
+                </section>
+              </div>
+            </ev-form-section>
+          </div>
+          </ng-container>
         </div>
-        <div class="form-group">
-          <label>Unidades a agregar *</label>
-          <input type="number" min="1" [(ngModel)]="cantidadAgregarInventario" required />
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" type="button" (click)="closeInventarioModal()">Cancelar</button>
-        <button class="btn-primary" type="button" (click)="saveAgregarInventario()">Agregar al inventario</button>
+
+        <ev-evento-preview
+          class="ev-wizard__preview"
+          [formData]="formData"
+          [previewUrl]="previewUrl"
+          [categorias]="categorias"
+          [lugares]="lugares"
+          [estadoLabel]="wizardEstadoLabel"
+        />
       </div>
     </div>
-  </div>
+  </ev-form-modal>
 </div>

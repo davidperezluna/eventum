@@ -1,0 +1,8 @@
+<div class="ev-empty-state">
+  <span class="material-icons ev-empty-state__icon" aria-hidden="true">{{ icon }}</span>
+  <h3 *ngIf="title" class="ev-empty-state__title">{{ title }}</h3>
+  <p *ngIf="description" class="ev-empty-state__description">{{ description }}</p>
+  <div class="ev-empty-state__cta">
+    <ng-content select="[emptyCta]" />
+  </div>
+</div>

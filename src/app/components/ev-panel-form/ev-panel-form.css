@@ -1,0 +1,8 @@
+.ev-panel-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.ev-panel-form .ev-form {
+  gap: 0;
+}

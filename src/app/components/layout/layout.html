@@ -328,7 +328,17 @@
     [class.client-content]="isCliente() && currentUser && usuario"
     [class.public-content]="!currentUser || !usuario || isLector()"
     [class.layout-content--cart-fab]="mostrarCarritoFab"
+    [class.main-content--showcase]="authService.isShowcaseOrganizador()"
   >
+    <div class="layout-notice-wrap">
+      <ev-notice
+        *ngIf="authService.isShowcaseOrganizador()"
+        variant="warning"
+        density="inline"
+        icon="info"
+        message="Modo demostración — los cambios no se publican ni procesan pagos reales."
+      />
+    </div>
     <router-outlet />
   </main>
 
@@ -349,4 +359,5 @@
   </a>
 
   <app-client-confirm-dialog />
+  <ev-drawer-host />
 </div>

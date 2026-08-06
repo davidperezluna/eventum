@@ -252,15 +252,10 @@
 }
 .ticket-card__transfer button .material-icons { font-size: 1rem; }
 
-.ticket-card__notice {
+.ticket-card .ev-notice {
   margin-top: 0.75rem;
-  padding: 0.75rem;
-  border-radius: 10px;
-  background: #f8fafc;
-  color: #64748b;
-  font-size: 0.78rem;
+  margin-bottom: 0;
 }
-.ticket-card__notice p { margin: 0; line-height: 1.45; }
 
 .ticket-card__attendee {
   display: flex;

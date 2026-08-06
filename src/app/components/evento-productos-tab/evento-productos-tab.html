@@ -8,14 +8,12 @@
       <h2>Productos</h2>
       <p class="section-kicker">Selecciona tus productos y revisa el total antes de pagar.</p>
     </ng-container>
-    <div
-      class="preventa-banner"
-      [class.preventa-banner--urgent]="preventaUrgente()"
-      [class.preventa-banner--evento]="!preventaActiva()"
-    >
-      <span class="material-icons" aria-hidden="true">{{ preventaActiva() ? 'schedule' : 'local_offer' }}</span>
-      <span>{{ getPrecioEstadoHintLabel() }}</span>
-    </div>
+    <ev-notice
+      [variant]="preventaUrgente() ? 'warning' : 'info'"
+      density="inline"
+      [icon]="preventaActiva() ? 'schedule' : 'local_offer'"
+      [message]="getPrecioEstadoHintLabel()"
+    />
   </header>
 
   <div *ngIf="loading" class="loading-small">

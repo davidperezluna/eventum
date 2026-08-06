@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { RouterModule } from '@angular/router';
+import { EvNotice } from '../ev-notice';
 
 export interface CompraTicketBadge {
   label: string;
@@ -114,7 +115,7 @@ export type CompraTicketAction =
 @Component({
   selector: 'app-compra-ticket-card',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, EvNotice],
   templateUrl: './compra-ticket-card.html',
   styleUrl: './compra-ticket-card.css',
 })

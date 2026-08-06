@@ -1,0 +1,16 @@
+<section class="ev-panel-summary" [attr.aria-label]="label">
+  <p class="ev-panel-summary__label">{{ label }}</p>
+  <div class="ev-panel-summary__grid" [class.ev-panel-summary__grid--hero]="hasHero">
+    <div
+      *ngFor="let metric of metrics"
+      class="ev-panel-summary__stat"
+      [class.ev-panel-summary__stat--hero]="metric.variant === 'hero'"
+      [class.ev-panel-summary__stat--accent]="metric.variant === 'accent'"
+      [class.ev-panel-summary__stat--text]="metric.variant === 'text'"
+    >
+      <span class="ev-panel-summary__stat-value">{{ metric.value }}</span>
+      <span class="ev-panel-summary__stat-label">{{ metric.label }}</span>
+    </div>
+  </div>
+  <p *ngIf="hint" class="ev-panel-summary__hint">{{ hint }}</p>
+</section>

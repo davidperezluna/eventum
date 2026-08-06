@@ -6,6 +6,7 @@ import { inject } from '@angular/core';
 import { Router, CanActivateFn, PRIMARY_OUTLET } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { guardarReturnUrlLogin } from '../core/login-redirect';
+import { isShowcaseBlockedRoute } from '../core/showcase-policy';
 
 /** Segmentos de ruta (sin query) para una URL de navegación. */
 function segmentosDesdeUrl(router: Router, url: string): string[] {
@@ -154,11 +155,23 @@ export const authGuard: CanActivateFn = async (route, state) => {
       }
     }
 
+    const routeSegments = segmentosDesdeUrl(router, state.url);
+
+    if (authService.isShowcaseOrganizador() && isShowcaseBlockedRoute(routeSegments)) {
+      console.log('Auth Guard - Ruta bloqueada para showcase:', state.url);
+      router.navigate(['/dashboard-organizador']);
+      return false;
+    }
+
     const adminOnly = route.data?.['adminOnly'] === true;
     if (adminOnly && !authService.isAdministrador()) {
-      console.log('Auth Guard - Ruta solo admin bloqueada para usuario:', usuario.tipo_usuario_id);
-      router.navigate([authService.isOrganizador() ? '/dashboard-organizador' : '/dashboard']);
-      return false;
+      const showcaseProductos =
+        authService.isShowcaseOrganizador() && routeSegments[0] === 'productos';
+      if (!showcaseProductos) {
+        console.log('Auth Guard - Ruta solo admin bloqueada para usuario:', usuario.tipo_usuario_id);
+        router.navigate([authService.isOrganizador() ? '/dashboard-organizador' : '/dashboard']);
+        return false;
+      }
     }
 
     console.log('Auth Guard - Acceso permitido');

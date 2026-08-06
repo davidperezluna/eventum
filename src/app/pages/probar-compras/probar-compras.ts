@@ -9,10 +9,11 @@ import { CarritoCompraService } from '../../services/carrito-compra.service';
 import { ProductosService } from '../../services/productos.service';
 import { Evento, CategoriaEvento, TipoEstadoEvento } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
+import { EvNotice } from '../../components/ev-notice';
 
 @Component({
   selector: 'app-probar-compras',
-  imports: [CommonModule, RouterModule, FormsModule, DateFormatPipe],
+  imports: [CommonModule, RouterModule, FormsModule, DateFormatPipe, EvNotice],
   templateUrl: './probar-compras.html',
   styleUrl: './probar-compras.css',
 })

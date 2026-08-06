@@ -33,9 +33,7 @@
 
       <ng-container *ngTemplateOutlet="traslado; context: { $implicit: card.traslado }"></ng-container>
 
-      <div class="ticket-card__notice" *ngIf="card.pendingMessage">
-        <p>{{ card.pendingMessage }}</p>
-      </div>
+      <ev-notice *ngIf="card.pendingMessage" variant="info" density="compact" [message]="card.pendingMessage" />
 
       <div class="ticket-card__attendee" *ngIf="card.attendee as attendee">
         <div class="ticket-card__attendee-field">
@@ -117,9 +115,7 @@
 
       <ng-container *ngTemplateOutlet="traslado; context: { $implicit: card.traslado }"></ng-container>
 
-      <div class="ticket-card__notice" *ngIf="card.blockedMessage">
-        <p>{{ card.blockedMessage }}</p>
-      </div>
+      <ev-notice *ngIf="card.blockedMessage" variant="warning" density="compact" [message]="card.blockedMessage" />
 
       <div class="ticket-card__cover-actions" *ngIf="card.qrAction || card.canTransfer">
         <button

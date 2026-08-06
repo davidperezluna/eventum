@@ -1,0 +1,51 @@
+<div
+  [class]="rootClass"
+  [attr.aria-hidden]="!visible"
+  role="presentation"
+>
+  <div
+    class="ev-drawer__backdrop"
+    (click)="onBackdropClick()"
+    aria-hidden="true"
+  ></div>
+
+  <aside
+    #panel
+    [class]="panelClass"
+    role="dialog"
+    [attr.aria-modal]="true"
+    [attr.aria-label]="ariaLabel || title"
+    aria-labelledby="ev-drawer-title"
+    [attr.aria-busy]="loading"
+    (transitionend)="onTransitionEnd($event)"
+  >
+    <header class="ev-drawer__header">
+      <div class="ev-drawer__header-main">
+        <span *ngIf="icon" class="ev-drawer__icon" aria-hidden="true">
+          <span class="material-icons">{{ icon }}</span>
+        </span>
+        <div class="ev-drawer__header-copy">
+          <h2 id="ev-drawer-title" class="ev-drawer__title">{{ title }}</h2>
+          <p *ngIf="description" class="ev-drawer__description">{{ description }}</p>
+        </div>
+      </div>
+      <button
+        *ngIf="showCloseButton"
+        #closeBtn
+        type="button"
+        class="ev-drawer__close"
+        (click)="requestClose()"
+        aria-label="Cerrar panel"
+      >
+        <span class="material-icons" aria-hidden="true">close</span>
+      </button>
+    </header>
+
+    <div class="ev-drawer__content">
+      <ev-drawer-skeleton *ngIf="loading" />
+      <div class="ev-drawer__body" [class.ev-drawer__body--hidden]="loading">
+        <ng-content />
+      </div>
+    </div>
+  </aside>
+</div>

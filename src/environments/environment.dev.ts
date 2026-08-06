@@ -58,4 +58,8 @@ export const environment = {
     updateCheckIntervalMs: 5 * 60 * 1000,
     showUpdateNotification: false,
   },
+
+  showcaseModeEnabled: true,
+  showcaseOrganizadorId: 0,
+  showcaseOrganizadorEmail: 'showcase@eventumcol.com',
 };

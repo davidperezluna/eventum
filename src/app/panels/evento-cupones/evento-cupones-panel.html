@@ -1,0 +1,129 @@
+<div class="ev-panel">
+  <div class="ev-panel__scroll">
+    <ev-panel-summary label="Cupones" [metrics]="summaryMetrics" />
+
+    <ev-notice
+      *ngIf="panelInsight as insight"
+      variant="warning"
+      [message]="insight.message"
+      [actionLabel]="insight.ctaLabel"
+    />
+
+    <ev-panel-form>
+      <div class="ev-form">
+        <ev-form-section title="Crear nuevo cupón" description="Define el código, descuento y límite de usos.">
+          <div class="ev-form-grid ev-form-grid--3">
+            <div class="ev-field">
+              <label class="ev-field__label" for="cupon-codigo">
+                Código<span class="ev-field__required" aria-hidden="true">*</span>
+              </label>
+              <input
+                id="cupon-codigo"
+                type="text"
+                class="ev-input"
+                [(ngModel)]="nuevoCupon.codigo"
+                (ngModelChange)="onFormChange()"
+                placeholder="Ej: FIESTA20"
+                autocomplete="off"
+                style="text-transform: uppercase"
+              />
+              <p class="ev-field__hint">Mínimo 4 caracteres</p>
+            </div>
+            <div class="ev-field">
+              <label class="ev-field__label" for="cupon-descuento">
+                Descuento (%)<span class="ev-field__required" aria-hidden="true">*</span>
+              </label>
+              <ev-number-input
+                id="cupon-descuento"
+                mode="integer"
+                [min]="1"
+                [max]="100"
+                [(ngModel)]="nuevoCupon.porcentaje_descuento"
+                (ngModelChange)="onFormChange()"
+              />
+            </div>
+            <div class="ev-field">
+              <label class="ev-field__label" for="cupon-max-usos">
+                Límite de usos<span class="ev-field__required" aria-hidden="true">*</span>
+              </label>
+              <ev-number-input
+                id="cupon-max-usos"
+                mode="integer"
+                [min]="1"
+                [(ngModel)]="nuevoCupon.max_usos"
+                (ngModelChange)="onFormChange()"
+              />
+              <p class="ev-field__hint">Por defecto 1 (solo un uso)</p>
+            </div>
+          </div>
+        </ev-form-section>
+      </div>
+    </ev-panel-form>
+
+    <section class="ev-panel__dashboard" aria-labelledby="cupones-lista-title">
+      <h3 id="cupones-lista-title" class="ev-panel-summary__label">Cupones existentes</h3>
+
+      <ev-empty-state
+        *ngIf="cupones.length === 0"
+        icon="sell"
+        title="No hay cupones"
+        description="Crea un cupón de lanzamiento para incentivar las primeras compras de tu evento."
+      >
+        <ev-button emptyCta variant="primary" [fullWidth]="true" (click)="focusCreateForm()">
+          Crear cupón
+        </ev-button>
+      </ev-empty-state>
+
+      <div *ngIf="cupones.length > 0" class="ev-panel-list">
+        <table class="ev-panel-list__table">
+          <thead>
+            <tr>
+              <th scope="col">Código</th>
+              <th scope="col">Descuento</th>
+              <th scope="col">Usos</th>
+              <th scope="col">Estado</th>
+              <th scope="col"><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let cupon of cupones">
+              <td><strong>{{ cupon.codigo }}</strong></td>
+              <td>{{ cupon.porcentaje_descuento }}%</td>
+              <td>{{ cupon.usos_actuales }} / {{ cupon.max_usos }}</td>
+              <td>
+                <ev-badge [variant]="cupon.activo ? 'success' : 'neutral'">
+                  {{ cupon.activo ? 'Activo' : 'Inactivo' }}
+                </ev-badge>
+              </td>
+              <td>
+                <div class="ev-panel-list__actions">
+                  <button
+                    type="button"
+                    class="ev-panel-list__icon-btn"
+                    (click)="toggleCuponActivo(cupon)"
+                    [attr.aria-label]="cupon.activo ? 'Desactivar cupón ' + cupon.codigo : 'Activar cupón ' + cupon.codigo"
+                  >
+                    <span class="material-icons" aria-hidden="true">{{ cupon.activo ? 'block' : 'check_circle' }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="ev-panel-list__icon-btn ev-panel-list__icon-btn--danger"
+                    (click)="eliminarCupon(cupon)"
+                    [attr.aria-label]="'Eliminar cupón ' + cupon.codigo"
+                  >
+                    <span class="material-icons" aria-hidden="true">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <ev-drawer-footer>
+    <ev-button variant="ghost" (click)="closePanel()">Cerrar</ev-button>
+    <ev-button variant="primary" [disabled]="!canCreate" [loading]="saving" (click)="crearCupon()">Guardar</ev-button>
+  </ev-drawer-footer>
+</div>

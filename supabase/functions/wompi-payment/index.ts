@@ -549,6 +549,29 @@ serve(async (req) => {
       wompiCuentaHint = wompiCuentaHint ?? eventoProductos.wompi_cuenta_id ?? null
     }
 
+    const showcaseOrganizadorIdRaw = Deno.env.get('SHOWCASE_ORGANIZADOR_ID')
+    if (eventoId && showcaseOrganizadorIdRaw) {
+      const showcaseOrganizadorId = Number(showcaseOrganizadorIdRaw)
+      if (Number.isFinite(showcaseOrganizadorId) && showcaseOrganizadorId > 0) {
+        const { data: eventoShowcase } = await supabaseClient
+          .from('eventos')
+          .select('organizador_id')
+          .eq('id', eventoId)
+          .maybeSingle()
+        if (eventoShowcase?.organizador_id === showcaseOrganizadorId) {
+          return new Response(
+            JSON.stringify({
+              error: 'Los pagos no están disponibles para eventos de demostración.',
+            }),
+            {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            },
+          )
+        }
+      }
+    }
+
     const { wompiPrivateKey, wompiEnvironment, wompiCuentaId } = await resolveWompiCredentials(
       supabaseClient,
       eventoId,

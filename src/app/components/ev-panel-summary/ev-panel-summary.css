@@ -1,0 +1,104 @@
+.ev-panel-summary {
+  padding: 1.15rem 1.2rem 1.2rem;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.ev-panel-summary__label {
+  margin: 0 0 0.9rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.ev-panel-summary__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.ev-panel-summary__grid--hero {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ev-panel-summary__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.ev-panel-summary__stat-value {
+  font-size: 1.375rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ev-panel-summary__stat--text .ev-panel-summary__stat-value {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.ev-panel-summary__stat-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.ev-panel-summary__stat--hero {
+  grid-column: 1 / -1;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(139, 92, 246, 0.04));
+  border: 1px solid rgba(124, 58, 237, 0.12);
+}
+
+.ev-panel-summary__stat--hero .ev-panel-summary__stat-value {
+  font-size: 1.625rem;
+  color: #7c3aed;
+}
+
+.ev-panel-summary__stat--accent .ev-panel-summary__stat-value {
+  color: #7c3aed;
+}
+
+.ev-panel-summary__hint {
+  margin: 0.85rem 0 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 0.8125rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+@media (min-width: 901px) {
+  .ev-panel-summary__grid:not(.ev-panel-summary__grid--hero) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .ev-panel-summary__grid--hero {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .ev-panel-summary__grid--hero .ev-panel-summary__stat--hero {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .ev-panel-summary__grid:not(.ev-panel-summary__grid--hero) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

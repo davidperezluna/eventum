@@ -1,14 +1,18 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { ProductosService } from '../../services/productos.service';
 import { EventosService } from '../../services/eventos.service';
 import { AlertService } from '../../services/alert.service';
-import { Evento, PaginatedResponse, Producto } from '../../types';
+import { AuthService } from '../../services/auth.service';
+import { Evento, PaginatedResponse, Producto, ProductoFilters } from '../../types';
+import { EvNumberInput } from '../../components/ev-number-input/ev-number-input';
+import { formatGroupedNumber } from '../../core/number-input-format';
 
 @Component({
   selector: 'app-productos',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, EvNumberInput],
   templateUrl: './productos.html',
   styleUrl: './productos.css'
 })
@@ -24,24 +28,38 @@ export class Productos implements OnInit {
   showModal = false;
   editingProducto: Producto | null = null;
   formData: Partial<Producto> = { activo: true, es_licor: false, cantidad_total: 0, orden: 0 };
-  precioPreventaInput = '';
-  precioEventoInput = '';
 
   constructor(
     private productosService: ProductosService,
     private eventosService: EventosService,
     private alertService: AlertService,
-    private cdr: ChangeDetectorRef
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
-    void this.loadEventos();
-    void this.loadProductos();
+    const eventoId = Number(this.route.snapshot.queryParamMap.get('eventoId'));
+    if (eventoId > 0) {
+      this.eventoFiltro = eventoId;
+    }
+    void this.loadEventos().then(() => this.loadProductos());
   }
 
   async loadEventos(): Promise<void> {
     try {
-      const res = await this.eventosService.getEventos({ page: 1, limit: 200, activo: undefined });
+      const filters: { page: number; limit: number; activo?: boolean; organizador_id?: number } = {
+        page: 1,
+        limit: 200,
+        activo: undefined,
+      };
+      if (this.authService.isOrganizador()) {
+        const organizadorId = this.authService.getUsuarioId();
+        if (organizadorId) {
+          filters.organizador_id = organizadorId;
+        }
+      }
+      const res = await this.eventosService.getEventos(filters);
       this.eventos = res.data || [];
       this.cdr.detectChanges();
     } catch (err) {
@@ -52,11 +70,25 @@ export class Productos implements OnInit {
   async loadProductos(): Promise<void> {
     this.loading = true;
     try {
-      const res: PaginatedResponse<Producto> = await this.productosService.getProductos({
+      const filters: ProductoFilters = {
         page: this.page,
         limit: this.limit,
-        evento_id: this.eventoFiltro ?? undefined
-      });
+      };
+      if (this.eventoFiltro != null) {
+        filters.evento_id = this.eventoFiltro;
+      } else if (this.authService.isOrganizador()) {
+        const eventoIds = this.eventos.map((evento) => evento.id);
+        if (eventoIds.length === 0) {
+          this.productos = [];
+          this.total = 0;
+          this.loading = false;
+          this.cdr.detectChanges();
+          return;
+        }
+        filters.evento_ids = eventoIds;
+      }
+
+      const res: PaginatedResponse<Producto> = await this.productosService.getProductos(filters);
       this.productos = res.data;
       this.total = res.total;
     } catch (err) {
@@ -79,16 +111,12 @@ export class Productos implements OnInit {
     this.formData = producto
       ? { ...producto }
       : { activo: true, es_licor: false, cantidad_total: 0, cantidad_vendidas: 0, orden: 0, precio: 0, precio_evento: 0 };
-    this.precioPreventaInput = this.formatMiles(this.formData.precio);
-    this.precioEventoInput = this.formatMiles(this.formData.precio_evento);
     this.showModal = true;
   }
 
   closeModal(): void {
     this.showModal = false;
     this.editingProducto = null;
-    this.precioPreventaInput = '';
-    this.precioEventoInput = '';
   }
 
   async saveProducto(): Promise<void> {
@@ -137,43 +165,6 @@ export class Productos implements OnInit {
   }
 
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
-  }
-
-  onPrecioInputChange(tipo: 'preventa' | 'evento', rawValue: string): void {
-    const digits = (rawValue ?? '').replace(/\D/g, '');
-    const formatted = this.formatMilesFromDigits(digits);
-
-    if (tipo === 'preventa') {
-      this.precioPreventaInput = formatted;
-      this.formData.precio = digits.length > 0 ? Number(digits) : 0;
-      return;
-    }
-
-    this.precioEventoInput = formatted;
-    this.formData.precio_evento = digits.length > 0 ? Number(digits) : undefined;
-  }
-
-  private formatMiles(value: number | null | undefined): string {
-    if (value === null || value === undefined || !Number.isFinite(Number(value))) {
-      return '';
-    }
-    return new Intl.NumberFormat('es-CO', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-      useGrouping: true
-    }).format(Number(value));
-  }
-
-  private formatMilesFromDigits(digits: string): string {
-    if (!digits) return '';
-    const numeric = Number(digits);
-    if (!Number.isFinite(numeric)) return '';
-    return this.formatMiles(numeric);
+    return `$${formatGroupedNumber(value)}`;
   }
 }

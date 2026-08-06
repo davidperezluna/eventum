@@ -15,6 +15,7 @@ import { DetalleEventoStateService } from '../../services/detalle-evento-state.s
 import { CarritoCompraService, ItemCarritoEvento } from '../../services/carrito-compra.service';
 import { ProductosService } from '../../services/productos.service';
 import { EventoProductosTab } from '../../components/evento-productos-tab/evento-productos-tab';
+import { EvNotice } from '../../components/ev-notice';
 import {
   Evento,
   TipoBoleta,
@@ -37,7 +38,7 @@ import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-detalle-evento',
-  imports: [CommonModule, FormsModule, RouterModule, DateFormatPipe, SafePipe, EventoProductosTab],
+  imports: [CommonModule, FormsModule, RouterModule, DateFormatPipe, SafePipe, EventoProductosTab, EvNotice],
   templateUrl: './detalle-evento.html',
   styleUrl: './detalle-evento.css',
   schemas: [CUSTOM_ELEMENTS_SCHEMA]

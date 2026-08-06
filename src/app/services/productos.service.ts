@@ -71,6 +71,9 @@ export class ProductosService {
     if (filters.evento_id != null) {
       query = query.eq('evento_id', filters.evento_id);
     }
+    if (filters.evento_ids?.length) {
+      query = query.in('evento_id', filters.evento_ids);
+    }
     if (filters.activo != null) {
       query = query.eq('activo', filters.activo);
     }

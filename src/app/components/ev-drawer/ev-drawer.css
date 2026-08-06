@@ -1,0 +1,237 @@
+/* ============================================
+   EV DRAWER — Shell lateral reutilizable
+   ============================================ */
+
+html.ev-drawer-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+  scrollbar-gutter: auto;
+}
+
+html.ev-drawer-open body {
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+
+.ev-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 1095;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.ev-drawer--visible {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.ev-drawer__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.38);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.24s ease;
+}
+
+.ev-drawer--visible .ev-drawer__backdrop {
+  opacity: 1;
+}
+
+.ev-drawer--closing .ev-drawer__backdrop {
+  opacity: 0;
+}
+
+.ev-drawer__panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  overflow: hidden;
+  background: #f8fafc;
+  border-left: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow:
+    -12px 0 40px rgba(15, 23, 42, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.45) inset;
+  transform: translateX(100%);
+  transition:
+    transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, width;
+}
+
+.ev-drawer--open .ev-drawer__panel {
+  transform: translateX(0);
+}
+
+/* ---- Sizes ---- */
+
+.ev-drawer__panel--sm {
+  width: min(100%, 22.5rem);
+}
+
+.ev-drawer__panel--md {
+  width: min(100%, 30rem);
+}
+
+.ev-drawer__panel--lg {
+  width: min(100%, 40rem);
+}
+
+.ev-drawer__panel--xl {
+  width: min(100%, 50rem);
+}
+
+.ev-drawer__panel--fullscreen {
+  width: 100%;
+  border-left: 0;
+}
+
+/* ---- Header ---- */
+
+.ev-drawer__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.95rem 1rem 0.85rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  background: rgba(255, 255, 255, 0.94);
+  flex-shrink: 0;
+}
+
+.ev-drawer__header-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.ev-drawer__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-primary, #7c3aed) 12%, #fff);
+  color: var(--color-primary, #7c3aed);
+  flex-shrink: 0;
+}
+
+.ev-drawer__icon .material-icons {
+  font-size: 1.35rem;
+}
+
+.ev-drawer__header-copy {
+  min-width: 0;
+}
+
+.ev-drawer__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ev-form-ink, #0f172a);
+  line-height: 1.25;
+}
+
+.ev-drawer__description {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--ev-form-muted, #64748b);
+  line-height: 1.45;
+}
+
+.ev-drawer__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.ev-drawer__close:hover {
+  background: rgba(15, 23, 42, 0.06);
+  color: #0f172a;
+}
+
+.ev-drawer__close .material-icons {
+  font-size: 1.25rem;
+}
+
+/* ---- Content / body ---- */
+
+.ev-drawer__content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.ev-drawer__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.ev-drawer__body--hidden {
+  visibility: hidden;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ev-drawer-skeleton {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* ---- Responsive ---- */
+
+@media (max-width: 768px) {
+  .ev-drawer__panel--sm,
+  .ev-drawer__panel--md,
+  .ev-drawer__panel--lg,
+  .ev-drawer__panel--xl {
+    width: 100%;
+    border-left: 0;
+    border-radius: 16px 16px 0 0;
+    top: auto;
+    max-height: 92vh;
+    transform: translateY(100%);
+  }
+
+  .ev-drawer--open .ev-drawer__panel--sm,
+  .ev-drawer--open .ev-drawer__panel--md,
+  .ev-drawer--open .ev-drawer__panel--lg,
+  .ev-drawer--open .ev-drawer__panel--xl {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ev-drawer__panel,
+  .ev-drawer__backdrop {
+    transition: none;
+  }
+}

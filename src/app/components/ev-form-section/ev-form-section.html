@@ -1,0 +1,9 @@
+<section class="ev-form-section">
+  <header class="ev-form-section__head">
+    <h3 class="ev-form-section__title">{{ title }}</h3>
+    <p *ngIf="description" class="ev-form-section__desc">{{ description }}</p>
+  </header>
+  <div class="ev-form-section__body">
+    <ng-content />
+  </div>
+</section>

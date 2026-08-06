@@ -72,29 +72,6 @@
   font-weight: 700;
 }
 
-.admin-banner {
-  display: flex;
-  gap: var(--spacing-sm);
-  align-items: flex-start;
-  padding: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
-  border-radius: var(--border-radius-md);
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  color: #1e3a8a;
-}
-
-.admin-banner .material-icons {
-  font-size: 1.4rem;
-  margin-top: 0.1rem;
-}
-
-.admin-banner p {
-  margin: 0.25rem 0 0;
-  font-size: 0.9rem;
-  color: #1e40af;
-}
-
 .filters-card {
   display: flex;
   flex-wrap: wrap;

@@ -115,24 +115,21 @@
           <div class="form-row">
             <div class="form-group">
               <label for="prod-precio">Precio preventa (COP)</label>
-              <input
+              <ev-number-input
                 id="prod-precio"
-                type="text"
-                inputmode="numeric"
-                [ngModel]="precioPreventaInput"
-                (ngModelChange)="onPrecioInputChange('preventa', $event)"
+                mode="integer"
+                [min]="0"
+                [(ngModel)]="formData.precio"
                 name="precio"
-                required
               />
             </div>
             <div class="form-group">
               <label for="prod-precio-evento">Precio en evento (COP)</label>
-              <input
+              <ev-number-input
                 id="prod-precio-evento"
-                type="text"
-                inputmode="numeric"
-                [ngModel]="precioEventoInput"
-                (ngModelChange)="onPrecioInputChange('evento', $event)"
+                mode="integer"
+                [min]="0"
+                [(ngModel)]="formData.precio_evento"
                 name="precio_evento"
               />
             </div>
@@ -148,11 +145,23 @@
           <div class="form-row">
             <div class="form-group">
               <label for="prod-stock">Cantidad total</label>
-              <input id="prod-stock" type="number" [(ngModel)]="formData.cantidad_total" name="cantidad_total" min="0" />
+              <ev-number-input
+                id="prod-stock"
+                mode="integer"
+                [min]="0"
+                [(ngModel)]="formData.cantidad_total"
+                name="cantidad_total"
+              />
             </div>
             <div class="form-group">
               <label for="prod-limite">Límite por persona</label>
-              <input id="prod-limite" type="number" [(ngModel)]="formData.limite_por_persona" name="limite_por_persona" min="1" />
+              <ev-number-input
+                id="prod-limite"
+                mode="integer"
+                [min]="1"
+                [(ngModel)]="formData.limite_por_persona"
+                name="limite_por_persona"
+              />
             </div>
           </div>
 

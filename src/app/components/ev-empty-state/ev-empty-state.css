@@ -1,0 +1,48 @@
+.ev-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px dashed rgba(15, 23, 42, 0.12);
+}
+
+.ev-empty-state__icon {
+  font-size: 2.75rem;
+  color: #94a3b8;
+  margin-bottom: 0.75rem;
+}
+
+.ev-empty-state__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.ev-empty-state__description {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #64748b;
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+.ev-empty-state__cta:not(:empty) {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  margin-top: 0.75rem;
+}
+
+.ev-empty-state__cta:not(:empty) .ev-button {
+  width: 100%;
+}
+
+.ev-empty-state__cta:not(:empty) .material-icons {
+  font-size: 1.15rem;
+  margin-right: 0.35rem;
+}

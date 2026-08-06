@@ -1,0 +1,48 @@
+<div class="ev-panel">
+  <div class="ev-panel__scroll">
+    <p class="ev-panel__lead">
+      Esta imagen aparece en listados, tarjetas y la página pública del evento.
+    </p>
+
+    <ev-panel-form>
+      <div class="ev-upload ev-panel-form">
+        <input
+          #fileInput
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          class="ev-panel__file-input"
+          (change)="onFileSelected($event)"
+        />
+
+        <button type="button" class="ev-upload__trigger" (click)="triggerSelect()" [disabled]="saving">
+          <span class="material-icons" aria-hidden="true">upload</span>
+          Seleccionar imagen
+        </button>
+
+        <p class="ev-field__hint">JPG, PNG o WebP · Máximo 10 MB</p>
+
+        <div *ngIf="hasPreview" class="ev-upload__preview">
+          <img [src]="previewUrl!" [alt]="'Vista previa de ' + data.eventoTitulo" />
+          <button
+            type="button"
+            class="ev-upload__remove"
+            (click)="removeImage()"
+            [disabled]="saving"
+            aria-label="Quitar imagen"
+          >
+            <span class="material-icons" aria-hidden="true">close</span>
+          </button>
+        </div>
+
+        <p *ngIf="!hasPreview && markedForRemoval" class="ev-field__hint ev-field__hint--danger">
+          La imagen se eliminará al guardar.
+        </p>
+      </div>
+    </ev-panel-form>
+  </div>
+
+  <ev-drawer-footer>
+    <ev-button variant="ghost" [disabled]="saving" (click)="closePanel()">Cerrar</ev-button>
+    <ev-button variant="primary" [disabled]="!canSave" [loading]="saving" (click)="save()">Guardar</ev-button>
+  </ev-drawer-footer>
+</div>

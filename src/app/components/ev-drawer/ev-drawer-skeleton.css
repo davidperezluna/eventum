@@ -1,0 +1,34 @@
+.ev-drawer-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem;
+}
+
+.ev-drawer-skeleton__block {
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.06) 0%,
+    rgba(15, 23, 42, 0.1) 45%,
+    rgba(15, 23, 42, 0.06) 90%
+  );
+  background-size: 220% 100%;
+  animation: evDrawerSkeleton 1.2s ease-in-out infinite;
+}
+
+@keyframes evDrawerSkeleton {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ev-drawer-skeleton__block {
+    animation: none;
+    background: rgba(15, 23, 42, 0.08);
+  }
+}

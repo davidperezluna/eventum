@@ -23,6 +23,14 @@
           <a class="org-btn org-btn--ghost" href="#como-funciona" (click)="scrollToComoFunciona($event)">
             Ver cómo funciona
           </a>
+          <a
+            *ngIf="showcaseModeEnabled"
+            class="org-btn org-btn--ghost"
+            routerLink="/login-admin"
+            [queryParams]="{ returnUrl: '/dashboard-organizador' }"
+          >
+            Acceder al demo
+          </a>
         </div>
         <ul class="org-promises" aria-label="Promesas de Eventum">
           <li *ngFor="let promise of promises">

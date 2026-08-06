@@ -1,0 +1,1505 @@
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+
+import { CommonModule } from '@angular/common';
+
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+
+import { EventosService } from '../../services/eventos.service';
+
+import { BoletasService } from '../../services/boletas.service';
+
+import { ProductosService } from '../../services/productos.service';
+
+import { CuponesService } from '../../services/cupones.service';
+
+import { DashboardService } from '../../services/dashboard.service';
+
+import { DashboardOrganizadorService } from '../../services/dashboard-organizador.service';
+
+import { ReportesService, ReporteEvento } from '../../services/reportes.service';
+
+import { AuthService } from '../../services/auth.service';
+
+import { AlertService } from '../../services/alert.service';
+
+import { DrawerService } from '../../core/drawer';
+
+import { openEventoCuponesDrawer } from '../../panels/evento-cupones';
+import { openEventoImagenDrawer } from '../../panels/evento-imagen';
+import { openEventoCobrosDrawer } from '../../panels/evento-cobros';
+import { openEventoBoletasDrawer } from '../../panels/evento-boletas';
+import { openEventoProductosDrawer } from '../../panels/evento-productos';
+import { openEventoFechasDrawer } from '../../panels/evento-fechas';
+
+import { Evento, TipoBoleta, TipoEstadoEvento, DashboardStats, CuponDescuento } from '../../types';
+
+import { DateFormatPipe } from '../../pipes/date-format.pipe';
+
+import {
+
+  buildEventoReadiness,
+
+  EventoReadinessResult,
+
+  EventoReadinessStep,
+
+  getNextStepActionLabel,
+
+  getNextStepMessage,
+
+} from '../../core/evento-readiness';
+
+import {
+
+  buildEventoTimeline,
+
+  EventoTimelineItem,
+
+  formatTimelineDate,
+
+} from '../../core/evento-timeline';
+
+
+
+interface LifecycleStep {
+
+  value: TipoEstadoEvento;
+
+  label: string;
+
+}
+
+
+
+export interface OpsAction {
+
+  id: string;
+
+  label: string;
+
+  icon: string;
+
+  badge?: string | null;
+
+  disabled?: boolean;
+
+  dock?: boolean;
+
+}
+
+
+
+@Component({
+
+  selector: 'app-evento-operaciones',
+
+  standalone: true,
+
+  imports: [CommonModule, RouterLink, DateFormatPipe],
+
+  templateUrl: './evento-operaciones.html',
+
+  styleUrls: ['./evento-operaciones.css', '../eventos/eventos.css'],
+
+})
+
+export class EventoOperaciones implements OnInit {
+
+  evento: Evento | null = null;
+
+  tiposBoleta: TipoBoleta[] = [];
+
+  cupones: CuponDescuento[] = [];
+
+  tieneProductos = false;
+
+  productosCount = 0;
+
+  stats: DashboardStats | null = null;
+
+  reporte: ReporteEvento | null = null;
+
+  timeline: EventoTimelineItem[] = [];
+
+  readiness: EventoReadinessResult | null = null;
+
+  loading = true;
+
+  savingEstado = false;
+
+  publishing = false;
+
+  showMoreSheet = false;
+
+  eventoId = 0;
+
+  /** Evita caché del navegador en la imagen del hero tras guardar en el drawer. */
+  heroImagenVersion = 0;
+
+
+
+  readonly lifecycleSteps: LifecycleStep[] = [
+
+    { value: TipoEstadoEvento.BORRADOR, label: 'Borrador' },
+
+    { value: TipoEstadoEvento.PUBLICADO, label: 'Publicado' },
+
+    { value: TipoEstadoEvento.EN_CURSO, label: 'En curso' },
+
+    { value: TipoEstadoEvento.FINALIZADO, label: 'Finalizado' },
+
+    { value: TipoEstadoEvento.CANCELADO, label: 'Cancelado' },
+
+  ];
+
+
+
+  constructor(
+
+    private route: ActivatedRoute,
+
+    private router: Router,
+
+    public authService: AuthService,
+
+    private eventosService: EventosService,
+
+    private boletasService: BoletasService,
+
+    private productosService: ProductosService,
+
+    private cuponesService: CuponesService,
+
+    private dashboardService: DashboardService,
+
+    private dashboardOrganizadorService: DashboardOrganizadorService,
+
+    private reportesService: ReportesService,
+
+    private alertService: AlertService,
+
+    private drawerService: DrawerService,
+
+    private cdr: ChangeDetectorRef,
+
+  ) {}
+
+
+
+  get isShowcaseMode(): boolean {
+
+    return this.authService.isShowcaseOrganizador();
+
+  }
+
+
+
+  get ventasBlocked(): boolean {
+
+    return this.isShowcaseMode;
+
+  }
+
+
+
+  ngOnInit(): void {
+
+    this.route.paramMap.subscribe((params) => {
+
+      const id = Number(params.get('id'));
+
+      if (!id || id <= 0) {
+
+        void this.router.navigate(['/eventos']);
+
+        return;
+
+      }
+
+      this.eventoId = id;
+
+      void this.loadPage();
+
+    });
+
+  }
+
+
+
+  async loadPage(): Promise<void> {
+
+    this.loading = true;
+
+    this.cdr.detectChanges();
+
+    try {
+
+      const evento = await this.eventosService.getEventoById(this.eventoId);
+
+      if (!this.canAccessEvento(evento)) {
+
+        this.alertService.warning('Acceso denegado', 'No tienes permiso para administrar este evento.');
+
+        void this.router.navigate(['/eventos']);
+
+        return;
+
+      }
+
+      this.evento = evento;
+
+
+
+      const orgId = this.authService.isOrganizador() ? this.authService.getUsuarioId() : null;
+
+
+
+      const [tipos, tieneProductos, cupones, resumenMap, stats, reporte] = await Promise.all([
+
+        this.boletasService.getTiposBoleta(this.eventoId).catch(() => [] as TipoBoleta[]),
+
+        this.productosService.eventoTieneProductos(this.eventoId).catch(() => false),
+
+        this.cuponesService.getCuponesByEvento(this.eventoId).catch(() => [] as CuponDescuento[]),
+
+        this.productosService.getResumenProductosPorEvento([this.eventoId]).catch(() => new Map()),
+
+        orgId != null
+
+          ? this.dashboardOrganizadorService.getStats(orgId, this.eventoId).catch(() => null)
+
+          : this.dashboardService.getStats(this.eventoId).catch(() => null),
+
+        this.reportesService.getReporteEvento(this.eventoId).catch(() => null),
+
+      ]);
+
+
+
+      this.tiposBoleta = tipos;
+
+      this.tieneProductos = tieneProductos;
+
+      this.cupones = cupones;
+
+      this.productosCount = resumenMap.get(this.eventoId)?.cantidad ?? 0;
+
+      this.stats = stats;
+
+      this.reporte = reporte;
+
+      this.rebuildReadiness();
+
+      this.rebuildTimeline();
+
+      if (this.route.snapshot.queryParamMap.get('open') === 'boletas') {
+
+        this.openBoletasDrawer();
+
+        void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+
+      } else if (this.route.snapshot.queryParamMap.get('open') === 'imagen') {
+
+        this.openImagenDrawer();
+
+        void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+
+      } else if (this.route.snapshot.queryParamMap.get('open') === 'productos') {
+
+        this.openProductosDrawer();
+
+        void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+
+      } else if (this.route.snapshot.queryParamMap.get('open') === 'fechas') {
+
+        this.openFechasDrawer();
+
+        void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+
+      }
+
+    } catch (err) {
+
+      console.error('Error cargando centro de operaciones:', err);
+
+      this.alertService.error('Error', 'No se pudo cargar el evento.');
+
+      void this.router.navigate(['/eventos']);
+
+    } finally {
+
+      this.loading = false;
+
+      this.cdr.detectChanges();
+
+    }
+
+  }
+
+
+
+  private canAccessEvento(evento: Evento): boolean {
+
+    if (!this.authService.isOrganizador()) {
+
+      return true;
+
+    }
+
+    const orgId = this.authService.getUsuarioId();
+
+    return orgId != null && evento.organizador_id === orgId;
+
+  }
+
+
+
+  private rebuildReadiness(): void {
+
+    if (!this.evento) {
+
+      this.readiness = null;
+
+      return;
+
+    }
+
+    this.readiness = buildEventoReadiness(this.evento, this.tiposBoleta, this.tieneProductos);
+
+  }
+
+
+
+  private rebuildTimeline(): void {
+
+    if (!this.evento) {
+
+      this.timeline = [];
+
+      return;
+
+    }
+
+    this.timeline = buildEventoTimeline(this.evento, this.reporte);
+
+  }
+
+
+
+  get opsActions(): OpsAction[] {
+
+    const tiposCount = this.tiposBoleta.length;
+
+    const cuponesCount = this.cupones.length;
+
+
+
+    return [
+
+      {
+
+        id: 'boletas',
+
+        label: 'Boletas',
+
+        icon: 'confirmation_number',
+
+        badge: tiposCount > 0 ? `${tiposCount} tipo${tiposCount === 1 ? '' : 's'}` : null,
+
+        dock: true,
+
+      },
+
+      {
+
+        id: 'productos',
+
+        label: 'Productos',
+
+        icon: 'local_bar',
+
+        badge: this.productosCount > 0 ? `${this.productosCount} producto${this.productosCount === 1 ? '' : 's'}` : null,
+
+        dock: true,
+
+      },
+
+      {
+
+        id: 'escanear',
+
+        label: 'Escanear',
+
+        icon: 'qr_code_scanner',
+
+        dock: true,
+
+      },
+
+      {
+
+        id: 'ventas',
+
+        label: 'Ventas',
+
+        icon: 'receipt_long',
+
+        badge: this.reporte && this.reporte.boletas_vendidas > 0
+
+          ? `${this.reporte.boletas_vendidas} venta${this.reporte.boletas_vendidas === 1 ? '' : 's'}`
+
+          : null,
+
+        disabled: this.ventasBlocked,
+
+      },
+
+      {
+
+        id: 'cupones',
+
+        label: 'Cupones',
+
+        icon: 'sell',
+
+        badge: cuponesCount > 0 ? `${cuponesCount} cupón${cuponesCount === 1 ? '' : 'es'}` : null,
+
+      },
+
+      {
+
+        id: 'mas',
+
+        label: 'Más',
+
+        icon: 'more_horiz',
+
+        dock: true,
+
+      },
+
+    ];
+
+  }
+
+
+
+  get dockActions(): OpsAction[] {
+
+    return this.opsActions.filter((a) => a.dock);
+
+  }
+
+
+
+  get barActions(): OpsAction[] {
+
+    return this.opsActions.filter((a) => a.id !== 'mas');
+
+  }
+
+
+
+  get hasSales(): boolean {
+
+    return (this.reporte?.boletas_vendidas ?? 0) > 0;
+
+  }
+
+
+
+  get cuponesUsados(): number {
+
+    return this.cupones.reduce((sum, c) => sum + (c.usos_actuales ?? 0), 0);
+
+  }
+
+
+
+  get ingresosTrend(): { label: string; positive: boolean } | null {
+
+    if (!this.stats) return null;
+
+    const hoy = this.stats.ingresos_dia_actual ?? 0;
+
+    const ayer = this.stats.ingresos_dia_anterior ?? 0;
+
+    if (hoy === 0 && ayer === 0) return null;
+
+    if (ayer === 0) {
+
+      return { label: 'Hoy con ventas', positive: true };
+
+    }
+
+    const pct = Math.round(((hoy - ayer) / ayer) * 100);
+
+    if (pct === 0) return { label: 'Igual que ayer', positive: true };
+
+    return {
+
+      label: `${pct > 0 ? '+' : ''}${pct}% vs ayer`,
+
+      positive: pct >= 0,
+
+    };
+
+  }
+
+
+
+  get estadoActual(): TipoEstadoEvento {
+
+    return (this.evento?.estado as TipoEstadoEvento) ?? TipoEstadoEvento.BORRADOR;
+
+  }
+
+
+
+  get lifecycleIndex(): number {
+
+    return this.lifecycleSteps.findIndex((s) => s.value === this.estadoActual);
+
+  }
+
+
+
+  get estadoLabel(): string {
+
+    return this.lifecycleSteps.find((s) => s.value === this.estadoActual)?.label ?? 'Sin estado';
+
+  }
+
+
+
+  get contextMessage(): string {
+
+    switch (this.estadoActual) {
+
+      case TipoEstadoEvento.PUBLICADO:
+
+        return 'Tu evento ya está disponible y puede recibir ventas.';
+
+      case TipoEstadoEvento.EN_CURSO:
+
+        return 'El evento está en operación.';
+
+      case TipoEstadoEvento.FINALIZADO:
+
+        return 'Consulta estadísticas o duplica este evento.';
+
+      case TipoEstadoEvento.CANCELADO:
+
+        return 'Este evento fue cancelado.';
+
+      default:
+
+        return 'Tu evento todavía no es visible para el público.';
+
+    }
+
+  }
+
+
+
+  get contextBannerClass(): string {
+
+    switch (this.estadoActual) {
+
+      case TipoEstadoEvento.PUBLICADO:
+
+        return 'ev-ops-hero__context--published';
+
+      case TipoEstadoEvento.EN_CURSO:
+
+        return 'ev-ops-hero__context--live';
+
+      case TipoEstadoEvento.FINALIZADO:
+
+        return 'ev-ops-hero__context--done';
+
+      case TipoEstadoEvento.CANCELADO:
+
+        return 'ev-ops-hero__context--cancelled';
+
+      default:
+
+        return 'ev-ops-hero__context--draft';
+
+    }
+
+  }
+
+
+
+  get primaryActionLabel(): string {
+
+    switch (this.estadoActual) {
+
+      case TipoEstadoEvento.PUBLICADO:
+
+        return this.evento?.activo ? 'Despublicar' : 'Activar en catálogo';
+
+      case TipoEstadoEvento.EN_CURSO:
+
+        return 'Ir al escáner';
+
+      case TipoEstadoEvento.FINALIZADO:
+
+      case TipoEstadoEvento.CANCELADO:
+
+        return 'Ver evento';
+
+      default:
+
+        return 'Publicar evento';
+
+    }
+
+  }
+
+
+
+  get showSecondaryVerEvento(): boolean {
+
+    return this.estadoActual !== TipoEstadoEvento.FINALIZADO &&
+
+      this.estadoActual !== TipoEstadoEvento.CANCELADO;
+
+  }
+
+
+
+  get lugarLabel(): string {
+
+    const lugar = this.evento?.lugar;
+
+    if (!lugar?.nombre) return 'Sin lugar asignado';
+
+    return lugar.ciudad ? `${lugar.nombre}, ${lugar.ciudad}` : lugar.nombre;
+
+  }
+
+
+
+  get iniciales(): string {
+
+    const titulo = this.evento?.titulo?.trim() ?? '';
+
+    const words = titulo.split(/\s+/).filter(Boolean);
+
+    if (words.length === 0) return 'EV';
+
+    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+
+    return `${words[0][0]}${words[1][0]}`.toUpperCase();
+
+  }
+
+
+
+  get nextStepMessage(): string {
+
+    if (!this.readiness?.nextStep) {
+
+      return 'Todo está configurado correctamente.';
+
+    }
+
+    return getNextStepMessage(this.readiness.nextStep);
+
+  }
+
+
+
+  get nextStepActionLabel(): string {
+
+    if (!this.readiness?.nextStep) {
+
+      return 'Ver evento';
+
+    }
+
+    return getNextStepActionLabel(this.readiness.nextStep);
+
+  }
+
+
+
+  formatCurrency(value: number | undefined | null): string {
+
+    const n = Number(value ?? 0);
+
+    if (!Number.isFinite(n)) return '$0';
+
+    if (n >= 1_000_000) {
+
+      return `$${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+
+    }
+
+    if (n >= 1_000) {
+
+      return `$${Math.round(n / 1_000)}K`;
+
+    }
+
+    return new Intl.NumberFormat('es-CO', {
+
+      style: 'currency',
+
+      currency: 'COP',
+
+      maximumFractionDigits: 0,
+
+    }).format(n);
+
+  }
+
+
+
+  formatTimelineItemDate(item: EventoTimelineItem): string | null {
+
+    return formatTimelineDate(item.date);
+
+  }
+
+
+
+  isLifecycleStepActive(step: LifecycleStep): boolean {
+
+    return step.value === this.estadoActual;
+
+  }
+
+
+
+  isLifecycleStepCompleted(step: LifecycleStep): boolean {
+
+    const idx = this.lifecycleSteps.findIndex((s) => s.value === step.value);
+
+    return idx >= 0 && idx < this.lifecycleIndex;
+
+  }
+
+
+
+  isLifecycleStepDisabled(step: LifecycleStep): boolean {
+
+    if (this.savingEstado) return true;
+
+    if (this.isShowcaseMode && step.value === TipoEstadoEvento.PUBLICADO) {
+
+      return true;
+
+    }
+
+    return false;
+
+  }
+
+
+
+  onOpsAction(action: OpsAction): void {
+
+    if (action.disabled) {
+
+      if (action.id === 'ventas') {
+
+        this.alertService.info('Modo demo', 'Las ventas no están disponibles en modo demo.');
+
+      }
+
+      return;
+
+    }
+
+
+
+    this.showMoreSheet = false;
+
+
+
+    switch (action.id) {
+
+      case 'boletas':
+
+        this.openBoletasDrawer();
+
+        break;
+
+      case 'productos':
+
+        this.openProductosDrawer();
+
+        break;
+
+      case 'escanear':
+
+        void this.router.navigate(['/escanear-qr']);
+
+        break;
+
+      case 'ventas':
+
+        void this.router.navigate(['/ventas'], { queryParams: { eventoId: this.eventoId } });
+
+        break;
+
+      case 'cupones':
+
+        this.openCuponesDrawer();
+
+        break;
+
+      case 'mas':
+        if (typeof window !== 'undefined' && window.matchMedia('(min-width: 769px)').matches) {
+          document.getElementById('ev-ops-advanced-title')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          this.showMoreSheet = !this.showMoreSheet;
+        }
+        break;
+
+    }
+
+  }
+
+
+
+  closeMoreSheet(): void {
+
+    this.showMoreSheet = false;
+
+  }
+
+
+
+  openCuponesDrawer(): void {
+
+    if (!this.evento) {
+
+      return;
+
+    }
+
+    this.showMoreSheet = false;
+
+    const ref = openEventoCuponesDrawer(this.drawerService, this.evento);
+
+    void ref.afterClosed().then((changed) => {
+
+      if (changed) {
+
+        void this.loadPage();
+
+      }
+
+    });
+
+  }
+
+
+
+  openImagenDrawer(): void {
+
+    if (!this.evento) {
+
+      return;
+
+    }
+
+    this.showMoreSheet = false;
+
+    const ref = openEventoImagenDrawer(this.drawerService, this.evento);
+
+    void ref.afterClosed().then((result) => {
+
+      if (!result?.changed || !this.evento) {
+
+        return;
+
+      }
+
+      this.heroImagenVersion += 1;
+
+      this.evento = {
+
+        ...this.evento,
+
+        imagen_principal: result.imagenUrl ?? undefined,
+
+      };
+
+      this.rebuildReadiness();
+
+      this.cdr.markForCheck();
+
+      this.cdr.detectChanges();
+
+    });
+
+  }
+
+
+
+  heroImagenSrc(url?: string | null): string | null {
+
+    const trimmed = url?.trim();
+
+    if (!trimmed) {
+
+      return null;
+
+    }
+
+    const separator = trimmed.includes('?') ? '&' : '?';
+
+    return `${trimmed}${separator}v=${this.heroImagenVersion}`;
+
+  }
+
+
+
+  openCobrosDrawer(): void {
+
+    if (!this.evento) {
+
+      return;
+
+    }
+
+    this.showMoreSheet = false;
+
+    const ref = openEventoCobrosDrawer(this.drawerService, this.evento);
+
+    void ref.afterClosed().then((result) => {
+
+      if (!result?.changed || !this.evento) {
+
+        return;
+
+      }
+
+      this.evento = {
+
+        ...this.evento,
+
+        es_gratis: result.es_gratis ?? this.evento.es_gratis,
+
+        porcentaje_servicio: result.porcentaje_servicio ?? this.evento.porcentaje_servicio,
+
+        wompi_cuenta_id: result.wompi_cuenta_id ?? null,
+
+      };
+
+      this.rebuildReadiness();
+
+      this.cdr.detectChanges();
+
+    });
+
+  }
+
+
+
+  openFechasDrawer(): void {
+
+    if (!this.evento) {
+
+      return;
+
+    }
+
+    this.showMoreSheet = false;
+
+    const ref = openEventoFechasDrawer(this.drawerService, this.evento);
+
+    void ref.afterClosed().then(async (result) => {
+
+      if (!result?.changed || !this.evento) {
+
+        return;
+
+      }
+
+      try {
+
+        this.evento = await this.eventosService.getEventoById(this.eventoId);
+
+        this.rebuildReadiness();
+
+        this.rebuildTimeline();
+
+        this.cdr.detectChanges();
+
+      } catch {
+
+        this.evento = {
+
+          ...this.evento,
+
+          lugar_id: result.lugar_id ?? undefined,
+
+          edad_minima: result.edad_minima ?? undefined,
+
+          fecha_inicio: result.fecha_inicio ?? this.evento.fecha_inicio,
+
+          fecha_fin: result.fecha_fin ?? this.evento.fecha_fin,
+
+          fecha_venta_inicio: result.fecha_venta_inicio ?? this.evento.fecha_venta_inicio,
+
+          fecha_venta_fin: result.fecha_venta_fin ?? this.evento.fecha_venta_fin,
+
+        };
+
+        this.rebuildReadiness();
+
+        this.rebuildTimeline();
+
+        this.cdr.detectChanges();
+
+      }
+
+    });
+
+  }
+
+
+
+  openBoletasDrawer(): void {
+
+    if (!this.evento) {
+
+      return;
+
+    }
+
+    this.showMoreSheet = false;
+
+    const ref = openEventoBoletasDrawer(this.drawerService, this.evento);
+
+    void ref.afterClosed().then((result) => {
+
+      if (!result?.changed) {
+
+        return;
+
+      }
+
+      if (result.tiposBoleta) {
+
+        this.tiposBoleta = result.tiposBoleta;
+
+      } else {
+
+        void this.refreshTiposBoleta();
+
+        return;
+
+      }
+
+      this.rebuildReadiness();
+
+      this.cdr.detectChanges();
+
+    });
+
+  }
+
+
+
+  openProductosDrawer(): void {
+
+    if (!this.evento) {
+
+      return;
+
+    }
+
+    this.showMoreSheet = false;
+
+    const ref = openEventoProductosDrawer(this.drawerService, this.evento);
+
+    void ref.afterClosed().then((result) => {
+
+      if (!result?.changed) {
+
+        return;
+
+      }
+
+      void this.refreshProductosResumen();
+
+    });
+
+  }
+
+
+
+  private async refreshProductosResumen(): Promise<void> {
+
+    try {
+
+      const [tieneProductos, resumenMap] = await Promise.all([
+
+        this.productosService.eventoTieneProductos(this.eventoId).catch(() => false),
+
+        this.productosService.getResumenProductosPorEvento([this.eventoId]).catch(() => new Map()),
+
+      ]);
+
+      this.tieneProductos = tieneProductos;
+
+      this.productosCount = resumenMap.get(this.eventoId)?.cantidad ?? 0;
+
+      this.rebuildReadiness();
+
+      this.cdr.detectChanges();
+
+    } catch {
+
+      /* noop */
+
+    }
+
+  }
+
+
+
+  private async refreshTiposBoleta(): Promise<void> {
+
+    try {
+
+      this.tiposBoleta = await this.boletasService.getTiposBoleta(this.eventoId);
+
+      this.rebuildReadiness();
+
+      this.cdr.detectChanges();
+
+    } catch {
+
+      /* noop */
+
+    }
+
+  }
+
+
+
+  goToAnalisis(): void {
+
+    void this.router.navigate(['/eventos', this.eventoId, 'inteligencia']);
+
+  }
+
+
+
+  goToLectores(): void {
+
+    void this.router.navigate(['/lectores-parametrizacion']);
+
+  }
+
+
+
+  goToEditarInfo(): void {
+
+    void this.router.navigate(['/eventos'], {
+
+      queryParams: { edit: this.eventoId, step: 0 },
+
+    });
+
+  }
+
+
+
+  async onLifecycleStepClick(step: LifecycleStep): Promise<void> {
+
+    if (!this.evento || this.isLifecycleStepDisabled(step) || step.value === this.estadoActual) {
+
+      return;
+
+    }
+
+    if (this.isShowcaseMode && step.value === TipoEstadoEvento.PUBLICADO) {
+
+      this.alertService.info('Modo demo', 'En modo demo no se publica al catálogo.');
+
+      return;
+
+    }
+
+    this.savingEstado = true;
+
+    this.cdr.detectChanges();
+
+    try {
+
+      const updated = await this.eventosService.updateEvento(this.evento.id, { estado: step.value });
+
+      this.evento = { ...this.evento, ...updated, lugar: this.evento.lugar };
+
+      this.rebuildReadiness();
+
+      this.rebuildTimeline();
+
+    } catch (err) {
+
+      console.error('Error actualizando estado:', err);
+
+      this.alertService.error('Error', 'No se pudo cambiar el estado del evento.');
+
+    } finally {
+
+      this.savingEstado = false;
+
+      this.cdr.detectChanges();
+
+    }
+
+  }
+
+
+
+  async onPrimaryAction(): Promise<void> {
+
+    if (!this.evento) return;
+
+
+
+    switch (this.estadoActual) {
+
+      case TipoEstadoEvento.EN_CURSO:
+
+        void this.router.navigate(['/escanear-qr']);
+
+        return;
+
+      case TipoEstadoEvento.FINALIZADO:
+
+      case TipoEstadoEvento.CANCELADO:
+
+        this.verEventoPublico();
+
+        return;
+
+      case TipoEstadoEvento.PUBLICADO:
+
+        await this.toggleCatalogo();
+
+        return;
+
+      default:
+
+        await this.publicarEvento();
+
+    }
+
+  }
+
+
+
+  async publicarEvento(): Promise<void> {
+
+    if (!this.evento) return;
+
+    if (this.isShowcaseMode) {
+
+      this.alertService.info('Modo demo', 'En modo demo no se publica al catálogo.');
+
+      return;
+
+    }
+
+    if (this.readiness && this.readiness.percent < 100) {
+
+      this.alertService.warning(
+
+        'Configuración incompleta',
+
+        `Completa los pasos pendientes (${this.readiness.pendingCount} restantes) antes de publicar.`,
+
+      );
+
+      return;
+
+    }
+
+    this.publishing = true;
+
+    this.cdr.detectChanges();
+
+    try {
+
+      const updated = await this.eventosService.updateEvento(this.evento.id, {
+
+        estado: TipoEstadoEvento.PUBLICADO,
+
+        activo: true,
+
+      });
+
+      this.evento = { ...this.evento, ...updated, lugar: this.evento.lugar };
+
+      this.rebuildReadiness();
+
+      this.rebuildTimeline();
+
+      this.alertService.success('Publicado', 'Tu evento ya está disponible en el catálogo.');
+
+    } catch (err) {
+
+      console.error('Error publicando evento:', err);
+
+      this.alertService.error('Error', 'No se pudo publicar el evento.');
+
+    } finally {
+
+      this.publishing = false;
+
+      this.cdr.detectChanges();
+
+    }
+
+  }
+
+
+
+  async toggleCatalogo(): Promise<void> {
+
+    if (!this.evento) return;
+
+    if (this.isShowcaseMode) {
+
+      this.alertService.info('Modo demo', 'En modo demo el evento no se publica al catálogo.');
+
+      return;
+
+    }
+
+    this.publishing = true;
+
+    this.cdr.detectChanges();
+
+    try {
+
+      const updated = await this.eventosService.updateEvento(this.evento.id, {
+
+        activo: !this.evento.activo,
+
+      });
+
+      this.evento = { ...this.evento, ...updated, lugar: this.evento.lugar };
+
+      this.rebuildReadiness();
+
+    } catch (err) {
+
+      console.error('Error actualizando catálogo:', err);
+
+      this.alertService.error('Error', 'No se pudo actualizar el catálogo.');
+
+    } finally {
+
+      this.publishing = false;
+
+      this.cdr.detectChanges();
+
+    }
+
+  }
+
+
+
+  verEventoPublico(): void {
+
+    if (!this.evento) return;
+
+    window.open(`/detalle-evento/${this.evento.id}`, '_blank', 'noopener,noreferrer');
+
+  }
+
+
+
+  onReadinessStepClick(step: EventoReadinessStep): void {
+
+    if (!this.evento) return;
+
+    if (step.complete && step.id !== 'publicacion' && step.id !== 'imagen' && step.id !== 'fechas' && step.id !== 'cobros' && step.id !== 'boletas' && step.id !== 'productos') {
+
+      return;
+
+    }
+
+    switch (step.action) {
+
+      case 'imagen':
+
+        this.openImagenDrawer();
+
+        break;
+
+      case 'cobros':
+
+        this.openCobrosDrawer();
+
+        break;
+
+      case 'boletas':
+
+        this.openBoletasDrawer();
+
+        break;
+
+      case 'fechas':
+
+        this.openFechasDrawer();
+
+        break;
+
+      case 'wizard':
+
+        void this.router.navigate(['/eventos'], {
+
+          queryParams: { edit: this.evento.id, step: step.wizardStep ?? 0 },
+
+        });
+
+        break;
+
+      case 'productos':
+
+        this.openProductosDrawer();
+
+        break;
+
+      case 'publish':
+
+        void this.publicarEvento();
+
+        break;
+
+    }
+
+  }
+
+
+
+  onNextStepAction(): void {
+
+    if (!this.readiness?.nextStep) {
+
+      this.verEventoPublico();
+
+      return;
+
+    }
+
+    this.onReadinessStepClick(this.readiness.nextStep);
+
+  }
+
+}
+
+

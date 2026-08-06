@@ -1,0 +1,428 @@
+<div class="ev-ops-page">
+  <div *ngIf="loading" class="ev-ops-loading" aria-busy="true">
+    <div class="ev-ops-loading__bar"></div>
+    <p>Cargando centro de operaciones…</p>
+  </div>
+
+  <ng-container *ngIf="!loading && evento as ev">
+    <header class="ev-ops-topbar">
+      <a routerLink="/eventos" class="ev-ops-back">
+        <span class="material-icons" aria-hidden="true">arrow_back</span>
+        Mis Eventos
+      </a>
+      <div class="ev-ops-topbar__actions">
+        <a
+          [routerLink]="['/eventos', eventoId, 'inteligencia']"
+          class="ev-hub-btn ev-hub-btn--inteligencia ev-hub-btn--topbar"
+        >
+          <span class="material-icons" aria-hidden="true">insights</span>
+          Inteligencia
+        </a>
+      </div>
+    </header>
+
+    <!-- 1. Hero + estado -->
+    <section class="ev-ops-hero" aria-labelledby="ev-ops-title">
+      <div class="ev-ops-hero__layout">
+        <div class="ev-ops-hero__media ev-ops-hero__media--editable" (click)="openImagenDrawer()" role="button" tabindex="0" (keydown.enter)="openImagenDrawer()" aria-label="Editar imagen del evento">
+          <img
+            *ngIf="heroImagenSrc(ev.imagen_principal) as heroSrc; else opsPlaceholder"
+            [src]="heroSrc"
+            [alt]="ev.titulo"
+          />
+          <ng-template #opsPlaceholder>
+            <div class="ev-ops-hero__placeholder" aria-hidden="true">
+              <span>{{ iniciales }}</span>
+            </div>
+          </ng-template>
+          <span class="ev-ops-hero__media-edit" aria-hidden="true">
+            <span class="material-icons">photo_camera</span>
+          </span>
+        </div>
+
+        <div class="ev-ops-hero__body">
+          <div class="ev-ops-hero__head">
+            <div>
+              <p class="ev-ops-hero__eyebrow">Centro de operaciones</p>
+              <h1 id="ev-ops-title" class="ev-ops-hero__title">{{ ev.titulo }}</h1>
+              <ul class="ev-ops-hero__meta">
+                <li>
+                  <span class="material-icons" aria-hidden="true">calendar_today</span>
+                  {{ ev.fecha_inicio | dateFormat:'short' }}
+                </li>
+                <li>
+                  <span class="material-icons" aria-hidden="true">place</span>
+                  {{ lugarLabel }}
+                </li>
+              </ul>
+            </div>
+            <div class="ev-ops-hero__actions">
+              <button
+                *ngIf="showSecondaryVerEvento"
+                type="button"
+                class="ev-btn-ghost ev-btn-sm"
+                (click)="verEventoPublico()"
+              >
+                Ver evento
+              </button>
+              <button
+                type="button"
+                class="ev-btn-primary ev-btn-sm"
+                [disabled]="publishing || savingEstado"
+                (click)="onPrimaryAction()"
+              >
+                {{ primaryActionLabel }}
+              </button>
+            </div>
+          </div>
+
+          <div class="ev-ops-hero__pills">
+            <span class="ev-pill" [ngClass]="{
+              'ev-pill--draft': estadoActual === 'borrador',
+              'ev-pill--published': estadoActual === 'publicado',
+              'ev-pill--live': estadoActual === 'en_curso',
+              'ev-pill--done': estadoActual === 'finalizado',
+              'ev-pill--cancelled': estadoActual === 'cancelado'
+            }">
+              {{ estadoLabel }}
+            </span>
+            <span class="ev-pill" [class.ev-pill--inactive]="!ev.activo">
+              {{ ev.activo ? 'En catálogo' : 'Fuera de catálogo' }}
+            </span>
+            <span *ngIf="ev.destacado" class="ev-pill ev-pill--featured">Destacado</span>
+          </div>
+
+          <nav class="ev-hub-pair ev-hub-pair--hero" aria-label="Centros del evento">
+            <a
+              [routerLink]="['/eventos', eventoId, 'inteligencia']"
+              class="ev-hub-btn ev-hub-btn--inteligencia"
+            >
+              <span class="material-icons" aria-hidden="true">insights</span>
+              Inteligencia
+            </a>
+            <span class="ev-hub-btn ev-hub-btn--operaciones ev-hub-btn--current" aria-current="page">
+              <span class="material-icons" aria-hidden="true">settings</span>
+              Operaciones
+            </span>
+          </nav>
+
+          <div class="ev-ops-hero__context" [ngClass]="contextBannerClass">
+            <span class="material-icons" aria-hidden="true">info</span>
+            {{ contextMessage }}
+          </div>
+        </div>
+      </div>
+
+      <nav class="ev-ops-lifecycle" aria-label="Ciclo de vida del evento">
+        <ol class="ev-ops-lifecycle__track">
+          <li
+            *ngFor="let step of lifecycleSteps; let i = index; let last = last"
+            class="ev-ops-lifecycle__item"
+            [class.ev-ops-lifecycle__item--active]="isLifecycleStepActive(step)"
+            [class.ev-ops-lifecycle__item--completed]="isLifecycleStepCompleted(step)"
+          >
+            <button
+              type="button"
+              class="ev-ops-lifecycle__btn"
+              [disabled]="isLifecycleStepDisabled(step)"
+              [attr.aria-current]="isLifecycleStepActive(step) ? 'step' : null"
+              (click)="onLifecycleStepClick(step)"
+            >
+              <span class="ev-ops-lifecycle__dot"></span>
+              <span class="ev-ops-lifecycle__label">{{ step.label }}</span>
+            </button>
+            <span *ngIf="!last" class="ev-ops-lifecycle__connector" aria-hidden="true"></span>
+          </li>
+        </ol>
+      </nav>
+    </section>
+
+    <!-- 2. Estado de producción -->
+    <section class="ev-ops-readiness" *ngIf="readiness as r" aria-labelledby="ev-ops-readiness-title">
+      <div class="ev-ops-readiness__head">
+        <div>
+          <h2 id="ev-ops-readiness-title" class="ev-ops-readiness__title">{{ r.headline }}</h2>
+          <p class="ev-ops-readiness__sub">{{ r.subline }}</p>
+        </div>
+        <div class="ev-ops-readiness__percent" aria-hidden="true">
+          <span class="ev-ops-readiness__percent-value">{{ r.percent }}</span>
+          <span class="ev-ops-readiness__percent-sign">%</span>
+        </div>
+      </div>
+
+      <div
+        class="ev-ops-readiness__bar"
+        role="progressbar"
+        [attr.aria-valuenow]="r.percent"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        [attr.aria-label]="'Preparación del evento al ' + r.percent + ' por ciento'"
+      >
+        <div class="ev-ops-readiness__bar-fill" [style.width.%]="r.percent"></div>
+      </div>
+
+      <ul class="ev-ops-checklist">
+        <li
+          *ngFor="let step of r.steps"
+          class="ev-ops-checklist__item"
+          [class.ev-ops-checklist__item--done]="step.complete"
+          [class.ev-ops-checklist__item--pending]="!step.complete && !step.optional"
+          [class.ev-ops-checklist__item--optional]="step.optional"
+        >
+          <button
+            type="button"
+            class="ev-ops-checklist__btn"
+            (click)="onReadinessStepClick(step)"
+            [disabled]="step.complete && step.id !== 'publicacion' && step.id !== 'imagen' && step.id !== 'fechas' && step.id !== 'cobros' && step.id !== 'boletas' && step.id !== 'productos'"
+          >
+            <span class="ev-ops-checklist__icon" aria-hidden="true">
+              <span class="material-icons" *ngIf="step.complete">check_circle</span>
+              <span class="material-icons" *ngIf="!step.complete && !step.optional">error_outline</span>
+              <span class="material-icons" *ngIf="!step.complete && step.optional">radio_button_unchecked</span>
+            </span>
+            <span class="ev-ops-checklist__label">
+              {{ step.label }}
+              <span *ngIf="step.optional" class="ev-ops-checklist__optional">Opcional</span>
+            </span>
+            <span class="material-icons ev-ops-checklist__chevron" aria-hidden="true">chevron_right</span>
+          </button>
+        </li>
+      </ul>
+
+      <!-- Siguiente paso recomendado -->
+      <div
+        class="ev-ops-next"
+        [class.ev-ops-next--ready]="r.percent >= 100"
+      >
+        <div class="ev-ops-next__copy">
+          <p class="ev-ops-next__eyebrow">
+            {{ r.percent >= 100 ? 'Listo para operar' : 'Siguiente paso recomendado' }}
+          </p>
+          <p class="ev-ops-next__message">{{ nextStepMessage }}</p>
+        </div>
+        <button
+          type="button"
+          class="ev-btn-primary ev-ops-next__cta"
+          (click)="onNextStepAction()"
+        >
+          {{ nextStepActionLabel }}
+        </button>
+      </div>
+    </section>
+
+    <!-- 3. Barra de operaciones (desktop) -->
+    <nav class="ev-ops-bar ev-ops-bar--desktop" aria-label="Acciones de operación">
+      <ul class="ev-ops-bar__list">
+        <li *ngFor="let action of barActions">
+          <button
+            type="button"
+            class="ev-ops-bar__btn"
+            [class.ev-ops-bar__btn--disabled]="action.disabled"
+            [disabled]="action.disabled"
+            (click)="onOpsAction(action)"
+          >
+            <span class="material-icons ev-ops-bar__icon" aria-hidden="true">{{ action.icon }}</span>
+            <span class="ev-ops-bar__label">{{ action.label }}</span>
+            <span *ngIf="action.badge" class="ev-ops-bar__badge">{{ action.badge }}</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="ev-ops-bar__btn ev-ops-bar__btn--more" (click)="onOpsAction({ id: 'mas', label: 'Más', icon: 'more_horiz' })">
+            <span class="material-icons ev-ops-bar__icon" aria-hidden="true">more_horiz</span>
+            <span class="ev-ops-bar__label">Más opciones</span>
+          </button>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- 4. Pulso del evento -->
+    <section class="ev-ops-pulse" aria-labelledby="ev-ops-pulse-title">
+      <div class="ev-ops-pulse__head">
+        <div>
+          <h2 id="ev-ops-pulse-title" class="ev-ops-section-title">Pulso del evento</h2>
+          <p class="ev-ops-section-sub">Métricas en tiempo real de tu operación</p>
+        </div>
+        <a [routerLink]="['/eventos', eventoId, 'inteligencia']" class="ev-ops-link-btn">
+          <span class="material-icons" aria-hidden="true">insights</span>
+          Inteligencia
+          <span class="material-icons" aria-hidden="true">arrow_forward</span>
+        </a>
+      </div>
+
+      <div *ngIf="!hasSales" class="ev-ops-pulse__empty">
+        <span class="material-icons" aria-hidden="true">insights</span>
+        <p>Aún no tienes ventas. Publica tu evento para comenzar.</p>
+      </div>
+
+      <div class="ev-ops-pulse__grid" [class.ev-ops-pulse__grid--dimmed]="!hasSales">
+        <article class="ev-ops-kpi">
+          <span class="ev-ops-kpi__icon material-icons" aria-hidden="true">confirmation_number</span>
+          <p class="ev-ops-kpi__label">Boletas vendidas</p>
+          <p class="ev-ops-kpi__value">{{ reporte?.boletas_vendidas ?? 0 }}</p>
+        </article>
+        <article class="ev-ops-kpi">
+          <span class="ev-ops-kpi__icon material-icons" aria-hidden="true">payments</span>
+          <p class="ev-ops-kpi__label">Ingresos</p>
+          <p class="ev-ops-kpi__value">{{ formatCurrency(reporte?.ingresos ?? stats?.ingresos_totales) }}</p>
+          <p *ngIf="ingresosTrend as trend" class="ev-ops-kpi__trend" [class.ev-ops-kpi__trend--up]="trend.positive" [class.ev-ops-kpi__trend--down]="!trend.positive">
+            {{ trend.label }}
+          </p>
+        </article>
+        <article class="ev-ops-kpi">
+          <span class="ev-ops-kpi__icon material-icons" aria-hidden="true">groups</span>
+          <p class="ev-ops-kpi__label">Asistentes</p>
+          <p class="ev-ops-kpi__value">{{ reporte?.boletas_usadas ?? 0 }}</p>
+          <p class="ev-ops-kpi__hint" *ngIf="reporte && reporte.boletas_vendidas > 0">
+            de {{ reporte.boletas_vendidas }} vendidas
+          </p>
+        </article>
+        <article class="ev-ops-kpi">
+          <span class="ev-ops-kpi__icon material-icons" aria-hidden="true">sell</span>
+          <p class="ev-ops-kpi__label">Cupones usados</p>
+          <p class="ev-ops-kpi__value">{{ cuponesUsados }}</p>
+          <p class="ev-ops-kpi__hint" *ngIf="cupones.length > 0">
+            {{ cupones.length }} cupón{{ cupones.length === 1 ? '' : 'es' }} activo{{ cupones.length === 1 ? '' : 's' }}
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <!-- 5. Timeline + Config avanzada -->
+    <div class="ev-ops-bottom-grid">
+      <section class="ev-ops-timeline" aria-labelledby="ev-ops-timeline-title">
+        <h2 id="ev-ops-timeline-title" class="ev-ops-section-title">Historial del evento</h2>
+        <p class="ev-ops-section-sub">Hitos clave en el ciclo de vida</p>
+        <ol class="ev-ops-timeline__list">
+          <li
+            *ngFor="let item of timeline"
+            class="ev-ops-timeline__item"
+            [class.ev-ops-timeline__item--reached]="item.reached"
+            [class.ev-ops-timeline__item--current]="item.current"
+            [class.ev-ops-timeline__item--pending]="!item.reached"
+          >
+            <span class="ev-ops-timeline__marker" aria-hidden="true"></span>
+            <div class="ev-ops-timeline__body">
+              <p class="ev-ops-timeline__label">{{ item.label }}</p>
+              <p *ngIf="formatTimelineItemDate(item) as fecha" class="ev-ops-timeline__date">{{ fecha }}</p>
+              <p *ngIf="!formatTimelineItemDate(item) && item.description" class="ev-ops-timeline__date">{{ item.description }}</p>
+              <p *ngIf="!item.reached && !item.current" class="ev-ops-timeline__pending">Pendiente</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <section class="ev-ops-advanced" aria-labelledby="ev-ops-advanced-title">
+        <h2 id="ev-ops-advanced-title" class="ev-ops-section-title">Configuración avanzada</h2>
+        <p class="ev-ops-section-sub">Ajustes que no necesitas a diario</p>
+        <ul class="ev-ops-advanced__list">
+          <li>
+            <button type="button" class="ev-ops-advanced__btn" (click)="goToEditarInfo()">
+              <span class="material-icons" aria-hidden="true">edit_note</span>
+              <span>
+                <strong>Editar información</strong>
+                <small>Wizard de datos del evento</small>
+              </span>
+              <span class="material-icons ev-ops-advanced__chevron" aria-hidden="true">chevron_right</span>
+            </button>
+          </li>
+          <li>
+            <button type="button" class="ev-ops-advanced__btn" (click)="verEventoPublico()">
+              <span class="material-icons" aria-hidden="true">open_in_new</span>
+              <span>
+                <strong>Ver evento público</strong>
+                <small>Página de detalle en nueva pestaña</small>
+              </span>
+              <span class="material-icons ev-ops-advanced__chevron" aria-hidden="true">chevron_right</span>
+            </button>
+          </li>
+          <li>
+            <button type="button" class="ev-ops-advanced__btn" (click)="goToLectores()">
+              <span class="material-icons" aria-hidden="true">qr_code_scanner</span>
+              <span>
+                <strong>Lectores y permisos</strong>
+                <small>Parametrización de escaneo</small>
+              </span>
+              <span class="material-icons ev-ops-advanced__chevron" aria-hidden="true">chevron_right</span>
+            </button>
+          </li>
+          <li>
+            <a [routerLink]="['/eventos', eventoId, 'inteligencia']" class="ev-ops-advanced__btn ev-ops-advanced__btn--link">
+              <span class="material-icons" aria-hidden="true">insights</span>
+              <span>
+                <strong>Centro de inteligencia</strong>
+                <small>Recaudo, aforo y asistencia</small>
+              </span>
+              <span class="material-icons ev-ops-advanced__chevron" aria-hidden="true">chevron_right</span>
+            </a>
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <!-- Mobile dock -->
+    <nav class="ev-ops-dock" aria-label="Acciones rápidas">
+      <button
+        *ngFor="let action of dockActions"
+        type="button"
+        class="ev-ops-dock__btn"
+        [class.ev-ops-dock__btn--active]="action.id === 'mas' && showMoreSheet"
+        [disabled]="action.disabled"
+        (click)="onOpsAction(action)"
+      >
+        <span class="material-icons" aria-hidden="true">{{ action.icon }}</span>
+        <span class="ev-ops-dock__label">{{ action.label }}</span>
+        <span *ngIf="action.badge && action.id !== 'mas'" class="ev-ops-dock__dot" aria-hidden="true"></span>
+      </button>
+    </nav>
+
+    <!-- Mobile more sheet -->
+    <div
+      class="ev-ops-sheet-backdrop"
+      [class.ev-ops-sheet-backdrop--open]="showMoreSheet"
+      (click)="closeMoreSheet()"
+      aria-hidden="true"
+    ></div>
+    <aside
+      class="ev-ops-sheet"
+      [class.ev-ops-sheet--open]="showMoreSheet"
+      role="dialog"
+      aria-label="Más opciones"
+    >
+      <div class="ev-ops-sheet__handle" aria-hidden="true"></div>
+      <h3 class="ev-ops-sheet__title">Más opciones</h3>
+      <ul class="ev-ops-sheet__list">
+        <li *ngFor="let action of opsActions">
+          <button
+            *ngIf="action.id !== 'mas'"
+            type="button"
+            class="ev-ops-sheet__btn"
+            [disabled]="action.disabled"
+            (click)="onOpsAction(action)"
+          >
+            <span class="material-icons" aria-hidden="true">{{ action.icon }}</span>
+            <span class="ev-ops-sheet__label">{{ action.label }}</span>
+            <span *ngIf="action.badge" class="ev-ops-sheet__badge">{{ action.badge }}</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="ev-ops-sheet__btn" (click)="goToEditarInfo(); closeMoreSheet()">
+            <span class="material-icons" aria-hidden="true">edit_note</span>
+            <span class="ev-ops-sheet__label">Editar información</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="ev-ops-sheet__btn" (click)="goToLectores(); closeMoreSheet()">
+            <span class="material-icons" aria-hidden="true">qr_code_scanner</span>
+            <span class="ev-ops-sheet__label">Lectores</span>
+          </button>
+        </li>
+        <li>
+          <a [routerLink]="['/eventos', eventoId, 'inteligencia']" class="ev-ops-sheet__btn ev-ops-sheet__btn--link" (click)="closeMoreSheet()">
+            <span class="material-icons" aria-hidden="true">insights</span>
+            <span class="ev-ops-sheet__label">Inteligencia</span>
+          </a>
+        </li>
+      </ul>
+    </aside>
+  </ng-container>
+</div>

@@ -1,0 +1,336 @@
+<div class="ev-intel-page">
+  <div *ngIf="loading" class="ev-intel-loading" aria-busy="true">
+    <div class="ev-intel-loading__bar"></div>
+    <p>Cargando centro de inteligencia…</p>
+  </div>
+
+  <ng-container *ngIf="!loading && evento as ev">
+    <header class="ev-intel-topbar">
+      <a routerLink="/eventos" class="ev-intel-back">
+        <span class="material-icons" aria-hidden="true">arrow_back</span>
+        Mis Eventos
+      </a>
+      <button
+        type="button"
+        class="ev-intel-topbar__refresh"
+        [disabled]="refreshing"
+        (click)="refresh()"
+        aria-label="Actualizar datos"
+      >
+        <span class="material-icons" [class.ev-intel-spin]="refreshing" aria-hidden="true">refresh</span>
+      </button>
+    </header>
+
+    <!-- Hero Premium -->
+    <section class="ev-intel-hero" aria-labelledby="ev-intel-title">
+      <!-- Fondo atmosférico -->
+      <div class="ev-intel-hero__atmosphere" aria-hidden="true">
+        <img
+          *ngIf="heroImagenSrc(ev.imagen_principal) as heroSrc; else intelAtmoFallback"
+          class="ev-intel-hero__atmo-img"
+          [src]="heroSrc"
+          [alt]=""
+        />
+        <ng-template #intelAtmoFallback>
+          <div class="ev-intel-hero__atmo-fallback"></div>
+        </ng-template>
+        <div class="ev-intel-hero__atmo-scrim"></div>
+      </div>
+
+      <!-- Zona superior: identidad + narrativa -->
+      <div class="ev-intel-hero__upper">
+        <div class="ev-intel-hero__identity">
+          <p class="ev-intel-hero__eyebrow">Centro de inteligencia</p>
+          <h1 id="ev-intel-title" class="ev-intel-hero__title">{{ ev.titulo }}</h1>
+          <p class="ev-intel-hero__meta-line">
+            <span>{{ ev.fecha_inicio | dateFormat:'short' }}</span>
+            <span class="ev-intel-hero__meta-dot" aria-hidden="true">·</span>
+            <span>{{ lugarLabel }}</span>
+            <span class="ev-intel-hero__meta-dot" aria-hidden="true">·</span>
+            <span class="ev-intel-hero__estado" [ngClass]="'ev-intel-hero__estado--' + estadoActual">{{ estadoLabel }}</span>
+          </p>
+        </div>
+
+        <!-- Historia del momento -->
+        <div class="ev-intel-hero__story" *ngIf="hero as h">
+          <p class="ev-intel-hero__story-headline">{{ h.headline }}</p>
+
+          <div class="ev-intel-hero__beats">
+            <div class="ev-intel-beat" *ngIf="h.showCountdown && h.countdown as cd">
+              <span class="ev-intel-beat__value">
+                <ng-container *ngIf="cd.days > 0">{{ cd.days }}d </ng-container>{{ padCountdown(cd.hours) }}:{{ padCountdown(cd.minutes) }}
+              </span>
+              <span class="ev-intel-beat__label">restantes</span>
+            </div>
+            <div class="ev-intel-beat" *ngIf="!h.showCountdown">
+              <span class="ev-intel-beat__value ev-intel-beat__value--text">{{ h.countdownCaption }}</span>
+              <span class="ev-intel-beat__label">estado</span>
+            </div>
+            <div class="ev-intel-beat">
+              <span class="ev-intel-beat__value">{{ h.aforoPct }}%</span>
+              <span class="ev-intel-beat__label">del aforo vendido</span>
+            </div>
+            <div class="ev-intel-beat">
+              <ng-container *ngIf="h.disponibles > 0; else sinDisponibles">
+                <span class="ev-intel-beat__value">{{ h.disponibles | number }}</span>
+                <span class="ev-intel-beat__label">entradas disponibles</span>
+              </ng-container>
+              <ng-template #sinDisponibles>
+                <span class="ev-intel-beat__value ev-intel-beat__value--text">—</span>
+                <span class="ev-intel-beat__label">{{ h.availabilityLine }}</span>
+              </ng-template>
+            </div>
+          </div>
+
+          <div
+            class="ev-intel-hero__aforo-track"
+            *ngIf="h.aforoPct >= 0"
+            role="progressbar"
+            [attr.aria-valuenow]="h.aforoPct"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            [attr.aria-label]="h.aforoLine"
+          >
+            <div class="ev-intel-hero__aforo-fill" [style.width.%]="h.aforoPct"></div>
+          </div>
+          <p class="ev-intel-hero__story-sub">{{ h.salesPhrase }}</p>
+        </div>
+      </div>
+
+      <!-- Acciones — barra sólida, siempre legible -->
+      <div class="ev-intel-hero__toolbar">
+        <nav class="ev-intel-hero__hubs" aria-label="Centros del evento">
+          <span class="ev-intel-action-pill ev-intel-action-pill--active" aria-current="page">
+            <span class="material-icons" aria-hidden="true">insights</span>
+            Inteligencia
+          </span>
+          <a
+            [routerLink]="['/eventos', eventoId, 'operaciones']"
+            class="ev-intel-action-pill ev-intel-action-pill--hub"
+          >
+            <span class="material-icons" aria-hidden="true">settings</span>
+            Operaciones
+          </a>
+        </nav>
+        <div class="ev-intel-hero__quick">
+          <button type="button" class="ev-intel-action-pill ev-intel-action-pill--accent" (click)="goToEscanear()">
+            <span class="material-icons" aria-hidden="true">qr_code_scanner</span>
+            Escáner
+          </button>
+          <button type="button" class="ev-intel-action-pill ev-intel-action-pill--secondary" (click)="compartirEvento()">
+            <span class="material-icons" aria-hidden="true">share</span>
+            Compartir
+          </button>
+          <button type="button" class="ev-intel-action-pill ev-intel-action-pill--secondary" (click)="verEventoPublico()">
+            <span class="material-icons" aria-hidden="true">open_in_new</span>
+            Ver evento
+          </button>
+        </div>
+      </div>
+
+      <!-- KPIs — números protagonistas -->
+      <div class="ev-intel-hero__kpis" aria-label="Indicadores principales">
+        <article
+          *ngFor="let card of pulseCards; let i = index"
+          class="ev-intel-kpi"
+          [class.ev-intel-kpi--recaudo]="card.id === 'recaudo'"
+          [class.ev-intel-kpi--aforo]="card.id === 'aforo'"
+          [class.ev-intel-kpi--asistentes]="card.id === 'asistentes'"
+          [style.animation-delay]="(i * 70) + 'ms'"
+        >
+          <p class="ev-intel-kpi__value">{{ card.value }}</p>
+          <p class="ev-intel-kpi__label">{{ card.label }}</p>
+          <p class="ev-intel-kpi__phrase">{{ card.phrase }}</p>
+          <p class="ev-intel-kpi__detail">{{ card.detail }}</p>
+          <div
+            *ngIf="card.barPct != null && card.barPct > 0"
+            class="ev-intel-kpi__bar"
+            role="presentation"
+          >
+            <div class="ev-intel-kpi__bar-fill" [style.width.%]="card.barPct"></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ¿Qué debo hacer ahora? -->
+    <section
+      class="ev-intel-guide"
+      *ngIf="actionNow as action"
+      [attr.data-variant]="action.variant"
+      aria-labelledby="ev-intel-guide-title"
+    >
+      <p id="ev-intel-guide-title" class="ev-intel-story__question">¿Qué debo hacer ahora?</p>
+      <p class="ev-intel-guide__message">{{ action.message }}</p>
+      <button type="button" class="ev-intel-story__cta" (click)="onActionNowClick()">
+        {{ action.ctaLabel }}
+        <span class="material-icons" aria-hidden="true">arrow_forward</span>
+      </button>
+    </section>
+
+    <!-- Capa narrativa -->
+    <div class="ev-intel-stories">
+
+      <!-- ¿Cómo van mis ventas? -->
+      <section
+        *ngIf="ventasStory as story"
+        class="ev-intel-story ev-intel-story--ventas"
+        [class.ev-intel-story--empty]="story.empty"
+        [attr.aria-label]="story.question"
+      >
+        <p class="ev-intel-story__question">{{ story.question }}</p>
+
+        <ng-container *ngIf="!story.empty; else ventasEmpty">
+          <h2 class="ev-intel-story__headline">{{ story.headline }}</h2>
+          <p class="ev-intel-story__narrative">{{ story.narrative }}</p>
+          <p class="ev-intel-story__insight" *ngIf="story.insight">{{ story.insight }}</p>
+
+          <div class="ev-intel-story__mix" *ngIf="recaudoTotal > 0">
+            <div class="ev-intel-story__mix-row">
+              <span>Entradas</span>
+              <strong>{{ formatCurrency(recaudoEntradas) }}</strong>
+            </div>
+            <div class="ev-intel-story__mix-track">
+              <div class="ev-intel-story__mix-fill ev-intel-story__mix-fill--entradas" [style.width.%]="recaudoEntradasPct"></div>
+            </div>
+            <div class="ev-intel-story__mix-row" *ngIf="recaudoProductos > 0">
+              <span>Productos</span>
+              <strong>{{ formatCurrency(recaudoProductos) }}</strong>
+            </div>
+            <div class="ev-intel-story__mix-track" *ngIf="recaudoProductos > 0">
+              <div class="ev-intel-story__mix-fill ev-intel-story__mix-fill--productos" [style.width.%]="recaudoProductosPct"></div>
+            </div>
+          </div>
+
+          <div class="ev-intel-story__spark" *ngIf="ventas7d.length > 0">
+            <p class="ev-intel-story__spark-label">Ritmo de los últimos 7 días</p>
+            <div class="ev-intel-story__spark-bars" role="img" aria-label="Ingresos últimos 7 días">
+              <div *ngFor="let day of ventas7d; let i = index" class="ev-intel-story__spark-col">
+                <div
+                  class="ev-intel-story__spark-bar"
+                  [style.height.%]="sparkHeight(day.ingresos)"
+                  [style.animation-delay]="(i * 40) + 'ms'"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-template #ventasEmpty>
+          <h2 class="ev-intel-story__headline ev-intel-story__headline--soft">{{ story.emptyHeadline }}</h2>
+          <p class="ev-intel-story__narrative">{{ story.emptyNarrative }}</p>
+        </ng-template>
+
+        <footer class="ev-intel-story__foot" *ngIf="story.ctaLabel">
+          <button type="button" class="ev-intel-story__cta" (click)="onStoryCta(story.ctaAction)">
+            {{ story.ctaLabel }}
+            <span class="material-icons" aria-hidden="true">arrow_forward</span>
+          </button>
+        </footer>
+      </section>
+
+      <!-- ¿Qué está pasando hoy? -->
+      <section
+        *ngIf="hoyStory as story"
+        class="ev-intel-story ev-intel-story--hoy"
+        [class.ev-intel-story--empty]="story.empty"
+        [attr.aria-label]="story.question"
+      >
+        <p class="ev-intel-story__question">{{ story.question }}</p>
+
+        <ng-container *ngIf="!story.empty; else hoyEmpty">
+          <h2 class="ev-intel-story__headline">{{ story.headline }}</h2>
+          <p class="ev-intel-story__narrative">{{ story.narrative }}</p>
+          <p class="ev-intel-story__insight" *ngIf="story.insight">{{ story.insight }}</p>
+        </ng-container>
+
+        <ng-template #hoyEmpty>
+          <h2 class="ev-intel-story__headline ev-intel-story__headline--soft">{{ story.emptyHeadline }}</h2>
+          <p class="ev-intel-story__narrative">{{ story.emptyNarrative }}</p>
+        </ng-template>
+
+        <footer class="ev-intel-story__foot" *ngIf="story.ctaLabel">
+          <button type="button" class="ev-intel-story__cta" (click)="onStoryCta(story.ctaAction)">
+            {{ story.ctaLabel }}
+            <span class="material-icons" aria-hidden="true">arrow_forward</span>
+          </button>
+        </footer>
+      </section>
+
+      <!-- ¿Qué está funcionando mejor? -->
+      <section
+        *ngIf="aforoStory as story"
+        class="ev-intel-story ev-intel-story--aforo"
+        [class.ev-intel-story--empty]="story.empty"
+        [attr.aria-label]="story.question"
+      >
+        <p class="ev-intel-story__question">{{ story.question }}</p>
+
+        <ng-container *ngIf="!story.empty; else aforoEmpty">
+          <h2 class="ev-intel-story__headline">{{ story.headline }}</h2>
+          <p class="ev-intel-story__narrative">{{ story.narrative }}</p>
+          <p class="ev-intel-story__insight" *ngIf="story.insight">{{ story.insight }}</p>
+
+          <ul class="ev-intel-story__list" *ngIf="rankingConVentas.length > 1">
+            <li *ngFor="let row of rankingConVentas" class="ev-intel-story__list-item">
+              <div class="ev-intel-story__list-head">
+                <span class="ev-intel-story__list-name">{{ row.nombre }}</span>
+                <span class="ev-intel-story__list-nums">{{ row.vendidas }}/{{ row.total }}</span>
+              </div>
+              <div class="ev-intel-story__list-track">
+                <div class="ev-intel-story__list-fill" [style.width.%]="row.pct"></div>
+              </div>
+            </li>
+          </ul>
+        </ng-container>
+
+        <ng-template #aforoEmpty>
+          <h2 class="ev-intel-story__headline ev-intel-story__headline--soft">{{ story.emptyHeadline }}</h2>
+          <p class="ev-intel-story__narrative">{{ story.emptyNarrative }}</p>
+        </ng-template>
+
+        <footer class="ev-intel-story__foot" *ngIf="story.ctaLabel">
+          <button type="button" class="ev-intel-story__cta" (click)="onStoryCta(story.ctaAction)">
+            {{ story.ctaLabel }}
+            <span class="material-icons" aria-hidden="true">arrow_forward</span>
+          </button>
+        </footer>
+      </section>
+
+      <!-- ¿Qué oportunidades tengo? -->
+      <section
+        *ngIf="productosStory as story"
+        class="ev-intel-story ev-intel-story--productos"
+        [class.ev-intel-story--empty]="story.empty"
+        [attr.aria-label]="story.question"
+      >
+        <p class="ev-intel-story__question">{{ story.question }}</p>
+
+        <ng-container *ngIf="!story.empty; else productosEmpty">
+          <h2 class="ev-intel-story__headline">{{ story.headline }}</h2>
+          <p class="ev-intel-story__narrative">{{ story.narrative }}</p>
+          <p class="ev-intel-story__insight" *ngIf="story.insight">{{ story.insight }}</p>
+
+          <ul class="ev-intel-story__chips" *ngIf="productosRows.length > 1">
+            <li *ngFor="let p of productosRows.slice(1, 4)" class="ev-intel-story__chip">
+              {{ p.nombre }} · {{ p.vendidas }} uds
+            </li>
+          </ul>
+        </ng-container>
+
+        <ng-template #productosEmpty>
+          <h2 class="ev-intel-story__headline ev-intel-story__headline--soft">{{ story.emptyHeadline }}</h2>
+          <p class="ev-intel-story__narrative">{{ story.emptyNarrative }}</p>
+        </ng-template>
+
+        <footer class="ev-intel-story__foot" *ngIf="story.ctaLabel">
+          <button type="button" class="ev-intel-story__cta" (click)="onStoryCta(story.ctaAction)">
+            {{ story.ctaLabel }}
+            <span class="material-icons" aria-hidden="true">arrow_forward</span>
+          </button>
+        </footer>
+      </section>
+
+    </div>
+  </ng-container>
+</div>

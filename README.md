@@ -131,6 +131,10 @@ Si necesitas cambiar la ruta base para GitHub Pages, actualiza:
 
 ## 📚 Documentación
 
+- **[Design System](docs/design-system/README.md)** — drawers, paneles, componentes `ev-*`, patrones de operaciones
+- **[Centro de Inteligencia — Diseño](docs/evento-intelligence-dashboard.md)** — wireframes, arquitectura y mapeo de datos (pendiente aprobación)
+- **[Centro de Operaciones](docs/centro-de-operaciones.md)** — flujos de producto, checklist, lifecycle, reglas de publicación
+- **[Crear un drawer](docs/design-system/creating-a-drawer.md)** — guía paso a paso para nuevos módulos
 - **[Flujo de compras y Wompi](FLUJO_COMPRAS_WOMPI.md)** — pagos, webhooks, materialización, reconciliación e idempotencia
 - [Supabase setup](SUPABASE_SETUP.md)
 - [Deploy producción](DEPLOY_PRODUCTION.md)

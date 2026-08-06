@@ -1,0 +1,38 @@
+<section
+  [class]="rootClass"
+  [attr.role]="role"
+  [attr.aria-label]="label"
+>
+  <span class="ev-notice__icon-wrap" aria-hidden="true">
+    <span class="material-icons ev-notice__icon">{{ resolvedIcon }}</span>
+  </span>
+
+  <div class="ev-notice__body">
+    <strong *ngIf="title" class="ev-notice__title">{{ title }}</strong>
+
+    <div class="ev-notice__content">
+      <p *ngIf="message" class="ev-notice__message">{{ message }}</p>
+      <ng-content />
+    </div>
+
+    <div class="ev-notice__actions">
+      <button
+        *ngIf="actionLabel"
+        type="button"
+        class="ev-notice__action ev-notice__action--primary"
+        (click)="onActionClick()"
+      >
+        {{ actionLabel }}
+      </button>
+      <button
+        *ngIf="secondaryActionLabel"
+        type="button"
+        class="ev-notice__action ev-notice__action--secondary"
+        (click)="onSecondaryActionClick()"
+      >
+        {{ secondaryActionLabel }}
+      </button>
+      <ng-content select="[evNoticeActions]" />
+    </div>
+  </div>
+</section>

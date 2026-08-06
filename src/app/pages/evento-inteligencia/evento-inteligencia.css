@@ -1,0 +1,929 @@
+/* Centro de Inteligencia — Hero Premium */
+
+.ev-intel-page {
+  --ev-intel-max: 1120px;
+  --ev-intel-accent: var(--color-secondary, #8b5cf6);
+  --ev-intel-accent-strong: var(--color-primary, #7c3aed);
+  --ev-intel-ink: #0f172a;
+  --ev-intel-muted: #64748b;
+  --ev-intel-soft: #f8fafc;
+  --ev-intel-surface: #ffffff;
+  --ev-intel-border: rgba(15, 23, 42, 0.06);
+  --ev-intel-radius: 20px;
+  --ev-intel-shadow: 0 2px 8px rgba(15, 23, 42, 0.04), 0 24px 64px rgba(15, 23, 42, 0.08);
+  --ev-intel-gap: 1.75rem;
+  max-width: var(--ev-intel-max);
+  margin: 0 auto;
+  padding: 0 1rem 2.5rem;
+}
+
+.ev-intel-loading {
+  padding: 4rem 1rem;
+  text-align: center;
+  color: var(--ev-intel-muted);
+}
+
+.ev-intel-loading__bar {
+  width: min(280px, 80%);
+  height: 4px;
+  margin: 0 auto 1rem;
+  border-radius: 999px;
+  background: var(--ev-intel-soft);
+  overflow: hidden;
+  position: relative;
+}
+
+.ev-intel-loading__bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: var(--ev-intel-accent);
+  border-radius: inherit;
+  animation: evIntelLoad 1.1s ease-in-out infinite;
+}
+
+@keyframes evIntelLoad {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+
+.ev-intel-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0 1rem;
+}
+
+.ev-intel-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--ev-intel-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+
+.ev-intel-back:hover {
+  color: var(--ev-intel-accent-strong);
+}
+
+.ev-intel-back .material-icons {
+  font-size: 1.1rem;
+}
+
+.ev-intel-topbar__refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ev-intel-muted);
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.ev-intel-topbar__refresh:hover:not(:disabled) {
+  background: rgba(15, 23, 42, 0.05);
+  color: var(--ev-intel-ink);
+}
+
+.ev-intel-spin {
+  animation: evIntelSpin 0.8s linear infinite;
+}
+
+@keyframes evIntelSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes evIntelFade {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==============================
+   HERO PREMIUM
+   ============================== */
+
+.ev-intel-hero {
+  position: relative;
+  border-radius: var(--ev-intel-radius);
+  box-shadow: var(--ev-intel-shadow);
+  overflow: hidden;
+  margin-bottom: var(--ev-intel-gap);
+  animation: evIntelFade 0.35s ease;
+  background: var(--ev-intel-surface);
+}
+
+/* Fondo atmosférico */
+.ev-intel-hero__atmosphere {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: min(72vw, 340px);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ev-intel-hero__atmo-img {
+  position: absolute;
+  inset: -30%;
+  width: 160%;
+  height: 160%;
+  object-fit: cover;
+  object-position: center 30%;
+  filter: blur(28px) saturate(1.15) brightness(0.85);
+  transform: scale(1.1);
+}
+
+.ev-intel-hero__atmo-fallback {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 20%, rgba(124, 58, 237, 0.45), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 30%, rgba(78, 205, 196, 0.25), transparent 55%),
+    linear-gradient(145deg, #1e1b4b 0%, #0f172a 100%);
+}
+
+.ev-intel-hero__atmo-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.25) 0%,
+    rgba(15, 23, 42, 0.72) 55%,
+    rgba(255, 255, 255, 0.98) 100%
+  );
+}
+
+/* Zona superior — texto sobre atmósfera */
+.ev-intel-hero__upper {
+  position: relative;
+  z-index: 1;
+  padding: 1.5rem 1.25rem 0;
+}
+
+.ev-intel-hero__eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.ev-intel-hero__title {
+  margin: 0;
+  font-size: clamp(1.5rem, 5vw, 2.125rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #fff;
+  line-height: 1.12;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.25);
+}
+
+.ev-intel-hero__meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  margin: 0.55rem 0 0;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.ev-intel-hero__meta-dot {
+  opacity: 0.45;
+}
+
+.ev-intel-hero__estado {
+  font-weight: 650;
+}
+
+.ev-intel-hero__estado--en_curso { color: #6ee7b7; }
+.ev-intel-hero__estado--publicado { color: #c4b5fd; }
+.ev-intel-hero__estado--finalizado { color: rgba(255, 255, 255, 0.55); }
+.ev-intel-hero__estado--cancelado { color: #fca5a5; }
+.ev-intel-hero__estado--borrador { color: rgba(255, 255, 255, 0.55); }
+
+/* Narrativa del momento */
+.ev-intel-hero__story {
+  margin-top: 1.35rem;
+  padding-top: 0.25rem;
+}
+
+.ev-intel-hero__story-headline {
+  margin: 0 0 1rem;
+  font-size: clamp(1.05rem, 3.5vw, 1.35rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+  line-height: 1.3;
+}
+
+.ev-intel-hero__beats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.ev-intel-beat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.ev-intel-beat__value {
+  font-size: clamp(1.25rem, 4vw, 1.65rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #fff;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.ev-intel-beat__value--text {
+  font-size: clamp(0.95rem, 3vw, 1.15rem);
+  letter-spacing: -0.01em;
+}
+
+.ev-intel-beat__label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.ev-intel-hero__aforo-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+  margin-bottom: 0.65rem;
+}
+
+.ev-intel-hero__aforo-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #a78bfa, #c4b5fd);
+  box-shadow: 0 0 12px rgba(167, 139, 250, 0.5);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ev-intel-hero__story-sub {
+  margin: 0;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.45;
+}
+
+/* Acciones — barra sólida sobre KPIs */
+.ev-intel-hero__toolbar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.85rem 1.25rem;
+  background: #fff;
+  box-shadow: 0 -1px 0 rgba(15, 23, 42, 0.06), 0 4px 20px rgba(15, 23, 42, 0.05);
+}
+
+.ev-intel-hero__hubs,
+.ev-intel-hero__quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.ev-intel-action-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.375rem;
+  padding: 0 0.9rem;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 999px;
+  background: #f8fafc;
+  color: var(--ev-intel-ink);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.ev-intel-action-pill .material-icons {
+  font-size: 1rem;
+  opacity: 0.85;
+}
+
+.ev-intel-action-pill:hover {
+  background: #f1f5f9;
+  border-color: rgba(15, 23, 42, 0.16);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07);
+}
+
+/* Inteligencia — activo */
+.ev-intel-action-pill--active {
+  background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.32);
+  cursor: default;
+  pointer-events: none;
+}
+
+.ev-intel-action-pill--active .material-icons {
+  opacity: 1;
+}
+
+/* Operaciones — mismo peso que Inteligencia */
+.ev-intel-action-pill--hub {
+  background: var(--ev-intel-ink);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
+}
+
+.ev-intel-action-pill--hub:hover {
+  background: #1e293b;
+  border-color: transparent;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.24);
+}
+
+.ev-intel-action-pill--hub .material-icons {
+  opacity: 1;
+}
+
+/* Escáner — CTA principal */
+.ev-intel-action-pill--accent {
+  background: var(--ev-intel-accent-strong);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.28);
+}
+
+.ev-intel-action-pill--accent:hover {
+  background: color-mix(in srgb, var(--ev-intel-accent-strong) 90%, #fff);
+  border-color: transparent;
+}
+
+.ev-intel-action-pill--accent .material-icons {
+  opacity: 1;
+}
+
+/* Compartir · Ver evento */
+.ev-intel-action-pill--secondary {
+  background: #fff;
+  color: var(--ev-intel-ink);
+  border-color: rgba(15, 23, 42, 0.14);
+}
+
+.ev-intel-action-pill--secondary:hover {
+  background: #f8fafc;
+  border-color: rgba(124, 58, 237, 0.35);
+  color: var(--ev-intel-accent-strong);
+}
+
+/* KPIs — sin cajas, número primero */
+.ev-intel-hero__kpis {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  padding: 0.5rem 0 0;
+  background: var(--ev-intel-surface);
+}
+
+.ev-intel-kpi {
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1.35rem 1.65rem;
+  animation: evIntelFade 0.4s ease backwards;
+  position: relative;
+}
+
+.ev-intel-kpi + .ev-intel-kpi::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 1.25rem;
+  bottom: 1.25rem;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(15, 23, 42, 0.07), transparent);
+}
+
+.ev-intel-kpi__value {
+  order: 1;
+  margin: 0;
+  font-size: clamp(2.25rem, 5.5vw, 3.25rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  color: var(--ev-intel-ink);
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
+}
+
+.ev-intel-kpi--recaudo .ev-intel-kpi__value {
+  color: var(--ev-intel-accent-strong);
+}
+
+.ev-intel-kpi--aforo .ev-intel-kpi__value {
+  color: #0d9488;
+}
+
+.ev-intel-kpi--asistentes .ev-intel-kpi__value {
+  color: #d97706;
+}
+
+.ev-intel-kpi__label {
+  order: 2;
+  margin: 0.5rem 0 0;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ev-intel-muted);
+}
+
+.ev-intel-kpi__phrase {
+  order: 3;
+  margin: 0.45rem 0 0;
+  font-size: 0.875rem;
+  font-weight: 550;
+  color: color-mix(in srgb, var(--ev-intel-ink) 75%, var(--ev-intel-muted));
+  line-height: 1.4;
+}
+
+.ev-intel-kpi__detail {
+  order: 4;
+  margin: 0.2rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--ev-intel-muted);
+  line-height: 1.45;
+}
+
+.ev-intel-kpi__bar {
+  order: 5;
+  margin-top: 0.85rem;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.ev-intel-kpi__bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #5eead4, #0d9488);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ---- Guía + historias ---- */
+
+.ev-intel-guide {
+  margin-bottom: var(--ev-intel-gap);
+  padding: 1.75rem 1.5rem;
+  border-radius: var(--ev-intel-radius);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--ev-intel-accent) 6%, #fff), #fff);
+  box-shadow: var(--ev-intel-shadow);
+  animation: evIntelFade 0.4s ease 0.1s backwards;
+}
+
+.ev-intel-guide[data-variant='warning'] {
+  background: linear-gradient(135deg, #fffbeb 0%, #fff 60%);
+}
+
+.ev-intel-guide[data-variant='success'] {
+  background: linear-gradient(135deg, #ecfdf5 0%, #fff 60%);
+}
+
+.ev-intel-guide__message {
+  margin: 0.5rem 0 1.25rem;
+  font-size: 1.0625rem;
+  font-weight: 550;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--ev-intel-ink) 88%, var(--ev-intel-muted));
+  max-width: 42rem;
+}
+
+.ev-intel-stories {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.ev-intel-story {
+  animation: evIntelFade 0.45s ease backwards;
+}
+
+.ev-intel-story:nth-child(1) { animation-delay: 0.08s; }
+.ev-intel-story:nth-child(2) { animation-delay: 0.14s; }
+.ev-intel-story:nth-child(3) { animation-delay: 0.2s; }
+.ev-intel-story:nth-child(4) { animation-delay: 0.26s; }
+
+.ev-intel-story__question {
+  margin: 0 0 0.65rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ev-intel-muted);
+}
+
+.ev-intel-story__headline {
+  margin: 0;
+  font-size: clamp(1.75rem, 4.5vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  color: var(--ev-intel-ink);
+}
+
+.ev-intel-story__headline--soft {
+  font-size: clamp(1.35rem, 3.5vw, 1.75rem);
+  letter-spacing: -0.02em;
+  color: color-mix(in srgb, var(--ev-intel-ink) 82%, var(--ev-intel-muted));
+}
+
+.ev-intel-story--ventas .ev-intel-story__headline:not(.ev-intel-story__headline--soft) {
+  color: var(--ev-intel-accent-strong);
+}
+
+.ev-intel-story--hoy .ev-intel-story__headline:not(.ev-intel-story__headline--soft) {
+  color: var(--ev-intel-ink);
+}
+
+.ev-intel-story--aforo .ev-intel-story__headline:not(.ev-intel-story__headline--soft) {
+  color: #0d9488;
+}
+
+.ev-intel-story--productos .ev-intel-story__headline:not(.ev-intel-story__headline--soft) {
+  color: #d97706;
+}
+
+.ev-intel-story__narrative {
+  margin: 0.75rem 0 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--ev-intel-ink) 72%, var(--ev-intel-muted));
+  max-width: 40rem;
+}
+
+.ev-intel-story__insight {
+  margin: 0.85rem 0 0;
+  padding-left: 0.85rem;
+  border-left: 3px solid color-mix(in srgb, var(--ev-intel-accent) 45%, transparent);
+  font-size: 0.9375rem;
+  font-weight: 550;
+  line-height: 1.5;
+  color: var(--ev-intel-ink);
+}
+
+.ev-intel-story__foot {
+  margin-top: 1.35rem;
+}
+
+.ev-intel-story__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.5rem;
+  padding: 0 1rem 0 1.1rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ev-intel-ink);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 650;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.15);
+}
+
+.ev-intel-story__cta .material-icons {
+  font-size: 1.1rem;
+  transition: transform 0.2s ease;
+}
+
+.ev-intel-story__cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+  background: #1e293b;
+}
+
+.ev-intel-story__cta:hover .material-icons {
+  transform: translateX(2px);
+}
+
+.ev-intel-story__cta:active {
+  transform: scale(0.98);
+}
+
+/* Mix recaudo — minimal */
+.ev-intel-story__mix {
+  margin-top: 1.5rem;
+  max-width: 28rem;
+}
+
+.ev-intel-story__mix-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: var(--ev-intel-muted);
+  margin-bottom: 0.35rem;
+}
+
+.ev-intel-story__mix-row strong {
+  font-size: 1rem;
+  font-weight: 750;
+  color: var(--ev-intel-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.ev-intel-story__mix-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.05);
+  margin-bottom: 0.85rem;
+  overflow: hidden;
+}
+
+.ev-intel-story__mix-fill {
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ev-intel-story__mix-fill--entradas {
+  background: var(--ev-intel-accent-strong);
+}
+
+.ev-intel-story__mix-fill--productos {
+  background: #14b8a6;
+}
+
+/* Spark — micro animación */
+.ev-intel-story__spark {
+  margin-top: 1.75rem;
+  padding-top: 0.25rem;
+}
+
+.ev-intel-story__spark-label {
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ev-intel-muted);
+}
+
+.ev-intel-story__spark-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.4rem;
+  height: 56px;
+}
+
+.ev-intel-story__spark-col {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+}
+
+.ev-intel-story__spark-bar {
+  width: 100%;
+  min-height: 4px;
+  border-radius: 4px 4px 0 0;
+  background: color-mix(in srgb, var(--ev-intel-accent) 55%, #fff);
+  transform-origin: bottom;
+  animation: evIntelSparkGrow 0.55s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+  transition: background 0.2s ease;
+}
+
+.ev-intel-story__spark-bar:hover {
+  background: var(--ev-intel-accent-strong);
+}
+
+@keyframes evIntelSparkGrow {
+  from { transform: scaleY(0); opacity: 0.4; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+
+/* Ranking tipos — lista limpia */
+.ev-intel-story__list {
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 32rem;
+}
+
+.ev-intel-story__list-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.875rem;
+}
+
+.ev-intel-story__list-name {
+  font-weight: 700;
+  color: var(--ev-intel-ink);
+}
+
+.ev-intel-story__list-nums {
+  color: var(--ev-intel-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ev-intel-story__list-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.ev-intel-story__list-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #5eead4, #0d9488);
+  transition: width 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Productos — chips */
+.ev-intel-story__chips {
+  list-style: none;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.ev-intel-story__chip {
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, #f59e0b 10%, #fff);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #92400e;
+}
+
+/* Empty state — más aire */
+.ev-intel-story--empty .ev-intel-story__narrative {
+  max-width: 36rem;
+}
+
+/* ---- Responsive — Mobile First ---- */
+
+@media (max-width: 720px) {
+  .ev-intel-hero__upper {
+    padding: 1.25rem 1rem 1rem;
+  }
+
+  .ev-intel-hero__atmosphere {
+    height: 88vw;
+    max-height: 380px;
+  }
+
+  .ev-intel-hero__beats {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  .ev-intel-beat {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .ev-intel-beat:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .ev-intel-beat__label {
+    text-align: right;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.8125rem;
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  .ev-intel-hero__kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .ev-intel-kpi {
+    padding: 1.35rem 1.25rem;
+  }
+
+  .ev-intel-kpi + .ev-intel-kpi::before {
+    display: none;
+  }
+
+  .ev-intel-kpi + .ev-intel-kpi {
+    border-top: 1px solid rgba(15, 23, 42, 0.05);
+  }
+
+  .ev-intel-kpi__value {
+    font-size: clamp(2.5rem, 10vw, 3rem);
+  }
+
+  .ev-intel-guide {
+    padding: 1.35rem 1.15rem;
+  }
+
+  .ev-intel-stories {
+    gap: 2rem;
+  }
+
+  .ev-intel-story__headline {
+    font-size: clamp(1.65rem, 7vw, 2.15rem);
+  }
+
+  .ev-intel-hero__toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.85rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .ev-intel-hero__hubs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
+    width: 100%;
+  }
+
+  .ev-intel-hero__hubs .ev-intel-action-pill {
+    flex: unset;
+    width: 100%;
+    justify-content: center;
+    min-height: 2.5rem;
+  }
+
+  .ev-intel-hero__quick {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
+    overflow: visible;
+    flex-wrap: unset;
+    padding-bottom: 0;
+  }
+
+  .ev-intel-hero__quick .ev-intel-action-pill {
+    width: 100%;
+    justify-content: center;
+    min-height: 2.5rem;
+    font-size: 0.8125rem;
+  }
+
+  .ev-intel-hero__quick .ev-intel-action-pill--accent {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 721px) {
+  .ev-intel-hero__upper {
+    padding: 1.75rem 1.75rem 1.25rem;
+  }
+
+  .ev-intel-hero__toolbar {
+    padding: 0.9rem 1.75rem;
+  }
+
+  .ev-intel-kpi {
+    padding: 1.75rem 1.5rem 1.85rem;
+  }
+}
+
+@media (min-width: 960px) {
+  .ev-intel-hero__atmosphere {
+    height: 320px;
+  }
+}

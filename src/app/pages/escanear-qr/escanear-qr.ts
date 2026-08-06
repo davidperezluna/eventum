@@ -40,10 +40,11 @@ import {
   AccesoPuertaToastProducto,
   AccesoPuertaToastTipo,
 } from '../../components/acceso-puerta-toast/acceso-puerta-toast';
+import { EvNotice } from '../../components/ev-notice';
 
 @Component({
   selector: 'app-escanear-qr',
-  imports: [CommonModule, FormsModule, RouterLink, AccesoPuertaToastComponent],
+  imports: [CommonModule, FormsModule, RouterLink, AccesoPuertaToastComponent, EvNotice],
   templateUrl: './escanear-qr.html',
   styleUrl: './escanear-qr.css',
 })

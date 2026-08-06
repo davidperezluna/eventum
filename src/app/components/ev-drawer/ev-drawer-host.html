@@ -1,0 +1,16 @@
+<ev-drawer
+  [title]="state.title || 'Panel'"
+  [description]="state.description || ''"
+  [icon]="state.icon || ''"
+  [size]="state.size"
+  [loading]="state.loading"
+  [open]="state.open"
+  [closing]="state.closing"
+  [closeOnBackdrop]="state.closeOnBackdrop"
+  [closeOnEscape]="state.closeOnEscape"
+  [showCloseButton]="state.showCloseButton"
+  (closeRequested)="onCloseRequested()"
+  (closed)="onDrawerClosed()"
+>
+  <ng-container #contentOutlet />
+</ev-drawer>

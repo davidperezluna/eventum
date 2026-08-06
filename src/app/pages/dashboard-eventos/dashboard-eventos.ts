@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, from } from 'rxjs';
 import { takeUntil, debounceTime, switchMap } from 'rxjs/operators';
 import { DashboardService } from '../../services/dashboard.service';
@@ -109,10 +109,15 @@ export class DashboardEventos implements OnInit, OnDestroy {
     private authService: AuthService,
     private appCacheService: AppCacheService,
     private alertService: AlertService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit() {
+    const eventoId = Number(this.route.snapshot.queryParamMap.get('eventoId'));
+    if (eventoId > 0) {
+      this.eventoFiltro = eventoId;
+    }
     // Verificar si es organizador
     this.unsubscribeAuthState = this.authService.onAuthStateChange((user, usuario, session) => {
       const incomingUserId = usuario?.id ?? this.authService.getUsuarioId();

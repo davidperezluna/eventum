@@ -13,7 +13,7 @@ export const environment = {
   /** `true`: tablón de cupos, /cupos, /mis-cupos y enlaces en la app. `false`: oculta todo el módulo. */
   cuposEventumEnabled: true,
   /** `true`: módulo Covers (clubes por lugar, sesiones, aforo, reingreso). `false`: oculta rutas y UI. */
-  coversEventumEnabled: true,
+  coversEventumEnabled: false,
   /**
    * Detalle evento → Entradas (no agotadas): mostrar disponibles / reservados / vendidas / totales.
    * `false` = ocultar esas cifras. Etapas agotadas siempre las muestran.
@@ -61,5 +61,11 @@ export const environment = {
     updateCheckIntervalMs: 5 * 60 * 1000,
     showUpdateNotification: false,
   },
+
+  /** Modo demostración comercial (cuenta organizador dedicada). */
+  showcaseModeEnabled: true,
+  /** ID en `usuarios` del organizador Eventum Showcase — reemplazar tras crear el usuario en Supabase. */
+  showcaseOrganizadorId: 2561,
+  showcaseOrganizadorEmail: 'eventumshowcase@gmail.com',
 };
 
