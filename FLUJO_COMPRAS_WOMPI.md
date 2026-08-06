@@ -575,24 +575,6 @@ supabase/migrations/004_palcos_checkout_reservas.sql
 
 ---
 
-## Agente boleta-email (CLI / Telegram / admin Node)
-
-Módulo independiente en `agents/boleta-email-agent/` que **no modifica** las Edge Functions existentes. Consulta la misma BD y responde en lenguaje natural dónde pueden estar las boletas (cuenta Eventum vs comprobante Wompi vs asistente).
-
-```bash
-cd agents/boleta-email-agent && cp .env.example .env
-npm install
-npm run cli -- "El cliente pagó con daniel@gmail.com pero no ve sus boletas"
-```
-
-- **CLI:** `npm run agent:boleta-email` (desde raíz del repo)
-- **Admin HTTP (Node):** `npm run agent:boleta-email:server` → `POST /api/admin/agents/boleta-email`
-- **Telegram:** `npm run agent:boleta-email:telegram` (webhook con whitelist de user IDs)
-
-Documentación completa: [`agents/boleta-email-agent/README.md`](agents/boleta-email-agent/README.md).
-
----
-
 ## Referencias externas
 
 - [Wompi — Eventos / webhooks](https://docs.wompi.co/docs/colombia/eventos/)
