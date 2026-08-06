@@ -1,219 +1,508 @@
 <div class="wompi-reconcile-page">
-  <header class="page-header">
+  <!-- Header -->
+  <header class="wr-header">
     <div>
-      <h1>
+      <h1 class="wr-header__title">
         <span class="material-icons">compare_arrows</span>
         Reconciliación Wompi
       </h1>
-      <p>Busca con los datos del comprobante Wompi (referencia y transacción) y compara con Eventum.</p>
+      <p class="wr-header__subtitle">
+        Referencia, transacción, correo o Checkout ID.
+      </p>
+    </div>
+    <div class="wr-header__stats">
+      <span class="wr-stat-pill" *ngIf="!orphansLoading">
+        <span class="material-icons">pending_actions</span>
+        {{ orphans.length }} requieren acción
+      </span>
+      <span class="wr-stat-pill wr-stat-pill--warn" *ngIf="!orphansLoading && orphans.length > 0">
+        <span class="material-icons">warning_amber</span>
+        Revisar huérfanos
+      </span>
     </div>
   </header>
 
-  <div class="tabs">
-    <button type="button" class="tab" [class.tab--active]="activeTab === 'buscar'" (click)="setTab('buscar')">
+  <!-- Tabs -->
+  <nav class="wr-tabs" role="tablist">
+    <button
+      type="button"
+      class="wr-tab"
+      [class.wr-tab--active]="activeTab === 'buscar'"
+      (click)="setTab('buscar')"
+    >
+      <span class="material-icons">search</span>
       Buscar
     </button>
-    <button type="button" class="tab" [class.tab--active]="activeTab === 'huerfanos'" (click)="setTab('huerfanos')">
+    <button
+      type="button"
+      class="wr-tab"
+      [class.wr-tab--active]="activeTab === 'huerfanos'"
+      (click)="setTab('huerfanos')"
+    >
+      <span class="material-icons">report_problem</span>
       Requieren acción
-      <span *ngIf="orphans.length > 0" class="tab-badge">{{ orphans.length }}</span>
+      <span *ngIf="orphans.length > 0" class="wr-tab__badge">{{ orphans.length }}</span>
     </button>
-  </div>
+  </nav>
 
+  <!-- ── Tab: Buscar ── -->
   <ng-container *ngIf="activeTab === 'buscar'">
-    <div class="filters-card filters-card--comprobante">
-      <p class="filters-hint">
-        En el comprobante del cliente suelen aparecer solo <strong>Referencia de pago</strong> y
-        <strong>Transacción #</strong>. Con uno de los dos basta para consultar.
+    <section class="wr-search-card">
+      <div class="wr-search-form">
+        <label class="wr-field wr-field--checkout">
+          <span class="wr-field__label">
+            <span class="material-icons">numbers</span>
+            Checkout ID
+          </span>
+          <input
+            [(ngModel)]="searchCheckoutId"
+            (keyup.enter)="buscar()"
+            type="text"
+            inputmode="numeric"
+            class="wr-input"
+            placeholder="1939"
+            autocomplete="off"
+          />
+        </label>
+
+        <label class="wr-field">
+          <span class="wr-field__label">
+            <span class="material-icons">tag</span>
+            Referencia
+          </span>
+          <input
+            [(ngModel)]="searchReference"
+            (keyup.enter)="buscar()"
+            type="text"
+            class="wr-input"
+            placeholder="EVENTUM-CHK-TXN-…"
+            autocomplete="off"
+          />
+        </label>
+
+        <label class="wr-field">
+          <span class="wr-field__label">
+            <span class="material-icons">receipt</span>
+            Transacción #
+          </span>
+          <input
+            [(ngModel)]="searchWompiTxId"
+            (keyup.enter)="buscar()"
+            type="text"
+            class="wr-input"
+            placeholder="ID comprobante Wompi"
+            autocomplete="off"
+          />
+        </label>
+
+        <label class="wr-field">
+          <span class="wr-field__label">
+            <span class="material-icons">mail</span>
+            Correo
+          </span>
+          <input
+            [(ngModel)]="searchEmail"
+            (keyup.enter)="buscar()"
+            type="email"
+            class="wr-input"
+            placeholder="Wompi o Eventum"
+            autocomplete="off"
+          />
+        </label>
+
+        <div class="wr-search-actions">
+          <button type="button" class="wr-btn wr-btn--primary" [disabled]="loading" (click)="buscar()">
+            <span class="material-icons">{{ loading ? 'hourglass_top' : 'search' }}</span>
+            {{ loading ? 'Consultando…' : 'Consultar' }}
+          </button>
+          <button type="button" class="wr-btn wr-btn--secondary wr-btn--clear" (click)="limpiarBusqueda()">
+            Limpiar
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="wr-state-card wr-state-card--loading">
+      <span class="material-icons">sync</span>
+      <p>Consultando Wompi y base de datos…</p>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="!loading && searchError && !result?.success" class="wr-state-card wr-state-card--error">
+      <span class="material-icons">error_outline</span>
+      <p>{{ searchError }}</p>
+      <p *ngIf="searchError.includes('404') || searchError.includes('Failed')" style="font-size: var(--font-size-xs); margin-top: 0.5rem;">
+        ¿Desplegaste la función? <code class="wr-mono">supabase functions deploy wompi-reconcile-lookup</code>
       </p>
+    </div>
 
-      <label class="field">
-        <span class="field-label">Referencia de pago</span>
-        <input
-          [(ngModel)]="searchReference"
-          (keyup.enter)="buscar()"
-          type="text"
-          class="select-input"
-          placeholder="Ej. EVENTUM-CHK-TXN-1939-…"
-          autocomplete="off"
-        />
-      </label>
-
-      <label class="field">
-        <span class="field-label">Transacción #</span>
-        <input
-          [(ngModel)]="searchWompiTxId"
-          (keyup.enter)="buscar()"
-          type="text"
-          class="select-input"
-          placeholder="ID que muestra Wompi en el comprobante"
-          autocomplete="off"
-        />
-      </label>
-
-      <button type="button" class="btn-primary btn-search" [disabled]="loading" (click)="buscar()">
-        <span class="material-icons">search</span>
-        {{ loading ? 'Consultando…' : 'Consultar' }}
-      </button>
-
-      <button type="button" class="btn-advanced-toggle" (click)="toggleAdvancedSearch()">
-        <span class="material-icons">{{ showAdvancedSearch ? 'expand_less' : 'expand_more' }}</span>
-        {{ showAdvancedSearch ? 'Ocultar IDs internos' : 'Búsqueda avanzada (IDs Eventum)' }}
-      </button>
-
-      <div *ngIf="showAdvancedSearch" class="advanced-fields">
-        <label class="field">
-          <span class="field-label">Checkout ID</span>
-          <input [(ngModel)]="searchCheckoutId" (keyup.enter)="buscar()" type="text" inputmode="numeric" class="select-input" placeholder="Ej. 1939" />
-        </label>
-        <label class="field">
-          <span class="field-label">Compra boletas ID</span>
-          <input [(ngModel)]="searchCompraId" (keyup.enter)="buscar()" type="text" inputmode="numeric" class="select-input" placeholder="Ej. 2079" />
-        </label>
-        <label class="field">
-          <span class="field-label">Compra productos ID</span>
-          <input [(ngModel)]="searchCompraProductoId" (keyup.enter)="buscar()" type="text" inputmode="numeric" class="select-input" placeholder="ID compras_productos" />
-        </label>
-        <label class="field">
-          <span class="field-label">Transacción producto ID</span>
-          <input [(ngModel)]="searchTransaccionProductoId" (keyup.enter)="buscar()" type="text" inputmode="numeric" class="select-input" placeholder="ID transacciones_producto" />
-        </label>
-        <button type="button" class="btn-primary btn-search-advanced" [disabled]="loading" (click)="buscar()">
-          <span class="material-icons">search</span>
-          {{ loading ? 'Consultando…' : 'Consultar por ID' }}
-        </button>
+    <!-- Email multiple results -->
+    <div *ngIf="!loading && result?.success && result?.lookup_mode === 'email_multiple'" class="wr-table-card">
+      <div class="wr-table-card__head">
+        <h2><span class="material-icons">mail</span> Resultados por correo</h2>
+        <p *ngIf="result?.hint">{{ result?.hint }}</p>
+        <p *ngIf="result?.usuario as u" style="margin-top: 0.5rem;">
+          Usuario Eventum: <strong>{{ u.email }}</strong>
+          <span *ngIf="u.nombre"> ({{ u.nombre }})</span>
+        </p>
+      </div>
+      <div class="wr-table-wrap wr-table-wrap--desktop" *ngIf="result?.matches?.length">
+        <table class="wr-table">
+          <thead>
+            <tr>
+              <th>Coincidencia</th>
+              <th>Checkout</th>
+              <th>Cuenta Eventum</th>
+              <th>Estado</th>
+              <th>Evento</th>
+              <th>Fecha</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let m of result?.matches">
+              <td><span class="wr-badge wr-badge--info">{{ getEmailMatchTypeLabel(m.match_type) }}</span></td>
+              <td><strong>#{{ m.checkout.id }}</strong></td>
+              <td>{{ m.checkout.cliente?.email || '—' }}</td>
+              <td><span [class]="getStatusBadgeClass(m.checkout.estado)">{{ m.checkout.estado }}</span></td>
+              <td class="wr-truncate" [attr.title]="m.checkout.evento?.titulo || ''">{{ m.checkout.evento?.titulo || '—' }}</td>
+              <td>{{ m.checkout.fecha_creacion | dateFormat:'short' }}</td>
+              <td>
+                <button type="button" class="wr-btn wr-btn--secondary wr-btn--sm" (click)="analizarCheckoutDesdeEmail(m.checkout.id)">
+                  Analizar
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="wr-mobile-list" *ngIf="result?.matches?.length">
+        <article class="wr-mobile-card" *ngFor="let m of result?.matches">
+          <div class="wr-mobile-card__head">
+            <strong>#{{ m.checkout.id }}</strong>
+            <span [class]="getStatusBadgeClass(m.checkout.estado)">{{ m.checkout.estado }}</span>
+          </div>
+          <span class="wr-badge wr-badge--info wr-mobile-card__tag">{{ getEmailMatchTypeLabel(m.match_type) }}</span>
+          <dl class="wr-mobile-card__meta">
+            <div><dt>Cuenta</dt><dd>{{ m.checkout.cliente?.email || '—' }}</dd></div>
+            <div><dt>Evento</dt><dd>{{ m.checkout.evento?.titulo || '—' }}</dd></div>
+            <div><dt>Fecha</dt><dd>{{ m.checkout.fecha_creacion | dateFormat:'short' }}</dd></div>
+          </dl>
+          <button type="button" class="wr-btn wr-btn--secondary wr-btn--block" (click)="analizarCheckoutDesdeEmail(m.checkout.id)">
+            Analizar
+          </button>
+        </article>
+      </div>
+      <div *ngIf="!result?.matches?.length" class="wr-state-card">
+        <span class="material-icons">inbox</span>
+        <p>Sin checkouts para ese correo.</p>
       </div>
     </div>
 
-    <div *ngIf="loading" class="content-card loading-state">Consultando Wompi y base de datos…</div>
+    <!-- Single lookup result -->
+    <ng-container *ngIf="!loading && result?.success && result?.lookup_mode !== 'email_multiple'">
+      <!-- Summary bar -->
+      <div class="wr-summary-bar" *ngIf="result">
+        <span class="wr-summary-bar__label">Resumen</span>
+        <span [class]="getAlignmentBadge(result).class">{{ getAlignmentBadge(result).label }}</span>
+        <span *ngIf="result.wompi?.status" [class]="getWompiStatusBadge(result.wompi!.status!)">
+          Wompi: {{ result.wompi!.status }}
+        </span>
+        <span *ngIf="result.checkout?.materializado" class="wr-badge wr-badge--ok">
+          Materializado
+        </span>
+        <span *ngIf="result.checkout && !result.checkout.materializado" class="wr-badge wr-badge--warn">
+          Sin materializar
+        </span>
+        <span *ngIf="result.requiere_accion" class="wr-badge wr-badge--error">
+          Requiere acción
+        </span>
+        <span *ngIf="emailsDifferen(result)" class="wr-badge wr-badge--warn">
+          Emails distintos
+        </span>
+      </div>
 
-    <div *ngIf="!loading && searchError && !result?.success" class="content-card error-state">
-      <span class="material-icons">error_outline</span>
-      <p>{{ searchError }}</p>
-      <p class="error-hint" *ngIf="searchError.includes('404') || searchError.includes('Failed')">
-        ¿Desplegaste la función? <code>supabase functions deploy wompi-reconcile-lookup</code>
-      </p>
-    </div>
+      <!-- Email alert -->
+      <div *ngIf="emailsDifferen(result)" class="wr-email-alert">
+        <div class="wr-email-alert__icon">
+          <span class="material-icons">support_agent</span>
+        </div>
+        <div>
+          <h3 class="wr-email-alert__title">Correos distintos — guía para soporte</h3>
+          <p class="wr-email-alert__text">{{ result?.email_context?.mensaje_soporte }}</p>
+          <div class="wr-email-compare">
+            <div class="wr-email-box">
+              <span class="wr-email-box__label">Comprobante Wompi</span>
+              <span class="wr-email-box__value">{{ result?.email_context?.email_wompi_comprobante || '—' }}</span>
+            </div>
+            <div class="wr-email-box wr-email-box--highlight">
+              <span class="wr-email-box__label">Cuenta con boletas (Eventum)</span>
+              <span class="wr-email-box__value">{{ result?.email_context?.email_cuenta_eventum || '—' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    <div *ngIf="!loading && result?.success" class="result-grid">
-      <section class="content-card panel">
-        <h2>
-          <span class="material-icons">account_balance</span>
-          Wompi
-          <span class="env-badge">{{ result?.wompi_environment || '—' }}</span>
-        </h2>
-        <ng-container *ngIf="result?.wompi; else noWompi">
-          <dl class="kv">
-            <dt>Status</dt><dd><strong>{{ result?.wompi?.status }}</strong></dd>
-            <dt>Reference</dt><dd class="mono">{{ result?.wompi?.reference }}</dd>
-            <dt>Transaction ID</dt><dd class="mono">{{ result?.wompi?.id }}</dd>
-            <dt>Monto</dt><dd>{{ formatWompiAmount(result?.wompi?.amount_in_cents, result?.wompi?.currency) }}</dd>
-            <dt>Email cliente</dt><dd>{{ result?.wompi?.customer_email || '—' }}</dd>
-            <dt>Método</dt><dd>{{ result?.wompi?.payment_method_type || '—' }}</dd>
-            <dt>Creado</dt><dd>{{ result?.wompi?.created_at || '—' }}</dd>
-          </dl>
-          <p class="lookup-hint" *ngIf="result?.lookup_source">Fuente: {{ result?.lookup_source }}</p>
-        </ng-container>
-        <ng-template #noWompi>
-          <p class="empty-inline">No se encontró transacción en Wompi con los criterios dados.</p>
-        </ng-template>
-      </section>
+      <!-- Compare panels -->
+      <div class="wr-compare-grid">
+        <!-- Wompi -->
+        <article class="wr-panel wr-panel--wompi">
+          <header class="wr-panel__head">
+            <span class="material-icons">account_balance</span>
+            <h2 class="wr-panel__title">Wompi</h2>
+            <span class="wr-panel__env">{{ result?.wompi_environment || '—' }}</span>
+          </header>
+          <div class="wr-panel__body" *ngIf="result?.wompi; else noWompi">
+            <div class="wr-status-row">
+              <span [class]="getWompiStatusBadge(result!.wompi!.status!)">{{ result!.wompi!.status }}</span>
+              <span class="wr-amount">{{ formatWompiAmount(result!.wompi!.amount_in_cents, result!.wompi!.currency) }}</span>
+            </div>
+            <dl class="wr-detail-list">
+              <div class="wr-detail-row">
+                <dt>Reference</dt>
+                <dd class="wr-mono">{{ result!.wompi!.reference }}</dd>
+              </div>
+              <div class="wr-detail-row">
+                <dt>Transaction ID</dt>
+                <dd class="wr-mono">{{ result!.wompi!.id }}</dd>
+              </div>
+              <div class="wr-detail-row">
+                <dt>Email comprobante</dt>
+                <dd>
+                  {{ result!.wompi!.customer_email || '—' }}
+                  <span class="wr-detail-row__hint">Recibo / facturación</span>
+                </dd>
+              </div>
+              <div class="wr-detail-row">
+                <dt>Método</dt>
+                <dd>{{ result!.wompi!.payment_method_type || '—' }}</dd>
+              </div>
+              <div class="wr-detail-row">
+                <dt>Creado</dt>
+                <dd>{{ result!.wompi!.created_at || '—' }}</dd>
+              </div>
+            </dl>
+            <p *ngIf="result?.lookup_source" style="margin: var(--spacing-sm) 0 0; font-size: var(--font-size-xs); color: var(--color-text-secondary);">
+              Fuente: {{ result!.lookup_source }}
+            </p>
+          </div>
+          <ng-template #noWompi>
+            <div class="wr-panel__body">
+              <p class="wr-panel__empty">No se encontró transacción en Wompi con los criterios dados.</p>
+            </div>
+          </ng-template>
+        </article>
 
-      <section class="content-card panel">
-        <h2>
-          <span class="material-icons">receipt_long</span>
-          Eventum — Checkout
-        </h2>
-        <ng-container *ngIf="result?.checkout; else noCheckout">
-          <dl class="kv">
-            <dt>ID</dt><dd>{{ result?.checkout?.id }}</dd>
-            <dt>Tipo</dt><dd>{{ result?.checkout?.tipo }}</dd>
-            <dt>Estado</dt><dd>{{ result?.checkout?.estado }}</dd>
-            <dt>Wompi status</dt><dd>{{ result?.checkout?.wompi_status || '—' }}</dd>
-            <dt>Materializado</dt><dd>{{ result?.checkout?.materializado ? 'Sí' : 'No' }}</dd>
-            <dt>Cliente</dt><dd>{{ getClienteLabel(result!.checkout!) }}</dd>
-            <dt>Evento</dt><dd>{{ result?.checkout?.evento?.titulo || '—' }}</dd>
-            <dt>Total BD</dt><dd>{{ formatCurrency(result?.checkout?.total, result?.checkout?.moneda) }}</dd>
-            <dt>Compra boletas</dt><dd>{{ result?.checkout?.compra_id || '—' }}</dd>
-            <dt>Compra productos</dt><dd>{{ result?.checkout?.compra_producto_id || '—' }}</dd>
-            <dt>Compra cover</dt><dd>{{ result?.checkout?.compra_cover_id || '—' }}</dd>
-          </dl>
-          <div class="panel-actions">
+        <!-- Eventum checkout -->
+        <article class="wr-panel wr-panel--eventum">
+          <header class="wr-panel__head">
+            <span class="material-icons">receipt_long</span>
+            <h2 class="wr-panel__title">Eventum — Checkout</h2>
+          </header>
+          <div class="wr-panel__body" *ngIf="result?.checkout; else noCheckout">
+            <div class="wr-status-row">
+              <span [class]="getStatusBadgeClass(result!.checkout!.estado)">{{ result!.checkout!.estado }}</span>
+              <span *ngIf="result!.checkout!.wompi_status" class="wr-badge wr-badge--neutral">
+                Wompi: {{ result!.checkout!.wompi_status }}
+              </span>
+              <span class="wr-amount">{{ formatCurrency(result!.checkout!.total, result!.checkout!.moneda) }}</span>
+            </div>
+            <dl class="wr-detail-list">
+              <div class="wr-detail-row">
+                <dt>ID</dt>
+                <dd><strong>#{{ result!.checkout!.id }}</strong></dd>
+              </div>
+              <div class="wr-detail-row">
+                <dt>Tipo</dt>
+                <dd>{{ result!.checkout!.tipo }}</dd>
+              </div>
+              <div class="wr-detail-row">
+                <dt>Materializado</dt>
+                <dd>
+                  <span [class]="result!.checkout!.materializado ? 'wr-badge wr-badge--ok' : 'wr-badge wr-badge--warn'">
+                    {{ result!.checkout!.materializado ? 'Sí' : 'No' }}
+                  </span>
+                </dd>
+              </div>
+              <div class="wr-detail-row">
+                <dt>Cliente</dt>
+                <dd>{{ getClienteLabel(result!.checkout!) }}</dd>
+              </div>
+              <div class="wr-detail-row">
+                <dt>Cuenta Eventum</dt>
+                <dd>
+                  <strong>{{ result!.checkout!.cliente?.email || '—' }}</strong>
+                  <span class="wr-detail-row__hint">Mis compras — aquí debe iniciar sesión</span>
+                </dd>
+              </div>
+              <div class="wr-detail-row">
+                <dt>Evento</dt>
+                <dd>{{ result!.checkout!.evento?.titulo || '—' }}</dd>
+              </div>
+              <div class="wr-detail-row">
+                <dt>Compra boletas</dt>
+                <dd>{{ result!.checkout!.compra_id || '—' }}</dd>
+              </div>
+              <div class="wr-detail-row">
+                <dt>Compra productos</dt>
+                <dd>{{ result!.checkout!.compra_producto_id || '—' }}</dd>
+              </div>
+              <div class="wr-detail-row">
+                <dt>Compra cover</dt>
+                <dd>{{ result!.checkout!.compra_cover_id || '—' }}</dd>
+              </div>
+            </dl>
+          </div>
+          <ng-template #noCheckout>
+            <div class="wr-panel__body">
+              <p class="wr-panel__empty">No hay checkout en Eventum para este criterio.</p>
+            </div>
+          </ng-template>
+          <div class="wr-panel__actions" *ngIf="result?.checkout">
             <a
-              class="btn-secondary btn-link"
+              class="wr-btn wr-btn--secondary wr-btn--sm"
               [routerLink]="['/transacciones-checkout']"
-              [queryParams]="{ tx_id: result?.checkout?.id }"
+              [queryParams]="{ tx_id: result!.checkout!.id }"
             >
+              <span class="material-icons">open_in_new</span>
               Ver en transacciones
             </a>
             <button
               *ngIf="result?.requiere_accion"
               type="button"
-              class="btn-primary"
-              [disabled]="syncingId === result?.checkout?.id"
+              class="wr-btn wr-btn--primary wr-btn--sm"
+              [disabled]="syncingId === result!.checkout!.id"
               (click)="sincronizar(result!.checkout!.id)"
             >
-              {{ syncingId === result?.checkout?.id ? 'Sincronizando…' : 'Sincronizar' }}
+              <span class="material-icons">sync</span>
+              {{ syncingId === result!.checkout!.id ? 'Sincronizando…' : 'Sincronizar' }}
             </button>
           </div>
-        </ng-container>
-        <ng-template #noCheckout>
-          <p class="empty-inline">No hay checkout en Eventum para este criterio.</p>
-        </ng-template>
-      </section>
+        </article>
+      </div>
 
-      <section class="content-card panel" *ngIf="result?.transaccion_producto as txnProd">
-        <h2>
+      <!-- Transacción producto -->
+      <section class="wr-section" *ngIf="result?.transaccion_producto as txnProd">
+        <header class="wr-section__head">
           <span class="material-icons">inventory_2</span>
-          Eventum — Transacción producto
-        </h2>
-        <dl class="kv">
-          <dt>ID</dt><dd>{{ txnProd['id'] }}</dd>
-          <dt>Estado</dt><dd>{{ txnProd['estado'] }}</dd>
-          <dt>Wompi status</dt><dd>{{ txnProd['wompi_status'] || '—' }}</dd>
-          <dt>Compra producto</dt><dd>{{ txnProd['compra_producto_id'] || '—' }}</dd>
-          <dt>Reference</dt><dd class="mono">{{ txnProd['wompi_reference'] || '—' }}</dd>
-          <dt>Wompi Tx</dt><dd class="mono">{{ txnProd['wompi_transaction_id'] || '—' }}</dd>
-        </dl>
+          <h2>Eventum — Transacción producto</h2>
+        </header>
+        <div class="wr-section__body">
+          <dl class="wr-detail-list">
+            <div class="wr-detail-row">
+              <dt>ID</dt><dd><strong>#{{ txnProd['id'] }}</strong></dd>
+            </div>
+            <div class="wr-detail-row">
+              <dt>Estado</dt><dd><span [class]="getStatusBadgeClass(formatRecordEstado(txnProd['estado']))">{{ txnProd['estado'] }}</span></dd>
+            </div>
+            <div class="wr-detail-row">
+              <dt>Wompi status</dt><dd>{{ txnProd['wompi_status'] || '—' }}</dd>
+            </div>
+            <div class="wr-detail-row">
+              <dt>Compra producto</dt><dd>{{ txnProd['compra_producto_id'] || '—' }}</dd>
+            </div>
+            <div class="wr-detail-row">
+              <dt>Reference</dt><dd class="wr-mono">{{ txnProd['wompi_reference'] || '—' }}</dd>
+            </div>
+            <div class="wr-detail-row">
+              <dt>Wompi Tx</dt><dd class="wr-mono">{{ txnProd['wompi_transaction_id'] || '—' }}</dd>
+            </div>
+          </dl>
+        </div>
       </section>
 
-      <section class="content-card panel panel--full" *ngIf="result?.compras && (result?.compras?.['compra_boletas'] || result?.compras?.['compra_productos'] || result?.compras?.['compra_cover'])">
-        <h2><span class="material-icons">shopping_bag</span> Compras materializadas</h2>
-        <pre class="json-block">{{ result?.compras | json }}</pre>
+      <!-- Compras materializadas -->
+      <section class="wr-section" *ngIf="hasComprasMaterializadas(result)">
+        <header class="wr-section__head">
+          <span class="material-icons">shopping_bag</span>
+          <h2>Compras materializadas</h2>
+        </header>
+        <div class="wr-section__body">
+          <div class="wr-compras-grid">
+            <div class="wr-compra-card" *ngIf="getCompraBoletas(result) as cb">
+              <div class="wr-compra-card__type">Boletas</div>
+              <div class="wr-compra-card__id">#{{ cb['id'] }}</div>
+              <div class="wr-compra-card__meta">
+                Estado: {{ cb['estado_compra'] }} · Pago: {{ cb['estado_pago'] }}<br />
+                {{ formatCompraTotal(cb) }}<br />
+                <strong>{{ cb['boletas_count'] }} boleta(s)</strong>
+              </div>
+            </div>
+            <div class="wr-compra-card" *ngIf="getCompraProductos(result) as cp">
+              <div class="wr-compra-card__type">Productos</div>
+              <div class="wr-compra-card__id">#{{ cp['id'] }}</div>
+              <div class="wr-compra-card__meta">
+                Estado: {{ cp['estado_compra'] }} · Pago: {{ cp['estado_pago'] }}<br />
+                {{ formatCompraTotal(cp) }}
+              </div>
+            </div>
+            <div class="wr-compra-card" *ngIf="getCompraCover(result) as cc">
+              <div class="wr-compra-card__type">Cover</div>
+              <div class="wr-compra-card__id">#{{ cc['id'] }}</div>
+              <div class="wr-compra-card__meta">
+                Estado: {{ cc['estado_compra'] }} · Pago: {{ cc['estado_pago'] }}<br />
+                {{ formatCompraTotal(cc) }}<br />
+                <strong>{{ cc['boletas_cover_count'] }} cover(s)</strong>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
-      <section class="content-card panel panel--full">
-        <h2><span class="material-icons">rule</span> Diagnóstico</h2>
-        <ul class="diag-list">
-          <li *ngFor="let item of result?.diagnostico" [class]="diagnosticoClass(item)">
-            <strong>{{ item.codigo }}</strong> — {{ item.mensaje }}
-          </li>
-        </ul>
+      <!-- Diagnóstico -->
+      <section class="wr-section">
+        <header class="wr-section__head">
+          <span class="material-icons">rule</span>
+          <h2>Diagnóstico</h2>
+        </header>
+        <div class="wr-section__body">
+          <div class="wr-diag-grid" *ngIf="result?.diagnostico?.length; else noDiag">
+            <div
+              *ngFor="let item of result!.diagnostico"
+              [class]="diagnosticoClass(item)"
+            >
+              <span class="material-icons">{{ getDiagnosticoIcon(item.nivel) }}</span>
+              <div>
+                <span class="wr-diag-item__code">{{ item.codigo }}</span>
+                {{ item.mensaje }}
+              </div>
+            </div>
+          </div>
+          <ng-template #noDiag>
+            <p class="wr-panel__empty">Sin diagnóstico disponible.</p>
+          </ng-template>
+        </div>
       </section>
-    </div>
+    </ng-container>
   </ng-container>
 
+  <!-- ── Tab: Huérfanos ── -->
   <ng-container *ngIf="activeTab === 'huerfanos'">
-    <div class="content-card">
-      <div class="panel-toolbar">
+    <div class="wr-table-card">
+      <div class="wr-toolbar">
         <p>
           Checkouts sin compra materializada: aprobados en BD o pendientes vencidos (más de ~10 min) con link Wompi.
           El cron también los procesa automáticamente.
         </p>
-        <button type="button" class="btn-secondary" [disabled]="orphansLoading" (click)="loadOrphans()">
+        <button type="button" class="wr-btn wr-btn--secondary" [disabled]="orphansLoading" (click)="loadOrphans()">
           <span class="material-icons">refresh</span>
           Actualizar
         </button>
       </div>
 
-      <div *ngIf="orphansLoading" class="loading-state">Cargando…</div>
+      <div *ngIf="orphansLoading" class="wr-state-card wr-state-card--loading">
+        <span class="material-icons">sync</span>
+        <p>Cargando…</p>
+      </div>
 
-      <div *ngIf="!orphansLoading && orphans.length === 0" class="empty-state">
+      <div *ngIf="!orphansLoading && orphans.length === 0" class="wr-state-card">
         <span class="material-icons">check_circle</span>
         <p>No hay checkouts huérfanos pendientes.</p>
       </div>
 
-      <div *ngIf="!orphansLoading && orphans.length > 0" class="table-scroll">
-        <table class="data-table">
+      <div *ngIf="!orphansLoading && orphans.length > 0" class="wr-table-wrap wr-table-wrap--desktop">
+        <table class="wr-table">
           <thead>
             <tr>
               <th>ID</th>
@@ -228,27 +517,57 @@
           </thead>
           <tbody>
             <tr *ngFor="let row of orphans">
-              <td>{{ row.id }}</td>
+              <td><strong>#{{ row.id }}</strong></td>
               <td><span [class]="orphanTipoClass(row)">{{ getOrphanTipoLabel(row) }}</span></td>
-              <td>{{ row.estado }}</td>
+              <td><span [class]="getStatusBadgeClass(row.estado)">{{ row.estado }}</span></td>
               <td>{{ getClienteLabel(row) }}</td>
-              <td>{{ row.evento?.titulo || '—' }}</td>
-              <td class="mono cell-truncate" [attr.title]="row.wompi_reference || ''">{{ row.wompi_reference || '—' }}</td>
+              <td class="wr-truncate" [attr.title]="row.evento?.titulo || ''">{{ row.evento?.titulo || '—' }}</td>
+              <td class="wr-mono wr-truncate" [attr.title]="row.wompi_reference || ''">{{ row.wompi_reference || '—' }}</td>
               <td>{{ row.fecha_creacion | dateFormat:'short' }}</td>
-              <td class="actions">
-                <button type="button" class="btn-venta-action btn-venta-action--text" (click)="verEnBuscar(row)">Analizar</button>
-                <button
-                  type="button"
-                  class="btn-venta-action btn-venta-action--text btn-venta-action--primary"
-                  [disabled]="syncingId === row.id"
-                  (click)="sincronizar(row.id)"
-                >
-                  {{ syncingId === row.id ? '…' : 'Sync' }}
-                </button>
+              <td>
+                <div class="wr-actions">
+                  <button type="button" class="wr-btn wr-btn--secondary wr-btn--sm" (click)="verEnBuscar(row)">
+                    Analizar
+                  </button>
+                  <button
+                    type="button"
+                    class="wr-btn wr-btn--primary wr-btn--sm"
+                    [disabled]="syncingId === row.id"
+                    (click)="sincronizar(row.id)"
+                  >
+                    {{ syncingId === row.id ? '…' : 'Sync' }}
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+      <div class="wr-mobile-list" *ngIf="!orphansLoading && orphans.length > 0">
+        <article class="wr-mobile-card" *ngFor="let row of orphans">
+          <div class="wr-mobile-card__head">
+            <strong>#{{ row.id }}</strong>
+            <span [class]="orphanTipoClass(row)">{{ getOrphanTipoLabel(row) }}</span>
+          </div>
+          <dl class="wr-mobile-card__meta">
+            <div><dt>Estado</dt><dd><span [class]="getStatusBadgeClass(row.estado)">{{ row.estado }}</span></dd></div>
+            <div><dt>Cliente</dt><dd>{{ getClienteLabel(row) }}</dd></div>
+            <div><dt>Evento</dt><dd>{{ row.evento?.titulo || '—' }}</dd></div>
+            <div><dt>Reference</dt><dd class="wr-mono">{{ row.wompi_reference || '—' }}</dd></div>
+            <div><dt>Fecha</dt><dd>{{ row.fecha_creacion | dateFormat:'short' }}</dd></div>
+          </dl>
+          <div class="wr-mobile-card__actions">
+            <button type="button" class="wr-btn wr-btn--secondary" (click)="verEnBuscar(row)">Analizar</button>
+            <button
+              type="button"
+              class="wr-btn wr-btn--primary"
+              [disabled]="syncingId === row.id"
+              (click)="sincronizar(row.id)"
+            >
+              {{ syncingId === row.id ? '…' : 'Sync' }}
+            </button>
+          </div>
+        </article>
       </div>
     </div>
   </ng-container>

@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const WOMPI_RECONCILE_LOOKUP_VERSION = '1.1.0-orphan-pending-list'
+const WOMPI_RECONCILE_LOOKUP_VERSION = '1.2.0-email-context'
 const ADMIN_TIPO_USUARIO_ID = 3
 
 const corsHeaders = {
@@ -129,6 +129,7 @@ async function assertAdminCaller(
   } = await adminClient.auth.getUser(jwt)
 
   if (callerAuthError || !callerAuthUser) {
+    console.error('wompi-reconcile-lookup auth.getUser:', callerAuthError?.message)
     throw new Error('UNAUTHORIZED')
   }
 
@@ -234,6 +235,116 @@ const CHECKOUT_SELECT = `
   evento:eventos(id, titulo, wompi_cuenta_id)
 `
 
+function normalizeEmail(value: unknown): string {
+  return String(value || '').trim().toLowerCase()
+}
+
+function extractEmailFromCheckoutPayload(checkout: Record<string, unknown> | null): string {
+  if (!checkout?.request_payload || typeof checkout.request_payload !== 'object') {
+    return ''
+  }
+  const payload = checkout.request_payload as Record<string, unknown>
+  const requestBody = payload.request_body
+  if (requestBody && typeof requestBody === 'object') {
+    const fromBody = normalizeEmail((requestBody as Record<string, unknown>).customer_email)
+    if (fromBody) return fromBody
+  }
+  return normalizeEmail(payload.customer_email)
+}
+
+function buildEmailContext(params: {
+  checkout: Record<string, unknown> | null
+  wompiTransaction: Record<string, unknown> | null
+}): Record<string, unknown> {
+  const cliente = params.checkout?.cliente as { email?: string | null } | null | undefined
+  const emailCuenta = normalizeEmail(cliente?.email)
+  const emailWompi = normalizeEmail(params.wompiTransaction?.customer_email)
+  const emailAlCrearCheckout = extractEmailFromCheckoutPayload(params.checkout)
+
+  const emailsCoinciden = emailCuenta && emailWompi ? emailCuenta === emailWompi : null
+  const materializado = params.checkout?.materializado === true
+
+  let mensajeSoporte: string | null = null
+  if (emailCuenta && emailWompi && emailsCoinciden === false) {
+    if (materializado && params.checkout?.compra_id) {
+      mensajeSoporte =
+        `El pago sí está materializado (compra #${params.checkout.compra_id}), pero el comprobante Wompi muestra ${emailWompi} y las boletas están en la cuenta Eventum ${emailCuenta}. Indica al cliente: «Inicia sesión en Eventum con ${emailCuenta} y entra a Mis compras — no uses el correo del recibo de Wompi».`
+    } else {
+      mensajeSoporte =
+        `Correo del comprobante Wompi (${emailWompi}) distinto al de la cuenta Eventum (${emailCuenta}). Las boletas quedarán en la cuenta con la que inició sesión al comprar.`
+    }
+  } else if (emailCuenta && materializado) {
+    mensajeSoporte = `Boletas en la cuenta Eventum ${emailCuenta} → Mis compras.`
+  }
+
+  return {
+    email_cuenta_eventum: emailCuenta || null,
+    email_wompi_comprobante: emailWompi || null,
+    email_al_crear_checkout: emailAlCrearCheckout || null,
+    emails_coinciden: emailsCoinciden,
+    mensaje_soporte: mensajeSoporte,
+  }
+}
+
+async function searchCheckoutsByEmail(
+  supabaseClient: ReturnType<typeof createClient>,
+  emailInput: string,
+): Promise<{
+  email: string
+  usuario: Record<string, unknown> | null
+  matches: Array<{ match_type: string; checkout: Record<string, unknown> }>
+}> {
+  const email = normalizeEmail(emailInput)
+  if (!email || !email.includes('@')) {
+    throw new Error('Indica un correo válido')
+  }
+
+  const matches: Array<{ match_type: string; checkout: Record<string, unknown> }> = []
+  const seenIds = new Set<number>()
+
+  const pushMatch = (matchType: string, row: Record<string, unknown>) => {
+    const id = Number(row.id)
+    if (!Number.isFinite(id) || id <= 0 || seenIds.has(id)) return
+    seenIds.add(id)
+    matches.push({ match_type: matchType, checkout: row })
+  }
+
+  const { data: usuario } = await supabaseClient
+    .from('usuarios')
+    .select('id, nombre, apellido, email, documento_identidad, activo')
+    .ilike('email', email)
+    .maybeSingle()
+
+  if (usuario?.id) {
+    const { data: byCliente } = await supabaseClient
+      .from('transacciones_checkout')
+      .select(CHECKOUT_SELECT)
+      .eq('cliente_id', Number(usuario.id))
+      .order('fecha_creacion', { ascending: false })
+      .limit(25)
+    for (const row of byCliente ?? []) {
+      pushMatch('cuenta_eventum', row as Record<string, unknown>)
+    }
+  }
+
+  const { data: byWompiPayload } = await supabaseClient
+    .from('transacciones_checkout')
+    .select(CHECKOUT_SELECT)
+    .eq('response_payload->>customer_email', email)
+    .order('fecha_creacion', { ascending: false })
+    .limit(25)
+
+  for (const row of byWompiPayload ?? []) {
+    pushMatch('comprobante_wompi', row as Record<string, unknown>)
+  }
+
+  return {
+    email,
+    usuario: usuario as Record<string, unknown> | null,
+    matches,
+  }
+}
+
 function buildDiagnostico(params: {
   checkout: Record<string, unknown> | null
   wompiTransaction: Record<string, unknown> | null
@@ -327,6 +438,18 @@ function buildDiagnostico(params: {
         mensaje: 'Pago y compra alineados correctamente.',
       })
     }
+
+    const emailCtx = buildEmailContext({ checkout, wompiTransaction: wompiTransaction })
+    if (emailCtx.emails_coinciden === false) {
+      items.unshift({
+        nivel: 'info',
+        codigo: 'EMAIL_WOMPI_VS_CUENTA',
+        mensaje: String(
+          emailCtx.mensaje_soporte ||
+            'El correo del comprobante Wompi no coincide con la cuenta Eventum donde están las boletas.',
+        ),
+      })
+    }
   }
 
   if (transaccionProducto && !checkout) {
@@ -377,7 +500,7 @@ async function loadCompraResumen(
       .eq('id', compraId)
       .maybeSingle()
     const { count } = await supabaseClient
-      .from('boletas')
+      .from('boletas_compradas')
       .select('id', { count: 'exact', head: true })
       .eq('compra_id', compraId)
     resumen.compra_boletas = { ...(data || {}), boletas_count: count ?? 0 }
@@ -426,7 +549,7 @@ serve(async (req) => {
     await assertAdminCaller(supabaseClient, req)
 
     const body = await req.json() as {
-      action?: 'lookup' | 'list_orphans'
+      action?: 'lookup' | 'list_orphans' | 'search_by_email'
       reference?: string
       wompi_transaction_id?: string
       transaccion_checkout_id?: number
@@ -434,9 +557,28 @@ serve(async (req) => {
       compra_producto_id?: number
       transaccion_producto_id?: number
       wompi_cuenta_id?: number
+      email?: string
     }
 
-    const action = body.action === 'list_orphans' ? 'list_orphans' : 'lookup'
+    const action = body.action === 'list_orphans'
+      ? 'list_orphans'
+      : body.action === 'search_by_email'
+        ? 'search_by_email'
+        : 'lookup'
+
+    if (action === 'search_by_email') {
+      const email = body.email?.trim() || ''
+      const searchResult = await searchCheckoutsByEmail(supabaseClient, email)
+      return jsonResponse({
+        success: true,
+        ...searchResult,
+        total: searchResult.matches.length,
+        hint:
+          searchResult.matches.length === 0
+            ? 'No hay checkouts con ese correo. Prueba referencia/transacción del comprobante Wompi.'
+            : 'Si el cliente dio el correo del recibo Wompi, prioriza filas «comprobante_wompi» y revisa la cuenta Eventum en cada fila.',
+      })
+    }
 
     if (action === 'list_orphans') {
       const ttlMinutes = resolvePendingTtlMinutes()
@@ -577,7 +719,23 @@ serve(async (req) => {
     }
 
     if (!checkout && !transaccionProducto && !reference && !wompiTransactionIdInput && !transaccionCheckoutId) {
-      return jsonResponse({ success: false, error: 'Indica reference, wompi_transaction_id, transaccion_checkout_id, compra_id o transaccion_producto_id' }, 400)
+      const emailSearch = body.email?.trim()
+      if (emailSearch) {
+        const searchResult = await searchCheckoutsByEmail(supabaseClient, emailSearch)
+        if (searchResult.matches.length === 1) {
+          checkout = searchResult.matches[0].checkout
+          transaccionCheckoutId = Number(checkout.id)
+        } else {
+          return jsonResponse({
+            success: true,
+            lookup_mode: 'email_multiple',
+            ...searchResult,
+            total: searchResult.matches.length,
+          })
+        }
+      } else {
+        return jsonResponse({ success: false, error: 'Indica reference, wompi_transaction_id, email, transaccion_checkout_id, compra_id o transaccion_producto_id' }, 400)
+      }
     }
 
     const eventoId = checkout?.evento_id
@@ -665,6 +823,8 @@ serve(async (req) => {
         }
       : null
 
+    const emailContext = buildEmailContext({ checkout, wompiTransaction })
+
     return jsonResponse({
       success: true,
       lookup_source: wompiLookupSource,
@@ -672,6 +832,7 @@ serve(async (req) => {
       wompi_cuenta_id: credentials.wompiCuentaId,
       requiere_accion: requiereAccion,
       diagnostico,
+      email_context: emailContext,
       wompi: wompiSummary,
       wompi_raw: wompiTransaction,
       checkout,
@@ -681,7 +842,10 @@ serve(async (req) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     if (message === 'UNAUTHORIZED') {
-      return jsonResponse({ success: false, error: 'No autorizado' }, 401)
+      return jsonResponse({
+        success: false,
+        error: 'Sesión inválida o expirada. Cierra sesión e inicia de nuevo como administrador.',
+      }, 401)
     }
     if (message === 'FORBIDDEN') {
       return jsonResponse({ success: false, error: 'Solo administradores pueden consultar reconciliación Wompi' }, 403)

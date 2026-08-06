@@ -129,6 +129,12 @@ Si necesitas cambiar la ruta base para GitHub Pages, actualiza:
 "build:gh-pages": "ng build --configuration production --base-href /tu-nueva-ruta/"
 ```
 
+## 📚 Documentación
+
+- **[Flujo de compras y Wompi](FLUJO_COMPRAS_WOMPI.md)** — pagos, webhooks, materialización, reconciliación e idempotencia
+- [Supabase setup](SUPABASE_SETUP.md)
+- [Deploy producción](DEPLOY_PRODUCTION.md)
+
 ## 📄 Licencia
 
 Este proyecto es parte de Eventum.

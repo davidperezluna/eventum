@@ -24,11 +24,8 @@ export class WompiReconcile implements OnInit {
 
   searchReference = '';
   searchWompiTxId = '';
+  searchEmail = '';
   searchCheckoutId = '';
-  searchCompraId = '';
-  searchCompraProductoId = '';
-  searchTransaccionProductoId = '';
-  showAdvancedSearch = false;
 
   loading = false;
   syncingId: number | null = null;
@@ -55,22 +52,16 @@ export class WompiReconcile implements OnInit {
     }
   }
 
-  toggleAdvancedSearch(): void {
-    this.showAdvancedSearch = !this.showAdvancedSearch;
-  }
-
   async buscar(): Promise<void> {
     const reference = this.searchReference.trim();
     const wompiTx = this.searchWompiTxId.trim();
+    const email = this.searchEmail.trim();
     const checkoutId = this.parsePositiveInt(this.searchCheckoutId);
-    const compraId = this.parsePositiveInt(this.searchCompraId);
-    const compraProductoId = this.parsePositiveInt(this.searchCompraProductoId);
-    const transaccionProductoId = this.parsePositiveInt(this.searchTransaccionProductoId);
 
-    if (!reference && !wompiTx && !checkoutId && !compraId && !compraProductoId && !transaccionProductoId) {
+    if (!reference && !wompiTx && !email && !checkoutId) {
       this.alertService.warning(
         'Búsqueda',
-        'Indica referencia, transacción # del comprobante, o un ID en búsqueda avanzada.',
+        'Indica referencia, transacción #, correo del cliente o Checkout ID.',
       );
       return;
     }
@@ -84,10 +75,8 @@ export class WompiReconcile implements OnInit {
       this.result = await this.wompiReconcileService.lookup({
         reference: reference || undefined,
         wompi_transaction_id: wompiTx || undefined,
+        email: email || undefined,
         transaccion_checkout_id: checkoutId ?? undefined,
-        compra_id: compraId ?? undefined,
-        compra_producto_id: compraProductoId ?? undefined,
-        transaccion_producto_id: transaccionProductoId ?? undefined,
       });
       if (!this.result.success) {
         this.searchError = this.result.error || 'No se pudo consultar.';
@@ -155,14 +144,32 @@ export class WompiReconcile implements OnInit {
 
   verEnBuscar(row: WompiReconcileOrphanRow): void {
     this.activeTab = 'buscar';
-    this.showAdvancedSearch = true;
     this.searchCheckoutId = String(row.id);
     this.searchReference = '';
     this.searchWompiTxId = '';
-    this.searchCompraId = '';
-    this.searchCompraProductoId = '';
-    this.searchTransaccionProductoId = '';
+    this.searchEmail = '';
     void this.buscar();
+  }
+
+  analizarCheckoutDesdeEmail(checkoutId: number): void {
+    this.searchCheckoutId = String(checkoutId);
+    this.searchReference = '';
+    this.searchWompiTxId = '';
+    void this.buscar();
+  }
+
+  getEmailMatchTypeLabel(matchType: string): string {
+    if (matchType === 'comprobante_wompi') {
+      return 'Correo en comprobante Wompi';
+    }
+    if (matchType === 'cuenta_eventum') {
+      return 'Cuenta Eventum';
+    }
+    return matchType;
+  }
+
+  emailsDifferen(result: WompiReconcileLookupResult | null): boolean {
+    return result?.email_context?.emails_coinciden === false;
   }
 
   private async buscarCheckoutId(id: number): Promise<void> {
@@ -189,8 +196,81 @@ export class WompiReconcile implements OnInit {
 
   orphanTipoClass(row: WompiReconcileOrphanRow): string {
     return row.estado === 'pendiente' || row.orphan_tipo === 'pendiente_vencida'
-      ? 'badge-warning'
-      : 'badge-danger';
+      ? 'wr-badge wr-badge--warn'
+      : 'wr-badge wr-badge--error';
+  }
+
+  limpiarBusqueda(): void {
+    this.searchReference = '';
+    this.searchWompiTxId = '';
+    this.searchEmail = '';
+    this.searchCheckoutId = '';
+    this.searchEmail = '';
+    this.result = null;
+    this.searchError = null;
+  }
+
+  hasComprasMaterializadas(result: WompiReconcileLookupResult | null): boolean {
+    if (!result?.compras) return false;
+    const c = result.compras;
+    return !!(c['compra_boletas'] || c['compra_productos'] || c['compra_cover']);
+  }
+
+  getCompraBoletas(result: WompiReconcileLookupResult | null): Record<string, unknown> | null {
+    return (result?.compras?.['compra_boletas'] as Record<string, unknown>) ?? null;
+  }
+
+  getCompraProductos(result: WompiReconcileLookupResult | null): Record<string, unknown> | null {
+    return (result?.compras?.['compra_productos'] as Record<string, unknown>) ?? null;
+  }
+
+  getCompraCover(result: WompiReconcileLookupResult | null): Record<string, unknown> | null {
+    return (result?.compras?.['compra_cover'] as Record<string, unknown>) ?? null;
+  }
+
+  getAlignmentBadge(result: WompiReconcileLookupResult | null): { label: string; class: string } {
+    if (!result) return { label: '—', class: 'wr-badge wr-badge--neutral' };
+    if (result.requiere_accion) {
+      return { label: 'Requiere acción', class: 'wr-badge wr-badge--error' };
+    }
+    const wompiOk = result.wompi?.status === 'APPROVED';
+    const materializado = result.checkout?.materializado;
+    if (wompiOk && materializado) {
+      return { label: 'Alineado', class: 'wr-badge wr-badge--ok' };
+    }
+    if (wompiOk && !materializado) {
+      return { label: 'Aprobado sin materializar', class: 'wr-badge wr-badge--warn' };
+    }
+    return { label: 'Revisar', class: 'wr-badge wr-badge--neutral' };
+  }
+
+  getStatusBadgeClass(status: string | undefined | null): string {
+    const s = (status || '').toLowerCase();
+    if (s === 'aprobada' || s === 'approved' || s === 'completada' || s === 'pagada') {
+      return 'wr-badge wr-badge--ok';
+    }
+    if (s === 'pendiente' || s === 'pending') {
+      return 'wr-badge wr-badge--warn';
+    }
+    if (s === 'rechazada' || s === 'declined' || s === 'error' || s === 'expirada') {
+      return 'wr-badge wr-badge--error';
+    }
+    return 'wr-badge wr-badge--neutral';
+  }
+
+  getWompiStatusBadge(status: string): string {
+    const s = status.toUpperCase();
+    if (s === 'APPROVED') return 'wr-badge wr-badge--ok';
+    if (s === 'PENDING') return 'wr-badge wr-badge--warn';
+    if (s === 'DECLINED' || s === 'ERROR' || s === 'VOIDED') return 'wr-badge wr-badge--error';
+    return 'wr-badge wr-badge--neutral';
+  }
+
+  getDiagnosticoIcon(nivel: string): string {
+    if (nivel === 'ok') return 'check_circle';
+    if (nivel === 'warning') return 'warning';
+    if (nivel === 'error') return 'error';
+    return 'info';
   }
 
   getClienteLabel(checkout: { cliente?: { nombre?: string | null; apellido?: string | null; email?: string | null } | null; id?: number }): string {
@@ -201,10 +281,10 @@ export class WompiReconcile implements OnInit {
   }
 
   diagnosticoClass(item: WompiDiagnosticoItem): string {
-    if (item.nivel === 'ok') return 'diag diag--ok';
-    if (item.nivel === 'warning') return 'diag diag--warning';
-    if (item.nivel === 'error') return 'diag diag--error';
-    return 'diag diag--info';
+    if (item.nivel === 'ok') return 'wr-diag-item wr-diag-item--ok';
+    if (item.nivel === 'warning') return 'wr-diag-item wr-diag-item--warning';
+    if (item.nivel === 'error') return 'wr-diag-item wr-diag-item--error';
+    return 'wr-diag-item wr-diag-item--info';
   }
 
   formatWompiAmount(cents?: number, currency?: string): string {
@@ -215,6 +295,15 @@ export class WompiReconcile implements OnInit {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(cents / 100);
+  }
+
+  formatCompraTotal(compra: Record<string, unknown> | null): string {
+    if (!compra) return '—';
+    return this.formatCurrency(Number(compra['total'] ?? 0), String(compra['moneda'] ?? 'COP'));
+  }
+
+  formatRecordEstado(value: unknown): string {
+    return value != null ? String(value) : '—';
   }
 
   formatCurrency(value: number | undefined | null, moneda?: string | null): string {

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { supabaseConfig } from '../config/supabase.config';
+import { AuthService } from './auth.service';
 import { SupabaseService } from './supabase.service';
 
 export type WompiDiagnosticoNivel = 'ok' | 'warning' | 'error' | 'info';
@@ -46,15 +47,35 @@ export interface WompiReconcileCheckout {
   evento?: { id: number; titulo?: string | null } | null;
 }
 
+export interface WompiEmailContext {
+  email_cuenta_eventum?: string | null;
+  email_wompi_comprobante?: string | null;
+  email_al_crear_checkout?: string | null;
+  emails_coinciden?: boolean | null;
+  mensaje_soporte?: string | null;
+}
+
+export interface WompiEmailSearchMatch {
+  match_type: 'cuenta_eventum' | 'comprobante_wompi' | string;
+  checkout: WompiReconcileCheckout;
+}
+
 export interface WompiReconcileLookupResult {
   success: boolean;
   version?: string;
   error?: string;
+  lookup_mode?: 'email_multiple' | string;
   lookup_source?: 'transaction_id' | 'reference' | null;
   wompi_environment?: string;
   wompi_cuenta_id?: number | null;
   requiere_accion?: boolean;
   diagnostico?: WompiDiagnosticoItem[];
+  email_context?: WompiEmailContext | null;
+  hint?: string;
+  email?: string;
+  usuario?: { id: number; nombre?: string; email?: string } | null;
+  matches?: WompiEmailSearchMatch[];
+  total?: number;
   wompi?: WompiLookupSummary | null;
   checkout?: WompiReconcileCheckout | null;
   transaccion_producto?: Record<string, unknown> | null;
@@ -70,6 +91,7 @@ export interface WompiReconcileOrphanRow extends WompiReconcileCheckout {
 export interface WompiLookupParams {
   reference?: string;
   wompi_transaction_id?: string;
+  email?: string;
   transaccion_checkout_id?: number;
   compra_id?: number;
   compra_producto_id?: number;
@@ -78,7 +100,10 @@ export interface WompiLookupParams {
 
 @Injectable({ providedIn: 'root' })
 export class WompiReconcileService {
-  constructor(private supabase: SupabaseService) {}
+  constructor(
+    private supabase: SupabaseService,
+    private authService: AuthService,
+  ) {}
 
   async lookup(params: WompiLookupParams): Promise<WompiReconcileLookupResult> {
     return this.invokeFunction({ action: 'lookup', ...params });
@@ -167,6 +192,10 @@ export class WompiReconcileService {
   }
 
   private async getAccessToken(): Promise<string | null> {
+    const sesionValida = await this.authService.ensureActiveSession();
+    if (!sesionValida) {
+      return null;
+    }
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     return session?.access_token ?? null;
   }
