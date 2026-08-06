@@ -15,7 +15,7 @@ export interface EventoReadinessStep {
   complete: boolean;
   optional?: boolean;
   wizardStep?: number;
-  action: 'wizard' | 'imagen' | 'fechas' | 'cobros' | 'boletas' | 'productos' | 'publish';
+  action: 'wizard' | 'informacion' | 'imagen' | 'fechas' | 'cobros' | 'boletas' | 'productos' | 'publish';
 }
 
 export interface EventoReadinessResult {
@@ -76,8 +76,7 @@ export function buildEventoReadiness(
       id: 'informacion',
       label: 'Información',
       complete: hasInformacion(evento),
-      wizardStep: 0,
-      action: 'wizard',
+      action: 'informacion',
     },
     {
       id: 'imagen',

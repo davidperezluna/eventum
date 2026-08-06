@@ -30,6 +30,7 @@ import { openEventoCobrosDrawer } from '../../panels/evento-cobros';
 import { openEventoBoletasDrawer } from '../../panels/evento-boletas';
 import { openEventoProductosDrawer } from '../../panels/evento-productos';
 import { openEventoFechasDrawer } from '../../panels/evento-fechas';
+import { openEventoInformacionDrawer } from '../../panels/evento-informacion';
 
 import { Evento, TipoBoleta, TipoEstadoEvento, DashboardStats, CuponDescuento } from '../../types';
 
@@ -313,6 +314,12 @@ export class EventoOperaciones implements OnInit {
       } else if (this.route.snapshot.queryParamMap.get('open') === 'fechas') {
 
         this.openFechasDrawer();
+
+        void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+
+      } else if (this.route.snapshot.queryParamMap.get('open') === 'informacion') {
+
+        this.openInformacionDrawer();
 
         void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
 
@@ -1204,9 +1211,51 @@ export class EventoOperaciones implements OnInit {
 
   goToEditarInfo(): void {
 
-    void this.router.navigate(['/eventos'], {
+    this.openInformacionDrawer();
 
-      queryParams: { edit: this.eventoId, step: 0 },
+  }
+
+
+
+  openInformacionDrawer(): void {
+
+    if (!this.evento) {
+
+      return;
+
+    }
+
+    this.showMoreSheet = false;
+
+    const ref = openEventoInformacionDrawer(this.drawerService, this.evento);
+
+    void ref.afterClosed().then((result) => {
+
+      if (!result?.changed || !this.evento) {
+
+        return;
+
+      }
+
+      this.evento = {
+
+        ...this.evento,
+
+        titulo: result.titulo ?? this.evento.titulo,
+
+        categoria_id: result.categoria_id ?? this.evento.categoria_id,
+
+        tags: result.tags ?? this.evento.tags,
+
+        descripcion_corta: result.descripcion_corta ?? this.evento.descripcion_corta,
+
+        descripcion: result.descripcion ?? this.evento.descripcion,
+
+      };
+
+      this.rebuildReadiness();
+
+      this.cdr.detectChanges();
 
     });
 
@@ -1426,13 +1475,19 @@ export class EventoOperaciones implements OnInit {
 
     if (!this.evento) return;
 
-    if (step.complete && step.id !== 'publicacion' && step.id !== 'imagen' && step.id !== 'fechas' && step.id !== 'cobros' && step.id !== 'boletas' && step.id !== 'productos') {
+    if (step.complete && step.id !== 'publicacion' && step.id !== 'informacion' && step.id !== 'imagen' && step.id !== 'fechas' && step.id !== 'cobros' && step.id !== 'boletas' && step.id !== 'productos') {
 
       return;
 
     }
 
     switch (step.action) {
+
+      case 'informacion':
+
+        this.openInformacionDrawer();
+
+        break;
 
       case 'imagen':
 

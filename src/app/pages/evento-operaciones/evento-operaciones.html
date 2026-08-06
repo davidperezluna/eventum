@@ -173,7 +173,7 @@
             type="button"
             class="ev-ops-checklist__btn"
             (click)="onReadinessStepClick(step)"
-            [disabled]="step.complete && step.id !== 'publicacion' && step.id !== 'imagen' && step.id !== 'fechas' && step.id !== 'cobros' && step.id !== 'boletas' && step.id !== 'productos'"
+            [disabled]="step.complete && step.id !== 'publicacion' && step.id !== 'informacion' && step.id !== 'imagen' && step.id !== 'fechas' && step.id !== 'cobros' && step.id !== 'boletas' && step.id !== 'productos'"
           >
             <span class="ev-ops-checklist__icon" aria-hidden="true">
               <span class="material-icons" *ngIf="step.complete">check_circle</span>
