@@ -1,0 +1,163 @@
+:host {
+  display: block;
+}
+
+.fin-org {
+  background: #ffffff;
+  border: 1px solid #dfe6f3;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+/* —— KPI protagonista: saldo del empresario —— */
+.fin-org__hero {
+  padding: 1.35rem 1.4rem 1.25rem;
+  border-bottom: 1px solid #e8edf5;
+  background: linear-gradient(145deg, #ecfdf5 0%, #ffffff 55%);
+}
+
+.fin-org__hero-label {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #047857;
+}
+
+.fin-org__hero-hint {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.875rem;
+  color: #64748b;
+  line-height: 1.45;
+  max-width: 36rem;
+}
+
+.fin-org__hero-value {
+  margin: 0;
+  font-size: clamp(2.15rem, 5vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  color: #065f46;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.fin-org__split {
+  margin-top: 0.55rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  font-size: 0.8125rem;
+  color: #047857;
+}
+
+.fin-org__split strong {
+  font-weight: 700;
+}
+
+.fin-org__split--muted {
+  color: #64748b;
+}
+
+.fin-org__split--muted strong {
+  color: #475569;
+}
+
+/* —— Historia contextual —— */
+.fin-org__story {
+  padding: 1.15rem 1.4rem 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.fin-org__story-origin {
+  margin: 0 0 0.15rem;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.fin-org__story-arrow {
+  display: flex;
+  justify-content: center;
+  color: #cbd5e1;
+  line-height: 1;
+}
+
+.fin-org__story-arrow .material-icons {
+  font-size: 1.2rem;
+}
+
+.fin-org__story-step {
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #eef2f7;
+}
+
+.fin-org__story-step--discount {
+  background: #fff;
+  border-style: dashed;
+  border-color: #e2e8f0;
+}
+
+.fin-org__story-step--result {
+  background: linear-gradient(180deg, #f0fdf4 0%, #fff 100%);
+  border-color: #bbf7d0;
+}
+
+.fin-org__story-step-head {
+  margin-bottom: 0.35rem;
+}
+
+.fin-org__story-step-label {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.fin-org__story-step-hint {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  line-height: 1.35;
+}
+
+.fin-org__story-step-value {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+.fin-org__story-step-value--discount {
+  color: #64748b;
+}
+
+.fin-org__story-step-value--result {
+  font-size: 1.2rem;
+  color: #047857;
+}
+
+.fin-org__story-step--result .fin-org__story-step-label {
+  color: #047857;
+}
+
+@media (max-width: 560px) {
+  .fin-org__hero {
+    padding: 1.15rem 1.1rem 1rem;
+  }
+
+  .fin-org__story {
+    padding: 1rem 1.1rem 1.15rem;
+  }
+}

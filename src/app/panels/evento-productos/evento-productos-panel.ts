@@ -434,6 +434,7 @@ export class EventoProductosPanel implements OnInit, EvDrawerContent {
       this.dataChanged = true;
       this.alertService.success(this.editingProducto ? 'Actualizado' : 'Guardado', this.editingProducto ? 'El producto se actualizó correctamente.' : 'El producto se creó correctamente.');
       await this.loadProductos();
+      this.notifyParentChange();
       this.captureFormSnapshot();
       this.drawerRef.markPristine();
       await this.goToDashboard(true);
@@ -469,6 +470,7 @@ export class EventoProductosPanel implements OnInit, EvDrawerContent {
       this.dataChanged = true;
       this.alertService.success('Guardado', `Se agregaron ${cantidad} unidad(es) al inventario.`);
       await this.loadProductos();
+      this.notifyParentChange();
       this.captureInventorySnapshot();
       this.drawerRef.markPristine();
       await this.goToDashboard(true);
@@ -499,6 +501,7 @@ export class EventoProductosPanel implements OnInit, EvDrawerContent {
       this.dataChanged = true;
       this.alertService.success('Desactivado', 'El producto fue desactivado.');
       await this.loadProductos();
+      this.notifyParentChange();
     } catch (err) {
       console.error('Error desactivando producto:', err);
       this.alertService.error('Error', 'No se pudo desactivar el producto');
@@ -509,6 +512,13 @@ export class EventoProductosPanel implements OnInit, EvDrawerContent {
     void this.drawerRef.close({
       changed: this.dataChanged,
       productos: this.dataChanged ? this.productos : undefined,
+    });
+  }
+
+  private notifyParentChange(): void {
+    this.data.onChanged?.({
+      changed: true,
+      productos: this.productos,
     });
   }
 

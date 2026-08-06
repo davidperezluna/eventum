@@ -1,13 +1,26 @@
 import { Evento, TipoBoleta, TipoEstadoEvento, DashboardStats } from '../../types';
 import { ReporteEvento, ReporteVentas } from '../../services/reportes.service';
 import {
+  buildFinanzasOrganizadorView,
+  getRecaudoBrutoConsolidado,
+  resolveMostrarProductos,
+  formatFinanzasMonedaExacta,
+} from '../../utils/dashboard-finanzas.view';
+import {
   IntelActionNow,
   IntelAforoTotals,
   IntelCountdown,
+  IntelFinanzasHeroView,
   IntelHeroMoment,
+  IntelHoySection,
+  IntelOportunidad,
+  IntelOportunidadesSection,
   IntelPulseCard,
-  IntelStorySection,
+  IntelRankingRow,
+  IntelRankingSection,
+  IntelVentasSection,
   IntelCtaAction,
+  IntelCtaVariant,
 } from './evento-inteligencia.types';
 
 interface BoletaRankingInput {
@@ -33,12 +46,6 @@ export function computeAforoTotals(tipos: TipoBoleta[]): IntelAforoTotals {
   }
   const pct = total > 0 ? Math.round((vendidas / total) * 100) : 0;
   return { vendidas, total, pct };
-}
-
-export function computeRecaudoTotal(reporte: ReporteEvento | null, stats: DashboardStats | null): number {
-  const entradas = reporte?.ingresos ?? 0;
-  const productos = stats?.ingresos_productos_totales ?? 0;
-  return entradas + productos;
 }
 
 function buildCountdown(fechaInicio: Date | string | undefined, now: Date): IntelCountdown | null {
@@ -159,55 +166,54 @@ export function buildHeroMoment(evento: Evento, aforo: IntelAforoTotals, now = n
   };
 }
 
-function formatVariacionRecaudo(stats: DashboardStats | null): string | null {
+
+export function buildIntelFinanzasHero(
+  stats: DashboardStats | null,
+  formatCurrency: (n: number) => string,
+  formatAmount: (n: number) => string,
+): IntelFinanzasHeroView {
+  const showProductos = resolveMostrarProductos(stats);
   if (!stats) {
-    return null;
+    return {
+      empty: true,
+      showProductos,
+      ventasGeneradas: formatAmount(0),
+      ventasGeneradasMoneda: formatCurrency(0),
+      ventasGeneradasBoletas: formatAmount(0),
+      ventasGeneradasProductos: formatAmount(0),
+      descuentosEstimados: formatCurrency(0),
+      recibirasAprox: formatAmount(0),
+      recibirasAproxMoneda: formatCurrency(0),
+      recibirasAproxBoletas: formatAmount(0),
+      recibirasAproxProductos: formatAmount(0),
+    };
   }
-  const hoy = stats.ingresos_dia_actual ?? 0;
-  const ayer = stats.ingresos_dia_anterior ?? 0;
-  if (hoy === 0 && ayer === 0) {
-    return null;
-  }
-  if (ayer === 0 && hoy > 0) {
-    return 'Hoy registraste tus primeros ingresos del día';
-  }
-  const delta = Math.round(((hoy - ayer) / ayer) * 100);
-  if (delta > 0) {
-    return `Un ${delta}% más de ingresos por entradas que ayer`;
-  }
-  if (delta < 0) {
-    return `Un ${Math.abs(delta)}% menos de ingresos por entradas que ayer`;
-  }
-  return 'Mismo ritmo de ingresos por entradas que ayer';
+
+  const fin = buildFinanzasOrganizadorView(stats, showProductos);
+
+  return {
+    empty: fin.recaudoBruto === 0 && fin.saldoEstimadoRecibir === 0,
+    showProductos,
+    ventasGeneradas: formatAmount(fin.recaudoBruto),
+    ventasGeneradasMoneda: formatCurrency(fin.recaudoBruto),
+    ventasGeneradasBoletas: formatAmount(fin.recaudoBrutoBoletas),
+    ventasGeneradasProductos: formatAmount(fin.recaudoBrutoProductos),
+    descuentosEstimados: formatCurrency(fin.descuentosEstimados),
+    recibirasAprox: formatAmount(fin.saldoEstimadoRecibir),
+    recibirasAproxMoneda: formatCurrency(fin.saldoEstimadoRecibir),
+    recibirasAproxBoletas: formatAmount(fin.saldoEstimadoRecibirBoletas),
+    recibirasAproxProductos: formatAmount(fin.saldoEstimadoRecibirProductos),
+  };
 }
 
 export function buildPulseCards(
   reporte: ReporteEvento | null,
   stats: DashboardStats | null,
   aforo: IntelAforoTotals,
-  formatCurrency: (n: number) => string,
 ): IntelPulseCard[] {
-  const recaudo = computeRecaudoTotal(reporte, stats);
   const boletasVendidas = reporte?.boletas_vendidas ?? 0;
   const asistentes = reporte?.boletas_usadas ?? 0;
-  const variacion = formatVariacionRecaudo(stats);
-  const pctProductos =
-    recaudo > 0 ? Math.round(((stats?.ingresos_productos_totales ?? 0) / recaudo) * 100) : 0;
   const tasaIngreso = boletasVendidas > 0 ? Math.round((asistentes / boletasVendidas) * 100) : 0;
-
-  let recaudoPhrase: string;
-  let recaudoDetail: string;
-  if (recaudo === 0) {
-    recaudoPhrase = 'Aún no hay recaudo registrado';
-    recaudoDetail = 'Cuando lleguen las primeras ventas, lo verás reflejado aquí';
-  } else if (pctProductos > 0) {
-    recaudoPhrase = 'Recaudo acumulado de entradas y productos';
-    recaudoDetail =
-      variacion ?? `Los productos aportan el ${pctProductos}% de lo recaudado`;
-  } else {
-    recaudoPhrase = 'Todo tu recaudo proviene de entradas';
-    recaudoDetail = variacion ?? 'Buen punto de partida para medir el crecimiento';
-  }
 
   let aforoPhrase: string;
   let aforoDetail: string;
@@ -229,10 +235,10 @@ export function buildPulseCards(
   let asistentesDetail: string;
   if (boletasVendidas === 0) {
     asistentesPhrase = 'Todo listo para recibir asistentes';
-    asistentesDetail = 'Cuando vendas entradas, podrás registrar ingresos en puerta';
+    asistentesDetail = 'Cuando vendas entradas, podrás registrar asistentes en puerta';
   } else if (asistentes === 0) {
-    asistentesPhrase = 'Aún no hay ingresos registrados';
-    asistentesDetail = `${boletasVendidas.toLocaleString('es-CO')} entradas vendidas esperando en puerta`;
+    asistentesPhrase = 'Aún no hay asistentes en puerta';
+    asistentesDetail = `${boletasVendidas.toLocaleString('es-CO')} entradas vendidas esperando acceso`;
   } else if (tasaIngreso >= 80) {
     asistentesPhrase = 'La mayoría de tus asistentes ya ingresó';
     asistentesDetail = `${asistentes.toLocaleString('es-CO')} personas dentro — ${tasaIngreso}% del total vendido`;
@@ -248,14 +254,6 @@ export function buildPulseCards(
   }
 
   return [
-    {
-      id: 'recaudo',
-      icon: 'payments',
-      label: 'Recaudo total',
-      value: formatCurrency(recaudo),
-      phrase: recaudoPhrase,
-      detail: recaudoDetail,
-    },
     {
       id: 'aforo',
       icon: 'confirmation_number',
@@ -291,14 +289,14 @@ export function buildActionNow(
     if (boletasVendidas > 0 && asistentes < boletasVendidas * 0.3) {
       return {
         variant: 'warning',
-        message: `Hay ${boletasVendidas} boletas vendidas pero solo ${asistentes} ingresos. Abre el escáner en puerta.`,
+        message: `Hay ${boletasVendidas} boletas vendidas pero solo ${asistentes} asistentes en puerta. Abre el escáner.`,
         ctaLabel: 'Abrir escáner',
         ctaAction: 'escanear',
       };
     }
     return {
       variant: 'info',
-      message: 'Tu evento está en curso. Monitorea ingresos en tiempo real desde el escáner.',
+      message: 'Tu evento está en curso. Monitorea el acceso en tiempo real desde el escáner.',
       ctaLabel: 'Ir al escáner',
       ctaAction: 'escanear',
     };
@@ -344,7 +342,7 @@ export function buildActionNow(
   if (hero.aforoPct >= 50) {
     return {
       variant: 'success',
-      message: `Vas bien: ${hero.salesPhrase.toLowerCase()}. Mantén el momentum compartiendo tu evento.`,
+      message: `Vas bien: ${hero.salesPhrase.toLowerCase()}. Mantén el momentum con difusión puntual hacia tu audiencia.`,
       ctaLabel: 'Compartir evento',
       ctaAction: 'share',
     };
@@ -353,257 +351,428 @@ export function buildActionNow(
   return {
     variant: 'info',
     message: hero.salesDetail,
-    ctaLabel: 'Compartir evento',
-    ctaAction: 'share',
+    ctaLabel: 'Centro de operaciones',
+    ctaAction: 'operaciones',
   };
 }
 
 export function formatIntelCurrency(value: number): string {
-  const n = Number(value ?? 0);
-  if (!Number.isFinite(n)) {
-    return '$0';
-  }
-  if (n >= 1_000_000) {
-    return `$${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
-  }
-  if (n >= 10_000) {
-    return `$${Math.round(n / 1_000)}K`;
-  }
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    maximumFractionDigits: 0,
-  }).format(n);
+  return formatFinanzasMonedaExacta(value);
 }
 
 export function padCountdown(n: number): string {
   return n.toString().padStart(2, '0');
 }
 
-export function buildVentasStory(
-  reporte: ReporteEvento | null,
+export function buildVentasSection(
   stats: DashboardStats | null,
-  ventas7d: ReporteVentas[],
   formatCurrency: (n: number) => string,
-): IntelStorySection {
-  const recaudo = computeRecaudoTotal(reporte, stats);
-  const entradas = reporte?.ingresos ?? 0;
-  const productos = stats?.ingresos_productos_totales ?? 0;
-  const variacion = formatVariacionRecaudo(stats);
-  const ingresos7d = ventas7d.reduce((s, d) => s + (d.ingresos ?? 0), 0);
-  const diasConVentas = ventas7d.filter((d) => (d.ingresos ?? 0) > 0).length;
+): IntelVentasSection {
+  const showProductos = resolveMostrarProductos(stats);
+  const brutoConsolidado = stats ? getRecaudoBrutoConsolidado(stats, showProductos) : 0;
 
-  if (recaudo === 0) {
+  if (!stats || brutoConsolidado === 0) {
     return {
-      id: 'ventas',
       question: '¿Cómo van mis ventas?',
-      headline: '',
-      narrative: '',
       empty: true,
-      emptyHeadline: 'No hay recaudo todavía',
-      emptyNarrative:
-        'Tu evento está listo para vender, pero aún no se ha registrado ningún ingreso. Comparte tu evento para comenzar a generar ventas.',
-      ctaLabel: 'Compartir evento',
-      ctaAction: 'share',
+      emptyMessage:
+        'Cuando lleguen las primeras ventas, verás aquí el desglose por boletas y productos.',
+      showProductos: false,
+      clientesPagaronBoletas: formatCurrency(0),
+      clientesPagaronProductos: formatCurrency(0),
+      descuentosEstimados: formatCurrency(0),
+      descuentosPct: 0,
+      recibirasAproxBoletas: formatCurrency(0),
+      recibirasAproxProductos: formatCurrency(0),
+      conclusion: 'Tu punto de partida es activar la difusión desde la recomendación de arriba.',
     };
   }
 
-  let narrative: string;
-  if (productos > 0 && entradas > 0) {
-    narrative = `Llevas ${formatCurrency(recaudo)} acumulados entre entradas (${formatCurrency(entradas)}) y productos (${formatCurrency(productos)}). Tu negocio ya tiene diversificación de ingresos.`;
-  } else if (productos > 0) {
-    narrative = `Tu recaudo de ${formatCurrency(recaudo)} proviene principalmente de productos. Las entradas pueden ser tu próxima palanca de crecimiento.`;
+  const fin = buildFinanzasOrganizadorView(stats, showProductos);
+  const tieneProductosBruto = fin.recaudoBrutoProductos > 0;
+  const descuentosPct =
+    fin.recaudoBruto > 0 ? Math.round((fin.descuentosEstimados / fin.recaudoBruto) * 100) : 0;
+
+  const pctBoletasBruto =
+    fin.recaudoBruto > 0 ? Math.round((fin.recaudoBrutoBoletas / fin.recaudoBruto) * 100) : 100;
+  const pctProductosBruto =
+    fin.recaudoBruto > 0 ? Math.round((fin.recaudoBrutoProductos / fin.recaudoBruto) * 100) : 0;
+
+  let conclusion: string;
+  if (tieneProductosBruto && fin.recaudoBrutoBoletas > 0) {
+    conclusion =
+      pctBoletasBruto >= 70
+        ? `Las boletas concentran el ${pctBoletasBruto}% de lo que pagaron tus clientes. Los productos ya diversifican tu saldo.`
+        : pctProductosBruto >= 40
+          ? `Los productos representan un ${pctProductosBruto}% de lo pagado. Sigue impulsando boletas sin descuidar lo que vende en puerta.`
+          : 'Tienes dos rubros activos. Equilibrar boletas y productos te da más estabilidad.';
+  } else if (tieneProductosBruto) {
+    conclusion =
+      'Por ahora solo hay ventas de productos. Las boletas pueden ser tu próxima palanca de crecimiento.';
   } else {
-    narrative = `Llevas ${formatCurrency(recaudo)} recaudados solo con entradas. Es una base sólida para seguir construyendo.`;
+    conclusion =
+      'Todo lo que pagaron tus clientes viene de boletas. Es una base sólida para sumar productos o nuevos tipos.';
   }
 
-  let insight: string | undefined;
-  if (variacion) {
-    insight = variacion;
-  } else if (ingresos7d > 0) {
-    insight = `En los últimos 7 días sumaste ${formatCurrency(ingresos7d)} por entradas${diasConVentas < 7 ? `, con actividad en ${diasConVentas} día${diasConVentas === 1 ? '' : 's'}` : ''}.`;
+  if (descuentosPct >= 15) {
+    conclusion += ` Los descuentos estimados representan el ${descuentosPct}% de lo pagado.`;
   }
 
   return {
-    id: 'ventas',
     question: '¿Cómo van mis ventas?',
-    headline: formatCurrency(recaudo),
-    narrative,
-    insight,
     empty: false,
-    ctaLabel: recaudo > 0 && (reporte?.boletas_vendidas ?? 0) < 10 ? 'Compartir evento' : undefined,
-    ctaAction: recaudo > 0 && (reporte?.boletas_vendidas ?? 0) < 10 ? 'share' : undefined,
+    showProductos: tieneProductosBruto,
+    clientesPagaronBoletas: formatCurrency(fin.recaudoBrutoBoletas),
+    clientesPagaronProductos: formatCurrency(fin.recaudoBrutoProductos),
+    descuentosEstimados: formatCurrency(fin.descuentosEstimados),
+    descuentosPct,
+    recibirasAproxBoletas: formatCurrency(fin.saldoEstimadoRecibirBoletas),
+    recibirasAproxProductos: formatCurrency(fin.saldoEstimadoRecibirProductos),
+    conclusion,
   };
 }
 
-export function buildHoyStory(
-  stats: DashboardStats | null,
-  reporte: ReporteEvento | null,
-  formatCurrency: (n: number) => string,
-): IntelStorySection {
-  const hoy = stats?.ingresos_dia_actual ?? 0;
-  const ayer = stats?.ingresos_dia_anterior ?? 0;
-  const boletasHoy = reporte?.boletas_vendidas ?? 0;
-
-  if (hoy === 0 && ayer === 0) {
-    return {
-      id: 'hoy',
-      question: '¿Qué está pasando hoy?',
-      headline: '',
-      narrative: '',
-      empty: true,
-      emptyHeadline: 'Sin movimiento hoy',
-      emptyNarrative:
-        boletasHoy === 0
-          ? 'Hoy no hay ventas registradas. Es un buen momento para compartir tu evento y activar la difusión.'
-          : 'Hoy no entró dinero nuevo, pero ya tienes ventas previas. Mantén la comunicación con quienes compraron.',
-      ctaLabel: boletasHoy === 0 ? 'Compartir evento' : 'Ver operaciones',
-      ctaAction: boletasHoy === 0 ? 'share' : 'operaciones',
-    };
-  }
-
-  let headline: string;
-  let narrative: string;
-  let insight: string | undefined;
-  let ctaLabel: string | undefined;
-  let ctaAction: IntelCtaAction | undefined;
-
-  if (hoy === 0 && ayer > 0) {
-    headline = 'Hoy va más tranquilo';
-    narrative = `Ayer registraste ${formatCurrency(ayer)} en entradas. Hoy aún no hay ingresos nuevos — considera un recordatorio a tu audiencia.`;
-    ctaLabel = 'Compartir evento';
-    ctaAction = 'share';
-  } else if (ayer === 0 && hoy > 0) {
-    headline = formatCurrency(hoy);
-    narrative = '¡Buenas noticias! Hoy registraste tus primeros ingresos del día. Es señal de que la difusión está funcionando.';
-  } else {
-    headline = formatCurrency(hoy);
-    const delta = ayer > 0 ? Math.round(((hoy - ayer) / ayer) * 100) : null;
-    narrative =
-      delta != null && delta > 0
-        ? `Hoy llevas ${formatCurrency(hoy)} — un ${delta}% más que ayer. El ritmo de ventas está subiendo.`
-        : delta != null && delta < 0
-          ? `Hoy llevas ${formatCurrency(hoy)} — un ${Math.abs(delta)}% menos que ayer. Un empujón de difusión puede ayudar.`
-          : `Hoy llevas ${formatCurrency(hoy)}, mismo ritmo que ayer. Consistencia es buena señal.`;
-    if (delta != null && delta < 0) {
-      insight = 'Refuerza la difusión en redes o envía un recordatorio a tu lista.';
-      ctaLabel = 'Compartir evento';
-      ctaAction = 'share';
-    }
-  }
-
-  return {
-    id: 'hoy',
-    question: '¿Qué está pasando hoy?',
-    headline,
-    narrative,
-    insight,
-    empty: false,
-    ctaLabel,
-    ctaAction,
-  };
-}
-
-export function buildAforoStory(
+export function buildBoletasRankingSection(
   ranking: BoletaRankingInput[],
   aforo: IntelAforoTotals,
-): IntelStorySection {
+  formatCurrency: (n: number) => string,
+): IntelRankingSection {
+  const question = '¿Qué boletas están funcionando mejor?';
+
   if (ranking.length === 0 || aforo.total === 0) {
     return {
-      id: 'aforo',
-      question: '¿Qué está funcionando mejor?',
-      headline: '',
-      narrative: '',
+      question,
       empty: true,
-      emptyHeadline: 'Aún no hay tipos de boleta',
-      emptyNarrative:
-        'Configura tus entradas en Operaciones para ver qué tipos generan más demanda y optimizar tu estrategia de precios.',
+      emptyMessage: 'Configura tipos de boleta en Operaciones para ver cuál genera más demanda.',
+      rows: [],
+      conclusion: 'Sin tipos definidos, no hay forma de comparar qué precio o formato convence más.',
       ctaLabel: 'Configurar boletas',
       ctaAction: 'boletas',
+      ctaVariant: 'secondary',
     };
   }
 
-  const top = ranking[0];
   const conVentas = ranking.filter((r) => r.vendidas > 0);
 
   if (conVentas.length === 0) {
     return {
-      id: 'aforo',
-      question: '¿Qué está funcionando mejor?',
-      headline: '',
-      narrative: '',
+      question,
       empty: true,
-      emptyHeadline: 'Ninguna entrada vendida aún',
-      emptyNarrative: `Tienes ${aforo.total.toLocaleString('es-CO')} entradas disponibles en ${ranking.length} tipo${ranking.length === 1 ? '' : 's'}. Comparte tu evento para descubrir cuál genera más interés.`,
-      ctaLabel: 'Compartir evento',
-      ctaAction: 'share',
+      emptyMessage: `Tienes ${ranking.length} tipo${ranking.length === 1 ? '' : 's'} configurado${ranking.length === 1 ? '' : 's'}, pero ninguna venta registrada todavía.`,
+      rows: [],
+      conclusion: 'Cuando lleguen las primeras compras, este ranking te dirá qué tipo convence primero.',
     };
   }
 
-  const headline = top.nombre;
-  let narrative: string;
-  if (conVentas.length === 1) {
-    narrative = `"${top.nombre}" concentra todas tus ventas: ${top.vendidas} de ${top.total} (${top.pct}%). Por ahora es tu única referencia de demanda.`;
+  const totalVendidas = conVentas.reduce((s, r) => s + r.vendidas, 0);
+  const rows: IntelRankingRow[] = conVentas.map((r) => ({
+    nombre: r.nombre,
+    vendidas: r.vendidas,
+    pct: totalVendidas > 0 ? Math.round((r.vendidas / totalVendidas) * 100) : r.pct,
+    clientesPagaron: formatCurrency(r.ingresosEst),
+    clientesPagaronRaw: r.ingresosEst,
+  }));
+
+  const top = rows[0];
+  let conclusion: string;
+  if (rows.length === 1) {
+    conclusion = `"${top.nombre}" concentra el 100% de tus ventas por ahora. Es tu única referencia de demanda.`;
+  } else if (top.pct != null && top.pct >= 50) {
+    conclusion = `"${top.nombre}" concentra el ${top.pct}% de las entradas vendidas. Es claramente la preferida de tu audiencia.`;
   } else {
-    narrative = `"${top.nombre}" lidera con ${top.vendidas} vendidas (${top.pct}% de su cupo). Es el tipo que más resuena con tu audiencia.`;
+    conclusion = `"${top.nombre}" lidera, pero hay reparto entre varios tipos. Considera potenciar el segundo más vendido.`;
   }
 
-  const insight =
-    top.pct >= 80 && top.vendidas < top.total
-      ? `"${top.nombre}" está cerca de agotarse — evalúa liberar más cupos o crear un tipo similar.`
-      : conVentas.length > 1 && ranking[1]
-        ? `En segundo lugar va "${ranking[1].nombre}" con ${ranking[1].vendidas} vendidas.`
-        : undefined;
+  if (conVentas[0].pct >= 80 && conVentas[0].vendidas < conVentas[0].total) {
+    conclusion += ` "${conVentas[0].nombre}" está cerca de agotarse — evalúa liberar más cupos.`;
+  }
 
   return {
-    id: 'aforo',
-    question: '¿Qué está funcionando mejor?',
-    headline,
-    narrative,
-    insight,
+    question,
     empty: false,
-    ctaLabel: top.pct >= 80 ? 'Gestionar boletas' : undefined,
-    ctaAction: top.pct >= 80 ? 'boletas' : undefined,
+    rows,
+    conclusion,
+    ctaLabel: conVentas[0].pct >= 80 ? 'Gestionar boletas' : undefined,
+    ctaAction: conVentas[0].pct >= 80 ? 'boletas' : undefined,
+    ctaVariant: 'secondary',
   };
 }
 
-export function buildProductosStory(
+export function buildProductosRankingSection(
   productosCount: number,
   rows: ProductoRowInput[],
   formatCurrency: (n: number) => string,
-): IntelStorySection | null {
+): IntelRankingSection | null {
   if (productosCount === 0) {
     return null;
   }
 
+  const question = '¿Qué productos están funcionando mejor?';
+
   if (rows.length === 0) {
     return {
-      id: 'productos',
-      question: '¿Qué oportunidades tengo?',
-      headline: '',
-      narrative: '',
+      question,
       empty: true,
-      emptyHeadline: 'Productos listos, sin ventas aún',
-      emptyNarrative: `Tienes ${productosCount} producto${productosCount === 1 ? '' : 's'} configurado${productosCount === 1 ? '' : 's'}. Cuando el evento esté en marcha, pueden sumar ingresos extra sin depender solo de las entradas.`,
-      ctaLabel: 'Administrar productos',
+      emptyMessage: `Tienes ${productosCount} producto${productosCount === 1 ? '' : 's'} listo${productosCount === 1 ? '' : 's'}, sin ventas registradas aún.`,
+      rows: [],
+      conclusion: 'Cuando el evento esté en marcha, aquí verás qué producto genera más ingreso por unidad.',
+      ctaLabel: 'Ver catálogo',
       ctaAction: 'productos',
+      ctaVariant: 'secondary',
     };
   }
 
-  const top = rows[0];
   const totalIngresos = rows.reduce((s, r) => s + r.ingresosEst, 0);
+  const rankingRows: IntelRankingRow[] = rows.map((r) => ({
+    nombre: r.nombre,
+    vendidas: r.vendidas,
+    pct: totalIngresos > 0 ? Math.round((r.ingresosEst / totalIngresos) * 100) : 0,
+    clientesPagaron: formatCurrency(r.ingresosEst),
+    clientesPagaronRaw: r.ingresosEst,
+  }));
+
+  const top = rankingRows[0];
+  let conclusion: string;
+  if (rankingRows.length === 1) {
+    conclusion = `"${top.nombre}" es tu único producto con ventas. Amplía el catálogo si ves demanda constante.`;
+  } else if (top.pct != null && top.pct >= 50) {
+    conclusion = `"${top.nombre}" genera el ${top.pct}% de lo que pagaron tus clientes por productos. Destácalo en comunicación y en puerta.`;
+  } else {
+    conclusion = `"${top.nombre}" lidera en productos, con reparto saludable entre ${rankingRows.length} activos.`;
+  }
 
   return {
-    id: 'productos',
-    question: '¿Qué oportunidades tengo?',
-    headline: top.nombre,
-    narrative: `"${top.nombre}" es tu producto estrella con ${top.vendidas} unidades vendidas (~${formatCurrency(top.ingresosEst)}). Los productos ya aportan ${formatCurrency(totalIngresos)} a tu recaudo.`,
-    insight:
-      rows.length > 1
-        ? `"${rows[1].nombre}" le sigue con ${rows[1].vendidas} unidades — considera destacarlo en la comunicación del evento.`
-        : 'Amplía tu catálogo si ves demanda constante en puerta.',
+    question,
     empty: false,
-    ctaLabel: 'Administrar productos',
+    rows: rankingRows,
+    conclusion,
+    ctaLabel: 'Ver catálogo',
     ctaAction: 'productos',
+    ctaVariant: 'secondary',
   };
+}
+
+function todayIsoLocal(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+export function buildHoySection(
+  stats: DashboardStats | null,
+  ventas7d: ReporteVentas[],
+  tieneProductos: boolean,
+  formatCurrency: (n: number) => string,
+): IntelHoySection {
+  const question = '¿Qué está pasando hoy?';
+  const hoyIso = todayIsoLocal();
+  const hoyData = ventas7d.find((v) => v.fecha === hoyIso);
+  const entradasHoy = hoyData?.boletas_vendidas ?? 0;
+  const ingresosHoy = stats?.ingresos_dia_actual ?? hoyData?.ingresos ?? 0;
+  const ayer = stats?.ingresos_dia_anterior ?? 0;
+
+  if (entradasHoy === 0 && ingresosHoy === 0 && ayer === 0) {
+    return {
+      question,
+      empty: true,
+      emptyMessage: 'Hoy no hay movimiento registrado todavía.',
+      lines: [],
+      conclusion: 'Es un buen momento para activar difusión antes de que pase el día.',
+    };
+  }
+
+  const lines: string[] = [];
+
+  if (entradasHoy > 0 && ingresosHoy > 0) {
+    lines.push(
+      entradasHoy === 1
+        ? `Hoy vendiste 1 entrada · Tus clientes pagaron ${formatCurrency(ingresosHoy)}`
+        : `Hoy vendiste ${entradasHoy.toLocaleString('es-CO')} entradas · Tus clientes pagaron ${formatCurrency(ingresosHoy)}`,
+    );
+  } else if (entradasHoy > 0) {
+    lines.push(
+      entradasHoy === 1
+        ? 'Hoy vendiste 1 entrada.'
+        : `Hoy vendiste ${entradasHoy.toLocaleString('es-CO')} entradas.`,
+    );
+  } else if (ingresosHoy > 0) {
+    lines.push(`Hoy tus clientes pagaron ${formatCurrency(ingresosHoy)} en entradas.`);
+  } else {
+    lines.push('Hoy no se han vendido entradas.');
+  }
+
+  if (tieneProductos) {
+    lines.push('No hubo ventas de productos registradas hoy.');
+  }
+
+  let conclusion: string;
+  if (ingresosHoy === 0 && ayer > 0) {
+    conclusion = 'El ritmo bajó respecto a ayer. Un recordatorio a tu audiencia puede reactivarlo.';
+  } else if (ayer === 0 && ingresosHoy > 0) {
+    conclusion = 'Buen arranque del día: la difusión está respondiendo.';
+  } else if (ayer > 0 && ingresosHoy > 0) {
+    const delta = Math.round(((ingresosHoy - ayer) / ayer) * 100);
+    if (delta > 0) {
+      conclusion = `Hoy tus clientes pagaron un ${delta}% más en entradas que ayer. Mantén el momentum.`;
+    } else if (delta < 0) {
+      conclusion = `Hoy tus clientes pagaron un ${Math.abs(delta)}% menos en entradas que ayer. Refuerza la difusión en horas clave.`;
+    } else {
+      conclusion = 'Mismo ritmo que ayer. La consistencia es señal de demanda estable.';
+    }
+  } else {
+    conclusion = 'Sigue monitoreando el cierre del día para detectar tendencias.';
+  }
+
+  return {
+    question,
+    empty: false,
+    lines,
+    conclusion,
+  };
+}
+
+export interface OportunidadesInput {
+  rankingBoletas: BoletaRankingInput[];
+  rankingProductos: ProductoRowInput[];
+  productosCount: number;
+  cuponesCount: number;
+  tiposBoletaCount: number;
+  reporte: ReporteEvento | null;
+  stats: DashboardStats | null;
+  aforo: IntelAforoTotals;
+}
+
+export function buildOportunidadesSection(input: OportunidadesInput): IntelOportunidadesSection {
+  const items: IntelOportunidad[] = [];
+  const conVentas = input.rankingBoletas.filter((r) => r.vendidas > 0);
+  const totalBoletasVendidas = conVentas.reduce((s, r) => s + r.vendidas, 0);
+
+  if (conVentas.length > 0 && totalBoletasVendidas > 0) {
+    const top = conVentas[0];
+    const pct = Math.round((top.vendidas / totalBoletasVendidas) * 100);
+    if (pct >= 55) {
+      items.push({
+        text: `Tu "${top.nombre}" concentra el ${pct}% de las ventas. Refuerza su difusión o crea un tipo similar antes de que se agote.`,
+      });
+    }
+  }
+
+  if (input.rankingProductos.length > 0) {
+    const top = input.rankingProductos[0];
+    items.push({
+      text: `"${top.nombre}" concentra lo que más pagaron tus clientes en productos. Destácalo en comunicación y en puerta.`,
+    });
+  } else if (input.productosCount === 0) {
+    items.push({
+      text: 'Aún no vendes productos adicionales. Agregar bebidas, merch o combos puede aumentar lo que recibirás por asistente sin depender solo de boletas.',
+      ctaLabel: 'Agregar productos',
+      ctaAction: 'productos',
+      ctaVariant: 'secondary',
+    });
+  } else if (input.rankingProductos.length === 0 && input.productosCount > 0) {
+    items.push({
+      text: `Tienes ${input.productosCount} producto${input.productosCount === 1 ? '' : 's'} configurado${input.productosCount === 1 ? '' : 's'} sin ventas. Promociónalos en puerta cuando empiece el evento.`,
+      ctaLabel: 'Ver catálogo',
+      ctaAction: 'productos',
+      ctaVariant: 'secondary',
+    });
+  }
+
+  if (input.cuponesCount === 0) {
+    items.push({
+      text: 'Aún no has creado cupones. Un descuento por tiempo limitado puede impulsar ventas cuando el ritmo se enfríe.',
+      ctaLabel: 'Crear cupones',
+      ctaAction: 'cupones',
+      ctaVariant: 'secondary',
+    });
+  }
+
+  if (input.productosCount > 0 && input.productosCount < 4) {
+    items.push({
+      text: `Tu catálogo tiene ${input.productosCount} producto${input.productosCount === 1 ? '' : 's'}. Ampliarlo suele elevar el ticket promedio en puerta.`,
+      ctaLabel: 'Ampliar catálogo',
+      ctaAction: 'productos',
+      ctaVariant: 'secondary',
+    });
+  }
+
+  if (input.tiposBoletaCount === 1 && input.aforo.total > 0) {
+    items.push({
+      text: 'Solo tienes un tipo de boleta. Crear una opción VIP o palco puede aumentar tu ticket promedio sin tocar el aforo base.',
+      ctaLabel: 'Crear tipo VIP',
+      ctaAction: 'boletas',
+      ctaVariant: 'secondary',
+    });
+  } else if (input.tiposBoletaCount >= 2 && conVentas.length >= 2) {
+    const precioTop = conVentas[0].ingresosEst / Math.max(1, conVentas[0].vendidas);
+    const precioSeg = conVentas[1].ingresosEst / Math.max(1, conVentas[1].vendidas);
+    if (precioSeg < precioTop * 0.6) {
+      items.push({
+        text: 'Hay mucha diferencia entre tu boleta estrella y la segunda. Un combo o pack puede subir el ticket promedio de quien compra la opción económica.',
+      });
+    }
+  }
+
+  if (items.length === 0) {
+    items.push({
+      text: 'Tu operación va equilibrada. Sigue monitoreando ventas y aforo; ajusta precios o cupos si un tipo se agota antes de lo previsto.',
+    });
+  }
+
+  const conclusion =
+    items.length > 1
+      ? 'Prioriza una acción a la vez. El impacto suele venir de reforzar lo que ya funciona, no de cambiar todo a la vez.'
+      : 'Pequeños ajustes basados en datos suelen mover la aguja más que grandes cambios de último momento.';
+
+  return {
+    question: '¿Qué oportunidades tengo?',
+    items: items.slice(0, 5),
+    conclusion,
+  };
+}
+
+/** Evita CTAs repetidos: solo actionNow lleva botón primario. */
+export function applyIntelCtaPolicy(
+  actionNow: IntelActionNow | null,
+  sections: ({ ctaLabel?: string; ctaAction?: IntelCtaAction; ctaVariant?: IntelCtaVariant } | null)[],
+  oportunidades: IntelOportunidadesSection | null = null,
+): { hideHeroShare: boolean } {
+  const primaryAction = actionNow?.ctaAction;
+  const usedActions = new Set<IntelCtaAction>();
+  if (primaryAction) {
+    usedActions.add(primaryAction);
+  }
+
+  for (const section of sections) {
+    if (!section?.ctaLabel || !section.ctaAction) {
+      continue;
+    }
+
+    if (section.ctaAction === primaryAction || usedActions.has(section.ctaAction)) {
+      section.ctaLabel = undefined;
+      section.ctaAction = undefined;
+      section.ctaVariant = undefined;
+      continue;
+    }
+
+    section.ctaVariant = 'secondary';
+    usedActions.add(section.ctaAction);
+  }
+
+  if (oportunidades) {
+    oportunidades.items = oportunidades.items.map((item) => {
+      if (!item.ctaAction || !item.ctaLabel) {
+        return item;
+      }
+      if (item.ctaAction === primaryAction || usedActions.has(item.ctaAction)) {
+        return { text: item.text };
+      }
+      usedActions.add(item.ctaAction);
+      return { ...item, ctaVariant: 'secondary' as const };
+    });
+  }
+
+  return { hideHeroShare: primaryAction === 'share' };
 }

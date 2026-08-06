@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
 import { DashboardStats } from '../../types';
+import { formatFinanzasMonedaExacta } from '../../utils/dashboard-finanzas.view';
 
 @Component({
   selector: 'app-finanzas-desglose',
@@ -15,13 +16,7 @@ export class FinanzasDesgloseComponent {
   viewMode: 'todo' | 'boletas' | 'productos' = 'boletas';
 
   formatCurrency(value: number | null | undefined): string {
-    const safeValue = value ?? 0;
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(safeValue);
+    return formatFinanzasMonedaExacta(value);
   }
 
   setViewMode(mode: 'todo' | 'boletas' | 'productos'): void {

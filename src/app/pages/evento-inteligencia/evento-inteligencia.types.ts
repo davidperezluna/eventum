@@ -1,6 +1,8 @@
 import { EvNoticeVariant } from '../../components/ev-notice';
 
-export type IntelCtaAction = 'share' | 'operaciones' | 'escanear' | 'boletas' | 'productos';
+export type IntelCtaAction = 'share' | 'operaciones' | 'escanear' | 'boletas' | 'productos' | 'cupones';
+
+export type IntelCtaVariant = 'primary' | 'secondary';
 
 export interface IntelCountdown {
   days: number;
@@ -9,11 +11,8 @@ export interface IntelCountdown {
 }
 
 export interface IntelHeroMoment {
-  /** Narrativa principal: "Faltan 2 horas para el evento" */
   headline: string;
-  /** Línea de aforo: "0% del aforo vendido" */
   aforoLine: string;
-  /** Línea de disponibilidad: "100 entradas disponibles" */
   availabilityLine: string;
   disponibles: number;
   salesPhrase: string;
@@ -25,14 +24,28 @@ export interface IntelHeroMoment {
 }
 
 export interface IntelPulseCard {
-  id: 'recaudo' | 'aforo' | 'asistentes';
+  id: 'aforo' | 'asistentes';
   icon: string;
   label: string;
   value: string;
-  /** Frase contextual completa — no solo el número */
   phrase: string;
   detail: string;
   barPct?: number;
+}
+
+/** Presentación financiera del hero — datos vía buildFinanzasOrganizadorView. */
+export interface IntelFinanzasHeroView {
+  empty: boolean;
+  showProductos: boolean;
+  ventasGeneradas: string;
+  ventasGeneradasMoneda: string;
+  ventasGeneradasBoletas: string;
+  ventasGeneradasProductos: string;
+  descuentosEstimados: string;
+  recibirasAprox: string;
+  recibirasAproxMoneda: string;
+  recibirasAproxBoletas: string;
+  recibirasAproxProductos: string;
 }
 
 export interface IntelActionNow {
@@ -42,17 +55,60 @@ export interface IntelActionNow {
   ctaAction: IntelCtaAction;
 }
 
-export interface IntelStorySection {
-  id: string;
-  question: string;
-  headline: string;
-  narrative: string;
-  insight?: string;
-  empty: boolean;
-  emptyHeadline?: string;
-  emptyNarrative?: string;
+export interface IntelCtaCapable {
   ctaLabel?: string;
   ctaAction?: IntelCtaAction;
+  ctaVariant?: IntelCtaVariant;
+}
+
+export interface IntelVentasSection extends IntelCtaCapable {
+  question: string;
+  empty: boolean;
+  emptyMessage?: string;
+  showProductos: boolean;
+  /** Desglose bruto por rubro — complementa el total del hero, no lo repite. */
+  clientesPagaronBoletas: string;
+  clientesPagaronProductos: string;
+  descuentosEstimados: string;
+  descuentosPct: number;
+  /** Desglose neto por rubro. */
+  recibirasAproxBoletas: string;
+  recibirasAproxProductos: string;
+  conclusion?: string;
+}
+
+export interface IntelRankingRow {
+  nombre: string;
+  vendidas: number;
+  pct?: number;
+  clientesPagaron: string;
+  clientesPagaronRaw: number;
+}
+
+export interface IntelRankingSection extends IntelCtaCapable {
+  question: string;
+  empty: boolean;
+  emptyMessage?: string;
+  rows: IntelRankingRow[];
+  conclusion?: string;
+}
+
+export interface IntelHoySection extends IntelCtaCapable {
+  question: string;
+  empty: boolean;
+  emptyMessage?: string;
+  lines: string[];
+  conclusion?: string;
+}
+
+export interface IntelOportunidad extends IntelCtaCapable {
+  text: string;
+}
+
+export interface IntelOportunidadesSection {
+  question: string;
+  items: IntelOportunidad[];
+  conclusion?: string;
 }
 
 export interface IntelAforoTotals {

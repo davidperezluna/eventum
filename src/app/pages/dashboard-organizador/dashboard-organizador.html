@@ -19,30 +19,39 @@
     <p>Cargando estadísticas...</p>
   </div>
 
-  <!-- Stats Grid Principal -->
-  <section *ngIf="!loading && !error" class="dashboard-section dashboard-section--kpis">
+  <!-- Resumen financiero del organizador -->
+  <section *ngIf="!loading && !error" class="dashboard-section dashboard-section--finanzas-org">
     <div class="dashboard-section__head">
-      <h2>Resumen ejecutivo</h2>
-      <p>Indicadores clave de tu operación como organizador.</p>
+      <h2>Tu saldo</h2>
+      <p>Cuánto estimamos que recibirás y de dónde sale ese valor.</p>
     </div>
-    <app-dashboard-kpis [stats]="stats" eventosLabel="Mis eventos activos" [mostrarProductos]="!!stats.tiene_productos"></app-dashboard-kpis>
-  </section>
-
-  <!-- Ingresos por mes / día -->
-  <app-ingresos-resumen *ngIf="!loading && !error" class="dashboard-section" [stats]="stats"></app-ingresos-resumen>
-
-  <!-- Desglose ingresos: empresario vs Eventum -->
-  <section *ngIf="!loading && !error" class="dashboard-section dashboard-section--finanzas">
-    <div class="dashboard-section__head">
-      <h2>Salud financiera</h2>
-      <p>Desglose de ingresos brutos, comisiones y netos operativos.</p>
-    </div>
-    <app-finanzas-desglose
+    <app-dashboard-finanzas-hero-organizador
       [stats]="stats"
       [mostrarProductos]="!!stats.tiene_productos"
-      clienteSubtext="Tu lado como organizador: ventas de boletas y neto tras Wompi sobre ese rubro."
-    ></app-finanzas-desglose>
+    ></app-dashboard-finanzas-hero-organizador>
   </section>
+
+  <!-- Indicadores operativos -->
+  <section *ngIf="!loading && !error" class="dashboard-section dashboard-section--kpis">
+    <div class="dashboard-section__head">
+      <h2>Resumen operativo</h2>
+      <p>Volumen de ventas, eventos y clientes.</p>
+    </div>
+    <app-dashboard-kpis
+      [stats]="stats"
+      modo="operativo"
+      eventosLabel="Mis eventos activos"
+      [mostrarProductos]="!!stats.tiene_productos"
+    ></app-dashboard-kpis>
+  </section>
+
+  <!-- Recaudo bruto por periodo (contexto, no saldo del empresario) -->
+  <app-ingresos-resumen
+    *ngIf="!loading && !error"
+    class="dashboard-section"
+    [stats]="stats"
+    [contextoOrganizador]="true"
+  ></app-ingresos-resumen>
 
   <!-- Dashboard Content -->
   <section *ngIf="!loading && !error" class="dashboard-section">
@@ -70,7 +79,7 @@
               {{ venta.evento.titulo }}
             </div>
             <div class="venta-details">
-              <span class="venta-total">{{ formatCurrency(venta.total || 0) }}</span>
+              <span class="venta-total" title="Monto pagado por el cliente (recaudo bruto, no tu saldo neto)">{{ formatCurrency(venta.total || 0) }}</span>
               <div class="venta-badges">
                 <span class="venta-tipo-badge" [class]="
                   venta.tipo_venta === 'productos' ? 'badge-productos' :

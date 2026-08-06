@@ -1,5 +1,5 @@
 <div class="kpi-panel">
-  <section class="kpi-hero" title="Suma de totales cobrados (bruto)">
+  <section *ngIf="modo === 'completo'" class="kpi-hero" title="Suma de totales cobrados (bruto)">
     <p class="kpi-hero__label">Ingresos totales</p>
     <p class="kpi-hero__value">{{ formatAmountNoCurrency(ingresosTotalesGlobales) }}</p>
 
@@ -17,7 +17,7 @@
     </p>
   </section>
 
-  <section class="kpi-insights" aria-label="Indicadores financieros clave">
+  <section *ngIf="modo === 'completo'" class="kpi-insights" aria-label="Indicadores financieros clave">
     <article class="kpi-insight">
       <p class="kpi-insight__label">Margen neto total</p>
       <p class="kpi-insight__value">{{ formatAmountNoCurrency(netoTotalConsolidado) }}</p>

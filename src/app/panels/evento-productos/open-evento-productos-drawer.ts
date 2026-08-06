@@ -3,9 +3,14 @@ import { Evento } from '../../types';
 import { EventoProductosPanel } from './evento-productos-panel';
 import { EventoProductosDrawerResult, EventoProductosPanelData } from './evento-productos.types';
 
+export interface OpenEventoProductosDrawerOptions {
+  onChanged?: EventoProductosPanelData['onChanged'];
+}
+
 export function openEventoProductosDrawer(
   drawerService: DrawerService,
   evento: Pick<Evento, 'id' | 'titulo'>,
+  options?: OpenEventoProductosDrawerOptions,
 ): DrawerRef<EventoProductosDrawerResult> {
   return drawerService.open<EventoProductosPanel, EventoProductosPanelData, EventoProductosDrawerResult>(
     EventoProductosPanel,
@@ -17,6 +22,7 @@ export function openEventoProductosDrawer(
       data: {
         eventoId: evento.id,
         eventoTitulo: evento.titulo,
+        onChanged: options?.onChanged,
       },
     },
   );

@@ -1,0 +1,131 @@
+<div
+  class="ev-panel-sidebar-overlay"
+  *ngIf="open"
+  (click)="closePanel.emit()"
+  aria-hidden="true"
+></div>
+
+<aside
+  class="ev-panel-sidebar"
+  [class.ev-panel-sidebar--open]="open"
+  [class.ev-panel-sidebar--compact]="compact"
+  aria-label="Navegación del panel"
+>
+  <header class="ev-panel-sidebar__header">
+    <div class="ev-panel-sidebar__brand-row">
+      <a
+        [routerLink]="homeRoute"
+        class="ev-panel-sidebar__brand"
+        [attr.aria-label]="'Eventum, ir al inicio del panel'"
+        (click)="onNavigate()"
+      >
+        <img src="logo-eventum.svg" alt="" class="ev-panel-sidebar__logo" />
+      </a>
+      <button
+        type="button"
+        class="ev-panel-sidebar__close"
+        (click)="closePanel.emit()"
+        aria-label="Cerrar menú"
+      >
+        <span class="material-icons" aria-hidden="true">close</span>
+      </button>
+    </div>
+    <p class="ev-panel-sidebar__subtitle">{{ panelSubtitle }}</p>
+  </header>
+
+  <nav class="ev-panel-sidebar__nav" aria-label="Secciones del panel">
+    <ng-container *ngFor="let section of sections; trackBy: trackSection">
+      <div class="ev-panel-sidebar__section">
+        <p *ngIf="section.label && !compact" class="ev-panel-sidebar__section-label">
+          {{ section.label }}
+        </p>
+
+        <ng-container *ngFor="let entry of section.entries; trackBy: trackEntry">
+          <a
+            *ngIf="isAdminNavLink(entry)"
+            [routerLink]="entry.path"
+            routerLinkActive="ev-panel-sidebar__link--active"
+            [routerLinkActiveOptions]="{ exact: entry.path === '/dashboard' || entry.path === '/dashboard-organizador' }"
+            class="ev-panel-sidebar__link"
+            [attr.title]="compact ? entry.label : null"
+            (click)="onNavigate()"
+          >
+            <span class="material-icons ev-panel-sidebar__icon" aria-hidden="true">{{ entry.icon }}</span>
+            <span class="ev-panel-sidebar__label">{{ entry.label }}</span>
+          </a>
+
+          <div *ngIf="isAdminNavGroup(entry)" class="ev-panel-sidebar__group">
+            <button
+              type="button"
+              class="ev-panel-sidebar__link ev-panel-sidebar__link--group"
+              [class.ev-panel-sidebar__link--active]="isGroupActive(entry)"
+              [attr.aria-expanded]="isGroupExpanded(entry)"
+              [attr.title]="compact ? entry.label : null"
+              (click)="toggleGroup(entry, $event)"
+            >
+              <span class="material-icons ev-panel-sidebar__icon" aria-hidden="true">{{ entry.icon }}</span>
+              <span class="ev-panel-sidebar__label">{{ entry.label }}</span>
+              <span class="material-icons ev-panel-sidebar__chevron" aria-hidden="true">
+                {{ isGroupExpanded(entry) ? 'expand_less' : 'expand_more' }}
+              </span>
+            </button>
+
+            <div
+              class="ev-panel-sidebar__subnav"
+              *ngIf="isGroupExpanded(entry) && !compact"
+              [attr.aria-label]="'Submenú ' + entry.label"
+            >
+              <a
+                *ngFor="let child of entry.children"
+                [routerLink]="child.path"
+                routerLinkActive="ev-panel-sidebar__link--active"
+                class="ev-panel-sidebar__link ev-panel-sidebar__link--child"
+                (click)="onNavigate()"
+              >
+                <span class="material-icons ev-panel-sidebar__icon ev-panel-sidebar__icon--child" aria-hidden="true">
+                  {{ child.icon }}
+                </span>
+                <span class="ev-panel-sidebar__label">{{ child.label }}</span>
+              </a>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </ng-container>
+  </nav>
+
+  <footer class="ev-panel-sidebar__footer">
+    <div class="ev-panel-sidebar__account" *ngIf="userEmail">
+      <div class="ev-panel-sidebar__avatar" aria-hidden="true">{{ userInitials() }}</div>
+      <div class="ev-panel-sidebar__account-text" *ngIf="!compact">
+        <span class="ev-panel-sidebar__account-email">{{ userEmail }}</span>
+        <span class="ev-panel-sidebar__account-role" *ngIf="userRole">{{ userRole }}</span>
+      </div>
+    </div>
+
+    <div class="ev-panel-sidebar__footer-actions">
+      <button
+        type="button"
+        class="ev-panel-sidebar__footer-btn"
+        [attr.title]="compact ? (compact ? 'Expandir menú' : 'Modo compacto') : null"
+        [attr.aria-label]="compact ? 'Expandir menú lateral' : 'Modo compacto del menú lateral'"
+        (click)="toggleCompact()"
+      >
+        <span class="material-icons" aria-hidden="true">{{ compact ? 'chevron_right' : 'chevron_left' }}</span>
+        <span class="ev-panel-sidebar__footer-btn-label" *ngIf="!compact">Modo compacto</span>
+      </button>
+
+      <button
+        type="button"
+        class="ev-panel-sidebar__footer-btn ev-panel-sidebar__footer-btn--logout"
+        [attr.title]="compact ? 'Cerrar sesión' : null"
+        (click)="logoutClick.emit()"
+      >
+        <span class="material-icons" aria-hidden="true">logout</span>
+        <span class="ev-panel-sidebar__footer-btn-label" *ngIf="!compact">Cerrar sesión</span>
+      </button>
+    </div>
+
+    <p class="ev-panel-sidebar__copyright" *ngIf="!compact">&copy; {{ currentYear }} Eventum</p>
+  </footer>
+</aside>

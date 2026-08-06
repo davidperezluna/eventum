@@ -10,6 +10,7 @@ import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { IngresosResumenComponent } from '../../components/ingresos-resumen/ingresos-resumen';
 import { DashboardKpisComponent } from '../../components/dashboard-kpis/dashboard-kpis';
 import { FinanzasDesgloseComponent } from '../../components/finanzas-desglose/finanzas-desglose';
+import { formatFinanzasMonedaExacta } from '../../utils/dashboard-finanzas.view';
 
 @Component({
   selector: 'app-dashboard',
@@ -175,12 +176,7 @@ export class Dashboard implements OnInit {
   }
 
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
+    return formatFinanzasMonedaExacta(value);
   }
 
   getVariacionPorcentual(actual: number, anterior: number): number {

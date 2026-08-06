@@ -1,4 +1,8 @@
-<div class="layout-container" [class.client-layout]="isCliente() || isLector() || !currentUser || !usuario">
+<div
+  class="layout-container"
+  [class.client-layout]="isCliente() || isLector() || !currentUser || !usuario"
+  [class.panel-sidebar-compact]="sidebarCompact && !isCliente() && !isLector() && !!currentUser"
+>
   
   <!-- Layout para Administradores y Organizadores (Sidebar) -->
   <ng-container *ngIf="!isCliente() && !isLector() && currentUser && usuario">
@@ -12,84 +16,18 @@
         </a>
       </div>
     </header>
-    <!-- Overlay para móviles -->
-    <div 
-      class="sidebar-overlay" 
-      *ngIf="sidebarOpen"
-      (click)="closeSidebar()"
-    ></div>
-  
-    <aside class="sidebar" [class.open]="sidebarOpen">
-      <div class="sidebar-header">
-        <div class="sidebar-header-content">
-          <h1 class="sidebar-logo">
-            <img src="logo-eventum.svg" alt="Eventum" class="logo-img" />
-          </h1>
-          <button class="sidebar-close" (click)="closeSidebar()" aria-label="Close menu">
-            <span class="material-icons">close</span>
-          </button>
-        </div>
-        <p class="subtitle">Panel de Administración</p>
-      </div>
-      <nav class="sidebar-nav">
-        <ng-container *ngFor="let item of menuItems">
-          <a
-            *ngIf="!item.children?.length"
-            [routerLink]="item.path"
-            class="nav-item"
-            [class.active]="isMenuItemActive(item)"
-            (click)="closeSidebar()"
-          >
-            <span class="material-icons nav-icon">{{ item.icon }}</span>
-            <span class="nav-label">{{ item.label }}</span>
-          </a>
-
-          <div *ngIf="item.children?.length" class="nav-group">
-            <button
-              type="button"
-              class="nav-item nav-item--group"
-              [class.active]="isMenuItemActive(item)"
-              [attr.aria-expanded]="item.expanded"
-              (click)="toggleMenuGroup(item)"
-            >
-              <span class="material-icons nav-icon">{{ item.icon }}</span>
-              <span class="nav-label">{{ item.label }}</span>
-              <span class="material-icons nav-group-chevron">{{ item.expanded ? 'expand_less' : 'expand_more' }}</span>
-            </button>
-
-            <div class="nav-submenu" *ngIf="item.expanded">
-              <a
-                *ngFor="let child of item.children"
-                [routerLink]="child.path"
-                class="nav-item nav-subitem"
-                [class.active]="isMenuItemActive(child)"
-                (click)="closeSidebar()"
-              >
-                <span class="material-icons nav-icon">{{ child.icon }}</span>
-                <span class="nav-label">{{ child.label }}</span>
-              </a>
-            </div>
-          </div>
-        </ng-container>
-      </nav>
-      <div class="sidebar-footer">
-        <div *ngIf="currentUser && usuario" class="user-info">
-          <div class="user-email">
-            <span class="material-icons">person</span>
-            <span class="email-text">{{ userEmail }}</span>
-          </div>
-          <div class="user-role" *ngIf="userRole">
-            <span class="material-icons">badge</span>
-            <span>{{ userRole }}</span>
-          </div>
-          <button class="btn-logout" (click)="logout()">
-            <span class="material-icons">logout</span>
-            <span>Cerrar Sesión</span>
-          </button>
-        </div>
-        <p>&copy; {{ currentYear }} Eventum</p>
-      </div>
-    </aside>
+    <app-admin-sidebar
+      [sections]="navSections"
+      [open]="sidebarOpen"
+      [compact]="sidebarCompact"
+      [userEmail]="userEmail"
+      [userRole]="userRole"
+      [panelSubtitle]="panelSubtitle"
+      [homeRoute]="panelHomeRoute"
+      (closePanel)="closeSidebar()"
+      (logoutClick)="logout()"
+      (compactChange)="setSidebarCompact($event)"
+    ></app-admin-sidebar>
   </ng-container>
 
   <!-- Layout para Clientes (Header Top) -->

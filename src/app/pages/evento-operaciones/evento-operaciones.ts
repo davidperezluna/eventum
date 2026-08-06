@@ -37,7 +37,6 @@ import { Evento, TipoBoleta, TipoEstadoEvento, DashboardStats, CuponDescuento } 
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 import {
-
   buildEventoReadiness,
 
   EventoReadinessResult,
@@ -51,7 +50,15 @@ import {
 } from '../../core/evento-readiness';
 
 import {
+  isEventoCatalogoInconsistent,
+  patchBorrador,
+  patchFueraDeCatalogo,
+  patchPublicadoEnCatalogo,
+} from '../../core/evento-publicacion';
 
+import { formatFinanzasMonedaExacta, getRecaudoBrutoConsolidado, resolveMostrarProductos } from '../../utils/dashboard-finanzas.view';
+
+import {
   buildEventoTimeline,
 
   EventoTimelineItem,
@@ -248,6 +255,11 @@ export class EventoOperaciones implements OnInit {
       }
 
       this.evento = evento;
+
+      if (isEventoCatalogoInconsistent(evento) && !this.isShowcaseMode) {
+        const synced = await this.eventosService.updateEvento(evento.id, patchPublicadoEnCatalogo());
+        this.evento = { ...evento, ...synced, lugar: evento.lugar };
+      }
 
 
 
@@ -523,6 +535,11 @@ export class EventoOperaciones implements OnInit {
 
 
 
+  get recaudoBrutoEvento(): number {
+    if (!this.stats) return 0;
+    return getRecaudoBrutoConsolidado(this.stats, resolveMostrarProductos(this.stats));
+  }
+
   get ingresosTrend(): { label: string; positive: boolean } | null {
 
     if (!this.stats) return null;
@@ -734,33 +751,7 @@ export class EventoOperaciones implements OnInit {
 
 
   formatCurrency(value: number | undefined | null): string {
-
-    const n = Number(value ?? 0);
-
-    if (!Number.isFinite(n)) return '$0';
-
-    if (n >= 1_000_000) {
-
-      return `$${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
-
-    }
-
-    if (n >= 1_000) {
-
-      return `$${Math.round(n / 1_000)}K`;
-
-    }
-
-    return new Intl.NumberFormat('es-CO', {
-
-      style: 'currency',
-
-      currency: 'COP',
-
-      maximumFractionDigits: 0,
-
-    }).format(n);
-
+    return formatFinanzasMonedaExacta(value);
   }
 
 
@@ -1083,7 +1074,9 @@ export class EventoOperaciones implements OnInit {
 
     this.showMoreSheet = false;
 
-    const ref = openEventoBoletasDrawer(this.drawerService, this.evento);
+    const ref = openEventoBoletasDrawer(this.drawerService, this.evento, {
+      onChanged: (result) => this.applyBoletasDrawerResult(result),
+    });
 
     void ref.afterClosed().then((result) => {
 
@@ -1093,21 +1086,7 @@ export class EventoOperaciones implements OnInit {
 
       }
 
-      if (result.tiposBoleta) {
-
-        this.tiposBoleta = result.tiposBoleta;
-
-      } else {
-
-        void this.refreshTiposBoleta();
-
-        return;
-
-      }
-
-      this.rebuildReadiness();
-
-      this.cdr.detectChanges();
+      this.applyBoletasDrawerResult(result);
 
     });
 
@@ -1125,7 +1104,9 @@ export class EventoOperaciones implements OnInit {
 
     this.showMoreSheet = false;
 
-    const ref = openEventoProductosDrawer(this.drawerService, this.evento);
+    const ref = openEventoProductosDrawer(this.drawerService, this.evento, {
+      onChanged: () => void this.refreshProductosResumen(),
+    });
 
     void ref.afterClosed().then((result) => {
 
@@ -1138,6 +1119,30 @@ export class EventoOperaciones implements OnInit {
       void this.refreshProductosResumen();
 
     });
+
+  }
+
+
+
+  private applyBoletasDrawerResult(result: { changed: boolean; tiposBoleta?: TipoBoleta[] }): void {
+
+    if (result.tiposBoleta) {
+
+      this.tiposBoleta = result.tiposBoleta;
+
+      this.rebuildReadiness();
+
+      this.cdr.detectChanges();
+
+      return;
+
+    }
+
+    if (result.changed) {
+
+      void this.refreshTiposBoleta();
+
+    }
 
   }
 
@@ -1279,13 +1284,26 @@ export class EventoOperaciones implements OnInit {
 
     }
 
+    if (step.value === TipoEstadoEvento.PUBLICADO) {
+
+      await this.publicarEvento();
+
+      return;
+
+    }
+
     this.savingEstado = true;
 
     this.cdr.detectChanges();
 
     try {
 
-      const updated = await this.eventosService.updateEvento(this.evento.id, { estado: step.value });
+      const payload =
+        step.value === TipoEstadoEvento.BORRADOR
+          ? patchBorrador()
+          : { estado: step.value };
+
+      const updated = await this.eventosService.updateEvento(this.evento.id, payload);
 
       this.evento = { ...this.evento, ...updated, lugar: this.evento.lugar };
 
@@ -1427,21 +1445,31 @@ export class EventoOperaciones implements OnInit {
 
     }
 
+    const nextActivo = !this.evento.activo;
+
+    if (nextActivo && this.estadoActual === TipoEstadoEvento.BORRADOR) {
+
+      await this.publicarEvento();
+
+      return;
+
+    }
+
     this.publishing = true;
 
     this.cdr.detectChanges();
 
     try {
 
-      const updated = await this.eventosService.updateEvento(this.evento.id, {
+      const payload = nextActivo ? patchPublicadoEnCatalogo() : patchFueraDeCatalogo();
 
-        activo: !this.evento.activo,
-
-      });
+      const updated = await this.eventosService.updateEvento(this.evento.id, payload);
 
       this.evento = { ...this.evento, ...updated, lugar: this.evento.lugar };
 
       this.rebuildReadiness();
+
+      this.rebuildTimeline();
 
     } catch (err) {
 

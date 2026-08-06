@@ -21,6 +21,13 @@ import {
 import { ClientConfirmDialog } from '../client-confirm-dialog/client-confirm-dialog';
 import { EvDrawerHost } from '../ev-drawer/ev-drawer-host';
 import { EvNotice } from '../ev-notice';
+import { AdminSidebarComponent } from '../admin-sidebar/admin-sidebar';
+import { AdminNavSection } from '../admin-sidebar/admin-nav.types';
+import {
+  buildAdminNavSections,
+  buildOrganizadorNavSections,
+  buildShowcaseNavSections,
+} from '../admin-sidebar/admin-nav.config';
 import { LOGIN_QUERY_CARRITO_PAGAR } from '../../core/login-redirect';
 
 type ClientNavItem = {
@@ -37,22 +44,21 @@ type ClientNavItem = {
 
 @Component({
   selector: 'app-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, ClientConfirmDialog, EvDrawerHost, EvNotice],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    CommonModule,
+    ClientConfirmDialog,
+    EvDrawerHost,
+    EvNotice,
+    AdminSidebarComponent,
+  ],
   templateUrl: './layout.html',
   styleUrl: './layout.css',
 })
 export class Layout implements OnInit, OnDestroy {
-  menuItems: Array<{
-    path?: string;
-    label: string;
-    icon: string;
-    expanded?: boolean;
-    children?: Array<{
-      path: string;
-      label: string;
-      icon: string;
-    }>;
-  }> = [];
+  navSections: AdminNavSection[] = [];
 
   /** Navegación cliente (drawer móvil + barra desktop) — orden único. */
   clientNavItems: ClientNavItem[] = [];
@@ -62,6 +68,7 @@ export class Layout implements OnInit, OnDestroy {
   userEmail: string = '';
   userRole: string = '';
   sidebarOpen: boolean = false;
+  sidebarCompact = false;
   clientMenuOpen: boolean = false;
   totalItemsCarrito = 0;
   totalTrasladosPendientes = 0;
@@ -130,7 +137,7 @@ export class Layout implements OnInit, OnDestroy {
           }
         } else if (this.authService.isLector()) {
           this.userRole = 'Lector';
-          this.menuItems = [];
+          this.navSections = [];
           this.clientNavItems = [];
           this.redirectLectorFueraDeApp();
         } else {
@@ -139,7 +146,7 @@ export class Layout implements OnInit, OnDestroy {
         }
       } else {
         // Si no hay usuario, limpiar menú
-        this.menuItems = [];
+        this.navSections = [];
         this.clientNavItems = [];
         this.userRole = '';
         this.mostrarNavAccesosPuerta = false;
@@ -289,6 +296,13 @@ export class Layout implements OnInit, OnDestroy {
     return this.usuario?.tipo_usuario_id === 2 ? '/dashboard-organizador' : '/dashboard';
   }
 
+  get panelSubtitle(): string {
+    if (this.usuario?.tipo_usuario_id === 2) {
+      return 'Panel del Organizador';
+    }
+    return 'Panel Administrativo';
+  }
+
   ngOnDestroy() {
     if (this.routerSubscription) {
       this.routerSubscription.unsubscribe();
@@ -309,72 +323,15 @@ export class Layout implements OnInit, OnDestroy {
   }
 
   loadMenuAdministrador() {
-    this.menuItems = [
-      { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
-      { path: '/usuarios', label: 'Usuarios', icon: 'people' },
-      { path: '/eventos', label: 'Eventos', icon: 'event' },
-      { path: '/categorias', label: 'Categorías', icon: 'category' },
-      { path: '/lugares', label: 'Lugares', icon: 'place' },
-      ...(this.coversEventumEnabled
-        ? [{ path: '/covers-config', label: 'Covers', icon: 'local_bar' }]
-        : []),
-      { path: '/boletas', label: 'Boletas sin usar', icon: 'confirmation_number' },
-      { path: '/boletas-usadas', label: 'Boletas usadas', icon: 'how_to_reg' },
-      { path: '/productos', label: 'Productos', icon: 'local_mall' },
-      { path: '/lectores-parametrizacion', label: 'Lectores', icon: 'qr_code_scanner' },
-      { path: '/palcos', label: 'Palcos', icon: 'event_seat' },
-      {
-        label: 'Ventas',
-        icon: 'attach_money',
-        expanded: true,
-        children: [
-          { path: '/ventas', label: 'Ventas boletas', icon: 'confirmation_number' },
-          { path: '/ventas-productos', label: 'Ventas productos', icon: 'inventory_2' },
-          { path: '/ventas-palcos', label: 'Ventas palcos', icon: 'weekend' },
-          { path: '/transacciones-checkout', label: 'Transacciones', icon: 'receipt_long' },
-          { path: '/wompi-reconcile', label: 'Reconciliación Wompi', icon: 'compare_arrows' },
-        ]
-      },
-      { path: '/probar-compras', label: 'Probar compras', icon: 'storefront' },
-      { path: '/ventas-manual', label: 'Venta manual', icon: 'point_of_sale' },
-      { path: '/calificaciones', label: 'Calificaciones', icon: 'star' },
-      { path: '/notificaciones', label: 'Notificaciones', icon: 'notifications' },
-      { path: '/reportes', label: 'Reportes', icon: 'assessment' },
-      { path: '/perfil', label: 'Mi Perfil', icon: 'person' },
-    ];
+    this.navSections = buildAdminNavSections(this.coversEventumEnabled);
   }
 
   loadMenuOrganizador() {
-    // Temporal: sólo entrada al panel organizador en el menú lateral.
-    this.menuItems = [
-      { path: '/dashboard-organizador', label: 'Dashboard', icon: 'dashboard' },
-      ...(this.coversEventumEnabled
-        ? [{ path: '/covers-config', label: 'Covers', icon: 'local_bar' }]
-        : []),
-    ];
-    /*
-    Ocultos de momento — restaurar al activar rutas desde el sidebar:
-      { path: '/eventos', label: 'Mis Eventos', icon: 'event' },
-      { path: '/boletas', label: 'Boletas sin usar', icon: 'confirmation_number' },
-      { path: '/boletas-usadas', label: 'Boletas usadas', icon: 'how_to_reg' },
-      { path: '/lectores-parametrizacion', label: 'Lectores', icon: 'qr_code_scanner' },
-      { path: '/ventas', label: 'Mis Ventas', icon: 'attach_money' },
-      { path: '/perfil', label: 'Mi Perfil', icon: 'person' },
-    */
+    this.navSections = buildOrganizadorNavSections(this.coversEventumEnabled);
   }
 
   loadMenuShowcase() {
-    this.menuItems = [
-      { path: '/dashboard-organizador', label: 'Dashboard', icon: 'dashboard' },
-      { path: '/eventos', label: 'Mis Eventos', icon: 'event' },
-      { path: '/boletas', label: 'Boletas sin usar', icon: 'confirmation_number' },
-      { path: '/boletas-usadas', label: 'Boletas usadas', icon: 'how_to_reg' },
-      { path: '/palcos', label: 'Palcos', icon: 'event_seat' },
-      { path: '/lectores-parametrizacion', label: 'Lectores', icon: 'qr_code_scanner' },
-      { path: '/escanear-qr', label: 'Escanear QR', icon: 'qr_code_2' },
-      { path: '/productos', label: 'Productos', icon: 'local_mall' },
-      { path: '/perfil', label: 'Mi Perfil', icon: 'person' },
-    ];
+    this.navSections = buildShowcaseNavSections();
   }
 
   loadMenuCliente() {
@@ -417,7 +374,7 @@ export class Layout implements OnInit, OnDestroy {
         : []),
       { path: '/perfil', label: 'Mi perfil', icon: 'person', exact: false, dividerBefore: true },
     ];
-    this.menuItems = [];
+    this.navSections = [];
   }
 
   clientNavFor(surface: 'mobile' | 'desktop'): ClientNavItem[] {
@@ -455,6 +412,10 @@ export class Layout implements OnInit, OnDestroy {
     this.syncBodyScrollLock();
   }
 
+  setSidebarCompact(compact: boolean): void {
+    this.sidebarCompact = compact;
+  }
+
   toggleClientMenu() {
     this.clientMenuOpen = !this.clientMenuOpen;
     this.syncBodyScrollLock();
@@ -471,29 +432,6 @@ export class Layout implements OnInit, OnDestroy {
     } else {
       unlockBodyScroll();
     }
-  }
-
-  toggleMenuGroup(item: { expanded?: boolean; children?: unknown[] }): void {
-    if (!item.children?.length) return;
-    item.expanded = !item.expanded;
-  }
-
-  isMenuItemActive(item: { path?: string; children?: Array<{ path: string }> }): boolean {
-    if (item.path) {
-      return this.isPathActive(item.path);
-    }
-    if (item.children?.length) {
-      return item.children.some((child) => this.isPathActive(child.path));
-    }
-    return false;
-  }
-
-  private isPathActive(path: string): boolean {
-    const currentPath = this.router.url.split('?')[0];
-    if (path === '/ventas') {
-      return currentPath === '/ventas';
-    }
-    return currentPath === path || currentPath.startsWith(`${path}/`);
   }
 
   async logout() {

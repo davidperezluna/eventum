@@ -5,6 +5,8 @@ export type EventoProductosView = 'dashboard' | 'form' | 'inventory';
 export interface EventoProductosPanelData {
   eventoId: number;
   eventoTitulo: string;
+  /** Se invoca al guardar cambios sin cerrar el drawer (p. ej. actualizar checklist en Operaciones). */
+  onChanged?: (result: EventoProductosDrawerResult) => void;
 }
 
 export interface EventoProductosDrawerResult {

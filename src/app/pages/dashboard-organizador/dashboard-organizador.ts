@@ -1,28 +1,29 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { DashboardOrganizadorService } from '../../services/dashboard-organizador.service';
+import { DashboardService } from '../../services/dashboard.service';
 import { AuthService } from '../../services/auth.service';
 import { AppCacheService } from '../../services/app-cache.service';
 import { AlertService } from '../../services/alert.service';
 import { DashboardStats } from '../../types';
+import { formatFinanzasMonedaExacta } from '../../utils/dashboard-finanzas.view';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { IngresosResumenComponent } from '../../components/ingresos-resumen/ingresos-resumen';
 import { DashboardKpisComponent } from '../../components/dashboard-kpis/dashboard-kpis';
-import { FinanzasDesgloseComponent } from '../../components/finanzas-desglose/finanzas-desglose';
+import { DashboardFinanzasHeroOrganizadorComponent } from '../../components/dashboard-finanzas-hero-organizador/dashboard-finanzas-hero-organizador';
 
 @Component({
   selector: 'app-dashboard-organizador',
-  imports: [CommonModule, RouterModule, DateFormatPipe, IngresosResumenComponent, DashboardKpisComponent, FinanzasDesgloseComponent],
+  imports: [CommonModule, RouterModule, DateFormatPipe, IngresosResumenComponent, DashboardKpisComponent, DashboardFinanzasHeroOrganizadorComponent],
   templateUrl: './dashboard-organizador.html',
-  styleUrls: ['./dashboard-organizador.css', '../dashboard/dashboard.css', '../finanzas-desglose-panel.css'],
+  styleUrls: ['./dashboard-organizador.css', '../dashboard/dashboard.css'],
 })
 export class DashboardOrganizador implements OnInit {
   private readonly cacheTtlMs = 60 * 1000;
   isManualRefreshing = false;
 
   constructor(
-    private dashboardService: DashboardOrganizadorService,
+    private dashboardService: DashboardService,
     private authService: AuthService,
     private appCacheService: AppCacheService,
     private alertService: AlertService,
@@ -132,7 +133,7 @@ export class DashboardOrganizador implements OnInit {
     this.cdr.detectChanges();
 
     try {
-      const stats = await this.dashboardService.getStats(this.organizadorId);
+      const stats = await this.dashboardService.getStats({ organizadorId: this.organizadorId });
       this.stats = stats;
       this.loading = false;
       this.persistState();
@@ -190,12 +191,7 @@ export class DashboardOrganizador implements OnInit {
   }
 
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-CO', { 
-      style: 'currency', 
-      currency: 'COP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
+    return formatFinanzasMonedaExacta(value);
   }
 
   getVariacionPorcentual(actual: number, anterior: number): number {

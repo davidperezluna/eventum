@@ -453,6 +453,7 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
       this.dataChanged = true;
       this.alertService.success(this.editingTipo ? 'Actualizado' : 'Guardado', 'El tipo de boleta se guardó correctamente.');
       await this.loadTipos();
+      this.notifyParentChange();
       this.captureFormSnapshot();
       this.drawerRef.markPristine();
       await this.goToDashboard(true);
@@ -485,6 +486,7 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
       this.dataChanged = true;
       this.alertService.success('Guardado', `Se agregaron ${cantidad} unidad(es) al inventario.`);
       await this.loadTipos();
+      this.notifyParentChange();
       this.captureInventorySnapshot();
       this.drawerRef.markPristine();
       await this.goToDashboard(true);
@@ -515,6 +517,7 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
       this.dataChanged = true;
       this.alertService.success('Desactivado', 'El tipo de boleta fue desactivado.');
       await this.loadTipos();
+      this.notifyParentChange();
     } catch (err: unknown) {
       console.error('Error desactivando tipo de boleta:', err);
       this.alertService.error('Error', 'No se pudo desactivar el tipo de boleta');
@@ -525,6 +528,13 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
     void this.drawerRef.close({
       changed: this.dataChanged,
       tiposBoleta: this.dataChanged ? this.tipos : undefined,
+    });
+  }
+
+  private notifyParentChange(): void {
+    this.data.onChanged?.({
+      changed: true,
+      tiposBoleta: this.tipos,
     });
   }
 

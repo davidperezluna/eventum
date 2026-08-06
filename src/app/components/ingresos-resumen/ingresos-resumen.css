@@ -42,6 +42,17 @@
   border-top: 1px solid #f1f5f9;
 }
 
+.dashboard-ingresos-contexto {
+  margin: 0 0 0.85rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
 .dashboard-ingresos-corto {
   display: flex;
   flex-direction: column;

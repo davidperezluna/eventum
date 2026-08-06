@@ -263,7 +263,7 @@
         <article class="ev-ops-kpi">
           <span class="ev-ops-kpi__icon material-icons" aria-hidden="true">payments</span>
           <p class="ev-ops-kpi__label">Ingresos</p>
-          <p class="ev-ops-kpi__value">{{ formatCurrency(reporte?.ingresos ?? stats?.ingresos_totales) }}</p>
+          <p class="ev-ops-kpi__value">{{ formatCurrency(recaudoBrutoEvento) }}</p>
           <p *ngIf="ingresosTrend as trend" class="ev-ops-kpi__trend" [class.ev-ops-kpi__trend--up]="trend.positive" [class.ev-ops-kpi__trend--down]="!trend.positive">
             {{ trend.label }}
           </p>

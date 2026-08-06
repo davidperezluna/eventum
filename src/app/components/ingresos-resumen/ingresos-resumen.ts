@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
 import { DashboardStats } from '../../types';
+import { formatFinanzasMonedaExacta } from '../../utils/dashboard-finanzas.view';
 
 @Component({
   selector: 'app-ingresos-resumen',
@@ -10,16 +11,12 @@ import { DashboardStats } from '../../types';
 })
 export class IngresosResumenComponent {
   @Input({ required: true }) stats!: DashboardStats;
+  /** Ajusta copy cuando el bloque es contexto de recaudo bruto, no saldo del empresario. */
+  @Input() contextoOrganizador = false;
   Math = Math;
 
   formatCurrency(value: number | null | undefined): string {
-    const safeValue = value ?? 0;
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(safeValue);
+    return formatFinanzasMonedaExacta(value);
   }
 
   getVariacionPorcentual(actual: number, anterior: number): number {

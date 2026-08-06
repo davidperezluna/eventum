@@ -1,0 +1,115 @@
+import { AdminNavSection } from './admin-nav.types';
+
+/** Menú administrador — agrupado por secciones, rutas sin cambios. */
+export function buildAdminNavSections(coversEnabled: boolean): AdminNavSection[] {
+  return [
+    {
+      entries: [{ kind: 'link', path: '/dashboard', label: 'Dashboard', icon: 'dashboard' }],
+    },
+    {
+      entries: [{ kind: 'link', path: '/eventos', label: 'Eventos', icon: 'event' }],
+    },
+    {
+      label: 'Operación',
+      entries: [
+        {
+          kind: 'group',
+          label: 'Ventas',
+          icon: 'payments',
+          expanded: false,
+          children: [
+            { path: '/ventas', label: 'Ventas boletas', icon: 'confirmation_number' },
+            { path: '/ventas-productos', label: 'Ventas productos', icon: 'inventory_2' },
+            { path: '/ventas-palcos', label: 'Ventas palcos', icon: 'weekend' },
+            { path: '/boletas-usadas', label: 'Boletas usadas', icon: 'how_to_reg' },
+            { path: '/boletas', label: 'Boletas sin usar', icon: 'confirmation_number' },
+            { path: '/transacciones-checkout', label: 'Transacciones', icon: 'receipt_long' },
+            { path: '/wompi-reconcile', label: 'Reconciliación Wompi', icon: 'compare_arrows' },
+            { path: '/ventas-manual', label: 'Venta manual', icon: 'point_of_sale' },
+            { path: '/probar-compras', label: 'Probar compras', icon: 'storefront' },
+          ],
+        },
+        { kind: 'link', path: '/lectores-parametrizacion', label: 'Lectores', icon: 'qr_code_scanner' },
+        { kind: 'link', path: '/escanear-qr', label: 'Escáner', icon: 'qr_code_2' },
+      ],
+    },
+    {
+      label: 'Catálogo',
+      entries: [
+        { kind: 'link', path: '/productos', label: 'Productos', icon: 'local_mall' },
+        { kind: 'link', path: '/palcos', label: 'Palcos', icon: 'event_seat' },
+        ...(coversEnabled
+          ? [{ kind: 'link' as const, path: '/covers-config', label: 'Covers', icon: 'local_bar' }]
+          : []),
+      ],
+    },
+    {
+      label: 'Administración',
+      entries: [
+        { kind: 'link', path: '/usuarios', label: 'Usuarios', icon: 'people' },
+        { kind: 'link', path: '/categorias', label: 'Categorías', icon: 'category' },
+        { kind: 'link', path: '/lugares', label: 'Lugares', icon: 'place' },
+        { kind: 'link', path: '/calificaciones', label: 'Calificaciones', icon: 'star' },
+        { kind: 'link', path: '/notificaciones', label: 'Notificaciones', icon: 'notifications' },
+        { kind: 'link', path: '/reportes', label: 'Reportes', icon: 'assessment' },
+      ],
+    },
+    {
+      label: 'Configuración',
+      entries: [{ kind: 'link', path: '/perfil', label: 'Mi Perfil', icon: 'person' }],
+    },
+  ];
+}
+
+/** Menú organizador estándar. */
+export function buildOrganizadorNavSections(coversEnabled: boolean): AdminNavSection[] {
+  return [
+    {
+      entries: [{ kind: 'link', path: '/dashboard-organizador', label: 'Dashboard', icon: 'dashboard' }],
+    },
+    ...(coversEnabled
+      ? [
+          {
+            label: 'Catálogo',
+            entries: [{ kind: 'link' as const, path: '/covers-config', label: 'Covers', icon: 'local_bar' }],
+          },
+        ]
+      : []),
+    {
+      label: 'Configuración',
+      entries: [{ kind: 'link', path: '/perfil', label: 'Mi Perfil', icon: 'person' }],
+    },
+  ];
+}
+
+/** Menú showcase organizador. */
+export function buildShowcaseNavSections(): AdminNavSection[] {
+  return [
+    {
+      entries: [{ kind: 'link', path: '/dashboard-organizador', label: 'Dashboard', icon: 'dashboard' }],
+    },
+    {
+      entries: [{ kind: 'link', path: '/eventos', label: 'Mis Eventos', icon: 'event' }],
+    },
+    {
+      label: 'Operación',
+      entries: [
+        { kind: 'link', path: '/lectores-parametrizacion', label: 'Lectores', icon: 'qr_code_scanner' },
+        { kind: 'link', path: '/escanear-qr', label: 'Escáner', icon: 'qr_code_2' },
+        { kind: 'link', path: '/boletas-usadas', label: 'Boletas usadas', icon: 'how_to_reg' },
+        { kind: 'link', path: '/boletas', label: 'Boletas sin usar', icon: 'confirmation_number' },
+      ],
+    },
+    {
+      label: 'Catálogo',
+      entries: [
+        { kind: 'link', path: '/productos', label: 'Productos', icon: 'local_mall' },
+        { kind: 'link', path: '/palcos', label: 'Palcos', icon: 'event_seat' },
+      ],
+    },
+    {
+      label: 'Configuración',
+      entries: [{ kind: 'link', path: '/perfil', label: 'Mi Perfil', icon: 'person' }],
+    },
+  ];
+}

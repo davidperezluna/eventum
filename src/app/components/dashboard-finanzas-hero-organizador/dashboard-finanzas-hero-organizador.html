@@ -1,0 +1,59 @@
+<section class="fin-org" aria-label="Resumen financiero del organizador">
+
+  <!-- KPI protagonista: saldo del empresario -->
+  <header class="fin-org__hero">
+    <p class="fin-org__hero-label">Saldo estimado a recibir</p>
+    <p class="fin-org__hero-hint">Tu ganancia neta aproximada después de Wompi, comisiones y descuentos</p>
+    <p class="fin-org__hero-value">{{ formatAmount(finanzas.saldoEstimadoRecibir) }}</p>
+    <div class="fin-org__split">
+      <span>Boletas <strong>{{ formatAmount(finanzas.saldoEstimadoRecibirBoletas) }}</strong></span>
+      <span *ngIf="mostrarProductos">Productos <strong>{{ formatAmount(finanzas.saldoEstimadoRecibirProductos) }}</strong></span>
+    </div>
+  </header>
+
+  <!-- Historia contextual: de dónde sale el saldo -->
+  <div class="fin-org__story" aria-label="Cómo se calcula tu saldo estimado">
+    <p class="fin-org__story-origin">Clientes pagan</p>
+
+    <div class="fin-org__story-arrow" aria-hidden="true">
+      <span class="material-icons">south</span>
+    </div>
+
+    <article class="fin-org__story-step">
+      <div class="fin-org__story-step-head">
+        <p class="fin-org__story-step-label">Recaudo bruto</p>
+        <p class="fin-org__story-step-hint">Lo que pagaron tus clientes (antes de descuentos)</p>
+      </div>
+      <p class="fin-org__story-step-value">{{ formatAmount(finanzas.recaudoBruto) }}</p>
+      <div class="fin-org__split fin-org__split--muted">
+        <span>Boletas <strong>{{ formatAmount(finanzas.recaudoBrutoBoletas) }}</strong></span>
+        <span *ngIf="mostrarProductos">Productos <strong>{{ formatAmount(finanzas.recaudoBrutoProductos) }}</strong></span>
+      </div>
+    </article>
+
+    <div class="fin-org__story-arrow" aria-hidden="true">
+      <span class="material-icons">south</span>
+    </div>
+
+    <article class="fin-org__story-step fin-org__story-step--discount">
+      <div class="fin-org__story-step-head">
+        <p class="fin-org__story-step-label">Descuentos estimados</p>
+        <p class="fin-org__story-step-hint">Wompi, comisiones y demás descuentos ya calculados</p>
+      </div>
+      <p class="fin-org__story-step-value fin-org__story-step-value--discount">− {{ formatAmount(finanzas.descuentosEstimados) }}</p>
+    </article>
+
+    <div class="fin-org__story-arrow" aria-hidden="true">
+      <span class="material-icons">south</span>
+    </div>
+
+    <article class="fin-org__story-step fin-org__story-step--result">
+      <div class="fin-org__story-step-head">
+        <p class="fin-org__story-step-label">Saldo estimado a recibir</p>
+        <p class="fin-org__story-step-hint">Lo que estimamos que recibirás tú como organizador</p>
+      </div>
+      <p class="fin-org__story-step-value fin-org__story-step-value--result">{{ formatAmount(finanzas.saldoEstimadoRecibir) }}</p>
+    </article>
+  </div>
+
+</section>

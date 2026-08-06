@@ -19,6 +19,8 @@ import { BoletasService } from '../../services/boletas.service';
 import { DrawerService } from '../../core/drawer';
 import { openEventoCuponesDrawer } from '../../panels/evento-cupones';
 import { openEventoBoletasDrawer } from '../../panels/evento-boletas';
+import { enforceBorradorCatalogoRules } from '../../core/evento-publicacion';
+import { formatFinanzasMonedaExacta } from '../../utils/dashboard-finanzas.view';
 import { Evento, CategoriaEvento, Lugar, Usuario, PaginatedResponse, TipoEstadoEvento, WompiCuenta } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { EvFormModal } from '../../components/ev-form-modal/ev-form-modal';
@@ -59,7 +61,7 @@ export class Eventos implements OnInit, OnDestroy {
 
   showModal = false;
   editingEvento: Evento | null = null;
-  formData: Partial<Evento> = { activo: true, estado: TipoEstadoEvento.BORRADOR };
+  formData: Partial<Evento> = { activo: false, estado: TipoEstadoEvento.BORRADOR };
   wizardStep = 0;
   wizardPhase: 'form' | 'success' = 'form';
   wizardSelectToken = 0;
@@ -413,19 +415,7 @@ export class Eventos implements OnInit, OnDestroy {
   }
 
   formatCurrency(value: number | undefined | null): string {
-    const n = Number(value ?? 0);
-    if (!Number.isFinite(n)) return '$0';
-    if (n >= 1_000_000) {
-      return `$${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
-    }
-    if (n >= 1_000) {
-      return `$${Math.round(n / 1_000)}K`;
-    }
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      maximumFractionDigits: 0,
-    }).format(n);
+    return formatFinanzasMonedaExacta(value);
   }
 
   async loadCategorias() {
@@ -606,7 +596,7 @@ export class Eventos implements OnInit, OnDestroy {
     } else {
       // Nuevo evento - establecer valores por defecto
       this.formData = {
-        activo: this.isShowcaseMode ? false : true,
+        activo: false,
         estado: TipoEstadoEvento.BORRADOR,
         organizador_id: usuario?.id || (this.organizadores.length > 0 ? this.organizadores[0].id : 0),
         wompi_cuenta_id: null,
@@ -930,6 +920,8 @@ export class Eventos implements OnInit, OnDestroy {
       eventoData.wompi_cuenta_id = null;
     }
 
+    Object.assign(eventoData, enforceBorradorCatalogoRules(eventoData));
+
     // Limpiar campos vacíos opcionales y propiedades de relación que no existen en la BD
     if (!eventoData.descripcion) delete eventoData.descripcion;
     if (!eventoData.descripcion_corta) delete eventoData.descripcion_corta;
@@ -986,7 +978,11 @@ export class Eventos implements OnInit, OnDestroy {
       return;
     }
     try {
-      await this.eventosService.updateEvento(evento.id, { activo: !evento.activo });
+      const nextActivo = !evento.activo;
+      const payload = nextActivo
+        ? { activo: true, estado: TipoEstadoEvento.PUBLICADO }
+        : { activo: false };
+      await this.eventosService.updateEvento(evento.id, payload);
       this.loadEventos();
     } catch (err) {
       console.error('Error actualizando evento:', err);
