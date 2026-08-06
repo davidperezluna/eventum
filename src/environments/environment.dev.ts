@@ -60,6 +60,6 @@ export const environment = {
   },
 
   showcaseModeEnabled: true,
-  showcaseOrganizadorId: 0,
-  showcaseOrganizadorEmail: 'showcase@eventumcol.com',
+  showcaseOrganizadorId: 2561,
+  showcaseOrganizadorEmail: 'eventumshowcase@gmail.com',
 };
