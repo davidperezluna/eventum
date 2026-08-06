@@ -1,36 +1,34 @@
 /**
  * Tokens del Panel Administrativo / Organizador.
- * Alineados con Centro de Inteligencia y Centro de Operaciones.
- * No usar en Área de Cliente.
+ * Paleta editorial: blanco, grises cálidos, azul oscuro, acento morado mínimo.
  */
 :root {
-  --ev-panel-sidebar-width: 272px;
-  --ev-panel-sidebar-width-compact: 72px;
+  --ev-panel-sidebar-width: 260px;
+  --ev-panel-sidebar-width-compact: 68px;
 
-  --ev-panel-ink: #0f172a;
-  --ev-panel-muted: #64748b;
-  --ev-panel-muted-light: #94a3b8;
-  --ev-panel-soft: #f8fafc;
+  --ev-panel-ink: #1a1f36;
+  --ev-panel-ink-soft: #3c4257;
+  --ev-panel-muted: #697386;
+  --ev-panel-muted-light: #a3acb9;
+  --ev-panel-soft: #f6f9fc;
   --ev-panel-surface: #ffffff;
-  --ev-panel-border: rgba(15, 23, 42, 0.06);
-  --ev-panel-border-strong: rgba(15, 23, 42, 0.1);
+  --ev-panel-sidebar-bg: #ffffff;
+  --ev-panel-border: rgba(26, 31, 54, 0.08);
+  --ev-panel-hover: rgba(26, 31, 54, 0.04);
+  --ev-panel-active-bg: rgba(26, 31, 54, 0.05);
 
   --ev-panel-accent: var(--color-secondary, #8b5cf6);
   --ev-panel-accent-strong: var(--color-primary, #7c3aed);
-  --ev-panel-accent-soft: color-mix(in srgb, var(--ev-panel-accent) 10%, #fff);
-  --ev-panel-accent-ring: color-mix(in srgb, var(--ev-panel-accent) 22%, transparent);
 
-  --ev-panel-radius-sm: 8px;
-  --ev-panel-radius: 10px;
-  --ev-panel-radius-lg: 16px;
+  --ev-panel-radius-sm: 6px;
+  --ev-panel-radius: 8px;
 
   --ev-panel-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.04),
-    0 8px 24px rgba(15, 23, 42, 0.06);
+    0 0 0 1px rgba(26, 31, 54, 0.03),
+    0 8px 32px rgba(26, 31, 54, 0.08);
 
-  --ev-panel-transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  --ev-panel-transition: 160ms cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Compatibilidad con main-content existente */
   --sidebar-width: var(--ev-panel-sidebar-width);
 }
 

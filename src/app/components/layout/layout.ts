@@ -27,6 +27,7 @@ import {
   buildAdminNavSections,
   buildOrganizadorNavSections,
   buildShowcaseNavSections,
+  extractOrganizerEventIdFromUrl,
 } from '../admin-sidebar/admin-nav.config';
 import { LOGIN_QUERY_CARRITO_PAGAR } from '../../core/login-redirect';
 
@@ -121,11 +122,7 @@ export class Layout implements OnInit, OnDestroy {
         } else if (usuario.tipo_usuario_id === 2) {
           this.userRole = 'Organizador';
           this.clientNavItems = [];
-          if (this.authService.isShowcaseOrganizador()) {
-            this.loadMenuShowcase();
-          } else {
-            this.loadMenuOrganizador();
-          }
+          this.syncOrganizadorNav(this.router.url);
         } else if (usuario.tipo_usuario_id === 1) {
           this.userRole = 'Cliente';
           this.loadMenuCliente();
@@ -165,6 +162,9 @@ export class Layout implements OnInit, OnDestroy {
         if (event instanceof NavigationEnd) {
           this.syncRutaCarrito(event.urlAfterRedirects);
           this.verificarRedireccionCompletarPerfil(event.urlAfterRedirects);
+          if (this.usuario?.tipo_usuario_id === 2) {
+            this.syncOrganizadorNav(event.urlAfterRedirects);
+          }
         }
         if (window.innerWidth <= 768) {
           this.closeSidebar();
@@ -296,11 +296,25 @@ export class Layout implements OnInit, OnDestroy {
     return this.usuario?.tipo_usuario_id === 2 ? '/dashboard-organizador' : '/dashboard';
   }
 
-  get panelSubtitle(): string {
+  /** Nombre para saludo humano en el sidebar del panel. */
+  get panelUserName(): string | null {
+    const u = this.usuario as { nombre?: string; apellido?: string } | null;
+    if (!u) return null;
+    const nom = typeof u.nombre === 'string' ? u.nombre.trim() : '';
+    const ape = typeof u.apellido === 'string' ? u.apellido.trim() : '';
+    const joined = [nom, ape].filter(Boolean).join(' ').trim();
+    return joined.length > 0 ? joined : null;
+  }
+
+  get panelHeaderTagline(): string {
     if (this.usuario?.tipo_usuario_id === 2) {
-      return 'Panel del Organizador';
+      return 'Administra tu evento con tranquilidad.';
     }
-    return 'Panel Administrativo';
+    return 'Todo tu ecosistema de eventos, en un solo lugar.';
+  }
+
+  get panelSidebarVariant(): 'admin' | 'organizer' {
+    return this.usuario?.tipo_usuario_id === 2 ? 'organizer' : 'admin';
   }
 
   ngOnDestroy() {
@@ -330,8 +344,16 @@ export class Layout implements OnInit, OnDestroy {
     this.navSections = buildOrganizadorNavSections(this.coversEventumEnabled);
   }
 
-  loadMenuShowcase() {
-    this.navSections = buildShowcaseNavSections();
+  loadMenuShowcase(eventId: number | null = null) {
+    this.navSections = buildShowcaseNavSections(eventId, this.coversEventumEnabled);
+  }
+
+  syncOrganizadorNav(url: string) {
+    if (this.authService.isShowcaseOrganizador()) {
+      this.loadMenuShowcase(extractOrganizerEventIdFromUrl(url));
+    } else {
+      this.loadMenuOrganizador();
+    }
   }
 
   loadMenuCliente() {
