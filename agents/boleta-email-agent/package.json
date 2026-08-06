@@ -1,0 +1,25 @@
+{
+  "name": "@eventum/boleta-email-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "cli": "tsx src/interfaces/cli/cli.ts",
+    "dev": "tsx watch src/interfaces/cli/cli.ts",
+    "telegram": "tsx src/interfaces/telegram/telegram-webhook.ts",
+    "server": "tsx src/interfaces/http/server.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.86.2",
+    "dotenv": "^16.4.7",
+    "openai": "^4.77.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "~5.9.2",
+    "vitest": "^4.0.8"
+  }
+}
