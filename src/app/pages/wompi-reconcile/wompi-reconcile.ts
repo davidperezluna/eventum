@@ -6,9 +6,12 @@ import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { AlertService } from '../../services/alert.service';
 import {
   WompiDiagnosticoItem,
+  WompiReconcileCheckout,
   WompiReconcileLookupResult,
   WompiReconcileOrphanRow,
   WompiReconcileService,
+  WompiGuiaSoporte,
+  WompiTitularItem,
 } from '../../services/wompi-reconcile.service';
 
 type TabId = 'buscar' | 'huerfanos';
@@ -20,6 +23,14 @@ type TabId = 'buscar' | 'huerfanos';
   styleUrl: './wompi-reconcile.css',
 })
 export class WompiReconcile implements OnInit {
+  private readonly diagnosticoOcultoEnGuia = new Set([
+    'ALIGNED',
+    'NO_ISSUES_DETECTED',
+    'EMAIL_WOMPI_VS_CUENTA',
+    'TRASLADO_PENDIENTE',
+    'TITULAR_DISTINTO_COMPRADOR',
+  ]);
+
   activeTab: TabId = 'buscar';
 
   searchReference = '';
@@ -159,17 +170,165 @@ export class WompiReconcile implements OnInit {
   }
 
   getEmailMatchTypeLabel(matchType: string): string {
-    if (matchType === 'comprobante_wompi') {
-      return 'Correo en comprobante Wompi';
-    }
-    if (matchType === 'cuenta_eventum') {
-      return 'Cuenta Eventum';
-    }
+    if (matchType === 'comprobante_wompi') return 'Recibo Wompi';
+    if (matchType === 'cuenta_eventum') return 'Comprador';
     return matchType;
+  }
+
+  resolveCheckoutTipo(checkout: WompiReconcileCheckout | null | undefined): string {
+    if (!checkout) return '';
+
+    const fromRow = String(checkout.tipo ?? '').trim().toLowerCase();
+    if (fromRow) return fromRow;
+
+    const fromMeta = checkout.metadata?.['tipo'];
+    if (fromMeta != null && String(fromMeta).trim()) {
+      return String(fromMeta).trim().toLowerCase();
+    }
+
+    const payload = checkout.request_payload || {};
+    const requestBody = (payload['request_body'] || payload) as Record<string, unknown>;
+    const fromBody = String(requestBody['tipo'] ?? '').trim().toLowerCase();
+    if (fromBody) return fromBody;
+
+    const hasItems = (key: string): boolean => {
+      const block = requestBody[key] as Record<string, unknown> | undefined;
+      const items = block?.['items'];
+      return Array.isArray(items) && items.length > 0;
+    };
+
+    const hasCovers = hasItems('pedido_covers');
+    const hasProductos = hasItems('pedido_productos');
+    const hasBoletas = hasItems('pedido_boletas');
+
+    if (hasCovers) return hasProductos ? 'cover_mixto' : 'cover';
+    if (hasBoletas) return hasProductos ? 'mixto' : 'boletas';
+    if (hasProductos) return 'productos';
+
+    const hasCompraBoletas = this.parsePositiveInt(checkout.compra_id) != null;
+    const hasCompraProductos = this.parsePositiveInt(checkout.compra_producto_id) != null;
+    const hasCompraCover = this.parsePositiveInt(checkout.compra_cover_id) != null;
+
+    if (hasCompraCover && hasCompraProductos) return 'cover_mixto';
+    if (hasCompraCover) return 'cover';
+    if (hasCompraBoletas && hasCompraProductos) return 'mixto';
+    if (hasCompraProductos) return 'productos';
+    if (hasCompraBoletas) return 'boletas';
+
+    return '';
+  }
+
+  getCheckoutTipoLabel(checkout: WompiReconcileCheckout | null | undefined): string {
+    const tipo = this.resolveCheckoutTipo(checkout);
+    const labels: Record<string, string> = {
+      boletas: 'Boletas',
+      productos: 'Productos',
+      mixto: 'Mixta',
+      cover: 'Cover',
+      cover_mixto: 'Cover + productos',
+    };
+    return labels[tipo] ?? (tipo || '—');
+  }
+
+  getCheckoutTipoBadgeClass(checkout: WompiReconcileCheckout | null | undefined): string {
+    const tipo = this.resolveCheckoutTipo(checkout);
+    if (tipo === 'mixto' || tipo === 'cover_mixto') return 'wr-badge wr-badge--warn';
+    if (tipo === 'productos') return 'wr-badge wr-badge--info';
+    if (tipo === 'cover') return 'wr-badge wr-badge--neutral';
+    if (tipo === 'boletas') return 'wr-badge wr-badge--ok';
+    return 'wr-badge wr-badge--neutral';
+  }
+
+  getGuiaSoporte(result: WompiReconcileLookupResult | null): WompiGuiaSoporte | null {
+    if (!result) return null;
+
+    const diag = result.diagnostico ?? [];
+    const critico = diag.find((d) =>
+      ['CHECKOUT_NOT_FOUND', 'NEEDS_MATERIALIZATION', 'WOMPI_APPROVED_CHECKOUT_PENDING', 'PRODUCTO_NEEDS_MATERIALIZATION'].includes(
+        d.codigo,
+      ),
+    );
+    if (critico) {
+      return { title: 'Acción requerida', text: critico.mensaje, warn: true };
+    }
+
+    if (result.titular_context?.hay_traslados_pendientes) {
+      return {
+        title: 'Traslado pendiente',
+        text: result.titular_context.mensaje_soporte ?? 'El destinatario debe aceptar en su cuenta.',
+        warn: true,
+      };
+    }
+
+    if (this.emailsDifferen(result) && result.email_context?.email_cuenta_eventum) {
+      return {
+        title: 'Correos distintos',
+        text:
+          result.email_context.mensaje_soporte ??
+          `Entrar con ${result.email_context.email_cuenta_eventum} (Mis compras), no con el email del recibo Wompi.`,
+        warn: true,
+        showEmailCompare: true,
+      };
+    }
+
+    if (result.titular_context?.hay_titular_distinto_comprador) {
+      return {
+        title: 'Titular distinto',
+        text: result.titular_context.mensaje_soporte ?? 'La entrada está en otra cuenta (ver tabla abajo).',
+        warn: false,
+      };
+    }
+
+    const wompiNotFound = diag.find((d) => d.codigo === 'WOMPI_NOT_FOUND');
+    if (wompiNotFound && result.checkout) {
+      return { title: 'Wompi sin respuesta', text: wompiNotFound.mensaje, warn: false };
+    }
+
+    return null;
+  }
+
+  getDiagnosticoVisible(result: WompiReconcileLookupResult | null): WompiDiagnosticoItem[] {
+    const guia = this.getGuiaSoporte(result);
+    return (result?.diagnostico ?? []).filter((d) => {
+      if (this.diagnosticoOcultoEnGuia.has(d.codigo)) return false;
+      if (guia && d.codigo === guia.title) return false;
+      if (guia?.text === d.mensaje) return false;
+      return true;
+    });
   }
 
   emailsDifferen(result: WompiReconcileLookupResult | null): boolean {
     return result?.email_context?.emails_coinciden === false;
+  }
+
+  hasTitularContext(result: WompiReconcileLookupResult | null): boolean {
+    return (result?.titular_context?.items?.length ?? 0) > 0;
+  }
+
+  getTitularItems(result: WompiReconcileLookupResult | null): WompiTitularItem[] {
+    return result?.titular_context?.items ?? [];
+  }
+
+  getTitularTipoLabel(tipo: string): string {
+    return tipo === 'cover' ? 'Cover' : 'Boleta';
+  }
+
+  getTrasladoBadgeClass(item: WompiTitularItem): string {
+    if (!item.traslado_pendiente) {
+      return item.es_comprador ? 'wr-badge wr-badge--ok' : 'wr-badge wr-badge--neutral';
+    }
+    return item.traslado_estado === 'recibido'
+      ? 'wr-badge wr-badge--warn'
+      : 'wr-badge wr-badge--warn';
+  }
+
+  getTrasladoLabel(item: WompiTitularItem): string {
+    if (item.traslado_pendiente && item.traslado_destino_email) {
+      return `Pendiente → ${item.traslado_destino_email}`;
+    }
+    if (item.es_comprador) return 'Comprador';
+    if (item.titular_email) return 'Otro titular';
+    return '—';
   }
 
   private async buscarCheckoutId(id: number): Promise<void> {
@@ -304,6 +463,31 @@ export class WompiReconcile implements OnInit {
 
   formatRecordEstado(value: unknown): string {
     return value != null ? String(value) : '—';
+  }
+
+  getBoletasTipos(compra: Record<string, unknown> | null): Array<{ nombre: string; count: number }> {
+    return this.getCompraItemsResumen(compra, 'tipos_boleta');
+  }
+
+  getCompraItemsResumen(
+    compra: Record<string, unknown> | null,
+    field: string,
+  ): Array<{ nombre: string; count: number }> {
+    const raw = compra?.[field];
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .map((item) => {
+        const row = item as Record<string, unknown>;
+        const nombre = String(row['nombre'] ?? '').trim();
+        const count = Number(row['count'] ?? 0);
+        if (!nombre || !Number.isFinite(count) || count <= 0) return null;
+        return { nombre, count };
+      })
+      .filter((item): item is { nombre: string; count: number } => item != null);
+  }
+
+  getCompraItemsTotal(compra: Record<string, unknown> | null, field: string): number {
+    return this.getCompraItemsResumen(compra, field).reduce((sum, item) => sum + item.count, 0);
   }
 
   formatCurrency(value: number | undefined | null, moneda?: string | null): string {

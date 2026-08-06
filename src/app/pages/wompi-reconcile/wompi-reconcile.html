@@ -7,7 +7,7 @@
         Reconciliación Wompi
       </h1>
       <p class="wr-header__subtitle">
-        Referencia, transacción, correo o Checkout ID.
+        Cruza pago Wompi vs checkout Eventum.
       </p>
     </div>
     <div class="wr-header__stats">
@@ -90,7 +90,7 @@
             (keyup.enter)="buscar()"
             type="text"
             class="wr-input"
-            placeholder="ID comprobante Wompi"
+            placeholder="ID Wompi"
             autocomplete="off"
           />
         </label>
@@ -152,6 +152,7 @@
           <thead>
             <tr>
               <th>Coincidencia</th>
+              <th>Tipo compra</th>
               <th>Checkout</th>
               <th>Cuenta Eventum</th>
               <th>Estado</th>
@@ -163,6 +164,7 @@
           <tbody>
             <tr *ngFor="let m of result?.matches">
               <td><span class="wr-badge wr-badge--info">{{ getEmailMatchTypeLabel(m.match_type) }}</span></td>
+              <td><span [class]="getCheckoutTipoBadgeClass(m.checkout)">{{ getCheckoutTipoLabel(m.checkout) }}</span></td>
               <td><strong>#{{ m.checkout.id }}</strong></td>
               <td>{{ m.checkout.cliente?.email || '—' }}</td>
               <td><span [class]="getStatusBadgeClass(m.checkout.estado)">{{ m.checkout.estado }}</span></td>
@@ -184,6 +186,7 @@
             <span [class]="getStatusBadgeClass(m.checkout.estado)">{{ m.checkout.estado }}</span>
           </div>
           <span class="wr-badge wr-badge--info wr-mobile-card__tag">{{ getEmailMatchTypeLabel(m.match_type) }}</span>
+          <span [class]="getCheckoutTipoBadgeClass(m.checkout) + ' wr-mobile-card__tag'">{{ getCheckoutTipoLabel(m.checkout) }}</span>
           <dl class="wr-mobile-card__meta">
             <div><dt>Cuenta</dt><dd>{{ m.checkout.cliente?.email || '—' }}</dd></div>
             <div><dt>Evento</dt><dd>{{ m.checkout.evento?.titulo || '—' }}</dd></div>
@@ -216,28 +219,36 @@
           Sin materializar
         </span>
         <span *ngIf="result.requiere_accion" class="wr-badge wr-badge--error">
-          Requiere acción
+          Acción
         </span>
         <span *ngIf="emailsDifferen(result)" class="wr-badge wr-badge--warn">
-          Emails distintos
+          Emails ≠
+        </span>
+        <span *ngIf="result.titular_context?.hay_traslados_pendientes" class="wr-badge wr-badge--warn">
+          Traslado pendiente
+        </span>
+        <span *ngIf="result.titular_context?.hay_titular_distinto_comprador && !result.titular_context?.hay_traslados_pendientes" class="wr-badge wr-badge--neutral">
+          Titular distinto
         </span>
       </div>
 
-      <!-- Email alert -->
-      <div *ngIf="emailsDifferen(result)" class="wr-email-alert">
-        <div class="wr-email-alert__icon">
-          <span class="material-icons">support_agent</span>
-        </div>
+      <!-- Guía soporte (única) -->
+      <div
+        *ngIf="getGuiaSoporte(result) as guia"
+        class="wr-guia"
+        [class.wr-guia--warn]="guia.warn"
+      >
+        <span class="material-icons">{{ guia.warn ? 'support_agent' : 'info' }}</span>
         <div>
-          <h3 class="wr-email-alert__title">Correos distintos — guía para soporte</h3>
-          <p class="wr-email-alert__text">{{ result?.email_context?.mensaje_soporte }}</p>
-          <div class="wr-email-compare">
+          <h3 class="wr-guia__title">{{ guia.title }}</h3>
+          <p class="wr-guia__text">{{ guia.text }}</p>
+          <div *ngIf="guia.showEmailCompare" class="wr-email-compare">
             <div class="wr-email-box">
-              <span class="wr-email-box__label">Comprobante Wompi</span>
+              <span class="wr-email-box__label">Recibo Wompi</span>
               <span class="wr-email-box__value">{{ result?.email_context?.email_wompi_comprobante || '—' }}</span>
             </div>
             <div class="wr-email-box wr-email-box--highlight">
-              <span class="wr-email-box__label">Cuenta con boletas (Eventum)</span>
+              <span class="wr-email-box__label">Cuenta comprador</span>
               <span class="wr-email-box__value">{{ result?.email_context?.email_cuenta_eventum || '—' }}</span>
             </div>
           </div>
@@ -268,10 +279,9 @@
                 <dd class="wr-mono">{{ result!.wompi!.id }}</dd>
               </div>
               <div class="wr-detail-row">
-                <dt>Email comprobante</dt>
+                <dt>Email recibo</dt>
                 <dd>
                   {{ result!.wompi!.customer_email || '—' }}
-                  <span class="wr-detail-row__hint">Recibo / facturación</span>
                 </dd>
               </div>
               <div class="wr-detail-row">
@@ -289,7 +299,10 @@
           </div>
           <ng-template #noWompi>
             <div class="wr-panel__body">
-              <p class="wr-panel__empty">No se encontró transacción en Wompi con los criterios dados.</p>
+              <p class="wr-panel__empty">Sin transacción en Wompi.</p>
+              <p *ngIf="result?.checkout" class="wr-panel__empty wr-panel__empty--hint">
+                Común en sandbox o pagos expirados. Usa las fechas del panel Eventum.
+              </p>
             </div>
           </ng-template>
         </article>
@@ -315,7 +328,11 @@
               </div>
               <div class="wr-detail-row">
                 <dt>Tipo</dt>
-                <dd>{{ result!.checkout!.tipo }}</dd>
+                <dd>
+                  <span [class]="getCheckoutTipoBadgeClass(result!.checkout!)">
+                    {{ getCheckoutTipoLabel(result!.checkout!) }}
+                  </span>
+                </dd>
               </div>
               <div class="wr-detail-row">
                 <dt>Materializado</dt>
@@ -326,14 +343,23 @@
                 </dd>
               </div>
               <div class="wr-detail-row">
-                <dt>Cliente</dt>
-                <dd>{{ getClienteLabel(result!.checkout!) }}</dd>
+                <dt>Fecha</dt>
+                <dd>
+                  <strong>{{ result!.checkout!.fecha_creacion | dateFormat:'short' }}</strong>
+                </dd>
+              </div>
+              <div class="wr-detail-row" *ngIf="result!.checkout!.fecha_confirmacion">
+                <dt>Confirmación</dt>
+                <dd>{{ result!.checkout!.fecha_confirmacion | dateFormat:'short' }}</dd>
+              </div>
+              <div class="wr-detail-row" *ngIf="result!.checkout!.fecha_cancelacion">
+                <dt>Cierre</dt>
+                <dd>{{ result!.checkout!.fecha_cancelacion | dateFormat:'short' }}</dd>
               </div>
               <div class="wr-detail-row">
-                <dt>Cuenta Eventum</dt>
+                <dt>Comprador</dt>
                 <dd>
                   <strong>{{ result!.checkout!.cliente?.email || '—' }}</strong>
-                  <span class="wr-detail-row__hint">Mis compras — aquí debe iniciar sesión</span>
                 </dd>
               </div>
               <div class="wr-detail-row">
@@ -356,7 +382,7 @@
           </div>
           <ng-template #noCheckout>
             <div class="wr-panel__body">
-              <p class="wr-panel__empty">No hay checkout en Eventum para este criterio.</p>
+              <p class="wr-panel__empty">Sin checkout en Eventum.</p>
             </div>
           </ng-template>
           <div class="wr-panel__actions" *ngIf="result?.checkout">
@@ -422,26 +448,51 @@
           <div class="wr-compras-grid">
             <div class="wr-compra-card" *ngIf="getCompraBoletas(result) as cb">
               <div class="wr-compra-card__type">Boletas</div>
-              <div class="wr-compra-card__id">#{{ cb['id'] }}</div>
+              <div class="wr-compra-card__id">#{{ cb['id'] || '—' }}</div>
+              <div class="wr-compra-card__tipos" *ngIf="getBoletasTipos(cb).length; else sinTiposBoleta">
+                <span *ngFor="let t of getBoletasTipos(cb)" class="wr-badge wr-badge--neutral">
+                  {{ t.nombre }} × {{ t.count }}
+                </span>
+              </div>
+              <ng-template #sinTiposBoleta>
+                <div class="wr-compra-card__tipos wr-compra-card__tipos--empty">Tipo: —</div>
+              </ng-template>
               <div class="wr-compra-card__meta">
-                Estado: {{ cb['estado_compra'] }} · Pago: {{ cb['estado_pago'] }}<br />
+                Estado: {{ formatRecordEstado(cb['estado_compra']) }} · Pago: {{ formatRecordEstado(cb['estado_pago']) }}<br />
                 {{ formatCompraTotal(cb) }}<br />
                 <strong>{{ cb['boletas_count'] }} boleta(s)</strong>
               </div>
             </div>
             <div class="wr-compra-card" *ngIf="getCompraProductos(result) as cp">
               <div class="wr-compra-card__type">Productos</div>
-              <div class="wr-compra-card__id">#{{ cp['id'] }}</div>
+              <div class="wr-compra-card__id">#{{ cp['id'] || '—' }}</div>
+              <div class="wr-compra-card__tipos" *ngIf="getCompraItemsResumen(cp, 'productos').length; else sinProductos">
+                <span *ngFor="let p of getCompraItemsResumen(cp, 'productos')" class="wr-badge wr-badge--neutral">
+                  {{ p.nombre }} × {{ p.count }}
+                </span>
+              </div>
+              <ng-template #sinProductos>
+                <div class="wr-compra-card__tipos wr-compra-card__tipos--empty">Producto: —</div>
+              </ng-template>
               <div class="wr-compra-card__meta">
-                Estado: {{ cp['estado_compra'] }} · Pago: {{ cp['estado_pago'] }}<br />
-                {{ formatCompraTotal(cp) }}
+                Estado: {{ formatRecordEstado(cp['estado_compra']) }} · Pago: {{ formatRecordEstado(cp['estado_pago']) }}<br />
+                {{ formatCompraTotal(cp) }}<br />
+                <strong>{{ getCompraItemsTotal(cp, 'productos') || cp['productos_count'] || 0 }} unidad(es)</strong>
               </div>
             </div>
             <div class="wr-compra-card" *ngIf="getCompraCover(result) as cc">
               <div class="wr-compra-card__type">Cover</div>
-              <div class="wr-compra-card__id">#{{ cc['id'] }}</div>
+              <div class="wr-compra-card__id">#{{ cc['id'] || '—' }}</div>
+              <div class="wr-compra-card__tipos" *ngIf="getCompraItemsResumen(cc, 'tipos_cover').length; else sinTiposCover">
+                <span *ngFor="let t of getCompraItemsResumen(cc, 'tipos_cover')" class="wr-badge wr-badge--neutral">
+                  {{ t.nombre }} × {{ t.count }}
+                </span>
+              </div>
+              <ng-template #sinTiposCover>
+                <div class="wr-compra-card__tipos wr-compra-card__tipos--empty">Tipo cover: —</div>
+              </ng-template>
               <div class="wr-compra-card__meta">
-                Estado: {{ cc['estado_compra'] }} · Pago: {{ cc['estado_pago'] }}<br />
+                Estado: {{ formatRecordEstado(cc['estado_compra']) }} · Pago: {{ formatRecordEstado(cc['estado_pago']) }}<br />
                 {{ formatCompraTotal(cc) }}<br />
                 <strong>{{ cc['boletas_cover_count'] }} cover(s)</strong>
               </div>
@@ -450,6 +501,55 @@
         </div>
       </section>
 
+      <!-- Titular actual / traslados -->
+      <ng-container *ngIf="result as lookup">
+        <section class="wr-section" *ngIf="hasTitularContext(lookup)">
+          <header class="wr-section__head">
+            <span class="material-icons">swap_horiz</span>
+            <h2>¿Quién tiene la entrada?</h2>
+          </header>
+          <div class="wr-section__body">
+            <div class="wr-table-wrap wr-table-wrap--desktop">
+              <table class="wr-table">
+                <thead>
+                  <tr>
+                    <th>Tipo</th>
+                    <th>ID</th>
+                    <th>Titular</th>
+                    <th>Email</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of getTitularItems(lookup)">
+                    <td>{{ getTitularTipoLabel(item.tipo) }}</td>
+                    <td><strong>#{{ item.item_id }}</strong></td>
+                    <td>{{ item.titular_nombre || '—' }}</td>
+                    <td>{{ item.titular_email || '—' }}</td>
+                    <td>
+                      <span [class]="getTrasladoBadgeClass(item)">{{ getTrasladoLabel(item) }}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="wr-mobile-list">
+              <article class="wr-mobile-card" *ngFor="let item of getTitularItems(lookup)">
+                <div class="wr-mobile-card__head">
+                  <strong>{{ getTitularTipoLabel(item.tipo) }} #{{ item.item_id }}</strong>
+                  <span [class]="getTrasladoBadgeClass(item)">{{ getTrasladoLabel(item) }}</span>
+                </div>
+                <dl class="wr-mobile-card__meta">
+                  <div><dt>Titular</dt><dd>{{ item.titular_nombre || '—' }}</dd></div>
+                  <div><dt>Email</dt><dd>{{ item.titular_email || '—' }}</dd></div>
+                </dl>
+              </article>
+            </div>
+          </div>
+        </section>
+      </ng-container>
+
       <!-- Diagnóstico -->
       <section class="wr-section">
         <header class="wr-section__head">
@@ -457,9 +557,9 @@
           <h2>Diagnóstico</h2>
         </header>
         <div class="wr-section__body">
-          <div class="wr-diag-grid" *ngIf="result?.diagnostico?.length; else noDiag">
+          <div class="wr-diag-grid" *ngIf="getDiagnosticoVisible(result).length; else noDiag">
             <div
-              *ngFor="let item of result!.diagnostico"
+              *ngFor="let item of getDiagnosticoVisible(result)"
               [class]="diagnosticoClass(item)"
             >
               <span class="material-icons">{{ getDiagnosticoIcon(item.nivel) }}</span>
@@ -470,7 +570,7 @@
             </div>
           </div>
           <ng-template #noDiag>
-            <p class="wr-panel__empty">Sin diagnóstico disponible.</p>
+            <p class="wr-panel__empty">Nada más que reportar.</p>
           </ng-template>
         </div>
       </section>
@@ -482,8 +582,7 @@
     <div class="wr-table-card">
       <div class="wr-toolbar">
         <p>
-          Checkouts sin compra materializada: aprobados en BD o pendientes vencidos (más de ~10 min) con link Wompi.
-          El cron también los procesa automáticamente.
+          Checkouts aprobados o pendientes vencidos sin compra generada. El cron también los procesa.
         </p>
         <button type="button" class="wr-btn wr-btn--secondary" [disabled]="orphansLoading" (click)="loadOrphans()">
           <span class="material-icons">refresh</span>
@@ -506,6 +605,7 @@
           <thead>
             <tr>
               <th>ID</th>
+              <th>Tipo compra</th>
               <th>Problema</th>
               <th>Estado BD</th>
               <th>Cliente</th>
@@ -518,6 +618,7 @@
           <tbody>
             <tr *ngFor="let row of orphans">
               <td><strong>#{{ row.id }}</strong></td>
+              <td><span [class]="getCheckoutTipoBadgeClass(row)">{{ getCheckoutTipoLabel(row) }}</span></td>
               <td><span [class]="orphanTipoClass(row)">{{ getOrphanTipoLabel(row) }}</span></td>
               <td><span [class]="getStatusBadgeClass(row.estado)">{{ row.estado }}</span></td>
               <td>{{ getClienteLabel(row) }}</td>
@@ -550,6 +651,7 @@
             <span [class]="orphanTipoClass(row)">{{ getOrphanTipoLabel(row) }}</span>
           </div>
           <dl class="wr-mobile-card__meta">
+            <div><dt>Tipo compra</dt><dd><span [class]="getCheckoutTipoBadgeClass(row)">{{ getCheckoutTipoLabel(row) }}</span></dd></div>
             <div><dt>Estado</dt><dd><span [class]="getStatusBadgeClass(row.estado)">{{ row.estado }}</span></dd></div>
             <div><dt>Cliente</dt><dd>{{ getClienteLabel(row) }}</dd></div>
             <div><dt>Evento</dt><dd>{{ row.evento?.titulo || '—' }}</dd></div>

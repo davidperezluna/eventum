@@ -38,6 +38,10 @@ export interface WompiReconcileCheckout {
   moneda?: string | null;
   numero_intento?: string;
   fecha_creacion?: string | null;
+  fecha_confirmacion?: string | null;
+  fecha_cancelacion?: string | null;
+  metadata?: Record<string, unknown> | null;
+  request_payload?: Record<string, unknown> | null;
   cliente?: {
     id: number;
     nombre?: string | null;
@@ -52,6 +56,36 @@ export interface WompiEmailContext {
   email_wompi_comprobante?: string | null;
   email_al_crear_checkout?: string | null;
   emails_coinciden?: boolean | null;
+  mensaje_soporte?: string | null;
+}
+
+export interface WompiTitularItem {
+  tipo: 'boleta' | 'cover' | string;
+  item_id: number;
+  codigo_qr?: string | null;
+  estado?: string | null;
+  titular_usuario_id?: number | null;
+  titular_email?: string | null;
+  titular_nombre?: string | null;
+  es_comprador?: boolean;
+  traslado_pendiente?: boolean;
+  traslado_estado?: string | null;
+  traslado_destino_email?: string | null;
+  traslado_id?: number | null;
+}
+
+export type WompiGuiaSoporte = {
+  title: string;
+  text: string;
+  warn: boolean;
+  showEmailCompare?: boolean;
+};
+
+export interface WompiTitularContext {
+  items?: WompiTitularItem[];
+  total?: number;
+  hay_traslados_pendientes?: boolean;
+  hay_titular_distinto_comprador?: boolean;
   mensaje_soporte?: string | null;
 }
 
@@ -71,6 +105,7 @@ export interface WompiReconcileLookupResult {
   requiere_accion?: boolean;
   diagnostico?: WompiDiagnosticoItem[];
   email_context?: WompiEmailContext | null;
+  titular_context?: WompiTitularContext | null;
   hint?: string;
   email?: string;
   usuario?: { id: number; nombre?: string; email?: string } | null;

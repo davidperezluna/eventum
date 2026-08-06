@@ -1,7 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const WOMPI_RECONCILE_LOOKUP_VERSION = '1.2.0-email-context'
+/** Reconciliación Wompi — lookup, huérfanos, titular/traslados, resumen compras con tipos. */
+const WOMPI_RECONCILE_LOOKUP_VERSION = '1.4.1-compras-tipos'
 const ADMIN_TIPO_USUARIO_ID = 3
 
 const corsHeaders = {
@@ -239,6 +240,241 @@ function normalizeEmail(value: unknown): string {
   return String(value || '').trim().toLowerCase()
 }
 
+function usuarioEmail(usuario: Record<string, unknown> | null | undefined): string {
+  return normalizeEmail(usuario?.email)
+}
+
+function usuarioLabel(usuario: Record<string, unknown> | null | undefined): string {
+  if (!usuario) return ''
+  const nombre = [usuario.nombre, usuario.apellido].filter(Boolean).join(' ').trim()
+  return nombre || usuarioEmail(usuario)
+}
+
+const TRASLADO_PENDIENTE_ESTADOS = new Set(['enviado', 'recibido'])
+
+async function loadTitularContext(
+  supabaseClient: ReturnType<typeof createClient>,
+  checkout: Record<string, unknown> | null,
+): Promise<Record<string, unknown> | null> {
+  if (!checkout) return null
+
+  const compradorId = checkout.cliente_id ? Number(checkout.cliente_id) : null
+  const cliente = checkout.cliente as { email?: string | null } | null | undefined
+  const compradorEmail = normalizeEmail(cliente?.email)
+
+  const items: Record<string, unknown>[] = []
+  let hayTrasladosPendientes = false
+  let hayTitularDistintoComprador = false
+
+  const pushBoletaItem = (params: {
+    tipo: 'boleta' | 'cover'
+    itemId: number
+    codigoQr?: string | null
+    estado?: string | null
+    titularUsuarioId: number | null
+    titularEmail: string
+    titularNombre: string
+    trasladoActivo: Record<string, unknown> | null
+  }) => {
+    const {
+      tipo,
+      itemId,
+      codigoQr,
+      estado,
+      titularUsuarioId,
+      titularEmail,
+      titularNombre,
+      trasladoActivo,
+    } = params
+
+    const trasladoPendiente = !!trasladoActivo
+    if (trasladoPendiente) hayTrasladosPendientes = true
+
+    const destinoUsuario = trasladoActivo?.usuario_destino as Record<string, unknown> | null | undefined
+    const trasladoDestinoEmail =
+      normalizeEmail(trasladoActivo?.email_destino) || usuarioEmail(destinoUsuario) || null
+
+    const esComprador =
+      compradorId != null &&
+      titularUsuarioId != null &&
+      titularUsuarioId === compradorId &&
+      !trasladoPendiente
+
+    if (
+      titularUsuarioId != null &&
+      compradorId != null &&
+      titularUsuarioId !== compradorId &&
+      !trasladoPendiente
+    ) {
+      hayTitularDistintoComprador = true
+    }
+
+    items.push({
+      tipo,
+      item_id: itemId,
+      codigo_qr: codigoQr ?? null,
+      estado: estado ?? null,
+      titular_usuario_id: titularUsuarioId,
+      titular_email: titularEmail || null,
+      titular_nombre: titularNombre || null,
+      es_comprador: esComprador,
+      traslado_pendiente: trasladoPendiente,
+      traslado_estado: trasladoActivo ? String(trasladoActivo.estado) : null,
+      traslado_destino_email: trasladoDestinoEmail,
+      traslado_id: trasladoActivo ? Number(trasladoActivo.id) : null,
+    })
+  }
+
+  const compraId = checkout.compra_id ? Number(checkout.compra_id) : null
+  if (compraId) {
+    const { data: boletas } = await supabaseClient
+      .from('boletas_compradas')
+      .select(`
+        id, codigo_qr, estado, titular_cliente_id, asistente_usuario_id,
+        asistente_usuario:usuarios!asistente_usuario_id(id, nombre, apellido, email),
+        titular:usuarios!titular_cliente_id(id, nombre, apellido, email)
+      `)
+      .eq('compra_id', compraId)
+      .order('id', { ascending: true })
+
+    const boletaIds = (boletas ?? [])
+      .map((row) => Number((row as { id?: number }).id))
+      .filter((id) => Number.isInteger(id) && id > 0)
+
+    const trasladosByBoleta = new Map<number, Record<string, unknown>[]>()
+    if (boletaIds.length) {
+      const { data: traslados } = await supabaseClient
+        .from('traslados_boleta')
+        .select(`
+          id, boleta_id, estado, email_destino, fecha_creacion, fecha_aceptacion,
+          usuario_destino:usuarios!usuario_destino_id(id, email, nombre, apellido),
+          usuario_origen:usuarios!usuario_origen_id(id, email, nombre, apellido)
+        `)
+        .in('boleta_id', boletaIds)
+        .order('fecha_creacion', { ascending: false })
+
+      for (const row of traslados ?? []) {
+        const traslado = row as Record<string, unknown>
+        const boletaId = Number(traslado.boleta_id)
+        if (!Number.isInteger(boletaId) || boletaId <= 0) continue
+        const list = trasladosByBoleta.get(boletaId) ?? []
+        list.push(traslado)
+        trasladosByBoleta.set(boletaId, list)
+      }
+    }
+
+    for (const row of boletas ?? []) {
+      const boleta = row as Record<string, unknown>
+      const boletaId = Number(boleta.id)
+      const traslados = trasladosByBoleta.get(boletaId) ?? []
+      const trasladoActivo =
+        traslados.find((t) => TRASLADO_PENDIENTE_ESTADOS.has(String(t.estado))) ?? null
+
+      const asistente = boleta.asistente_usuario as Record<string, unknown> | null | undefined
+      const titular = boleta.titular as Record<string, unknown> | null | undefined
+      const titularUsuarioId =
+        Number(boleta.asistente_usuario_id || boleta.titular_cliente_id || 0) || null
+      const titularEmail = usuarioEmail(asistente) || usuarioEmail(titular)
+      const titularNombre = usuarioLabel(asistente) || usuarioLabel(titular)
+
+      pushBoletaItem({
+        tipo: 'boleta',
+        itemId: boletaId,
+        codigoQr: boleta.codigo_qr ? String(boleta.codigo_qr) : null,
+        estado: boleta.estado ? String(boleta.estado) : null,
+        titularUsuarioId,
+        titularEmail,
+        titularNombre,
+        trasladoActivo,
+      })
+    }
+  }
+
+  const compraCoverId = checkout.compra_cover_id ? Number(checkout.compra_cover_id) : null
+  if (compraCoverId) {
+    const { data: covers } = await supabaseClient
+      .from('boletas_cover')
+      .select(`
+        id, codigo_qr, estado, titular_cliente_id,
+        titular:usuarios!titular_cliente_id(id, nombre, apellido, email)
+      `)
+      .eq('compra_cover_id', compraCoverId)
+      .order('id', { ascending: true })
+
+    const coverIds = (covers ?? [])
+      .map((row) => Number((row as { id?: number }).id))
+      .filter((id) => Number.isInteger(id) && id > 0)
+
+    const trasladosByCover = new Map<number, Record<string, unknown>[]>()
+    if (coverIds.length) {
+      const { data: traslados } = await supabaseClient
+        .from('traslados_boleta')
+        .select(`
+          id, boleta_cover_id, estado, email_destino, fecha_creacion, fecha_aceptacion,
+          usuario_destino:usuarios!usuario_destino_id(id, email, nombre, apellido),
+          usuario_origen:usuarios!usuario_origen_id(id, email, nombre, apellido)
+        `)
+        .in('boleta_cover_id', coverIds)
+        .order('fecha_creacion', { ascending: false })
+
+      for (const row of traslados ?? []) {
+        const traslado = row as Record<string, unknown>
+        const coverId = Number(traslado.boleta_cover_id)
+        if (!Number.isInteger(coverId) || coverId <= 0) continue
+        const list = trasladosByCover.get(coverId) ?? []
+        list.push(traslado)
+        trasladosByCover.set(coverId, list)
+      }
+    }
+
+    for (const row of covers ?? []) {
+      const cover = row as Record<string, unknown>
+      const coverId = Number(cover.id)
+      const traslados = trasladosByCover.get(coverId) ?? []
+      const trasladoActivo =
+        traslados.find((t) => TRASLADO_PENDIENTE_ESTADOS.has(String(t.estado))) ?? null
+
+      const titular = cover.titular as Record<string, unknown> | null | undefined
+      const titularUsuarioId = Number(cover.titular_cliente_id || 0) || null
+
+      pushBoletaItem({
+        tipo: 'cover',
+        itemId: coverId,
+        codigoQr: cover.codigo_qr ? String(cover.codigo_qr) : null,
+        estado: cover.estado ? String(cover.estado) : null,
+        titularUsuarioId,
+        titularEmail: usuarioEmail(titular),
+        titularNombre: usuarioLabel(titular),
+        trasladoActivo,
+      })
+    }
+  }
+
+  if (!items.length) return null
+
+  let mensajeSoporte: string | null = null
+  if (hayTrasladosPendientes) {
+    mensajeSoporte = 'Traslado pendiente: el destinatario debe aceptar en su cuenta (Mis compras).'
+  } else if (hayTitularDistintoComprador) {
+    const emails = [
+      ...new Set(
+        items
+          .map((item) => String(item.titular_email || '').trim())
+          .filter((email) => email.includes('@')),
+      ),
+    ]
+    mensajeSoporte = `Entrada con titular distinto al comprador. Cuenta: ${emails.join(', ')}.`
+  }
+
+  return {
+    items,
+    total: items.length,
+    hay_traslados_pendientes: hayTrasladosPendientes,
+    hay_titular_distinto_comprador: hayTitularDistintoComprador,
+    mensaje_soporte: mensajeSoporte,
+  }
+}
+
 function extractEmailFromCheckoutPayload(checkout: Record<string, unknown> | null): string {
   if (!checkout?.request_payload || typeof checkout.request_payload !== 'object') {
     return ''
@@ -266,15 +502,9 @@ function buildEmailContext(params: {
 
   let mensajeSoporte: string | null = null
   if (emailCuenta && emailWompi && emailsCoinciden === false) {
-    if (materializado && params.checkout?.compra_id) {
-      mensajeSoporte =
-        `El pago sí está materializado (compra #${params.checkout.compra_id}), pero el comprobante Wompi muestra ${emailWompi} y las boletas están en la cuenta Eventum ${emailCuenta}. Indica al cliente: «Inicia sesión en Eventum con ${emailCuenta} y entra a Mis compras — no uses el correo del recibo de Wompi».`
-    } else {
-      mensajeSoporte =
-        `Correo del comprobante Wompi (${emailWompi}) distinto al de la cuenta Eventum (${emailCuenta}). Las boletas quedarán en la cuenta con la que inició sesión al comprar.`
-    }
-  } else if (emailCuenta && materializado) {
-    mensajeSoporte = `Boletas en la cuenta Eventum ${emailCuenta} → Mis compras.`
+    mensajeSoporte = materializado
+      ? `Entrar con ${emailCuenta} (Mis compras), no con ${emailWompi} del recibo Wompi.`
+      : `Recibo Wompi: ${emailWompi}. Compra quedará en cuenta Eventum: ${emailCuenta}.`
   }
 
   return {
@@ -361,7 +591,7 @@ function buildDiagnostico(params: {
     items.push({
       nivel: 'error',
       codigo: 'CHECKOUT_NOT_FOUND',
-      mensaje: 'Hay transacción en Wompi pero no se encontró checkout ni transacción producto en Eventum.',
+      mensaje: 'Hay pago en Wompi pero no hay checkout en Eventum.',
     })
   }
 
@@ -369,7 +599,7 @@ function buildDiagnostico(params: {
     items.push({
       nivel: 'warning',
       codigo: 'WOMPI_NOT_FOUND',
-      mensaje: 'Registro en Eventum sin transacción correspondiente en Wompi (aún pendiente o reference distinta).',
+      mensaje: 'Hay checkout en Eventum pero Wompi no devolvió la transacción (expirada, sandbox o referencia distinta).',
     })
   }
 
@@ -379,7 +609,7 @@ function buildDiagnostico(params: {
       items.push({
         nivel: 'error',
         codigo: 'MISSING_PAYLOAD',
-        mensaje: 'El checkout no tiene request_payload — no se puede materializar automáticamente.',
+        mensaje: 'Falta request_payload: no se puede materializar automáticamente.',
       })
     }
 
@@ -393,7 +623,7 @@ function buildDiagnostico(params: {
         items.push({
           nivel: 'warning',
           codigo: 'NEEDS_MATERIALIZATION',
-          mensaje: 'Pago aprobado pero sin compra materializada — usar Sincronizar.',
+          mensaje: 'Pago aprobado sin compra. Usar Sincronizar.',
         })
       }
     }
@@ -402,7 +632,7 @@ function buildDiagnostico(params: {
       items.push({
         nivel: 'warning',
         codigo: 'STATUS_MISMATCH',
-        mensaje: `Estado Wompi distinto: API=${wompiStatus}, BD=${dbWompiStatus || '—'}.`,
+        mensaje: `Estado distinto: Wompi ${wompiStatus}, BD ${dbWompiStatus || '—'}.`,
       })
     }
 
@@ -410,7 +640,7 @@ function buildDiagnostico(params: {
       items.push({
         nivel: 'warning',
         codigo: 'WOMPI_APPROVED_CHECKOUT_PENDING',
-        mensaje: 'Wompi APPROVED pero checkout sigue pendiente en Eventum — usar Sincronizar.',
+        mensaje: 'Wompi aprobó el pago; checkout sigue pendiente. Usar Sincronizar.',
       })
     }
 
@@ -423,7 +653,7 @@ function buildDiagnostico(params: {
       items.push({
         nivel: 'warning',
         codigo: 'PENDING_UNMATERIALIZED',
-        mensaje: 'Checkout pendiente sin compra — puede haber pago APPROVED en Wompi; consultar o sincronizar.',
+        mensaje: 'Checkout pendiente sin compra. Revisar Wompi o Sincronizar.',
       })
     }
 
@@ -435,19 +665,7 @@ function buildDiagnostico(params: {
       items.push({
         nivel: 'ok',
         codigo: 'ALIGNED',
-        mensaje: 'Pago y compra alineados correctamente.',
-      })
-    }
-
-    const emailCtx = buildEmailContext({ checkout, wompiTransaction: wompiTransaction })
-    if (emailCtx.emails_coinciden === false) {
-      items.unshift({
-        nivel: 'info',
-        codigo: 'EMAIL_WOMPI_VS_CUENTA',
-        mensaje: String(
-          emailCtx.mensaje_soporte ||
-            'El correo del comprobante Wompi no coincide con la cuenta Eventum donde están las boletas.',
-        ),
+        mensaje: 'Pago y compra OK.',
       })
     }
   }
@@ -458,7 +676,7 @@ function buildDiagnostico(params: {
       items.push({
         nivel: 'warning',
         codigo: 'PRODUCTO_NEEDS_MATERIALIZATION',
-        mensaje: 'Transacción producto aprobada sin compra_producto_id — usar Sincronizar.',
+        mensaje: 'Producto aprobado sin compra. Usar Sincronizar.',
       })
     }
   }
@@ -467,7 +685,7 @@ function buildDiagnostico(params: {
     items.push({
       nivel: 'info',
       codigo: 'NO_ISSUES_DETECTED',
-      mensaje: 'No se detectaron discrepancias evidentes con los datos disponibles.',
+      mensaje: 'Sin problemas detectados.',
     })
   }
 
@@ -484,6 +702,102 @@ async function loadCheckoutById(
     .eq('id', id)
     .maybeSingle()
   return data as Record<string, unknown> | null
+}
+
+async function loadBoletasTiposResumen(
+  supabaseClient: ReturnType<typeof createClient>,
+  compraId: number,
+): Promise<Array<{ tipo_boleta_id: number; nombre: string; count: number }>> {
+  const { data } = await supabaseClient
+    .from('boletas_compradas')
+    .select('tipo_boleta_id, tipos_boleta:tipos_boleta(id, nombre)')
+    .eq('compra_id', compraId)
+
+  const byTipo = new Map<number, { nombre: string; count: number }>()
+  for (const row of data ?? []) {
+    const typed = row as {
+      tipo_boleta_id?: number
+      tipos_boleta?: { id?: number; nombre?: string } | { id?: number; nombre?: string }[] | null
+    }
+    const tipoId = Number(typed.tipo_boleta_id)
+    if (!Number.isInteger(tipoId) || tipoId <= 0) continue
+    const rawTipo = typed.tipos_boleta
+    const tipo = Array.isArray(rawTipo) ? rawTipo[0] : rawTipo
+    const nombre = String(tipo?.nombre || `Tipo #${tipoId}`)
+    const prev = byTipo.get(tipoId) ?? { nombre, count: 0 }
+    byTipo.set(tipoId, { nombre: prev.nombre || nombre, count: prev.count + 1 })
+  }
+
+  return [...byTipo.entries()].map(([tipo_boleta_id, item]) => ({
+    tipo_boleta_id,
+    nombre: item.nombre,
+    count: item.count,
+  }))
+}
+
+async function loadProductosItemsResumen(
+  supabaseClient: ReturnType<typeof createClient>,
+  compraProductoId: number,
+): Promise<Array<{ producto_id: number; nombre: string; count: number }>> {
+  const { data } = await supabaseClient
+    .from('compras_productos_items')
+    .select('producto_id, cantidad, productos:productos(id, nombre)')
+    .eq('compra_producto_id', compraProductoId)
+
+  const byProducto = new Map<number, { nombre: string; count: number }>()
+  for (const row of data ?? []) {
+    const typed = row as {
+      producto_id?: number
+      cantidad?: number
+      productos?: { id?: number; nombre?: string } | { id?: number; nombre?: string }[] | null
+    }
+    const productoId = Number(typed.producto_id)
+    if (!Number.isInteger(productoId) || productoId <= 0) continue
+    const cantidad = Number(typed.cantidad)
+    const qty = Number.isFinite(cantidad) && cantidad > 0 ? cantidad : 1
+    const rawProd = typed.productos
+    const prod = Array.isArray(rawProd) ? rawProd[0] : rawProd
+    const nombre = String(prod?.nombre || `Producto #${productoId}`)
+    const prev = byProducto.get(productoId) ?? { nombre, count: 0 }
+    byProducto.set(productoId, { nombre: prev.nombre || nombre, count: prev.count + qty })
+  }
+
+  return [...byProducto.entries()].map(([producto_id, item]) => ({
+    producto_id,
+    nombre: item.nombre,
+    count: item.count,
+  }))
+}
+
+async function loadCoverTiposResumen(
+  supabaseClient: ReturnType<typeof createClient>,
+  compraCoverId: number,
+): Promise<Array<{ tipo_cover_id: number; nombre: string; count: number }>> {
+  const { data } = await supabaseClient
+    .from('boletas_cover')
+    .select('tipo_cover_id, tipos_cover:tipos_cover(id, nombre)')
+    .eq('compra_cover_id', compraCoverId)
+
+  const byTipo = new Map<number, { nombre: string; count: number }>()
+  for (const row of data ?? []) {
+    const typed = row as {
+      tipo_cover_id?: number
+      tipos_cover?: { id?: number; nombre?: string } | { id?: number; nombre?: string }[] | null
+    }
+    const tipoId = Number(typed.tipo_cover_id)
+    if (!Number.isInteger(tipoId) || tipoId <= 0) continue
+    const rawTipo = typed.tipos_cover
+    const tipo = Array.isArray(rawTipo) ? rawTipo[0] : rawTipo
+    const nombre = String(tipo?.nombre || `Cover #${tipoId}`)
+    const prev = byTipo.get(tipoId) ?? { nombre, count: 0 }
+    byTipo.set(tipoId, { nombre: prev.nombre || nombre, count: prev.count + 1 })
+  }
+
+  return [...byTipo.entries()].map(([tipo_cover_id, item]) => ({
+    tipo_cover_id,
+    nombre: item.nombre,
+    count: item.count,
+  }))
 }
 
 async function loadCompraResumen(
@@ -503,7 +817,13 @@ async function loadCompraResumen(
       .from('boletas_compradas')
       .select('id', { count: 'exact', head: true })
       .eq('compra_id', compraId)
-    resumen.compra_boletas = { ...(data || {}), boletas_count: count ?? 0 }
+    const tiposBoleta = await loadBoletasTiposResumen(supabaseClient, compraId)
+    resumen.compra_boletas = {
+      id: (data as { id?: number } | null)?.id ?? compraId,
+      ...(data || {}),
+      boletas_count: count ?? 0,
+      tipos_boleta: tiposBoleta,
+    }
   }
 
   const compraProductoId = checkout?.compra_producto_id ? Number(checkout.compra_producto_id) : null
@@ -513,7 +833,17 @@ async function loadCompraResumen(
       .select('id, estado_compra, estado_pago, total, moneda, fecha_creacion')
       .eq('id', compraProductoId)
       .maybeSingle()
-    resumen.compra_productos = data
+    const { count } = await supabaseClient
+      .from('compras_productos_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('compra_producto_id', compraProductoId)
+    const productos = await loadProductosItemsResumen(supabaseClient, compraProductoId)
+    resumen.compra_productos = {
+      id: (data as { id?: number } | null)?.id ?? compraProductoId,
+      ...(data || {}),
+      productos_count: count ?? 0,
+      productos,
+    }
   }
 
   const compraCoverId = checkout?.compra_cover_id ? Number(checkout.compra_cover_id) : null
@@ -527,7 +857,13 @@ async function loadCompraResumen(
       .from('boletas_cover')
       .select('id', { count: 'exact', head: true })
       .eq('compra_cover_id', compraCoverId)
-    resumen.compra_cover = { ...(data || {}), boletas_cover_count: count ?? 0 }
+    const tiposCover = await loadCoverTiposResumen(supabaseClient, compraCoverId)
+    resumen.compra_cover = {
+      id: (data as { id?: number } | null)?.id ?? compraCoverId,
+      ...(data || {}),
+      boletas_cover_count: count ?? 0,
+      tipos_cover: tiposCover,
+    }
   }
 
   return resumen
@@ -575,8 +911,8 @@ serve(async (req) => {
         total: searchResult.matches.length,
         hint:
           searchResult.matches.length === 0
-            ? 'No hay checkouts con ese correo. Prueba referencia/transacción del comprobante Wompi.'
-            : 'Si el cliente dio el correo del recibo Wompi, prioriza filas «comprobante_wompi» y revisa la cuenta Eventum en cada fila.',
+            ? 'Sin checkouts con ese correo. Prueba referencia o ID de transacción Wompi.'
+            : 'Correo del recibo Wompi ≠ cuenta comprador. Abre Analizar y mira «Guía soporte».',
       })
     }
 
@@ -798,7 +1134,9 @@ serve(async (req) => {
     }
 
     const compras = await loadCompraResumen(supabaseClient, checkout)
+    const titularContext = await loadTitularContext(supabaseClient, checkout)
     const diagnostico = buildDiagnostico({ checkout, wompiTransaction, transaccionProducto })
+
     const requiereAccion = diagnostico.some((d) =>
       [
         'NEEDS_MATERIALIZATION',
@@ -833,6 +1171,7 @@ serve(async (req) => {
       requiere_accion: requiereAccion,
       diagnostico,
       email_context: emailContext,
+      titular_context: titularContext,
       wompi: wompiSummary,
       wompi_raw: wompiTransaction,
       checkout,
