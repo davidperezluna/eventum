@@ -1614,22 +1614,35 @@
   }
 
   .ev-intel-hero__strip {
-    grid-template-columns: repeat(3, minmax(11.5rem, 1fr));
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    -webkit-overflow-scrolling: touch;
+    grid-template-columns: 1fr;
+    overflow-x: visible;
   }
 
   .ev-intel-hero__strip-cell {
-    padding: 1.15rem 1rem 1.25rem;
+    padding: 1.2rem 1rem 1.3rem;
+  }
+
+  .ev-intel-hero__strip-cell + .ev-intel-hero__strip-cell {
+    border-left: 0;
+    border-top: 1px solid var(--ev-intel-border);
   }
 
   .ev-intel-fin-hero__value {
-    font-size: clamp(2rem, 9vw, 2.75rem);
+    font-size: clamp(1.85rem, 7.5vw, 2.35rem);
+  }
+
+  .ev-intel-fin-hero__desc,
+  .ev-intel-fin-hero__support {
+    max-width: none;
   }
 
   .ev-intel-kpi__value {
-    font-size: clamp(2.5rem, 10vw, 3rem);
+    font-size: clamp(1.85rem, 7.5vw, 2.35rem);
+  }
+
+  .ev-intel-kpi__phrase,
+  .ev-intel-kpi__detail {
+    overflow-wrap: anywhere;
   }
 
   .ev-intel-ed {
