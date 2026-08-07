@@ -294,15 +294,17 @@ html.ev-dialog-open body {
   top: calc(env(safe-area-inset-top, 0px) + 0.85rem);
   left: 50%;
   z-index: 10070;
-  max-width: min(92vw, 26rem);
+  width: calc(100vw - 1.5rem);
+  max-width: calc(100vw - 1.5rem);
   padding: 0.75rem 1rem;
-  border-radius: 999px;
+  border-radius: 10px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
   opacity: 0;
   transform: translate(-50%, -0.65rem);
   pointer-events: none;
+  box-sizing: border-box;
   transition:
     opacity 0.22s ease,
     transform 0.22s ease;
@@ -331,6 +333,11 @@ html.ev-dialog-open body {
 }
 
 @media (min-width: 640px) {
+  .ev-toast {
+    width: auto;
+    max-width: min(92vw, 26rem);
+  }
+
   .ev-dialog-backdrop {
     align-items: center;
     padding: 1.25rem;
