@@ -926,7 +926,7 @@ export function applyIntelCtaPolicy(
   actionNow: IntelActionNow | null,
   sections: ({ ctaLabel?: string; ctaAction?: IntelCtaAction; ctaVariant?: IntelCtaVariant } | null)[],
   oportunidades: IntelOportunidadesSection | null = null,
-): { hideHeroShare: boolean } {
+): void {
   const primaryAction = actionNow?.ctaAction;
   const usedActions = new Set<IntelCtaAction>();
   if (primaryAction) {
@@ -961,6 +961,4 @@ export function applyIntelCtaPolicy(
       return { ...item, ctaVariant: 'secondary' as const };
     });
   }
-
-  return { hideHeroShare: primaryAction === 'share' };
 }

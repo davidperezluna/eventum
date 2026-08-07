@@ -168,8 +168,6 @@ export class EventoInteligencia implements OnInit {
 
   refreshing = false;
 
-  hideHeroShare = false;
-
   eventoId = 0;
 
 
@@ -422,13 +420,11 @@ export class EventoInteligencia implements OnInit {
 
 
 
-    const ctaPolicy = applyIntelCtaPolicy(
+    applyIntelCtaPolicy(
       this.actionNow,
       [this.ventasSection, this.boletasSection, this.productosSection, this.hoySection],
       this.oportunidadesSection,
     );
-
-    this.hideHeroShare = ctaPolicy.hideHeroShare;
 
   }
 

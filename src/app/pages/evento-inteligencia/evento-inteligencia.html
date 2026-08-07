@@ -81,7 +81,7 @@
             Operaciones
           </a>
         </nav>
-        <div class="ev-intel-hero__quick">
+        <div class="ev-intel-hero__actions">
           <ev-button
             *ngIf="!authService.isOrganizador()"
             variant="primary"
@@ -91,15 +91,15 @@
             <span class="material-icons" aria-hidden="true">qr_code_scanner</span>
             Escáner
           </ev-button>
-          <ev-button
-            *ngIf="!hideHeroShare"
-            variant="secondary"
-            size="sm"
+          <button
+            type="button"
+            class="ev-intel-hero__icon-btn"
             (click)="compartirEvento()"
+            aria-label="Compartir evento"
+            title="Compartir evento"
           >
             <span class="material-icons" aria-hidden="true">share</span>
-            Compartir
-          </ev-button>
+          </button>
         </div>
       </div>
 
