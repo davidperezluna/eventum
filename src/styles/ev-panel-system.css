@@ -232,13 +232,103 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, #f1f5f9, #e2e8f0);
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  color: #94a3b8;
+  background: var(--ev-form-canvas, #fafbfc);
+  border: 1px solid var(--ev-form-border, #e8ecf3);
+  color: var(--ev-form-subtle, #94a3b8);
 }
 
 .ev-panel-card__thumb--placeholder .material-icons {
   font-size: 1.65rem;
+}
+
+.ev-panel-card__head--stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.ev-panel-card__title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ev-panel-card__title-row .ev-panel-card__name {
+  flex: 1;
+  min-width: 0;
+}
+
+.ev-panel-card__badges--secondary {
+  margin-top: 0.45rem;
+  justify-content: flex-start;
+}
+
+.ev-panel-card__pricing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.65rem;
+  margin-top: 0.45rem;
+}
+
+.ev-panel-card__pricing .ev-panel-card__price {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.ev-panel-card__pricing .ev-panel-card__price-alt {
+  margin: 0;
+}
+
+.ev-panel-card__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem 0.85rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  background: var(--ev-form-canvas, #fafbfc);
+  border: 1px solid var(--ev-form-border, #e8ecf3);
+}
+
+.ev-panel-card__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.ev-panel-card__stat-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ev-form-subtle, #94a3b8);
+}
+
+.ev-panel-card__stat-value {
+  font-size: 0.875rem;
+  font-weight: 650;
+  color: var(--ev-form-ink, #0f172a);
+  line-height: 1.3;
+}
+
+.ev-panel-card__stat-value--accent {
+  color: var(--color-primary, #7c3aed);
+}
+
+.ev-panel-card__progress-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.ev-panel-card__progress-meta {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ev-panel-card__progress-meta .ev-panel-card__pct {
+  margin: 0;
 }
 
 .ev-panel-card__highlight {
@@ -336,9 +426,9 @@
 .ev-panel-card__actions {
   display: flex;
   gap: 0.35rem;
-  margin-top: 0.35rem;
+  margin-top: 0.15rem;
   padding-top: 0.85rem;
-  border-top: 1px solid rgba(15, 23, 42, 0.06);
+  border-top: 1px solid var(--ev-form-border, #e8ecf3);
 }
 
 .ev-panel-card__action {

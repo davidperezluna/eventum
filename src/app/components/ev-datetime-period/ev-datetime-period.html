@@ -1,0 +1,32 @@
+<div class="ev-datetime-period">
+  <div class="ev-datetime-period__block">
+    <p class="ev-datetime-period__label">
+      {{ startLabel }}<span *ngIf="required" class="ev-field__required" aria-hidden="true">*</span>
+    </p>
+    <ev-date-time-picker
+      [id]="startId"
+      [disabled]="disabled"
+      [hasError]="hasRangeError"
+      [ngModel]="normalizedStart"
+      (ngModelChange)="onStartChange($event)"
+    />
+  </div>
+
+  <div class="ev-datetime-period__block">
+    <p class="ev-datetime-period__label">
+      {{ endLabel }}<span *ngIf="required" class="ev-field__required" aria-hidden="true">*</span>
+    </p>
+    <ev-date-time-picker
+      [id]="endId"
+      [disabled]="disabled"
+      [hasError]="hasRangeError"
+      [ngModel]="normalizedEnd"
+      (ngModelChange)="onEndChange($event)"
+    />
+  </div>
+
+  <p *ngIf="rangeError" class="ev-datetime-period__hint" role="alert">
+    <span class="material-icons" aria-hidden="true">error_outline</span>
+    <span class="ev-datetime-period__hint-text">{{ rangeError }}</span>
+  </p>
+</div>

@@ -2,7 +2,7 @@
 
 .ev-drawer-footer {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-end;
   gap: 0.65rem;
@@ -15,16 +15,27 @@
   box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.04);
 }
 
+.ev-drawer-footer .ev-button:only-child {
+  flex: 0 1 auto;
+}
+
 @media (max-width: 768px) {
   .ev-drawer-footer {
-    flex-direction: column-reverse;
+    flex-direction: row;
     align-items: stretch;
     gap: 0.5rem;
     padding-inline: 0.85rem;
   }
 
   .ev-drawer-footer .ev-button {
-    width: 100%;
+    flex: 1 1 0;
+    width: auto;
     min-width: 0;
+    max-width: none;
+  }
+
+  .ev-drawer-footer .ev-button:only-child {
+    flex: 0 1 auto;
+    margin-left: auto;
   }
 }

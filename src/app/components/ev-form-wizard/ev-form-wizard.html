@@ -1,32 +1,27 @@
 <div class="ev-form-wizard" role="navigation" aria-label="Progreso del asistente">
-  <div class="ev-form-wizard__progress-head">
-    <span class="ev-form-wizard__step-label">
-      Paso {{ currentStep + 1 }} de {{ steps.length }}
-      <span class="ev-form-wizard__step-name">— {{ steps[currentStep]?.label }}</span>
-    </span>
-    <span class="ev-form-wizard__percent">{{ progressPercent }}%</span>
+  <div class="ev-form-wizard__progress">
+    <span class="ev-form-wizard__counter">Paso {{ currentStep + 1 }} de {{ steps.length }}</span>
+    <div
+      class="ev-form-wizard__track"
+      role="progressbar"
+      [attr.aria-valuenow]="progressPercent"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      [attr.aria-valuetext]="'Paso ' + (currentStep + 1) + ' de ' + steps.length + ', ' + progressPercent + '%'"
+    >
+      <div class="ev-form-wizard__fill" [style.width.%]="progressPercent"></div>
+    </div>
+    <span class="ev-form-wizard__current-name">{{ steps[currentStep]?.label }}</span>
   </div>
-  <div
-    class="ev-form-wizard__track"
-    role="progressbar"
-    [attr.aria-valuenow]="progressPercent"
-    aria-valuemin="0"
-    aria-valuemax="100"
-  >
-    <div class="ev-form-wizard__fill" [style.width.%]="progressPercent"></div>
-  </div>
-  <ol class="ev-form-wizard__steps">
+
+  <ol class="ev-form-wizard__trail" aria-hidden="true">
     <li
       *ngFor="let step of steps; let i = index"
-      class="ev-form-wizard__step"
-      [class.ev-form-wizard__step--done]="isCompleted(i)"
-      [class.ev-form-wizard__step--current]="isCurrent(i)"
+      class="ev-form-wizard__trail-item"
+      [class.ev-form-wizard__trail-item--done]="isCompleted(i)"
+      [class.ev-form-wizard__trail-item--current]="isCurrent(i)"
     >
-      <span class="ev-form-wizard__dot" aria-hidden="true">
-        <span class="material-icons" *ngIf="isCompleted(i)">check</span>
-        <ng-container *ngIf="!isCompleted(i)">{{ i + 1 }}</ng-container>
-      </span>
-      <span class="ev-form-wizard__label">{{ step.label }}</span>
+      <span class="ev-form-wizard__trail-label">{{ step.label }}</span>
     </li>
   </ol>
 </div>

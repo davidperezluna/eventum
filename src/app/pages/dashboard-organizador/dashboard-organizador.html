@@ -1,230 +1,245 @@
-<div class="dashboard">
-  <div class="dashboard-toolbar" role="navigation" aria-label="Acciones del dashboard organizador">
-    <button class="dashboard-toolbar__action dashboard-toolbar__action--refresh" (click)="loadStats({ manual: true })" [disabled]="loading || isManualRefreshing" type="button">
+<div class="dashboard dashboard--org dash-ctrl">
+  <div class="dashboard-toolbar dash-ctrl__toolbar" role="navigation" aria-label="Acciones del dashboard organizador">
+    <button
+      class="dashboard-toolbar__action dashboard-toolbar__action--refresh"
+      (click)="loadStats({ manual: true })"
+      [disabled]="loading || isManualRefreshing"
+      type="button"
+    >
       <span class="dashboard-refresh-loader" *ngIf="isManualRefreshing" aria-hidden="true"></span>
       <span class="material-icons" *ngIf="!isManualRefreshing">refresh</span>
       {{ isManualRefreshing ? 'Recargando...' : 'Recargar' }}
     </button>
   </div>
 
-  <!-- Mensaje de error -->
   <div *ngIf="error" class="error-message">
     <span class="material-icons">error</span>
     <p>{{ error }}</p>
   </div>
 
-  <!-- Loading state -->
   <div *ngIf="loading" class="loading-state">
     <div class="spinner"></div>
     <p>Cargando estadísticas...</p>
   </div>
 
-  <!-- Resumen financiero del organizador -->
-  <section *ngIf="!loading && !error" class="dashboard-section dashboard-section--finanzas-org">
-    <div class="dashboard-section__head">
-      <h2>Tu saldo</h2>
-      <p>Cuánto estimamos que recibirás y de dónde sale ese valor.</p>
-    </div>
-    <app-dashboard-finanzas-hero-organizador
-      [stats]="stats"
-      [mostrarProductos]="!!stats.tiene_productos"
-    ></app-dashboard-finanzas-hero-organizador>
-  </section>
+  <ng-container *ngIf="!loading && !error">
+    <!-- 1. Hero -->
+    <header class="dash-ctrl-hero" aria-label="Resumen del negocio">
+      <p class="dash-ctrl-hero__eyebrow">Panel del organizador</p>
+      <h1 class="dash-ctrl-hero__title">{{ heroTitle }}</h1>
+      <p class="dash-ctrl-hero__subtitle">Todos tus eventos</p>
 
-  <!-- Indicadores operativos -->
-  <section *ngIf="!loading && !error" class="dashboard-section dashboard-section--kpis">
-    <div class="dashboard-section__head">
-      <h2>Resumen operativo</h2>
-      <p>Volumen de ventas, eventos y clientes.</p>
-    </div>
-    <app-dashboard-kpis
-      [stats]="stats"
-      modo="operativo"
-      eventosLabel="Mis eventos activos"
-      [mostrarProductos]="!!stats.tiene_productos"
-    ></app-dashboard-kpis>
-  </section>
-
-  <!-- Recaudo bruto por periodo (contexto, no saldo del empresario) -->
-  <app-ingresos-resumen
-    *ngIf="!loading && !error"
-    class="dashboard-section"
-    [stats]="stats"
-    [contextoOrganizador]="true"
-  ></app-ingresos-resumen>
-
-  <!-- Dashboard Content -->
-  <section *ngIf="!loading && !error" class="dashboard-section">
-    <div class="dashboard-section__head">
-      <h2>Operación en tiempo real</h2>
-      <p>Actividad reciente de ventas y próximos eventos publicados.</p>
-    </div>
-    <div class="dashboard-content dashboard-content--primary">
-    <!-- Ventas Recientes -->
-    <div class="content-card content-card--ventas">
-      <div class="card-header">
-        <h2>
-          <span class="material-icons">receipt</span>
-          Ventas Recientes
-        </h2>
+      <div class="dash-ctrl-hero__money-block">
+        <p class="dash-ctrl-hero__money-label">Hoy recibirías aproximadamente</p>
+        <p class="dash-ctrl-hero__money-value">${{ formatAmount(finanzasConsolidado.saldoEstimadoRecibir) }}</p>
       </div>
-      <div *ngIf="stats.ventas_recientes && stats.ventas_recientes.length > 0; else noVentas" class="ventas-list">
-        <div *ngFor="let venta of stats.ventas_recientes" class="venta-item">
-          <div class="venta-info">
-            <div class="venta-header">
-              <span class="venta-transaccion">{{ venta.numero_transaccion }}</span>
-              <span class="venta-fecha">{{ venta.fecha_compra | dateFormat:'short' }}</span>
-            </div>
-            <div class="venta-evento" *ngIf="venta.evento?.titulo">
-              {{ venta.evento.titulo }}
-            </div>
-            <div class="venta-details">
-              <span class="venta-total" title="Monto pagado por el cliente (recaudo bruto, no tu saldo neto)">{{ formatCurrency(venta.total || 0) }}</span>
-              <div class="venta-badges">
-                <span class="venta-tipo-badge" [class]="
-                  venta.tipo_venta === 'productos' ? 'badge-productos' :
-                  (venta.tipo_venta === 'mixta' ? 'badge-mixta' : 'badge-ventas')
-                ">
-                  {{ venta.tipo_venta === 'productos' ? 'Productos' : (venta.tipo_venta === 'mixta' ? 'Mixta' : 'Boletas') }}
-                </span>
-                <span class="venta-estado" [class]="venta.estado_pago === 'completado' ? 'badge-success' : 'badge-warning'">
-                  {{ venta.estado_pago || 'Pendiente' }}
-                </span>
-              </div>
-            </div>
+
+      <div class="dash-ctrl-hero__context">
+        <span>{{ formatAmount(stats.eventos_activos) }} eventos activos</span>
+        <span class="dash-ctrl-hero__dot" aria-hidden="true"></span>
+        <span>{{ formatAmount(proximosEventosCount) }} próximos eventos</span>
+      </div>
+
+      <p class="dash-ctrl-hero__status">{{ heroStatusLine }}</p>
+    </header>
+
+    <!-- 2. Necesita tu atención -->
+    <section class="dash-ctrl-section" aria-labelledby="dash-attention-heading">
+      <div class="dash-ctrl-section__head">
+        <h2 id="dash-attention-heading">Necesita tu atención</h2>
+      </div>
+
+      <ul class="dash-ctrl-attention" *ngIf="attentionItems.length > 0; else noAttention">
+        <li
+          *ngFor="let item of attentionItems"
+          class="dash-ctrl-attention__item"
+          [class.dash-ctrl-attention__item--warn]="item.tone === 'warn'"
+          [class.dash-ctrl-attention__item--ok]="item.tone === 'ok'"
+          [class.dash-ctrl-attention__item--info]="item.tone === 'info'"
+        >
+          <div class="dash-ctrl-attention__body">
+            <p class="dash-ctrl-attention__title">{{ item.title }}</p>
+            <p class="dash-ctrl-attention__message">{{ item.message }}</p>
           </div>
-        </div>
-      </div>
-      <ng-template #noVentas>
-        <div class="empty-state">
-          <span class="material-icons">shopping_cart</span>
-          <p>No hay ventas recientes</p>
-        </div>
+          <a
+            class="dash-ctrl-btn dash-ctrl-btn--sm"
+            [routerLink]="item.actionRoute"
+            [queryParams]="attentionQueryParams(item)"
+          >
+            {{ item.actionLabel }}
+          </a>
+        </li>
+      </ul>
+
+      <ng-template #noAttention>
+        <p class="dash-ctrl-empty">Nada urgente por ahora. Sigue construyendo tu negocio.</p>
       </ng-template>
-    </div>
+    </section>
 
-    <!-- Eventos Próximos -->
-    <div class="content-card content-card--eventos">
-      <div class="card-header">
-        <h2>
-          <span class="material-icons">calendar_today</span>
-          Mis Próximos Eventos
-        </h2>
+    <!-- 3. KPI principales -->
+    <section class="dash-ctrl-section" aria-labelledby="dash-kpi-heading">
+      <div class="dash-ctrl-section__head">
+        <h2 id="dash-kpi-heading">Resumen</h2>
       </div>
-      <div *ngIf="stats.eventos_proximos && stats.eventos_proximos.length > 0; else noEventos" class="eventos-list">
-        <div *ngFor="let evento of stats.eventos_proximos" class="evento-item">
-          <div class="evento-image" *ngIf="evento.imagen_principal">
-            <img [src]="evento.imagen_principal" [alt]="evento.titulo" />
-          </div>
-          <div class="evento-info">
-            <h3>{{ evento.titulo }}</h3>
-            <p class="evento-fecha">
-              <span class="material-icons">schedule</span>
-              {{ evento.fecha_inicio | dateFormat:'medium' }}
-            </p>
-            <p *ngIf="evento.descripcion_corta" class="evento-descripcion">{{ evento.descripcion_corta }}</p>
-          </div>
-        </div>
-      </div>
-      <ng-template #noEventos>
-        <div class="empty-state">
-          <span class="material-icons">event_busy</span>
-          <p>No hay eventos próximos</p>
-        </div>
-      </ng-template>
-    </div>
-    </div>
-  </section>
 
-  <!-- Sección de Estadísticas Adicionales -->
-  <section *ngIf="!loading && !error" class="dashboard-section">
-    <div class="dashboard-section__head">
-      <h2>Comportamiento de audiencia</h2>
-      <p>Distribución de boletas y eventos con mejor rendimiento.</p>
-    </div>
-    <div class="dashboard-content dashboard-content--secondary">
-    <!-- Boletas por Estado -->
-    <div class="content-card content-card--boletas">
-      <div class="card-header">
-        <h2>
-          <span class="material-icons">pie_chart</span>
-          Boletas por Estado
-        </h2>
-      </div>
-      <div *ngIf="stats.boletas_por_estado && stats.boletas_por_estado.length > 0; else noBoletasEstado" class="estados-list">
-        <div *ngFor="let item of stats.boletas_por_estado" class="estado-item">
-          <div class="estado-header">
-            <span class="estado-label">{{ getEstadoBoletaLabel(item.estado) }}</span>
-            <span class="estado-cantidad">{{ item.cantidad }}</span>
-          </div>
-          <div class="estado-bar">
-            <div class="estado-bar-fill" 
-                 [style.width.%]="(item.cantidad / stats.boletas_vendidas) * 100"
-                 [class]="'estado-' + item.estado">
-            </div>
-          </div>
-        </div>
-      </div>
-      <ng-template #noBoletasEstado>
-        <div class="empty-state">
-          <p>No hay datos de boletas</p>
-        </div>
-      </ng-template>
-    </div>
+      <div class="dash-ctrl-kpis">
+        <article class="dash-ctrl-kpi">
+          <p class="dash-ctrl-kpi__label">Recibirás aprox.</p>
+          <p class="dash-ctrl-kpi__value">${{ formatAmount(finanzasConsolidado.saldoEstimadoRecibir) }}</p>
+        </article>
 
-    <!-- Top Eventos -->
-    <div class="content-card content-card--top">
-      <div class="card-header">
-        <h2>
-          <span class="material-icons">star</span>
-          Mis Eventos Más Populares
-        </h2>
+        <article class="dash-ctrl-kpi">
+          <p class="dash-ctrl-kpi__label">Boletas vendidas</p>
+          <p class="dash-ctrl-kpi__value">{{ formatAmount(stats.boletas_vendidas) }}</p>
+        </article>
+
+        <article class="dash-ctrl-kpi">
+          <p class="dash-ctrl-kpi__label">Eventos activos</p>
+          <p class="dash-ctrl-kpi__value">{{ formatAmount(stats.eventos_activos) }}</p>
+        </article>
+
+        <article class="dash-ctrl-kpi">
+          <p class="dash-ctrl-kpi__label">Asistencia promedio</p>
+          <p class="dash-ctrl-kpi__value">{{ tasaAsistenciaDisplay }}%</p>
+        </article>
       </div>
-      <div *ngIf="stats.top_eventos && stats.top_eventos.length > 0; else noTopEventos" class="top-eventos-list">
-        <div *ngFor="let evento of stats.top_eventos; let i = index" class="top-evento-item">
-          <div class="top-evento-rank">{{ i + 1 }}</div>
-          <div class="top-evento-image" *ngIf="evento.imagen_principal">
-            <img [src]="evento.imagen_principal" [alt]="evento.titulo" />
-          </div>
-          <div class="top-evento-info">
-            <h3>{{ evento.titulo }}</h3>
-            <p class="top-evento-boletas">
-              <span class="material-icons">confirmation_number</span>
-              {{ evento.boletas_vendidas || 0 }} boletas vendidas
+
+      <details class="dash-ctrl-details" *ngIf="stats.boletas_por_estado?.length">
+        <summary>Distribución de boletas por estado</summary>
+        <ul class="dash-ctrl-estados">
+          <li *ngFor="let item of stats.boletas_por_estado" class="dash-ctrl-estados__row">
+            <span>{{ getEstadoBoletaLabel(item.estado) }}</span>
+            <span class="dash-ctrl-estados__count">{{ formatAmount(item.cantidad) }}</span>
+          </li>
+        </ul>
+      </details>
+
+      <app-ingresos-resumen
+        class="dash-ctrl-ingresos"
+        [stats]="stats"
+        [contextoOrganizador]="true"
+        [defaultOpen]="false"
+      ></app-ingresos-resumen>
+    </section>
+
+    <!-- 4. Próximos eventos -->
+    <section class="dash-ctrl-section" aria-labelledby="dash-agenda-heading">
+      <div class="dash-ctrl-section__head dash-ctrl-section__head--row">
+        <h2 id="dash-agenda-heading">Próximos eventos</h2>
+        <a routerLink="/eventos" class="dash-ctrl-link">Ver todos</a>
+      </div>
+
+      <ul class="dash-ctrl-agenda" *ngIf="stats.eventos_proximos?.length; else noAgenda">
+        <li *ngFor="let evento of stats.eventos_proximos" class="dash-ctrl-agenda__item">
+          <time class="dash-ctrl-agenda__date">{{ formatAgendaDate(evento.fecha_inicio) }}</time>
+          <div class="dash-ctrl-agenda__main">
+            <p class="dash-ctrl-agenda__title">{{ evento.titulo }}</p>
+            <p class="dash-ctrl-agenda__meta" *ngIf="daysUntil(evento.fecha_inicio) as d">
+              <ng-container [ngSwitch]="d">
+                <span *ngSwitchCase="0">Hoy</span>
+                <span *ngSwitchCase="1">Mañana</span>
+                <span *ngSwitchDefault>En {{ d }} días</span>
+              </ng-container>
             </p>
           </div>
-        </div>
-      </div>
-      <ng-template #noTopEventos>
-        <div class="empty-state">
-          <span class="material-icons">trending_flat</span>
-          <p>No hay eventos con ventas aún</p>
-        </div>
-      </ng-template>
-    </div>
-    </div>
-  </section>
+          <a
+            class="dash-ctrl-btn dash-ctrl-btn--ghost dash-ctrl-btn--sm"
+            [routerLink]="['/eventos', evento.id, 'operaciones']"
+          >
+            Abrir
+          </a>
+        </li>
+      </ul>
 
-  <!-- Accesos Rápidos -->
-  <section *ngIf="!loading && !error" class="quick-actions dashboard-section">
-    <div class="dashboard-section__head">
-      <h2>Accesos rápidos</h2>
-      <p>Atajos para tus acciones administrativas más frecuentes.</p>
-    </div>
-    <div class="actions-grid">
-      <a routerLink="/eventos" class="action-card">
-        <span class="material-icons">event</span>
-        <span>Gestionar eventos</span>
-      </a>
-      <a routerLink="/boletas" class="action-card">
-        <span class="material-icons">confirmation_number</span>
-        <span>Ver boletas</span>
-      </a>
-      <a routerLink="/ventas" class="action-card">
-        <span class="material-icons">attach_money</span>
-        <span>Ver ventas</span>
-      </a>
-    </div>
-  </section>
+      <ng-template #noAgenda>
+        <p class="dash-ctrl-empty">No hay eventos próximos en el calendario.</p>
+      </ng-template>
+    </section>
+
+    <!-- 5. Actividad reciente -->
+    <section class="dash-ctrl-section" aria-labelledby="dash-feed-heading">
+      <div class="dash-ctrl-section__head">
+        <h2 id="dash-feed-heading">Actividad reciente</h2>
+      </div>
+
+      <ul class="dash-ctrl-feed" *ngIf="activityFeed.length; else noFeed">
+        <li *ngFor="let item of activityFeed" class="dash-ctrl-feed__item">
+          <p class="dash-ctrl-feed__time">{{ item.timeLabel }}</p>
+          <p class="dash-ctrl-feed__message">{{ item.message }}</p>
+          <p class="dash-ctrl-feed__detail" *ngIf="item.detail">{{ item.detail }}</p>
+        </li>
+      </ul>
+
+      <ng-template #noFeed>
+        <p class="dash-ctrl-empty">Aún no hay actividad reciente de ventas.</p>
+      </ng-template>
+    </section>
+
+    <!-- 6. Rendimiento -->
+    <section class="dash-ctrl-section" aria-labelledby="dash-rank-heading">
+      <div class="dash-ctrl-section__head">
+        <h2 id="dash-rank-heading">Eventos con mejor rendimiento</h2>
+      </div>
+
+      <ol class="dash-ctrl-rank" *ngIf="rankingItems.length; else noRank">
+        <li *ngFor="let item of rankingItems" class="dash-ctrl-rank__item">
+          <span class="dash-ctrl-rank__medal" aria-hidden="true">{{ item.medal }}</span>
+          <div class="dash-ctrl-rank__body">
+            <p class="dash-ctrl-rank__title">{{ item.title }}</p>
+            <p class="dash-ctrl-rank__sub">{{ formatAmount(item.boletas) }} boletas vendidas</p>
+          </div>
+          <span class="dash-ctrl-rank__pct">{{ item.pct }}%</span>
+          <a
+            *ngIf="item.eventoId"
+            class="dash-ctrl-btn dash-ctrl-btn--ghost dash-ctrl-btn--sm"
+            [routerLink]="['/eventos', item.eventoId, 'inteligencia']"
+          >
+            Ver
+          </a>
+        </li>
+      </ol>
+
+      <ng-template #noRank>
+        <p class="dash-ctrl-empty">Todavía no hay eventos con ventas registradas.</p>
+      </ng-template>
+    </section>
+
+    <!-- 7. Accesos rápidos -->
+    <section class="dash-ctrl-section dash-ctrl-section--last" aria-labelledby="dash-actions-heading">
+      <div class="dash-ctrl-section__head">
+        <h2 id="dash-actions-heading">Accesos rápidos</h2>
+      </div>
+
+      <div class="dash-ctrl-actions">
+        <a routerLink="/eventos" class="dash-ctrl-action">
+          <span class="material-icons" aria-hidden="true">add_circle_outline</span>
+          <span>Crear evento</span>
+        </a>
+        <a routerLink="/escanear-qr" class="dash-ctrl-action">
+          <span class="material-icons" aria-hidden="true">qr_code_scanner</span>
+          <span>Escáner</span>
+        </a>
+        <a routerLink="/ventas" class="dash-ctrl-action">
+          <span class="material-icons" aria-hidden="true">payments</span>
+          <span>Ventas</span>
+        </a>
+        <a routerLink="/productos" class="dash-ctrl-action">
+          <span class="material-icons" aria-hidden="true">local_mall</span>
+          <span>Productos</span>
+        </a>
+        <a routerLink="/palcos" class="dash-ctrl-action">
+          <span class="material-icons" aria-hidden="true">event_seat</span>
+          <span>Palcos</span>
+        </a>
+        <a [routerLink]="cuponesRoute" class="dash-ctrl-action">
+          <span class="material-icons" aria-hidden="true">sell</span>
+          <span>Cupones</span>
+        </a>
+        <a routerLink="/boletas" class="dash-ctrl-action">
+          <span class="material-icons" aria-hidden="true">confirmation_number</span>
+          <span>Boletas</span>
+        </a>
+      </div>
+    </section>
+  </ng-container>
 </div>
-

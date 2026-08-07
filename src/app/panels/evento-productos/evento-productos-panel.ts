@@ -114,12 +114,12 @@ export class EventoProductosPanel implements OnInit, EvDrawerContent {
     return '';
   }
 
-  get panelInsight(): { message: string; ctaLabel: string } | null {
+  get panelInsight(): string | null {
     const reco = getProductoRecomendacion(this.productos);
     if (!reco || this.productos.length === 0) {
       return null;
     }
-    return { message: reco.message, ctaLabel: reco.showCta ? 'Crear producto' : '' };
+    return reco.message;
   }
 
   badgeVariant(badge: ProductoBadge): EvBadgeVariant {

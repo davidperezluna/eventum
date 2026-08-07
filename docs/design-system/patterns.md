@@ -1,8 +1,10 @@
 # Patrones de interacción
 
-## Alertas modales (`AlertService`)
+## Alertas y diálogos
 
-SweetAlert2 centralizado en `src/app/services/alert.service.ts`. Usar títulos consistentes en drawers:
+Sistema unificado `ev-dialog` (ver [dialogs.md](./dialogs.md)). `AlertService` delega en `EvDialogService` — ya no usa SweetAlert2.
+
+Títulos consistentes en drawers:
 
 | Acción | Título | Ejemplo mensaje |
 |--------|--------|-----------------|
@@ -17,6 +19,9 @@ SweetAlert2 centralizado en `src/app/services/alert.service.ts`. Usar títulos c
 this.alertService.success('Guardado', 'Las fechas y el lugar se guardaron correctamente.');
 this.alertService.warning('Campo requerido', 'Las fechas de venta son requeridas.');
 this.alertService.error('Error', 'No se pudo guardar la configuración de cobros.');
+await this.alertService.presetConfirm('delete-coupon', {
+  message: `El código ${codigo} dejará de estar disponible.`,
+});
 ```
 
 ---

@@ -4,8 +4,6 @@
       Define cómo se cobrarán las entradas: evento gratuito o de pago, cuenta Wompi y comisión de servicio.
     </p>
 
-    <ev-panel-summary label="Configuración de cobros" [metrics]="summaryMetrics" />
-
     <ev-notice
       *ngIf="panelInsight as insight"
       variant="warning"
@@ -13,16 +11,9 @@
       [actionLabel]="insight.ctaLabel"
     />
 
-    <ev-notice
-      [variant]="configComplete ? 'success' : 'warning'"
-      [icon]="configComplete ? 'check_circle' : 'error_outline'"
-      [title]="statusNoticeTitle"
-      [message]="statusNoticeMessage"
-    />
-
     <ev-panel-form>
       <div class="ev-form">
-        <ev-form-section title="Tipo de evento" description="Indica si el evento cobra entradas online.">
+        <ev-form-section icon="volunteer_activism" title="Tipo de evento" description="Indica si el evento cobra entradas online.">
           <div class="ev-check-row">
             <label class="ev-check">
               <input type="checkbox" [(ngModel)]="esGratis" (ngModelChange)="onEsGratisChange($event)" [disabled]="saving" />
@@ -32,7 +23,7 @@
           <p class="ev-field__hint">Si está activo, no se requiere cuenta Wompi ni cobro online.</p>
         </ev-form-section>
 
-        <ev-form-section *ngIf="!esGratis" title="Cobro online" description="Comisión de servicio y cuenta de destino.">
+        <ev-form-section *ngIf="!esGratis" icon="payments" title="Cobro online" description="Comisión y cuenta de destino.">
           <div class="ev-form-grid ev-form-grid--2">
             <div class="ev-field">
               <label class="ev-field__label" for="cobros-servicio">Servicio (%)</label>

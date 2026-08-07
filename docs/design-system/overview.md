@@ -4,7 +4,7 @@
 
 1. **Consistencia sobre creatividad local** — Los drawers de operaciones comparten la misma anatomía: lead, resumen, aviso opcional, formulario, footer fijo.
 2. **Un scroll, un propósito** — El drawer bloquea el scroll de la página; solo el área de contenido del panel scrollea (`ev-panel__body` o `ev-panel__scroll`).
-3. **Feedback claro** — Avisos inline con `ev-notice`; confirmaciones y errores de acción con `AlertService` (SweetAlert2).
+3. **Feedback claro** — Avisos inline con `ev-notice`; confirmaciones y errores de acción con `AlertService` / `ev-dialog`.
 4. **Cambios sin guardar** — Los paneles con formulario implementan `EvDrawerContent` para interceptar el cierre.
 5. **Mobile-first** — Drawers a pantalla completa en ≤768px; footers apilados; grids de formulario en 1 columna.
 
@@ -68,11 +68,12 @@ Colores semánticos alineados con variantes de `ev-notice` y `ev-badge`:
 
 ## Host del drawer
 
-`ev-drawer-host` debe estar montado en el layout raíz (`layout.html`). Sin él, `DrawerService.open()` lanza error en consola.
+`ev-drawer-host` y `ev-dialog-host` deben estar montados en el layout raíz (`layout.html`).
 
 ```html
 <!-- layout.html -->
 <ev-drawer-host />
+<ev-dialog-host />
 ```
 
 ## Scrollbars

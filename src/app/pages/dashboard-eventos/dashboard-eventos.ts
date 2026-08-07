@@ -17,10 +17,11 @@ import { IngresosResumenComponent } from '../../components/ingresos-resumen/ingr
 import { DashboardKpisComponent } from '../../components/dashboard-kpis/dashboard-kpis';
 import { FinanzasDesgloseComponent } from '../../components/finanzas-desglose/finanzas-desglose';
 import { formatFinanzasMonedaExacta } from '../../utils/dashboard-finanzas.view';
+import { EvDatePicker } from '../../components/ev-date-picker/ev-date-picker';
 
 @Component({
   selector: 'app-dashboard-eventos',
-  imports: [CommonModule, FormsModule, RouterModule, DateFormatPipe, IngresosResumenComponent, DashboardKpisComponent, FinanzasDesgloseComponent],
+  imports: [CommonModule, FormsModule, RouterModule, DateFormatPipe, IngresosResumenComponent, DashboardKpisComponent, FinanzasDesgloseComponent, EvDatePicker],
   templateUrl: './dashboard-eventos.html',
   styleUrls: ['./dashboard-eventos.css', '../finanzas-desglose-panel.css'],
 })

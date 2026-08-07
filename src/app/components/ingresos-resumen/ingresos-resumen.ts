@@ -13,6 +13,8 @@ export class IngresosResumenComponent {
   @Input({ required: true }) stats!: DashboardStats;
   /** Ajusta copy cuando el bloque es contexto de recaudo bruto, no saldo del empresario. */
   @Input() contextoOrganizador = false;
+  /** Si el bloque expandible inicia abierto. */
+  @Input() defaultOpen = true;
   Math = Math;
 
   formatCurrency(value: number | null | undefined): string {

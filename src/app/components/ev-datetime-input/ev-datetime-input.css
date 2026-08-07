@@ -1,0 +1,9 @@
+:host {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+:host(.ev-datetime-input--full) {
+  width: 100%;
+}

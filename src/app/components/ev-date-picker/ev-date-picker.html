@@ -1,0 +1,38 @@
+<div class="ev-date-picker">
+  <button
+    type="button"
+    class="ev-dtp-trigger"
+    [class.ev-dtp-trigger--open]="isOpen"
+    [class.ev-dtp-trigger--placeholder]="isPlaceholder"
+    [class.ev-dtp-trigger--error]="hasError"
+    [id]="inputId"
+    [disabled]="inputDisabled"
+    [attr.aria-expanded]="isOpen"
+    aria-haspopup="dialog"
+    (click)="openPicker($event)"
+  >
+    <span class="material-icons ev-dtp-trigger__icon" aria-hidden="true">event</span>
+    <span class="ev-dtp-trigger__label">{{ displayLabel }}</span>
+    <span class="material-icons ev-dtp-trigger__chevron" aria-hidden="true">expand_more</span>
+  </button>
+
+  <input
+    class="ev-date-picker__hidden-input"
+    matInput
+    [matDatepicker]="picker"
+    [formControl]="dateCtrl"
+    (dateChange)="onMatDateChange($event)"
+    tabindex="-1"
+    aria-hidden="true"
+  />
+
+  <mat-datepicker
+    #picker
+    [touchUi]="useTouchUi"
+    [calendarHeaderComponent]="calendarHeader"
+    startView="multi-year"
+    panelClass="ev-datepicker-panel"
+    (opened)="onPickerOpened()"
+    (closed)="onPickerClosed()"
+  />
+</div>

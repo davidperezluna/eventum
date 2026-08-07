@@ -1,212 +1,160 @@
 import { Injectable } from '@angular/core';
-import Swal from 'sweetalert2';
-import type { SweetAlertOptions, SweetAlertResult } from 'sweetalert2';
+import { EvDialogService } from '../core/ev-dialog/ev-dialog.service';
+import { EvDialogOpenConfig, EvDialogResult } from '../core/ev-dialog/ev-dialog.types';
 
-/**
- * Servicio centralizado para manejar alertas usando SweetAlert2
- * Reemplaza los alert() y confirm() nativos del navegador
- */
-type AppAlertVariant = 'default' | 'success' | 'warning' | 'error' | 'info' | 'confirm';
-
-type AppModalBaseOptions = Pick<
-  SweetAlertOptions,
-  'customClass' | 'buttonsStyling' | 'allowOutsideClick' | 'allowEscapeKey'
->;
+/** Resultado compatible con integraciones legacy (sin SweetAlert). */
+export interface AppAlertResult {
+  isConfirmed: boolean;
+  isDismissed: boolean;
+}
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AlertService {
-  private modalClass(variant: AppAlertVariant = 'default'): SweetAlertOptions['customClass'] {
-    return {
-      popup: `app-alert-modal app-alert-modal--${variant}`,
-      title: 'app-alert-modal__title',
-      htmlContainer: 'app-alert-modal__text',
-      confirmButton: 'app-alert-modal__btn app-alert-modal__btn--primary',
-      cancelButton: 'app-alert-modal__btn app-alert-modal__btn--secondary',
-      actions: 'app-alert-modal__actions',
-      icon: 'app-alert-modal__icon',
-    };
+  constructor(private readonly dialog: EvDialogService) {}
+
+  snackbar(message: string, options?: { timerMs?: number }): Promise<AppAlertResult> {
+    return this.dialog.toast(message, { timerMs: options?.timerMs }).then(() => ({
+      isConfirmed: true,
+      isDismissed: false,
+    }));
   }
 
-  private baseModalOptions(variant: AppAlertVariant): AppModalBaseOptions {
-    return {
-      customClass: this.modalClass(variant),
-      buttonsStyling: false,
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-    };
-  }
-
-  private fireModal(options: SweetAlertOptions): Promise<SweetAlertResult> {
-    return Swal.fire(options);
-  }
-
-  /**
-   * Muestra un snackbar/toast no bloqueante
-   */
-  snackbar(message: string, options?: { timerMs?: number }): Promise<SweetAlertResult> {
-    const timerMs = Math.max(2500, Number(options?.timerMs || 4500));
-    return Swal.fire({
-      toast: true,
-      title: message,
-      position: 'top-end',
-      showConfirmButton: false,
-      timer: timerMs,
-      timerProgressBar: false,
-      allowOutsideClick: true,
-      allowEscapeKey: true,
-      customClass: {
-        popup: 'app-snackbar-toast'
-      },
-      showClass: {
-        popup: 'app-snackbar-enter'
-      },
-      hideClass: {
-        popup: 'app-snackbar-exit'
-      }
-    });
-  }
-
-  /**
-   * Muestra un mensaje de éxito
-   */
-  success(title: string, message?: string): Promise<SweetAlertResult> {
-    return this.fireModal({
-      ...this.baseModalOptions('success'),
-      icon: 'success',
+  success(title: string, message?: string): Promise<AppAlertResult> {
+    return this.openAlert({
+      tone: 'success',
       title,
-      text: message,
-      confirmButtonText: '¡Perfecto!',
-      timer: 3000,
-      timerProgressBar: true,
+      message,
+      confirmText: 'Perfecto',
+      autoCloseMs: 2800,
     });
   }
 
-  /**
-   * Muestra un mensaje de error.
-   * Usa `options.html` para contenido con enlaces (no combinar con `message` como texto plano).
-   */
-  error(
-    title: string,
-    message?: string,
-    options?: { html?: string }
-  ): Promise<SweetAlertResult> {
-    const html = options?.html?.trim();
-    return this.fireModal({
-      ...this.baseModalOptions('error'),
-      icon: 'error',
+  error(title: string, message?: string, options?: { html?: string }): Promise<AppAlertResult> {
+    return this.openAlert({
+      tone: 'error',
       title,
-      ...(html ? { html } : { text: message }),
-      confirmButtonText: 'Entendido',
+      message: options?.html ? undefined : message,
+      html: options?.html,
+      confirmText: 'Entendido',
     });
   }
 
-  /**
-   * Muestra un mensaje de advertencia
-   */
-  warning(title: string, message?: string): Promise<SweetAlertResult> {
-    return this.fireModal({
-      ...this.baseModalOptions('warning'),
-      icon: 'warning',
+  warning(title: string, message?: string): Promise<AppAlertResult> {
+    return this.openAlert({
+      tone: 'warning',
       title,
-      text: message,
-      confirmButtonText: 'Entendido',
+      message,
+      confirmText: 'Entendido',
     });
   }
 
-  /**
-   * Muestra un mensaje informativo
-   */
-  info(title: string, message?: string): Promise<SweetAlertResult> {
-    return this.fireModal({
-      ...this.baseModalOptions('info'),
-      icon: 'info',
+  info(title: string, message?: string): Promise<AppAlertResult> {
+    return this.openAlert({
+      tone: 'info',
       title,
-      text: message,
-      confirmButtonText: 'Entendido',
+      message,
+      confirmText: 'Entendido',
     });
   }
 
-  /**
-   * Muestra un mensaje simple (reemplaza alert())
-   */
-  alert(title: string, message?: string): Promise<SweetAlertResult> {
-    return this.fireModal({
-      ...this.baseModalOptions('default'),
+  alert(title: string, message?: string): Promise<AppAlertResult> {
+    return this.openAlert({
+      tone: 'neutral',
       title,
-      text: message,
-      confirmButtonText: 'OK',
+      message,
+      confirmText: 'OK',
     });
   }
 
-  /**
-   * Muestra un diálogo de confirmación (reemplaza confirm())
-   */
   confirm(
     title: string,
     message?: string,
     confirmText: string = 'Sí, continuar',
-    cancelText: string = 'Cancelar'
+    cancelText: string = 'Cancelar',
   ): Promise<boolean> {
-    return this.fireModal({
-      ...this.baseModalOptions('confirm'),
+    return this.dialog.confirm({
       title,
-      text: message,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: confirmText,
-      cancelButtonText: cancelText,
-      reverseButtons: true,
-    }).then((result) => {
-      return result.isConfirmed;
+      message,
+      confirmText,
+      cancelText,
+      tone: 'confirm',
     });
   }
 
-  /**
-   * Muestra un mensaje de confirmación con opciones personalizadas
-   */
-  confirmCustom(options: SweetAlertOptions): Promise<boolean> {
-    return this.fireModal({
-      ...this.baseModalOptions('confirm'),
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, continuar',
-      cancelButtonText: 'Cancelar',
-      reverseButtons: true,
+  confirmCustom(options: EvDialogOpenConfig): Promise<boolean> {
+    return this.dialog.confirm({
+      showCancel: true,
+      tone: 'confirm',
       ...options,
-    }).then((result) => {
-      return result.isConfirmed;
     });
   }
 
-  /**
-   * Muestra un mensaje de carga
-   */
-  loading(title: string = 'Cargando...'): void {
-    void this.fireModal({
-      ...this.baseModalOptions('default'),
+  /** Confirmación destructiva con jerarquía visual dedicada. */
+  confirmDestructive(
+    title: string,
+    message?: string,
+    confirmText: string = 'Eliminar',
+    cancelText: string = 'Conservar',
+  ): Promise<boolean> {
+    return this.dialog.confirm({
       title,
-      showConfirmButton: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
+      message,
+      confirmText,
+      cancelText,
+      destructive: true,
+      detail: 'No podrás deshacer esta acción.',
     });
   }
 
-  /**
-   * Cierra cualquier alerta abierta
-   */
+  presetConfirm(
+    preset: import('../core/ev-dialog/ev-dialog.types').EvDialogPreset,
+    overrides: Partial<Omit<EvDialogOpenConfig, 'preset'>> = {},
+  ): Promise<boolean> {
+    return this.dialog.presetConfirm(preset, overrides);
+  }
+
+  loading(title: string = 'Cargando…'): void {
+    void this.dialog.open({
+      title,
+      tone: 'neutral',
+      icon: 'hourglass_top',
+      loading: true,
+      loadingLabel: title,
+      showCancel: false,
+      confirmText: title,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+    });
+  }
+
   close(): void {
-    Swal.close();
+    this.dialog.closeDialog(true);
   }
 
-  snackbarSuccess(title: string, message?: string): Promise<SweetAlertResult> {
+  snackbarSuccess(title: string, message?: string): Promise<AppAlertResult> {
     return this.snackbar(message ? `${title}. ${message}` : title);
   }
 
-  snackbarError(title: string, message?: string): Promise<SweetAlertResult> {
-    return this.snackbar(message ? `${title}. ${message}` : title);
+  snackbarError(title: string, message?: string): Promise<AppAlertResult> {
+    return this.snackbar(message ? `${title}. ${message}` : title, { timerMs: 5200 });
+  }
+
+  private openAlert(config: EvDialogOpenConfig): Promise<AppAlertResult> {
+    return this.dialog
+      .open({
+        showCancel: false,
+        allowOutsideClick: true,
+        ...config,
+      })
+      .then((result) => this.toLegacyResult(result));
+  }
+
+  private toLegacyResult(result: EvDialogResult): AppAlertResult {
+    return {
+      isConfirmed: result.confirmed,
+      isDismissed: result.dismissed,
+    };
   }
 }
-

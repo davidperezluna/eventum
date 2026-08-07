@@ -1,3 +1,4 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { CommonModule } from '@angular/common';
 import {
   AfterViewInit,
@@ -6,6 +7,7 @@ import {
   EventEmitter,
   HostBinding,
   Input,
+  OnDestroy,
   Output,
   ViewChild,
   forwardRef,
@@ -22,6 +24,7 @@ import {
 } from './ev-select.types';
 
 let evSelectIdCounter = 0;
+const EV_SELECT_MOBILE_QUERY = '(max-width: 640px)';
 
 @Component({
   selector: 'ev-select',
@@ -37,7 +40,7 @@ let evSelectIdCounter = 0;
     },
   ],
 })
-export class EvSelect implements ControlValueAccessor, AfterViewInit {
+export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy {
   @ViewChild(NgSelectComponent) private ngSelect?: NgSelectComponent;
 
   @Input() placeholder = 'Seleccionar';
@@ -45,9 +48,13 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit {
   @Input({ transform: numberAttribute }) searchThreshold = 8;
   @Input({ transform: booleanAttribute }) clearable = false;
   @Input({ transform: booleanAttribute }) disabled = false;
+  @Input({ transform: booleanAttribute }) hasError = false;
   @Input({ transform: booleanAttribute }) fullWidth = false;
+  /** Fuerza bottom sheet en móvil (auto en viewport ≤640px). */
+  @Input({ transform: booleanAttribute }) mobileSheet?: boolean;
   @Input() id?: string;
   @Input() ariaLabel?: string;
+  @Input() mobileSheetTitle?: string;
   @Input() size: EvSelectSize = 'md';
   @Input() variant: EvSelectVariant = 'form';
   @Input() appendTo: string | null = 'body';
@@ -74,8 +81,14 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit {
   private optionsSnapshot: EvSelectOption[] = [];
   private readonly fallbackId = `ev-select-${++evSelectIdCounter}`;
   private suppressModelChange = false;
+  private mobilePanelEl: HTMLElement | null = null;
+  private mobileHeadEl: HTMLElement | null = null;
+  private mobileCloseHandler: (() => void) | null = null;
 
-  constructor(private readonly cdr: ChangeDetectorRef) {}
+  constructor(
+    private readonly cdr: ChangeDetectorRef,
+    private readonly breakpointObserver: BreakpointObserver,
+  ) {}
 
   get inputId(): string {
     return this.id ?? this.fallbackId;
@@ -91,6 +104,15 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit {
     return this.optionsSnapshot.length >= this.searchThreshold;
   }
 
+  get isMobileSheet(): boolean {
+    if (this.mobileSheet !== undefined) return this.mobileSheet;
+    return this.breakpointObserver.isMatched(EV_SELECT_MOBILE_QUERY);
+  }
+
+  get sheetTitle(): string {
+    return this.mobileSheetTitle ?? this.ariaLabel ?? this.placeholder;
+  }
+
   get hostClass(): string {
     return [
       'ev-select-host',
@@ -98,7 +120,9 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit {
       `ev-select-host--${this.variant}`,
       this.isOpen ? 'ev-select-host--open' : '',
       this.disabled ? 'ev-select-host--disabled' : '',
+      this.hasError ? 'ev-select-host--error' : '',
       this.fullWidth ? 'ev-select-host--full' : '',
+      this.isMobileSheet && this.isOpen ? 'ev-select-host--sheet-open' : '',
     ]
       .filter(Boolean)
       .join(' ');
@@ -115,6 +139,11 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit {
   ngAfterViewInit(): void {
     this.applyValue(this.currentValue);
     this.ngSelect?.setDisabledState(this.disabled);
+  }
+
+  ngOnDestroy(): void {
+    this.cleanupMobilePanel();
+    this.unlockBodyScroll();
   }
 
   writeValue(value: unknown): void {
@@ -169,11 +198,108 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit {
 
   onOpen(): void {
     this.isOpen = true;
+    if (this.isMobileSheet) {
+      this.lockBodyScroll();
+    }
+    this.schedulePanelDecoration();
+    this.cdr.markForCheck();
   }
 
   onClose(): void {
     this.isOpen = false;
+    this.cleanupMobilePanel();
+    this.unlockBodyScroll();
     this.onTouched();
+    this.cdr.markForCheck();
+  }
+
+  closePanel(): void {
+    this.ngSelect?.close();
+  }
+
+  private schedulePanelDecoration(retry = 0): void {
+    requestAnimationFrame(() => {
+      const panel = this.getOpenPanel();
+      if (!panel) {
+        if (retry < 4) {
+          this.schedulePanelDecoration(retry + 1);
+        }
+        return;
+      }
+      this.decoratePanel(panel);
+    });
+  }
+
+  private decoratePanel(panel: HTMLElement): void {
+    this.cleanupMobilePanel();
+    this.mobilePanelEl = panel;
+    panel.classList.add('ev-select-panel');
+
+    if (!this.isMobileSheet) {
+      return;
+    }
+
+    panel.classList.add('ev-select-panel--sheet');
+
+    if (panel.querySelector('.ev-select-sheet-head')) {
+      return;
+    }
+
+    const head = document.createElement('div');
+    head.className = 'ev-select-sheet-head';
+    head.innerHTML = `
+      <span class="ev-select-sheet-head__handle" aria-hidden="true"></span>
+      <p class="ev-select-sheet-head__title">${this.escapeHtml(this.sheetTitle)}</p>
+      <button type="button" class="ev-select-sheet-head__close" aria-label="Cerrar">
+        <span class="material-icons" aria-hidden="true">close</span>
+      </button>
+    `;
+
+    const closeBtn = head.querySelector('.ev-select-sheet-head__close');
+    this.mobileCloseHandler = () => this.closePanel();
+    closeBtn?.addEventListener('click', this.mobileCloseHandler);
+
+    panel.insertBefore(head, panel.firstChild);
+    this.mobileHeadEl = head;
+  }
+
+  private cleanupMobilePanel(): void {
+    if (this.mobileCloseHandler && this.mobileHeadEl) {
+      this.mobileHeadEl
+        .querySelector('.ev-select-sheet-head__close')
+        ?.removeEventListener('click', this.mobileCloseHandler);
+    }
+
+    this.mobilePanelEl?.classList.remove('ev-select-panel', 'ev-select-panel--sheet');
+    this.mobileHeadEl?.remove();
+    this.mobilePanelEl = null;
+    this.mobileHeadEl = null;
+    this.mobileCloseHandler = null;
+  }
+
+  private getOpenPanel(): HTMLElement | null {
+    const panels = Array.from(document.querySelectorAll('body > .ng-dropdown-panel'));
+    const visible = panels.find((panel) => {
+      const el = panel as HTMLElement;
+      return el.offsetParent !== null || getComputedStyle(el).display !== 'none';
+    });
+    return (visible ?? panels.at(-1) ?? null) as HTMLElement | null;
+  }
+
+  private lockBodyScroll(): void {
+    document.body.style.overflow = 'hidden';
+  }
+
+  private unlockBodyScroll(): void {
+    document.body.style.overflow = '';
+  }
+
+  private escapeHtml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   private applyValue(value: unknown): void {

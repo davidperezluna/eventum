@@ -2,6 +2,7 @@
   [type]="type"
   [class]="classNames"
   [disabled]="disabled || loading"
+  [attr.aria-busy]="loading || null"
 >
   <span *ngIf="loading" class="ev-button__spinner material-icons" aria-hidden="true">progress_activity</span>
   <span class="ev-button__label"><ng-content /></span>

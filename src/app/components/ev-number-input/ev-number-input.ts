@@ -23,19 +23,56 @@ let evNumberInputIdCounter = 0;
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <input
-      [id]="inputId"
-      type="text"
-      [class]="inputClass"
-      [attr.inputmode]="allowDecimals ? 'decimal' : 'numeric'"
-      [attr.autocomplete]="autocomplete"
-      [placeholder]="placeholder"
-      [disabled]="isDisabled"
-      [value]="displayValue"
-      (focus)="onFocus()"
-      (blur)="onBlur()"
-      (input)="onInput($event)"
-    />
+    <div
+      class="ev-number-input"
+      [class.ev-number-input--prefix]="!!prefix"
+      [class.ev-number-input--stepper]="stepper"
+      [class.ev-number-input--disabled]="inputDisabled"
+    >
+      @if (prefix) {
+        <span class="ev-number-input__prefix" aria-hidden="true">{{ prefix }}</span>
+      }
+
+      @if (stepper) {
+        <button
+          type="button"
+          class="ev-number-input__step"
+          (click)="decrement()"
+          [disabled]="inputDisabled || atMin"
+          aria-label="Disminuir"
+          tabindex="-1"
+        >
+          <span class="material-icons" aria-hidden="true">remove</span>
+        </button>
+      }
+
+      <input
+        [id]="inputId"
+        type="text"
+        [class]="inputClass"
+        [attr.inputmode]="allowDecimals ? 'decimal' : 'numeric'"
+        [attr.autocomplete]="autocomplete"
+        [placeholder]="placeholder"
+        [disabled]="inputDisabled"
+        [value]="displayValue"
+        (focus)="onFocus()"
+        (blur)="onBlur()"
+        (input)="onInput($event)"
+      />
+
+      @if (stepper) {
+        <button
+          type="button"
+          class="ev-number-input__step"
+          (click)="increment()"
+          [disabled]="inputDisabled || atMax"
+          aria-label="Aumentar"
+          tabindex="-1"
+        >
+          <span class="material-icons" aria-hidden="true">add</span>
+        </button>
+      }
+    </div>
   `,
   styles: `
     :host {
@@ -44,7 +81,7 @@ let evNumberInputIdCounter = 0;
       min-width: 0;
     }
 
-    :host(.ev-number-input--full) input {
+    :host(.ev-number-input--full) .ev-number-input {
       width: 100%;
     }
   `,
@@ -61,15 +98,17 @@ export class EvNumberInput implements ControlValueAccessor {
   @Input() inputClass = 'ev-input';
   @Input() placeholder = '';
   @Input() autocomplete = 'off';
+  @Input() prefix = '';
+  @Input({ transform: booleanAttribute }) stepper = false;
   @Input({ transform: booleanAttribute }) fullWidth = true;
   @Input({ transform: booleanAttribute }) disabled = false;
 
-  /** Entero (cantidades / dinero sin centavos) o decimal (precios con centavos). */
   @Input() mode: 'integer' | 'decimal' = 'integer';
 
   @Input({ transform: numberAttribute }) min?: number;
   @Input({ transform: numberAttribute }) max?: number;
   @Input({ transform: numberAttribute }) decimals = 0;
+  @Input({ transform: numberAttribute }) step = 1;
 
   @HostBinding('class.ev-number-input--full')
   get hostFullWidth(): boolean {
@@ -90,8 +129,20 @@ export class EvNumberInput implements ControlValueAccessor {
     return this.id ?? this.fallbackId;
   }
 
+  get inputDisabled(): boolean {
+    return this.disabled || this.isDisabled;
+  }
+
   get allowDecimals(): boolean {
     return this.mode === 'decimal' && this.decimals > 0;
+  }
+
+  get atMin(): boolean {
+    return this.min != null && this.modelValue != null && this.modelValue <= this.min;
+  }
+
+  get atMax(): boolean {
+    return this.max != null && this.modelValue != null && this.modelValue >= this.max;
   }
 
   writeValue(value: number | null | undefined): void {
@@ -113,6 +164,18 @@ export class EvNumberInput implements ControlValueAccessor {
     this.isDisabled = isDisabled;
   }
 
+  increment(): void {
+    const delta = this.allowDecimals ? this.step : Math.max(1, Math.trunc(this.step));
+    const base = this.modelValue ?? (this.min ?? 0);
+    this.commitValue(this.clamp(base + delta));
+  }
+
+  decrement(): void {
+    const delta = this.allowDecimals ? this.step : Math.max(1, Math.trunc(this.step));
+    const base = this.modelValue ?? (this.min ?? 0);
+    this.commitValue(this.clamp(base - delta));
+  }
+
   onFocus(): void {
     this.focused = true;
     if (this.modelValue == null) {
@@ -129,9 +192,7 @@ export class EvNumberInput implements ControlValueAccessor {
   onBlur(): void {
     this.focused = false;
     this.onTouched();
-    this.modelValue = this.clamp(this.modelValue);
-    this.onChange(this.modelValue);
-    this.displayValue = this.formatModel(this.modelValue);
+    this.commitValue(this.clamp(this.modelValue));
   }
 
   onInput(event: Event): void {
@@ -151,6 +212,12 @@ export class EvNumberInput implements ControlValueAccessor {
       this.modelValue = roundToDecimals(this.modelValue, this.decimals);
     }
     this.onChange(this.modelValue);
+  }
+
+  private commitValue(value: number | null): void {
+    this.modelValue = value;
+    this.onChange(this.modelValue);
+    this.displayValue = this.formatModel(this.modelValue);
   }
 
   private formatModel(value: number | null): string {

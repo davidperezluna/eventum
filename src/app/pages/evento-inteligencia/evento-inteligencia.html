@@ -21,83 +21,52 @@
       </button>
     </header>
 
-    <!-- Hero Premium -->
+    <!-- Hero -->
     <section class="ev-intel-hero" aria-labelledby="ev-intel-title">
-      <!-- Fondo atmosférico -->
-      <div class="ev-intel-hero__atmosphere" aria-hidden="true">
-        <img
-          *ngIf="heroImagenSrc(ev.imagen_principal) as heroSrc; else intelAtmoFallback"
-          class="ev-intel-hero__atmo-img"
-          [src]="heroSrc"
-          [alt]=""
-        />
-        <ng-template #intelAtmoFallback>
-          <div class="ev-intel-hero__atmo-fallback"></div>
-        </ng-template>
-        <div class="ev-intel-hero__atmo-scrim"></div>
-      </div>
-
-      <!-- Zona superior: identidad + narrativa -->
-      <div class="ev-intel-hero__upper">
+      <div class="ev-intel-hero__main">
         <div class="ev-intel-hero__identity">
           <p class="ev-intel-hero__eyebrow">Centro de inteligencia</p>
           <h1 id="ev-intel-title" class="ev-intel-hero__title">{{ ev.titulo }}</h1>
-          <p class="ev-intel-hero__meta-line">
-            <span>{{ ev.fecha_inicio | dateFormat:'short' }}</span>
-            <span class="ev-intel-hero__meta-dot" aria-hidden="true">·</span>
-            <span>{{ lugarLabel }}</span>
-            <span class="ev-intel-hero__meta-dot" aria-hidden="true">·</span>
-            <span class="ev-intel-hero__estado" [ngClass]="'ev-intel-hero__estado--' + estadoActual">{{ estadoLabel }}</span>
-          </p>
+          <div class="ev-intel-hero__meta">
+            <time class="ev-intel-hero__date">{{ ev.fecha_inicio | dateFormat:'short' }}</time>
+            <span
+              class="ev-intel-hero__status"
+              [ngClass]="'ev-intel-hero__status--' + estadoActual"
+            >
+              {{ estadoLabel }}
+            </span>
+          </div>
         </div>
 
-        <!-- Historia del momento -->
-        <div class="ev-intel-hero__story" *ngIf="hero as h">
-          <p class="ev-intel-hero__story-headline">{{ h.headline }}</p>
+        <div class="ev-intel-hero__countdown" *ngIf="hero as h" aria-live="polite">
+          <ng-container *ngIf="h.showCountdown && h.countdown as cd">
+            <p class="ev-intel-hero__countdown-title">Cuenta regresiva</p>
+            <div class="ev-intel-hero__countdown-grid" role="timer">
+              <div class="ev-intel-hero__countdown-unit" *ngIf="cd.days > 0">
+                <span class="ev-intel-hero__countdown-value">{{ cd.days }}</span>
+                <span class="ev-intel-hero__countdown-label">días</span>
+              </div>
+              <div class="ev-intel-hero__countdown-unit">
+                <span class="ev-intel-hero__countdown-value">{{ padCountdown(cd.hours) }}</span>
+                <span class="ev-intel-hero__countdown-label">horas</span>
+              </div>
+              <div class="ev-intel-hero__countdown-unit">
+                <span class="ev-intel-hero__countdown-value">{{ padCountdown(cd.minutes) }}</span>
+                <span class="ev-intel-hero__countdown-label">min</span>
+              </div>
+            </div>
+            <p class="ev-intel-hero__countdown-caption">{{ h.headline }}</p>
+          </ng-container>
 
-          <div class="ev-intel-hero__beats">
-            <div class="ev-intel-beat" *ngIf="h.showCountdown && h.countdown as cd">
-              <span class="ev-intel-beat__value">
-                <ng-container *ngIf="cd.days > 0">{{ cd.days }}d </ng-container>{{ padCountdown(cd.hours) }}:{{ padCountdown(cd.minutes) }}
-              </span>
-              <span class="ev-intel-beat__label">restantes</span>
-            </div>
-            <div class="ev-intel-beat" *ngIf="!h.showCountdown">
-              <span class="ev-intel-beat__value ev-intel-beat__value--text">{{ h.countdownCaption }}</span>
-              <span class="ev-intel-beat__label">estado</span>
-            </div>
-            <div class="ev-intel-beat">
-              <span class="ev-intel-beat__value">{{ h.aforoPct }}%</span>
-              <span class="ev-intel-beat__label">del aforo vendido</span>
-            </div>
-            <div class="ev-intel-beat">
-              <ng-container *ngIf="h.disponibles > 0; else sinDisponibles">
-                <span class="ev-intel-beat__value">{{ h.disponibles | number }}</span>
-                <span class="ev-intel-beat__label">entradas disponibles</span>
-              </ng-container>
-              <ng-template #sinDisponibles>
-                <span class="ev-intel-beat__value ev-intel-beat__value--text">—</span>
-                <span class="ev-intel-beat__label">{{ h.availabilityLine }}</span>
-              </ng-template>
-            </div>
-          </div>
-
-          <div
-            class="ev-intel-hero__aforo-track"
-            *ngIf="h.aforoPct >= 0"
-            role="progressbar"
-            [attr.aria-valuenow]="h.aforoPct"
-            aria-valuemin="0"
-            aria-valuemax="100"
-            [attr.aria-label]="h.aforoLine"
-          >
-            <div class="ev-intel-hero__aforo-fill" [style.width.%]="h.aforoPct"></div>
-          </div>
-          <p class="ev-intel-hero__story-sub">{{ h.salesPhrase }}</p>
+          <ng-container *ngIf="!h.showCountdown">
+            <p class="ev-intel-hero__countdown-title">Estado del evento</p>
+            <p class="ev-intel-hero__countdown-static">{{ h.countdownCaption }}</p>
+            <p class="ev-intel-hero__countdown-caption">{{ h.headline }}</p>
+          </ng-container>
         </div>
       </div>
 
-      <!-- Acciones — barra sólida, siempre legible -->
+      <!-- Acciones -->
       <div class="ev-intel-hero__toolbar">
         <nav class="ev-intel-hero__hubs" aria-label="Centros del evento">
           <span class="ev-intel-action-pill ev-intel-action-pill--active" aria-current="page">
@@ -133,42 +102,38 @@
         </div>
       </div>
 
-      <!-- Hero financiero — saldo estimado protagonista -->
-      <section
-        *ngIf="finanzasHero as fin"
-        class="ev-intel-fin-hero"
-        aria-label="Resumen financiero del evento"
-      >
-        <div class="ev-intel-fin-hero__stage">
+      <!-- Métricas — una fila -->
+      <div class="ev-intel-hero__strip" aria-label="Resumen del evento">
+        <section
+          *ngIf="finanzasHero as fin"
+          class="ev-intel-fin-hero ev-intel-hero__strip-cell"
+          aria-label="Resumen financiero del evento"
+        >
           <p class="ev-intel-fin-hero__label">Recibirás aproximadamente</p>
           <p class="ev-intel-fin-hero__value">{{ fin.recibirasAprox }}</p>
           <p class="ev-intel-fin-hero__desc">
             <ng-container *ngIf="!fin.empty">
-              Es el valor estimado que recibirás después de los descuentos aplicables.
+              Valor estimado después de descuentos aplicables.
             </ng-container>
             <ng-container *ngIf="fin.empty">
               Cuando lleguen las primeras ventas, verás aquí cuánto recibirás.
             </ng-container>
           </p>
-        </div>
+          <dl class="ev-intel-fin-hero__support" *ngIf="!fin.empty" aria-label="Contexto del saldo estimado">
+            <div class="ev-intel-fin-hero__support-row">
+              <dt>Pagaron</dt>
+              <dd>{{ fin.ventasGeneradasMoneda }}</dd>
+            </div>
+            <div class="ev-intel-fin-hero__support-row">
+              <dt>Descuentos</dt>
+              <dd>− {{ fin.descuentosEstimados }}</dd>
+            </div>
+          </dl>
+        </section>
 
-        <dl class="ev-intel-fin-hero__support" *ngIf="!fin.empty" aria-label="Contexto del saldo estimado">
-          <div class="ev-intel-fin-hero__support-row">
-            <dt>Tus clientes pagaron</dt>
-            <dd>{{ fin.ventasGeneradasMoneda }}</dd>
-          </div>
-          <div class="ev-intel-fin-hero__support-row">
-            <dt>Descuentos estimados</dt>
-            <dd>− {{ fin.descuentosEstimados }}</dd>
-          </div>
-        </dl>
-      </section>
-
-      <!-- KPIs operativos -->
-      <div class="ev-intel-hero__kpis ev-intel-hero__kpis--duo" aria-label="Indicadores operativos">
         <article
           *ngFor="let card of pulseCards; let i = index"
-          class="ev-intel-kpi"
+          class="ev-intel-kpi ev-intel-hero__strip-cell"
           [class.ev-intel-kpi--aforo]="card.id === 'aforo'"
           [class.ev-intel-kpi--asistentes]="card.id === 'asistentes'"
           [style.animation-delay]="(i * 70) + 'ms'"

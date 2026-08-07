@@ -1,4 +1,7 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { MAT_DATE_LOCALE } from '@angular/material/core';
+import { provideLuxonDateAdapter } from '@angular/material-luxon-adapter';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import {
   provideRouter,
   withEnabledBlockingInitialNavigation,
@@ -12,6 +15,9 @@ import { environment } from '../environments/environment';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
+    provideAnimationsAsync(),
+    provideLuxonDateAdapter(),
+    { provide: MAT_DATE_LOCALE, useValue: 'es-CO' },
     provideRouter(
       routes,
       withEnabledBlockingInitialNavigation(), // Mejora la navegación inicial en producción

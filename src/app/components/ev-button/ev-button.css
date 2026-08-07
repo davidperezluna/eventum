@@ -100,6 +100,21 @@
 
 .ev-button--loading {
   position: relative;
+  pointer-events: none;
+}
+
+.ev-button--loading .ev-button__label {
+  visibility: hidden;
+}
+
+.ev-button--loading .ev-button__spinner {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  font-size: 1.25rem;
+  line-height: 1;
 }
 
 .ev-button__label {

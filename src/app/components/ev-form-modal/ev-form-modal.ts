@@ -75,9 +75,12 @@ export class EvFormModal {
 
 
   get panelClass(): string {
-
-    return `ev-form-modal__panel ev-form-modal__panel--${this.size}`;
-
+    return [
+      `ev-form-modal__panel ev-form-modal__panel--${this.size}`,
+      this.wizardMode ? 'ev-form-modal__panel--wizard' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
   }
 
 

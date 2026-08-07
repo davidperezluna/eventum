@@ -53,12 +53,12 @@
               </select>
             </div>
             <div class="filter-group">
-              <label>Fecha desde</label>
-              <input type="date" [(ngModel)]="fechaDesde" (ngModelChange)="aplicarFiltros()" class="select-input" />
+              <label for="dashboard-eventos-desde">Fecha desde</label>
+              <ev-date-picker id="dashboard-eventos-desde" [(ngModel)]="fechaDesde" (ngModelChange)="aplicarFiltros()" />
             </div>
             <div class="filter-group">
-              <label>Fecha hasta</label>
-              <input type="date" [(ngModel)]="fechaHasta" (ngModelChange)="aplicarFiltros()" class="select-input" />
+              <label for="dashboard-eventos-hasta">Fecha hasta</label>
+              <ev-date-picker id="dashboard-eventos-hasta" [(ngModel)]="fechaHasta" (ngModelChange)="aplicarFiltros()" />
             </div>
             <div class="filter-group filter-group--actions">
               <button type="button" class="btn-secondary" (click)="limpiarFiltros()" [disabled]="!tieneFiltrosActivos">

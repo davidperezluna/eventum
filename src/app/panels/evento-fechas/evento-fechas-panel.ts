@@ -10,8 +10,8 @@ import { EvDrawerFooter } from '../../components/ev-drawer/ev-drawer-footer';
 import { EvButton } from '../../components/ev-button';
 import { EvSelect, EvSelectOption, mapToEvSelectOptions } from '../../components/ev-select/ev-select';
 import { EvNumberInput } from '../../components/ev-number-input/ev-number-input';
+import { EvDatetimePeriod } from '../../components/ev-datetime-period/ev-datetime-period';
 import { EvFormSection } from '../../components/ev-form-section/ev-form-section';
-import { EvBadge } from '../../components/ev-badge';
 import { EvNotice } from '../../components/ev-notice';
 import { EvPanelForm } from '../../components/ev-panel-form';
 import { Lugar, Evento } from '../../types';
@@ -31,8 +31,8 @@ import {
     EvButton,
     EvSelect,
     EvNumberInput,
+    EvDatetimePeriod,
     EvFormSection,
-    EvBadge,
     EvNotice,
     EvPanelForm,
   ],
@@ -76,17 +76,6 @@ export class EventoFechasPanel implements OnInit, EvDrawerContent {
     return !!(this.fechaInicio && this.fechaFin && this.fechaVentaInicio && this.fechaVentaFin);
   }
 
-  get lugarLabel(): string {
-    if (this.lugarId == null) {
-      return 'Sin lugar';
-    }
-    const lugar = this.lugares.find((l) => l.id === this.lugarId) ?? this.data.lugar;
-    if (!lugar) {
-      return 'Sin lugar';
-    }
-    return lugar.ciudad ? `${lugar.nombre}, ${lugar.ciudad}` : lugar.nombre;
-  }
-
   get panelInsight(): { message: string; ctaLabel: string } | null {
     if (!this.configComplete) {
       return {
@@ -117,10 +106,6 @@ export class EventoFechasPanel implements OnInit, EvDrawerContent {
     } else {
       this.drawerRef.markPristine();
     }
-  }
-
-  formatDisplayDate(datetimeLocal: string): string {
-    return this.formatSummaryDate(datetimeLocal);
   }
 
   closePanel(): void {
@@ -219,28 +204,6 @@ export class EventoFechasPanel implements OnInit, EvDrawerContent {
     }
     const iso = typeof value === 'string' ? value : value.toISOString();
     return this.timezoneService.isoToDatetimeLocal(iso);
-  }
-
-  private formatSummaryDate(datetimeLocal: string): string {
-    if (!datetimeLocal) {
-      return '—';
-    }
-    try {
-      const iso = this.timezoneService.datetimeLocalToISO(datetimeLocal);
-      const date = new Date(iso);
-      if (Number.isNaN(date.getTime())) {
-        return '—';
-      }
-      return this.timezoneService.formatDateTime(date, {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-      });
-    } catch {
-      return datetimeLocal;
-    }
   }
 
   private captureSnapshot(): void {

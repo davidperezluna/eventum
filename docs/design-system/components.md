@@ -78,7 +78,9 @@ Banner informativo unificado. Reemplaza avisos ad-hoc (`alert-box`, `ev-panel-st
 | Recomendación / estado del módulo | `ev-notice` |
 | Confirmación post-guardado | `AlertService.success()` |
 | Error de red / validación puntual | `AlertService.warning()` / `.error()` |
-| Confirmar eliminar | `AlertService.confirm()` |
+| Confirmar eliminar | `AlertService.confirmDestructive()` o `.presetConfirm('delete-*')` |
+
+Ver [dialogs.md](../../docs/design-system/dialogs.md) para el sistema completo.
 
 ---
 
@@ -188,15 +190,69 @@ Estilos en `src/styles/ev-drawer-system.css`. En móvil los botones se apilan (`
 
 ## `ev-form-section`
 
-Sección de formulario con título y descripción.
+Sección de formulario con icono, título y descripción corta. Cada bloque es una tarjeta independiente (estilos en `ev-form-system.css`).
 
 ```html
-<ev-form-section title="Fechas del evento" description="Cuándo ocurre la experiencia en vivo.">
+<ev-form-section
+  icon="event"
+  title="Información básica"
+  description="Lo primero que verá el comprador."
+>
   <div class="ev-form-grid ev-form-grid--2">...</div>
 </ev-form-section>
 ```
 
 Grids disponibles: `--2`, `--3`. Span completo: `ev-form-span-2`.
+
+---
+
+## Date & Time System (oficial)
+
+Motor interno: **Angular Material Datepicker** (Luxon) + **`ev-time-picker`** propio.  
+**Nunca** importar `@angular/material` ni librerías de fecha en pantallas — solo componentes `ev-*`.
+
+| Componente | Uso | Valor |
+|------------|-----|-------|
+| `ev-date-picker` | Solo fecha | `YYYY-MM-DD` |
+| `ev-time-picker` | Solo hora | `HH:mm` (24h) |
+| `ev-date-time-picker` | Fecha + hora separadas | `YYYY-MM-DDTHH:mm` |
+| `ev-datetime-period` | Rango inicio/fin | dos `datetime-local` |
+
+Estilos: `src/styles/ev-datetime-picker.css`, `src/styles/ev-material-datepicker.css` (panel calendario).
+
+```html
+<ev-date-picker id="desde" [(ngModel)]="fechaDesde" />
+
+<ev-time-picker id="apertura" [(ngModel)]="horaApertura" [minuteStep]="15" />
+
+<ev-date-time-picker id="inicio" [(ngModel)]="fechaInicio" [disabled]="saving" />
+
+<ev-datetime-period
+  startLabel="Venta inicia"
+  endLabel="Venta termina"
+  [(start)]="fechaVentaInicio"
+  [(end)]="fechaVentaFin"
+  [required]="true"
+/>
+```
+
+`ev-datetime-input` permanece como alias de compatibilidad; preferir `ev-date-time-picker`.
+
+---
+
+## `ev-number-input`
+
+Input numérico con formato agrupado. Opciones visuales:
+
+| Input | Uso |
+|-------|-----|
+| `prefix="$"` | Campos de precio |
+| `[stepper]="true"` | Cantidades e inventario |
+
+```html
+<ev-number-input id="precio" mode="integer" prefix="$" [min]="0" [(ngModel)]="precio" />
+<ev-number-input id="cantidad" mode="integer" [stepper]="true" [min]="1" [(ngModel)]="cantidad" />
+```
 
 ---
 

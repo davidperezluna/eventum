@@ -5,7 +5,10 @@
 @import './styles/legal-modal.css';
 @import '@ng-select/ng-select/themes/default.theme.css';
 @import './styles/ev-form-system.css';
+@import './styles/ev-datetime-picker.css';
+@import './styles/ev-material-datepicker.css';
 @import './styles/ev-drawer-system.css';
+@import './styles/ev-dialog-system.css';
 @import './styles/ev-panel-system.css';
 @import './styles/ev-button-system.css';
 @import './styles/ev-select-theme.css';

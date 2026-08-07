@@ -4,61 +4,6 @@
       Define dónde ocurre el evento y cuándo estará activo, tanto para la experiencia como para la venta de entradas.
     </p>
 
-    <section
-      class="ev-panel-overview"
-      [class.ev-panel-overview--complete]="configComplete"
-      [class.ev-panel-overview--pending]="!configComplete"
-      aria-label="Calendario del evento"
-    >
-      <div class="ev-panel-overview__header">
-        <span class="material-icons" aria-hidden="true">{{ configComplete ? 'check_circle' : 'event' }}</span>
-        <div class="ev-panel-overview__title-row">
-          <strong>Calendario del evento</strong>
-          <ev-badge [variant]="configComplete ? 'success' : 'warning'">
-            {{ configComplete ? 'Completo' : 'Pendiente' }}
-          </ev-badge>
-        </div>
-      </div>
-
-      <dl class="ev-panel-overview__list">
-        <div class="ev-panel-overview__row">
-          <dt>Lugar</dt>
-          <dd>{{ lugarLabel }}</dd>
-        </div>
-        <div class="ev-panel-overview__row">
-          <dt>Evento</dt>
-          <dd>
-            <ng-container *ngIf="configComplete; else eventoPendiente">
-              {{ formatDisplayDate(fechaInicio) }} → {{ formatDisplayDate(fechaFin) }}
-            </ng-container>
-            <ng-template #eventoPendiente>Define inicio y fin del evento</ng-template>
-          </dd>
-        </div>
-        <div class="ev-panel-overview__row">
-          <dt>Venta</dt>
-          <dd>
-            <ng-container *ngIf="configComplete; else ventaPendiente">
-              {{ formatDisplayDate(fechaVentaInicio) }} → {{ formatDisplayDate(fechaVentaFin) }}
-            </ng-container>
-            <ng-template #ventaPendiente>Define el periodo de venta</ng-template>
-          </dd>
-        </div>
-        <div class="ev-panel-overview__row" *ngIf="edadMinima != null">
-          <dt>Edad mín.</dt>
-          <dd>{{ edadMinima }} años</dd>
-        </div>
-      </dl>
-
-      <div *ngIf="!configComplete" class="ev-panel-overview__hint">
-        <ev-notice
-          variant="warning"
-          density="compact"
-          icon="info"
-          message="Completa las fechas del evento y del periodo de venta para habilitar la venta de entradas."
-        />
-      </div>
-    </section>
-
     <ev-notice
       *ngIf="panelInsight as insight"
       variant="warning"
@@ -68,7 +13,7 @@
 
     <ev-panel-form>
       <div class="ev-form">
-        <ev-form-section title="Lugar" description="Opcional. Ayuda a los asistentes a ubicar el evento.">
+        <ev-form-section icon="place" title="Lugar" description="Opcional. Ayuda a ubicar el evento.">
           <div class="ev-form-grid ev-form-grid--2">
             <div class="ev-field">
               <label class="ev-field__label" for="fechas-lugar">Lugar</label>
@@ -97,66 +42,34 @@
           </div>
         </ev-form-section>
 
-        <ev-form-section title="Fechas del evento" description="Cuándo ocurre la experiencia en vivo.">
-          <div class="ev-form-grid ev-form-grid--2">
-            <div class="ev-field">
-              <label class="ev-field__label" for="fechas-inicio">
-                Inicio<span class="ev-field__required" aria-hidden="true">*</span>
-              </label>
-              <input
-                id="fechas-inicio"
-                type="datetime-local"
-                class="ev-input"
-                [(ngModel)]="fechaInicio"
-                (ngModelChange)="onFormChange()"
-                [disabled]="saving"
-              />
-            </div>
-            <div class="ev-field">
-              <label class="ev-field__label" for="fechas-fin">
-                Fin<span class="ev-field__required" aria-hidden="true">*</span>
-              </label>
-              <input
-                id="fechas-fin"
-                type="datetime-local"
-                class="ev-input"
-                [(ngModel)]="fechaFin"
-                (ngModelChange)="onFormChange()"
-                [disabled]="saving"
-              />
-            </div>
-          </div>
+        <ev-form-section icon="event" title="Fechas del evento" description="Cuándo ocurre la experiencia en vivo.">
+          <ev-datetime-period
+            startLabel="El evento inicia"
+            endLabel="El evento termina"
+            startId="fechas-inicio"
+            endId="fechas-fin"
+            [required]="true"
+            [disabled]="saving"
+            [start]="fechaInicio"
+            (startChange)="fechaInicio = $event; onFormChange()"
+            [end]="fechaFin"
+            (endChange)="fechaFin = $event; onFormChange()"
+          />
         </ev-form-section>
 
-        <ev-form-section title="Venta de entradas" description="Periodo en el que se pueden comprar boletas.">
-          <div class="ev-form-grid ev-form-grid--2">
-            <div class="ev-field">
-              <label class="ev-field__label" for="fechas-venta-inicio">
-                Venta — inicio<span class="ev-field__required" aria-hidden="true">*</span>
-              </label>
-              <input
-                id="fechas-venta-inicio"
-                type="datetime-local"
-                class="ev-input"
-                [(ngModel)]="fechaVentaInicio"
-                (ngModelChange)="onFormChange()"
-                [disabled]="saving"
-              />
-            </div>
-            <div class="ev-field">
-              <label class="ev-field__label" for="fechas-venta-fin">
-                Venta — fin<span class="ev-field__required" aria-hidden="true">*</span>
-              </label>
-              <input
-                id="fechas-venta-fin"
-                type="datetime-local"
-                class="ev-input"
-                [(ngModel)]="fechaVentaFin"
-                (ngModelChange)="onFormChange()"
-                [disabled]="saving"
-              />
-            </div>
-          </div>
+        <ev-form-section icon="sell" title="Venta de entradas" description="Periodo en el que se pueden comprar boletas.">
+          <ev-datetime-period
+            startLabel="Venta inicia"
+            endLabel="Venta termina"
+            startId="fechas-venta-inicio"
+            endId="fechas-venta-fin"
+            [required]="true"
+            [disabled]="saving"
+            [start]="fechaVentaInicio"
+            (startChange)="fechaVentaInicio = $event; onFormChange()"
+            [end]="fechaVentaFin"
+            (endChange)="fechaVentaFin = $event; onFormChange()"
+          />
         </ev-form-section>
       </div>
     </ev-panel-form>

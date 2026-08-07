@@ -20,3 +20,15 @@
 :host(.ev-select-host--form) .ev-select.ng-select {
   width: 100%;
 }
+
+:host(.ev-select-host--sheet-open) {
+  position: relative;
+  z-index: 12151;
+}
+
+.ev-select-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12140;
+  background: transparent;
+}

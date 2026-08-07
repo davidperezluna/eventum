@@ -11,4 +11,6 @@ import { Component, Input } from '@angular/core';
 export class EvFormSection {
   @Input({ required: true }) title!: string;
   @Input() description = '';
+  /** Material icon name (ej. `confirmation_number`). */
+  @Input() icon = '';
 }

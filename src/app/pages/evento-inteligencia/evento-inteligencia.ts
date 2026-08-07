@@ -578,18 +578,6 @@ export class EventoInteligencia implements OnInit {
 
 
 
-  heroImagenSrc(url?: string | null): string | null {
-
-    const trimmed = url?.trim();
-
-    if (!trimmed) return null;
-
-    return trimmed;
-
-  }
-
-
-
   formatCurrency(value: number | undefined | null): string {
     return formatFinanzasMonedaExacta(Number(value ?? 0));
   }

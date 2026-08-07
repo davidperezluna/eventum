@@ -1,5 +1,9 @@
 <aside class="ev-evento-preview" aria-label="Vista previa del evento">
-  <p class="ev-evento-preview__eyebrow">Vista previa</p>
+  <header class="ev-evento-preview__head">
+    <p class="ev-evento-preview__eyebrow">Vista previa</p>
+    <p class="ev-evento-preview__lead">Así se verá tu evento</p>
+  </header>
+
   <article class="ev-evento-preview__card">
     <div class="ev-evento-preview__media">
       <img *ngIf="previewUrl; else placeholder" [src]="previewUrl" [alt]="titulo" />
@@ -37,5 +41,6 @@
       </ul>
     </div>
   </article>
-  <p class="ev-evento-preview__hint">Se actualiza mientras completas el asistente.</p>
+
+  <p class="ev-evento-preview__hint">Se actualiza en tiempo real mientras completas el asistente.</p>
 </aside>

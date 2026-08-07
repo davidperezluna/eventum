@@ -12,10 +12,11 @@ import { validarDocumentoIdentidadColombia } from '../../core/documento-identida
 import { validarTelefonoColombia, normalizarTelefonoColombia } from '../../core/telefono-colombia';
 import { formatFechaNacimientoParaInput } from '../../core/fecha-nacimiento';
 import { TelefonoColombiaInputComponent } from '../../components/telefono-colombia-input/telefono-colombia-input';
+import { EvDatePicker } from '../../components/ev-date-picker/ev-date-picker';
 
 @Component({
   selector: 'app-perfil',
-  imports: [CommonModule, FormsModule, TelefonoColombiaInputComponent],
+  imports: [CommonModule, FormsModule, TelefonoColombiaInputComponent, EvDatePicker],
   templateUrl: './perfil.html',
   styleUrl: './perfil.css',
 })

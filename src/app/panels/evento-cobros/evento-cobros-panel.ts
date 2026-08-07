@@ -11,7 +11,6 @@ import { EvButton } from '../../components/ev-button';
 import { EvSelect, EvSelectOption, mapToEvSelectOptions } from '../../components/ev-select/ev-select';
 import { EvNumberInput } from '../../components/ev-number-input/ev-number-input';
 import { EvFormSection } from '../../components/ev-form-section/ev-form-section';
-import { EvPanelSummary, EvPanelSummaryMetric } from '../../components/ev-panel-summary';
 import { EvNotice } from '../../components/ev-notice';
 import { EvPanelForm } from '../../components/ev-panel-form';
 import { isEventoCobrosConfigured } from '../../core/evento-readiness';
@@ -27,7 +26,7 @@ interface CobrosFormSnapshot {
 @Component({
   selector: 'app-evento-cobros-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule, EvDrawerFooter, EvButton, EvSelect, EvNumberInput, EvFormSection, EvPanelSummary, EvNotice, EvPanelForm],
+  imports: [CommonModule, FormsModule, EvDrawerFooter, EvButton, EvSelect, EvNumberInput, EvFormSection, EvNotice, EvPanelForm],
   templateUrl: './evento-cobros-panel.html',
   styleUrl: './evento-cobros-panel.css',
 })
@@ -68,41 +67,8 @@ export class EventoCobrosPanel implements OnInit, EvDrawerContent {
     });
   }
 
-  get tipoEventoLabel(): string {
-    return this.esGratis ? 'Gratis' : 'De pago';
-  }
-
-  get wompiCuentaLabel(): string {
-    if (!this.wompiCuentaId) {
-      return 'Sin cuenta asignada';
-    }
-    return this.getWompiCuentaNombre(this.wompiCuentaId);
-  }
-
   get canSave(): boolean {
     return this.isDirty();
-  }
-
-  get summaryMetrics(): EvPanelSummaryMetric[] {
-    return [
-      { value: this.tipoEventoLabel, label: 'Tipo' },
-      { value: this.esGratis ? '—' : `${this.porcentajeServicio}%`, label: 'Servicio', variant: 'accent' },
-      { value: this.esGratis ? 'No aplica' : this.wompiCuentaLabel, label: 'Cuenta Wompi' },
-    ];
-  }
-
-  get statusNoticeTitle(): string {
-    return this.configComplete ? 'Configuración completa' : 'Configuración pendiente';
-  }
-
-  get statusNoticeMessage(): string {
-    if (this.configComplete) {
-      if (this.esGratis) {
-        return this.tipoEventoLabel;
-      }
-      return `${this.tipoEventoLabel} · ${this.porcentajeServicio}% servicio · ${this.wompiCuentaLabel}`;
-    }
-    return 'Asigna una cuenta Wompi o marca el evento como gratis.';
   }
 
   get panelInsight(): { message: string; ctaLabel: string } | null {
@@ -183,13 +149,6 @@ export class EventoCobrosPanel implements OnInit, EvDrawerContent {
       this.saving = false;
       this.cdr.detectChanges();
     }
-  }
-
-  getWompiCuentaNombre(id?: number | null): string {
-    if (!id) {
-      return 'Sin cuenta asignada';
-    }
-    return this.wompiCuentas.find((c) => c.id === id)?.nombre ?? `Cuenta #${id}`;
   }
 
   private async loadWompiCuentas(): Promise<void> {

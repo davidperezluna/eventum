@@ -742,8 +742,8 @@
       </select>
     </label>
     <div class="field-row">
-      <label class="field"><span>Apertura</span><input type="time" [(ngModel)]="plantillaForm.hora_apertura" /></label>
-      <label class="field"><span>Cierre</span><input type="time" [(ngModel)]="plantillaForm.hora_cierre" /></label>
+      <label class="field field--picker"><span>Apertura</span><ev-time-picker [(ngModel)]="plantillaForm.hora_apertura" [minuteStep]="15" /></label>
+      <label class="field field--picker"><span>Cierre</span><ev-time-picker [(ngModel)]="plantillaForm.hora_cierre" [minuteStep]="15" /></label>
     </div>
     <p class="field-hint">Si cierra después de medianoche (ej. 22:00 → 03:00), indica la hora de cierre tal cual.</p>
     <label class="field"><span>Aforo</span><input type="number" min="1" [(ngModel)]="plantillaForm.aforo_maximo" /></label>
@@ -772,10 +772,10 @@
         <option *ngFor="let t of config?.tipos_cover" [ngValue]="t.id">{{ t.nombre }}</option>
       </select>
     </label>
-    <label class="field"><span>Fecha</span><input type="date" [(ngModel)]="sesionForm.fecha" /></label>
+    <label class="field field--picker"><span>Fecha</span><ev-date-picker [(ngModel)]="sesionForm.fecha" /></label>
     <div class="field-row">
-      <label class="field"><span>Apertura</span><input type="time" [(ngModel)]="sesionForm.hora_apertura" /></label>
-      <label class="field"><span>Cierre</span><input type="time" [(ngModel)]="sesionForm.hora_cierre" /></label>
+      <label class="field field--picker"><span>Apertura</span><ev-time-picker [(ngModel)]="sesionForm.hora_apertura" [minuteStep]="15" /></label>
+      <label class="field field--picker"><span>Cierre</span><ev-time-picker [(ngModel)]="sesionForm.hora_cierre" [minuteStep]="15" /></label>
     </div>
     <label class="field"><span>Aforo</span><input type="number" [(ngModel)]="sesionForm.aforo_maximo" /></label>
     <div class="modal-actions">
@@ -817,8 +817,8 @@
       </select>
     </label>
     <div class="field-row">
-      <label class="field"><span>Apertura</span><input type="time" [(ngModel)]="wizardForm.hora_apertura" /></label>
-      <label class="field"><span>Cierre</span><input type="time" [(ngModel)]="wizardForm.hora_cierre" /></label>
+      <label class="field field--picker"><span>Apertura</span><ev-time-picker [(ngModel)]="wizardForm.hora_apertura" [minuteStep]="15" /></label>
+      <label class="field field--picker"><span>Cierre</span><ev-time-picker [(ngModel)]="wizardForm.hora_cierre" [minuteStep]="15" /></label>
     </div>
     <label class="field"><span>Aforo</span><input type="number" [(ngModel)]="wizardForm.aforo_maximo" /></label>
     <label class="switch-field">

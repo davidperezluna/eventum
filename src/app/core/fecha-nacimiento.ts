@@ -8,7 +8,7 @@ export interface ValidacionFechaNacimiento {
 
 export const EDAD_MINIMA_ANIOS = 18;
 
-/** Formatea fecha de nacimiento para `<input type="date">` sin desfase por zona horaria. */
+/** Formatea fecha de nacimiento para `ev-date-picker` (`YYYY-MM-DD`) sin desfase por zona horaria. */
 export function formatFechaNacimientoParaInput(date: Date | string | undefined | null): string {
   if (!date) {
     return '';

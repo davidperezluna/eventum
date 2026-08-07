@@ -1,0 +1,72 @@
+<div class="ev-time-picker" [class.ev-time-picker--sheet]="isMobileSheet && isOpen">
+  <button
+    #trigger
+    type="button"
+    class="ev-dtp-trigger"
+    [class.ev-dtp-trigger--open]="isOpen"
+    [class.ev-dtp-trigger--placeholder]="isPlaceholder"
+    [class.ev-dtp-trigger--error]="hasError"
+    [id]="inputId"
+    [disabled]="inputDisabled"
+    [attr.aria-expanded]="isOpen"
+    aria-haspopup="listbox"
+    (click)="toggle($event)"
+  >
+    <span class="material-icons ev-dtp-trigger__icon" aria-hidden="true">schedule</span>
+    <span class="ev-dtp-trigger__label">{{ displayLabel }}</span>
+    <span class="material-icons ev-dtp-trigger__chevron" aria-hidden="true">expand_more</span>
+  </button>
+
+  <div
+    *ngIf="isMobileSheet && isOpen"
+    class="ev-dtp-backdrop"
+    aria-hidden="true"
+    (click)="close()"
+  ></div>
+
+  <div
+    #popover
+    class="ev-dtp-popover"
+    [class.ev-dtp-popover--open]="isOpen"
+    [class.ev-dtp-popover--sheet]="isMobileSheet"
+    [ngStyle]="popoverStyle"
+    role="listbox"
+    aria-label="Seleccionar hora"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="ev-dtp-time" [class.ev-dtp-time--sheet]="isMobileSheet">
+      <div *ngIf="isMobileSheet" class="ev-dtp-time__sheet-head">
+        <p class="ev-dtp-time__sheet-title">Seleccionar hora</p>
+        <button type="button" class="ev-dtp-time__sheet-close" aria-label="Cerrar" (click)="close()">
+          <span class="material-icons" aria-hidden="true">close</span>
+        </button>
+      </div>
+
+      <div *ngIf="showSearch" class="ev-dtp-time__search-wrap">
+        <input
+          #searchInput
+          type="search"
+          class="ev-dtp-time__search"
+          [(ngModel)]="searchTerm"
+          placeholder="Buscar hora…"
+          (click)="$event.stopPropagation()"
+        />
+      </div>
+
+      <ul class="ev-dtp-time__list">
+        <li *ngFor="let slot of filteredSlots">
+          <button
+            #optionBtn
+            type="button"
+            class="ev-dtp-time__option"
+            [class.ev-dtp-time__option--selected]="slot.value === selectedTime"
+            (click)="selectSlot(slot.value)"
+          >
+            {{ slot.label }}
+          </button>
+        </li>
+        <li *ngIf="filteredSlots.length === 0" class="ev-dtp-time__empty">Sin resultados</li>
+      </ul>
+    </div>
+  </div>
+</div>

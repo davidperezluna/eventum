@@ -13,6 +13,7 @@ import { StorageService } from '../../services/storage.service';
 import { AuthService } from '../../services/auth.service';
 import { BoletaComprada, TipoBoleta, PaginatedResponse, TipoEstadoBoleta, Evento } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
+import { EvDatePicker } from '../../components/ev-date-picker/ev-date-picker';
 import { validarDocumentoIdentidadColombia } from '../../core/documento-identidad';
 import {
   documentoAsistenteBoleta,
@@ -24,7 +25,7 @@ import {
 
 @Component({
   selector: 'app-boletas',
-  imports: [CommonModule, FormsModule, DateFormatPipe],
+  imports: [CommonModule, FormsModule, DateFormatPipe, EvDatePicker],
   templateUrl: './boletas.html',
   styleUrl: './boletas.css',
 })

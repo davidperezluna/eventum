@@ -1,20 +1,41 @@
 <div class="eventos-page">
-  <header class="ev-header">
-    <div class="ev-header__copy">
-      <h1 class="ev-header__title">{{ pageTitle }}</h1>
+  <header class="ev-events-hero" *ngIf="!isFirstTimeEmpty || loading">
+    <p class="ev-events-hero__eyebrow">{{ heroEyebrow }}</p>
+
+    <div class="ev-events-hero__title-row">
+      <h1 class="ev-events-hero__title">{{ pageTitle }}</h1>
+      <button type="button" class="ev-events-hero__cta" (click)="openModal()">
+        <span class="material-icons" aria-hidden="true">add</span>
+        Nuevo evento
+      </button>
     </div>
-    <button type="button" class="ev-btn-primary ev-header__cta" (click)="openModal()">
-      <span class="material-icons" aria-hidden="true">add</span>
-      Nuevo evento
-    </button>
+
+    <p class="ev-events-hero__desc">{{ pageSubtitle }}</p>
+
+    <div class="ev-events-hero__stats" *ngIf="showHeroStats" aria-label="Resumen">
+      <div class="ev-events-hero__stat" *ngFor="let stat of heroStats">
+        <span class="ev-events-hero__stat-value">{{ stat.value }}</span>
+        <span class="ev-events-hero__stat-label">{{ stat.label }}</span>
+      </div>
+    </div>
+
+    <div class="ev-events-hero__notice" *ngIf="isShowcaseMode">
+      <ev-notice
+        variant="neutral"
+        density="banner"
+        icon="science"
+        message="Modo demostración — los cambios no se publican ni procesan pagos reales."
+      />
+    </div>
   </header>
 
-  <div *ngIf="showResumenStrip" class="ev-resumen">
-    <p class="ev-resumen__text">{{ resumenStripText }}</p>
-    <a *ngIf="authService.isOrganizador()" [routerLink]="dashboardRoute" class="ev-resumen__link">
-      Ver panel
-      <span class="material-icons" aria-hidden="true">arrow_forward</span>
-    </a>
+  <div class="ev-events-demo-notice" *ngIf="isShowcaseMode && isFirstTimeEmpty && !loading">
+    <ev-notice
+      variant="neutral"
+      density="banner"
+      icon="science"
+      message="Modo demostración — los cambios no se publican ni procesan pagos reales."
+    />
   </div>
 
   <div class="ev-toolbar" role="search">
@@ -354,7 +375,7 @@
           <ng-container *ngFor="let token of [wizardSelectToken]; trackBy: trackByWizardSelectToken">
           <div class="ev-form" [ngSwitch]="wizardStep">
             <!-- Paso 1: Información básica -->
-            <ev-form-section *ngSwitchCase="0" title="Información básica" description="¿Cómo se llama y cómo se clasifica tu evento?">
+            <ev-form-section *ngSwitchCase="0" icon="event" title="Información básica" description="Lo primero que verá el comprador.">
               <div class="ev-form-grid ev-form-grid--2">
                 <div class="ev-field ev-form-span-2">
                   <label class="ev-field__label" for="evento-titulo">
@@ -383,7 +404,7 @@
             </ev-form-section>
 
             <!-- Paso 2: Lugar y fecha -->
-            <ev-form-section *ngSwitchCase="1" title="Lugar y fecha" description="Define dónde sucede y cuándo ocurre.">
+            <ev-form-section *ngSwitchCase="1" icon="place" title="Lugar y fecha" description="Dónde ocurre y cuándo se vende.">
               <div class="ev-form-grid ev-form-grid--2">
                 <div class="ev-field">
                   <label class="ev-field__label" for="evento-lugar">Lugar</label>
@@ -402,34 +423,32 @@
               </div>
               <div class="ev-wizard__subsection">
                 <h4 class="ev-wizard__subsection-title">Fechas del evento</h4>
-                <div class="ev-form-grid ev-form-grid--2">
-                  <div class="ev-field">
-                    <label class="ev-field__label" for="evento-inicio">Inicio<span class="ev-field__required" aria-hidden="true">*</span></label>
-                    <input id="evento-inicio" type="datetime-local" class="ev-input" [(ngModel)]="formData.fecha_inicio" required />
-                  </div>
-                  <div class="ev-field">
-                    <label class="ev-field__label" for="evento-fin">Fin<span class="ev-field__required" aria-hidden="true">*</span></label>
-                    <input id="evento-fin" type="datetime-local" class="ev-input" [(ngModel)]="formData.fecha_fin" required />
-                  </div>
-                </div>
+                <ev-datetime-period
+                  startLabel="El evento inicia"
+                  endLabel="El evento termina"
+                  startId="evento-inicio"
+                  endId="evento-fin"
+                  [required]="true"
+                  [(start)]="formData.fecha_inicio"
+                  [(end)]="formData.fecha_fin"
+                />
               </div>
               <div class="ev-wizard__subsection">
                 <h4 class="ev-wizard__subsection-title">Venta de entradas</h4>
-                <div class="ev-form-grid ev-form-grid--2">
-                  <div class="ev-field">
-                    <label class="ev-field__label" for="evento-venta-inicio">Venta — inicio<span class="ev-field__required" aria-hidden="true">*</span></label>
-                    <input id="evento-venta-inicio" type="datetime-local" class="ev-input" [(ngModel)]="formData.fecha_venta_inicio" required />
-                  </div>
-                  <div class="ev-field">
-                    <label class="ev-field__label" for="evento-venta-fin">Venta — fin<span class="ev-field__required" aria-hidden="true">*</span></label>
-                    <input id="evento-venta-fin" type="datetime-local" class="ev-input" [(ngModel)]="formData.fecha_venta_fin" required />
-                  </div>
-                </div>
+                <ev-datetime-period
+                  startLabel="Venta inicia"
+                  endLabel="Venta termina"
+                  startId="evento-venta-inicio"
+                  endId="evento-venta-fin"
+                  [required]="true"
+                  [(start)]="formData.fecha_venta_inicio"
+                  [(end)]="formData.fecha_venta_fin"
+                />
               </div>
             </ev-form-section>
 
             <!-- Paso 3: Descripción -->
-            <ev-form-section *ngSwitchCase="2" title="Descripción" description="Cuéntale al público qué vivirá y las condiciones legales.">
+            <ev-form-section *ngSwitchCase="2" icon="description" title="Descripción" description="Cuéntale al público qué vivirá.">
               <div class="ev-form-grid ev-form-grid--2">
                 <div class="ev-field ev-form-span-2">
                   <label class="ev-field__label" for="evento-desc-corta">Descripción corta</label>
@@ -455,7 +474,7 @@
             </ev-form-section>
 
             <!-- Paso 4: Configuración -->
-            <ev-form-section *ngSwitchCase="3" title="Configuración" description="Precios, cobros y opciones de publicación.">
+            <ev-form-section *ngSwitchCase="3" icon="tune" title="Configuración" description="Precios, cobros y publicación.">
               <div class="ev-check-row ev-wizard__gratis-toggle">
                 <label class="ev-check">
                   <input type="checkbox" [(ngModel)]="formData.es_gratis" />
@@ -468,6 +487,7 @@
                   <ev-number-input
                     id="evento-precio-min"
                     mode="integer"
+                    prefix="$"
                     [min]="0"
                     [(ngModel)]="formData.precio_minimo"
                     placeholder="0"
@@ -478,6 +498,7 @@
                   <ev-number-input
                     id="evento-precio-max"
                     mode="integer"
+                    prefix="$"
                     [min]="0"
                     [(ngModel)]="formData.precio_maximo"
                     placeholder="0"
@@ -525,7 +546,7 @@
             </ev-form-section>
 
             <!-- Paso 5: Imagen -->
-            <ev-form-section *ngSwitchCase="4" title="Imagen" description="La imagen principal para listados y detalle público.">
+            <ev-form-section *ngSwitchCase="4" icon="image" title="Imagen" description="Visible en listados y detalle.">
               <div class="ev-field">
                 <label class="ev-field__label">Imagen principal</label>
                 <div class="ev-upload">
@@ -548,7 +569,7 @@
             </ev-form-section>
 
             <!-- Paso 6: Revisión -->
-            <ev-form-section *ngSwitchCase="5" title="Revisión y crear" description="Confirma que todo esté correcto antes de guardar.">
+            <ev-form-section *ngSwitchCase="5" icon="fact_check" title="Revisión y crear" description="Confirma antes de guardar.">
               <div class="ev-wizard-review">
                 <section class="ev-wizard-review__block">
                   <div class="ev-wizard-review__head">

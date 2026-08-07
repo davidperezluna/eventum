@@ -48,6 +48,7 @@ import {
   EntradaTicketCard,
   ProductoTicketCard,
 } from '../../components/compra-ticket-card/compra-ticket-card';
+import { EvDatePicker } from '../../components/ev-date-picker/ev-date-picker';
 import type { AuthStateCallback } from '../../services/auth.service';
 import { CoversService } from '../../services/covers.service';
 import { AccesosPuertaService } from '../../services/accesos-puerta.service';
@@ -179,6 +180,7 @@ interface LugarCoverGrupo {
     AccesoPuertaToastComponent,
     QrAccesoModalComponent,
     CompraTicketCardComponent,
+    EvDatePicker,
   ],
   templateUrl: './mis-compras.html',
   styleUrl: './mis-compras.css',

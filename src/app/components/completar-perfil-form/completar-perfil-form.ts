@@ -20,12 +20,13 @@ import {
 import { esGeneroUsuarioValido, perfilListoParaComprar } from '../../core/perfil-completo';
 import { validarTelefonoColombia, normalizarTelefonoColombia } from '../../core/telefono-colombia';
 import { TelefonoColombiaInputComponent } from '../telefono-colombia-input/telefono-colombia-input';
+import { EvDatePicker } from '../ev-date-picker/ev-date-picker';
 
 type CampoPerfilForm = 'nombre' | 'apellido' | 'documento' | 'telefono' | 'fechaNacimiento' | 'genero';
 
 @Component({
   selector: 'app-completar-perfil-form',
-  imports: [CommonModule, FormsModule, TelefonoColombiaInputComponent],
+  imports: [CommonModule, FormsModule, TelefonoColombiaInputComponent, EvDatePicker],
   templateUrl: './completar-perfil-form.html',
   styleUrl: './completar-perfil-form.css',
 })

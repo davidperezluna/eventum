@@ -86,12 +86,12 @@
               </select>
             </div>
             <div class="filter-group">
-              <label>Fecha desde</label>
-              <input type="date" [(ngModel)]="fechaDesde" class="select-input" />
+              <label for="reportes-fecha-desde">Fecha desde</label>
+              <ev-date-picker id="reportes-fecha-desde" [(ngModel)]="fechaDesde" />
             </div>
             <div class="filter-group">
-              <label>Fecha hasta</label>
-              <input type="date" [(ngModel)]="fechaHasta" class="select-input" />
+              <label for="reportes-fecha-hasta">Fecha hasta</label>
+              <ev-date-picker id="reportes-fecha-hasta" [(ngModel)]="fechaHasta" />
             </div>
             <div class="filter-group filter-group--actions">
               <button

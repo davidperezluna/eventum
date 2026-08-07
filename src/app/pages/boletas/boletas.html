@@ -117,21 +117,19 @@
       </div>
       <div class="filters-row">
         <div class="filter-group">
-          <label>Fecha desde</label>
-          <input 
-            type="date" 
-            [(ngModel)]="fechaDesdeFiltro" 
+          <label for="boletas-fecha-desde">Fecha desde</label>
+          <ev-date-picker
+            id="boletas-fecha-desde"
+            [(ngModel)]="fechaDesdeFiltro"
             (ngModelChange)="loadBoletas()"
-            class="select-input"
           />
         </div>
         <div class="filter-group">
-          <label>Fecha hasta</label>
-          <input 
-            type="date" 
-            [(ngModel)]="fechaHastaFiltro" 
+          <label for="boletas-fecha-hasta">Fecha hasta</label>
+          <ev-date-picker
+            id="boletas-fecha-hasta"
+            [(ngModel)]="fechaHastaFiltro"
             (ngModelChange)="loadBoletas()"
-            class="select-input"
           />
         </div>
       </div>

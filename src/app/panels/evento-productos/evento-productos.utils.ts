@@ -85,13 +85,11 @@ export function getProductoRecomendacion(productos: Producto[]): ProductoRecomen
   if (productos.length === 0) {
     return {
       message: 'Aumenta los ingresos de tu evento agregando comida, bebidas o merchandising.',
-      showCta: true,
     };
   }
   if (productos.length === 1) {
     return {
       message: 'Agregar bebidas suele aumentar el ticket promedio.',
-      showCta: true,
     };
   }
   return null;

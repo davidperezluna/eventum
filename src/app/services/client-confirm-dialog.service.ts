@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { EvDialogService } from '../core/ev-dialog/ev-dialog.service';
+import { EvDialogOpenConfig, EvDialogPreset } from '../core/ev-dialog/ev-dialog.types';
+import { presetConfig } from '../core/ev-dialog/ev-dialog.presets';
 
 export interface ClientConfirmRequest {
   title: string;
@@ -7,50 +9,44 @@ export interface ClientConfirmRequest {
   confirmText?: string;
   cancelText?: string;
   icon?: string;
+  detail?: string;
+  destructive?: boolean;
+  preset?: EvDialogPreset;
 }
 
-export type ClientConfirmDialogState =
-  | { open: false }
-  | ({ open: true } & Required<Pick<ClientConfirmRequest, 'title' | 'message'>> &
-      Omit<ClientConfirmRequest, 'title' | 'message'>);
-
-const CLOSED: ClientConfirmDialogState = { open: false };
-
+/**
+ * Wrapper de compatibilidad para flujos cliente.
+ * Delega en el sistema unificado `EvDialogService`.
+ */
 @Injectable({
   providedIn: 'root',
 })
 export class ClientConfirmDialogService {
-  private readonly stateSubject = new BehaviorSubject<ClientConfirmDialogState>(CLOSED);
-  private resolveFn: ((confirmed: boolean) => void) | null = null;
-
-  readonly state$ = this.stateSubject.asObservable();
+  constructor(private readonly dialog: EvDialogService) {}
 
   confirm(request: ClientConfirmRequest): Promise<boolean> {
-    if (this.resolveFn) {
-      this.finish(false);
-    }
+    const config: EvDialogOpenConfig = request.preset
+      ? presetConfig(request.preset, {
+          title: request.title,
+          message: request.message,
+          detail: request.detail,
+          confirmText: request.confirmText,
+          cancelText: request.cancelText,
+          icon: request.icon,
+          destructive: request.destructive,
+        })
+      : {
+          title: request.title,
+          message: request.message,
+          detail: request.detail,
+          confirmText: request.confirmText,
+          cancelText: request.cancelText,
+          icon: request.icon,
+          destructive: request.destructive,
+          tone: request.destructive ? 'destructive' : 'confirm',
+          showCancel: true,
+        };
 
-    return new Promise<boolean>((resolve) => {
-      this.resolveFn = resolve;
-      this.stateSubject.next({
-        open: true,
-        title: request.title,
-        message: request.message,
-        confirmText: request.confirmText ?? 'Sí, continuar',
-        cancelText: request.cancelText ?? 'Cancelar',
-        icon: request.icon ?? 'swap_horiz',
-      });
-    });
-  }
-
-  respond(confirmed: boolean): void {
-    this.finish(confirmed);
-  }
-
-  private finish(confirmed: boolean): void {
-    this.stateSubject.next(CLOSED);
-    const resolve = this.resolveFn;
-    this.resolveFn = null;
-    resolve?.(confirmed);
+    return this.dialog.confirm(config);
   }
 }

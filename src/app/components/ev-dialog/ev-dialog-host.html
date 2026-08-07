@@ -1,0 +1,87 @@
+@if (openDialog; as dialog) {
+  <div
+    class="ev-dialog-backdrop"
+    [class.ev-dialog-backdrop--visible]="panelVisible"
+    (click)="onBackdropClick()"
+    role="presentation"
+  >
+    <div
+      #panel
+      [class]="panelClass()"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-labelledby]="'ev-dialog-title'"
+      [attr.aria-describedby]="dialog.message || dialog.detail || dialog.html ? 'ev-dialog-body' : null"
+      (click)="$event.stopPropagation()"
+    >
+      <button
+        type="button"
+        class="ev-dialog__close"
+        (click)="onCancel()"
+        [disabled]="dialog.loading"
+        aria-label="Cerrar"
+      >
+        <span class="material-icons" aria-hidden="true">close</span>
+      </button>
+
+      <div class="ev-dialog__hero">
+        <div class="ev-dialog__icon-wrap" [ngClass]="toneClass(dialog.tone)" aria-hidden="true">
+          @if (dialog.loading) {
+            <span class="material-icons ev-dialog__spinner">progress_activity</span>
+          } @else {
+            <span class="material-icons">{{ dialog.icon }}</span>
+          }
+        </div>
+
+        <div class="ev-dialog__copy">
+          <h2 id="ev-dialog-title" class="ev-dialog__title">{{ dialog.title }}</h2>
+
+          <div id="ev-dialog-body" class="ev-dialog__body">
+            @if (dialog.message) {
+              <p class="ev-dialog__message">{{ dialog.message }}</p>
+            }
+            @if (trustedHtml) {
+              <div class="ev-dialog__html" [innerHTML]="trustedHtml"></div>
+            }
+            @if (dialog.detail) {
+              <p class="ev-dialog__detail">{{ dialog.detail }}</p>
+            }
+          </div>
+        </div>
+      </div>
+
+      <footer class="ev-dialog__footer">
+        @if (dialog.showCancel) {
+          <button
+            type="button"
+            class="ev-dialog__btn ev-dialog__btn--ghost"
+            (click)="onCancel()"
+            [disabled]="dialog.loading"
+          >
+            {{ dialog.cancelText }}
+          </button>
+        }
+
+        <button
+          #primaryBtn
+          type="button"
+          class="ev-dialog__btn ev-dialog__btn--primary"
+          [class.ev-dialog__btn--destructive]="dialog.destructive"
+          (click)="onConfirm()"
+          [disabled]="dialog.loading"
+        >
+          @if (dialog.loading) {
+            <span class="material-icons ev-dialog__btn-spinner" aria-hidden="true">progress_activity</span>
+          }
+          <span>{{ dialog.loading ? dialog.loadingLabel : dialog.confirmText }}</span>
+        </button>
+      </footer>
+    </div>
+  </div>
+}
+
+@if (toast.visible) {
+  <div class="ev-toast ev-toast--visible" [class.ev-toast--success]="toast.tone === 'success'" [class.ev-toast--error]="toast.tone === 'error'" role="status" aria-live="polite">
+    <span class="ev-toast__message">{{ toast.message }}</span>
+  </div>
+}

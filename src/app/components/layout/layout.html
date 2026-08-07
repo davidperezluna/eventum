@@ -262,10 +262,10 @@
   >
     <div class="layout-notice-wrap">
       <ev-notice
-        *ngIf="authService.isShowcaseOrganizador()"
-        variant="warning"
-        density="inline"
-        icon="info"
+        *ngIf="showShowcaseNoticeInLayout"
+        variant="neutral"
+        density="banner"
+        icon="science"
         message="Modo demostración — los cambios no se publican ni procesan pagos reales."
       />
     </div>
@@ -288,6 +288,6 @@
     </span>
   </a>
 
-  <app-client-confirm-dialog />
+  <ev-dialog-host />
   <ev-drawer-host />
 </div>

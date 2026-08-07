@@ -9,15 +9,12 @@ import { EvDrawerFooter } from '../../components/ev-drawer/ev-drawer-footer';
 import { EvButton } from '../../components/ev-button';
 import { EvSelect, EvSelectOption, mapToEvSelectOptions } from '../../components/ev-select/ev-select';
 import { EvFormSection } from '../../components/ev-form-section/ev-form-section';
-import { EvBadge } from '../../components/ev-badge';
-import { EvNotice } from '../../components/ev-notice';
 import { EvPanelForm } from '../../components/ev-panel-form';
 import { CategoriaEvento, Evento } from '../../types';
 import {
   EventoInformacionDrawerResult,
   EventoInformacionPanelData,
   InformacionFormSnapshot,
-  isInformacionComplete,
 } from './evento-informacion.types';
 
 @Component({
@@ -30,8 +27,6 @@ import {
     EvButton,
     EvSelect,
     EvFormSection,
-    EvBadge,
-    EvNotice,
     EvPanelForm,
   ],
   templateUrl: './evento-informacion-panel.html',
@@ -65,18 +60,6 @@ export class EventoInformacionPanel implements OnInit, EvDrawerContent {
     this.descripcion = this.data.descripcion ?? '';
     this.captureSnapshot();
     void this.loadCategorias();
-  }
-
-  get configComplete(): boolean {
-    return isInformacionComplete(this.getFormSnapshot());
-  }
-
-  get categoriaLabel(): string {
-    if (this.categoriaId == null) {
-      return 'Selecciona una categoría';
-    }
-    const categoria = this.categorias.find((c) => c.id === this.categoriaId);
-    return categoria?.nombre ?? 'Categoría seleccionada';
   }
 
   get canSave(): boolean {

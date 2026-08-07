@@ -1,0 +1,395 @@
+/* ============================================
+   Eventum — Datepicker panel (Material motor oculto)
+   panelClass vive en mat-calendar; tokens en mat-datepicker-content
+   ============================================ */
+
+/* Tokens en el wrapper (Material lee el fondo aquí) */
+.mat-datepicker-content:has(.ev-datepicker-panel) {
+  --mat-datepicker-calendar-container-background-color: #ffffff;
+  --mat-datepicker-calendar-container-text-color: var(--ev-form-ink, #0f172a);
+  --mat-datepicker-calendar-date-selected-state-background-color: var(--ev-form-accent-strong, #7c3aed);
+  --mat-datepicker-calendar-date-selected-state-text-color: #ffffff;
+  --mat-datepicker-calendar-date-hover-state-background-color: var(--ev-form-soft, #f8fafc);
+  --mat-datepicker-calendar-date-focus-state-background-color: var(--ev-form-soft, #f8fafc);
+  --mat-datepicker-calendar-date-today-outline-color: var(--ev-form-accent-strong, #7c3aed);
+  --mat-datepicker-calendar-header-text-color: var(--ev-form-muted, #64748b);
+  --mat-datepicker-calendar-body-label-text-color: transparent;
+  --mat-datepicker-calendar-period-button-text-color: var(--ev-form-ink, #0f172a);
+  --mat-datepicker-calendar-navigation-button-icon-color: var(--ev-form-muted, #64748b);
+  --mat-datepicker-calendar-container-shape: var(--ev-form-radius-lg, 16px);
+  --mat-datepicker-calendar-container-touch-shape: var(--ev-form-radius-lg, 16px) var(--ev-form-radius-lg, 16px) 0 0;
+  --mat-datepicker-calendar-container-elevation-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.03),
+    0 12px 32px rgba(15, 23, 42, 0.08);
+  font-family: inherit;
+}
+
+/* ---- Capas opacas (sin transparencia) ---- */
+
+.mat-datepicker-content:has(.ev-datepicker-panel) {
+  background: #ffffff !important;
+  color: var(--ev-form-ink, #0f172a);
+  border: 1px solid var(--ev-form-border, rgba(15, 23, 42, 0.07));
+  border-radius: var(--ev-form-radius-lg, 16px);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.03),
+    0 12px 32px rgba(15, 23, 42, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.65) inset;
+  overflow: hidden;
+  animation: evDatepickerPopIn 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mat-datepicker-content:has(.ev-datepicker-panel) .mat-datepicker-content-container {
+  background: #ffffff;
+}
+
+mat-calendar.ev-datepicker-panel,
+.ev-datepicker-panel {
+  background: #ffffff;
+}
+
+.ev-datepicker-panel .mat-calendar-content,
+.ev-datepicker-panel .mat-calendar-body,
+.ev-datepicker-panel .mat-calendar-table,
+.ev-datepicker-panel .mat-calendar-table-header {
+  background: #ffffff;
+}
+
+@keyframes evDatepickerPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Ancho compacto — override tamaño fijo Material (296px) */
+.mat-datepicker-content:has(.ev-datepicker-panel):not(.mat-datepicker-content-touch) {
+  width: min(18.25rem, calc(100vw - 1.5rem));
+}
+
+.mat-datepicker-content:has(.ev-datepicker-panel):not(.mat-datepicker-content-touch) .mat-calendar {
+  width: 100% !important;
+  height: auto !important;
+}
+
+.mat-datepicker-content:has(.ev-datepicker-panel) .mat-datepicker-content-container,
+.mat-datepicker-content:has(.ev-datepicker-panel) .mat-datepicker-content-container-with-custom-header {
+  padding: 0;
+}
+
+.ev-datepicker-panel.mat-calendar {
+  width: 100%;
+  font-family: inherit;
+}
+
+.ev-datepicker-panel .mat-calendar-header:not(:has(.ev-cal-header)) {
+  display: none;
+}
+
+/* ---- Contenido ---- */
+
+.ev-datepicker-panel .mat-calendar-content {
+  padding: 0.35rem 0.7rem 0.75rem;
+}
+
+.ev-datepicker-panel mat-multi-year-view,
+.ev-datepicker-panel mat-year-view,
+.ev-datepicker-panel mat-month-view {
+  display: block;
+  background: #ffffff;
+  animation: evCalViewEnter 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes evCalViewEnter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- Tabla: conservar layout Material ---- */
+
+.ev-datepicker-panel .mat-calendar-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.ev-datepicker-panel .mat-calendar-table-header th {
+  padding: 0 0 0.45rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ev-form-subtle, #94a3b8);
+  border: 0;
+  background: #ffffff;
+}
+
+/* Ocultar labels de década solo en multi-year / year */
+.ev-datepicker-panel mat-multi-year-view .mat-calendar-body-label,
+.ev-datepicker-panel mat-multi-year-view tr[aria-hidden='true'],
+.ev-datepicker-panel mat-year-view .mat-calendar-body-label,
+.ev-datepicker-panel mat-year-view tr[aria-hidden='true'] {
+  display: none !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  visibility: hidden !important;
+}
+
+/* ---- Celdas: cosmética + fondo sólido ---- */
+
+.ev-datepicker-panel .mat-calendar-body-cell-content {
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  color: var(--ev-form-ink, #0f172a);
+  font-size: 0.78rem;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+  transition:
+    background 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---- Multi-year — tarjetas de año ---- */
+
+.ev-datepicker-panel mat-multi-year-view .mat-calendar-body-cell-content {
+  border: 1px solid var(--ev-form-border, rgba(15, 23, 42, 0.07)) !important;
+  background: var(--ev-form-soft, #f8fafc) !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.025);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.ev-datepicker-panel mat-multi-year-view
+  .mat-calendar-body-cell:not(.mat-calendar-body-disabled):hover
+  .mat-calendar-body-cell-content:not(.mat-calendar-body-selected) {
+  background: #ffffff !important;
+  border-color: color-mix(in srgb, var(--ev-form-accent, #8b5cf6) 18%, transparent) !important;
+  color: var(--ev-form-accent-strong, #7c3aed);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+  transform: translateY(-1px);
+}
+
+.ev-datepicker-panel mat-multi-year-view .mat-calendar-body-selected .mat-calendar-body-cell-content {
+  background: linear-gradient(
+    135deg,
+    var(--ev-form-accent-strong, #7c3aed) 0%,
+    var(--ev-form-accent, #8b5cf6) 100%
+  ) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+  font-weight: 650;
+  box-shadow:
+    0 3px 12px color-mix(in srgb, var(--ev-form-accent, #8b5cf6) 32%, transparent),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  transform: none;
+}
+
+/* ---- Year view — tarjetas de mes ---- */
+
+.ev-datepicker-panel mat-year-view .mat-calendar-body-cell-content {
+  border: 1px solid var(--ev-form-border, rgba(15, 23, 42, 0.07)) !important;
+  background: var(--ev-form-soft, #f8fafc) !important;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.ev-datepicker-panel mat-year-view
+  .mat-calendar-body-cell:not(.mat-calendar-body-disabled):hover
+  .mat-calendar-body-cell-content:not(.mat-calendar-body-selected) {
+  background: #ffffff !important;
+  border-color: color-mix(in srgb, var(--ev-form-accent, #8b5cf6) 18%, transparent) !important;
+  color: var(--ev-form-accent-strong, #7c3aed);
+  transform: translateY(-1px);
+}
+
+.ev-datepicker-panel mat-year-view .mat-calendar-body-selected .mat-calendar-body-cell-content {
+  background: linear-gradient(
+    135deg,
+    var(--ev-form-accent-strong, #7c3aed) 0%,
+    var(--ev-form-accent, #8b5cf6) 100%
+  ) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--ev-form-accent, #8b5cf6) 30%, transparent);
+}
+
+/* ---- Month view — días ---- */
+
+.ev-datepicker-panel mat-month-view .mat-calendar-body-cell-content {
+  font-size: 0.78rem;
+  background: #ffffff !important;
+}
+
+.ev-datepicker-panel mat-month-view
+  .mat-calendar-body-cell:not(.mat-calendar-body-disabled):hover
+  .mat-calendar-body-cell-content:not(.mat-calendar-body-selected) {
+  background: var(--ev-form-soft, #f8fafc) !important;
+  transform: scale(1.06);
+}
+
+.ev-datepicker-panel
+  mat-month-view
+  .mat-calendar-body-today:not(.mat-calendar-body-selected)
+  .mat-calendar-body-cell-content {
+  border-color: color-mix(in srgb, var(--ev-form-accent, #8b5cf6) 38%, transparent) !important;
+  color: var(--ev-form-accent-strong, #7c3aed);
+  font-weight: 700;
+  background: #ffffff !important;
+}
+
+.ev-datepicker-panel mat-month-view .mat-calendar-body-selected .mat-calendar-body-cell-content {
+  background: linear-gradient(
+    135deg,
+    var(--ev-form-accent-strong, #7c3aed) 0%,
+    var(--ev-form-accent, #8b5cf6) 100%
+  ) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+  font-weight: 650;
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--ev-form-accent, #8b5cf6) 30%, transparent);
+}
+
+.ev-datepicker-panel mat-month-view .mat-calendar-body-disabled .mat-calendar-body-cell-content {
+  color: var(--ev-form-subtle, #94a3b8);
+  background: #ffffff !important;
+  opacity: 0.4;
+}
+
+/* Focus ring Eventum */
+.ev-datepicker-panel .mat-calendar-body-active .mat-calendar-body-cell-content {
+  box-shadow: 0 0 0 3px var(--ev-form-focus-ring, rgba(139, 92, 246, 0.12));
+}
+
+/* ---- Overlay: por encima de modales ev-form (z-index 1100) ---- */
+
+.cdk-overlay-container:has(.ev-datepicker-panel) {
+  z-index: 12100 !important;
+}
+
+.cdk-overlay-container:has(.ev-datepicker-panel) .cdk-overlay-pane {
+  z-index: 12100 !important;
+}
+
+.cdk-overlay-container:has(.ev-datepicker-panel) .cdk-overlay-backdrop {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* ---- Mobile: bottom sheet ancho completo ---- */
+
+@media (max-width: 640px) {
+  .cdk-overlay-pane.mat-datepicker-dialog:has(.ev-datepicker-panel),
+  .cdk-overlay-pane.mat-datepicker-popup:has(.ev-datepicker-panel) {
+    position: fixed !important;
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    transform: none !important;
+    margin: 0 !important;
+  }
+
+  .mat-datepicker-content:has(.ev-datepicker-panel) {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: var(--ev-form-radius-lg, 16px) var(--ev-form-radius-lg, 16px) 0 0;
+    border-bottom: 0;
+    box-shadow:
+      0 -6px 28px rgba(15, 23, 42, 0.08),
+      0 -1px 0 var(--ev-form-border, rgba(15, 23, 42, 0.07)),
+      0 0 0 1px rgba(255, 255, 255, 0.7) inset;
+    animation: evDatepickerSheetIn 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  @keyframes evDatepickerSheetIn {
+    from {
+      opacity: 0.92;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .mat-datepicker-content:has(.ev-datepicker-panel) .mat-datepicker-content-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: min(82vh, 34rem);
+    overflow-y: auto;
+  }
+
+  .mat-datepicker-content:has(.ev-datepicker-panel) .mat-calendar,
+  mat-calendar.ev-datepicker-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .ev-datepicker-panel .mat-calendar-body {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .ev-datepicker-panel .mat-calendar-content {
+    padding: 0.15rem 0.85rem calc(1rem + env(safe-area-inset-bottom, 0));
+  }
+
+  .ev-datepicker-panel mat-multi-year-view .mat-calendar-body-cell-content,
+  .ev-datepicker-panel mat-year-view .mat-calendar-body-cell-content {
+    font-size: 0.8125rem;
+    border-radius: 12px !important;
+  }
+
+  .ev-datepicker-panel mat-month-view .mat-calendar-body-cell-content {
+    font-size: 0.875rem;
+    border-radius: 12px !important;
+  }
+}
+
+/* Anular ripple Material dentro del panel */
+.ev-datepicker-panel .mat-mdc-button,
+.ev-datepicker-panel .mat-mdc-icon-button {
+  --mat-icon-button-state-layer-color: transparent;
+  --mat-icon-button-ripple-color: transparent;
+}
+
+.ev-datepicker-panel .mat-ripple,
+.ev-datepicker-panel .mat-mdc-button-ripple {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mat-datepicker-content:has(.ev-datepicker-panel),
+  .mat-datepicker-content.mat-datepicker-content-touch:has(.ev-datepicker-panel),
+  .ev-datepicker-panel mat-multi-year-view,
+  .ev-datepicker-panel mat-year-view,
+  .ev-datepicker-panel mat-month-view,
+  .ev-datepicker-panel .mat-calendar-body-cell-content,
+  .ev-cal-header__nav,
+  .ev-cal-header__title {
+    animation: none;
+    transition: none;
+  }
+}

@@ -1,0 +1,41 @@
+<div class="ev-cal-header">
+  <span [id]="_periodButtonLabelId" class="cdk-visually-hidden" aria-live="polite">
+    {{ periodButtonDescription }}
+  </span>
+
+  <span class="ev-cal-header__handle" aria-hidden="true"></span>
+
+  <button
+    type="button"
+    class="ev-cal-header__nav"
+    [disabled]="!previousEnabled()"
+    [attr.aria-label]="prevButtonLabel"
+    (click)="previousClicked()"
+  >
+    <svg class="ev-cal-header__chevron" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+  <button
+    type="button"
+    class="ev-cal-header__title"
+    [attr.aria-label]="periodButtonLabel"
+    [attr.aria-describedby]="_periodButtonLabelId"
+    (click)="currentPeriodClicked()"
+  >
+    {{ displayTitle }}
+  </button>
+
+  <button
+    type="button"
+    class="ev-cal-header__nav"
+    [disabled]="!nextEnabled()"
+    [attr.aria-label]="nextButtonLabel"
+    (click)="nextClicked()"
+  >
+    <svg class="ev-cal-header__chevron" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+</div>

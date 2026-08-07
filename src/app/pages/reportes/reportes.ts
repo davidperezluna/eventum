@@ -23,6 +23,7 @@ import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { IngresosResumenComponent } from '../../components/ingresos-resumen/ingresos-resumen';
 import { DashboardKpisComponent } from '../../components/dashboard-kpis/dashboard-kpis';
 import { FinanzasDesgloseComponent } from '../../components/finanzas-desglose/finanzas-desglose';
+import { EvDatePicker } from '../../components/ev-date-picker/ev-date-picker';
 import {
   repartoWompiPorCompra,
   WOMPI_IVA,
@@ -38,6 +39,7 @@ import {
     IngresosResumenComponent,
     DashboardKpisComponent,
     FinanzasDesgloseComponent,
+    EvDatePicker,
   ],
   templateUrl: './reportes.html',
   styleUrls: ['reportes.css', '../dashboard-eventos/dashboard-eventos.css', '../finanzas-desglose-panel.css'],

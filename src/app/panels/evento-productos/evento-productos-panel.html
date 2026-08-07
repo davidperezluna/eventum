@@ -24,9 +24,7 @@
       <ev-notice
         *ngIf="panelInsight as insight"
         variant="warning"
-        [message]="insight.message"
-        [actionLabel]="insight.ctaLabel"
-        (actionClick)="openCreateForm()"
+        [message]="insight"
       />
 
       <ev-empty-state
@@ -43,7 +41,7 @@
 
       <div *ngIf="productos.length > 0" class="ev-panel__grid">
         <ev-panel-card *ngFor="let producto of productos" [inactive]="producto.activo === false">
-          <header class="ev-panel-card__head">
+          <header class="ev-panel-card__head ev-panel-card__head--stacked">
             <div class="ev-panel-card__identity">
               <img
                 *ngIf="producto.imagen_url"
@@ -55,48 +53,58 @@
                 <span class="material-icons" aria-hidden="true">local_mall</span>
               </span>
               <div class="ev-panel-card__meta">
-                <h3 class="ev-panel-card__name">{{ producto.nombre }}</h3>
-                <p class="ev-panel-card__price">${{ formatPrecio(producto.precio) }}</p>
-                <p *ngIf="hasPrecioEventoDistinto(producto)" class="ev-panel-card__price-alt">
-                  Evento: ${{ formatPrecio(producto.precio_evento ?? producto.precio) }}
-                </p>
+                <div class="ev-panel-card__title-row">
+                  <h3 class="ev-panel-card__name">{{ producto.nombre }}</h3>
+                  <ev-badge [variant]="badgeVariant(getProductoBadge(producto))">
+                    {{ badgeLabel(getProductoBadge(producto)) }}
+                  </ev-badge>
+                </div>
+                <div
+                  *ngIf="producto.es_licor || hasPrecioEventoDistinto(producto)"
+                  class="ev-panel-card__badges ev-panel-card__badges--secondary"
+                >
+                  <ev-badge *ngIf="producto.es_licor" variant="accent">Licor +18</ev-badge>
+                  <ev-badge *ngIf="hasPrecioEventoDistinto(producto)" variant="neutral">Preventa</ev-badge>
+                  <ev-badge *ngIf="hasPrecioEventoDistinto(producto)" variant="neutral">Evento</ev-badge>
+                </div>
+                <div class="ev-panel-card__pricing">
+                  <span class="ev-panel-card__price">${{ formatPrecio(producto.precio) }}</span>
+                  <span *ngIf="hasPrecioEventoDistinto(producto)" class="ev-panel-card__price-alt">
+                    Evento: ${{ formatPrecio(producto.precio_evento ?? producto.precio) }}
+                  </span>
+                </div>
               </div>
-            </div>
-            <div class="ev-panel-card__badges">
-              <ev-badge [variant]="badgeVariant(getProductoBadge(producto))">
-                {{ badgeLabel(getProductoBadge(producto)) }}
-              </ev-badge>
-              <ev-badge *ngIf="producto.es_licor" variant="accent">Licor +18</ev-badge>
-              <ev-badge *ngIf="hasPrecioEventoDistinto(producto)" variant="neutral">Preventa</ev-badge>
-              <ev-badge *ngIf="hasPrecioEventoDistinto(producto)" variant="neutral">Evento</ev-badge>
             </div>
           </header>
 
-          <div class="ev-panel-card__highlight">
-            <span class="ev-panel-card__highlight-label">Ingreso potencial</span>
-            <span class="ev-panel-card__highlight-value">${{ formatPrecio(computeIngresoPotencial(producto)) }}</span>
+          <div class="ev-panel-card__stats">
+            <div class="ev-panel-card__stat">
+              <span class="ev-panel-card__stat-label">Ingreso potencial</span>
+              <span class="ev-panel-card__stat-value ev-panel-card__stat-value--accent">
+                ${{ formatPrecio(computeIngresoPotencial(producto)) }}
+              </span>
+            </div>
+            <div class="ev-panel-card__stat">
+              <span class="ev-panel-card__stat-label">Inventario</span>
+              <span class="ev-panel-card__stat-value">
+                {{ getDisponibles(producto) }} disp. · {{ producto.cantidad_vendidas ?? 0 }} vend.
+              </span>
+            </div>
           </div>
 
-          <div class="ev-panel-card__metrics">
-            <span>{{ getDisponibles(producto) }} disponibles</span>
-            <span class="ev-panel-card__dot" aria-hidden="true">·</span>
-            <span>{{ producto.cantidad_vendidas ?? 0 }} vendidas</span>
+          <div class="ev-panel-card__progress-block">
+            <div class="ev-panel-card__progress" role="presentation">
+              <div
+                class="ev-panel-card__progress-fill"
+                [style.width.%]="computeVendidoPct(producto)"
+                [class.ev-panel-card__progress-fill--high]="computeVendidoPct(producto) >= 80"
+                [class.ev-panel-card__progress-fill--full]="computeVendidoPct(producto) >= 100"
+              ></div>
+            </div>
+            <div class="ev-panel-card__progress-meta">
+              <span class="ev-panel-card__pct">{{ computeVendidoPct(producto) }}% vendido</span>
+            </div>
           </div>
-
-          <div class="ev-panel-card__progress" role="presentation">
-            <div
-              class="ev-panel-card__progress-fill"
-              [style.width.%]="computeVendidoPct(producto)"
-              [class.ev-panel-card__progress-fill--high]="computeVendidoPct(producto) >= 80"
-              [class.ev-panel-card__progress-fill--full]="computeVendidoPct(producto) >= 100"
-            ></div>
-          </div>
-          <p class="ev-panel-card__pct">{{ computeVendidoPct(producto) }}% vendido</p>
-
-          <p class="ev-panel-card__status">
-            <span class="ev-panel-card__status-dot" [ngClass]="badgeDotClass(getProductoBadge(producto))"></span>
-            {{ badgeLabel(getProductoBadge(producto)) }}
-          </p>
 
           <footer class="ev-panel-card__actions">
             <button type="button" class="ev-panel-card__action" (click)="openForm(producto)">Editar</button>
@@ -124,7 +132,7 @@
     <div *ngIf="view === 'form'" class="ev-panel__view" [class.ev-panel__view--forward]="viewDirection === 'forward'">
       <ev-panel-form>
         <div class="ev-form">
-          <ev-form-section title="Datos básicos" description="Nombre, descripción y precios del producto.">
+          <ev-form-section icon="storefront" title="Datos básicos" description="Lo primero que verá el comprador.">
             <div class="ev-form-grid ev-form-grid--2">
               <div class="ev-field ev-form-span-2">
                 <label class="ev-field__label" for="prod-nombre">
@@ -144,7 +152,7 @@
                 <label class="ev-field__label" for="prod-descripcion">Descripción</label>
                 <textarea
                   id="prod-descripcion"
-                  class="ev-input ev-input--textarea"
+                  class="ev-textarea ev-textarea--sm"
                   rows="3"
                   [(ngModel)]="formData.descripcion"
                   (ngModelChange)="onFormChange()"
@@ -156,16 +164,16 @@
                 <label class="ev-field__label" for="prod-precio">
                   Precio preventa<span class="ev-field__required" aria-hidden="true">*</span>
                 </label>
-                <ev-number-input id="prod-precio" mode="integer" [min]="0" [(ngModel)]="formData.precio" (ngModelChange)="onFormChange()" [disabled]="saving" />
+                <ev-number-input id="prod-precio" mode="integer" prefix="$" [min]="0" [(ngModel)]="formData.precio" (ngModelChange)="onFormChange()" [disabled]="saving" />
               </div>
               <div class="ev-field">
                 <label class="ev-field__label" for="prod-precio-evento">Precio en evento</label>
-                <ev-number-input id="prod-precio-evento" mode="integer" [min]="0" [(ngModel)]="formData.precio_evento" (ngModelChange)="onFormChange()" [disabled]="saving" />
+                <ev-number-input id="prod-precio-evento" mode="integer" prefix="$" [min]="0" [(ngModel)]="formData.precio_evento" (ngModelChange)="onFormChange()" [disabled]="saving" />
               </div>
             </div>
           </ev-form-section>
 
-          <ev-form-section title="Imagen" description="URL pública de la imagen del producto.">
+          <ev-form-section icon="image" title="Imagen" description="URL pública del producto.">
             <div class="ev-field">
               <label class="ev-field__label" for="prod-imagen">URL imagen</label>
               <input id="prod-imagen" type="url" class="ev-input" [(ngModel)]="formData.imagen_url" (ngModelChange)="onFormChange()" placeholder="https://..." [disabled]="saving" />
@@ -175,17 +183,17 @@
             </div>
           </ev-form-section>
 
-          <ev-form-section title="Stock y límites" description="Disponibilidad y orden en el catálogo.">
+          <ev-form-section icon="inventory" title="Stock y límites" description="Disponibilidad y orden en el catálogo.">
             <div class="ev-form-grid ev-form-grid--2">
               <div *ngIf="!editingProducto" class="ev-field">
                 <label class="ev-field__label" for="prod-stock">
                   Stock inicial<span class="ev-field__required" aria-hidden="true">*</span>
                 </label>
-                <ev-number-input id="prod-stock" mode="integer" [min]="1" [(ngModel)]="formData.cantidad_total" (ngModelChange)="onFormChange()" [disabled]="saving" />
+                <ev-number-input id="prod-stock" mode="integer" [stepper]="true" [min]="1" [(ngModel)]="formData.cantidad_total" (ngModelChange)="onFormChange()" [disabled]="saving" />
               </div>
               <div class="ev-field">
                 <label class="ev-field__label" for="prod-limite">Límite por persona</label>
-                <ev-number-input id="prod-limite" mode="integer" [min]="1" [(ngModel)]="formData.limite_por_persona" (ngModelChange)="onFormChange()" placeholder="Sin límite" [disabled]="saving" />
+                <ev-number-input id="prod-limite" mode="integer" [stepper]="true" [min]="1" [(ngModel)]="formData.limite_por_persona" (ngModelChange)="onFormChange()" placeholder="Sin límite" [disabled]="saving" />
               </div>
               <div class="ev-field">
                 <label class="ev-field__label" for="prod-orden">Orden</label>
@@ -212,7 +220,7 @@
             </div>
           </ev-form-section>
 
-          <ev-form-section title="Clasificación" description="Tipo de producto y visibilidad en venta.">
+          <ev-form-section icon="category" title="Clasificación" description="Tipo de producto y visibilidad.">
             <div class="ev-check-row">
               <label class="ev-check">
                 <input type="checkbox" [(ngModel)]="formData.es_licor" (ngModelChange)="onFormChange()" [disabled]="saving" />
@@ -235,7 +243,7 @@
     <div *ngIf="view === 'inventory' && inventarioProducto" class="ev-panel__view" [class.ev-panel__view--forward]="viewDirection === 'forward'">
       <ev-panel-form>
         <div class="ev-form">
-          <ev-form-section [title]="inventarioProducto.nombre" description="Estado actual del inventario">
+          <ev-form-section icon="inventory_2" [title]="inventarioProducto.nombre" description="Estado actual del inventario">
             <div class="ev-panel-readonly__grid">
               <div class="ev-panel-readonly__stat">
                 <span class="ev-panel-readonly__value">{{ inventarioProducto.cantidad_total }}</span>
@@ -264,12 +272,12 @@
             </div>
             <p class="ev-panel-card__pct">{{ computeVendidoPct(inventarioProducto) }}% vendido</p>
           </ev-form-section>
-          <ev-form-section title="Agregar inventario" description="Suma unidades disponibles para la venta.">
+          <ev-form-section icon="add_circle" title="Agregar inventario" description="Suma unidades disponibles.">
             <div class="ev-field">
               <label class="ev-field__label" for="prod-inv-cantidad">
                 Unidades a agregar<span class="ev-field__required" aria-hidden="true">*</span>
               </label>
-              <ev-number-input id="prod-inv-cantidad" mode="integer" [min]="1" [(ngModel)]="cantidadAgregarInventario" (ngModelChange)="onInventoryChange()" placeholder="10" [disabled]="saving" />
+              <ev-number-input id="prod-inv-cantidad" mode="integer" [stepper]="true" [min]="1" [(ngModel)]="cantidadAgregarInventario" (ngModelChange)="onInventoryChange()" placeholder="10" [disabled]="saving" />
             </div>
           </ev-form-section>
         </div>

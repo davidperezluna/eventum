@@ -14,11 +14,8 @@ import { EvEmptyState } from '../../components/ev-empty-state';
 import { EvPanelSummary, EvPanelSummaryMetric } from '../../components/ev-panel-summary';
 import { EvNotice } from '../../components/ev-notice';
 import { EvPanelForm } from '../../components/ev-panel-form';
-
-export interface EventoCuponesPanelData {
-  eventoId: number;
-  eventoTitulo: string;
-}
+import { EvPanelCard } from '../../components/ev-panel-card';
+import { EventoCuponesPanelData, EventoCuponesView } from './evento-cupones.types';
 
 @Component({
   selector: 'app-evento-cupones-panel',
@@ -35,6 +32,7 @@ export interface EventoCuponesPanelData {
     EvPanelSummary,
     EvNotice,
     EvPanelForm,
+    EvPanelCard,
   ],
   templateUrl: './evento-cupones-panel.html',
   styleUrl: './evento-cupones-panel.css',
@@ -46,10 +44,13 @@ export class EventoCuponesPanel implements OnInit, EvDrawerContent {
   readonly drawerRef = inject(DrawerRef<boolean>);
   readonly data = inject<EventoCuponesPanelData>(EV_DRAWER_DATA);
 
+  view: EventoCuponesView = 'dashboard';
+  viewDirection: 'forward' | 'back' = 'forward';
   cupones: CuponDescuento[] = [];
   saving = false;
   nuevoCupon: Partial<CuponDescuento> = this.buildEmptyCupon();
   private dataChanged = false;
+  private formSnapshot = '';
 
   ngOnInit(): void {
     void this.loadCupones(true);
@@ -69,31 +70,72 @@ export class EventoCuponesPanel implements OnInit, EvDrawerContent {
     if (this.cupones.length === 0) {
       return {
         message: 'Crea un cupón de lanzamiento para incentivar las primeras compras.',
-        ctaLabel: '',
+        ctaLabel: 'Crear cupón',
       };
     }
     return null;
   }
 
-  get canCreate(): boolean {
-    const codigo = this.nuevoCupon.codigo?.trim() ?? '';
-    return codigo.length >= 4 && (this.nuevoCupon.porcentaje_descuento ?? 0) > 0;
+  get showFooter(): boolean {
+    return this.view === 'form';
+  }
+
+  get canSaveForm(): boolean {
+    return this.isFormDirty() && this.isFormValid();
   }
 
   evDrawerHasUnsavedChanges(): boolean {
-    return !!(this.nuevoCupon.codigo?.trim());
+    return this.view === 'form' && this.isFormDirty();
   }
 
   onFormChange(): void {
-    if (this.nuevoCupon.codigo?.trim()) {
+    if (this.isFormDirty()) {
       this.drawerRef.markDirty();
     } else {
       this.drawerRef.markPristine();
     }
   }
 
-  focusCreateForm(): void {
-    document.getElementById('cupon-codigo')?.focus();
+  getUsoPct(cupon: CuponDescuento): number {
+    const max = cupon.max_usos ?? 0;
+    if (max <= 0) {
+      return 0;
+    }
+    return Math.min(100, Math.round(((cupon.usos_actuales ?? 0) / max) * 100));
+  }
+
+  statusDotClass(active: boolean | undefined): string {
+    return active ? 'ev-panel-card__status-dot--success' : '';
+  }
+
+  async goToDashboard(force = false): Promise<void> {
+    if (!force && !(await this.confirmLeaveCurrentView())) {
+      return;
+    }
+    this.viewDirection = 'back';
+    this.view = 'dashboard';
+    this.nuevoCupon = this.buildEmptyCupon();
+    this.syncDrawerHeader();
+    this.drawerRef.markPristine();
+    this.cdr.detectChanges();
+  }
+
+  openCreateForm(): void {
+    void this.openForm();
+  }
+
+  async openForm(): Promise<void> {
+    if (!(await this.confirmLeaveCurrentView())) {
+      return;
+    }
+
+    this.viewDirection = 'forward';
+    this.nuevoCupon = this.buildEmptyCupon();
+    this.captureFormSnapshot();
+    this.view = 'form';
+    this.syncDrawerHeader();
+    this.drawerRef.markPristine();
+    this.cdr.detectChanges();
   }
 
   async loadCupones(showSkeleton = false): Promise<void> {
@@ -115,8 +157,10 @@ export class EventoCuponesPanel implements OnInit, EvDrawerContent {
   }
 
   async crearCupon(): Promise<void> {
-    if (!this.canCreate) {
-      this.alertService.warning('Campos incompletos', 'El código (mín. 4 caracteres) y el porcentaje son obligatorios');
+    if (this.saving || !this.canSaveForm) {
+      if (!this.isFormValid()) {
+        this.alertService.warning('Campos incompletos', 'El código (mín. 4 caracteres) y el porcentaje son obligatorios');
+      }
       return;
     }
 
@@ -132,9 +176,11 @@ export class EventoCuponesPanel implements OnInit, EvDrawerContent {
       await this.cuponesService.crearCupon(payload);
       this.alertService.success('Guardado', 'El cupón se creó correctamente.');
       this.nuevoCupon = this.buildEmptyCupon();
-      this.drawerRef.markPristine();
       this.dataChanged = true;
       await this.loadCupones();
+      this.captureFormSnapshot();
+      this.drawerRef.markPristine();
+      await this.goToDashboard(true);
     } catch (err: unknown) {
       console.error('Error creando cupón:', err);
       this.alertService.error('Error', 'No se pudo crear el cupón.');
@@ -157,12 +203,9 @@ export class EventoCuponesPanel implements OnInit, EvDrawerContent {
   }
 
   async eliminarCupon(cupon: CuponDescuento): Promise<void> {
-    const confirmed = await this.alertService.confirm(
-      'Eliminar cupón',
-      `¿Estás seguro de eliminar el cupón ${cupon.codigo}?`,
-      'Sí, eliminar',
-      'Cancelar',
-    );
+    const confirmed = await this.alertService.presetConfirm('delete-coupon', {
+      message: `El código ${cupon.codigo} dejará de estar disponible para los compradores.`,
+    });
     if (!confirmed) {
       return;
     }
@@ -180,6 +223,46 @@ export class EventoCuponesPanel implements OnInit, EvDrawerContent {
 
   closePanel(): void {
     void this.drawerRef.close(this.dataChanged);
+  }
+
+  private syncDrawerHeader(): void {
+    if (this.view === 'form') {
+      this.drawerRef.setTitle('Crear cupón');
+      this.drawerRef.setDescription(this.data.eventoTitulo);
+      this.drawerRef.setIcon('edit');
+      return;
+    }
+    this.drawerRef.setTitle('Cupones de descuento');
+    this.drawerRef.setDescription(this.data.eventoTitulo);
+    this.drawerRef.setIcon('sell');
+  }
+
+  private async confirmLeaveCurrentView(): Promise<boolean> {
+    if (!this.evDrawerHasUnsavedChanges()) {
+      return true;
+    }
+    return this.alertService.presetConfirm('discard-changes');
+  }
+
+  private isFormValid(): boolean {
+    const codigo = this.nuevoCupon.codigo?.trim() ?? '';
+    return codigo.length >= 4 && (this.nuevoCupon.porcentaje_descuento ?? 0) > 0;
+  }
+
+  private captureFormSnapshot(): void {
+    this.formSnapshot = JSON.stringify(this.serializeFormSnapshot());
+  }
+
+  private serializeFormSnapshot(): Record<string, unknown> {
+    return {
+      codigo: this.nuevoCupon.codigo?.trim().toUpperCase() ?? '',
+      porcentaje_descuento: Number(this.nuevoCupon.porcentaje_descuento ?? 0),
+      max_usos: Number(this.nuevoCupon.max_usos ?? 1),
+    };
+  }
+
+  private isFormDirty(): boolean {
+    return JSON.stringify(this.serializeFormSnapshot()) !== this.formSnapshot;
   }
 
   private buildEmptyCupon(): Partial<CuponDescuento> {

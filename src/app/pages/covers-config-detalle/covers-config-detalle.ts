@@ -28,6 +28,8 @@ import {
   VentaNocheCoverItem,
 } from '../../types/covers';
 import { Usuario, WompiCuenta } from '../../types';
+import { EvDatePicker } from '../../components/ev-date-picker/ev-date-picker';
+import { EvTimePicker } from '../../components/ev-time-picker/ev-time-picker';
 
 type VistaTab = 'hoy' | 'agenda' | 'config';
 
@@ -46,7 +48,7 @@ const METODOS_PAGO_MANUAL: Array<{ value: MetodoPagoCoverManual; label: string }
 
 @Component({
   selector: 'app-covers-config-detalle',
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, EvDatePicker, EvTimePicker],
   templateUrl: './covers-config-detalle.html',
   styleUrl: './covers-config-detalle.css',
 })

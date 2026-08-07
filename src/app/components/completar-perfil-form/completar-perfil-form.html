@@ -96,14 +96,13 @@
       [class.completar-perfil-form__field--error]="mostrarErrorCampo('fechaNacimiento') && errorFechaNacimiento()"
     >
       <label for="completar-perfil-fecha">Fecha de nacimiento *</label>
-      <input
+      <ev-date-picker
         id="completar-perfil-fecha"
-        type="date"
         [(ngModel)]="fechaNacimiento"
         name="fechaNacimiento"
-        autocomplete="bday"
         [disabled]="guardando"
-        (blur)="marcarTocado('fechaNacimiento')"
+        [hasError]="mostrarErrorCampo('fechaNacimiento') && !!errorFechaNacimiento()"
+        (click)="marcarTocado('fechaNacimiento')"
       />
       <p
         class="completar-perfil-form__field-error"

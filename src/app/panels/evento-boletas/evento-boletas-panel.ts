@@ -11,6 +11,7 @@ import { EvDrawerFooter } from '../../components/ev-drawer/ev-drawer-footer';
 import { EvButton } from '../../components/ev-button';
 import { EvFormSection } from '../../components/ev-form-section/ev-form-section';
 import { EvNumberInput } from '../../components/ev-number-input/ev-number-input';
+import { EvDatetimePeriod } from '../../components/ev-datetime-period/ev-datetime-period';
 import { EvBadge, EvBadgeVariant } from '../../components/ev-badge';
 import { EvEmptyState } from '../../components/ev-empty-state';
 import { EvPanelSummary, EvPanelSummaryMetric } from '../../components/ev-panel-summary';
@@ -44,6 +45,7 @@ import { formatGroupedNumber } from '../../core/number-input-format';
     EvButton,
     EvFormSection,
     EvNumberInput,
+    EvDatetimePeriod,
     EvBadge,
     EvEmptyState,
     EvPanelSummary,

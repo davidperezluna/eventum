@@ -1,67 +1,33 @@
 <div class="ev-panel">
-  <div class="ev-panel__scroll">
-    <ev-panel-summary label="Cupones" [metrics]="summaryMetrics" />
+  <div class="ev-panel__body">
+    <div *ngIf="view !== 'dashboard'" class="ev-panel__subnav">
+      <button type="button" class="ev-panel__back" (click)="goToDashboard()">
+        <span class="material-icons" aria-hidden="true">arrow_back</span>
+        Volver al resumen
+      </button>
+    </div>
 
-    <ev-notice
-      *ngIf="panelInsight as insight"
-      variant="warning"
-      [message]="insight.message"
-      [actionLabel]="insight.ctaLabel"
-    />
+    <div
+      *ngIf="view === 'dashboard'"
+      class="ev-panel__view ev-panel__dashboard"
+      [class.ev-panel__view--back]="viewDirection === 'back'"
+    >
+      <ev-panel-summary label="Resumen" [metrics]="summaryMetrics" />
 
-    <ev-panel-form>
-      <div class="ev-form">
-        <ev-form-section title="Crear nuevo cupón" description="Define el código, descuento y límite de usos.">
-          <div class="ev-form-grid ev-form-grid--3">
-            <div class="ev-field">
-              <label class="ev-field__label" for="cupon-codigo">
-                Código<span class="ev-field__required" aria-hidden="true">*</span>
-              </label>
-              <input
-                id="cupon-codigo"
-                type="text"
-                class="ev-input"
-                [(ngModel)]="nuevoCupon.codigo"
-                (ngModelChange)="onFormChange()"
-                placeholder="Ej: FIESTA20"
-                autocomplete="off"
-                style="text-transform: uppercase"
-              />
-              <p class="ev-field__hint">Mínimo 4 caracteres</p>
-            </div>
-            <div class="ev-field">
-              <label class="ev-field__label" for="cupon-descuento">
-                Descuento (%)<span class="ev-field__required" aria-hidden="true">*</span>
-              </label>
-              <ev-number-input
-                id="cupon-descuento"
-                mode="integer"
-                [min]="1"
-                [max]="100"
-                [(ngModel)]="nuevoCupon.porcentaje_descuento"
-                (ngModelChange)="onFormChange()"
-              />
-            </div>
-            <div class="ev-field">
-              <label class="ev-field__label" for="cupon-max-usos">
-                Límite de usos<span class="ev-field__required" aria-hidden="true">*</span>
-              </label>
-              <ev-number-input
-                id="cupon-max-usos"
-                mode="integer"
-                [min]="1"
-                [(ngModel)]="nuevoCupon.max_usos"
-                (ngModelChange)="onFormChange()"
-              />
-              <p class="ev-field__hint">Por defecto 1 (solo un uso)</p>
-            </div>
-          </div>
-        </ev-form-section>
+      <div *ngIf="cupones.length > 0" class="ev-panel__cta-wrap">
+        <ev-button variant="primary" [fullWidth]="true" (click)="openCreateForm()">
+          <span class="material-icons" aria-hidden="true">add</span>
+          Crear nuevo cupón
+        </ev-button>
       </div>
-    </ev-panel-form>
 
-    <section class="ev-panel__dashboard" aria-labelledby="cupones-lista-title">
-      <h3 id="cupones-lista-title" class="ev-panel-summary__label">Cupones existentes</h3>
+      <ev-notice
+        *ngIf="panelInsight as insight"
+        variant="warning"
+        [message]="insight.message"
+        [actionLabel]="insight.ctaLabel"
+        (actionClick)="openCreateForm()"
+      />
 
       <ev-empty-state
         *ngIf="cupones.length === 0"
@@ -69,61 +35,125 @@
         title="No hay cupones"
         description="Crea un cupón de lanzamiento para incentivar las primeras compras de tu evento."
       >
-        <ev-button emptyCta variant="primary" [fullWidth]="true" (click)="focusCreateForm()">
-          Crear cupón
+        <ev-button emptyCta variant="primary" [fullWidth]="true" (click)="openCreateForm()">
+          <span class="material-icons" aria-hidden="true">add</span>
+          Crear primer cupón
         </ev-button>
       </ev-empty-state>
 
-      <div *ngIf="cupones.length > 0" class="ev-panel-list">
-        <table class="ev-panel-list__table">
-          <thead>
-            <tr>
-              <th scope="col">Código</th>
-              <th scope="col">Descuento</th>
-              <th scope="col">Usos</th>
-              <th scope="col">Estado</th>
-              <th scope="col"><span class="sr-only">Acciones</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let cupon of cupones">
-              <td><strong>{{ cupon.codigo }}</strong></td>
-              <td>{{ cupon.porcentaje_descuento }}%</td>
-              <td>{{ cupon.usos_actuales }} / {{ cupon.max_usos }}</td>
-              <td>
-                <ev-badge [variant]="cupon.activo ? 'success' : 'neutral'">
-                  {{ cupon.activo ? 'Activo' : 'Inactivo' }}
-                </ev-badge>
-              </td>
-              <td>
-                <div class="ev-panel-list__actions">
-                  <button
-                    type="button"
-                    class="ev-panel-list__icon-btn"
-                    (click)="toggleCuponActivo(cupon)"
-                    [attr.aria-label]="cupon.activo ? 'Desactivar cupón ' + cupon.codigo : 'Activar cupón ' + cupon.codigo"
-                  >
-                    <span class="material-icons" aria-hidden="true">{{ cupon.activo ? 'block' : 'check_circle' }}</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="ev-panel-list__icon-btn ev-panel-list__icon-btn--danger"
-                    (click)="eliminarCupon(cupon)"
-                    [attr.aria-label]="'Eliminar cupón ' + cupon.codigo"
-                  >
-                    <span class="material-icons" aria-hidden="true">delete</span>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div *ngIf="cupones.length > 0" class="ev-panel__grid">
+        <ev-panel-card *ngFor="let cupon of cupones" [inactive]="!cupon.activo">
+          <header class="ev-panel-card__head">
+            <div class="ev-panel-card__meta">
+              <h3 class="ev-panel-card__name">{{ cupon.codigo }}</h3>
+              <p class="ev-panel-card__price">{{ cupon.porcentaje_descuento }}% de descuento</p>
+            </div>
+            <div class="ev-panel-card__badges">
+              <ev-badge [variant]="cupon.activo ? 'success' : 'neutral'">
+                {{ cupon.activo ? 'Activo' : 'Inactivo' }}
+              </ev-badge>
+            </div>
+          </header>
+
+          <div class="ev-panel-card__metrics">
+            <span>{{ cupon.usos_actuales || 0 }} usados</span>
+            <span class="ev-panel-card__dot" aria-hidden="true">·</span>
+            <span>{{ cupon.max_usos }} máximo</span>
+          </div>
+
+          <div class="ev-panel-card__progress" role="presentation">
+            <div
+              class="ev-panel-card__progress-fill"
+              [style.width.%]="getUsoPct(cupon)"
+              [class.ev-panel-card__progress-fill--high]="getUsoPct(cupon) >= 80"
+              [class.ev-panel-card__progress-fill--full]="getUsoPct(cupon) >= 100"
+            ></div>
+          </div>
+          <p class="ev-panel-card__pct">{{ getUsoPct(cupon) }}% de usos consumidos</p>
+
+          <p class="ev-panel-card__status">
+            <span class="ev-panel-card__status-dot" [ngClass]="statusDotClass(cupon.activo)"></span>
+            {{ cupon.activo ? 'Disponible en checkout' : 'No disponible' }}
+          </p>
+
+          <footer class="ev-panel-card__actions">
+            <button type="button" class="ev-panel-card__action" (click)="toggleCuponActivo(cupon)">
+              {{ cupon.activo ? 'Desactivar' : 'Activar' }}
+            </button>
+            <button type="button" class="ev-panel-card__action" (click)="eliminarCupon(cupon)">
+              Eliminar
+            </button>
+          </footer>
+        </ev-panel-card>
       </div>
-    </section>
+    </div>
+
+    <div *ngIf="view === 'form'" class="ev-panel__view" [class.ev-panel__view--forward]="viewDirection === 'forward'">
+      <ev-panel-form>
+        <div class="ev-form">
+          <ev-form-section icon="local_offer" title="Datos del cupón" description="Código, descuento y límite de usos.">
+            <div class="ev-form-grid ev-form-grid--3">
+              <div class="ev-field">
+                <label class="ev-field__label" for="cupon-codigo">
+                  Código<span class="ev-field__required" aria-hidden="true">*</span>
+                </label>
+                <input
+                  id="cupon-codigo"
+                  type="text"
+                  class="ev-input ev-input--uppercase"
+                  [(ngModel)]="nuevoCupon.codigo"
+                  (ngModelChange)="onFormChange()"
+                  placeholder="Ej: FIESTA20"
+                  autocomplete="off"
+                  [disabled]="saving"
+                />
+                <p class="ev-field__hint">Mínimo 4 caracteres</p>
+              </div>
+              <div class="ev-field">
+                <label class="ev-field__label" for="cupon-descuento">
+                  Descuento (%)<span class="ev-field__required" aria-hidden="true">*</span>
+                </label>
+                <ev-number-input
+                  id="cupon-descuento"
+                  mode="integer"
+                  [stepper]="true"
+                  [min]="1"
+                  [max]="100"
+                  [(ngModel)]="nuevoCupon.porcentaje_descuento"
+                  (ngModelChange)="onFormChange()"
+                  [disabled]="saving"
+                />
+              </div>
+              <div class="ev-field">
+                <label class="ev-field__label" for="cupon-max-usos">
+                  Límite de usos<span class="ev-field__required" aria-hidden="true">*</span>
+                </label>
+                <ev-number-input
+                  id="cupon-max-usos"
+                  mode="integer"
+                  [stepper]="true"
+                  [min]="1"
+                  [(ngModel)]="nuevoCupon.max_usos"
+                  (ngModelChange)="onFormChange()"
+                  [disabled]="saving"
+                />
+                <p class="ev-field__hint">Por defecto 1 uso.</p>
+              </div>
+            </div>
+          </ev-form-section>
+        </div>
+      </ev-panel-form>
+    </div>
   </div>
 
-  <ev-drawer-footer>
+  <ev-drawer-footer *ngIf="showFooter">
+    <ev-button variant="ghost" [disabled]="saving" (click)="goToDashboard()">Cancelar</ev-button>
+    <ev-button variant="primary" [disabled]="!canSaveForm" [loading]="saving" (click)="crearCupon()">
+      Guardar
+    </ev-button>
+  </ev-drawer-footer>
+
+  <ev-drawer-footer *ngIf="view === 'dashboard'">
     <ev-button variant="ghost" (click)="closePanel()">Cerrar</ev-button>
-    <ev-button variant="primary" [disabled]="!canCreate" [loading]="saving" (click)="crearCupon()">Guardar</ev-button>
   </ev-drawer-footer>
 </div>

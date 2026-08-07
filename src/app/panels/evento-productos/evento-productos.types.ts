@@ -28,5 +28,4 @@ export type ProductoStockStatus = 'suficiente' | 'bajo' | 'sin_stock';
 
 export interface ProductoRecomendacion {
   message: string;
-  showCta: boolean;
 }

@@ -28,10 +28,12 @@ import { EvFormWizard, EvWizardStep } from '../../components/ev-form-wizard/ev-f
 import { EvEventoPreview } from '../../components/ev-evento-preview/ev-evento-preview';
 import { EvSelect, EvSelectOption, mapToEvSelectOptions } from '../../components/ev-select/ev-select';
 import { EvNumberInput } from '../../components/ev-number-input/ev-number-input';
+import { EvDatetimePeriod } from '../../components/ev-datetime-period/ev-datetime-period';
+import { EvNotice } from '../../components/ev-notice';
 
 @Component({
   selector: 'app-eventos',
-  imports: [CommonModule, FormsModule, RouterLink, EvFormModal, EvFormSection, EvFormWizard, EvEventoPreview, EvSelect, EvNumberInput],
+  imports: [CommonModule, FormsModule, RouterLink, EvFormModal, EvFormSection, EvFormWizard, EvEventoPreview, EvSelect, EvNumberInput, EvDatetimePeriod, EvNotice],
   templateUrl: './eventos.html',
   styleUrl: './eventos.css',
 })
@@ -56,6 +58,7 @@ export class Eventos implements OnInit, OnDestroy {
   resumenTotalEventos: number | null = null;
   resumenEventosActivos: number | null = null;
   resumenBoletasVendidas: number | null = null;
+  resumenProductosVendidos: number | null = null;
   private searchSubject = new Subject<string>();
 
   showModal = false;
@@ -234,32 +237,36 @@ export class Eventos implements OnInit, OnDestroy {
 
   get pageSubtitle(): string {
     return this.authService.isOrganizador()
-      ? 'Gestiona y monitorea tus eventos'
-      : 'Gestiona todos los eventos del sistema';
+      ? 'Administra todos tus eventos desde un solo lugar.'
+      : 'Gestiona todos los eventos del sistema desde un solo lugar.';
   }
 
-  get showResumenStrip(): boolean {
+  get heroEyebrow(): string {
+    return this.authService.isOrganizador() ? 'Centro de operaciones' : 'Panel administrativo';
+  }
+
+  get showHeroStats(): boolean {
     return !this.loading && !this.isFirstTimeEmpty;
   }
 
-  get resumenStripText(): string {
-    if (this.authService.isOrganizador() && this.resumenTotalEventos != null) {
-      const partes = [
-        `${this.resumenTotalEventos} ${this.resumenTotalEventos === 1 ? 'evento' : 'eventos'}`,
+  get heroStats(): Array<{ value: number; label: string }> {
+    if (this.authService.isOrganizador()) {
+      return [
+        {
+          value: this.resumenEventosActivos ?? this.resumenTotalEventos ?? this.total,
+          label: 'eventos activos',
+        },
+        {
+          value: this.resumenProductosVendidos ?? 0,
+          label: 'productos',
+        },
+        {
+          value: this.resumenBoletasVendidas ?? 0,
+          label: 'boletas',
+        },
       ];
-      if (this.resumenEventosActivos != null) {
-        partes.push(
-          `${this.resumenEventosActivos} en catálogo`
-        );
-      }
-      if (this.resumenBoletasVendidas != null) {
-        partes.push(
-          `${this.resumenBoletasVendidas} ${this.resumenBoletasVendidas === 1 ? 'boleta vendida' : 'boletas vendidas'}`
-        );
-      }
-      return partes.join(' · ');
     }
-    return `${this.total} ${this.total === 1 ? 'evento' : 'eventos'}`;
+    return [{ value: this.total, label: this.total === 1 ? 'evento' : 'eventos' }];
   }
 
   get dashboardRoute(): string {
@@ -319,7 +326,7 @@ export class Eventos implements OnInit, OnDestroy {
       return 'Tu evento está listo. Elige el siguiente paso para continuar.';
     }
     return this.editingEvento
-      ? 'Actualiza la información paso a paso. Los cambios se reflejan en el panel.'
+      ? 'Actualiza la información paso a paso.'
       : 'Construye tu evento paso a paso.';
   }
 
@@ -570,6 +577,7 @@ export class Eventos implements OnInit, OnDestroy {
       this.resumenTotalEventos = null;
       this.resumenEventosActivos = null;
       this.resumenBoletasVendidas = null;
+      this.resumenProductosVendidos = null;
       return;
     }
     const organizadorId = this.authService.getUsuarioId();
@@ -587,12 +595,14 @@ export class Eventos implements OnInit, OnDestroy {
       this.resumenTotalEventos = stats.eventos_totales ?? this.total;
       this.resumenEventosActivos = stats.eventos_activos ?? null;
       this.resumenBoletasVendidas = stats.boletas_vendidas ?? null;
+      this.resumenProductosVendidos = stats.productos_vendidos ?? 0;
     } catch (err) {
       console.warn('No se pudieron cargar métricas de eventos:', err);
       this.boletasPorEvento = new Map();
       this.resumenTotalEventos = this.total;
       this.resumenEventosActivos = null;
       this.resumenBoletasVendidas = null;
+      this.resumenProductosVendidos = null;
     }
   }
 

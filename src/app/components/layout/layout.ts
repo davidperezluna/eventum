@@ -18,7 +18,7 @@ import {
   esRutaExentaCompletarPerfil,
   urlDestinoClienteConPerfil,
 } from '../../core/perfil-completo';
-import { ClientConfirmDialog } from '../client-confirm-dialog/client-confirm-dialog';
+import { EvDialogHost } from '../ev-dialog/ev-dialog-host';
 import { EvDrawerHost } from '../ev-drawer/ev-drawer-host';
 import { EvNotice } from '../ev-notice';
 import { AdminSidebar } from '../admin-sidebar/admin-sidebar';
@@ -44,7 +44,7 @@ type ClientNavItem = {
 
 @Component({
   selector: 'app-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, ClientConfirmDialog, EvDrawerHost, EvNotice, AdminSidebar],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, EvDialogHost, EvDrawerHost, EvNotice, AdminSidebar],
   templateUrl: './layout.html',
   styleUrl: './layout.css',
 })
@@ -78,6 +78,13 @@ export class Layout implements OnInit, OnDestroy {
   /** Login contextual de compra cuando hay ítems en el carrito (header «Entrar»). */
   get headerLoginQueryParams(): typeof LOGIN_QUERY_CARRITO_PAGAR | undefined {
     return this.totalItemsCarrito > 0 ? LOGIN_QUERY_CARRITO_PAGAR : undefined;
+  }
+
+  /** Banner demo en layout global; en /eventos va integrado al hero de la página. */
+  get showShowcaseNoticeInLayout(): boolean {
+    if (!this.authService.isShowcaseOrganizador()) return false;
+    const path = this.router.url.split('?')[0];
+    return path !== '/eventos';
   }
 
   private routerSubscription?: any;

@@ -107,7 +107,7 @@
     >
       <ev-panel-form>
         <div class="ev-form">
-          <ev-form-section title="Datos básicos" description="Nombre, descripción y precio del tipo de entrada.">
+          <ev-form-section icon="confirmation_number" title="Datos básicos" description="Lo primero que verá el comprador.">
             <div class="ev-form-grid ev-form-grid--2">
               <div class="ev-field ev-form-span-2">
                 <label class="ev-field__label" for="boleta-nombre">
@@ -144,6 +144,7 @@
                 <ev-number-input
                   id="boleta-precio"
                   mode="integer"
+                  prefix="$"
                   [min]="0"
                   [(ngModel)]="formData.precio"
                   (ngModelChange)="onFormChange()"
@@ -159,6 +160,7 @@
                 <ev-number-input
                   id="boleta-cantidad"
                   mode="integer"
+                  [stepper]="true"
                   [min]="1"
                   [(ngModel)]="formData.cantidad_total"
                   (ngModelChange)="calcularCantidadesTipoBoleta()"
@@ -169,34 +171,21 @@
             </div>
           </ev-form-section>
 
-          <ev-form-section title="Periodo de venta" description="Opcional. Limita cuándo se puede comprar este tipo.">
-            <div class="ev-form-grid ev-form-grid--2">
-              <div class="ev-field">
-                <label class="ev-field__label" for="boleta-venta-inicio">Venta inicio</label>
-                <input
-                  id="boleta-venta-inicio"
-                  type="datetime-local"
-                  class="ev-input"
-                  [(ngModel)]="formData.fecha_venta_inicio"
-                  (ngModelChange)="onFormChange()"
-                  [disabled]="saving"
-                />
-              </div>
-              <div class="ev-field">
-                <label class="ev-field__label" for="boleta-venta-fin">Venta fin</label>
-                <input
-                  id="boleta-venta-fin"
-                  type="datetime-local"
-                  class="ev-input"
-                  [(ngModel)]="formData.fecha_venta_fin"
-                  (ngModelChange)="onFormChange()"
-                  [disabled]="saving"
-                />
-              </div>
-            </div>
+          <ev-form-section icon="schedule" title="Periodo de venta" description="Opcional. Puedes cambiarlo después.">
+            <ev-datetime-period
+              startLabel="Venta inicia"
+              endLabel="Venta termina"
+              startId="boleta-venta-inicio"
+              endId="boleta-venta-fin"
+              [disabled]="saving"
+              [start]="formData.fecha_venta_inicio"
+              (startChange)="formData.fecha_venta_inicio = $event; onFormChange()"
+              [end]="formData.fecha_venta_fin"
+              (endChange)="formData.fecha_venta_fin = $event; onFormChange()"
+            />
           </ev-form-section>
 
-          <ev-form-section title="Palcos y capacidad" description="Entradas individuales o paquetes grupales con mapa opcional.">
+          <ev-form-section icon="groups" title="Palcos y capacidad" description="Entradas individuales o paquetes grupales.">
             <div class="ev-check-row">
               <label class="ev-check">
                 <input
@@ -217,12 +206,13 @@
                 <ev-number-input
                   id="boleta-personas"
                   mode="integer"
+                  [stepper]="true"
                   [min]="1"
                   [(ngModel)]="formData.personas_por_unidad"
                   (ngModelChange)="onFormChange()"
                   [disabled]="saving"
                 />
-                <p class="ev-field__hint">Cuántas personas incluye cada unidad vendida.</p>
+                <p class="ev-field__hint">Cuántas personas incluye cada unidad.</p>
               </div>
             </div>
 
@@ -263,20 +253,21 @@
             </div>
           </ev-form-section>
 
-          <ev-form-section title="Límites y estado" description="Control de compra por persona y disponibilidad en venta.">
+          <ev-form-section icon="rule" title="Límites y estado" description="Control de compra y disponibilidad.">
             <div class="ev-form-grid ev-form-grid--2">
               <div class="ev-field">
                 <label class="ev-field__label" for="boleta-limite">Límite por persona</label>
                 <ev-number-input
                   id="boleta-limite"
                   mode="integer"
+                  [stepper]="true"
                   [min]="1"
                   [(ngModel)]="formData.limite_por_persona"
                   (ngModelChange)="onFormChange()"
                   placeholder="Sin límite"
                   [disabled]="saving"
                 />
-                <p class="ev-field__hint">Máximo de boletas de este tipo por comprador.</p>
+                <p class="ev-field__hint">Máximo por comprador. Opcional.</p>
               </div>
             </div>
 
@@ -325,7 +316,7 @@
     >
       <ev-panel-form>
         <div class="ev-form">
-          <ev-form-section [title]="inventarioTipo.nombre" description="Estado actual del inventario">
+          <ev-form-section icon="inventory_2" [title]="inventarioTipo.nombre" description="Estado actual del inventario">
             <div class="ev-panel-readonly__grid">
               <div class="ev-panel-readonly__stat">
                 <span class="ev-panel-readonly__value">{{ inventarioTipo.cantidad_total }}</span>
@@ -346,7 +337,7 @@
             <p class="ev-panel-card__pct">{{ getOcupacionPct(inventarioTipo) }}% ocupación</p>
           </ev-form-section>
 
-          <ev-form-section title="Agregar inventario" description="Suma unidades disponibles para la venta.">
+          <ev-form-section icon="add_circle" title="Agregar inventario" description="Suma unidades disponibles.">
             <div class="ev-field">
               <label class="ev-field__label" for="boleta-inv-cantidad">
                 Unidades a agregar<span class="ev-field__required" aria-hidden="true">*</span>
@@ -354,6 +345,7 @@
               <ev-number-input
                 id="boleta-inv-cantidad"
                 mode="integer"
+                [stepper]="true"
                 [min]="1"
                 [(ngModel)]="cantidadAgregarInventario"
                 (ngModelChange)="onInventoryChange()"

@@ -1088,9 +1088,9 @@
 }
 
 .layout-notice-wrap {
-  margin: 0 0 var(--spacing-md);
+  margin: 0 0 1rem;
 }
 
 .main-content--showcase {
-  padding-top: var(--spacing-sm);
+  padding-top: 1rem;
 }

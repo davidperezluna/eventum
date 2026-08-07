@@ -14,6 +14,7 @@ El Design System cubre principalmente el **Centro de Operaciones del evento** (`
 | [Drawers y paneles](./drawers.md) | `ev-drawer`, `DrawerService`, patrón de módulos por evento |
 | [Crear un drawer nuevo](./creating-a-drawer.md) | Guía paso a paso con plantillas de código |
 | [Componentes](./components.md) | API de `ev-notice`, `ev-badge`, `ev-panel-*`, `ev-button`, etc. |
+| [Diálogos](./dialogs.md) | Sistema `ev-dialog`: confirmaciones, alertas, presets, toasts |
 | [Patrones](./patterns.md) | Footers, alertas modales, formularios, checklist de readiness |
 
 ## Documentación de producto
@@ -59,6 +60,7 @@ import { EvButton } from '../../components/ev-button';
 src/styles/ev-form-system.css    → Formularios (.ev-form, .ev-field, .ev-input)
 src/styles/ev-drawer-system.css  → Footer del drawer
 src/styles/ev-panel-system.css   → Layout de paneles, overview, listas
+src/styles/ev-dialog-system.css  → Diálogos y toasts premium
 src/styles/ev-button-system.css  → Botones compartidos
 src/styles/ev-select-theme.css   → Tema ng-select
 ```

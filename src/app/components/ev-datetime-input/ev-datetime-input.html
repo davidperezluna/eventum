@@ -1,0 +1,23 @@
+<div
+  class="ev-datetime-field"
+  [class.ev-datetime-field--disabled]="inputDisabled"
+>
+  <ev-date-picker
+    class="ev-datetime-field__date"
+    [id]="dateInputId"
+    [disabled]="inputDisabled"
+    [hasError]="hasError"
+    [ngModel]="datePart"
+    (ngModelChange)="onDateChange($event)"
+    (click)="markTouched()"
+  />
+  <ev-time-picker
+    class="ev-datetime-field__time"
+    [id]="timeInputId"
+    [disabled]="inputDisabled"
+    [hasError]="hasError"
+    [ngModel]="timePart"
+    (ngModelChange)="onTimeChange($event)"
+    (click)="markTouched()"
+  />
+</div>

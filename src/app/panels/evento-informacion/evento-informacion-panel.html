@@ -4,60 +4,9 @@
       Define cómo se presenta tu evento: nombre, categoría y descripción para listados y detalle público.
     </p>
 
-    <section
-      class="ev-panel-overview"
-      [class.ev-panel-overview--complete]="configComplete"
-      [class.ev-panel-overview--pending]="!configComplete"
-      aria-label="Información básica"
-    >
-      <div class="ev-panel-overview__header">
-        <span class="material-icons" aria-hidden="true">{{ configComplete ? 'check_circle' : 'info' }}</span>
-        <div class="ev-panel-overview__title-row">
-          <strong>Información básica</strong>
-          <ev-badge [variant]="configComplete ? 'success' : 'warning'">
-            {{ configComplete ? 'Completo' : 'Pendiente' }}
-          </ev-badge>
-        </div>
-      </div>
-
-      <dl class="ev-panel-overview__list">
-        <div class="ev-panel-overview__row">
-          <dt>Título</dt>
-          <dd>{{ titulo.trim() || 'Agrega un título' }}</dd>
-        </div>
-        <div class="ev-panel-overview__row">
-          <dt>Categoría</dt>
-          <dd>{{ categoriaLabel }}</dd>
-        </div>
-        <div class="ev-panel-overview__row">
-          <dt>Descripción</dt>
-          <dd>
-            <ng-container *ngIf="descripcionCorta.trim() || descripcion.trim(); else descPendiente">
-              {{ descripcionCorta.trim() || descripcion.trim() | slice:0:120
-              }}{{ (descripcionCorta.trim() || descripcion.trim()).length > 120 ? '…' : '' }}
-            </ng-container>
-            <ng-template #descPendiente>Agrega una descripción corta o completa</ng-template>
-          </dd>
-        </div>
-        <div class="ev-panel-overview__row" *ngIf="tags.trim()">
-          <dt>Tags</dt>
-          <dd>{{ tags.trim() }}</dd>
-        </div>
-      </dl>
-
-      <div *ngIf="!configComplete" class="ev-panel-overview__hint">
-        <ev-notice
-          variant="warning"
-          density="compact"
-          icon="info"
-          message="Completa el título, la categoría y al menos una descripción para continuar."
-        />
-      </div>
-    </section>
-
     <ev-panel-form>
       <div class="ev-form">
-        <ev-form-section title="Identidad" description="Nombre y clasificación del evento.">
+        <ev-form-section icon="badge" title="Identidad" description="Nombre y clasificación del evento.">
           <div class="ev-form-grid ev-form-grid--2">
             <div class="ev-field ev-form-span-2">
               <label class="ev-field__label" for="info-titulo">
@@ -101,7 +50,7 @@
           </div>
         </ev-form-section>
 
-        <ev-form-section title="Descripción" description="Texto visible en listados y página del evento.">
+        <ev-form-section icon="description" title="Descripción" description="Visible en listados y página del evento.">
           <div class="ev-form-grid ev-form-grid--2">
             <div class="ev-field ev-form-span-2">
               <label class="ev-field__label" for="info-desc-corta">Descripción corta</label>
