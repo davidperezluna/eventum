@@ -67,7 +67,7 @@ export class LectorLayout implements OnInit, OnDestroy {
 
   async logout(): Promise<void> {
     this.closeClientMenu();
-    await this.authService.logout('/login-admin');
+    await this.authService.logout('/eventos-cliente');
   }
 
   private syncBodyScrollLock(): void {

@@ -216,6 +216,44 @@
   flex-shrink: 0;
 }
 
+.ev-ops-hero__publish-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  max-width: 100%;
+}
+
+.ev-ops-hero__publish-hint {
+  margin: 0;
+  max-width: 14rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #64748b;
+  text-align: right;
+}
+
+.ev-ops-publish-btn--blocked {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #e2e8f0 !important;
+  color: #64748b !important;
+  box-shadow: none !important;
+  border: 1px dashed #cbd5e1;
+  cursor: pointer;
+}
+
+.ev-ops-publish-btn--blocked:hover {
+  background: #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+.ev-ops-publish-btn__lock {
+  font-size: 1rem !important;
+}
+
 .ev-ops-hero__pills {
   display: flex;
   flex-wrap: wrap;
@@ -495,6 +533,20 @@
   color: #94a3b8;
 }
 
+.ev-ops-checklist__item--blocked .ev-ops-checklist__btn {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  border-style: dashed;
+}
+
+.ev-ops-checklist__item--blocked .ev-ops-checklist__icon {
+  color: #94a3b8;
+}
+
+.ev-ops-checklist__item--blocked .ev-ops-checklist__label {
+  color: #64748b;
+}
+
 .ev-ops-checklist__label {
   flex: 1;
   font-size: 0.875rem;
@@ -551,6 +603,16 @@
 
   .ev-ops-hero__actions {
     width: 100%;
+  }
+
+  .ev-ops-hero__publish-wrap {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .ev-ops-hero__publish-hint {
+    max-width: none;
+    text-align: left;
   }
 
   .ev-ops-hero__actions .ev-btn-primary {

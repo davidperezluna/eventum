@@ -6,7 +6,7 @@
  * - Mis publicaciones → /mis-cupos
  */
 export const CUPOS_LABELS = {
-  module: 'Cupos Eventum',
+  module: 'Cupos eventum',
 
   explorar: 'Explorar cupos',
   explorarShort: 'Explorar',

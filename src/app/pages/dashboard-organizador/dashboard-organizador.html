@@ -72,33 +72,6 @@
         </div>
       </div>
 
-      <div class="ev-intel-hero__toolbar">
-        <nav class="ev-intel-hero__hubs" aria-label="Alcance de inteligencia">
-          <span class="ev-intel-action-pill ev-intel-action-pill--active" aria-current="page">
-            <span class="material-icons" aria-hidden="true">insights</span>
-            Vista general
-          </span>
-          <a routerLink="/eventos" class="ev-intel-action-pill ev-intel-action-pill--hub">
-            <span class="material-icons" aria-hidden="true">event</span>
-            Mis eventos
-          </a>
-        </nav>
-        <div class="ev-intel-hero__actions">
-          <a
-            *ngIf="proximoEventoOperacionesRoute as route"
-            [routerLink]="route"
-            class="ev-intel-action-pill ev-intel-action-pill--accent"
-          >
-            <span class="material-icons" aria-hidden="true">event</span>
-            Próximo evento
-          </a>
-          <a routerLink="/eventos" class="ev-intel-action-pill ev-intel-action-pill--secondary">
-            <span class="material-icons" aria-hidden="true">add_circle_outline</span>
-            Crear evento
-          </a>
-        </div>
-      </div>
-
       <div class="ev-intel-hero__strip" aria-label="Resumen del portafolio">
         <section
           *ngIf="iv.finanzasHero as fin"

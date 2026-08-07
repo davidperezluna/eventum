@@ -31,6 +31,12 @@
   [class.ev-admin-sidebar--compact]="compact"
   aria-label="Navegación del panel"
 >
+  <div
+    class="ev-admin-sidebar__flyout-backdrop"
+    *ngIf="compact && hasFlyoutOpen()"
+    (click)="closeAllFlyouts()"
+    aria-hidden="true"
+  ></div>
   <!-- Header -->
   <header class="ev-admin-sidebar__header">
     <div class="ev-admin-sidebar__header-row">
@@ -78,8 +84,8 @@
               class="ev-admin-sidebar__link ev-admin-sidebar__link--group"
               [class.ev-admin-sidebar__link--active]="isGroupActive(entry)"
               [attr.aria-expanded]="isGroupExpanded(entry)"
-              [attr.data-tooltip]="compact ? entry.label : null"
-              (click)="toggleGroup(entry)"
+              [attr.data-tooltip]="compact ? null : entry.label"
+              (click)="toggleGroup(entry, $event)"
             >
               <span class="material-icons ev-admin-sidebar__icon" aria-hidden="true">{{ entry.icon }}</span>
               <span class="ev-admin-sidebar__label">{{ entry.label }}</span>
@@ -91,14 +97,16 @@
             <div
               class="ev-admin-sidebar__submenu"
               [class.ev-admin-sidebar__submenu--open]="isGroupExpanded(entry)"
+              [style.top.px]="compact && isGroupExpanded(entry) ? flyoutAnchorTop : null"
+              (click)="$event.stopPropagation()"
             >
               <div class="ev-admin-sidebar__submenu-inner">
+                <p *ngIf="compact" class="ev-admin-sidebar__flyout-title">{{ entry.label }}</p>
                 <a
                   *ngFor="let child of entry.children"
                   [routerLink]="child.path"
                   class="ev-admin-sidebar__link ev-admin-sidebar__link--sub"
                   [class.ev-admin-sidebar__link--active]="isLinkActive(child.path)"
-                  [attr.data-tooltip]="compact ? child.label : null"
                   (click)="onNavClick()"
                 >
                   <span class="material-icons ev-admin-sidebar__icon ev-admin-sidebar__icon--sub" aria-hidden="true">
@@ -116,37 +124,67 @@
 
   <!-- Footer -->
   <footer class="ev-admin-sidebar__footer">
-    <div class="ev-admin-sidebar__account" *ngIf="userEmail">
-      <div
-        class="ev-admin-sidebar__account-identity"
-        [attr.data-tooltip]="compact && userEmail ? userEmail : null"
-      >
-        <span class="material-icons ev-admin-sidebar__account-icon" aria-hidden="true">account_circle</span>
-        <div class="ev-admin-sidebar__account-text">
-          <span class="ev-admin-sidebar__account-role" *ngIf="userRole">{{ userRole }}</span>
-          <span class="ev-admin-sidebar__account-email">{{ userEmail }}</span>
-        </div>
+    <div class="ev-admin-sidebar__account">
+      <div class="ev-admin-sidebar__account-identity">
+        <a
+          *ngIf="userName"
+          routerLink="/perfil"
+          class="ev-admin-sidebar__profile"
+          [class.ev-admin-sidebar__link]="compact"
+          aria-label="Ir a mi perfil"
+          [attr.title]="compact ? userName : null"
+          (click)="onNavClick()"
+        >
+          <span
+            *ngIf="compact"
+            class="material-icons ev-admin-sidebar__account-icon"
+            [class.ev-admin-sidebar__icon]="compact"
+            aria-hidden="true"
+          >account_circle</span>
+          <div class="ev-admin-sidebar__account-text">
+            <span class="ev-admin-sidebar__account-email">{{ userName }}</span>
+          </div>
+        </a>
+        <a
+          *ngIf="!userName && compact"
+          routerLink="/perfil"
+          class="ev-admin-sidebar__profile ev-admin-sidebar__link"
+          aria-label="Ir a mi perfil"
+          (click)="onNavClick()"
+        >
+          <span class="material-icons ev-admin-sidebar__account-icon ev-admin-sidebar__icon" aria-hidden="true">account_circle</span>
+        </a>
+        <button
+          type="button"
+          class="ev-admin-sidebar__logout"
+          [class.ev-admin-sidebar__link]="compact"
+          (click)="logout.emit()"
+          aria-label="Cerrar sesión"
+          [attr.title]="compact ? 'Cerrar sesión' : null"
+        >
+          <span
+            class="material-icons"
+            [class.ev-admin-sidebar__icon]="compact"
+            aria-hidden="true"
+          >logout</span>
+        </button>
       </div>
-      <button
-        type="button"
-        class="ev-admin-sidebar__logout"
-        (click)="logout.emit()"
-        [attr.data-tooltip]="compact ? 'Cerrar sesión' : null"
-      >
-        <span class="material-icons" aria-hidden="true">logout</span>
-        <span class="ev-admin-sidebar__logout-label">Cerrar sesión</span>
-      </button>
     </div>
 
     <div class="ev-admin-sidebar__footer-actions">
       <button
         type="button"
         class="ev-admin-sidebar__compact-toggle"
+        [class.ev-admin-sidebar__link]="compact"
         (click)="toggleCompact()"
         [attr.aria-label]="compact ? 'Expandir menú' : 'Contraer menú'"
-        [attr.data-tooltip]="compact ? 'Expandir' : 'Contraer'"
+        [attr.title]="compact ? 'Expandir menú' : 'Contraer menú'"
       >
-        <span class="material-icons" aria-hidden="true">
+        <span
+          class="material-icons"
+          [class.ev-admin-sidebar__icon]="compact"
+          aria-hidden="true"
+        >
           {{ compact ? 'chevron_right' : 'chevron_left' }}
         </span>
       </button>

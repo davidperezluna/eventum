@@ -40,11 +40,11 @@ import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 import {
   buildEventoReadiness,
-
   EventoReadinessResult,
-
   EventoReadinessStep,
-
+  getPrePublishPendingSteps,
+  formatPrePublishPendingMessage,
+  isEventoReadyToPublish,
 } from '../../core/evento-readiness';
 
 import {
@@ -657,6 +657,23 @@ export class EventoOperaciones implements OnInit {
 
 
 
+  get canPublishEvento(): boolean {
+    if (!this.readiness) return false;
+    return isEventoReadyToPublish(this.readiness);
+  }
+
+  get isPublishBlocked(): boolean {
+    return this.estadoActual === TipoEstadoEvento.BORRADOR && !this.canPublishEvento;
+  }
+
+  get showHeroPrimaryAction(): boolean {
+    return this.estadoActual !== TipoEstadoEvento.BORRADOR;
+  }
+
+  get isPrimaryActionDisabled(): boolean {
+    return this.publishing || this.savingEstado;
+  }
+
   get primaryActionLabel(): string {
 
     switch (this.estadoActual) {
@@ -673,23 +690,13 @@ export class EventoOperaciones implements OnInit {
 
       case TipoEstadoEvento.CANCELADO:
 
-        return 'Ver evento';
+        return 'Ver inteligencia';
 
       default:
 
         return 'Publicar evento';
 
     }
-
-  }
-
-
-
-  get showSecondaryVerEvento(): boolean {
-
-    return this.estadoActual !== TipoEstadoEvento.FINALIZADO &&
-
-      this.estadoActual !== TipoEstadoEvento.CANCELADO;
 
   }
 
@@ -1011,8 +1018,6 @@ export class EventoOperaciones implements OnInit {
 
           ...this.evento,
 
-          lugar_id: result.lugar_id ?? undefined,
-
           edad_minima: result.edad_minima ?? undefined,
 
           fecha_inicio: result.fecha_inicio ?? this.evento.fecha_inicio,
@@ -1209,7 +1214,7 @@ export class EventoOperaciones implements OnInit {
 
     const ref = openEventoInformacionDrawer(this.drawerService, this.evento);
 
-    void ref.afterClosed().then((result) => {
+    void ref.afterClosed().then(async (result) => {
 
       if (!result?.changed || !this.evento) {
 
@@ -1217,25 +1222,45 @@ export class EventoOperaciones implements OnInit {
 
       }
 
-      this.evento = {
+      try {
 
-        ...this.evento,
+        this.evento = await this.eventosService.getEventoById(this.eventoId);
 
-        titulo: result.titulo ?? this.evento.titulo,
+        this.rebuildReadiness();
 
-        categoria_id: result.categoria_id ?? this.evento.categoria_id,
+        this.cdr.detectChanges();
 
-        tags: result.tags ?? this.evento.tags,
+      } catch {
 
-        descripcion_corta: result.descripcion_corta ?? this.evento.descripcion_corta,
+        this.evento = {
 
-        descripcion: result.descripcion ?? this.evento.descripcion,
+          ...this.evento,
 
-      };
+          titulo: result.titulo ?? this.evento.titulo,
 
-      this.rebuildReadiness();
+          categoria_id: result.categoria_id ?? this.evento.categoria_id,
 
-      this.cdr.detectChanges();
+          lugar_id: result.lugar_id ?? this.evento.lugar_id,
+
+          tags: result.tags ?? this.evento.tags,
+
+          descripcion_corta: result.descripcion_corta ?? this.evento.descripcion_corta,
+
+          descripcion: result.descripcion ?? this.evento.descripcion,
+
+          url_video: result.url_video ?? this.evento.url_video,
+
+          terminos_condiciones: result.terminos_condiciones ?? this.evento.terminos_condiciones,
+
+          politica_reembolso: result.politica_reembolso ?? this.evento.politica_reembolso,
+
+        };
+
+        this.rebuildReadiness();
+
+        this.cdr.detectChanges();
+
+      }
 
     });
 
@@ -1260,6 +1285,14 @@ export class EventoOperaciones implements OnInit {
     }
 
     if (step.value === TipoEstadoEvento.PUBLICADO) {
+
+      if (!this.canPublishEvento) {
+
+        this.notifyPublishNotReady();
+
+        return;
+
+      }
 
       await this.publicarEvento();
 
@@ -1326,7 +1359,7 @@ export class EventoOperaciones implements OnInit {
 
       case TipoEstadoEvento.CANCELADO:
 
-        this.verEventoPublico();
+        void this.router.navigate(['/eventos', this.eventoId, 'inteligencia']);
 
         return;
 
@@ -1338,9 +1371,37 @@ export class EventoOperaciones implements OnInit {
 
       default:
 
+        if (!this.canPublishEvento) {
+
+          this.notifyPublishNotReady();
+
+          return;
+
+        }
+
         await this.publicarEvento();
 
     }
+
+  }
+
+
+
+  private notifyPublishNotReady(): void {
+
+    if (!this.readiness) return;
+
+    const pending = getPrePublishPendingSteps(this.readiness);
+
+    if (pending.length === 0) return;
+
+    this.alertService.warning(
+
+      'Aún no puedes publicar',
+
+      formatPrePublishPendingMessage(pending),
+
+    );
 
   }
 
@@ -1358,15 +1419,9 @@ export class EventoOperaciones implements OnInit {
 
     }
 
-    if (this.readiness && this.readiness.percent < 100) {
+    if (this.readiness && !isEventoReadyToPublish(this.readiness)) {
 
-      this.alertService.warning(
-
-        'Configuración incompleta',
-
-        `Completa los pasos pendientes (${this.readiness.pendingCount} restantes) antes de publicar.`,
-
-      );
+      this.notifyPublishNotReady();
 
       return;
 
@@ -1468,11 +1523,24 @@ export class EventoOperaciones implements OnInit {
 
 
 
-  verEventoPublico(): void {
+  isReadinessStepDisabled(step: EventoReadinessStep): boolean {
 
-    if (!this.evento) return;
+    if (
+      step.complete &&
+      step.id !== 'publicacion' &&
+      step.id !== 'informacion' &&
+      step.id !== 'imagen' &&
+      step.id !== 'fechas' &&
+      step.id !== 'cobros' &&
+      step.id !== 'boletas' &&
+      step.id !== 'productos'
+    ) {
 
-    window.open(`/detalle-evento/${this.evento.id}`, '_blank', 'noopener,noreferrer');
+      return true;
+
+    }
+
+    return false;
 
   }
 
@@ -1480,13 +1548,7 @@ export class EventoOperaciones implements OnInit {
 
   onReadinessStepClick(step: EventoReadinessStep): void {
 
-    if (!this.evento) return;
-
-    if (step.complete && step.id !== 'publicacion' && step.id !== 'informacion' && step.id !== 'imagen' && step.id !== 'fechas' && step.id !== 'cobros' && step.id !== 'boletas' && step.id !== 'productos') {
-
-      return;
-
-    }
+    if (!this.evento || this.isReadinessStepDisabled(step)) return;
 
     switch (step.action) {
 
@@ -1537,6 +1599,14 @@ export class EventoOperaciones implements OnInit {
         break;
 
       case 'publish':
+
+        if (!this.canPublishEvento) {
+
+          this.notifyPublishNotReady();
+
+          return;
+
+        }
 
         void this.publicarEvento();
 

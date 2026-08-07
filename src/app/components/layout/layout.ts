@@ -58,7 +58,6 @@ export class Layout implements OnInit, OnDestroy {
   currentUser: User | null = null;
   usuario: any = null;
   userEmail: string = '';
-  userRole: string = '';
   sidebarOpen: boolean = false;
   sidebarCompact: boolean = false;
   clientMenuOpen: boolean = false;
@@ -131,17 +130,13 @@ export class Layout implements OnInit, OnDestroy {
       this.usuario = usuario;
       
       if (usuario) {
-        // Determinar el nombre del rol
         if (usuario.tipo_usuario_id === 3) {
-          this.userRole = 'Administrador';
           this.clientNavItems = [];
           this.loadAdminNav();
         } else if (usuario.tipo_usuario_id === 2) {
-          this.userRole = 'Organizador';
           this.clientNavItems = [];
           this.loadAdminNav();
         } else if (usuario.tipo_usuario_id === 1) {
-          this.userRole = 'Cliente';
           this.loadMenuCliente();
           this.clientePerfilIncompleto = esClienteConPerfilIncompleto(usuario);
           this.misComprasStateService.hydrateTrasladosPendientesCountFromState(usuario.id);
@@ -150,19 +145,16 @@ export class Layout implements OnInit, OnDestroy {
             void this.accesosPuertaService.refresh({ background: true });
           }
         } else if (this.authService.isLector()) {
-          this.userRole = 'Lector';
           this.adminNavSections = [];
           this.clientNavItems = [];
           this.redirectLectorFueraDeApp();
         } else {
-          this.userRole = 'Usuario';
           this.clientNavItems = [];
         }
       } else {
         // Si no hay usuario, limpiar menú
         this.adminNavSections = [];
         this.clientNavItems = [];
-        this.userRole = '';
         this.mostrarNavAccesosPuerta = false;
         this.clientePerfilIncompleto = false;
         this.accesosPuertaService.clear();
@@ -300,7 +292,7 @@ export class Layout implements OnInit, OnDestroy {
     }
   }
 
-  /** Nombre/apellidos para menú cliente; si no hay, el pie solo muestra el correo */
+  /** Nombre/apellidos para menú cliente y pie del panel admin/organizador */
   nombreCliente(): string | null {
     const u = this.usuario as { nombre?: string; apellido?: string } | null;
     if (!u) return null;
@@ -397,7 +389,6 @@ export class Layout implements OnInit, OnDestroy {
       ...(this.cuposEventumEnabled
         ? [{ path: '/cupos', label: CUPOS_LABELS.explorar, icon: 'forum', exact: true }]
         : []),
-      { path: '/perfil', label: 'Mi perfil', icon: 'person', exact: false, dividerBefore: true },
     ];
     this.adminNavSections = [];
   }
@@ -456,7 +447,6 @@ export class Layout implements OnInit, OnDestroy {
   }
 
   async logout() {
-    const redirect = this.authService.isCliente() ? '/login' : '/login-admin';
-    await this.authService.logout(redirect);
+    await this.authService.logout('/eventos-cliente');
   }
 }

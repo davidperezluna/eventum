@@ -436,7 +436,7 @@ export class AuthService {
   /**
    * Cierra sesión y borra tokens persistidos (crítico en PWA al cerrar la app en segundo plano).
    */
-  async logout(redirectTo = '/login-admin'): Promise<void> {
+  async logout(redirectTo = '/eventos-cliente'): Promise<void> {
     this.setForcedLogoutFlag();
 
     try {

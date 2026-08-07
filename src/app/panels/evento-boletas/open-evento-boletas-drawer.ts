@@ -9,7 +9,7 @@ export interface OpenEventoBoletasDrawerOptions {
 
 export function openEventoBoletasDrawer(
   drawerService: DrawerService,
-  evento: Pick<Evento, 'id' | 'titulo'>,
+  evento: Pick<Evento, 'id' | 'titulo' | 'fecha_venta_inicio' | 'fecha_venta_fin'>,
   options?: OpenEventoBoletasDrawerOptions,
 ): DrawerRef<EventoBoletasDrawerResult> {
   return drawerService.open<EventoBoletasPanel, EventoBoletasPanelData, EventoBoletasDrawerResult>(
@@ -18,10 +18,12 @@ export function openEventoBoletasDrawer(
       title: 'Boletas',
       description: evento.titulo,
       icon: 'confirmation_number',
-      size: 'xl',
+      size: 'lg',
       data: {
         eventoId: evento.id,
         eventoTitulo: evento.titulo,
+        eventoFechaVentaInicio: evento.fecha_venta_inicio,
+        eventoFechaVentaFin: evento.fecha_venta_fin,
         onChanged: options?.onChanged,
       },
     },

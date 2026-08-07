@@ -23,6 +23,7 @@ import {
   normalizarTiposBoletaActivos,
   tiposBoletaAgotados,
   tiposBoletaConExistencias,
+  isTipoBoletaEnVenta,
 } from '../../core/catalogo-compra-evento';
 import { Evento, Palco, Producto, TipoBoleta } from '../../types';
 import { environment } from '../../../environments/environment';
@@ -198,6 +199,9 @@ export class CarritoAgregar implements OnInit, OnDestroy {
   }
 
   maxCantidadBoleta(tipo: TipoBoleta): number {
+    if (this.evento && !isTipoBoletaEnVenta(this.evento, tipo)) {
+      return 0;
+    }
     const stockPalcos = this.esLineaPalcoMultipersona(tipo)
       ? (this.palcosDisponiblesPorTipo.get(tipo.id) ?? []).length
       : null;

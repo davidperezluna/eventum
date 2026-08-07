@@ -53,10 +53,6 @@ export function buildAdminNavSections(coversEnabled: boolean): AdminNavSection[]
         { kind: 'link', path: '/reportes', label: 'Reportes', icon: 'assessment' },
       ],
     },
-    {
-      label: 'Configuración',
-      entries: [{ kind: 'link', path: '/perfil', label: 'Mi Perfil', icon: 'person' }],
-    },
   ];
 }
 
@@ -80,7 +76,6 @@ function buildOrganizadorNavCore(showcase: boolean): AdminNavSection[] {
         ...(showcase
           ? [{ kind: 'link' as const, path: '/demo-laboratorio', label: 'Laboratorio', icon: 'science' }]
           : []),
-        { kind: 'link', path: '/perfil', label: 'Mi cuenta', icon: 'person' },
       ],
     },
   ];

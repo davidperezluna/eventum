@@ -29,7 +29,7 @@
     </div>
   </header>
 
-  <div class="ev-events-demo-notice" *ngIf="isShowcaseMode && isFirstTimeEmpty && !loading">
+  <div class="ev-events-demo-notice" *ngIf="isShowcaseMode && !isFirstTimeEmpty && !loading">
     <ev-notice
       variant="neutral"
       density="banner"
@@ -38,7 +38,7 @@
     />
   </div>
 
-  <div class="ev-toolbar" role="search">
+  <div class="ev-toolbar" *ngIf="!isFirstTimeEmpty || loading" role="search">
     <div class="ev-toolbar__search">
       <span class="material-icons ev-toolbar__search-icon" aria-hidden="true">search</span>
       <input
@@ -226,16 +226,53 @@
       </ev-evento-card>
     </div>
 
-    <div *ngIf="isFirstTimeEmpty" class="ev-empty" role="status">
-      <div class="ev-empty__art" aria-hidden="true">
-        <div class="ev-empty__orb"></div>
-        <span class="material-icons ev-empty__icon">celebration</span>
-      </div>
-      <h2 class="ev-empty__title">Tu primer evento comienza aquí</h2>
-      <p class="ev-empty__text">Crea un evento y empieza a vender entradas en minutos.</p>
-      <button type="button" class="ev-btn-primary ev-empty__cta" (click)="openModal()">
-        Crear mi primer evento
-      </button>
+    <div *ngIf="isFirstTimeEmpty" class="ev-events-onboarding" role="status">
+      <article class="ev-events-onboarding__panel">
+        <section class="ev-events-onboarding__hero" aria-labelledby="onboarding-title">
+          <div class="ev-events-onboarding__hero-grid">
+            <header class="ev-events-onboarding__intro">
+              <p class="ev-events-onboarding__eyebrow">Mis eventos</p>
+              <h1 id="onboarding-title" class="ev-events-onboarding__title">
+                Crea experiencias que tu público recordará ✨
+              </h1>
+              <p class="ev-events-onboarding__lead">
+                {{ authService.isOrganizador()
+                  ? 'Publica tu evento, vende entradas y opera con inteligencia en tiempo real — todo desde un solo lugar.'
+                  : 'Publica el primer evento del organizador y activa ventas, acceso e inteligencia en un solo flujo.' }}
+              </p>
+
+              <div class="ev-events-onboarding__demo" *ngIf="isShowcaseMode">
+                <span class="material-icons ev-events-onboarding__demo-icon" aria-hidden="true">science</span>
+                <p class="ev-events-onboarding__demo-text">
+                  Modo demostración — los cambios no se publican ni procesan pagos reales.
+                </p>
+              </div>
+            </header>
+
+            <aside class="ev-events-onboarding__preview" aria-hidden="true">
+              <p class="ev-events-onboarding__preview-label">Vista previa · publicado</p>
+              <ev-evento-card
+                [titulo]="onboardingPreviewTitulo"
+                [metaLine]="onboardingPreviewMeta"
+                [coverUrl]="onboardingPreviewCoverUrl"
+                [iniciales]="getEventoIniciales(onboardingPreviewTitulo)"
+                [estadoLabel]="getEstadoCardLabel(onboardingPreviewEstado)"
+                [statusDotClass]="getCoverStatusClass(onboardingPreviewEstado)"
+                [showStatus]="true"
+                [interactive]="false"
+              />
+            </aside>
+          </div>
+        </section>
+
+        <div class="ev-events-onboarding__cta-bar">
+          <button type="button" class="ev-btn-primary ev-events-onboarding__cta" (click)="openModal()">
+            <span class="material-icons" aria-hidden="true">add</span>
+            Crear mi primer evento
+          </button>
+          <p class="ev-events-onboarding__hint">Empieza en borrador y publícalo cuando esté listo.</p>
+        </div>
+      </article>
     </div>
 
     <div *ngIf="isFilteredEmpty" class="ev-empty ev-empty--filtered" role="status">
@@ -253,7 +290,7 @@
   </section>
 
   <button
-    *ngIf="!showModal"
+    *ngIf="!showModal && !isFirstTimeEmpty"
     type="button"
     class="ev-fab"
     (click)="openModal()"
@@ -271,7 +308,7 @@
     [primaryDisabled]="uploadingImage"
     [wizardMode]="wizardPhase === 'form'"
     [wizardStep]="wizardStep"
-    [wizardTotalSteps]="wizardSteps.length"
+    [wizardTotalSteps]="activeWizardSteps.length"
     (closed)="closeModal()"
     (cancelled)="closeModal()"
     (primaryAction)="saveEvento()"
@@ -307,12 +344,68 @@
 
     <!-- Wizard -->
     <div *ngIf="wizardPhase === 'form'" class="ev-wizard">
-      <ev-form-wizard [steps]="wizardSteps" [currentStep]="wizardStep" />
+      <ev-form-wizard [steps]="activeWizardSteps" [currentStep]="wizardStep" />
 
       <div class="ev-wizard__layout">
         <div class="ev-wizard__main">
           <ng-container *ngFor="let token of [wizardSelectToken]; trackBy: trackByWizardSelectToken">
-          <div class="ev-form" [ngSwitch]="wizardStep">
+          <!-- Crear evento: 2 pasos -->
+          <div *ngIf="!editingEvento" class="ev-form" [ngSwitch]="wizardStep">
+            <ev-form-section *ngSwitchCase="0" icon="event" title="Qué es" description="Lo esencial para identificar tu evento.">
+              <div class="ev-form-grid ev-form-grid--2">
+                <div class="ev-field ev-form-span-2">
+                  <label class="ev-field__label" for="evento-titulo">
+                    Título<span class="ev-field__required" aria-hidden="true">*</span>
+                  </label>
+                  <input id="evento-titulo" type="text" class="ev-input" [(ngModel)]="formData.titulo" required placeholder="Ej: Festival de Música 2026" />
+                </div>
+                <div class="ev-field ev-form-span-2">
+                  <label class="ev-field__label" for="evento-categoria">
+                    Categoría<span class="ev-field__required" aria-hidden="true">*</span>
+                  </label>
+                  <ev-select id="evento-categoria" [(ngModel)]="formData.categoria_id" [options]="categoriaOptions" placeholder="Selecciona categoría" />
+                </div>
+                <div class="ev-field ev-form-span-2" *ngIf="!authService.isOrganizador()">
+                  <label class="ev-field__label" for="evento-organizador">
+                    Organizador<span class="ev-field__required" aria-hidden="true">*</span>
+                  </label>
+                  <ev-select id="evento-organizador" [(ngModel)]="formData.organizador_id" [options]="organizadorOptions" placeholder="Selecciona organizador" [searchable]="true" />
+                  <p class="ev-field__hint" *ngIf="organizadores.length === 0">No hay organizadores disponibles.</p>
+                </div>
+              </div>
+            </ev-form-section>
+
+            <ev-form-section *ngSwitchCase="1" icon="schedule" title="Cuándo y dónde" description="Lugar del evento y fechas. El resto lo ajustas en Operaciones.">
+              <div class="ev-field">
+                <label class="ev-field__label" for="evento-lugar-create">
+                  Lugar<span class="ev-field__required" aria-hidden="true">*</span>
+                </label>
+                <ev-select
+                  id="evento-lugar-create"
+                  [(ngModel)]="formData.lugar_id"
+                  [options]="lugarOptions"
+                  placeholder="Selecciona lugar"
+                />
+              </div>
+              <ev-datetime-period
+                startLabel="El evento inicia"
+                endLabel="El evento termina"
+                startId="evento-inicio-create"
+                endId="evento-fin-create"
+                [required]="true"
+                [start]="formData.fecha_inicio"
+                (startChange)="onCreateFechaInicioChange($event)"
+                [end]="formData.fecha_fin"
+                (endChange)="onCreateFechaFinChange($event)"
+              />
+              <p class="ev-field__hint ev-wizard__create-hint">
+                La venta de entradas comenzará ahora y terminará una hora antes de que termine el evento.
+              </p>
+            </ev-form-section>
+          </div>
+
+          <!-- Editar evento: wizard completo -->
+          <div *ngIf="editingEvento" class="ev-form" [ngSwitch]="wizardStep">
             <!-- Paso 1: Información básica -->
             <ev-form-section *ngSwitchCase="0" icon="event" title="Información básica" description="Lo primero que verá el comprador.">
               <div class="ev-form-grid ev-form-grid--2">
@@ -329,6 +422,12 @@
                   <ev-select id="evento-categoria" [(ngModel)]="formData.categoria_id" [options]="categoriaOptions" placeholder="Selecciona categoría" />
                 </div>
                 <div class="ev-field">
+                  <label class="ev-field__label" for="evento-lugar">
+                    Lugar<span class="ev-field__required" aria-hidden="true">*</span>
+                  </label>
+                  <ev-select id="evento-lugar" [(ngModel)]="formData.lugar_id" [options]="lugarOptions" placeholder="Selecciona lugar" />
+                </div>
+                <div class="ev-field">
                   <label class="ev-field__label" for="evento-tags">Tags</label>
                   <input id="evento-tags" type="text" class="ev-input" [(ngModel)]="formData.tags" placeholder="música, festival, rock" />
                 </div>
@@ -342,13 +441,9 @@
               </div>
             </ev-form-section>
 
-            <!-- Paso 2: Lugar y fecha -->
-            <ev-form-section *ngSwitchCase="1" icon="place" title="Lugar y fecha" description="Dónde ocurre y cuándo se vende.">
+            <!-- Paso 2: Fechas -->
+            <ev-form-section *ngSwitchCase="1" icon="schedule" title="Fechas" description="Cuándo ocurre y cuándo se vende.">
               <div class="ev-form-grid ev-form-grid--2">
-                <div class="ev-field">
-                  <label class="ev-field__label" for="evento-lugar">Lugar</label>
-                  <ev-select id="evento-lugar" [(ngModel)]="formData.lugar_id" [options]="lugarOptions" placeholder="Sin lugar" [clearable]="true" />
-                </div>
                 <div class="ev-field">
                   <label class="ev-field__label" for="evento-edad">Edad mínima</label>
                   <ev-number-input
@@ -396,18 +491,6 @@
                 <div class="ev-field ev-form-span-2">
                   <label class="ev-field__label" for="evento-desc-completa">Descripción completa</label>
                   <textarea id="evento-desc-completa" class="ev-textarea ev-textarea--sm" [(ngModel)]="formData.descripcion" rows="4" placeholder="Detalla la experiencia, artistas e incluye"></textarea>
-                </div>
-                <div class="ev-field ev-form-span-2">
-                  <label class="ev-field__label" for="evento-video">Video (YouTube)</label>
-                  <input id="evento-video" type="url" class="ev-input" [(ngModel)]="formData.url_video" placeholder="https://youtube.com/..." />
-                </div>
-                <div class="ev-field">
-                  <label class="ev-field__label" for="evento-terminos">Términos y condiciones</label>
-                  <textarea id="evento-terminos" class="ev-textarea ev-textarea--sm" [(ngModel)]="formData.terminos_condiciones" rows="3" placeholder="Términos del evento"></textarea>
-                </div>
-                <div class="ev-field">
-                  <label class="ev-field__label" for="evento-reembolso">Política de reembolso</label>
-                  <textarea id="evento-reembolso" class="ev-textarea ev-textarea--sm" [(ngModel)]="formData.politica_reembolso" rows="3" placeholder="Política de cancelación"></textarea>
                 </div>
               </div>
             </ev-form-section>
@@ -518,6 +601,7 @@
                   <dl class="ev-wizard-review__list">
                     <div><dt>Título</dt><dd>{{ formData.titulo || '—' }}</dd></div>
                     <div><dt>Categoría</dt><dd>{{ getCategoriaNombre(formData.categoria_id) }}</dd></div>
+                    <div><dt>Lugar</dt><dd>{{ getLugarNombreById(formData.lugar_id) }}</dd></div>
                     <div *ngIf="formData.tags"><dt>Tags</dt><dd>{{ formData.tags }}</dd></div>
                     <div *ngIf="!authService.isOrganizador()"><dt>Organizador</dt><dd>{{ getOrganizadorNombre(formData.organizador_id) }}</dd></div>
                   </dl>
@@ -525,11 +609,10 @@
 
                 <section class="ev-wizard-review__block">
                   <div class="ev-wizard-review__head">
-                    <h4>Lugar y fecha</h4>
+                    <h4>Fechas</h4>
                     <button type="button" class="ev-wizard-review__edit" (click)="wizardGoToStep(1)">Editar</button>
                   </div>
                   <dl class="ev-wizard-review__list">
-                    <div><dt>Lugar</dt><dd>{{ getLugarNombreById(formData.lugar_id) }}</dd></div>
                     <div><dt>Edad mínima</dt><dd>{{ formData.edad_minima ? formData.edad_minima + ' años' : 'Sin restricción' }}</dd></div>
                     <div><dt>Evento</dt><dd>{{ formatWizardDate(formData.fecha_inicio) }} → {{ formatWizardDate(formData.fecha_fin) }}</dd></div>
                     <div><dt>Venta</dt><dd>{{ formatWizardDate(formData.fecha_venta_inicio) }} → {{ formatWizardDate(formData.fecha_venta_fin) }}</dd></div>
@@ -544,9 +627,6 @@
                   <dl class="ev-wizard-review__list">
                     <div *ngIf="formData.descripcion_corta"><dt>Corta</dt><dd>{{ formData.descripcion_corta }}</dd></div>
                     <div *ngIf="formData.descripcion"><dt>Completa</dt><dd class="ev-wizard-review__multiline">{{ formData.descripcion }}</dd></div>
-                    <div *ngIf="formData.url_video"><dt>Video</dt><dd>{{ formData.url_video }}</dd></div>
-                    <div *ngIf="formData.terminos_condiciones"><dt>Términos</dt><dd class="ev-wizard-review__multiline">{{ formData.terminos_condiciones }}</dd></div>
-                    <div *ngIf="formData.politica_reembolso"><dt>Reembolso</dt><dd class="ev-wizard-review__multiline">{{ formData.politica_reembolso }}</dd></div>
                   </dl>
                 </section>
 

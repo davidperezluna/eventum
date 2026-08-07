@@ -34,6 +34,7 @@ import {
   isVentaActiva,
 } from './evento-boletas.utils';
 import { formatGroupedNumber } from '../../core/number-input-format';
+import { eventoTieneVentanaVentaGlobal } from '../../core/catalogo-compra-evento';
 
 @Component({
   selector: 'app-evento-boletas-panel',
@@ -96,6 +97,13 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
 
   ngOnInit(): void {
     void this.loadTipos(true);
+  }
+
+  get usaVentanaVentaEvento(): boolean {
+    return eventoTieneVentanaVentaGlobal({
+      fecha_venta_inicio: this.data.eventoFechaVentaInicio,
+      fecha_venta_fin: this.data.eventoFechaVentaFin,
+    });
   }
 
   get summaryMetrics(): EvPanelSummaryMetric[] {
@@ -162,8 +170,11 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
   }
 
   get mostrarCampoMapaPalcos(): boolean {
-    const pp = Number(this.formData.personas_por_unidad ?? 1);
-    return pp > 1 || !!this.formData.es_palco;
+    return !!this.formData.es_palco;
+  }
+
+  get mostrarPersonasPorPalco(): boolean {
+    return !!this.formData.es_palco;
   }
 
   get cantidadTotalLabel(): string {
@@ -303,8 +314,10 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
           : undefined,
         limite_por_persona: fresh.limite_por_persona,
         activo: fresh.activo,
-        personas_por_unidad: fresh.personas_por_unidad ?? 1,
         es_palco: fresh.es_palco ?? false,
+        personas_por_unidad: fresh.es_palco
+          ? Math.max(2, fresh.personas_por_unidad ?? 4)
+          : 1,
         imagen_mapa_palcos: fresh.imagen_mapa_palcos,
       };
     }
@@ -345,6 +358,18 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
       this.formData.cantidad_vendidas = 0;
     }
     this.onFormChange();
+  }
+
+  onEsPalcoChange(): void {
+    if (!this.formData.es_palco) {
+      this.formData.personas_por_unidad = 1;
+      this.selectedMapaPalcoFile = null;
+      this.previewMapaPalco = null;
+      this.formData.imagen_mapa_palcos = undefined;
+    } else if (Number(this.formData.personas_por_unidad ?? 1) <= 1) {
+      this.formData.personas_por_unidad = 4;
+    }
+    this.calcularCantidadesTipoBoleta();
   }
 
   triggerMapaSelect(): void {
@@ -401,8 +426,8 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
     }
 
     const pp = Number(this.formData.personas_por_unidad ?? 1);
-    if (!Number.isFinite(pp) || pp < 1) {
-      this.alertService.warning('Valor inválido', 'Personas por palco/unidad debe ser al menos 1');
+    if (this.formData.es_palco && (!Number.isFinite(pp) || pp < 2)) {
+      this.alertService.warning('Valor inválido', 'Indica cuántas personas incluye cada palco o paquete (mínimo 2).');
       return;
     }
 
@@ -418,7 +443,7 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
         tipoData = {
           ...this.formData,
           evento_id: this.data.eventoId,
-          personas_por_unidad: Math.max(1, Math.floor(pp)),
+          personas_por_unidad: this.resolvePersonasPorUnidad(),
           es_palco: !!this.formData.es_palco,
           cantidad_vendidas: 0,
           cantidad_disponibles: this.formData.cantidad_total,
@@ -429,6 +454,7 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
             ? this.timezoneService.datetimeLocalToISO(this.formData.fecha_venta_fin as string)
             : undefined,
         };
+        this.applyVentanaVentaTipoPayload(tipoData);
         this.cleanOptionalTipoFields(tipoData);
       }
 
@@ -546,16 +572,19 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
         this.drawerRef.setTitle('Boletas');
         this.drawerRef.setDescription(this.data.eventoTitulo);
         this.drawerRef.setIcon('confirmation_number');
+        this.drawerRef.resize('lg');
         break;
       case 'form':
         this.drawerRef.setTitle(this.formTitle);
         this.drawerRef.setDescription(this.data.eventoTitulo);
         this.drawerRef.setIcon('edit');
+        this.drawerRef.resize('md');
         break;
       case 'inventory':
         this.drawerRef.setTitle(this.inventoryTitle);
         this.drawerRef.setDescription(this.data.eventoTitulo);
         this.drawerRef.setIcon('inventory_2');
+        this.drawerRef.resize('md');
         break;
     }
   }
@@ -572,8 +601,15 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
     );
   }
 
-  private buildTipoBoletaUpdatePayload(): Partial<TipoBoleta> {
+  private resolvePersonasPorUnidad(): number {
+    if (!this.formData.es_palco) {
+      return 1;
+    }
     const pp = Number(this.formData.personas_por_unidad ?? 1);
+    return Math.max(2, Math.floor(pp));
+  }
+
+  private buildTipoBoletaUpdatePayload(): Partial<TipoBoleta> {
     const payload: Partial<TipoBoleta> = {
       evento_id: this.data.eventoId,
       nombre: this.formData.nombre?.trim(),
@@ -581,7 +617,7 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
       precio: this.formData.precio,
       limite_por_persona: this.formData.limite_por_persona,
       activo: this.formData.activo,
-      personas_por_unidad: Math.max(1, Math.floor(pp)),
+      personas_por_unidad: this.resolvePersonasPorUnidad(),
       es_palco: !!this.formData.es_palco,
       fecha_venta_inicio: this.formData.fecha_venta_inicio
         ? this.timezoneService.datetimeLocalToISO(this.formData.fecha_venta_inicio as string)
@@ -590,8 +626,20 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
         ? this.timezoneService.datetimeLocalToISO(this.formData.fecha_venta_fin as string)
         : undefined,
     };
+    this.applyVentanaVentaTipoPayload(payload);
     this.cleanOptionalTipoFields(payload);
     return payload;
+  }
+
+  private applyVentanaVentaTipoPayload(payload: Partial<TipoBoleta>): void {
+    if (!this.usaVentanaVentaEvento) {
+      return;
+    }
+    delete payload.fecha_venta_inicio;
+    delete payload.fecha_venta_fin;
+    if (this.editingTipo) {
+      Object.assign(payload, { fecha_venta_inicio: null, fecha_venta_fin: null });
+    }
   }
 
   private cleanOptionalTipoFields(payload: Partial<TipoBoleta>): void {

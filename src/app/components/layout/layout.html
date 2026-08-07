@@ -11,8 +11,7 @@
     [sections]="adminNavSections"
     [open]="sidebarOpen"
     [compact]="effectiveSidebarCompact"
-    [userEmail]="userEmail"
-    [userRole]="userRole"
+    [userName]="nombreCliente() ?? ''"
     [panelTitle]="panelTitle"
     [homeRoute]="panelHomeRoute"
     [currentYear]="currentYear"
@@ -49,9 +48,8 @@
             <span class="material-icons">close</span>
           </button>
         </div>
-        <p class="subtitle">Área de cliente</p>
       </div>
-      <nav class="sidebar-nav client-mobile-nav" aria-label="Secciones del cliente">
+      <nav class="sidebar-nav client-mobile-nav" aria-label="Navegación">
         <ng-container *ngFor="let item of clientNavFor('mobile')">
           <div *ngIf="item.dividerBefore" class="client-nav-divider" role="separator" aria-hidden="true"></div>
           <a
@@ -70,17 +68,28 @@
       </nav>
       <div class="sidebar-footer client-menu-footer">
         <div *ngIf="currentUser && usuario" class="client-menu-account">
-          <div class="client-menu-account__identity" aria-label="Sesión iniciada">
-            <span class="material-icons client-menu-account__icon" aria-hidden="true">account_circle</span>
-            <div class="client-menu-account__text">
-              <span *ngIf="nombreCliente() as nombre" class="client-menu-account__name">{{ nombre }}</span>
-              <span class="client-menu-account__email">{{ userEmail }}</span>
-            </div>
+          <div class="client-menu-account__identity">
+            <a
+              routerLink="/perfil"
+              class="client-menu-account__profile"
+              aria-label="Ir a mi perfil"
+              (click)="closeClientMenu()"
+            >
+              <span class="material-icons client-menu-account__icon" aria-hidden="true">account_circle</span>
+              <div class="client-menu-account__text">
+                <span *ngIf="nombreCliente() as nombre" class="client-menu-account__name">{{ nombre }}</span>
+                <span class="client-menu-account__email">{{ userEmail }}</span>
+              </div>
+            </a>
+            <button
+              type="button"
+              class="client-menu-logout"
+              (click)="logout()"
+              aria-label="Cerrar sesión"
+            >
+              <span class="material-icons" aria-hidden="true">logout</span>
+            </button>
           </div>
-          <button type="button" class="btn-logout client-menu-logout" (click)="logout()">
-            <span class="material-icons" aria-hidden="true">logout</span>
-            <span>Cerrar sesión</span>
-          </button>
         </div>
         <p class="client-menu-copyright">&copy; {{ currentYear }} Eventum</p>
       </div>
@@ -172,7 +181,7 @@
         </a>
         <a routerLink="/organizadores" class="nav-item" routerLinkActive="active" (click)="closeClientMenu()">
           <span class="material-icons nav-icon">business_center</span>
-          <span class="nav-label">Para Organizadores</span>
+          <span class="nav-label">Para organizadores</span>
         </a>
         <a routerLink="/carrito" class="nav-item nav-item--with-badge" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeClientMenu()">
           <span class="material-icons nav-icon">shopping_cart</span>
@@ -226,7 +235,7 @@
             {{ cuposLabels.module }}
           </a>
           <a routerLink="/organizadores" routerLinkActive="active" class="client-nav-item">
-            Para Organizadores
+            Para organizadores
           </a>
           <a
             *ngIf="coversEventumEnabled"

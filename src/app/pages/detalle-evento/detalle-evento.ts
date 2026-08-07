@@ -35,6 +35,7 @@ import { CUPOS_LABELS } from '../../core/cupos-labels';
 import { resolverConflictoEventoAntesDeAgregar } from '../../core/carrito-conflicto';
 import { ClientConfirmDialogService } from '../../services/client-confirm-dialog.service';
 import { environment } from '../../../environments/environment';
+import { isTipoBoletaEnVenta, mostrarFinVentaTipoBoleta } from '../../core/catalogo-compra-evento';
 
 @Component({
   selector: 'app-detalle-evento',
@@ -203,9 +204,8 @@ export class DetalleEvento implements OnInit, OnDestroy {
   }
 
   /** Fin de venta por etapa: ya está en la ficha del evento («Venta en línea»). */
-  mostrarFinVentaTipo(_tipo: TipoBoleta): boolean {
-    if (!this.evento) return false;
-    return !this.evento.fecha_venta_inicio && !this.evento.fecha_venta_fin;
+  mostrarFinVentaTipo(tipo: TipoBoleta): boolean {
+    return mostrarFinVentaTipoBoleta(this.evento, tipo);
   }
 
   get tiposBoletaDisponibles(): TipoBoleta[] {
@@ -242,6 +242,9 @@ export class DetalleEvento implements OnInit, OnDestroy {
   }
 
   maxCantidadPermitida(tipo: TipoBoleta): number {
+    if (this.evento && !isTipoBoletaEnVenta(this.evento, tipo)) {
+      return 0;
+    }
     const stockPalcos = this.esLineaPalcoMultipersona(tipo)
       ? (this.palcosDisponiblesPorTipo.get(tipo.id) ?? []).length
       : null;

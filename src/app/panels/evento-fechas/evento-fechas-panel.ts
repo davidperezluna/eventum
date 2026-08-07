@@ -3,18 +3,17 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DrawerRef, EV_DRAWER_DATA, EvDrawerContent } from '../../core/drawer';
 import { EventosService } from '../../services/eventos.service';
-import { LugaresService } from '../../services/lugares.service';
 import { TimezoneService } from '../../services/timezone.service';
 import { AlertService } from '../../services/alert.service';
 import { EvDrawerFooter } from '../../components/ev-drawer/ev-drawer-footer';
 import { EvButton } from '../../components/ev-button';
-import { EvSelect, EvSelectOption, mapToEvSelectOptions } from '../../components/ev-select/ev-select';
 import { EvNumberInput } from '../../components/ev-number-input/ev-number-input';
 import { EvDatetimePeriod } from '../../components/ev-datetime-period/ev-datetime-period';
 import { EvFormSection } from '../../components/ev-form-section/ev-form-section';
 import { EvNotice } from '../../components/ev-notice';
 import { EvPanelForm } from '../../components/ev-panel-form';
-import { Lugar, Evento } from '../../types';
+import { Evento } from '../../types';
+import { getRangeValidationMessage } from '../../core/datetime-picker';
 import {
   EventoFechasDrawerResult,
   EventoFechasPanelData,
@@ -29,7 +28,6 @@ import {
     FormsModule,
     EvDrawerFooter,
     EvButton,
-    EvSelect,
     EvNumberInput,
     EvDatetimePeriod,
     EvFormSection,
@@ -41,17 +39,12 @@ import {
 })
 export class EventoFechasPanel implements OnInit, EvDrawerContent {
   private readonly eventosService = inject(EventosService);
-  private readonly lugaresService = inject(LugaresService);
   private readonly timezoneService = inject(TimezoneService);
   private readonly alertService = inject(AlertService);
   private readonly cdr = inject(ChangeDetectorRef);
   readonly drawerRef = inject(DrawerRef<EventoFechasDrawerResult>);
   readonly data = inject<EventoFechasPanelData>(EV_DRAWER_DATA);
 
-  lugares: Lugar[] = [];
-  lugarOptions: EvSelectOption<number>[] = [];
-
-  lugarId: number | null = null;
   edadMinima: number | null = null;
   fechaInicio = '';
   fechaFin = '';
@@ -62,14 +55,12 @@ export class EventoFechasPanel implements OnInit, EvDrawerContent {
   private initialSnapshot = '';
 
   ngOnInit(): void {
-    this.lugarId = this.data.lugar_id ?? null;
     this.edadMinima = this.data.edad_minima ?? null;
     this.fechaInicio = this.toDatetimeLocal(this.data.fecha_inicio);
     this.fechaFin = this.toDatetimeLocal(this.data.fecha_fin);
     this.fechaVentaInicio = this.toDatetimeLocal(this.data.fecha_venta_inicio);
     this.fechaVentaFin = this.toDatetimeLocal(this.data.fecha_venta_fin);
     this.captureSnapshot();
-    void this.loadLugares();
   }
 
   get configComplete(): boolean {
@@ -83,17 +74,23 @@ export class EventoFechasPanel implements OnInit, EvDrawerContent {
         ctaLabel: '',
       };
     }
-    if (this.lugarId == null) {
-      return {
-        message: 'Asignar un lugar ayuda a tus asistentes a encontrar el evento con facilidad.',
-        ctaLabel: '',
-      };
-    }
     return null;
   }
 
+  get hasRangeErrors(): boolean {
+    return !!(this.eventRangeError || this.saleRangeError);
+  }
+
+  get eventRangeError(): string | null {
+    return getRangeValidationMessage(this.fechaInicio, this.fechaFin);
+  }
+
+  get saleRangeError(): string | null {
+    return getRangeValidationMessage(this.fechaVentaInicio, this.fechaVentaFin);
+  }
+
   get canSave(): boolean {
-    return this.isDirty();
+    return this.isDirty() && this.configComplete && !this.hasRangeErrors;
   }
 
   evDrawerHasUnsavedChanges(): boolean {
@@ -126,7 +123,6 @@ export class EventoFechasPanel implements OnInit, EvDrawerContent {
 
     try {
       const payload: Partial<Evento> = {
-        lugar_id: this.lugarId ?? undefined,
         edad_minima: this.edadMinima ?? undefined,
         fecha_inicio: this.timezoneService.datetimeLocalToISO(this.fechaInicio),
         fecha_fin: this.timezoneService.datetimeLocalToISO(this.fechaFin),
@@ -137,24 +133,16 @@ export class EventoFechasPanel implements OnInit, EvDrawerContent {
       const updated = await this.eventosService.updateEvento(this.data.eventoId, payload);
 
       this.captureSnapshot();
-      this.alertService.success('Guardado', 'Las fechas y el lugar se guardaron correctamente.');
+      this.alertService.success('Guardado', 'Las fechas del evento se guardaron correctamente.');
       this.drawerRef.markPristine();
-
-      const lugar =
-        updated.lugar ??
-        (this.lugarId != null
-          ? this.lugares.find((l) => l.id === this.lugarId) ?? this.data.lugar ?? null
-          : null);
 
       void this.drawerRef.close({
         changed: true,
-        lugar_id: updated.lugar_id ?? this.lugarId,
         edad_minima: updated.edad_minima ?? this.edadMinima,
         fecha_inicio: updated.fecha_inicio,
         fecha_fin: updated.fecha_fin,
         fecha_venta_inicio: updated.fecha_venta_inicio,
         fecha_venta_fin: updated.fecha_venta_fin,
-        lugar: lugar ? { id: lugar.id, nombre: lugar.nombre, ciudad: lugar.ciudad } : null,
       });
     } catch (err) {
       console.error('Error guardando fechas del evento:', err);
@@ -174,28 +162,17 @@ export class EventoFechasPanel implements OnInit, EvDrawerContent {
       this.alertService.warning('Campo requerido', 'Las fechas de venta son requeridas.');
       return false;
     }
-    return true;
-  }
-
-  private async loadLugares(): Promise<void> {
-    this.drawerRef.setLoading(true);
-    try {
-      const response = await this.lugaresService.getLugares({ limit: 1000 });
-      this.lugares = response.data ?? [];
-      this.lugarOptions = mapToEvSelectOptions(
-        this.lugares,
-        (l) => `${l.nombre} — ${l.ciudad}`,
-        (l) => l.id,
-      );
-    } catch (err) {
-      console.error('Error cargando lugares:', err);
-      this.alertService.error('Error', 'No se pudieron cargar los lugares.');
-      this.lugares = [];
-      this.lugarOptions = [];
-    } finally {
-      this.drawerRef.setLoading(false);
-      this.cdr.detectChanges();
+    const eventError = this.eventRangeError;
+    if (eventError) {
+      this.alertService.warning('Fechas inválidas', eventError);
+      return false;
     }
+    const saleError = this.saleRangeError;
+    if (saleError) {
+      this.alertService.warning('Fechas de venta inválidas', saleError);
+      return false;
+    }
+    return true;
   }
 
   private toDatetimeLocal(value?: Date | string | null): string {
@@ -212,7 +189,6 @@ export class EventoFechasPanel implements OnInit, EvDrawerContent {
 
   private getFormSnapshot(): FechasFormSnapshot {
     return {
-      lugar_id: this.lugarId,
       edad_minima: this.edadMinima,
       fecha_inicio: this.fechaInicio,
       fecha_fin: this.fechaFin,

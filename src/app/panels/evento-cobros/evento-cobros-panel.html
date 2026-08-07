@@ -23,38 +23,35 @@
           <p class="ev-field__hint">Si está activo, no se requiere cuenta Wompi ni cobro online.</p>
         </ev-form-section>
 
-        <ev-form-section *ngIf="!esGratis" icon="payments" title="Cobro online" description="Comisión y cuenta de destino.">
-          <div class="ev-form-grid ev-form-grid--2">
-            <div class="ev-field">
-              <label class="ev-field__label" for="cobros-servicio">Servicio (%)</label>
-              <ev-number-input
-                id="cobros-servicio"
-                mode="decimal"
-                [min]="0"
-                [max]="100"
-                [(ngModel)]="porcentajeServicio"
-                (ngModelChange)="onFormChange()"
-                placeholder="0"
-                [disabled]="saving"
-              />
-              <p class="ev-field__hint">Porcentaje que Eventum cobra sobre cada venta online.</p>
-            </div>
-            <div class="ev-field ev-form-span-2">
-              <label class="ev-field__label" for="cobros-wompi">
-                Cuenta Wompi<span *ngIf="!isShowcaseMode" class="ev-field__required" aria-hidden="true">*</span>
-              </label>
-              <ev-select
-                id="cobros-wompi"
-                [(ngModel)]="wompiCuentaId"
-                (ngModelChange)="onFormChange()"
-                [options]="wompiCuentaOptions"
-                placeholder="Selecciona una cuenta Wompi"
-                [clearable]="isShowcaseMode"
-                [disabled]="saving"
-              />
-              <p *ngIf="!isShowcaseMode" class="ev-field__hint">Define qué cuenta Wompi usará este evento para cobrar.</p>
-              <p *ngIf="isShowcaseMode" class="ev-field__hint">En modo demo puedes elegir una cuenta para ver el flujo; no se vinculará a pagos reales.</p>
-            </div>
+        <ev-form-section *ngIf="!esGratis" icon="payments" title="Cobro online" description="Cuenta Wompi y cargo aplicado en cada venta online.">
+          <div class="ev-field">
+            <label class="ev-field__label" for="cobros-servicio">Porcentaje de servicio por venta online</label>
+            <ev-number-input
+              id="cobros-servicio"
+              mode="decimal"
+              [min]="0"
+              [max]="100"
+              [(ngModel)]="porcentajeServicio"
+              (ngModelChange)="onFormChange()"
+              placeholder="0"
+              [disabled]="saving"
+            />
+          </div>
+          <div class="ev-field">
+            <label class="ev-field__label" for="cobros-wompi">
+              Cuenta Wompi<span *ngIf="!isShowcaseMode" class="ev-field__required" aria-hidden="true">*</span>
+            </label>
+            <ev-select
+              id="cobros-wompi"
+              [(ngModel)]="wompiCuentaId"
+              (ngModelChange)="onFormChange()"
+              [options]="wompiCuentaOptions"
+              placeholder="Selecciona una cuenta Wompi"
+              [clearable]="isShowcaseMode"
+              [disabled]="saving"
+            />
+            <p *ngIf="!isShowcaseMode" class="ev-field__hint">Define qué cuenta Wompi usará este evento para cobrar.</p>
+            <p *ngIf="isShowcaseMode" class="ev-field__hint">En modo demo puedes elegir una cuenta para ver el flujo; no se vinculará a pagos reales.</p>
           </div>
         </ev-form-section>
       </div>

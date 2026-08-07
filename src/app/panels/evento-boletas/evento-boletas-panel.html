@@ -171,7 +171,19 @@
             </div>
           </ev-form-section>
 
-          <ev-form-section icon="schedule" title="Periodo de venta" description="Opcional. Puedes cambiarlo después.">
+          <ev-notice
+            *ngIf="usaVentanaVentaEvento"
+            variant="neutral"
+            icon="info"
+            message="La venta de entradas la define el evento en Fechas y lugar. Todos los tipos comparten esa ventana."
+          />
+
+          <ev-form-section
+            *ngIf="!usaVentanaVentaEvento"
+            icon="schedule"
+            title="Periodo de venta"
+            description="Opcional. Define cuándo se puede comprar este tipo."
+          >
             <ev-datetime-period
               startLabel="Venta inicia"
               endLabel="Venta termina"
@@ -185,34 +197,52 @@
             />
           </ev-form-section>
 
-          <ev-form-section icon="groups" title="Palcos y capacidad" description="Entradas individuales o paquetes grupales.">
-            <div class="ev-check-row">
-              <label class="ev-check">
-                <input
-                  type="checkbox"
-                  [(ngModel)]="formData.es_palco"
-                  (ngModelChange)="onFormChange()"
-                  [disabled]="saving"
-                />
-                Es palco / paquete grupal
-              </label>
+          <ev-form-section icon="groups" title="Capacidad, límites y estado" description="Palco o paquete grupal, tope por comprador y visibilidad en venta.">
+            <div class="ev-field">
+              <div class="ev-check-row">
+                <label class="ev-check">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="formData.es_palco"
+                    (ngModelChange)="onEsPalcoChange()"
+                    [disabled]="saving"
+                  />
+                  Es palco / paquete grupal
+                </label>
+              </div>
+              <p class="ev-field__hint">Actívalo si vendes palcos, mesas o paquetes para varias personas en una sola compra.</p>
             </div>
 
             <div class="ev-form-grid ev-form-grid--2">
-              <div class="ev-field">
+              <div *ngIf="mostrarPersonasPorPalco" class="ev-field">
                 <label class="ev-field__label" for="boleta-personas">
-                  Personas por unidad<span class="ev-field__required" aria-hidden="true">*</span>
+                  Personas incluidas por palco<span class="ev-field__required" aria-hidden="true">*</span>
                 </label>
                 <ev-number-input
                   id="boleta-personas"
                   mode="integer"
                   [stepper]="true"
-                  [min]="1"
+                  [min]="2"
                   [(ngModel)]="formData.personas_por_unidad"
                   (ngModelChange)="onFormChange()"
                   [disabled]="saving"
                 />
-                <p class="ev-field__hint">Cuántas personas incluye cada unidad.</p>
+                <p class="ev-field__hint">Cuántas personas entran con cada palco o paquete vendido.</p>
+              </div>
+
+              <div class="ev-field" [class.ev-form-span-2]="!mostrarPersonasPorPalco">
+                <label class="ev-field__label" for="boleta-limite">Tope de compra por persona</label>
+                <ev-number-input
+                  id="boleta-limite"
+                  mode="integer"
+                  [stepper]="true"
+                  [min]="1"
+                  [(ngModel)]="formData.limite_por_persona"
+                  (ngModelChange)="onFormChange()"
+                  placeholder="Sin tope"
+                  [disabled]="saving"
+                />
+                <p class="ev-field__hint">Máximo de entradas de este tipo que puede comprar un mismo cliente. Vacío = sin restricción.</p>
               </div>
             </div>
 
@@ -251,25 +281,6 @@
                 </div>
               </div>
             </div>
-          </ev-form-section>
-
-          <ev-form-section icon="rule" title="Límites y estado" description="Control de compra y disponibilidad.">
-            <div class="ev-form-grid ev-form-grid--2">
-              <div class="ev-field">
-                <label class="ev-field__label" for="boleta-limite">Límite por persona</label>
-                <ev-number-input
-                  id="boleta-limite"
-                  mode="integer"
-                  [stepper]="true"
-                  [min]="1"
-                  [(ngModel)]="formData.limite_por_persona"
-                  (ngModelChange)="onFormChange()"
-                  placeholder="Sin límite"
-                  [disabled]="saving"
-                />
-                <p class="ev-field__hint">Máximo por comprador. Opcional.</p>
-              </div>
-            </div>
 
             <div *ngIf="editingTipo" class="ev-panel-readonly">
               <p class="ev-panel-readonly__title">Inventario actual</p>
@@ -292,18 +303,20 @@
               </button>
             </div>
 
-            <div class="ev-check-row">
-              <label class="ev-check">
-                <input
-                  type="checkbox"
-                  [(ngModel)]="formData.activo"
-                  (ngModelChange)="onFormChange()"
-                  [disabled]="saving"
-                />
-                Tipo activo
-              </label>
+            <div class="ev-field">
+              <div class="ev-check-row">
+                <label class="ev-check">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="formData.activo"
+                    (ngModelChange)="onFormChange()"
+                    [disabled]="saving"
+                  />
+                  Tipo activo
+                </label>
+              </div>
+              <p class="ev-field__hint">Desactívalo para ocultar este tipo del catálogo público sin eliminarlo.</p>
             </div>
-            <p class="ev-field__hint">Los tipos inactivos no aparecen en la venta pública.</p>
           </ev-form-section>
         </div>
       </ev-panel-form>

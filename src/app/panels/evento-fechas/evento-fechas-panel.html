@@ -1,7 +1,7 @@
 <div class="ev-panel">
   <div class="ev-panel__scroll">
     <p class="ev-panel__lead">
-      Define dónde ocurre el evento y cuándo estará activo, tanto para la experiencia como para la venta de entradas.
+      Define cuándo ocurre el evento y cuándo estará activa la venta de entradas.
     </p>
 
     <ev-notice
@@ -13,20 +13,8 @@
 
     <ev-panel-form>
       <div class="ev-form">
-        <ev-form-section icon="place" title="Lugar" description="Opcional. Ayuda a ubicar el evento.">
+        <ev-form-section icon="event" title="Fechas del evento" description="Cuándo ocurre la experiencia en vivo.">
           <div class="ev-form-grid ev-form-grid--2">
-            <div class="ev-field">
-              <label class="ev-field__label" for="fechas-lugar">Lugar</label>
-              <ev-select
-                id="fechas-lugar"
-                [(ngModel)]="lugarId"
-                (ngModelChange)="onFormChange()"
-                [options]="lugarOptions"
-                placeholder="Sin lugar"
-                [clearable]="true"
-                [disabled]="saving"
-              />
-            </div>
             <div class="ev-field">
               <label class="ev-field__label" for="fechas-edad">Edad mínima</label>
               <ev-number-input
@@ -40,9 +28,6 @@
               />
             </div>
           </div>
-        </ev-form-section>
-
-        <ev-form-section icon="event" title="Fechas del evento" description="Cuándo ocurre la experiencia en vivo.">
           <ev-datetime-period
             startLabel="El evento inicia"
             endLabel="El evento termina"

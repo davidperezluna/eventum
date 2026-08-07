@@ -1,12 +1,12 @@
 <div class="ev-panel">
   <div class="ev-panel__scroll">
     <p class="ev-panel__lead">
-      Define cómo se presenta tu evento: nombre, categoría y descripción para listados y detalle público.
+      Define cómo se presenta tu evento: nombre, categoría, lugar y descripción para listados y detalle público.
     </p>
 
     <ev-panel-form>
       <div class="ev-form">
-        <ev-form-section icon="badge" title="Identidad" description="Nombre y clasificación del evento.">
+        <ev-form-section icon="badge" title="Identidad" description="Nombre, clasificación y ubicación del evento.">
           <div class="ev-form-grid ev-form-grid--2">
             <div class="ev-field ev-form-span-2">
               <label class="ev-field__label" for="info-titulo">
@@ -36,6 +36,19 @@
               />
             </div>
             <div class="ev-field">
+              <label class="ev-field__label" for="info-lugar">
+                Lugar<span class="ev-field__required" aria-hidden="true">*</span>
+              </label>
+              <ev-select
+                id="info-lugar"
+                [(ngModel)]="lugarId"
+                (ngModelChange)="onFormChange()"
+                [options]="lugarOptions"
+                placeholder="Selecciona lugar"
+                [disabled]="saving"
+              />
+            </div>
+            <div class="ev-field ev-form-span-2">
               <label class="ev-field__label" for="info-tags">Tags</label>
               <input
                 id="info-tags"
@@ -78,6 +91,78 @@
               ></textarea>
             </div>
           </div>
+        </ev-form-section>
+
+        <ev-form-section icon="tune" title="Opcional" description="Video y textos legales visibles en la página pública del evento.">
+          <details class="ev-form-disclosure" [open]="videoOpen" (toggle)="videoOpen = $any($event.target).open">
+            <summary class="ev-form-disclosure__summary">
+              <span class="ev-form-disclosure__title">Video de YouTube</span>
+              <span class="ev-form-disclosure__meta">Opcional</span>
+            </summary>
+            <div class="ev-form-disclosure__body">
+              <div class="ev-field">
+                <label class="ev-field__label" for="info-video">Enlace del video</label>
+                <input
+                  id="info-video"
+                  type="url"
+                  class="ev-input"
+                  [(ngModel)]="urlVideo"
+                  (ngModelChange)="onFormChange()"
+                  placeholder="https://youtube.com/watch?v=..."
+                  [disabled]="saving"
+                />
+                <p class="ev-field__hint">Se muestra embebido en el detalle del evento si es un enlace válido de YouTube.</p>
+              </div>
+            </div>
+          </details>
+
+          <details class="ev-form-disclosure" [open]="terminosOpen" (toggle)="terminosOpen = $any($event.target).open">
+            <summary class="ev-form-disclosure__summary">
+              <span class="ev-form-disclosure__title">Términos y condiciones</span>
+              <span class="ev-form-disclosure__meta">Opcional</span>
+            </summary>
+            <div class="ev-form-disclosure__body">
+              <div class="ev-field">
+                <label class="ev-field__label" for="info-terminos">Texto para compradores</label>
+                <textarea
+                  id="info-terminos"
+                  class="ev-textarea ev-textarea--sm"
+                  [(ngModel)]="terminosCondiciones"
+                  (ngModelChange)="onFormChange()"
+                  rows="6"
+                  placeholder="Condiciones de asistencia y compra"
+                  [disabled]="saving"
+                ></textarea>
+                <button type="button" class="ev-panel-link" (click)="usarPlantillaTerminos()" [disabled]="saving">
+                  Usar plantilla general
+                </button>
+              </div>
+            </div>
+          </details>
+
+          <details class="ev-form-disclosure" [open]="reembolsoOpen" (toggle)="reembolsoOpen = $any($event.target).open">
+            <summary class="ev-form-disclosure__summary">
+              <span class="ev-form-disclosure__title">Política de reembolso</span>
+              <span class="ev-form-disclosure__meta">Opcional</span>
+            </summary>
+            <div class="ev-form-disclosure__body">
+              <div class="ev-field">
+                <label class="ev-field__label" for="info-reembolso">Texto para compradores</label>
+                <textarea
+                  id="info-reembolso"
+                  class="ev-textarea ev-textarea--sm"
+                  [(ngModel)]="politicaReembolso"
+                  (ngModelChange)="onFormChange()"
+                  rows="6"
+                  placeholder="Reglas de cancelación y devoluciones"
+                  [disabled]="saving"
+                ></textarea>
+                <button type="button" class="ev-panel-link" (click)="usarPlantillaReembolso()" [disabled]="saving">
+                  Usar plantilla general
+                </button>
+              </div>
+            </div>
+          </details>
         </ev-form-section>
       </div>
     </ev-panel-form>

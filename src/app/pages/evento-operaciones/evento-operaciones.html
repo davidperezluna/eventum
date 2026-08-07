@@ -56,19 +56,11 @@
                 </li>
               </ul>
             </div>
-            <div class="ev-ops-hero__actions">
-              <button
-                *ngIf="showSecondaryVerEvento"
-                type="button"
-                class="ev-btn-ghost ev-btn-sm"
-                (click)="verEventoPublico()"
-              >
-                Ver evento
-              </button>
+            <div class="ev-ops-hero__actions" *ngIf="showHeroPrimaryAction">
               <button
                 type="button"
                 class="ev-btn-primary ev-btn-sm"
-                [disabled]="publishing || savingEstado"
+                [disabled]="isPrimaryActionDisabled"
                 (click)="onPrimaryAction()"
               >
                 {{ primaryActionLabel }}
@@ -168,16 +160,18 @@
           [class.ev-ops-checklist__item--done]="step.complete"
           [class.ev-ops-checklist__item--pending]="!step.complete && !step.optional"
           [class.ev-ops-checklist__item--optional]="step.optional"
+          [class.ev-ops-checklist__item--blocked]="step.id === 'publicacion' && !step.complete && !canPublishEvento"
         >
           <button
             type="button"
             class="ev-ops-checklist__btn"
             (click)="onReadinessStepClick(step)"
-            [disabled]="step.complete && step.id !== 'publicacion' && step.id !== 'informacion' && step.id !== 'imagen' && step.id !== 'fechas' && step.id !== 'cobros' && step.id !== 'boletas' && step.id !== 'productos'"
+            [disabled]="isReadinessStepDisabled(step)"
           >
             <span class="ev-ops-checklist__icon" aria-hidden="true">
               <span class="material-icons" *ngIf="step.complete">check_circle</span>
-              <span class="material-icons" *ngIf="!step.complete && !step.optional">error_outline</span>
+              <span class="material-icons" *ngIf="!step.complete && step.id === 'publicacion' && !canPublishEvento">lock</span>
+              <span class="material-icons" *ngIf="!step.complete && !step.optional && !(step.id === 'publicacion' && !canPublishEvento)">error_outline</span>
               <span class="material-icons" *ngIf="!step.complete && step.optional">radio_button_unchecked</span>
             </span>
             <span class="ev-ops-checklist__label">
@@ -301,16 +295,6 @@
               <span>
                 <strong>Editar información</strong>
                 <small>Wizard de datos del evento</small>
-              </span>
-              <span class="material-icons ev-ops-advanced__chevron" aria-hidden="true">chevron_right</span>
-            </button>
-          </li>
-          <li>
-            <button type="button" class="ev-ops-advanced__btn" (click)="verEventoPublico()">
-              <span class="material-icons" aria-hidden="true">open_in_new</span>
-              <span>
-                <strong>Ver evento público</strong>
-                <small>Página de detalle en nueva pestaña</small>
               </span>
               <span class="material-icons ev-ops-advanced__chevron" aria-hidden="true">chevron_right</span>
             </button>

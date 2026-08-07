@@ -20,6 +20,7 @@ import { DrawerService } from '../../core/drawer';
 import { openEventoCuponesDrawer } from '../../panels/evento-cupones';
 import { openEventoBoletasDrawer } from '../../panels/evento-boletas';
 import { enforceBorradorCatalogoRules } from '../../core/evento-publicacion';
+import { getEventoLegalDefaults } from '../../core/evento-legal-defaults';
 import {
   getEventoEstadoAdminLabel,
   getEventoEstadoCardLabel,
@@ -35,6 +36,7 @@ import { EvEventoCard } from '../../components/ev-evento-card/ev-evento-card';
 import { EvSelect, EvSelectOption, mapToEvSelectOptions } from '../../components/ev-select/ev-select';
 import { EvNumberInput } from '../../components/ev-number-input/ev-number-input';
 import { EvDatetimePeriod } from '../../components/ev-datetime-period/ev-datetime-period';
+import { getRangeValidationMessage, compareDatetimeLocal } from '../../core/datetime-picker';
 import { EvNotice } from '../../components/ev-notice';
 
 @Component({
@@ -79,14 +81,23 @@ export class Eventos implements OnInit, OnDestroy {
   private pendingWizardStep = 0;
   private pendingOpen: string | null = null;
 
-  readonly wizardSteps: EvWizardStep[] = [
+  readonly createWizardSteps: EvWizardStep[] = [
+    { id: 'que-es', label: 'Qué es' },
+    { id: 'cuando-donde', label: 'Cuándo y dónde' },
+  ];
+
+  readonly editWizardSteps: EvWizardStep[] = [
     { id: 'basico', label: 'Información básica' },
-    { id: 'lugar-fecha', label: 'Lugar y fecha' },
+    { id: 'lugar-fecha', label: 'Fechas' },
     { id: 'descripcion', label: 'Descripción' },
     { id: 'configuracion', label: 'Configuración' },
     { id: 'imagen', label: 'Imagen' },
     { id: 'revision', label: 'Revisión' },
   ];
+
+  get activeWizardSteps(): EvWizardStep[] {
+    return this.editingEvento ? this.editWizardSteps : this.createWizardSteps;
+  }
 
   // Manejo de tipos de boleta por evento (drawer)
 
@@ -106,6 +117,12 @@ export class Eventos implements OnInit, OnDestroy {
   get isShowcaseMode(): boolean {
     return this.authService.isShowcaseOrganizador();
   }
+
+  readonly onboardingPreviewEstado = TipoEstadoEvento.PUBLICADO;
+  readonly onboardingPreviewTitulo = 'Festival Aurora 2026';
+  readonly onboardingPreviewMeta = '15 mar 2026 · Bogotá · Desde $45.000';
+  readonly onboardingPreviewCoverUrl =
+    'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=960&q=80';
 
   get estadosFormulario(): { value: TipoEstadoEvento; label: string }[] {
     if (this.isShowcaseMode) {
@@ -218,7 +235,7 @@ export class Eventos implements OnInit, OnDestroy {
     const open = this.pendingOpen;
     const step = Math.min(
       Math.max(this.pendingWizardStep, 0),
-      this.wizardSteps.length - 1,
+      this.editWizardSteps.length - 1,
     );
     this.pendingEditId = null;
     this.pendingOpen = null;
@@ -333,7 +350,7 @@ export class Eventos implements OnInit, OnDestroy {
     }
     return this.editingEvento
       ? 'Actualiza la información paso a paso.'
-      : 'Construye tu evento paso a paso.';
+      : 'Título y fecha para empezar; completa el resto en Operaciones.';
   }
 
   get eventoModalPrimaryLabel(): string {
@@ -693,7 +710,7 @@ export class Eventos implements OnInit, OnDestroy {
   }
 
   wizardGoToStep(step: number): void {
-    if (step >= 0 && step < this.wizardSteps.length) {
+    if (step >= 0 && step < this.activeWizardSteps.length) {
       this.wizardStep = step;
     }
   }
@@ -702,7 +719,7 @@ export class Eventos implements OnInit, OnDestroy {
     if (!this.validateWizardStep(this.wizardStep)) {
       return;
     }
-    if (this.wizardStep < this.wizardSteps.length - 1) {
+    if (this.wizardStep < this.activeWizardSteps.length - 1) {
       this.wizardStep += 1;
     }
   }
@@ -714,21 +731,68 @@ export class Eventos implements OnInit, OnDestroy {
   }
 
   validateWizardStep(step: number): boolean {
+    if (!this.editingEvento) {
+      return this.validateCreateWizardStep(step);
+    }
+    return this.validateEditWizardStep(step);
+  }
+
+  private validateBasicStep(): boolean {
+    if (!this.formData.titulo?.trim()) {
+      this.alertService.warning('Campo requerido', 'El título es requerido');
+      return false;
+    }
+    if (!this.formData.categoria_id) {
+      this.alertService.warning('Campo requerido', 'La categoría es requerida');
+      return false;
+    }
+    if (!this.authService.isOrganizador() && !this.formData.organizador_id) {
+      this.alertService.warning('Campo requerido', 'El organizador es requerido');
+      return false;
+    }
+    if (this.editingEvento && !this.formData.lugar_id) {
+      this.alertService.warning('Campo requerido', 'El lugar es requerido');
+      return false;
+    }
+    return true;
+  }
+
+  private validateCreateWizardStep(step: number): boolean {
     switch (step) {
       case 0:
-        if (!this.formData.titulo?.trim()) {
-          this.alertService.warning('Campo requerido', 'El título es requerido');
+        return this.validateBasicStep();
+      case 1:
+        if (!this.formData.lugar_id) {
+          this.alertService.warning('Campo requerido', 'Selecciona el lugar del evento');
           return false;
         }
-        if (!this.formData.categoria_id) {
-          this.alertService.warning('Campo requerido', 'La categoría es requerida');
+        if (!this.formData.fecha_inicio || !this.formData.fecha_fin) {
+          this.alertService.warning('Campo requerido', 'Las fechas de inicio y fin del evento son requeridas');
           return false;
         }
-        if (!this.authService.isOrganizador() && !this.formData.organizador_id) {
-          this.alertService.warning('Campo requerido', 'El organizador es requerido');
+        const now = this.timezoneService.isoToDatetimeLocal(new Date().toISOString());
+        if (compareDatetimeLocal(this.formData.fecha_inicio as string, now) <= 0) {
+          this.alertService.warning(
+            'Fecha inválida',
+            'El evento debe empezar en el futuro. Elige una fecha y hora posteriores a ahora.',
+          );
+          return false;
+        }
+        const rangeError = getRangeValidationMessage(this.formData.fecha_inicio, this.formData.fecha_fin);
+        if (rangeError) {
+          this.alertService.warning('Fechas inválidas', rangeError);
           return false;
         }
         return true;
+      default:
+        return true;
+    }
+  }
+
+  private validateEditWizardStep(step: number): boolean {
+    switch (step) {
+      case 0:
+        return this.validateBasicStep();
       case 1:
         if (!this.formData.fecha_inicio || !this.formData.fecha_fin) {
           this.alertService.warning('Campo requerido', 'Las fechas de inicio y fin del evento son requeridas');
@@ -736,6 +800,9 @@ export class Eventos implements OnInit, OnDestroy {
         }
         if (!this.formData.fecha_venta_inicio || !this.formData.fecha_venta_fin) {
           this.alertService.warning('Campo requerido', 'Las fechas de venta son requeridas');
+          return false;
+        }
+        if (!this.validateAllDateRanges()) {
           return false;
         }
         return true;
@@ -748,6 +815,85 @@ export class Eventos implements OnInit, OnDestroy {
       default:
         return true;
     }
+  }
+
+  onCreateFechaInicioChange(value: string): void {
+    this.formData.fecha_inicio = value;
+    if (!value) return;
+    this.formData.fecha_fin = this.addHoursToDatetimeLocal(value, 5);
+    this.cdr.markForCheck();
+  }
+
+  onCreateFechaFinChange(value: string): void {
+    this.formData.fecha_fin = value;
+  }
+
+  private applyCreateDefaults(): void {
+    const legalDefaults = getEventoLegalDefaults();
+    if (!this.formData.terminos_condiciones?.trim()) {
+      this.formData.terminos_condiciones = legalDefaults.terminos_condiciones;
+    }
+    if (!this.formData.politica_reembolso?.trim()) {
+      this.formData.politica_reembolso = legalDefaults.politica_reembolso;
+    }
+
+    const start = this.formData.fecha_inicio as string;
+    const eventEnd = this.formData.fecha_fin as string;
+    if (!start || !eventEnd) return;
+
+    if (!this.formData.fecha_venta_fin) {
+      this.formData.fecha_venta_fin = this.addHoursToDatetimeLocal(eventEnd, -1);
+    }
+
+    let ventaFin = this.formData.fecha_venta_fin as string;
+    if (compareDatetimeLocal(ventaFin, start) <= 0 || compareDatetimeLocal(ventaFin, eventEnd) >= 0) {
+      this.formData.fecha_venta_fin = this.addHoursToDatetimeLocal(eventEnd, -1);
+      ventaFin = this.formData.fecha_venta_fin as string;
+    }
+
+    const now = this.timezoneService.isoToDatetimeLocal(new Date().toISOString());
+    if (!this.formData.fecha_venta_inicio) {
+      if (compareDatetimeLocal(now, ventaFin) < 0) {
+        this.formData.fecha_venta_inicio = now;
+      } else {
+        const backdated = this.addHoursToDatetimeLocal(ventaFin, -24);
+        this.formData.fecha_venta_inicio = getRangeValidationMessage(backdated, ventaFin)
+          ? this.addHoursToDatetimeLocal(ventaFin, -1)
+          : backdated;
+      }
+    }
+
+    this.ensureSaleRangeValid();
+  }
+
+  private ensureSaleRangeValid(): void {
+    const ventaFin = this.formData.fecha_venta_fin as string;
+    const ventaInicio = this.formData.fecha_venta_inicio as string;
+    if (!ventaFin || !ventaInicio) return;
+    if (getRangeValidationMessage(ventaInicio, ventaFin)) {
+      this.formData.fecha_venta_inicio = this.addHoursToDatetimeLocal(ventaFin, -1);
+    }
+  }
+
+  private validateAllDateRanges(): boolean {
+    const eventError = getRangeValidationMessage(this.formData.fecha_inicio, this.formData.fecha_fin);
+    if (eventError) {
+      this.alertService.warning('Fechas inválidas', eventError);
+      return false;
+    }
+    const saleError = getRangeValidationMessage(this.formData.fecha_venta_inicio, this.formData.fecha_venta_fin);
+    if (saleError) {
+      this.alertService.warning('Fechas de venta inválidas', saleError);
+      return false;
+    }
+    return true;
+  }
+
+  private addHoursToDatetimeLocal(value: string, hours: number): string {
+    const iso = this.timezoneService.datetimeLocalToISO(value);
+    const date = new Date(iso);
+    date.setHours(date.getHours() + hours);
+    return this.timezoneService.isoToDatetimeLocal(date.toISOString());
   }
 
   getCategoriaNombre(id?: number): string {
@@ -912,15 +1058,31 @@ export class Eventos implements OnInit, OnDestroy {
   }
 
   async saveEvento() {
-    // Validaciones básicas
-    if (!this.formData.titulo || !this.formData.titulo.trim()) {
-      this.alertService.warning('Campo requerido', 'El título es requerido');
-      return;
+    if (!this.editingEvento) {
+      if (!this.validateCreateWizardStep(0) || !this.validateCreateWizardStep(1)) {
+        return;
+      }
+      this.applyCreateDefaults();
+      if (!this.validateAllDateRanges()) {
+        return;
+      }
+    } else {
+      if (!this.validateEditWizardStep(0) || !this.validateEditWizardStep(1)) {
+        return;
+      }
+      if (!this.formData.fecha_inicio || !this.formData.fecha_fin) {
+        this.alertService.warning('Campo requerido', 'Las fechas de inicio y fin son requeridas');
+        return;
+      }
+      if (!this.formData.fecha_venta_inicio || !this.formData.fecha_venta_fin) {
+        this.alertService.warning('Campo requerido', 'Las fechas de venta son requeridas');
+        return;
+      }
+      if (!this.validateAllDateRanges()) {
+        return;
+      }
     }
-    if (!this.formData.categoria_id) {
-      this.alertService.warning('Campo requerido', 'La categoría es requerida');
-      return;
-    }
+
     // Si es organizador, asegurar que se use su ID
     if (this.authService.isOrganizador()) {
       const organizadorId = this.authService.getUsuarioId();
@@ -934,20 +1096,14 @@ export class Eventos implements OnInit, OnDestroy {
       this.alertService.warning('Campo requerido', 'El organizador es requerido');
       return;
     }
-    if (!this.formData.fecha_inicio || !this.formData.fecha_fin) {
-      this.alertService.warning('Campo requerido', 'Las fechas de inicio y fin son requeridas');
-      return;
-    }
-    if (!this.formData.fecha_venta_inicio || !this.formData.fecha_venta_fin) {
-      this.alertService.warning('Campo requerido', 'Las fechas de venta son requeridas');
-      return;
-    }
+
     const porcentajeServicio = Number(this.formData.porcentaje_servicio ?? 0);
     if (!Number.isFinite(porcentajeServicio) || porcentajeServicio < 0 || porcentajeServicio > 100) {
       this.alertService.warning('Porcentaje inválido', 'El porcentaje de servicio debe estar entre 0 y 100');
       return;
     }
-    if (!this.isShowcaseMode && !this.formData.es_gratis && !this.formData.wompi_cuenta_id) {
+
+    if (this.editingEvento && !this.isShowcaseMode && !this.formData.es_gratis && !this.formData.wompi_cuenta_id) {
       this.alertService.warning('Campo requerido', 'La cuenta Wompi es requerida para eventos de pago');
       return;
     }

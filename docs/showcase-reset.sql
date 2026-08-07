@@ -17,7 +17,7 @@
 -- ⚠️ Reemplazar 0 por el ID real del organizador showcase
 DO $$
 DECLARE
-  v_showcase_organizador_id BIGINT := 0;
+  v_showcase_organizador_id BIGINT := 2561;
 BEGIN
   IF v_showcase_organizador_id <= 0 THEN
     RAISE EXCEPTION 'Configura v_showcase_organizador_id con el ID real del usuario Eventum Showcase';
@@ -27,8 +27,21 @@ BEGIN
   SELECT id FROM public.eventos
   WHERE organizador_id = v_showcase_organizador_id;
 
+  CREATE TEMP TABLE tmp_showcase_tipos_boleta ON COMMIT DROP AS
+  SELECT id FROM public.tipos_boleta
+  WHERE evento_id IN (SELECT id FROM tmp_showcase_eventos);
+
   DELETE FROM public.transacciones_checkout
   WHERE evento_id IN (SELECT id FROM tmp_showcase_eventos);
+
+  -- Palcos: inventario numerado ligado a tipos_boleta (no tienen evento_id directo).
+  UPDATE public.palcos
+  SET
+    estado = 'disponible',
+    compra_id = NULL,
+    transaccion_checkout_id = NULL,
+    fecha_actualizacion = now()
+  WHERE tipo_boleta_id IN (SELECT id FROM tmp_showcase_tipos_boleta);
 
   DELETE FROM public.compras_productos
   WHERE evento_id IN (SELECT id FROM tmp_showcase_eventos);
@@ -45,10 +58,10 @@ BEGIN
   DELETE FROM public.productos
   WHERE evento_id IN (SELECT id FROM tmp_showcase_eventos);
 
-  DELETE FROM public.tipos_boleta
-  WHERE evento_id IN (SELECT id FROM tmp_showcase_eventos);
-
   DELETE FROM public.palcos
+  WHERE tipo_boleta_id IN (SELECT id FROM tmp_showcase_tipos_boleta);
+
+  DELETE FROM public.tipos_boleta
   WHERE evento_id IN (SELECT id FROM tmp_showcase_eventos);
 
   DELETE FROM public.cupones_descuento

@@ -1,5 +1,74 @@
 import { EstadoPalco, Evento, Palco, Producto, TipoBoleta, TipoEstadoEvento } from '../types';
 
+export type VentanaVentaRef = {
+  fecha_venta_inicio?: Date | string | null;
+  fecha_venta_fin?: Date | string | null;
+};
+
+/** El evento define ventana global de venta (Fechas y lugar / creación). */
+export function eventoTieneVentanaVentaGlobal(evento: VentanaVentaRef): boolean {
+  return !!(evento.fecha_venta_inicio || evento.fecha_venta_fin);
+}
+
+/** Ventana efectiva: evento manda; si no hay global, usa la del tipo (etapas). */
+export function resolveVentanaVenta(evento: VentanaVentaRef, tipo?: VentanaVentaRef | null): VentanaVentaRef {
+  if (eventoTieneVentanaVentaGlobal(evento)) {
+    return {
+      fecha_venta_inicio: evento.fecha_venta_inicio,
+      fecha_venta_fin: evento.fecha_venta_fin,
+    };
+  }
+  return {
+    fecha_venta_inicio: tipo?.fecha_venta_inicio,
+    fecha_venta_fin: tipo?.fecha_venta_fin,
+  };
+}
+
+export function isDentroVentanaVenta(ventana: VentanaVentaRef, now: Date = new Date()): boolean {
+  if (ventana.fecha_venta_inicio && new Date(ventana.fecha_venta_inicio) > now) {
+    return false;
+  }
+  if (ventana.fecha_venta_fin && new Date(ventana.fecha_venta_fin) < now) {
+    return false;
+  }
+  return true;
+}
+
+export function isTipoBoletaEnVenta(
+  evento: VentanaVentaRef,
+  tipo: VentanaVentaRef,
+  now: Date = new Date(),
+): boolean {
+  return isDentroVentanaVenta(resolveVentanaVenta(evento, tipo), now);
+}
+
+export function getVentanaVentaErrorMessage(
+  evento: VentanaVentaRef,
+  tipo?: (VentanaVentaRef & { nombre?: string }) | null,
+  now: Date = new Date(),
+): string | null {
+  const ventana = resolveVentanaVenta(evento, tipo);
+  if (!ventana.fecha_venta_inicio && !ventana.fecha_venta_fin) {
+    return null;
+  }
+
+  const usaEvento = eventoTieneVentanaVentaGlobal(evento);
+
+  if (ventana.fecha_venta_inicio && new Date(ventana.fecha_venta_inicio) > now) {
+    return usaEvento
+      ? 'La venta de entradas para este evento aún no ha comenzado.'
+      : `La venta de «${tipo?.nombre ?? 'esta entrada'}» aún no ha comenzado.`;
+  }
+
+  if (ventana.fecha_venta_fin && new Date(ventana.fecha_venta_fin) < now) {
+    return usaEvento
+      ? 'La venta de entradas para este evento ya terminó.'
+      : `La venta de «${tipo?.nombre ?? 'esta entrada'}» ya terminó.`;
+  }
+
+  return null;
+}
+
 /** Normaliza tipos activos igual que detalle-evento (disponibles + orden agotados al final). */
 export function normalizarTiposBoletaActivos(tipos: TipoBoleta[]): TipoBoleta[] {
   return (tipos || [])
@@ -43,7 +112,7 @@ export function descripcionTipoBoletaVisible(tipo: TipoBoleta): boolean {
 /** Fin de venta por etapa: solo si el evento no muestra venta en línea global. */
 export function mostrarFinVentaTipoBoleta(evento: Evento | null, tipo: TipoBoleta): boolean {
   if (!evento) return false;
-  if (evento.fecha_venta_inicio || evento.fecha_venta_fin) return false;
+  if (eventoTieneVentanaVentaGlobal(evento)) return false;
   return !!tipo.fecha_venta_fin;
 }
 

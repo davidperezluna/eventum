@@ -30,7 +30,12 @@ export interface EventoReadinessResult {
 }
 
 function hasInformacion(evento: Evento): boolean {
-  return !!(evento.titulo?.trim() && evento.categoria_id && (evento.descripcion_corta?.trim() || evento.descripcion?.trim()));
+  return !!(
+    evento.titulo?.trim() &&
+    evento.categoria_id &&
+    evento.lugar_id &&
+    (evento.descripcion_corta?.trim() || evento.descripcion?.trim())
+  );
 }
 
 function hasImagen(evento: Evento): boolean {
@@ -150,6 +155,45 @@ export function buildEventoReadiness(
     headline,
     subline,
   };
+}
+
+/** Pasos obligatorios completados antes de poder publicar (excluye el paso «Publicación»). */
+export function isEventoReadyToPublish(result: EventoReadinessResult): boolean {
+  return result.steps
+    .filter((s) => !s.optional && s.id !== 'publicacion')
+    .every((s) => s.complete);
+}
+
+export function getPrePublishPendingCount(result: EventoReadinessResult): number {
+  return result.steps.filter((s) => !s.optional && s.id !== 'publicacion' && !s.complete).length;
+}
+
+export function getPrePublishPendingSteps(result: EventoReadinessResult): EventoReadinessStep[] {
+  return result.steps.filter((s) => !s.optional && s.id !== 'publicacion' && !s.complete);
+}
+
+const READINESS_FRIENDLY_PHRASES: Record<EventoReadinessStepId, string> = {
+  informacion: 'completar la información del evento',
+  imagen: 'subir una imagen',
+  fechas: 'definir las fechas',
+  boletas: 'configurar las entradas',
+  cobros: 'indicar cómo cobrar',
+  productos: 'agregar productos',
+  publicacion: 'publicar el evento',
+};
+
+/** Mensaje amigable para avisar qué falta antes de publicar. */
+export function formatPrePublishPendingMessage(steps: EventoReadinessStep[]): string {
+  const phrases = steps.map((s) => READINESS_FRIENDLY_PHRASES[s.id] ?? s.label.toLowerCase());
+  if (phrases.length === 0) return '';
+  if (phrases.length === 1) {
+    return `Te falta ${phrases[0]}. Revisa los pasos de abajo y vuelve a intentarlo.`;
+  }
+  if (phrases.length === 2) {
+    return `Te faltan ${phrases[0]} y ${phrases[1]}. Revisa los pasos de abajo y vuelve a intentarlo.`;
+  }
+  const last = phrases.pop()!;
+  return `Te faltan ${phrases.join(', ')} y ${last}. Revisa los pasos de abajo y vuelve a intentarlo.`;
 }
 
 export function getNextStepActionLabel(step: EventoReadinessStep): string {

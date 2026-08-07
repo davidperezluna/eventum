@@ -164,6 +164,12 @@ export class Organizadores implements OnInit, AfterViewInit, OnDestroy {
       description: 'Validas accesos y resuelves con claridad en vivo.',
       icon: 'verified_user',
     },
+    {
+      step: 5,
+      title: 'Cierre de operación',
+      description: 'Cierras caja, concilias lo vendido y dejas el resumen listo para tus cuentas.',
+      icon: 'point_of_sale',
+    },
   ];
 
   readonly faqs: FaqItem[] = [
