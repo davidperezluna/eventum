@@ -12,7 +12,7 @@ export const environment = {
   allowClienteLoginAdmin: true,
   cuposEventumEnabled: true,
   /** Staging/dev desplegado: activar mientras se prueba el módulo Covers. */
-  coversEventumEnabled: true,
+  coversEventumEnabled: false,
   /**
    * Detalle evento → Entradas (no agotadas): mostrar disponibles / reservados / vendidas / totales.
    * `false` = ocultar esas cifras. Etapas agotadas siempre las muestran.
