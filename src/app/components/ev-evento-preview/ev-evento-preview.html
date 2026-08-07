@@ -1,46 +1,15 @@
 <aside class="ev-evento-preview" aria-label="Vista previa del evento">
-  <header class="ev-evento-preview__head">
-    <p class="ev-evento-preview__eyebrow">Vista previa</p>
-    <p class="ev-evento-preview__lead">Así se verá tu evento</p>
-  </header>
-
-  <article class="ev-evento-preview__card">
-    <div class="ev-evento-preview__media">
-      <img *ngIf="previewUrl; else placeholder" [src]="previewUrl" [alt]="titulo" />
-      <ng-template #placeholder>
-        <div class="ev-evento-preview__placeholder">
-          <span class="ev-evento-preview__initials">{{ iniciales }}</span>
-        </div>
-      </ng-template>
-      <span *ngIf="formData.destacado" class="ev-evento-preview__badge">Destacado</span>
-    </div>
-    <div class="ev-evento-preview__body">
-      <div class="ev-evento-preview__pills">
-        <span class="ev-evento-preview__pill">{{ categoriaNombre }}</span>
-        <span class="ev-evento-preview__pill ev-evento-preview__pill--muted">{{ estadoLabel }}</span>
-      </div>
-      <h3 class="ev-evento-preview__title">{{ titulo }}</h3>
-      <p class="ev-evento-preview__desc">{{ descripcionCorta }}</p>
-      <ul class="ev-evento-preview__meta">
-        <li *ngIf="hasFechaEvento">
-          <span class="material-icons" aria-hidden="true">calendar_today</span>
-          {{ formData.fecha_inicio | dateFormat:'short' }}
-        </li>
-        <li>
-          <span class="material-icons" aria-hidden="true">place</span>
-          {{ lugarNombre }}
-        </li>
-        <li>
-          <span class="material-icons" aria-hidden="true">sell</span>
-          {{ precioLabel }}
-        </li>
-        <li *ngIf="hasFechaVenta">
-          <span class="material-icons" aria-hidden="true">confirmation_number</span>
-          Venta: {{ formData.fecha_venta_inicio | dateFormat:'short' }}
-        </li>
-      </ul>
-    </div>
-  </article>
-
-  <p class="ev-evento-preview__hint">Se actualiza en tiempo real mientras completas el asistente.</p>
+  <ev-evento-card
+    [titulo]="titulo"
+    [metaLine]="metaLine"
+    [coverUrl]="coverUrl"
+    [iniciales]="iniciales"
+    [estadoLabel]="cardEstadoLabel"
+    [statusDotClass]="statusClass"
+    [destacado]="!!formData.destacado"
+    [showStatus]="showStatusBadge"
+    [interactive]="false"
+    [titlePlaceholder]="isDefaultTitle"
+    [metaPlaceholder]="!metaLine"
+  />
 </aside>

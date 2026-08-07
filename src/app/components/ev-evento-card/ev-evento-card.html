@@ -1,0 +1,59 @@
+<article
+  class="ev-evento-card"
+  [class.ev-evento-card--menu-open]="menuOpen"
+  [class.ev-evento-card--interactive]="interactive"
+  [class.ev-evento-card--clickable]="!!cardRoute"
+  [attr.role]="cardRoute ? 'link' : null"
+  [attr.tabindex]="cardRoute ? 0 : null"
+  (click)="onCardClick($event)"
+  (keydown)="onCardKeydown($event)"
+>
+  <div class="ev-evento-card__hero">
+    <div class="ev-evento-card__hero-media">
+      <img
+        *ngIf="coverUrl && !imageError"
+        [src]="coverUrl"
+        [alt]="'Portada de ' + titulo"
+        loading="lazy"
+        class="ev-evento-card__img"
+        [class.ev-evento-card__img--loaded]="imageReady"
+        (load)="onCoverLoad()"
+        (error)="onCoverError()"
+      />
+      <div *ngIf="!coverUrl || imageError" class="ev-evento-card__placeholder" aria-hidden="true">
+        <span class="ev-evento-card__initials">{{ iniciales }}</span>
+      </div>
+      <div class="ev-evento-card__scrim" aria-hidden="true"></div>
+      <span *ngIf="destacado" class="ev-evento-card__featured">Destacado</span>
+    </div>
+
+    <div *ngIf="showStatus && estadoLabel" class="ev-evento-card__hero-bar">
+      <div class="ev-evento-card__status" [attr.aria-label]="'Estado: ' + estadoLabel">
+        <span class="ev-evento-card__status-dot" [ngClass]="statusDotClass"></span>
+        <span class="ev-evento-card__status-label">{{ estadoLabel }}</span>
+        <ng-container *ngIf="showInactivo">
+          <span class="ev-evento-card__status-sep" aria-hidden="true">·</span>
+          <span class="ev-evento-card__status-label ev-evento-card__status-label--muted">Inactivo</span>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+
+  <div class="ev-evento-card__body">
+    <div *ngIf="hasMenu; else titleOnly" class="ev-evento-card__head">
+      <h2 class="ev-evento-card__title">{{ titulo }}</h2>
+      <div class="ev-evento-card__menu">
+        <ng-content select="[evEventoCardMenu]" />
+      </div>
+    </div>
+    <ng-template #titleOnly>
+      <h2 class="ev-evento-card__title" [class.ev-evento-card__title--placeholder]="titlePlaceholder">{{ titulo }}</h2>
+    </ng-template>
+    <p
+      class="ev-evento-card__meta"
+      [class.ev-evento-card__meta--placeholder]="metaPlaceholder"
+    >
+      {{ metaLine || 'Fecha · lugar · precio' }}
+    </p>
+  </div>
+</article>

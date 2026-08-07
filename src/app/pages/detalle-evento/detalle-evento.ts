@@ -89,6 +89,8 @@ export class DetalleEvento implements OnInit, OnDestroy {
   private refreshIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly refreshIndicatorDelayMs = 800;
   private carritoSubscription?: Subscription;
+  /** Ruta del panel u otra pantalla desde la que se abrió el detalle (history.state). */
+  returnUrl: string | null = null;
 
   // Control de acordeones (todos cerrados por defecto)
   acordeones: {
@@ -155,8 +157,36 @@ export class DetalleEvento implements OnInit, OnDestroy {
     return this.modoPruebaCompraAdmin ? ['/probar-compras'] : ['/eventos-cliente'];
   }
 
+  get volverLabel(): string {
+    return this.returnUrl ? 'Volver' : 'Eventos';
+  }
+
+  get volverLabelDesktop(): string {
+    return this.returnUrl ? 'Volver' : 'Volver a eventos';
+  }
+
   volverAEventos(): void {
     this.cerrarCapasSuperpuestas({ sincronizarHistorial: false });
+    this.navegarSalida();
+  }
+
+  private resolveReturnUrl(): string | null {
+    const fromState = history.state?.['returnUrl'];
+    if (typeof fromState === 'string' && fromState.startsWith('/')) {
+      return fromState;
+    }
+    const returnTo = this.route.snapshot.queryParamMap.get('returnTo');
+    if (returnTo && returnTo.startsWith('/')) {
+      return returnTo;
+    }
+    return null;
+  }
+
+  private navegarSalida(): void {
+    if (this.returnUrl) {
+      void this.router.navigateByUrl(this.returnUrl);
+      return;
+    }
     void this.router.navigate(this.rutaVolverEventos);
   }
 
@@ -226,6 +256,7 @@ export class DetalleEvento implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.returnUrl = this.resolveReturnUrl();
     const eventoId = this.route.snapshot.paramMap.get('id');
     if (eventoId) {
       const parsedId = Number(eventoId);
@@ -634,7 +665,7 @@ export class DetalleEvento implements OnInit, OnDestroy {
       console.error('Error cargando evento:', err);
       this.loading = false;
       if (!silentRefreshMode) {
-        this.router.navigate(this.rutaVolverEventos);
+        this.navegarSalida();
       }
     } finally {
       this.stopSilentRefreshIndicator();

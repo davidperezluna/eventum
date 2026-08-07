@@ -559,8 +559,8 @@
 }
 
 .ev-form-modal__panel--wizard {
-  width: min(100%, 56rem);
-  max-height: min(92vh, 860px);
+  width: min(100%, 68rem);
+  max-height: min(92vh, 880px);
   background: #fff;
 }
 
@@ -568,6 +568,7 @@
   padding: 1.5rem 1.85rem 1.25rem;
   border-bottom: 1px solid var(--ev-form-border);
   background: #fff;
+  flex-shrink: 0;
 }
 
 .ev-form-modal__panel--wizard .ev-form-modal__title {
@@ -584,6 +585,11 @@
 }
 
 .ev-form-modal__panel--wizard .ev-form-modal__body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   padding: 0.35rem 1.85rem 0.5rem;
   background: var(--ev-form-canvas);
 }
@@ -594,6 +600,7 @@
   padding: 1rem 1.85rem 1.25rem;
   border-top: 1px solid var(--ev-form-border);
   background: #fff;
+  flex-shrink: 0;
 }
 
 .ev-form-modal__header {
@@ -771,7 +778,25 @@
   .ev-form-modal__panel {
     width: 100%;
     max-height: 94vh;
+    max-height: 94dvh;
     border-radius: 16px 16px 0 0;
+  }
+
+  .ev-form-modal__panel--wizard {
+    max-height: min(96dvh, 900px);
+  }
+
+  .ev-form-modal__panel--wizard .ev-form-modal__header {
+    padding: 1.1rem 1rem 0.95rem;
+  }
+
+  .ev-form-modal__panel--wizard .ev-form-modal__body {
+    padding: 0.5rem 1rem 0.75rem;
+    overflow: hidden;
+  }
+
+  .ev-form-modal__panel--wizard .ev-form-modal__footer {
+    padding: 0.85rem 1rem 1rem;
   }
 
   .ev-form-modal__panel--xl,

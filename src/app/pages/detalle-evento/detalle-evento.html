@@ -8,7 +8,7 @@
     <header class="client-page-header client-page-header--compact client-page-header--subpage detalle-page-header">
       <button type="button" class="detalle-page-back" (click)="volverAEventos()">
         <span class="material-icons" aria-hidden="true">arrow_back</span>
-        Eventos
+        {{ volverLabel }}
       </button>
       <h1 class="client-page-header__title">{{ evento.titulo }}</h1>
       <p
@@ -19,7 +19,7 @@
 
     <button type="button" class="btn-back btn-back--desktop" (click)="volverAEventos()">
       <span class="material-icons" aria-hidden="true">arrow_back</span>
-      Volver a eventos
+      {{ volverLabelDesktop }}
     </button>
 
     <ev-notice *ngIf="modoPruebaCompraAdmin" variant="info" icon="science" density="compact">

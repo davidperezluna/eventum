@@ -151,140 +151,79 @@
 
   <section class="ev-content" aria-live="polite" (click)="openMenuEventoId = null">
     <div *ngIf="loading" class="ev-grid" aria-busy="true">
-      <article *ngFor="let _ of [1,2,3,4,5,6]" class="ev-cover-card ev-cover-card--skeleton">
-        <div class="ev-cover-card__hero">
-          <div class="ev-skeleton ev-skeleton--cover-hero"></div>
-        </div>
-        <div class="ev-cover-card__body">
+      <article *ngFor="let _ of [1,2,3,4,5,6]" class="ev-evento-card-skeleton">
+        <div class="ev-skeleton ev-skeleton--cover-hero"></div>
+        <div class="ev-evento-card-skeleton__body">
           <div class="ev-skeleton ev-skeleton--line ev-skeleton--title"></div>
           <div class="ev-skeleton ev-skeleton--line ev-skeleton--meta"></div>
-          <div class="ev-skeleton ev-skeleton--zone"></div>
-          <div class="ev-skeleton ev-skeleton--zone"></div>
         </div>
       </article>
     </div>
 
     <div *ngIf="!loading && eventosOrdenados.length > 0" class="ev-grid">
-      <article
+      <ev-evento-card
         *ngFor="let evento of eventosOrdenados"
-        class="ev-cover-card"
-        [class.ev-cover-card--menu-open]="openMenuEventoId === evento.id"
+        [titulo]="evento.titulo"
+        [metaLine]="getCoverMetaLine(evento)"
+        [coverUrl]="evento.imagen_principal ?? null"
+        [iniciales]="getEventoIniciales(evento.titulo)"
+        [estadoLabel]="getEstadoCardLabel(evento.estado)"
+        [statusDotClass]="getCoverStatusClass(evento.estado)"
+        [showInactivo]="showInactivoPill(evento)"
+        [destacado]="!!evento.destacado"
+        [menuOpen]="openMenuEventoId === evento.id"
+        [hasMenu]="true"
+        [cardRoute]="getEventoInteligenciaRoute(evento.id)"
       >
-        <div class="ev-cover-card__hero">
-          <div class="ev-cover-card__hero-media">
-            <img
-              *ngIf="evento.imagen_principal; else evCoverPlaceholder"
-              [src]="evento.imagen_principal"
-              [alt]="evento.titulo"
-              loading="lazy"
-            />
-            <ng-template #evCoverPlaceholder>
-              <div class="ev-cover-card__placeholder" aria-hidden="true">
-                <span class="ev-cover-card__initials">{{ getEventoIniciales(evento.titulo) }}</span>
-              </div>
-            </ng-template>
-            <div class="ev-cover-card__scrim" aria-hidden="true"></div>
-            <span *ngIf="evento.destacado" class="ev-cover-card__featured">Destacado</span>
-          </div>
-
-          <div class="ev-cover-card__hero-bar">
-            <div class="ev-cover-card__status" [attr.aria-label]="'Estado: ' + getEstadoLabel(evento.estado)">
-              <span class="ev-cover-card__status-dot" [ngClass]="getCoverStatusClass(evento.estado)"></span>
-              <span class="ev-cover-card__status-label">{{ getEstadoLabel(evento.estado) }}</span>
-              <ng-container *ngIf="showInactivoPill(evento)">
-                <span class="ev-cover-card__status-sep" aria-hidden="true">·</span>
-                <span class="ev-cover-card__status-label ev-cover-card__status-label--muted">Inactivo</span>
-              </ng-container>
-            </div>
-
-            <div class="ev-cover-card__menu">
-              <button
-                type="button"
-                class="ev-cover-card__menu-btn"
-                (click)="toggleEventoMenu($event, evento.id)"
-                [attr.aria-expanded]="openMenuEventoId === evento.id"
-                aria-label="Opciones del evento"
-              >
-                <span class="material-icons" aria-hidden="true">more_horiz</span>
-              </button>
-              <div
-                *ngIf="openMenuEventoId === evento.id"
-                class="ev-cover-card__menu-panel"
-                role="menu"
-                (click)="$event.stopPropagation()"
-              >
-                <button type="button" role="menuitem" (click)="verEvento(evento); openMenuEventoId = null">
-                  <span class="material-icons" aria-hidden="true">open_in_new</span>
-                  Ver página pública
-                </button>
-                <a [routerLink]="dashboardRoute" class="ev-cover-card__menu-link" role="menuitem" (click)="openMenuEventoId = null">
-                  <span class="material-icons" aria-hidden="true">dashboard</span>
-                  Ir al panel
-                </a>
-                <button type="button" role="menuitem" (click)="openModal(evento); openMenuEventoId = null">
-                  <span class="material-icons" aria-hidden="true">edit</span>
-                  Editar información
-                </button>
-                <button type="button" role="menuitem" (click)="openBoletasDrawer(evento); openMenuEventoId = null">
-                  <span class="material-icons" aria-hidden="true">confirmation_number</span>
-                  Tipos de boleta
-                </button>
-                <button type="button" role="menuitem" (click)="openCuponesDrawer(evento); openMenuEventoId = null">
-                  <span class="material-icons" aria-hidden="true">local_offer</span>
-                  Cupones
-                </button>
-                <button type="button" role="menuitem" (click)="toggleDestacado(evento); openMenuEventoId = null">
-                  <span class="material-icons" aria-hidden="true">{{ evento.destacado ? 'star' : 'star_border' }}</span>
-                  {{ evento.destacado ? 'Quitar destacado' : 'Destacar' }}
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  [disabled]="isShowcaseMode"
-                  (click)="toggleActivo(evento); openMenuEventoId = null"
-                >
-                  <span class="material-icons" aria-hidden="true">{{ evento.activo ? 'block' : 'check_circle' }}</span>
-                  {{ evento.activo ? 'Desactivar' : 'Activar' }}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="ev-cover-card__body">
-          <h2 class="ev-cover-card__title">{{ evento.titulo }}</h2>
-          <p class="ev-cover-card__meta">{{ getCoverMetaLine(evento) }}</p>
-
-          <div class="ev-cover-card__zones">
+        <ng-container evEventoCardMenu>
+          <button
+            type="button"
+            class="ev-evento-card__menu-btn"
+            (click)="toggleEventoMenu($event, evento.id)"
+            [attr.aria-expanded]="openMenuEventoId === evento.id"
+            aria-label="Opciones del evento"
+          >
+            <span class="material-icons" aria-hidden="true">more_vert</span>
+          </button>
+          <div
+            *ngIf="openMenuEventoId === evento.id"
+            class="ev-evento-card__menu-panel"
+            role="menu"
+            (click)="$event.stopPropagation()"
+          >
+            <button type="button" role="menuitem" (click)="verEvento(evento); openMenuEventoId = null">
+              <span class="material-icons" aria-hidden="true">open_in_new</span>
+              Ver página pública
+            </button>
             <a
-              [routerLink]="['/eventos', evento.id, 'inteligencia']"
-              class="ev-cover-card__zone ev-cover-card__zone--intel"
+              [routerLink]="getEventoInteligenciaRoute(evento.id)"
+              class="ev-evento-card__menu-link"
+              role="menuitem"
+              (click)="openMenuEventoId = null"
             >
-              <span class="ev-cover-card__zone-icon" aria-hidden="true">
-                <span class="material-icons">insights</span>
-              </span>
-              <span class="ev-cover-card__zone-copy">
-                <span class="ev-cover-card__zone-name">Inteligencia</span>
-                <span class="ev-cover-card__zone-hint">Métricas y rendimiento</span>
-              </span>
-              <span class="material-icons ev-cover-card__zone-arrow" aria-hidden="true">arrow_forward</span>
+              <span class="material-icons" aria-hidden="true">insights</span>
+              Inteligencia
             </a>
             <a
-              [routerLink]="['/eventos', evento.id, 'operaciones']"
-              class="ev-cover-card__zone ev-cover-card__zone--ops"
+              [routerLink]="getEventoOperacionesRoute(evento.id)"
+              class="ev-evento-card__menu-link"
+              role="menuitem"
+              (click)="openMenuEventoId = null"
             >
-              <span class="ev-cover-card__zone-icon" aria-hidden="true">
-                <span class="material-icons">tune</span>
-              </span>
-              <span class="ev-cover-card__zone-copy">
-                <span class="ev-cover-card__zone-name">Operaciones</span>
-                <span class="ev-cover-card__zone-hint">Configuración y venta</span>
-              </span>
-              <span class="material-icons ev-cover-card__zone-arrow" aria-hidden="true">arrow_forward</span>
+              <span class="material-icons" aria-hidden="true">tune</span>
+              Operaciones
             </a>
+            <button type="button" role="menuitem" (click)="openModal(evento); openMenuEventoId = null">
+              <span class="material-icons" aria-hidden="true">edit</span>
+              Editar información
+            </button>
+            <button type="button" role="menuitem" (click)="openCuponesDrawer(evento); openMenuEventoId = null">
+              <span class="material-icons" aria-hidden="true">local_offer</span>
+              Cupones
+            </button>
           </div>
-        </div>
-      </article>
+        </ng-container>
+      </ev-evento-card>
     </div>
 
     <div *ngIf="isFirstTimeEmpty" class="ev-empty" role="status">
@@ -648,9 +587,7 @@
           class="ev-wizard__preview"
           [formData]="formData"
           [previewUrl]="previewUrl"
-          [categorias]="categorias"
           [lugares]="lugares"
-          [estadoLabel]="wizardEstadoLabel"
         />
       </div>
     </div>

@@ -20,12 +20,18 @@ import { DrawerService } from '../../core/drawer';
 import { openEventoCuponesDrawer } from '../../panels/evento-cupones';
 import { openEventoBoletasDrawer } from '../../panels/evento-boletas';
 import { enforceBorradorCatalogoRules } from '../../core/evento-publicacion';
+import {
+  getEventoEstadoAdminLabel,
+  getEventoEstadoCardLabel,
+  getEventoEstadoCardStatusClass,
+} from '../../core/evento-estado-labels';
 import { formatFinanzasMonedaExacta } from '../../utils/dashboard-finanzas.view';
 import { Evento, CategoriaEvento, Lugar, Usuario, PaginatedResponse, TipoEstadoEvento, WompiCuenta } from '../../types';
 import { EvFormModal } from '../../components/ev-form-modal/ev-form-modal';
 import { EvFormSection } from '../../components/ev-form-section/ev-form-section';
 import { EvFormWizard, EvWizardStep } from '../../components/ev-form-wizard/ev-form-wizard';
 import { EvEventoPreview } from '../../components/ev-evento-preview/ev-evento-preview';
+import { EvEventoCard } from '../../components/ev-evento-card/ev-evento-card';
 import { EvSelect, EvSelectOption, mapToEvSelectOptions } from '../../components/ev-select/ev-select';
 import { EvNumberInput } from '../../components/ev-number-input/ev-number-input';
 import { EvDatetimePeriod } from '../../components/ev-datetime-period/ev-datetime-period';
@@ -33,7 +39,7 @@ import { EvNotice } from '../../components/ev-notice';
 
 @Component({
   selector: 'app-eventos',
-  imports: [CommonModule, FormsModule, RouterLink, EvFormModal, EvFormSection, EvFormWizard, EvEventoPreview, EvSelect, EvNumberInput, EvDatetimePeriod, EvNotice],
+  imports: [CommonModule, FormsModule, RouterLink, EvFormModal, EvFormSection, EvFormWizard, EvEventoPreview, EvEventoCard, EvSelect, EvNumberInput, EvDatetimePeriod, EvNotice],
   templateUrl: './eventos.html',
   styleUrl: './eventos.css',
 })
@@ -330,10 +336,6 @@ export class Eventos implements OnInit, OnDestroy {
       : 'Construye tu evento paso a paso.';
   }
 
-  get wizardEstadoLabel(): string {
-    return this.getEstadoLabel(this.formData.estado);
-  }
-
   get eventoModalPrimaryLabel(): string {
     return this.editingEvento ? 'Guardar cambios' : 'Crear evento';
   }
@@ -372,7 +374,17 @@ export class Eventos implements OnInit, OnDestroy {
   }
 
   verEvento(evento: Evento): void {
-    window.open(`/detalle-evento/${evento.id}`, '_blank', 'noopener,noreferrer');
+    void this.router.navigate(['/detalle-evento', evento.id], {
+      state: { returnUrl: this.router.url },
+    });
+  }
+
+  getEventoInteligenciaRoute(eventoId: number): string {
+    return `/eventos/${eventoId}/inteligencia`;
+  }
+
+  getEventoOperacionesRoute(eventoId: number): string {
+    return `/eventos/${eventoId}/operaciones`;
   }
 
   getBoletasVendidas(eventoId: number): number | null {
@@ -439,18 +451,7 @@ export class Eventos implements OnInit, OnDestroy {
   }
 
   getCoverStatusClass(estado?: string): string {
-    switch (estado) {
-      case TipoEstadoEvento.PUBLICADO:
-        return 'ev-cover-card__status-dot--published';
-      case TipoEstadoEvento.EN_CURSO:
-        return 'ev-cover-card__status-dot--live';
-      case TipoEstadoEvento.FINALIZADO:
-        return 'ev-cover-card__status-dot--done';
-      case TipoEstadoEvento.CANCELADO:
-        return 'ev-cover-card__status-dot--cancelled';
-      default:
-        return 'ev-cover-card__status-dot--draft';
-    }
+    return getEventoEstadoCardStatusClass(estado);
   }
 
   private formatCoverDate(value: string | Date): string {
@@ -1050,8 +1051,11 @@ export class Eventos implements OnInit, OnDestroy {
   }
 
   getEstadoLabel(estado?: string): string {
-    const estadoObj = this.estados.find(e => e.value === estado);
-    return estadoObj?.label || estado || 'Sin estado';
+    return getEventoEstadoAdminLabel(estado);
+  }
+
+  getEstadoCardLabel(estado?: string): string {
+    return getEventoEstadoCardLabel(estado);
   }
 
   Math = Math;
