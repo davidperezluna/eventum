@@ -115,14 +115,6 @@
   border: 0;
 }
 
-.ev-events-demo-notice {
-  margin-bottom: 1.25rem;
-}
-
-.ev-events-demo-notice .ev-notice {
-  margin-bottom: 0;
-}
-
 /* Buttons */
 .ev-btn-primary {
   display: inline-flex;

@@ -24,7 +24,7 @@ export class Register implements OnInit {
       if (usuario) {
         let dashboardRoute = '/dashboard';
         if (usuario.tipo_usuario_id === 2) {
-          dashboardRoute = '/dashboard-organizador';
+          dashboardRoute = '/eventos';
         } else if (usuario.tipo_usuario_id === 1) {
           dashboardRoute = '/eventos-cliente';
         }

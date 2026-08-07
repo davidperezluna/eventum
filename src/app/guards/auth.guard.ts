@@ -159,13 +159,13 @@ export const authGuard: CanActivateFn = async (route, state) => {
 
     if (authService.isShowcaseOrganizador() && isShowcaseBlockedRoute(routeSegments)) {
       console.log('Auth Guard - Ruta bloqueada para showcase:', state.url);
-      router.navigate(['/dashboard-organizador']);
+      router.navigate(['/eventos']);
       return false;
     }
 
     if (authService.isOrganizador() && routeSegments[0] === 'escanear-qr') {
       console.log('Auth Guard - Escáner no disponible para organizador:', state.url);
-      router.navigate(['/dashboard-organizador']);
+      router.navigate(['/eventos']);
       return false;
     }
 
@@ -175,7 +175,7 @@ export const authGuard: CanActivateFn = async (route, state) => {
         authService.isShowcaseOrganizador() && routeSegments[0] === 'productos';
       if (!showcaseProductos) {
         console.log('Auth Guard - Ruta solo admin bloqueada para usuario:', usuario.tipo_usuario_id);
-        router.navigate([authService.isOrganizador() ? '/dashboard-organizador' : '/dashboard']);
+        router.navigate([authService.isOrganizador() ? '/eventos' : '/dashboard']);
         return false;
       }
     }

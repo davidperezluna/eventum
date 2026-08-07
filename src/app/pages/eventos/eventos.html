@@ -29,15 +29,6 @@
     </div>
   </header>
 
-  <div class="ev-events-demo-notice" *ngIf="isShowcaseMode && !isFirstTimeEmpty && !loading">
-    <ev-notice
-      variant="neutral"
-      density="banner"
-      icon="science"
-      message="Modo demostración — los cambios no se publican ni procesan pagos reales."
-    />
-  </div>
-
   <div class="ev-toolbar" *ngIf="!isFirstTimeEmpty || loading" role="search">
     <div class="ev-toolbar__search">
       <span class="material-icons ev-toolbar__search-icon" aria-hidden="true">search</span>

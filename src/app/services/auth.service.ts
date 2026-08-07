@@ -787,7 +787,7 @@ export class AuthService {
       case RolesPermitidos.LECTOR:
         return '/lector/inicio';
       case RolesPermitidos.ORGANIZADOR:
-        return '/dashboard-organizador';
+        return '/eventos';
       case RolesPermitidos.ADMINISTRADOR:
         return '/dashboard';
       case RolesPermitidos.CLIENTE:
@@ -803,7 +803,7 @@ export class AuthService {
   resolvePostLoginUrl(usuario: Usuario, returnUrl?: string | null): string {
     const home = this.getHomeRouteForUsuario(usuario);
     const target = (returnUrl || '').trim().split('?')[0];
-    if (!target || target === '/dashboard') {
+    if (!target || target === '/dashboard' || target === '/dashboard-organizador') {
       return home;
     }
 

@@ -295,7 +295,7 @@ export class Layout implements OnInit, OnDestroy {
     }
   }
 
-  /** Nombre/apellidos para menú cliente y pie del panel admin/organizador */
+  /** Nombre/apellidos para menú cliente; si no hay, el pie solo muestra el correo */
   nombreCliente(): string | null {
     const u = this.usuario as { nombre?: string; apellido?: string } | null;
     if (!u) return null;
@@ -305,9 +305,17 @@ export class Layout implements OnInit, OnDestroy {
     return joined.length > 0 ? joined : null;
   }
 
+  /** Solo el nombre (sin apellido) para el pie del panel admin/organizador */
+  nombrePanelSidebar(): string | null {
+    const u = this.usuario as { nombre?: string } | null;
+    if (!u) return null;
+    const nom = typeof u.nombre === 'string' ? u.nombre.trim() : '';
+    return nom.length > 0 ? nom : null;
+  }
+
   /** Inicio del panel admin u organizador (barra superior móvil). */
   get panelHomeRoute(): string {
-    return this.usuario?.tipo_usuario_id === 2 ? '/dashboard-organizador' : '/dashboard';
+    return this.usuario?.tipo_usuario_id === 2 ? '/eventos' : '/dashboard';
   }
 
   /** Subtítulo del sidebar según rol. */
