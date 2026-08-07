@@ -214,6 +214,9 @@ export class Layout implements OnInit, OnDestroy {
   }
 
   get mostrarCarritoFab(): boolean {
+    if (!this.currentUser || !this.usuario) {
+      return false;
+    }
     if (this.totalItemsCarrito <= 0 || this.enRutaCarrito || this.enRutaPagoWompi) {
       return false;
     }

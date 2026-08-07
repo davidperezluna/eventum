@@ -1,213 +1,296 @@
-<div class="conocenos-page">
-  <header class="conocenos-hero">
-    <div class="conocenos-hero-mesh" aria-hidden="true"></div>
-    <div class="conocenos-hero-content">
-      <a routerLink="/eventos-cliente" class="conocenos-back">
-        <span class="material-icons">arrow_back</span>
-        <span>Volver a eventos</span>
-      </a>
-      <p class="conocenos-eyebrow">Experiencias · tecnología · comunidad</p>
-      <h1>
-        Somos <span class="conocenos-gradient">Eventum</span>
-      </h1>
-      <p class="conocenos-lead">
-        Unimos a quienes crean eventos con quienes viven la música, el arte y la cultura.
-        Si quieres <strong>trabajar con nosotros</strong> o solo saludar, aquí empieza la conversación.
-      </p>
-      <div class="conocenos-hero-chips" aria-hidden="true">
-        <span class="hero-chip">Boletas digitales</span>
-        <span class="hero-chip">Pagos Wompi</span>
-        <span class="hero-chip">Equipo humano</span>
-      </div>
-    </div>
-  </header>
-
-  <div class="conocenos-inner">
-    <!-- Bloque destacado: colaborar -->
-    <section class="conocenos-alianza" aria-labelledby="alianza-titulo">
-      <div class="conocenos-alianza-inner">
-        <span class="alianza-badge">
-          <span class="material-icons alianza-badge-icon">rocket_launch</span>
-          Trabaja con nosotros
-        </span>
-        <h2 id="alianza-titulo">Llevamos tu evento al escenario digital</h2>
-        <p class="alianza-lead">
-          Buscamos <strong>organizadores</strong> con visión, <strong>marcas y venues</strong> que quieran co-crear experiencias,
-          y <strong>talento</strong> que quiera construir producto junto a Baria Dev. Si eso eres tú, queremos conocerte.
+<div class="org-page">
+  <!-- HERO -->
+  <section class="org-hero" aria-labelledby="cono-hero-title">
+    <div class="org-hero__glow" aria-hidden="true"></div>
+    <div class="org-hero__inner">
+      <div class="org-hero__copy org-reveal">
+        <p class="org-eyebrow">Conócenos</p>
+        <h1 id="cono-hero-title">Somos Eventum</h1>
+        <p class="org-hero__lead">
+          Unimos a quienes crean eventos con quienes viven la música, el arte y la cultura.
+          Si quieres <strong>trabajar con nosotros</strong> o solo saludar, aquí empieza la conversación.
         </p>
-        <ul class="alianza-puntos">
-          <li>
-            <span class="material-icons">event_available</span>
-            <span><strong>Publica con nosotros</strong> — inventario, reportes y cobros en un solo flujo.</span>
-          </li>
-          <li>
-            <span class="material-icons">handshake</span>
-            <span><strong>Alianzas</strong> — patrocinios, activaciones y contenido con nuestra comunidad.</span>
-          </li>
-          <li>
-            <span class="material-icons">groups</span>
-            <span><strong>Equipo y partners tech</strong> — integraciones, white-label y roadmap compartido.</span>
+        <div class="org-cta-row">
+          <a class="org-btn org-btn--primary" href="#contacto" (click)="scrollToContacto($event)">
+            Hablemos
+          </a>
+          <a class="org-btn org-btn--ghost" href="#trabaja-con-nosotros" (click)="scrollToAlianza($event)">
+            Trabaja con nosotros
+          </a>
+          <a class="org-btn org-btn--ghost" routerLink="/eventos-cliente">
+            Ver eventos
+          </a>
+        </div>
+        <ul class="org-promises" aria-label="Lo esencial de Eventum">
+          <li *ngFor="let promise of promises">
+            <span class="org-promises__icon" aria-hidden="true">
+              <span class="material-icons">{{ promise.icon }}</span>
+            </span>
+            <div class="org-promises__copy">
+              <strong>{{ promise.title }}</strong>
+              <p>{{ promise.description }}</p>
+            </div>
           </li>
         </ul>
-        <div class="alianza-cta-row">
-          <a [href]="correoTrabajaConNosotrosUrl" class="alianza-cta alianza-cta--primary" target="_blank" rel="noopener noreferrer">
-            <span class="material-icons">mail</span>
+      </div>
+
+      <div class="org-hero__visual org-reveal cono-hero-visual" aria-hidden="true">
+        <div class="org-mock-stage">
+          <div class="org-mock-stage__blur"></div>
+          <div class="org-mock-chip org-mock-chip--live">
+            <span class="org-mock-chip__pulse"></span>
+            Comunidad en vivo
+          </div>
+          <div class="org-mock cono-hero-mock">
+            <div class="org-mock__chrome">
+              <span class="org-mock__dot"></span>
+              <span class="org-mock__dot"></span>
+              <span class="org-mock__dot"></span>
+              <span class="org-mock__url">eventum · Descubre experiencias</span>
+              <span class="org-mock__chrome-status">En línea</span>
+            </div>
+            <div class="cono-hero-mock__body">
+              <div class="cono-hero-mock__head">
+                <span>Próximos eventos</span>
+                <span class="cono-hero-mock__meta">Bogotá · esta semana</span>
+              </div>
+              <div class="org-mock__list">
+                <div class="org-mock__row">
+                  <span class="org-mock__pill">Concierto</span>
+                  <span>Festival Aurora · sáb 15 mar</span>
+                  <strong>Desde $45k</strong>
+                </div>
+                <div class="org-mock__row">
+                  <span class="org-mock__pill org-mock__pill--teal">Teatro</span>
+                  <span>Noche de jazz · vie 21 mar</span>
+                  <strong>Desde $38k</strong>
+                </div>
+                <div class="org-mock__row">
+                  <span class="org-mock__pill org-mock__pill--blue">Cultura</span>
+                  <span>Arte en vivo · dom 23 mar</span>
+                  <strong>Gratis</strong>
+                </div>
+              </div>
+              <div class="cono-hero-mock__footer">
+                <span class="material-icons" aria-hidden="true">verified</span>
+                Compra segura con Wompi
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRABAJA CON NOSOTROS -->
+  <section class="org-section org-section--muted" id="trabaja-con-nosotros" aria-labelledby="cono-alianza-title">
+    <div class="org-container">
+      <article class="cono-alianza org-reveal">
+        <div class="cono-alianza__head">
+          <p class="org-eyebrow">Trabaja con nosotros</p>
+          <h2 id="cono-alianza-title">Llevamos tu evento al escenario digital</h2>
+          <p class="org-section__lead">
+            Buscamos <strong>organizadores</strong> con visión, <strong>marcas y venues</strong> que quieran co-crear experiencias,
+            y <strong>talento</strong> que quiera construir producto junto a Baria Dev.
+          </p>
+        </div>
+        <ul class="cono-alianza__list">
+          <li *ngFor="let point of alianzaPoints">
+            <span class="cono-alianza__icon" aria-hidden="true">
+              <span class="material-icons">{{ point.icon }}</span>
+            </span>
+            <div>
+              <strong>{{ point.title }}</strong>
+              <p>{{ point.description }}</p>
+            </div>
+          </li>
+        </ul>
+        <div class="org-cta-row">
+          <a
+            class="org-btn org-btn--primary"
+            [href]="correoTrabajaConNosotrosUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span class="material-icons" aria-hidden="true">mail</span>
             Proponer una colaboración
           </a>
-          <a [href]="whatsappUrl" class="alianza-cta alianza-cta--ghost" target="_blank" rel="noopener noreferrer">
+          <a class="org-btn org-btn--whatsapp" [href]="whatsappUrl" target="_blank" rel="noopener noreferrer">
             <ion-icon name="logo-whatsapp" aria-hidden="true"></ion-icon>
             WhatsApp directo
           </a>
         </div>
-      </div>
-    </section>
-
-    <div class="conocenos-split">
-      <section class="conocenos-card conocenos-card--tilt">
-        <div class="card-accent card-accent--violet" aria-hidden="true"></div>
-        <h2><span class="material-icons section-icon">celebration</span> Para asistentes</h2>
-        <p>
-          Descubre conciertos y cultura, compra con tranquilidad y lleva tu boleta en el móvil.
-          Cada evento es una historia; nosotros cuidamos la parte aburrida (pagos, QR, soporte).
-        </p>
-      </section>
-      <section class="conocenos-card conocenos-card--tilt">
-        <div class="card-accent card-accent--indigo" aria-hidden="true"></div>
-        <h2><span class="material-icons section-icon">business_center</span> Para organizadores</h2>
-        <p>
-          Publica tu evento, configura tipos de boleta y sigue cada venta con métricas en tiempo real y reportes claros.
-          Nosotros nos encargamos de lo operativo (inventario, cobros, reportes) para que tú te enfoques en llenar el escenario.
-        </p>
-        <a routerLink="/organizadores" class="alianza-cta alianza-cta--ghost">
-          <span class="material-icons">arrow_forward</span>
-          Ver propuesta para organizadores
-        </a>
-      </section>
+      </article>
     </div>
+  </section>
 
-    <section class="conocenos-card conocenos-card--pills-wrap">
-      <h2><span class="material-icons section-icon">auto_awesome</span> Lo que nos define</h2>
-      <p class="pills-intro">Pequeños superpoderes, todos en la misma plataforma.</p>
-      <div class="conocenos-pills">
-        <span class="conocenos-pill"><span class="material-icons">verified</span> Compra segura</span>
-        <span class="conocenos-pill"><span class="material-icons">qr_code</span> QR dinámico</span>
-        <span class="conocenos-pill"><span class="material-icons">support_agent</span> Soporte humano</span>
-        <span class="conocenos-pill"><span class="material-icons">insights</span> Métricas claras</span>
-        <span class="conocenos-pill"><span class="material-icons">event_note</span> Gestión completa</span>
-        <span class="conocenos-pill"><span class="material-icons">payments</span> Wompi integrado</span>
-      </div>
-    </section>
-
-    <section class="conocenos-wompi" id="pagos-wompi" aria-labelledby="wompi-titulo">
-      <div class="conocenos-wompi-card">
-        <div class="wompi-head">
-          <span class="material-icons wompi-head-icon" aria-hidden="true">security</span>
-          <div class="wompi-head-copy">
-            <h2 id="wompi-titulo">Pagos seguros con Wompi</h2>
-            <p class="wompi-head-lead">
-              En Eventum los cobros se procesan con <strong>Wompi</strong>: cifrado y estándares internacionales
-              para que compres boletas con la misma tranquilidad que en un comercio de confianza.
-            </p>
+  <!-- AUDIENCIAS -->
+  <section class="org-section" aria-labelledby="cono-audience-title">
+    <div class="org-container">
+      <header class="org-section__head org-reveal">
+        <p class="org-eyebrow">Para todos</p>
+        <h2 id="cono-audience-title">Dos formas de vivir Eventum</h2>
+        <p class="org-section__lead">
+          Ya sea que vayas a disfrutar o a producir, la plataforma está pensada para que la experiencia sea clara y confiable.
+        </p>
+      </header>
+      <div class="org-benefits cono-audiences org-reveal">
+        <article class="org-benefit" *ngFor="let audience of audiences">
+          <div class="org-benefit__icon" aria-hidden="true">
+            <span class="material-icons">{{ audience.icon }}</span>
           </div>
-        </div>
+          <h3>{{ audience.title }}</h3>
+          <p class="org-benefit__desc">{{ audience.description }}</p>
+          <a *ngIf="audience.link" class="cono-audience-link" [routerLink]="audience.link">
+            {{ audience.linkLabel }}
+            <span class="material-icons" aria-hidden="true">arrow_forward</span>
+          </a>
+        </article>
+      </div>
+    </div>
+  </section>
 
-        <ul class="wompi-detail-list">
-          <li>
-            <span class="material-icons" aria-hidden="true">lock</span>
+  <!-- VALORES -->
+  <section class="org-section org-section--muted" aria-labelledby="cono-values-title">
+    <div class="org-container">
+      <header class="org-section__head org-reveal">
+        <p class="org-eyebrow">Lo que nos define</p>
+        <h2 id="cono-values-title">Pequeños superpoderes, una sola plataforma</h2>
+        <p class="org-section__lead">
+          Tecnología con alma de evento: seguridad, claridad y acompañamiento humano en cada paso.
+        </p>
+      </header>
+      <div class="org-benefits org-reveal">
+        <article class="org-benefit" *ngFor="let value of values">
+          <div class="org-benefit__icon" aria-hidden="true">
+            <span class="material-icons">{{ value.icon }}</span>
+          </div>
+          <h3>{{ value.title }}</h3>
+          <p class="org-benefit__desc">{{ value.description }}</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- WOMPI -->
+  <section class="org-section" id="pagos-wompi" aria-labelledby="cono-wompi-title">
+    <div class="org-container">
+      <header class="org-section__head org-reveal">
+        <p class="org-eyebrow">Pagos</p>
+        <h2 id="cono-wompi-title">Pagos seguros con Wompi</h2>
+        <p class="org-section__lead">
+          En Eventum los cobros se procesan con <strong>Wompi</strong>: cifrado y estándares internacionales
+          para que compres boletas con la misma tranquilidad que en un comercio de confianza.
+        </p>
+      </header>
+
+      <article class="cono-wompi org-reveal">
+        <ul class="cono-wompi__list">
+          <li *ngFor="let feature of wompiFeatures">
+            <span class="cono-wompi__icon" aria-hidden="true">
+              <span class="material-icons">{{ feature.icon }}</span>
+            </span>
             <div>
-              <strong>Encriptación SSL/TLS</strong>
-              <p>Tráfico cifrado de nivel bancario; no guardamos datos de pago en nuestros servidores.</p>
-            </div>
-          </li>
-          <li>
-            <span class="material-icons" aria-hidden="true">verified_user</span>
-            <div>
-              <strong>Certificación PCI DSS</strong>
-              <p>Infraestructura certificada PCI DSS Level 1 para el procesamiento de pagos.</p>
-            </div>
-          </li>
-          <li>
-            <span class="material-icons" aria-hidden="true">shield</span>
-            <div>
-              <strong>Protección contra fraude</strong>
-              <p>Análisis y bloqueo de operaciones sospechosas en tiempo real.</p>
+              <strong>{{ feature.title }}</strong>
+              <p>{{ feature.description }}</p>
             </div>
           </li>
         </ul>
 
-        <p class="wompi-footnote">
+        <p class="cono-wompi__note">
           <span class="material-icons" aria-hidden="true">info</span>
           <span>
-            <strong>Millones de transacciones</strong> con altos estándares de seguridad, comparables a entidades
-            financieras.
+            <strong>Millones de transacciones</strong> con altos estándares de seguridad, comparables a entidades financieras.
           </span>
         </p>
 
-        <div class="wompi-actions">
-          <a
-            href="https://wompi.co"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="wompi-external-link"
-          >
-            <span class="material-icons" aria-hidden="true">open_in_new</span>
+        <div class="cono-wompi__actions">
+          <a href="https://wompi.co" target="_blank" rel="noopener noreferrer" class="org-soft-cta__link">
             Conoce más en wompi.co
+            <span class="material-icons" aria-hidden="true">open_in_new</span>
           </a>
+          <div class="cono-wompi__badges" aria-label="Indicadores de seguridad">
+            <span class="cono-wompi__badge"><span class="material-icons" aria-hidden="true">verified</span> Compra segura</span>
+            <span class="cono-wompi__badge"><span class="material-icons" aria-hidden="true">lock</span> SSL</span>
+            <span class="cono-wompi__badge"><span class="material-icons" aria-hidden="true">shield</span> PCI DSS</span>
+          </div>
         </div>
+      </article>
+    </div>
+  </section>
 
-        <div class="wompi-badges" aria-label="Indicadores de seguridad">
-          <span class="wompi-badge"><span class="material-icons" aria-hidden="true">verified</span> Compra segura</span>
-          <span class="wompi-badge"><span class="material-icons" aria-hidden="true">lock</span> SSL</span>
-          <span class="wompi-badge"><span class="material-icons" aria-hidden="true">shield</span> PCI DSS</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="conocenos-nexus" aria-labelledby="nexus-titulo">
-      <div class="nexus-header">
-        <p class="nexus-kicker">¿Hablamos?</p>
-        <h2 class="nexus-title" id="nexus-titulo">Tres formas de llegar al mismo equipo</h2>
-        <p class="nexus-sub">
+  <!-- CONTACTO -->
+  <section class="org-section org-section--muted" id="contacto" aria-labelledby="cono-contact-title">
+    <div class="org-container">
+      <header class="org-section__head org-reveal">
+        <p class="org-eyebrow">¿Hablamos?</p>
+        <h2 id="cono-contact-title">Tres formas de llegar al mismo equipo</h2>
+        <p class="org-section__lead">
           Elige el canal que te resulte más natural; respondemos con la misma energía.
         </p>
-      </div>
+      </header>
 
-      <div class="nexus-rail" aria-label="Canales de contacto">
+      <div class="cono-contact-grid org-reveal">
         <a
-          class="nexus-node nexus-node--ig"
-          [href]="instagramUrl"
+          *ngFor="let channel of contactChannels"
+          class="cono-contact-card cono-contact-card--{{ channel.modifier }}"
+          [href]="channel.href"
           target="_blank"
           rel="noopener noreferrer"
         >
-          <span class="nexus-node-glow" aria-hidden="true"></span>
-          <ion-icon name="logo-instagram" aria-hidden="true"></ion-icon>
-          <span class="nexus-node-label">Instagram</span>
-          <span class="nexus-node-hint">Novedades y detrás de cámaras</span>
-        </a>
-        <a
-          class="nexus-node nexus-node--wa"
-          [href]="whatsappUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <span class="nexus-node-glow" aria-hidden="true"></span>
-          <ion-icon name="logo-whatsapp" aria-hidden="true"></ion-icon>
-          <span class="nexus-node-label">WhatsApp</span>
-          <span class="nexus-node-hint">Respuesta ágil, ideal para dudas rápidas</span>
-        </a>
-        <a class="nexus-node nexus-node--mail" [href]="correoContactoUrl" target="_blank" rel="noopener noreferrer">
-          <span class="nexus-node-glow" aria-hidden="true"></span>
-          <ion-icon name="mail" aria-hidden="true"></ion-icon>
-          <span class="nexus-node-label">Correo</span>
-          <span class="nexus-node-hint">{{ email }}</span>
+          <span class="cono-contact-card__icon" aria-hidden="true">
+            <ion-icon [name]="channel.ionIcon"></ion-icon>
+          </span>
+          <span class="cono-contact-card__label">{{ channel.label }}</span>
+          <span class="cono-contact-card__hint">{{ channel.hint }}</span>
         </a>
       </div>
 
-      <p class="conocenos-credit">
+      <p class="cono-credit org-reveal">
         Plataforma desarrollada por <strong>Baria Dev</strong> — soluciones tecnológicas con alma de evento.
       </p>
-    </section>
+    </div>
+  </section>
 
-    <p class="conocenos-copy">&copy; {{ currentYear }} Eventum. Todos los derechos reservados.</p>
-  </div>
+  <!-- FINAL CTA -->
+  <section class="org-final-cta" aria-labelledby="cono-final-title">
+    <div class="org-final-cta__glow" aria-hidden="true"></div>
+    <div class="org-container org-final-cta__inner org-reveal">
+      <h2 id="cono-final-title">¿Listo para crear o vivir tu próxima experiencia?</h2>
+      <p>
+        Escríbenos, síguenos o explora eventos. Eventum está hecho para conectar escenarios con personas.
+      </p>
+      <div class="org-cta-row org-cta-row--center">
+        <a class="org-btn org-btn--primary org-btn--lg" [href]="whatsappUrl" target="_blank" rel="noopener noreferrer">
+          Hablar por WhatsApp
+        </a>
+        <a class="org-btn org-btn--ghost org-btn--lg" routerLink="/eventos-cliente">
+          Ver eventos
+        </a>
+      </div>
+      <a class="org-final-cta__mail" [href]="correoContactoUrl" target="_blank" rel="noopener noreferrer">
+        Prefieres correo? Escríbenos
+      </a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="org-footer" role="contentinfo">
+    <div class="org-container org-footer__inner">
+      <div class="org-footer__brand">
+        <img src="logo-eventum.svg" alt="Eventum" class="org-footer__logo" width="120" height="28" loading="lazy" />
+        <p>&copy; {{ currentYear }} Eventum</p>
+      </div>
+      <nav class="org-footer__nav" aria-label="Enlaces rápidos">
+        <a routerLink="/eventos-cliente">Eventos</a>
+        <a *ngIf="cuposEventumEnabled" routerLink="/cupos">{{ cuposLabels.module }}</a>
+        <a routerLink="/organizadores">Para Organizadores</a>
+        <a routerLink="/conocenos" aria-current="page">Contacto</a>
+        <a [href]="whatsappUrl" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+        <a [href]="instagramUrl" target="_blank" rel="noopener noreferrer">Instagram</a>
+        <a href="#" aria-disabled="true" title="Próximamente">Política de privacidad</a>
+        <a href="#" aria-disabled="true" title="Próximamente">Términos y condiciones</a>
+      </nav>
+    </div>
+  </footer>
 </div>

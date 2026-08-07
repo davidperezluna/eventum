@@ -183,11 +183,6 @@
           <span class="material-icons nav-icon">business_center</span>
           <span class="nav-label">Para organizadores</span>
         </a>
-        <a routerLink="/carrito" class="nav-item nav-item--with-badge" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeClientMenu()">
-          <span class="material-icons nav-icon">shopping_cart</span>
-          <span class="nav-label">Carrito</span>
-          <span *ngIf="totalItemsCarrito > 0" class="menu-badge">{{ totalItemsCarrito }}</span>
-        </a>
         <a routerLink="/conocenos" class="nav-item" routerLinkActive="active" (click)="closeClientMenu()">
           <span class="material-icons nav-icon">info</span>
           <span class="nav-label">Conócenos</span>
@@ -237,6 +232,9 @@
           <a routerLink="/organizadores" routerLinkActive="active" class="client-nav-item">
             Para organizadores
           </a>
+          <a routerLink="/conocenos" routerLinkActive="active" class="client-nav-item">
+            Conócenos
+          </a>
           <a
             *ngIf="coversEventumEnabled"
             routerLink="/clubes"
@@ -245,10 +243,6 @@
             class="client-nav-item"
           >
             {{ coversLabels.explorar }}
-          </a>
-          <a routerLink="/carrito" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="client-nav-item client-nav-item--with-badge">
-            Carrito
-            <span *ngIf="totalItemsCarrito > 0" class="menu-badge">{{ totalItemsCarrito }}</span>
           </a>
         </nav>
         <div class="client-user-menu">
