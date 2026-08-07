@@ -21,13 +21,12 @@ import {
 import { ClientConfirmDialog } from '../client-confirm-dialog/client-confirm-dialog';
 import { EvDrawerHost } from '../ev-drawer/ev-drawer-host';
 import { EvNotice } from '../ev-notice';
-import { AdminSidebarComponent } from '../admin-sidebar/admin-sidebar';
+import { AdminSidebar } from '../admin-sidebar/admin-sidebar';
 import { AdminNavSection } from '../admin-sidebar/admin-nav.types';
 import {
   buildAdminNavSections,
   buildOrganizadorNavSections,
   buildShowcaseNavSections,
-  extractOrganizerEventIdFromUrl,
 } from '../admin-sidebar/admin-nav.config';
 import { LOGIN_QUERY_CARRITO_PAGAR } from '../../core/login-redirect';
 
@@ -45,21 +44,12 @@ type ClientNavItem = {
 
 @Component({
   selector: 'app-layout',
-  imports: [
-    RouterOutlet,
-    RouterLink,
-    RouterLinkActive,
-    CommonModule,
-    ClientConfirmDialog,
-    EvDrawerHost,
-    EvNotice,
-    AdminSidebarComponent,
-  ],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, ClientConfirmDialog, EvDrawerHost, EvNotice, AdminSidebar],
   templateUrl: './layout.html',
   styleUrl: './layout.css',
 })
 export class Layout implements OnInit, OnDestroy {
-  navSections: AdminNavSection[] = [];
+  adminNavSections: AdminNavSection[] = [];
 
   /** Navegación cliente (drawer móvil + barra desktop) — orden único. */
   clientNavItems: ClientNavItem[] = [];
@@ -69,7 +59,7 @@ export class Layout implements OnInit, OnDestroy {
   userEmail: string = '';
   userRole: string = '';
   sidebarOpen: boolean = false;
-  sidebarCompact = false;
+  sidebarCompact: boolean = false;
   clientMenuOpen: boolean = false;
   totalItemsCarrito = 0;
   totalTrasladosPendientes = 0;
@@ -118,11 +108,11 @@ export class Layout implements OnInit, OnDestroy {
         if (usuario.tipo_usuario_id === 3) {
           this.userRole = 'Administrador';
           this.clientNavItems = [];
-          this.loadMenuAdministrador();
+          this.loadAdminNav();
         } else if (usuario.tipo_usuario_id === 2) {
           this.userRole = 'Organizador';
           this.clientNavItems = [];
-          this.syncOrganizadorNav(this.router.url);
+          this.loadAdminNav();
         } else if (usuario.tipo_usuario_id === 1) {
           this.userRole = 'Cliente';
           this.loadMenuCliente();
@@ -134,7 +124,7 @@ export class Layout implements OnInit, OnDestroy {
           }
         } else if (this.authService.isLector()) {
           this.userRole = 'Lector';
-          this.navSections = [];
+          this.adminNavSections = [];
           this.clientNavItems = [];
           this.redirectLectorFueraDeApp();
         } else {
@@ -143,7 +133,7 @@ export class Layout implements OnInit, OnDestroy {
         }
       } else {
         // Si no hay usuario, limpiar menú
-        this.navSections = [];
+        this.adminNavSections = [];
         this.clientNavItems = [];
         this.userRole = '';
         this.mostrarNavAccesosPuerta = false;
@@ -162,9 +152,6 @@ export class Layout implements OnInit, OnDestroy {
         if (event instanceof NavigationEnd) {
           this.syncRutaCarrito(event.urlAfterRedirects);
           this.verificarRedireccionCompletarPerfil(event.urlAfterRedirects);
-          if (this.usuario?.tipo_usuario_id === 2) {
-            this.syncOrganizadorNav(event.urlAfterRedirects);
-          }
         }
         if (window.innerWidth <= 768) {
           this.closeSidebar();
@@ -296,25 +283,12 @@ export class Layout implements OnInit, OnDestroy {
     return this.usuario?.tipo_usuario_id === 2 ? '/dashboard-organizador' : '/dashboard';
   }
 
-  /** Nombre para saludo humano en el sidebar del panel. */
-  get panelUserName(): string | null {
-    const u = this.usuario as { nombre?: string; apellido?: string } | null;
-    if (!u) return null;
-    const nom = typeof u.nombre === 'string' ? u.nombre.trim() : '';
-    const ape = typeof u.apellido === 'string' ? u.apellido.trim() : '';
-    const joined = [nom, ape].filter(Boolean).join(' ').trim();
-    return joined.length > 0 ? joined : null;
-  }
-
-  get panelHeaderTagline(): string {
+  /** Subtítulo del sidebar según rol. */
+  get panelTitle(): string {
     if (this.usuario?.tipo_usuario_id === 2) {
-      return 'Administra tu evento con tranquilidad.';
+      return this.authService.isShowcaseOrganizador() ? 'Panel Organizador · Demo' : 'Panel Organizador';
     }
-    return 'Todo tu ecosistema de eventos, en un solo lugar.';
-  }
-
-  get panelSidebarVariant(): 'admin' | 'organizer' {
-    return this.usuario?.tipo_usuario_id === 2 ? 'organizer' : 'admin';
+    return 'Panel Administrativo';
   }
 
   ngOnDestroy() {
@@ -336,24 +310,18 @@ export class Layout implements OnInit, OnDestroy {
     forceUnlockBodyScroll();
   }
 
-  loadMenuAdministrador() {
-    this.navSections = buildAdminNavSections(this.coversEventumEnabled);
-  }
-
-  loadMenuOrganizador() {
-    this.navSections = buildOrganizadorNavSections(this.coversEventumEnabled);
-  }
-
-  loadMenuShowcase(eventId: number | null = null) {
-    this.navSections = buildShowcaseNavSections(eventId, this.coversEventumEnabled);
-  }
-
-  syncOrganizadorNav(url: string) {
-    if (this.authService.isShowcaseOrganizador()) {
-      this.loadMenuShowcase(extractOrganizerEventIdFromUrl(url));
+  loadAdminNav(): void {
+    if (this.usuario?.tipo_usuario_id === 3) {
+      this.adminNavSections = buildAdminNavSections(this.coversEventumEnabled);
+    } else if (this.authService.isShowcaseOrganizador()) {
+      this.adminNavSections = buildShowcaseNavSections();
     } else {
-      this.loadMenuOrganizador();
+      this.adminNavSections = buildOrganizadorNavSections(this.coversEventumEnabled);
     }
+  }
+
+  onSidebarCompactChange(compact: boolean): void {
+    this.sidebarCompact = compact;
   }
 
   loadMenuCliente() {
@@ -396,7 +364,7 @@ export class Layout implements OnInit, OnDestroy {
         : []),
       { path: '/perfil', label: 'Mi perfil', icon: 'person', exact: false, dividerBefore: true },
     ];
-    this.navSections = [];
+    this.adminNavSections = [];
   }
 
   clientNavFor(surface: 'mobile' | 'desktop'): ClientNavItem[] {
@@ -432,10 +400,6 @@ export class Layout implements OnInit, OnDestroy {
   closeSidebar() {
     this.sidebarOpen = false;
     this.syncBodyScrollLock();
-  }
-
-  setSidebarCompact(compact: boolean): void {
-    this.sidebarCompact = compact;
   }
 
   toggleClientMenu() {

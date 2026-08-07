@@ -1,35 +1,26 @@
 <div
   class="layout-container"
   [class.client-layout]="isCliente() || isLector() || !currentUser || !usuario"
-  [class.panel-sidebar-compact]="sidebarCompact && !isCliente() && !isLector() && !!currentUser"
+  [class.admin-layout]="!isCliente() && !isLector() && currentUser && usuario"
+  [class.admin-layout--compact]="sidebarCompact"
 >
   
-  <!-- Layout para Administradores y Organizadores (Sidebar) -->
-  <ng-container *ngIf="!isCliente() && !isLector() && currentUser && usuario">
-    <header class="admin-mobile-topbar" aria-label="Barra superior móvil">
-      <div class="admin-mobile-topbar-inner">
-        <button type="button" class="menu-toggle" (click)="toggleSidebar()" aria-label="Abrir menú">
-          <span class="material-icons">menu</span>
-        </button>
-        <a [routerLink]="panelHomeRoute" class="brand-logo" aria-label="Eventum, ir al panel">
-          <img src="logo-eventum.svg" alt="Eventum" class="brand-logo-img" />
-        </a>
-      </div>
-    </header>
-    <app-admin-sidebar
-      [sections]="navSections"
-      [open]="sidebarOpen"
-      [compact]="sidebarCompact"
-      [variant]="panelSidebarVariant"
-      [userEmail]="userEmail"
-      [userName]="panelUserName"
-      [headerTagline]="panelHeaderTagline"
-      [homeRoute]="panelHomeRoute"
-      (closePanel)="closeSidebar()"
-      (logoutClick)="logout()"
-      (compactChange)="setSidebarCompact($event)"
-    ></app-admin-sidebar>
-  </ng-container>
+  <!-- Panel Administrativo / Organizador -->
+  <app-admin-sidebar
+    *ngIf="!isCliente() && !isLector() && currentUser && usuario"
+    [sections]="adminNavSections"
+    [open]="sidebarOpen"
+    [compact]="sidebarCompact"
+    [userEmail]="userEmail"
+    [userRole]="userRole"
+    [panelTitle]="panelTitle"
+    [homeRoute]="panelHomeRoute"
+    [currentYear]="currentYear"
+    (closeSidebar)="closeSidebar()"
+    (toggleSidebar)="toggleSidebar()"
+    (logout)="logout()"
+    (compactChange)="onSidebarCompactChange($event)"
+  />
 
   <!-- Layout para Clientes (Header Top) -->
   <ng-container *ngIf="isCliente() && currentUser && usuario">

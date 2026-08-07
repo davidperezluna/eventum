@@ -1,122 +1,119 @@
-import { CommonModule } from '@angular/common';
-import {
-  Component,
-  EventEmitter,
-  Input,
-  OnChanges,
-  Output,
-  SimpleChanges,
-} from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import {
-  AdminNavEntry,
-  AdminNavGroup,
-  AdminNavLink,
-  AdminNavSection,
-  isAdminNavGroup,
-  isAdminNavLink,
-} from './admin-nav.types';
-
-@Component({
-  selector: 'app-admin-sidebar',
-  standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
-  templateUrl: './admin-sidebar.html',
-  styleUrl: './admin-sidebar.css',
-})
-export class AdminSidebarComponent implements OnChanges {
-  @Input({ required: true }) sections: AdminNavSection[] = [];
-  @Input() open = false;
-  @Input() compact = false;
-  @Input() variant: 'admin' | 'organizer' = 'admin';
-  @Input() userEmail = '';
-  @Input() userName: string | null = null;
-  @Input() headerTagline = '';
-  @Input() homeRoute = '/dashboard';
-
-  @Output() closePanel = new EventEmitter<void>();
-  @Output() logoutClick = new EventEmitter<void>();
-  @Output() compactChange = new EventEmitter<boolean>();
-
-  readonly isAdminNavGroup = isAdminNavGroup;
-  readonly isAdminNavLink = isAdminNavLink;
-
-  private groupExpanded = new Map<string, boolean>();
-
-  constructor(private router: Router) {}
-
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['sections']) {
-      this.syncGroupExpandedState();
-    }
-  }
-
-  trackSection(_index: number, section: AdminNavSection): string {
-    return section.label ?? `section-${_index}`;
-  }
-
-  trackEntry(_index: number, entry: AdminNavEntry): string {
-    return isAdminNavLink(entry) ? entry.path : entry.label;
-  }
-
-  isExactLink(entry: AdminNavLink): boolean {
-    if (entry.exact != null) {
-      return entry.exact;
-    }
-    return entry.path === '/dashboard' || entry.path === '/dashboard-organizador';
-  }
-
-  isGroupExpanded(group: AdminNavGroup): boolean {
-    return this.groupExpanded.get(group.label) ?? false;
-  }
-
-  toggleGroup(group: AdminNavGroup, event: Event): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.groupExpanded.set(group.label, !this.isGroupExpanded(group));
-  }
-
-  onNavigate(): void {
-    this.closePanel.emit();
-  }
-
-  toggleCompact(): void {
-    this.compactChange.emit(!this.compact);
-  }
-
-  isLinkActive(path: string): boolean {
-    const currentPath = this.router.url.split('?')[0];
-    if (path === '/ventas') {
-      return currentPath === '/ventas';
-    }
-    return currentPath === path || currentPath.startsWith(`${path}/`);
-  }
-
-  isGroupActive(group: AdminNavGroup): boolean {
-    return group.children.some((child) => this.isLinkActive(child.path));
-  }
-
-  get accountLabel(): string {
-    if (this.userName) {
-      return this.userName.trim();
-    }
-    return this.userEmail;
-  }
-
-  private syncGroupExpandedState(): void {
-    for (const section of this.sections) {
-      for (const entry of section.entries) {
-        if (!isAdminNavGroup(entry)) {
-          continue;
-        }
-        const active = this.isGroupActive(entry);
-        if (!this.groupExpanded.has(entry.label)) {
-          this.groupExpanded.set(entry.label, entry.expanded ?? active);
-        } else if (active) {
-          this.groupExpanded.set(entry.label, true);
-        }
-      }
-    }
-  }
-}
-
+import { Component, EventEmitter, Input, Output, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router, RouterModule, NavigationEnd } from '@angular/router';
+import { filter, Subscription } from 'rxjs';
+import {
+  AdminNavSection,
+  AdminNavEntry,
+  isAdminNavGroup,
+} from './admin-nav.types';
+
+@Component({
+  selector: 'app-admin-sidebar',
+  standalone: true,
+  imports: [CommonModule, RouterModule],
+  templateUrl: './admin-sidebar.html',
+  styleUrl: './admin-sidebar.css',
+})
+export class AdminSidebar implements OnInit, OnDestroy {
+  @Input({ required: true }) sections: AdminNavSection[] = [];
+  @Input() open = false;
+  @Input() compact = false;
+  @Input() userEmail = '';
+  @Input() userRole = '';
+  @Input() panelTitle = 'Panel Administrativo';
+  @Input() homeRoute = '/dashboard';
+  @Input() currentYear = new Date().getFullYear();
+
+  @Output() closeSidebar = new EventEmitter<void>();
+  @Output() toggleSidebar = new EventEmitter<void>();
+  @Output() logout = new EventEmitter<void>();
+  @Output() compactChange = new EventEmitter<boolean>();
+
+  /** Estado expandido de grupos colapsables (clave = label del grupo). */
+  private expandedGroups = new Map<string, boolean>();
+  private routerSub?: Subscription;
+
+  constructor(private router: Router) {}
+
+  ngOnInit(): void {
+    this.syncExpandedFromRoute(this.router.url);
+    this.routerSub = this.router.events
+      .pipe(filter((e) => e instanceof NavigationEnd))
+      .subscribe((e) => {
+        if (e instanceof NavigationEnd) {
+          this.syncExpandedFromRoute(e.urlAfterRedirects);
+        }
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.routerSub?.unsubscribe();
+  }
+
+  onNavClick(): void {
+    this.closeSidebar.emit();
+  }
+
+  toggleCompact(): void {
+    this.compactChange.emit(!this.compact);
+  }
+
+  toggleGroup(entry: AdminNavEntry): void {
+    if (!isAdminNavGroup(entry)) return;
+    const key = entry.label;
+    this.expandedGroups.set(key, !this.isGroupExpanded(entry));
+  }
+
+  isGroupExpanded(entry: AdminNavEntry): boolean {
+    if (!isAdminNavGroup(entry)) return false;
+    if (this.expandedGroups.has(entry.label)) {
+      return this.expandedGroups.get(entry.label)!;
+    }
+    return entry.expanded ?? false;
+  }
+
+  isLinkActive(path: string): boolean {
+    const current = this.router.url.split('?')[0];
+    if (path === '/ventas') {
+      return current === '/ventas';
+    }
+    return current === path || current.startsWith(`${path}/`);
+  }
+
+  isGroupActive(entry: AdminNavEntry): boolean {
+    if (!isAdminNavGroup(entry)) return false;
+    return entry.children.some((c) => this.isLinkActive(c.path));
+  }
+
+  isEntryActive(entry: AdminNavEntry): boolean {
+    if (isAdminNavGroup(entry)) {
+      return this.isGroupActive(entry);
+    }
+    return this.isLinkActive(entry.path);
+  }
+
+  trackSection(_: number, section: AdminNavSection): string {
+    return section.label ?? `section-${_}`;
+  }
+
+  trackEntry(_: number, entry: AdminNavEntry): string {
+    return isAdminNavGroup(entry) ? `group-${entry.label}` : entry.path;
+  }
+
+  private syncExpandedFromRoute(url: string): void {
+    const path = url.split('?')[0];
+    for (const section of this.sections) {
+      for (const entry of section.entries) {
+        if (isAdminNavGroup(entry)) {
+          const active = entry.children.some(
+            (c) => path === c.path || (c.path !== '/ventas' && path.startsWith(`${c.path}/`)) || (c.path === '/ventas' && path === '/ventas')
+          );
+          if (active) {
+            this.expandedGroups.set(entry.label, true);
+          }
+        }
+      }
+    }
+  }
+}

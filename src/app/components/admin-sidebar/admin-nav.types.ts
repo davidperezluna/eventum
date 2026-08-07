@@ -3,14 +3,10 @@ export interface AdminNavLink {
   kind: 'link';
   path: string;
   label: string;
-  /** Omitir para ítems editoriales tipo hub (Centro de Inteligencia). */
-  icon?: string;
-  /** Hub = navegación principal del producto, sin icono. */
-  variant?: 'hub' | 'default';
-  exact?: boolean;
+  icon: string;
 }
 
-/** Grupo colapsable (p. ej. Ingresos en admin). */
+/** Grupo colapsable (p. ej. Ventas). */
 export interface AdminNavGroup {
   kind: 'group';
   label: string;
@@ -21,17 +17,9 @@ export interface AdminNavGroup {
 
 export type AdminNavEntry = AdminNavLink | AdminNavGroup;
 
-/**
- * Sección del sidebar.
- * - hub: centros del producto (sin etiqueta de sección)
- * - default: flujo editorial con label
- * - quiet: cuenta y utilidades discretas
- */
+/** Sección del sidebar con etiqueta opcional y entradas. */
 export interface AdminNavSection {
   label?: string;
-  tone?: 'hub' | 'default' | 'quiet';
-  /** Línea hairline antes de la sección (jerarquía por ritmo, no cajas). */
-  separator?: boolean;
   entries: AdminNavEntry[];
 }
 

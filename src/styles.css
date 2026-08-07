@@ -1,12 +1,12 @@
 /* Importar sistema de temas */
 @import './styles/themes.css';
 @import './styles/client-tokens.css';
+@import './app/components/admin-sidebar/admin-shell.tokens.css';
 @import './styles/legal-modal.css';
 @import '@ng-select/ng-select/themes/default.theme.css';
 @import './styles/ev-form-system.css';
 @import './styles/ev-drawer-system.css';
 @import './styles/ev-panel-system.css';
-@import './styles/ev-panel-tokens.css';
 @import './styles/ev-button-system.css';
 @import './styles/ev-select-theme.css';
 

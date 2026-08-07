@@ -25,101 +25,29 @@
 }
 
 /* ============================================
-   ADMIN/ORGANIZER SIDEBAR STYLES
+   ADMIN PANEL — main content offset
+   Sidebar styles → admin-sidebar.css (ev-admin-*)
    ============================================ */
 
-/* Barra fija solo en móvil: el botón deja de flotar sobre el contenido */
-.admin-mobile-topbar {
-  display: none;
+.main-content {
+  flex: 1;
+  margin-left: var(--ev-admin-sidebar-width, 288px);
+  padding: var(--spacing-xl);
+  background: #f6f8fc;
+  transition: margin-left 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  width: calc(100% - var(--ev-admin-sidebar-width, 288px));
 }
 
-@media (max-width: 768px) {
-  .admin-mobile-topbar {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 998;
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: 0;
-    padding-left: env(safe-area-inset-left, 0px);
-    padding-right: env(safe-area-inset-right, 0px);
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--ev-panel-border, rgba(15, 23, 42, 0.06));
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-    box-sizing: border-box;
-  }
-
-  .admin-mobile-topbar-inner {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--spacing-sm);
-    align-items: center;
-    width: 100%;
-    box-sizing: border-box;
-    padding: 1rem 1rem;
-    position: relative;
-  }
-
-  .admin-mobile-topbar .menu-toggle {
-    grid-column: 1;
-    grid-row: 1;
-    justify-self: start;
-    align-self: center;
-    z-index: 2;
-  }
-
-  .admin-mobile-topbar .brand-logo {
-    grid-column: 1 / -1;
-    grid-row: 1;
-    justify-self: center;
-    align-self: center;
-    z-index: 1;
-  }
+.admin-layout--compact .main-content {
+  margin-left: var(--ev-admin-sidebar-width-compact, 72px);
+  width: calc(100% - var(--ev-admin-sidebar-width-compact, 72px));
 }
 
-/* Icono menú (admin móvil): solo las tres líneas, sin contenedor ni borde */
-.menu-toggle {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  padding: 0;
-  flex-shrink: 0;
-  background: transparent;
-  color: #475569;
-  border: 0;
-  border-radius: 0;
-  cursor: pointer;
-  box-shadow: none;
-  transition: color 0.18s ease, opacity 0.15s ease;
-  -webkit-tap-highlight-color: transparent;
-}
+/* ============================================
+   CLIENT MOBILE DRAWER — shared drawer primitives
+   (used by client-mobile-menu only; do not reuse for admin)
+   ============================================ */
 
-.menu-toggle:hover {
-  color: var(--color-primary);
-}
-
-.menu-toggle:active {
-  opacity: 0.85;
-}
-
-.menu-toggle:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--color-primary-light) 55%, transparent);
-  outline-offset: 3px;
-}
-
-.menu-toggle .material-icons {
-  font-size: 1.4rem;
-}
-
-/* Client mobile drawer — clases compartidas (sidebar-header, nav-item, etc.) */
 .sidebar-header {
   padding: var(--spacing-xl) var(--spacing-lg);
   border-bottom: 1px solid var(--color-border);
@@ -207,36 +135,6 @@
   border-left: 3px solid transparent;
 }
 
-.nav-item--group {
-  width: 100%;
-  border-top: 0;
-  border-right: 0;
-  border-bottom: 0;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-}
-
-.nav-group {
-  display: block;
-}
-
-.nav-group-chevron {
-  margin-left: auto;
-  font-size: 1.1rem;
-  opacity: 0.85;
-}
-
-.nav-submenu {
-  display: flex;
-  flex-direction: column;
-}
-
-.nav-subitem {
-  padding-left: calc(var(--spacing-lg) + 1.4rem);
-  background: rgba(255, 255, 255, 0.03);
-}
-
 .nav-item--with-badge {
   justify-content: flex-start;
   gap: 0.35rem;
@@ -283,75 +181,7 @@
   color: var(--color-text-inverse-lighter);
 }
 
-.user-info {
-  margin-bottom: var(--spacing-md);
-  padding-bottom: var(--spacing-md);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.user-email {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-xs);
-  margin-bottom: var(--spacing-xs);
-  color: var(--color-text-inverse);
-  font-size: var(--font-size-sm);
-}
-
-.user-email .material-icons {
-  font-size: 1rem;
-}
-
-.email-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 180px;
-}
-
-.user-role {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-xs);
-  margin-bottom: var(--spacing-sm);
-  color: var(--color-text-inverse-light);
-  font-size: var(--font-size-xs);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: var(--border-radius-sm);
-}
-
-.user-role .material-icons {
-  font-size: 0.875rem;
-}
-
-.btn-logout {
-  width: 100%;
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--color-text-inverse);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  cursor: pointer;
-  transition: background var(--transition-normal);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-xs);
-}
-
-.btn-logout:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.btn-logout .material-icons {
-  font-size: 1rem;
-}
-
-/* Pie del menú cliente: nombre/correo llevan al perfil (admin sigue usando div.user-email) */
+/* Pie del menú cliente: nombre/correo llevan al perfil */
 .client-mobile-menu a.user-email.user-email--link-profile {
   text-decoration: none;
   color: var(--ec-text-primary, #0f172a);
@@ -388,14 +218,6 @@
   word-break: break-word;
   font-size: var(--font-size-xs);
   color: var(--ec-text-muted, #64748b);
-}
-.main-content {
-  flex: 1;
-  margin-left: var(--sidebar-width);
-  padding: var(--spacing-xl);
-  background: var(--ev-panel-soft, #f8fafc);
-  transition: margin-left var(--ev-panel-transition, 180ms cubic-bezier(0.4, 0, 0.2, 1));
-  width: calc(100% - var(--sidebar-width));
 }
 
 /* ============================================
@@ -1087,8 +909,21 @@
 
 /* Móviles y tablets pequeñas */
 @media (max-width: 768px) {
-  .menu-toggle {
+  .client-mobile-menu .sidebar-close {
     display: inline-flex;
+  }
+
+  .sidebar-header h1 {
+    font-size: var(--font-size-lg);
+  }
+
+  .subtitle {
+    display: block;
+    font-size: var(--font-size-xs);
+  }
+
+  .nav-label {
+    display: block;
   }
 
   .main-content {
@@ -1098,20 +933,9 @@
     width: 100%;
   }
 
-  .user-email {
-    justify-content: flex-start;
-  }
-
-  .email-text {
-    max-width: 100%;
-  }
-
-  .user-role {
-    justify-content: flex-start;
-  }
-
-  .btn-logout {
-    justify-content: flex-start;
+  .admin-layout--compact .main-content {
+    margin-left: 0;
+    width: 100%;
   }
 
   /* Client Mobile Header */
@@ -1211,13 +1035,8 @@
     max-width: 85vw;
   }
 
-  .menu-toggle .material-icons,
   .client-menu-toggle .material-icons {
     font-size: 1.3rem;
-  }
-
-  .admin-mobile-topbar-inner {
-    padding: 0.875rem 1rem;
   }
 
   .sidebar-header {

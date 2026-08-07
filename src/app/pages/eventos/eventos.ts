@@ -22,7 +22,6 @@ import { openEventoBoletasDrawer } from '../../panels/evento-boletas';
 import { enforceBorradorCatalogoRules } from '../../core/evento-publicacion';
 import { formatFinanzasMonedaExacta } from '../../utils/dashboard-finanzas.view';
 import { Evento, CategoriaEvento, Lugar, Usuario, PaginatedResponse, TipoEstadoEvento, WompiCuenta } from '../../types';
-import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { EvFormModal } from '../../components/ev-form-modal/ev-form-modal';
 import { EvFormSection } from '../../components/ev-form-section/ev-form-section';
 import { EvFormWizard, EvWizardStep } from '../../components/ev-form-wizard/ev-form-wizard';
@@ -32,7 +31,7 @@ import { EvNumberInput } from '../../components/ev-number-input/ev-number-input'
 
 @Component({
   selector: 'app-eventos',
-  imports: [CommonModule, FormsModule, DateFormatPipe, RouterLink, EvFormModal, EvFormSection, EvFormWizard, EvEventoPreview, EvSelect, EvNumberInput],
+  imports: [CommonModule, FormsModule, RouterLink, EvFormModal, EvFormSection, EvFormWizard, EvEventoPreview, EvSelect, EvNumberInput],
   templateUrl: './eventos.html',
   styleUrl: './eventos.css',
 })
@@ -405,6 +404,56 @@ export class Eventos implements OnInit, OnDestroy {
       return `Precio desde ${this.formatCurrency(evento.precio_minimo)}`;
     }
     return '';
+  }
+
+  /** Línea discreta bajo el título: fecha · ciudad · precio · vendidas */
+  getCoverMetaLine(evento: Evento): string {
+    const parts: string[] = [];
+    if (evento.fecha_inicio) {
+      parts.push(this.formatCoverDate(evento.fecha_inicio));
+    }
+    const ciudad = evento.lugar?.ciudad?.trim();
+    const lugar = evento.lugar?.nombre?.trim();
+    if (ciudad) {
+      parts.push(ciudad);
+    } else if (lugar) {
+      parts.push(lugar);
+    }
+    if (evento.es_gratis) {
+      parts.push('Gratis');
+    } else if (evento.precio_minimo != null) {
+      parts.push(`Desde ${this.formatCurrency(evento.precio_minimo)}`);
+    }
+    if (this.authService.isOrganizador()) {
+      const n = this.getBoletasVendidas(evento.id) ?? 0;
+      parts.push(n === 1 ? '1 vendida' : `${n} vendidas`);
+    }
+    return parts.join(' · ');
+  }
+
+  getCoverStatusClass(estado?: string): string {
+    switch (estado) {
+      case TipoEstadoEvento.PUBLICADO:
+        return 'ev-cover-card__status-dot--published';
+      case TipoEstadoEvento.EN_CURSO:
+        return 'ev-cover-card__status-dot--live';
+      case TipoEstadoEvento.FINALIZADO:
+        return 'ev-cover-card__status-dot--done';
+      case TipoEstadoEvento.CANCELADO:
+        return 'ev-cover-card__status-dot--cancelled';
+      default:
+        return 'ev-cover-card__status-dot--draft';
+    }
+  }
+
+  private formatCoverDate(value: string | Date): string {
+    try {
+      const d = value instanceof Date ? value : new Date(value);
+      if (Number.isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch {
+      return '';
+    }
   }
 
   getEventoIniciales(titulo: string): string {
