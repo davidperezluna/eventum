@@ -262,6 +262,13 @@
   >
     <div class="layout-notice-wrap">
       <ev-notice
+        *ngIf="showSimulatedViewBanner"
+        variant="neutral"
+        density="banner"
+        icon="visibility"
+        [message]="'Vista simulada — escenario «' + simulatedViewLabel + '». Los datos no provienen de ventas reales.'"
+      />
+      <ev-notice
         *ngIf="showShowcaseNoticeInLayout"
         variant="neutral"
         density="banner"

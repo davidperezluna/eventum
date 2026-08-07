@@ -18,6 +18,8 @@ import { DashboardOrganizadorService } from '../../services/dashboard-organizado
 
 import { ReportesService, ReporteEvento, ReporteVentas } from '../../services/reportes.service';
 
+import { DemoDataProvider } from '../../demo/demo-data.provider';
+
 import { AuthService } from '../../services/auth.service';
 
 import { AlertService } from '../../services/alert.service';
@@ -196,6 +198,8 @@ export class EventoInteligencia implements OnInit {
 
     private reportesService: ReportesService,
 
+    private demoDataProvider: DemoDataProvider,
+
     private alertService: AlertService,
 
     private cdr: ChangeDetectorRef,
@@ -258,7 +262,7 @@ export class EventoInteligencia implements OnInit {
 
       }
 
-      this.evento = evento;
+      this.evento = await this.demoDataProvider.applyEventoPresentation(evento);
 
 
 
@@ -276,13 +280,13 @@ export class EventoInteligencia implements OnInit {
 
         orgId != null
 
-          ? this.dashboardOrganizadorService.getStats(orgId, this.eventoId).catch(() => null)
+          ? this.demoDataProvider.getEventDashboardStats(orgId, this.eventoId).catch(() => null)
 
-          : this.dashboardService.getStats(this.eventoId).catch(() => null),
+          : this.demoDataProvider.getEventDashboardStats(null, this.eventoId).catch(() => null),
 
-        this.reportesService.getReporteEvento(this.eventoId).catch(() => null),
+        this.demoDataProvider.getReporteEvento(orgId, this.eventoId).catch(() => null),
 
-        this.reportesService
+        this.demoDataProvider
 
           .getVentasPorDia(desde, hasta, orgId ?? undefined, this.eventoId)
 
@@ -294,9 +298,9 @@ export class EventoInteligencia implements OnInit {
 
 
 
-      this.tiposBoleta = tipos;
+      this.tiposBoleta = await this.demoDataProvider.applyTiposBoleta(tipos, this.eventoId);
 
-      this.productos = productos;
+      this.productos = await this.demoDataProvider.applyProductos(productos, this.eventoId);
 
       this.stats = stats;
 
@@ -304,7 +308,9 @@ export class EventoInteligencia implements OnInit {
 
       this.ventas7d = ventas7d;
 
-      this.cuponesCount = cupones.length;
+      const cuponesDemo = await this.demoDataProvider.applyCupones(cupones, this.eventoId);
+
+      this.cuponesCount = cuponesDemo.length;
 
 
 

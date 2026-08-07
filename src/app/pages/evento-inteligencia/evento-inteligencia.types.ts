@@ -42,6 +42,11 @@ export interface IntelFinanzasHeroView {
   ventasGeneradasBoletas: string;
   ventasGeneradasProductos: string;
   descuentosEstimados: string;
+  servicioEventum: string;
+  comisionWompi: string;
+  servicioPct: number;
+  wompiPct: number;
+  showDeducciones: boolean;
   recibirasAprox: string;
   recibirasAproxMoneda: string;
   recibirasAproxBoletas: string;
@@ -70,7 +75,12 @@ export interface IntelVentasSection extends IntelCtaCapable {
   clientesPagaronBoletas: string;
   clientesPagaronProductos: string;
   descuentosEstimados: string;
+  servicioEventum: string;
+  comisionWompi: string;
   descuentosPct: number;
+  servicioPct: number;
+  wompiPct: number;
+  showDeducciones: boolean;
   /** Desglose neto por rubro. */
   recibirasAproxBoletas: string;
   recibirasAproxProductos: string;
@@ -93,11 +103,21 @@ export interface IntelRankingSection extends IntelCtaCapable {
   conclusion?: string;
 }
 
+export interface IntelHoyInsight {
+  id: string;
+  icon: string;
+  text: string;
+  /** Destaca visualmente el insight principal del día. */
+  emphasis?: boolean;
+}
+
 export interface IntelHoySection extends IntelCtaCapable {
   question: string;
   empty: boolean;
   emptyMessage?: string;
-  lines: string[];
+  insights: IntelHoyInsight[];
+  /** @deprecated Usar insights */
+  lines?: string[];
   conclusion?: string;
 }
 

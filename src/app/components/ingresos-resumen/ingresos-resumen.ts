@@ -15,7 +15,17 @@ export class IngresosResumenComponent {
   @Input() contextoOrganizador = false;
   /** Si el bloque expandible inicia abierto. */
   @Input() defaultOpen = true;
+  /** `premium`: tarjetas abiertas para dashboard organizador. */
+  @Input() variant: 'default' | 'premium' = 'default';
+  @Input() hideDayDelta = false;
   Math = Math;
+
+  get variacionDiaPct(): number {
+    return this.getVariacionPorcentual(
+      this.stats.ingresos_dia_actual || 0,
+      this.stats.ingresos_dia_anterior || 0,
+    );
+  }
 
   formatCurrency(value: number | null | undefined): string {
     return formatFinanzasMonedaExacta(value);

@@ -68,6 +68,20 @@ export function getSaldoEstimadoRecibirConsolidado(stats: DashboardStats, mostra
   return getSaldoEstimadoRecibirBoletas(stats) + getSaldoEstimadoRecibirProductos(stats, mostrarProductos);
 }
 
+/** Comisión de servicio Eventum cobrada al cliente (boletas + productos visibles). */
+export function getServicioEventumTotal(stats: DashboardStats, mostrarProductos: boolean): number {
+  const boletas = Number(stats.valor_servicio_total || 0);
+  const productos = mostrarProductos ? Number(stats.valor_servicio_productos_total || 0) : 0;
+  return boletas + productos;
+}
+
+/** Comisión Wompi estimada sobre la parte del organizador (ventas/boletas + productos). */
+export function getComisionWompiOrganizador(stats: DashboardStats, mostrarProductos: boolean): number {
+  const boletas = Number(stats.wompi_ventas_total || 0);
+  const productos = mostrarProductos ? Number(stats.wompi_productos_ventas_total || 0) : 0;
+  return boletas + productos;
+}
+
 /** @deprecated Usar getSaldoEstimadoRecibirConsolidado */
 export const getValorEstimadoRecibirConsolidado = getSaldoEstimadoRecibirConsolidado;
 
@@ -75,7 +89,12 @@ export interface DashboardFinanzasOrganizadorView {
   recaudoBruto: number;
   recaudoBrutoBoletas: number;
   recaudoBrutoProductos: number;
+  /** Servicio Eventum + comisión Wompi (parte organizador). */
   descuentosEstimados: number;
+  servicioEventum: number;
+  comisionWompi: number;
+  servicioPct: number;
+  wompiPct: number;
   saldoEstimadoRecibir: number;
   saldoEstimadoRecibirBoletas: number;
   saldoEstimadoRecibirProductos: number;
@@ -93,11 +112,29 @@ export function buildFinanzasOrganizadorView(
   const saldoEstimadoRecibirProductos = getSaldoEstimadoRecibirProductos(stats, mostrarProductos);
   const saldoEstimadoRecibir = saldoEstimadoRecibirBoletas + saldoEstimadoRecibirProductos;
 
+  const descuentosEstimados = recaudoBruto - saldoEstimadoRecibir;
+  let servicioEventum = getServicioEventumTotal(stats, mostrarProductos);
+  let comisionWompi = getComisionWompiOrganizador(stats, mostrarProductos);
+
+  if (servicioEventum + comisionWompi <= 0 && descuentosEstimados > 0) {
+    servicioEventum = descuentosEstimados;
+    comisionWompi = 0;
+  } else {
+    const drift = descuentosEstimados - servicioEventum - comisionWompi;
+    if (Math.abs(drift) >= 1) {
+      comisionWompi = Math.max(0, descuentosEstimados - servicioEventum);
+    }
+  }
+
   return {
     recaudoBruto,
     recaudoBrutoBoletas,
     recaudoBrutoProductos,
-    descuentosEstimados: recaudoBruto - saldoEstimadoRecibir,
+    descuentosEstimados,
+    servicioEventum,
+    comisionWompi,
+    servicioPct: recaudoBruto > 0 ? Math.round((servicioEventum / recaudoBruto) * 100) : 0,
+    wompiPct: recaudoBruto > 0 ? Math.round((comisionWompi / recaudoBruto) * 100) : 0,
     saldoEstimadoRecibir,
     saldoEstimadoRecibirBoletas,
     saldoEstimadoRecibirProductos,

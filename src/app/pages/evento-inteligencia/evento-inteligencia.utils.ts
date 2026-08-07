@@ -12,6 +12,7 @@ import {
   IntelCountdown,
   IntelFinanzasHeroView,
   IntelHeroMoment,
+  IntelHoyInsight,
   IntelHoySection,
   IntelOportunidad,
   IntelOportunidadesSection,
@@ -182,6 +183,11 @@ export function buildIntelFinanzasHero(
       ventasGeneradasBoletas: formatAmount(0),
       ventasGeneradasProductos: formatAmount(0),
       descuentosEstimados: formatCurrency(0),
+      servicioEventum: formatCurrency(0),
+      comisionWompi: formatCurrency(0),
+      servicioPct: 0,
+      wompiPct: 0,
+      showDeducciones: false,
       recibirasAprox: formatAmount(0),
       recibirasAproxMoneda: formatCurrency(0),
       recibirasAproxBoletas: formatAmount(0),
@@ -199,6 +205,11 @@ export function buildIntelFinanzasHero(
     ventasGeneradasBoletas: formatAmount(fin.recaudoBrutoBoletas),
     ventasGeneradasProductos: formatAmount(fin.recaudoBrutoProductos),
     descuentosEstimados: formatCurrency(fin.descuentosEstimados),
+    servicioEventum: formatCurrency(fin.servicioEventum),
+    comisionWompi: formatCurrency(fin.comisionWompi),
+    servicioPct: fin.servicioPct,
+    wompiPct: fin.wompiPct,
+    showDeducciones: fin.descuentosEstimados > 0,
     recibirasAprox: formatAmount(fin.saldoEstimadoRecibir),
     recibirasAproxMoneda: formatCurrency(fin.saldoEstimadoRecibir),
     recibirasAproxBoletas: formatAmount(fin.saldoEstimadoRecibirBoletas),
@@ -381,7 +392,12 @@ export function buildVentasSection(
       clientesPagaronBoletas: formatCurrency(0),
       clientesPagaronProductos: formatCurrency(0),
       descuentosEstimados: formatCurrency(0),
+      servicioEventum: formatCurrency(0),
+      comisionWompi: formatCurrency(0),
       descuentosPct: 0,
+      servicioPct: 0,
+      wompiPct: 0,
+      showDeducciones: false,
       recibirasAproxBoletas: formatCurrency(0),
       recibirasAproxProductos: formatCurrency(0),
       conclusion: 'Tu punto de partida es activar la difusión desde la recomendación de arriba.',
@@ -392,6 +408,8 @@ export function buildVentasSection(
   const tieneProductosBruto = fin.recaudoBrutoProductos > 0;
   const descuentosPct =
     fin.recaudoBruto > 0 ? Math.round((fin.descuentosEstimados / fin.recaudoBruto) * 100) : 0;
+  const servicioPct = fin.servicioPct;
+  const wompiPct = fin.wompiPct;
 
   const pctBoletasBruto =
     fin.recaudoBruto > 0 ? Math.round((fin.recaudoBrutoBoletas / fin.recaudoBruto) * 100) : 100;
@@ -415,7 +433,7 @@ export function buildVentasSection(
   }
 
   if (descuentosPct >= 15) {
-    conclusion += ` Los descuentos estimados representan el ${descuentosPct}% de lo pagado.`;
+    conclusion += ` Entre servicio (${servicioPct}%) y Wompi (${wompiPct}%), las deducciones suman el ${descuentosPct}% de lo pagado.`;
   }
 
   return {
@@ -425,7 +443,12 @@ export function buildVentasSection(
     clientesPagaronBoletas: formatCurrency(fin.recaudoBrutoBoletas),
     clientesPagaronProductos: formatCurrency(fin.recaudoBrutoProductos),
     descuentosEstimados: formatCurrency(fin.descuentosEstimados),
+    servicioEventum: formatCurrency(fin.servicioEventum),
+    comisionWompi: formatCurrency(fin.comisionWompi),
     descuentosPct,
+    servicioPct,
+    wompiPct,
+    showDeducciones: fin.descuentosEstimados > 0,
     recibirasAproxBoletas: formatCurrency(fin.saldoEstimadoRecibirBoletas),
     recibirasAproxProductos: formatCurrency(fin.saldoEstimadoRecibirProductos),
     conclusion,
@@ -560,6 +583,79 @@ function todayIsoLocal(): string {
   return `${y}-${m}-${day}`;
 }
 
+function isTodayLocal(fecha: string | Date | null | undefined): boolean {
+  if (!fecha) return false;
+  const d = new Date(typeof fecha === 'string' ? fecha : fecha.toISOString());
+  if (Number.isNaN(d.getTime())) return false;
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
+
+function hoyFormatRelativeTime(fecha: string | Date | null | undefined): string {
+  if (!fecha) return 'Recientemente';
+  const then = new Date(typeof fecha === 'string' ? fecha : fecha.toISOString()).getTime();
+  if (!Number.isFinite(then)) return 'Recientemente';
+  const diffMs = Date.now() - then;
+  if (diffMs < 60_000) return 'Hace un momento';
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 60) return mins === 1 ? 'Hace 1 min' : `Hace ${mins} min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return hours === 1 ? 'Hace 1 h' : `Hace ${hours} h`;
+  return 'Hoy temprano';
+}
+
+function countVentasHoyDesdeRecientes(stats: DashboardStats | null): { entradas: number; productos: number } {
+  let entradas = 0;
+  let productos = 0;
+  for (const venta of stats?.ventas_recientes ?? []) {
+    if (!isTodayLocal(venta?.fecha_compra)) continue;
+    const tipo = String(venta?.tipo_venta || venta?.source || 'ventas');
+    if (tipo === 'productos') {
+      productos += 1;
+    } else {
+      entradas += 1;
+    }
+  }
+  return { entradas, productos };
+}
+
+function findUltimaVentaHoy(stats: DashboardStats | null): { fecha: string; total: number } | null {
+  for (const venta of stats?.ventas_recientes ?? []) {
+    if (!isTodayLocal(venta?.fecha_compra)) continue;
+    return {
+      fecha: String(venta.fecha_compra),
+      total: Number(venta?.total ?? 0),
+    };
+  }
+  return null;
+}
+
+function findHoraPicoHoy(stats: DashboardStats | null): string | null {
+  const buckets = new Map<number, number>();
+  for (const venta of stats?.ventas_recientes ?? []) {
+    if (!isTodayLocal(venta?.fecha_compra)) continue;
+    const h = new Date(String(venta.fecha_compra)).getHours();
+    if (!Number.isFinite(h)) continue;
+    buckets.set(h, (buckets.get(h) ?? 0) + 1);
+  }
+  if (buckets.size < 2) return null;
+  let peakHour = 0;
+  let peakCount = 0;
+  for (const [hour, count] of buckets) {
+    if (count > peakCount) {
+      peakHour = hour;
+      peakCount = count;
+    }
+  }
+  const label = (h: number) => `${String(h).padStart(2, '0')}:00`;
+  const next = (peakHour + 1) % 24;
+  return `${label(peakHour)}–${label(next)}`;
+}
+
 export function buildHoySection(
   stats: DashboardStats | null,
   ventas7d: ReporteVentas[],
@@ -569,67 +665,137 @@ export function buildHoySection(
   const question = '¿Qué está pasando hoy?';
   const hoyIso = todayIsoLocal();
   const hoyData = ventas7d.find((v) => v.fecha === hoyIso);
-  const entradasHoy = hoyData?.boletas_vendidas ?? 0;
   const ingresosHoy = stats?.ingresos_dia_actual ?? hoyData?.ingresos ?? 0;
   const ayer = stats?.ingresos_dia_anterior ?? 0;
+  const ventasHoy = countVentasHoyDesdeRecientes(stats);
+  const entradasHoy = hoyData?.boletas_vendidas ?? ventasHoy.entradas;
+  const productosHoy = ventasHoy.productos;
 
-  if (entradasHoy === 0 && ingresosHoy === 0 && ayer === 0) {
+  type InsightDraft = IntelHoyInsight;
+  const insights: InsightDraft[] = [];
+  const used = new Set<string>();
+
+  const push = (id: string, icon: string, text: string, emphasis = true) => {
+    if (used.has(id)) return;
+    used.add(id);
+    insights.push({ id, icon, text, emphasis });
+  };
+
+  const hasActividad = entradasHoy > 0 || ingresosHoy > 0 || productosHoy > 0;
+
+  if (!hasActividad && ayer === 0) {
+    push('sin-actividad', 'hourglass_empty', 'Sin ventas registradas hoy todavía.', true);
+    push('tip-difusion', 'campaign', 'Es buen momento para activar difusión antes del cierre del día.', false);
     return {
       question,
-      empty: true,
-      emptyMessage: 'Hoy no hay movimiento registrado todavía.',
-      lines: [],
-      conclusion: 'Es un buen momento para activar difusión antes de que pase el día.',
+      empty: false,
+      insights,
     };
   }
 
-  const lines: string[] = [];
+  if (!hasActividad && ayer > 0) {
+    push('sin-hoy', 'today', 'Hoy no hay movimiento registrado todavía.', true);
+    push('ayer-ref', 'history', `Ayer tus clientes pagaron ${formatCurrency(ayer)}.`, false);
+    push('tip-ritmo', 'bolt', 'Un recordatorio a tu audiencia puede reactivar el ritmo.', false);
+    return {
+      question,
+      empty: false,
+      insights,
+    };
+  }
 
-  if (entradasHoy > 0 && ingresosHoy > 0) {
-    lines.push(
-      entradasHoy === 1
-        ? `Hoy vendiste 1 entrada · Tus clientes pagaron ${formatCurrency(ingresosHoy)}`
-        : `Hoy vendiste ${entradasHoy.toLocaleString('es-CO')} entradas · Tus clientes pagaron ${formatCurrency(ingresosHoy)}`,
+  if (ingresosHoy > 0) {
+    push(
+      'ingresos',
+      'payments',
+      `Tus clientes pagaron ${formatCurrency(ingresosHoy)} en entradas hoy.`,
+      true,
     );
-  } else if (entradasHoy > 0) {
-    lines.push(
-      entradasHoy === 1
-        ? 'Hoy vendiste 1 entrada.'
-        : `Hoy vendiste ${entradasHoy.toLocaleString('es-CO')} entradas.`,
-    );
-  } else if (ingresosHoy > 0) {
-    lines.push(`Hoy tus clientes pagaron ${formatCurrency(ingresosHoy)} en entradas.`);
   } else {
-    lines.push('Hoy no se han vendido entradas.');
+    push('sin-ingresos', 'payments', 'Hoy no se han registrado ingresos por entradas.', true);
+  }
+
+  if (entradasHoy > 0) {
+    push(
+      'entradas',
+      'confirmation_number',
+      entradasHoy === 1 ? '1 entrada vendida hoy.' : `${entradasHoy.toLocaleString('es-CO')} entradas vendidas hoy.`,
+      true,
+    );
   }
 
   if (tieneProductos) {
-    lines.push('No hubo ventas de productos registradas hoy.');
+    if (productosHoy > 0) {
+      push(
+        'productos',
+        'local_mall',
+        productosHoy === 1 ? '1 producto vendido hoy.' : `${productosHoy.toLocaleString('es-CO')} productos vendidos hoy.`,
+        true,
+      );
+    } else {
+      push('sin-productos', 'local_mall', 'No hubo ventas de productos registradas hoy.', false);
+    }
   }
 
-  let conclusion: string;
-  if (ingresosHoy === 0 && ayer > 0) {
-    conclusion = 'El ritmo bajó respecto a ayer. Un recordatorio a tu audiencia puede reactivarlo.';
-  } else if (ayer === 0 && ingresosHoy > 0) {
-    conclusion = 'Buen arranque del día: la difusión está respondiendo.';
-  } else if (ayer > 0 && ingresosHoy > 0) {
+  const ultima = findUltimaVentaHoy(stats);
+  if (ultima) {
+    push('ultima-venta', 'schedule', `Última venta ${hoyFormatRelativeTime(ultima.fecha)}.`, false);
+  }
+
+  if (entradasHoy >= 2 && ingresosHoy > 0) {
+    const ticket = Math.round(ingresosHoy / entradasHoy);
+    push('ticket', 'receipt_long', `Ticket promedio hoy: ${formatCurrency(ticket)}.`, false);
+  }
+
+  const peakHour = findHoraPicoHoy(stats);
+  if (peakHour) {
+    push('hora-pico', 'schedule', `Mayor actividad entre ${peakHour}.`, false);
+  }
+
+  if (ayer > 0 && ingresosHoy > 0) {
     const delta = Math.round(((ingresosHoy - ayer) / ayer) * 100);
     if (delta > 0) {
-      conclusion = `Hoy tus clientes pagaron un ${delta}% más en entradas que ayer. Mantén el momentum.`;
+      push('vs-ayer', 'trending_up', `Un ${delta}% más que ayer — mantén el momentum.`, false);
     } else if (delta < 0) {
-      conclusion = `Hoy tus clientes pagaron un ${Math.abs(delta)}% menos en entradas que ayer. Refuerza la difusión en horas clave.`;
+      push(
+        'vs-ayer',
+        'trending_down',
+        `Un ${Math.abs(delta)}% menos que ayer — refuerza difusión en horas clave.`,
+        false,
+      );
     } else {
-      conclusion = 'Mismo ritmo que ayer. La consistencia es señal de demanda estable.';
+      push('vs-ayer', 'trending_flat', 'Mismo ritmo que ayer — demanda estable.', false);
     }
-  } else {
-    conclusion = 'Sigue monitoreando el cierre del día para detectar tendencias.';
+  } else if (ayer === 0 && ingresosHoy > 0) {
+    push('vs-ayer', 'rocket_launch', 'Buen arranque: hoy abre con ventas frescas.', false);
+  } else if (ventas7d.length >= 3) {
+    const prev = ventas7d.filter((v) => v.fecha !== hoyIso && v.ingresos > 0);
+    if (prev.length >= 2) {
+      const prom = prev.reduce((s, v) => s + v.ingresos, 0) / prev.length;
+      if (prom > 0 && ingresosHoy > 0) {
+        const delta = Math.round(((ingresosHoy - prom) / prom) * 100);
+        if (Math.abs(delta) >= 8) {
+          push(
+            'vs-semana',
+            'date_range',
+            delta > 0
+              ? `Vas un ${delta}% por encima del promedio de la semana.`
+              : `Vas un ${Math.abs(delta)}% por debajo del promedio de la semana.`,
+            false,
+          );
+        }
+      }
+    }
   }
+
+  const maxInsights = 5;
+  const trimmed = insights.slice(0, maxInsights);
 
   return {
     question,
-    empty: false,
-    lines,
-    conclusion,
+    empty: trimmed.length === 0,
+    emptyMessage: 'Hoy no hay movimiento registrado todavía.',
+    insights: trimmed,
   };
 }
 

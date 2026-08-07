@@ -29,6 +29,7 @@ import {
   buildShowcaseNavSections,
 } from '../admin-sidebar/admin-nav.config';
 import { LOGIN_QUERY_CARRITO_PAGAR } from '../../core/login-redirect';
+import { DemoScenarioService } from '../../demo/demo-scenario.service';
 
 type ClientNavItem = {
   path: string;
@@ -83,8 +84,17 @@ export class Layout implements OnInit, OnDestroy {
   /** Banner demo en layout global; en /eventos va integrado al hero de la página. */
   get showShowcaseNoticeInLayout(): boolean {
     if (!this.authService.isShowcaseOrganizador()) return false;
+    if (this.demoScenarioService.isSimulatedViewActive()) return false;
     const path = this.router.url.split('?')[0];
     return path !== '/eventos';
+  }
+
+  get showSimulatedViewBanner(): boolean {
+    return this.demoScenarioService.isSimulatedViewActive();
+  }
+
+  get simulatedViewLabel(): string {
+    return this.demoScenarioService.getActiveLabel() ?? 'Demo';
   }
 
   private routerSubscription?: any;
@@ -100,6 +110,7 @@ export class Layout implements OnInit, OnDestroy {
     private trasladosBoletaService: TrasladosBoletaService,
     private accesosPuertaService: AccesosPuertaService,
     public router: Router,
+    private demoScenarioService: DemoScenarioService,
     private cdr: ChangeDetectorRef
   ) {}
 

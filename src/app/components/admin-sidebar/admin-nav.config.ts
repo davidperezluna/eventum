@@ -85,6 +85,9 @@ export function buildShowcaseNavSections(): AdminNavSection[] {
       entries: [{ kind: 'link', path: '/dashboard-organizador', label: 'Dashboard', icon: 'dashboard' }],
     },
     {
+      entries: [{ kind: 'link', path: '/demo-laboratorio', label: 'Laboratorio demo', icon: 'science' }],
+    },
+    {
       entries: [{ kind: 'link', path: '/eventos', label: 'Mis Eventos', icon: 'event' }],
     },
     {

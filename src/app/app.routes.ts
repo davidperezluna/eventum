@@ -63,6 +63,7 @@ import { CoversConfig } from './pages/covers-config/covers-config';
 import { CoversConfigDetalle } from './pages/covers-config-detalle/covers-config-detalle';
 import { ClubesExplorar } from './pages/clubes-explorar/clubes-explorar';
 import { ClubDetalle } from './pages/club-detalle/club-detalle';
+import { DemoLaboratorio } from './pages/demo-laboratorio/demo-laboratorio';
 import { Recibidos } from './pages/recibidos/recibidos';
 
 const cuposPublicRoutes: Routes = cuposEventumEnabled
@@ -195,6 +196,7 @@ const appRoutes: Routes = [
       { path: 'notificaciones', component: Notificaciones },
       { path: 'reportes', component: Reportes },
       { path: 'reportes/ventas-completadas', component: ReporteVentasCompletadas },
+      { path: 'demo-laboratorio', component: DemoLaboratorio },
       { path: 'perfil', component: Perfil },
       { path: 'completar-perfil', component: CompletarPerfil },
     ]

@@ -1,245 +1,425 @@
-<div class="dashboard dashboard--org dash-ctrl">
-  <div class="dashboard-toolbar dash-ctrl__toolbar" role="navigation" aria-label="Acciones del dashboard organizador">
-    <button
-      class="dashboard-toolbar__action dashboard-toolbar__action--refresh"
-      (click)="loadStats({ manual: true })"
-      [disabled]="loading || isManualRefreshing"
-      type="button"
-    >
-      <span class="dashboard-refresh-loader" *ngIf="isManualRefreshing" aria-hidden="true"></span>
-      <span class="material-icons" *ngIf="!isManualRefreshing">refresh</span>
-      {{ isManualRefreshing ? 'Recargando...' : 'Recargar' }}
-    </button>
-  </div>
-
-  <div *ngIf="error" class="error-message">
-    <span class="material-icons">error</span>
+<div class="ev-intel-page">
+  <div *ngIf="error" class="dash-org-error">
+    <span class="material-icons" aria-hidden="true">error</span>
     <p>{{ error }}</p>
   </div>
 
-  <div *ngIf="loading" class="loading-state">
-    <div class="spinner"></div>
-    <p>Cargando estadísticas...</p>
+  <div *ngIf="loading" class="ev-intel-loading" aria-busy="true">
+    <div class="ev-intel-loading__bar"></div>
+    <p>Cargando centro de inteligencia…</p>
   </div>
 
-  <ng-container *ngIf="!loading && !error">
-    <!-- 1. Hero -->
-    <header class="dash-ctrl-hero" aria-label="Resumen del negocio">
-      <p class="dash-ctrl-hero__eyebrow">Panel del organizador</p>
-      <h1 class="dash-ctrl-hero__title">{{ heroTitle }}</h1>
-      <p class="dash-ctrl-hero__subtitle">Todos tus eventos</p>
-
-      <div class="dash-ctrl-hero__money-block">
-        <p class="dash-ctrl-hero__money-label">Hoy recibirías aproximadamente</p>
-        <p class="dash-ctrl-hero__money-value">${{ formatAmount(finanzasConsolidado.saldoEstimadoRecibir) }}</p>
-      </div>
-
-      <div class="dash-ctrl-hero__context">
-        <span>{{ formatAmount(stats.eventos_activos) }} eventos activos</span>
-        <span class="dash-ctrl-hero__dot" aria-hidden="true"></span>
-        <span>{{ formatAmount(proximosEventosCount) }} próximos eventos</span>
-      </div>
-
-      <p class="dash-ctrl-hero__status">{{ heroStatusLine }}</p>
+  <ng-container *ngIf="!loading && !error && intel as iv">
+    <header class="ev-intel-topbar">
+      <a routerLink="/eventos" class="ev-intel-back">
+        <span class="material-icons" aria-hidden="true">event</span>
+        Mis eventos
+      </a>
+      <button
+        type="button"
+        class="ev-intel-topbar__refresh"
+        [disabled]="isManualRefreshing"
+        (click)="loadStats({ manual: true })"
+        aria-label="Actualizar datos"
+      >
+        <span class="material-icons" [class.ev-intel-spin]="isManualRefreshing" aria-hidden="true">refresh</span>
+      </button>
     </header>
 
-    <!-- 2. Necesita tu atención -->
-    <section class="dash-ctrl-section" aria-labelledby="dash-attention-heading">
-      <div class="dash-ctrl-section__head">
-        <h2 id="dash-attention-heading">Necesita tu atención</h2>
+    <!-- Hero — mismo sistema que Inteligencia, alcance portafolio -->
+    <section class="ev-intel-hero" aria-labelledby="dash-intel-title">
+      <div class="ev-intel-hero__main">
+        <div class="ev-intel-hero__identity">
+          <p class="ev-intel-hero__eyebrow">{{ iv.heroIdentity.eyebrow }}</p>
+          <h1 id="dash-intel-title" class="ev-intel-hero__title">{{ iv.heroIdentity.insight }}</h1>
+          <div class="ev-intel-hero__meta">
+            <span class="ev-intel-hero__date">{{ iv.heroIdentity.greeting }}</span>
+            <span class="ev-intel-hero__status ev-intel-hero__status--publicado">
+              {{ iv.heroIdentity.activosLabel }}
+            </span>
+          </div>
+          <p class="ev-intel-hero__subtitle" *ngIf="iv.heroIdentity.stateLine">{{ iv.heroIdentity.stateLine }}</p>
+        </div>
+
+        <div class="ev-intel-hero__countdown" *ngIf="iv.heroMoment as h" aria-live="polite">
+          <ng-container *ngIf="h.showCountdown && h.countdown as cd">
+            <p class="ev-intel-hero__countdown-title">Próximo evento</p>
+            <div class="ev-intel-hero__countdown-grid" role="timer">
+              <div class="ev-intel-hero__countdown-unit" *ngIf="cd.days > 0">
+                <span class="ev-intel-hero__countdown-value">{{ cd.days }}</span>
+                <span class="ev-intel-hero__countdown-label">días</span>
+              </div>
+              <div class="ev-intel-hero__countdown-unit">
+                <span class="ev-intel-hero__countdown-value">{{ padCountdown(cd.hours) }}</span>
+                <span class="ev-intel-hero__countdown-label">horas</span>
+              </div>
+              <div class="ev-intel-hero__countdown-unit">
+                <span class="ev-intel-hero__countdown-value">{{ padCountdown(cd.minutes) }}</span>
+                <span class="ev-intel-hero__countdown-label">min</span>
+              </div>
+            </div>
+            <p class="ev-intel-hero__countdown-caption">{{ h.headline }}</p>
+          </ng-container>
+
+          <ng-container *ngIf="!h.showCountdown">
+            <p class="ev-intel-hero__countdown-title">Tu portafolio</p>
+            <p class="ev-intel-hero__countdown-static">{{ h.countdownCaption }}</p>
+            <p class="ev-intel-hero__countdown-caption">{{ h.headline }}</p>
+          </ng-container>
+        </div>
       </div>
 
-      <ul class="dash-ctrl-attention" *ngIf="attentionItems.length > 0; else noAttention">
-        <li
-          *ngFor="let item of attentionItems"
-          class="dash-ctrl-attention__item"
-          [class.dash-ctrl-attention__item--warn]="item.tone === 'warn'"
-          [class.dash-ctrl-attention__item--ok]="item.tone === 'ok'"
-          [class.dash-ctrl-attention__item--info]="item.tone === 'info'"
+      <div class="ev-intel-hero__toolbar">
+        <nav class="ev-intel-hero__hubs" aria-label="Alcance de inteligencia">
+          <span class="ev-intel-action-pill ev-intel-action-pill--active" aria-current="page">
+            <span class="material-icons" aria-hidden="true">insights</span>
+            Vista general
+          </span>
+          <a routerLink="/eventos" class="ev-intel-action-pill ev-intel-action-pill--hub">
+            <span class="material-icons" aria-hidden="true">event</span>
+            Eventos
+          </a>
+        </nav>
+        <div class="ev-intel-hero__quick">
+          <a routerLink="/escanear-qr" class="ev-intel-action-pill ev-intel-action-pill--accent">
+            <span class="material-icons" aria-hidden="true">qr_code_scanner</span>
+            Escáner
+          </a>
+          <a routerLink="/eventos" class="ev-intel-action-pill ev-intel-action-pill--secondary">
+            <span class="material-icons" aria-hidden="true">add_circle_outline</span>
+            Crear evento
+          </a>
+        </div>
+      </div>
+
+      <div class="ev-intel-hero__strip" aria-label="Resumen del portafolio">
+        <section
+          *ngIf="iv.finanzasHero as fin"
+          class="ev-intel-fin-hero ev-intel-hero__strip-cell"
+          aria-label="Resumen financiero del portafolio"
         >
-          <div class="dash-ctrl-attention__body">
-            <p class="dash-ctrl-attention__title">{{ item.title }}</p>
-            <p class="dash-ctrl-attention__message">{{ item.message }}</p>
-          </div>
-          <a
-            class="dash-ctrl-btn dash-ctrl-btn--sm"
-            [routerLink]="item.actionRoute"
-            [queryParams]="attentionQueryParams(item)"
+          <p class="ev-intel-fin-hero__label">Recibirás aproximadamente</p>
+          <p class="ev-intel-fin-hero__value">{{ fin.recibirasAprox }}</p>
+          <p class="ev-intel-fin-hero__desc">
+            <ng-container *ngIf="!fin.empty">
+              Valor estimado de todos tus eventos, después de servicio y comisión Wompi.
+            </ng-container>
+            <ng-container *ngIf="fin.empty">
+              Cuando lleguen las primeras ventas, verás aquí cuánto recibirás.
+            </ng-container>
+          </p>
+          <dl class="ev-intel-fin-hero__support" *ngIf="!fin.empty" aria-label="Contexto del saldo estimado">
+            <div class="ev-intel-fin-hero__support-row">
+              <dt>Pagaron</dt>
+              <dd>{{ fin.ventasGeneradasMoneda }}</dd>
+            </div>
+            <div class="ev-intel-fin-hero__support-row">
+              <dt>Servicio</dt>
+              <dd>
+                − {{ fin.servicioEventum }}
+                <span class="ev-intel-ventas-line__pct">({{ fin.servicioPct }}%)</span>
+              </dd>
+            </div>
+            <div class="ev-intel-fin-hero__support-row">
+              <dt>Comisión Wompi</dt>
+              <dd>
+                − {{ fin.comisionWompi }}
+                <span class="ev-intel-ventas-line__pct">({{ fin.wompiPct }}%)</span>
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <article
+          *ngFor="let card of iv.pulseCards; let i = index"
+          class="ev-intel-kpi ev-intel-hero__strip-cell"
+          [class.ev-intel-kpi--aforo]="card.id === 'aforo'"
+          [class.ev-intel-kpi--asistentes]="card.id === 'asistentes'"
+          [style.animation-delay]="(i * 70) + 'ms'"
+        >
+          <p class="ev-intel-kpi__value">{{ card.value }}</p>
+          <p class="ev-intel-kpi__label">{{ card.label }}</p>
+          <p class="ev-intel-kpi__phrase">{{ card.phrase }}</p>
+          <p class="ev-intel-kpi__detail">{{ card.detail }}</p>
+          <div
+            *ngIf="card.barPct != null && card.barPct > 0"
+            class="ev-intel-kpi__bar"
+            role="presentation"
           >
-            {{ item.actionLabel }}
-          </a>
-        </li>
-      </ul>
-
-      <ng-template #noAttention>
-        <p class="dash-ctrl-empty">Nada urgente por ahora. Sigue construyendo tu negocio.</p>
-      </ng-template>
-    </section>
-
-    <!-- 3. KPI principales -->
-    <section class="dash-ctrl-section" aria-labelledby="dash-kpi-heading">
-      <div class="dash-ctrl-section__head">
-        <h2 id="dash-kpi-heading">Resumen</h2>
-      </div>
-
-      <div class="dash-ctrl-kpis">
-        <article class="dash-ctrl-kpi">
-          <p class="dash-ctrl-kpi__label">Recibirás aprox.</p>
-          <p class="dash-ctrl-kpi__value">${{ formatAmount(finanzasConsolidado.saldoEstimadoRecibir) }}</p>
-        </article>
-
-        <article class="dash-ctrl-kpi">
-          <p class="dash-ctrl-kpi__label">Boletas vendidas</p>
-          <p class="dash-ctrl-kpi__value">{{ formatAmount(stats.boletas_vendidas) }}</p>
-        </article>
-
-        <article class="dash-ctrl-kpi">
-          <p class="dash-ctrl-kpi__label">Eventos activos</p>
-          <p class="dash-ctrl-kpi__value">{{ formatAmount(stats.eventos_activos) }}</p>
-        </article>
-
-        <article class="dash-ctrl-kpi">
-          <p class="dash-ctrl-kpi__label">Asistencia promedio</p>
-          <p class="dash-ctrl-kpi__value">{{ tasaAsistenciaDisplay }}%</p>
-        </article>
-      </div>
-
-      <details class="dash-ctrl-details" *ngIf="stats.boletas_por_estado?.length">
-        <summary>Distribución de boletas por estado</summary>
-        <ul class="dash-ctrl-estados">
-          <li *ngFor="let item of stats.boletas_por_estado" class="dash-ctrl-estados__row">
-            <span>{{ getEstadoBoletaLabel(item.estado) }}</span>
-            <span class="dash-ctrl-estados__count">{{ formatAmount(item.cantidad) }}</span>
-          </li>
-        </ul>
-      </details>
-
-      <app-ingresos-resumen
-        class="dash-ctrl-ingresos"
-        [stats]="stats"
-        [contextoOrganizador]="true"
-        [defaultOpen]="false"
-      ></app-ingresos-resumen>
-    </section>
-
-    <!-- 4. Próximos eventos -->
-    <section class="dash-ctrl-section" aria-labelledby="dash-agenda-heading">
-      <div class="dash-ctrl-section__head dash-ctrl-section__head--row">
-        <h2 id="dash-agenda-heading">Próximos eventos</h2>
-        <a routerLink="/eventos" class="dash-ctrl-link">Ver todos</a>
-      </div>
-
-      <ul class="dash-ctrl-agenda" *ngIf="stats.eventos_proximos?.length; else noAgenda">
-        <li *ngFor="let evento of stats.eventos_proximos" class="dash-ctrl-agenda__item">
-          <time class="dash-ctrl-agenda__date">{{ formatAgendaDate(evento.fecha_inicio) }}</time>
-          <div class="dash-ctrl-agenda__main">
-            <p class="dash-ctrl-agenda__title">{{ evento.titulo }}</p>
-            <p class="dash-ctrl-agenda__meta" *ngIf="daysUntil(evento.fecha_inicio) as d">
-              <ng-container [ngSwitch]="d">
-                <span *ngSwitchCase="0">Hoy</span>
-                <span *ngSwitchCase="1">Mañana</span>
-                <span *ngSwitchDefault>En {{ d }} días</span>
-              </ng-container>
-            </p>
+            <div class="ev-intel-kpi__bar-fill" [style.width.%]="card.barPct"></div>
           </div>
-          <a
-            class="dash-ctrl-btn dash-ctrl-btn--ghost dash-ctrl-btn--sm"
-            [routerLink]="['/eventos', evento.id, 'operaciones']"
-          >
-            Abrir
-          </a>
-        </li>
-      </ul>
-
-      <ng-template #noAgenda>
-        <p class="dash-ctrl-empty">No hay eventos próximos en el calendario.</p>
-      </ng-template>
+        </article>
+      </div>
     </section>
 
-    <!-- 5. Actividad reciente -->
-    <section class="dash-ctrl-section" aria-labelledby="dash-feed-heading">
-      <div class="dash-ctrl-section__head">
-        <h2 id="dash-feed-heading">Actividad reciente</h2>
-      </div>
-
-      <ul class="dash-ctrl-feed" *ngIf="activityFeed.length; else noFeed">
-        <li *ngFor="let item of activityFeed" class="dash-ctrl-feed__item">
-          <p class="dash-ctrl-feed__time">{{ item.timeLabel }}</p>
-          <p class="dash-ctrl-feed__message">{{ item.message }}</p>
-          <p class="dash-ctrl-feed__detail" *ngIf="item.detail">{{ item.detail }}</p>
-        </li>
-      </ul>
-
-      <ng-template #noFeed>
-        <p class="dash-ctrl-empty">Aún no hay actividad reciente de ventas.</p>
-      </ng-template>
-    </section>
-
-    <!-- 6. Rendimiento -->
-    <section class="dash-ctrl-section" aria-labelledby="dash-rank-heading">
-      <div class="dash-ctrl-section__head">
-        <h2 id="dash-rank-heading">Eventos con mejor rendimiento</h2>
-      </div>
-
-      <ol class="dash-ctrl-rank" *ngIf="rankingItems.length; else noRank">
-        <li *ngFor="let item of rankingItems" class="dash-ctrl-rank__item">
-          <span class="dash-ctrl-rank__medal" aria-hidden="true">{{ item.medal }}</span>
-          <div class="dash-ctrl-rank__body">
-            <p class="dash-ctrl-rank__title">{{ item.title }}</p>
-            <p class="dash-ctrl-rank__sub">{{ formatAmount(item.boletas) }} boletas vendidas</p>
+    <div class="ev-intel-ed">
+      <div class="ev-intel-ed__row ev-intel-ed__row--solo" *ngIf="iv.actionNow as action">
+        <article
+          class="ev-intel-card ev-intel-card--guide"
+          [attr.data-variant]="action.variant"
+          aria-labelledby="dash-intel-guide-title"
+        >
+          <div class="ev-intel-card__split ev-intel-card__split--guide">
+            <header class="ev-intel-card__intro">
+              <span class="ev-intel-card__icon ev-intel-card__icon--guide material-icons" aria-hidden="true">bolt</span>
+              <p id="dash-intel-guide-title" class="ev-intel-card__question">¿Qué debo hacer ahora?</p>
+            </header>
+            <div class="ev-intel-card__main">
+              <p class="ev-intel-card__lead">{{ action.message }}</p>
+              <a
+                *ngIf="iv.actionNowRoute as route"
+                [routerLink]="route"
+                [queryParams]="actionNowQueryParams"
+                class="ev-intel-story__cta"
+              >
+                {{ action.ctaLabel }}
+                <span class="material-icons" aria-hidden="true">arrow_forward</span>
+              </a>
+            </div>
           </div>
-          <span class="dash-ctrl-rank__pct">{{ item.pct }}%</span>
-          <a
-            *ngIf="item.eventoId"
-            class="dash-ctrl-btn dash-ctrl-btn--ghost dash-ctrl-btn--sm"
-            [routerLink]="['/eventos', item.eventoId, 'inteligencia']"
-          >
-            Ver
+        </article>
+      </div>
+
+      <div class="ev-intel-ed__row ev-intel-ed__row--duo" *ngIf="iv.ventasSection || iv.hoySection">
+        <article
+          *ngIf="iv.ventasSection as v"
+          class="ev-intel-card ev-intel-card--ventas ev-intel-card--lg"
+          [attr.aria-label]="v.question"
+        >
+          <header class="ev-intel-card__head">
+            <span class="ev-intel-card__icon material-icons" aria-hidden="true">payments</span>
+            <p class="ev-intel-card__question">{{ v.question }}</p>
+          </header>
+
+          <ng-container *ngIf="!v.empty; else ventasEmpty">
+            <div class="ev-intel-ventas-breakdown">
+              <div class="ev-intel-ventas-group">
+                <p class="ev-intel-ventas-group__title">Tus clientes pagaron</p>
+                <div class="ev-intel-ventas-line">
+                  <span class="ev-intel-ventas-line__label">Boletas</span>
+                  <span class="ev-intel-ventas-line__value">{{ v.clientesPagaronBoletas }}</span>
+                </div>
+                <div class="ev-intel-ventas-line" *ngIf="v.showProductos">
+                  <span class="ev-intel-ventas-line__label">Productos</span>
+                  <span class="ev-intel-ventas-line__value">{{ v.clientesPagaronProductos }}</span>
+                </div>
+              </div>
+
+              <div class="ev-intel-ventas-group">
+                <p class="ev-intel-ventas-group__title">Deducciones estimadas</p>
+                <div class="ev-intel-ventas-line ev-intel-ventas-line--discount">
+                  <span class="ev-intel-ventas-line__label">Servicio</span>
+                  <span class="ev-intel-ventas-line__value">
+                    − {{ v.servicioEventum }}
+                    <span class="ev-intel-ventas-line__pct">({{ v.servicioPct }}%)</span>
+                  </span>
+                </div>
+                <div class="ev-intel-ventas-line ev-intel-ventas-line--discount">
+                  <span class="ev-intel-ventas-line__label">Comisión Wompi</span>
+                  <span class="ev-intel-ventas-line__value">
+                    − {{ v.comisionWompi }}
+                    <span class="ev-intel-ventas-line__pct">({{ v.wompiPct }}%)</span>
+                  </span>
+                </div>
+              </div>
+
+              <div class="ev-intel-ventas-group">
+                <p class="ev-intel-ventas-group__title">Recibirás aprox.</p>
+                <div class="ev-intel-ventas-line">
+                  <span class="ev-intel-ventas-line__label">Boletas</span>
+                  <span class="ev-intel-ventas-line__value ev-intel-ventas-line__value--net">{{ v.recibirasAproxBoletas }}</span>
+                </div>
+                <div class="ev-intel-ventas-line" *ngIf="v.showProductos">
+                  <span class="ev-intel-ventas-line__label">Productos</span>
+                  <span class="ev-intel-ventas-line__value ev-intel-ventas-line__value--net">{{ v.recibirasAproxProductos }}</span>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+          <ng-template #ventasEmpty>
+            <p class="ev-intel-card__empty">{{ v.emptyMessage }}</p>
+          </ng-template>
+          <p class="ev-intel-card__conclusion" *ngIf="v.conclusion">{{ v.conclusion }}</p>
+        </article>
+
+        <article
+          *ngIf="iv.hoySection as h"
+          class="ev-intel-card ev-intel-card--hoy ev-intel-card--dark ev-intel-card--sm"
+          [attr.aria-label]="h.question"
+        >
+          <header class="ev-intel-card__head ev-intel-card__head--invert">
+            <span class="ev-intel-card__icon material-icons" aria-hidden="true">today</span>
+            <p class="ev-intel-card__question">{{ h.question }}</p>
+          </header>
+          <ng-container *ngIf="h.insights.length > 0; else hoyEmpty">
+            <ul class="ev-intel-hoy-insights">
+              <li
+                *ngFor="let item of h.insights"
+                class="ev-intel-hoy-insights__item"
+                [class.ev-intel-hoy-insights__item--emphasis]="item.emphasis !== false"
+                [class.ev-intel-hoy-insights__item--secondary]="item.emphasis === false"
+              >
+                <span class="material-icons ev-intel-hoy-insights__icon" aria-hidden="true">{{ item.icon }}</span>
+                <span class="ev-intel-hoy-insights__text">{{ item.text }}</span>
+              </li>
+            </ul>
+          </ng-container>
+          <ng-template #hoyEmpty>
+            <p class="ev-intel-card__empty ev-intel-card__empty--invert">{{ h.emptyMessage }}</p>
+          </ng-template>
+        </article>
+      </div>
+
+      <div class="ev-intel-ed__row ev-intel-ed__row--wide" *ngIf="iv.eventosSection as b">
+        <article class="ev-intel-card ev-intel-card--boletas" [attr.aria-label]="b.question">
+          <header class="ev-intel-card__head ev-intel-card__head--bar">
+            <div class="ev-intel-card__head-left">
+              <span class="ev-intel-card__icon material-icons" aria-hidden="true">event</span>
+              <p class="ev-intel-card__question">{{ b.question }}</p>
+            </div>
+            <span class="ev-intel-card__badge" *ngIf="!b.empty && b.rows.length > 0">
+              {{ b.rows.length }} evento{{ b.rows.length === 1 ? '' : 's' }}
+            </span>
+          </header>
+
+          <ng-container *ngIf="!b.empty && b.rows.length > 0; else eventosEmpty">
+            <div class="ev-intel-leaderboard">
+              <div class="ev-intel-leaderboard__hero" *ngIf="b.rows[0] as top">
+                <span class="ev-intel-leaderboard__rank">#1</span>
+                <div class="ev-intel-leaderboard__hero-body">
+                  <a
+                    class="ev-intel-leaderboard__name ev-intel-leaderboard__name--link"
+                    [routerLink]="eventoIntelRoute(0)"
+                  >
+                    {{ top.nombre }}
+                  </a>
+                  <p class="ev-intel-leaderboard__metrics">
+                    <strong>{{ top.vendidas | number }}</strong> vendidas · <strong>{{ top.pct }}%</strong> · {{ top.clientesPagaron }}
+                  </p>
+                </div>
+                <a [routerLink]="eventoIntelRoute(0)" class="ev-intel-story__link dash-org-zoom-link">
+                  <span aria-hidden="true">→</span>
+                  Hacer zoom
+                </a>
+              </div>
+              <ol class="ev-intel-leaderboard__list" *ngIf="b.rows.length > 1" aria-label="Resto del ranking">
+                <li *ngFor="let row of b.rows.slice(1); let i = index" class="ev-intel-leaderboard__row">
+                  <span class="ev-intel-leaderboard__pos">{{ i + 2 }}</span>
+                  <a class="ev-intel-leaderboard__row-name ev-intel-leaderboard__row-name--link" [routerLink]="eventoIntelRoute(i + 1)">
+                    {{ row.nombre }}
+                  </a>
+                  <span class="ev-intel-leaderboard__row-meta">{{ row.vendidas | number }} · {{ row.pct }}% · {{ row.clientesPagaron }}</span>
+                </li>
+              </ol>
+            </div>
+          </ng-container>
+          <ng-template #eventosEmpty>
+            <p class="ev-intel-card__empty">{{ b.emptyMessage }}</p>
+          </ng-template>
+          <footer class="ev-intel-card__footer-bar">
+            <p class="ev-intel-card__conclusion" *ngIf="b.conclusion">{{ b.conclusion }}</p>
+            <a routerLink="/eventos" class="ev-intel-story__link" *ngIf="b.ctaLabel">
+              <span aria-hidden="true">→</span>
+              {{ b.ctaLabel }}
+            </a>
+          </footer>
+        </article>
+      </div>
+
+      <div
+        class="ev-intel-ed__row ev-intel-ed__row--asymmetric"
+        *ngIf="iv.proximosCards.length > 0 || iv.eventosSection.rows.length > 0"
+      >
+        <article
+          *ngIf="iv.proximosCards.length > 0"
+          class="ev-intel-card ev-intel-card--productos ev-intel-card--md"
+          aria-label="Próximos eventos"
+        >
+          <header class="ev-intel-card__head">
+            <span class="ev-intel-card__icon material-icons" aria-hidden="true">calendar_month</span>
+            <p class="ev-intel-card__question">¿Qué tienes en cartelera?</p>
+          </header>
+          <ol class="ev-intel-rank ev-intel-rank--compact">
+            <li
+              *ngFor="let card of iv.proximosCards; let i = index"
+              class="ev-intel-rank__item"
+              [class.ev-intel-rank__item--lead]="i === 0"
+            >
+              <span class="ev-intel-rank__pos">{{ i + 1 }}</span>
+              <div class="ev-intel-rank__main">
+                <a class="ev-intel-rank__name ev-intel-rank__name--link" [routerLink]="['/eventos', card.id, 'inteligencia']">
+                  {{ card.titulo }}
+                </a>
+                <span class="ev-intel-rank__meta">
+                  {{ card.fechaLabel }} · {{ card.countdownLabel }} · {{ card.boletasLabel }}
+                </span>
+              </div>
+            </li>
+          </ol>
+          <footer class="ev-intel-card__foot">
+            <a routerLink="/eventos" class="ev-intel-story__link">
+              <span aria-hidden="true">→</span>
+              Ver todos
+            </a>
+          </footer>
+        </article>
+
+        <aside
+          class="ev-intel-card ev-intel-card--spotlight ev-intel-card--xs"
+          *ngIf="iv.eventosSection.rows[0] as leader"
+          aria-label="Evento líder"
+        >
+          <span class="ev-intel-spotlight__eyebrow">Líder en ventas</span>
+          <p class="ev-intel-spotlight__value">{{ leader.pct }}%</p>
+          <p class="ev-intel-spotlight__name">{{ leader.nombre }}</p>
+          <p class="ev-intel-spotlight__hint">{{ leader.vendidas | number }} vendidas · {{ leader.clientesPagaron }}</p>
+          <a [routerLink]="eventoIntelRoute(0)" class="ev-intel-story__link ev-intel-story__link--invert dash-org-spotlight-link">
+            <span aria-hidden="true">→</span>
+            Hacer zoom
           </a>
-        </li>
-      </ol>
-
-      <ng-template #noRank>
-        <p class="dash-ctrl-empty">Todavía no hay eventos con ventas registradas.</p>
-      </ng-template>
-    </section>
-
-    <!-- 7. Accesos rápidos -->
-    <section class="dash-ctrl-section dash-ctrl-section--last" aria-labelledby="dash-actions-heading">
-      <div class="dash-ctrl-section__head">
-        <h2 id="dash-actions-heading">Accesos rápidos</h2>
+        </aside>
       </div>
 
-      <div class="dash-ctrl-actions">
-        <a routerLink="/eventos" class="dash-ctrl-action">
-          <span class="material-icons" aria-hidden="true">add_circle_outline</span>
-          <span>Crear evento</span>
-        </a>
-        <a routerLink="/escanear-qr" class="dash-ctrl-action">
-          <span class="material-icons" aria-hidden="true">qr_code_scanner</span>
-          <span>Escáner</span>
-        </a>
-        <a routerLink="/ventas" class="dash-ctrl-action">
-          <span class="material-icons" aria-hidden="true">payments</span>
-          <span>Ventas</span>
-        </a>
-        <a routerLink="/productos" class="dash-ctrl-action">
-          <span class="material-icons" aria-hidden="true">local_mall</span>
-          <span>Productos</span>
-        </a>
-        <a routerLink="/palcos" class="dash-ctrl-action">
-          <span class="material-icons" aria-hidden="true">event_seat</span>
-          <span>Palcos</span>
-        </a>
-        <a [routerLink]="cuponesRoute" class="dash-ctrl-action">
-          <span class="material-icons" aria-hidden="true">sell</span>
-          <span>Cupones</span>
-        </a>
-        <a routerLink="/boletas" class="dash-ctrl-action">
-          <span class="material-icons" aria-hidden="true">confirmation_number</span>
-          <span>Boletas</span>
-        </a>
+      <div class="ev-intel-ed__row ev-intel-ed__row--wide">
+        <article class="ev-intel-card ev-intel-card--activity" [attr.aria-label]="iv.activitySection.question">
+          <header class="ev-intel-card__head ev-intel-card__head--bar">
+            <div class="ev-intel-card__head-left">
+              <span class="ev-intel-card__icon material-icons" aria-hidden="true">history</span>
+              <p class="ev-intel-card__question">{{ iv.activitySection.question }}</p>
+            </div>
+            <span class="ev-intel-card__badge" *ngIf="iv.activitySection.items.length > 0">
+              {{ iv.activitySection.items.length }} venta{{ iv.activitySection.items.length === 1 ? '' : 's' }}
+            </span>
+          </header>
+
+          <ol class="ev-intel-timeline" *ngIf="iv.activitySection.items.length > 0; else activityEmpty">
+            <li
+              *ngFor="let item of iv.activitySection.items; let last = last"
+              class="ev-intel-timeline__item"
+              [class.ev-intel-timeline__item--last]="last"
+            >
+              <div
+                class="ev-intel-timeline__icon"
+                [class.ev-intel-timeline__icon--violet]="item.accent === 'violet'"
+                [class.ev-intel-timeline__icon--green]="item.accent === 'green'"
+                [class.ev-intel-timeline__icon--amber]="item.accent === 'amber'"
+                [class.ev-intel-timeline__icon--blue]="item.accent === 'blue'"
+              >
+                <span class="material-icons" aria-hidden="true">{{ item.icon }}</span>
+              </div>
+              <div class="ev-intel-timeline__content">
+                <p class="ev-intel-timeline__time">{{ item.timeLabel }}</p>
+                <p class="ev-intel-timeline__action">{{ item.action }}</p>
+                <p class="ev-intel-timeline__context">{{ item.context }}</p>
+              </div>
+              <p class="ev-intel-timeline__amount" *ngIf="item.amount">{{ item.amount }}</p>
+            </li>
+          </ol>
+          <ng-template #activityEmpty>
+            <p class="ev-intel-card__empty">{{ iv.activitySection.emptyMessage }}</p>
+          </ng-template>
+        </article>
       </div>
-    </section>
+    </div>
   </ng-container>
 </div>

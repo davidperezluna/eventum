@@ -1,0 +1,133 @@
+.demo-lab-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding-bottom: 4rem;
+}
+
+.demo-lab-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 1rem 0 0;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(139, 92, 246, 0.1);
+  color: #5b21b6;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.demo-lab-active .material-icons {
+  font-size: 1.125rem;
+}
+
+.demo-lab-section {
+  margin-bottom: 2rem;
+}
+
+.demo-lab-section__title {
+  margin: 0 0 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.demo-lab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.demo-lab-card {
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 1.125rem 1.25rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.demo-lab-card--selected {
+  border-color: rgba(124, 58, 237, 0.45);
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.2);
+}
+
+.demo-lab-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.demo-lab-card__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.demo-lab-card__badge {
+  flex-shrink: 0;
+  background: rgba(124, 58, 237, 0.12);
+  color: #6d28d9;
+}
+
+.demo-lab-card__desc {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.demo-lab-params {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.demo-lab-param__label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.demo-lab-param__value {
+  font-variant-numeric: tabular-nums;
+  color: #7c3aed;
+}
+
+.demo-lab-param__range {
+  width: 100%;
+  accent-color: #7c3aed;
+}
+
+.demo-lab-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.demo-lab-launch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.demo-lab-exit {
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .demo-lab-grid {
+    grid-template-columns: 1fr;
+  }
+}

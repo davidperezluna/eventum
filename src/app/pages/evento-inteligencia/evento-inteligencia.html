@@ -113,7 +113,7 @@
           <p class="ev-intel-fin-hero__value">{{ fin.recibirasAprox }}</p>
           <p class="ev-intel-fin-hero__desc">
             <ng-container *ngIf="!fin.empty">
-              Valor estimado después de descuentos aplicables.
+              Valor estimado después de servicio y comisión Wompi.
             </ng-container>
             <ng-container *ngIf="fin.empty">
               Cuando lleguen las primeras ventas, verás aquí cuánto recibirás.
@@ -125,8 +125,18 @@
               <dd>{{ fin.ventasGeneradasMoneda }}</dd>
             </div>
             <div class="ev-intel-fin-hero__support-row">
-              <dt>Descuentos</dt>
-              <dd>− {{ fin.descuentosEstimados }}</dd>
+              <dt>Servicio</dt>
+              <dd>
+                − {{ fin.servicioEventum }}
+                <span class="ev-intel-ventas-line__pct">({{ fin.servicioPct }}%)</span>
+              </dd>
+            </div>
+            <div class="ev-intel-fin-hero__support-row">
+              <dt>Comisión Wompi</dt>
+              <dd>
+                − {{ fin.comisionWompi }}
+                <span class="ev-intel-ventas-line__pct">({{ fin.wompiPct }}%)</span>
+              </dd>
             </div>
           </dl>
         </section>
@@ -205,12 +215,22 @@
                 </div>
               </div>
 
-              <div class="ev-intel-ventas-line ev-intel-ventas-line--discount">
-                <span class="ev-intel-ventas-line__label">Descuentos estimados</span>
-                <span class="ev-intel-ventas-line__value">
-                  − {{ v.descuentosEstimados }}
-                  <span class="ev-intel-ventas-line__pct" *ngIf="v.descuentosPct > 0">({{ v.descuentosPct }}%)</span>
-                </span>
+              <div class="ev-intel-ventas-group">
+                <p class="ev-intel-ventas-group__title">Deducciones estimadas</p>
+                <div class="ev-intel-ventas-line ev-intel-ventas-line--discount">
+                  <span class="ev-intel-ventas-line__label">Servicio</span>
+                  <span class="ev-intel-ventas-line__value">
+                    − {{ v.servicioEventum }}
+                    <span class="ev-intel-ventas-line__pct">({{ v.servicioPct }}%)</span>
+                  </span>
+                </div>
+                <div class="ev-intel-ventas-line ev-intel-ventas-line--discount">
+                  <span class="ev-intel-ventas-line__label">Comisión Wompi</span>
+                  <span class="ev-intel-ventas-line__value">
+                    − {{ v.comisionWompi }}
+                    <span class="ev-intel-ventas-line__pct">({{ v.wompiPct }}%)</span>
+                  </span>
+                </div>
               </div>
 
               <div class="ev-intel-ventas-group">
@@ -241,15 +261,22 @@
             <span class="ev-intel-card__icon material-icons" aria-hidden="true">today</span>
             <p class="ev-intel-card__question">{{ h.question }}</p>
           </header>
-          <ng-container *ngIf="!h.empty && h.lines.length > 0; else hoyEmpty">
-            <ul class="ev-intel-hoy-pills">
-              <li *ngFor="let line of h.lines" class="ev-intel-hoy-pills__item">{{ line }}</li>
+          <ng-container *ngIf="h.insights.length > 0; else hoyEmpty">
+            <ul class="ev-intel-hoy-insights">
+              <li
+                *ngFor="let item of h.insights"
+                class="ev-intel-hoy-insights__item"
+                [class.ev-intel-hoy-insights__item--emphasis]="item.emphasis !== false"
+                [class.ev-intel-hoy-insights__item--secondary]="item.emphasis === false"
+              >
+                <span class="material-icons ev-intel-hoy-insights__icon" aria-hidden="true">{{ item.icon }}</span>
+                <span class="ev-intel-hoy-insights__text">{{ item.text }}</span>
+              </li>
             </ul>
           </ng-container>
           <ng-template #hoyEmpty>
             <p class="ev-intel-card__empty ev-intel-card__empty--invert">{{ h.emptyMessage }}</p>
           </ng-template>
-          <p class="ev-intel-card__conclusion ev-intel-card__conclusion--invert" *ngIf="h.conclusion">{{ h.conclusion }}</p>
           <footer class="ev-intel-card__foot" *ngIf="h.ctaLabel">
             <button type="button" class="ev-intel-story__link ev-intel-story__link--invert" (click)="onStoryCta(h.ctaAction)">
               <span aria-hidden="true">→</span>

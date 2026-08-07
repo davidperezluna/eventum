@@ -1,3 +1,35 @@
+<ng-container *ngIf="variant === 'premium'; else defaultVariant">
+  <div class="ingresos-premium">
+    <p class="ingresos-premium__note" *ngIf="contextoOrganizador">
+      Montos pagados por tus clientes — no representan tu saldo neto como organizador.
+    </p>
+    <div class="ingresos-premium__grid">
+      <article class="ingresos-premium__card">
+        <p class="ingresos-premium__label">Mes actual</p>
+        <p class="ingresos-premium__value">{{ formatCurrency(stats.ingresos_mes_actual) }}</p>
+      </article>
+      <article class="ingresos-premium__card">
+        <p class="ingresos-premium__label">Mes anterior</p>
+        <p class="ingresos-premium__value ingresos-premium__value--muted">{{ formatCurrency(stats.ingresos_mes_anterior) }}</p>
+      </article>
+      <article class="ingresos-premium__card ingresos-premium__card--highlight">
+        <p class="ingresos-premium__label">Hoy</p>
+        <p class="ingresos-premium__value">{{ formatCurrency(stats.ingresos_dia_actual) }}</p>
+        <p class="ingresos-premium__delta" *ngIf="stats.ingresos_dia_anterior != null && !hideDayDelta">
+          <span [class.ingresos-premium__delta--up]="variacionDiaPct >= 0" [class.ingresos-premium__delta--down]="variacionDiaPct < 0">
+            {{ variacionDiaPct >= 0 ? '↑' : '↓' }} {{ Math.abs(variacionDiaPct) }}% vs ayer
+          </span>
+        </p>
+      </article>
+      <article class="ingresos-premium__card">
+        <p class="ingresos-premium__label">Ayer</p>
+        <p class="ingresos-premium__value ingresos-premium__value--muted">{{ formatCurrency(stats.ingresos_dia_anterior) }}</p>
+      </article>
+    </div>
+  </div>
+</ng-container>
+
+<ng-template #defaultVariant>
 <details class="dashboard-ingresos-expand" [open]="defaultOpen">
   <summary class="dashboard-ingresos-expand__summary">
     <span class="material-icons dashboard-ingresos-expand__chev" aria-hidden="true">expand_more</span>
@@ -72,3 +104,4 @@
     </div>
   </div>
 </details>
+</ng-template>

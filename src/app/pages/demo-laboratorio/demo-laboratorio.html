@@ -1,0 +1,92 @@
+<div class="demo-lab-page">
+  <header class="ev-events-hero">
+    <p class="ev-events-hero__eyebrow">Showcase · Simulación</p>
+    <div class="ev-events-hero__title-row">
+      <h1 class="ev-events-hero__title">Laboratorio de demo</h1>
+      <button
+        *ngIf="simulationActive"
+        type="button"
+        class="ev-btn-ghost ev-btn-sm demo-lab-exit"
+        (click)="exitSimulation()"
+      >
+        Salir de simulación
+      </button>
+    </div>
+    <p class="ev-events-hero__desc">
+      Elige un escenario narrativo y explora Dashboard, Inteligencia y Operaciones con datos simulados.
+      Nada se escribe en la base de datos.
+    </p>
+    <p *ngIf="simulationActive && activeLabel" class="demo-lab-active">
+      <span class="material-icons" aria-hidden="true">visibility</span>
+      Vista simulada activa: <strong>{{ activeLabel }}</strong>
+    </p>
+  </header>
+
+  <section class="demo-lab-section" aria-labelledby="demo-scenarios-title">
+    <h2 id="demo-scenarios-title" class="demo-lab-section__title">Escenarios</h2>
+    <div class="demo-lab-grid">
+      <button
+        type="button"
+        *ngFor="let scenario of scenarios"
+        class="demo-lab-card ev-card"
+        [class.demo-lab-card--selected]="scenario.id === selectedId"
+        (click)="selectScenario(scenario.id)"
+      >
+        <div class="demo-lab-card__head">
+          <h3 class="demo-lab-card__title">{{ scenario.title }}</h3>
+          <span *ngIf="scenario.badge" class="ev-pill demo-lab-card__badge">{{ scenario.badge }}</span>
+        </div>
+        <p class="demo-lab-card__desc">{{ scenario.description }}</p>
+      </button>
+    </div>
+  </section>
+
+  <section class="demo-lab-section" aria-labelledby="demo-params-title">
+    <h2 id="demo-params-title" class="demo-lab-section__title">Ajustes rápidos</h2>
+    <div class="demo-lab-params ev-card">
+      <div class="demo-lab-param" *ngFor="let slider of paramSliders">
+        <label class="demo-lab-param__label" [for]="'param-' + slider.key">
+          {{ slider.label }}
+          <span class="demo-lab-param__value">
+            {{ params[slider.key] }}{{ slider.suffix || '' }}
+          </span>
+        </label>
+        <input
+          [id]="'param-' + slider.key"
+          type="range"
+          class="demo-lab-param__range"
+          [min]="slider.min"
+          [max]="slider.max"
+          [step]="slider.step"
+          [(ngModel)]="params[slider.key]"
+        />
+      </div>
+
+      <div class="demo-lab-param demo-lab-param--select" *ngIf="heroEventoOptions.length > 0">
+        <label class="demo-lab-param__label">Evento protagonista</label>
+        <ev-select
+          variant="form"
+          [options]="heroEventoOptions"
+          [ngModel]="heroEventoId"
+          (ngModelChange)="onHeroEventoChange($event)"
+          placeholder="Seleccionar evento"
+          [searchable]="true"
+          ariaLabel="Evento protagonista de la demo"
+        />
+      </div>
+    </div>
+  </section>
+
+  <footer class="demo-lab-footer">
+    <button
+      type="button"
+      class="ev-btn-primary demo-lab-launch"
+      [disabled]="launching || loading"
+      (click)="launchDemo()"
+    >
+      <span class="material-icons" aria-hidden="true">play_arrow</span>
+      Ver demo
+    </button>
+    <a routerLink="/dashboard-organizador" class="ev-btn-ghost ev-btn-sm">Ir al dashboard</a>
+  </footer>
+</div>

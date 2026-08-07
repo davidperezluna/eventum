@@ -926,6 +926,59 @@
   gap: 0.5rem;
 }
 
+.ev-intel-hoy-insights {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.ev-intel-hoy-insights__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.ev-intel-hoy-insights__item--emphasis {
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ev-intel-hoy-insights__item--secondary {
+  padding: 0.15rem 0.1rem;
+  opacity: 0.92;
+}
+
+.ev-intel-hoy-insights__icon {
+  flex-shrink: 0;
+  font-size: 1.05rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.05rem;
+  color: #5eead4;
+}
+
+.ev-intel-hoy-insights__item--emphasis .ev-intel-hoy-insights__icon {
+  color: #99f6e4;
+}
+
+.ev-intel-hoy-insights__text {
+  font-size: clamp(0.92rem, 2.4vw, 1.02rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.ev-intel-hoy-insights__item--secondary .ev-intel-hoy-insights__text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.82);
+}
+
 .ev-intel-hoy-pills__item {
   margin: 0;
   padding: 0.55rem 0.75rem;

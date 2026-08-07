@@ -31,16 +31,24 @@
       </div>
     </article>
 
+    <article class="fin-org__story-step fin-org__story-step--discount">
+      <div class="fin-org__story-step-head">
+        <p class="fin-org__story-step-label">Servicio</p>
+        <p class="fin-org__story-step-hint">Comisión de servicio cobrada al cliente ({{ finanzas.servicioPct }}%)</p>
+      </div>
+      <p class="fin-org__story-step-value fin-org__story-step-value--discount">− {{ formatAmount(finanzas.servicioEventum) }}</p>
+    </article>
+
     <div class="fin-org__story-arrow" aria-hidden="true">
       <span class="material-icons">south</span>
     </div>
 
     <article class="fin-org__story-step fin-org__story-step--discount">
       <div class="fin-org__story-step-head">
-        <p class="fin-org__story-step-label">Descuentos estimados</p>
-        <p class="fin-org__story-step-hint">Wompi, comisiones y demás descuentos ya calculados</p>
+        <p class="fin-org__story-step-label">Comisión Wompi</p>
+        <p class="fin-org__story-step-hint">Costo estimado del procesador de pagos ({{ finanzas.wompiPct }}%)</p>
       </div>
-      <p class="fin-org__story-step-value fin-org__story-step-value--discount">− {{ formatAmount(finanzas.descuentosEstimados) }}</p>
+      <p class="fin-org__story-step-value fin-org__story-step-value--discount">− {{ formatAmount(finanzas.comisionWompi) }}</p>
     </article>
 
     <div class="fin-org__story-arrow" aria-hidden="true">

@@ -18,6 +18,8 @@ import { DashboardOrganizadorService } from '../../services/dashboard-organizado
 
 import { ReportesService, ReporteEvento } from '../../services/reportes.service';
 
+import { DemoDataProvider } from '../../demo/demo-data.provider';
+
 import { AuthService } from '../../services/auth.service';
 
 import { AlertService } from '../../services/alert.service';
@@ -184,6 +186,8 @@ export class EventoOperaciones implements OnInit {
 
     private reportesService: ReportesService,
 
+    private demoDataProvider: DemoDataProvider,
+
     private alertService: AlertService,
 
     private drawerService: DrawerService,
@@ -254,7 +258,7 @@ export class EventoOperaciones implements OnInit {
 
       }
 
-      this.evento = evento;
+      this.evento = await this.demoDataProvider.applyEventoPresentation(evento);
 
       if (isEventoCatalogoInconsistent(evento) && !this.isShowcaseMode) {
         const synced = await this.eventosService.updateEvento(evento.id, patchPublicadoEnCatalogo());
@@ -279,21 +283,21 @@ export class EventoOperaciones implements OnInit {
 
         orgId != null
 
-          ? this.dashboardOrganizadorService.getStats(orgId, this.eventoId).catch(() => null)
+          ? this.demoDataProvider.getEventDashboardStats(orgId, this.eventoId).catch(() => null)
 
-          : this.dashboardService.getStats(this.eventoId).catch(() => null),
+          : this.demoDataProvider.getEventDashboardStats(null, this.eventoId).catch(() => null),
 
-        this.reportesService.getReporteEvento(this.eventoId).catch(() => null),
+        this.demoDataProvider.getReporteEvento(orgId, this.eventoId).catch(() => null),
 
       ]);
 
 
 
-      this.tiposBoleta = tipos;
+      this.tiposBoleta = await this.demoDataProvider.applyTiposBoleta(tipos, this.eventoId);
 
       this.tieneProductos = tieneProductos;
 
-      this.cupones = cupones;
+      this.cupones = await this.demoDataProvider.applyCupones(cupones, this.eventoId);
 
       this.productosCount = resumenMap.get(this.eventoId)?.cantidad ?? 0;
 

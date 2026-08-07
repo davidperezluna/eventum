@@ -29,6 +29,13 @@
    Sidebar styles → admin-sidebar.css (ev-admin-*)
    ============================================ */
 
+:root {
+  --ev-admin-topbar-height: 4.875rem;
+  --ev-admin-mobile-content-offset: calc(
+    env(safe-area-inset-top, 0px) + var(--ev-admin-topbar-height) + var(--spacing-md)
+  );
+}
+
 .main-content {
   flex: 1;
   margin-left: var(--ev-admin-sidebar-width, 288px);
@@ -929,7 +936,7 @@
   .main-content {
     margin-left: 0;
     padding: var(--spacing-md);
-    padding-top: calc(env(safe-area-inset-top, 0px) + 4.875rem + var(--spacing-md));
+    padding-top: var(--ev-admin-mobile-content-offset);
     width: 100%;
   }
 
@@ -1063,7 +1070,9 @@
 
   .main-content {
     padding: var(--spacing-sm);
-    padding-top: calc(env(safe-area-inset-top, 0px) + 4.875rem + var(--spacing-sm));
+    padding-top: calc(
+      env(safe-area-inset-top, 0px) + var(--ev-admin-topbar-height) + var(--spacing-sm)
+    );
   }
 }
 
@@ -1091,6 +1100,8 @@
   margin: 0 0 1rem;
 }
 
-.main-content--showcase {
-  padding-top: 1rem;
+@media (min-width: 769px) {
+  .main-content--showcase {
+    padding-top: 1rem;
+  }
 }
