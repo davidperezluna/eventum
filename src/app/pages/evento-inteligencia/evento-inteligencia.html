@@ -10,15 +10,27 @@
         <span class="material-icons" aria-hidden="true">arrow_back</span>
         Mis Eventos
       </a>
-      <button
-        type="button"
-        class="ev-intel-topbar__refresh"
-        [disabled]="refreshing"
-        (click)="refresh()"
-        aria-label="Actualizar datos"
-      >
-        <span class="material-icons" [class.ev-intel-spin]="refreshing" aria-hidden="true">refresh</span>
-      </button>
+      <div class="ev-intel-topbar__actions">
+        <button
+          type="button"
+          class="ev-intel-topbar__icon-btn"
+          (click)="compartirEvento()"
+          aria-label="Compartir evento"
+          title="Compartir evento"
+        >
+          <span class="material-icons" aria-hidden="true">share</span>
+        </button>
+        <button
+          type="button"
+          class="ev-intel-topbar__icon-btn"
+          [disabled]="refreshing"
+          (click)="refresh()"
+          aria-label="Actualizar datos"
+          title="Actualizar datos"
+        >
+          <span class="material-icons" [class.ev-intel-spin]="refreshing" aria-hidden="true">refresh</span>
+        </button>
+      </div>
     </header>
 
     <!-- Hero -->
@@ -81,25 +93,11 @@
             Operaciones
           </a>
         </nav>
-        <div class="ev-intel-hero__actions">
-          <ev-button
-            *ngIf="!authService.isOrganizador()"
-            variant="primary"
-            size="sm"
-            (click)="goToEscanear()"
-          >
+        <div class="ev-intel-hero__actions" *ngIf="!authService.isOrganizador()">
+          <ev-button variant="primary" size="sm" (click)="goToEscanear()">
             <span class="material-icons" aria-hidden="true">qr_code_scanner</span>
             Escáner
           </ev-button>
-          <button
-            type="button"
-            class="ev-intel-hero__icon-btn"
-            (click)="compartirEvento()"
-            aria-label="Compartir evento"
-            title="Compartir evento"
-          >
-            <span class="material-icons" aria-hidden="true">share</span>
-          </button>
         </div>
       </div>
 

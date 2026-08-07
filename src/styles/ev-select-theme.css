@@ -406,4 +406,15 @@ body > .ng-dropdown-panel.ev-select-panel--sheet {
   .ev-select.ng-select .ng-value-container .ng-input > input {
     font-size: 0.875rem;
   }
+
+  /* Evita foco/teclado en el input fantasma de ng-select en móvil */
+  .ev-select.ng-select .ng-value-container .ng-input > input {
+    pointer-events: none;
+    caret-color: transparent;
+    user-select: none;
+  }
+
+  .ev-select-panel--sheet .ng-dropdown-header {
+    display: none;
+  }
 }

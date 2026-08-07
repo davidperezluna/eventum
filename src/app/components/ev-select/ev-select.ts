@@ -10,6 +10,7 @@ import {
   OnDestroy,
   Output,
   ViewChild,
+  ElementRef,
   forwardRef,
   booleanAttribute,
   numberAttribute,
@@ -86,15 +87,23 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
   private mobileCloseHandler: (() => void) | null = null;
 
   constructor(
+    private readonly hostRef: ElementRef<HTMLElement>,
     private readonly cdr: ChangeDetectorRef,
     private readonly breakpointObserver: BreakpointObserver,
   ) {}
+
+  get isMobileViewport(): boolean {
+    return this.breakpointObserver.isMatched(EV_SELECT_MOBILE_QUERY);
+  }
 
   get inputId(): string {
     return this.id ?? this.fallbackId;
   }
 
   get isSearchable(): boolean {
+    if (this.isMobileViewport) {
+      return false;
+    }
     if (this.searchable === true) {
       return true;
     }
@@ -102,6 +111,10 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
       return false;
     }
     return this.optionsSnapshot.length >= this.searchThreshold;
+  }
+
+  get openOnEnterEnabled(): boolean {
+    return !this.isMobileViewport;
   }
 
   get isMobileSheet(): boolean {
@@ -139,6 +152,7 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
   ngAfterViewInit(): void {
     this.applyValue(this.currentValue);
     this.ngSelect?.setDisabledState(this.disabled);
+    this.applyMobileKeyboardGuard();
   }
 
   ngOnDestroy(): void {
@@ -202,6 +216,7 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
       this.lockBodyScroll();
     }
     this.schedulePanelDecoration();
+    this.applyMobileKeyboardGuard();
     this.cdr.markForCheck();
   }
 
@@ -227,7 +242,51 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
         return;
       }
       this.decoratePanel(panel);
+      this.applyMobileKeyboardGuard();
     });
+  }
+
+  private applyMobileKeyboardGuard(): void {
+    if (!this.isMobileViewport) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      const roots: HTMLElement[] = [this.hostRef.nativeElement];
+      const panel = this.getOpenPanel();
+      if (panel) {
+        roots.push(panel);
+      }
+
+      for (const root of roots) {
+        root.querySelectorAll('input').forEach((node) => {
+          this.guardMobileInput(node);
+        });
+      }
+    });
+  }
+
+  private guardMobileInput(input: HTMLInputElement): void {
+    if (input.dataset['evMobileKbGuard'] === '1') {
+      return;
+    }
+
+    input.dataset['evMobileKbGuard'] = '1';
+    input.readOnly = true;
+    input.inputMode = 'none';
+    input.autocomplete = 'off';
+    input.setAttribute('autocorrect', 'off');
+    input.setAttribute('autocapitalize', 'off');
+    input.setAttribute('spellcheck', 'false');
+
+    input.addEventListener(
+      'focus',
+      (event) => {
+        event.preventDefault();
+        input.blur();
+      },
+      { capture: true },
+    );
   }
 
   private decoratePanel(panel: HTMLElement): void {
