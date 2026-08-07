@@ -78,6 +78,15 @@
   </section>
 
   <footer class="demo-lab-footer">
+    <button
+      type="button"
+      class="ev-btn-primary demo-lab-launch"
+      [disabled]="launching || loading"
+      (click)="launchDemo()"
+    >
+      <span class="material-icons" aria-hidden="true">play_arrow</span>
+      Ver demo
+    </button>
     <a routerLink="/dashboard-organizador" class="ev-btn-ghost ev-btn-sm">Ir al dashboard</a>
   </footer>
 </div>
