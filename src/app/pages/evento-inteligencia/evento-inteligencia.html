@@ -82,23 +82,28 @@
           </a>
         </nav>
         <div class="ev-intel-hero__quick">
-          <button type="button" class="ev-intel-action-pill ev-intel-action-pill--accent" (click)="goToEscanear()">
+          <ev-button
+            *ngIf="!authService.isOrganizador()"
+            variant="primary"
+            size="sm"
+            (click)="goToEscanear()"
+          >
             <span class="material-icons" aria-hidden="true">qr_code_scanner</span>
             Escáner
-          </button>
-          <button
+          </ev-button>
+          <ev-button
             *ngIf="!hideHeroShare"
-            type="button"
-            class="ev-intel-action-pill ev-intel-action-pill--secondary"
+            variant="secondary"
+            size="sm"
             (click)="compartirEvento()"
           >
             <span class="material-icons" aria-hidden="true">share</span>
             Compartir
-          </button>
-          <button type="button" class="ev-intel-action-pill ev-intel-action-pill--secondary" (click)="verEventoPublico()">
+          </ev-button>
+          <ev-button variant="ghost" size="sm" (click)="verEventoPublico()">
             <span class="material-icons" aria-hidden="true">open_in_new</span>
             Ver evento
-          </button>
+          </ev-button>
         </div>
       </div>
 
@@ -180,10 +185,10 @@
             </header>
             <div class="ev-intel-card__main">
               <p class="ev-intel-card__lead">{{ action.message }}</p>
-              <button type="button" class="ev-intel-story__cta" (click)="onActionNowClick()">
+              <ev-button variant="primary" size="sm" (click)="onActionNowClick()">
                 {{ action.ctaLabel }}
                 <span class="material-icons" aria-hidden="true">arrow_forward</span>
-              </button>
+              </ev-button>
             </div>
           </div>
         </article>

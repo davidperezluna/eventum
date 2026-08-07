@@ -311,7 +311,7 @@
   min-height: 2.375rem;
   padding: 0 0.9rem;
   border: 1px solid rgba(15, 23, 42, 0.1);
-  border-radius: 999px;
+  border-radius: var(--ev-button-radius, 6px);
   background: #f8fafc;
   color: var(--ev-intel-ink);
   font-size: 0.8125rem;
@@ -960,11 +960,11 @@
   width: 1.25rem;
   height: 1.25rem;
   margin-top: 0.05rem;
-  color: #5eead4;
+  color: #7da2ff;
 }
 
 .ev-intel-hoy-insights__item--emphasis .ev-intel-hoy-insights__icon {
-  color: #99f6e4;
+  color: #a5c4ff;
 }
 
 .ev-intel-hoy-insights__text {
@@ -1412,8 +1412,8 @@
   border-radius: 4px;
 }
 
-/* Guía — único CTA primario de contenido */
-.ev-intel-card--guide .ev-intel-story__cta {
+/* Guía — CTA primario de contenido */
+.ev-intel-card--guide .ev-button {
   margin-top: 0;
   align-self: flex-start;
 }
@@ -1697,14 +1697,13 @@
     padding-bottom: 0;
   }
 
-  .ev-intel-hero__quick .ev-intel-action-pill {
+  .ev-intel-hero__quick .ev-button {
     width: 100%;
+    min-width: 0;
     justify-content: center;
-    min-height: 2.5rem;
-    font-size: 0.8125rem;
   }
 
-  .ev-intel-hero__quick .ev-intel-action-pill--accent {
+  .ev-intel-hero__quick .ev-button--primary:first-child {
     grid-column: 1 / -1;
   }
 }

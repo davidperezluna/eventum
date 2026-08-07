@@ -89,6 +89,7 @@ export class DemoLaboratorio implements OnInit {
     const def = this.demoScenarioService.getScenarioDefinition(id);
     this.params = { ...def.defaultParams };
     this.cdr.detectChanges();
+    void this.launchDemo();
   }
 
   onHeroEventoChange(value: number | null): void {

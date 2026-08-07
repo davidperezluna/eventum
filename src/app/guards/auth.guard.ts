@@ -163,6 +163,12 @@ export const authGuard: CanActivateFn = async (route, state) => {
       return false;
     }
 
+    if (authService.isOrganizador() && routeSegments[0] === 'escanear-qr') {
+      console.log('Auth Guard - Escáner no disponible para organizador:', state.url);
+      router.navigate(['/dashboard-organizador']);
+      return false;
+    }
+
     const adminOnly = route.data?.['adminOnly'] === true;
     if (adminOnly && !authService.isAdministrador()) {
       const showcaseProductos =

@@ -221,7 +221,9 @@ export function buildPulseCards(
   reporte: ReporteEvento | null,
   stats: DashboardStats | null,
   aforo: IntelAforoTotals,
+  options?: { hideScanner?: boolean },
 ): IntelPulseCard[] {
+  const hideScanner = options?.hideScanner === true;
   const boletasVendidas = reporte?.boletas_vendidas ?? 0;
   const asistentes = reporte?.boletas_usadas ?? 0;
   const tasaIngreso = boletasVendidas > 0 ? Math.round((asistentes / boletasVendidas) * 100) : 0;
@@ -261,7 +263,9 @@ export function buildPulseCards(
     asistentesDetail =
       tasaIngreso > 0
         ? `El ${tasaIngreso}% de quienes compró ya ingresó — revisa los accesos`
-        : 'Usa el escáner para registrar cada ingreso';
+        : hideScanner
+          ? 'Aún no hay registros de ingreso en puerta'
+          : 'Usa el escáner para registrar cada ingreso';
   }
 
   return [
@@ -290,13 +294,31 @@ export function buildActionNow(
   reporte: ReporteEvento | null,
   aforo: IntelAforoTotals,
   hero: IntelHeroMoment,
+  options?: { hideScanner?: boolean },
 ): IntelActionNow {
+  const hideScanner = options?.hideScanner === true;
   const estado = evento.estado as TipoEstadoEvento;
   const boletasVendidas = reporte?.boletas_vendidas ?? 0;
   const asistentes = reporte?.boletas_usadas ?? 0;
   const daysLeft = hero.countdown?.days ?? null;
 
   if (estado === TipoEstadoEvento.EN_CURSO) {
+    if (hideScanner) {
+      if (boletasVendidas > 0 && asistentes < boletasVendidas * 0.3) {
+        return {
+          variant: 'warning',
+          message: `Hay ${boletasVendidas} boletas vendidas pero solo ${asistentes} asistentes registrados en puerta.`,
+          ctaLabel: 'Ver operaciones',
+          ctaAction: 'operaciones',
+        };
+      }
+      return {
+        variant: 'info',
+        message: 'Tu evento está en curso. Sigue el ingreso desde Inteligencia.',
+        ctaLabel: 'Ver métricas',
+        ctaAction: 'operaciones',
+      };
+    }
     if (boletasVendidas > 0 && asistentes < boletasVendidas * 0.3) {
       return {
         variant: 'warning',

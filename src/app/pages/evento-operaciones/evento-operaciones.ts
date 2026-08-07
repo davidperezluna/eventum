@@ -45,10 +45,6 @@ import {
 
   EventoReadinessStep,
 
-  getNextStepActionLabel,
-
-  getNextStepMessage,
-
 } from '../../core/evento-readiness';
 
 import {
@@ -415,6 +411,8 @@ export class EventoOperaciones implements OnInit {
 
     const cuponesCount = this.cupones.length;
 
+    const hideScanner = this.authService.isOrganizador();
+
 
 
     return [
@@ -447,17 +445,16 @@ export class EventoOperaciones implements OnInit {
 
       },
 
-      {
-
-        id: 'escanear',
-
-        label: 'Escanear',
-
-        icon: 'qr_code_scanner',
-
-        dock: true,
-
-      },
+      ...(hideScanner
+        ? []
+        : [
+            {
+              id: 'escanear',
+              label: 'Escanear',
+              icon: 'qr_code_scanner',
+              dock: true,
+            } as OpsAction,
+          ]),
 
       {
 
@@ -670,7 +667,7 @@ export class EventoOperaciones implements OnInit {
 
       case TipoEstadoEvento.EN_CURSO:
 
-        return 'Ir al escáner';
+        return this.authService.isOrganizador() ? 'Ver inteligencia' : 'Ir al escáner';
 
       case TipoEstadoEvento.FINALIZADO:
 
@@ -721,34 +718,6 @@ export class EventoOperaciones implements OnInit {
     if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
 
     return `${words[0][0]}${words[1][0]}`.toUpperCase();
-
-  }
-
-
-
-  get nextStepMessage(): string {
-
-    if (!this.readiness?.nextStep) {
-
-      return 'Todo está configurado correctamente.';
-
-    }
-
-    return getNextStepMessage(this.readiness.nextStep);
-
-  }
-
-
-
-  get nextStepActionLabel(): string {
-
-    if (!this.readiness?.nextStep) {
-
-      return 'Ver evento';
-
-    }
-
-    return getNextStepActionLabel(this.readiness.nextStep);
 
   }
 
@@ -838,7 +807,9 @@ export class EventoOperaciones implements OnInit {
 
       case 'escanear':
 
-        void this.router.navigate(['/escanear-qr']);
+        if (!this.authService.isOrganizador()) {
+          void this.router.navigate(['/escanear-qr']);
+        }
 
         break;
 
@@ -1343,7 +1314,11 @@ export class EventoOperaciones implements OnInit {
 
       case TipoEstadoEvento.EN_CURSO:
 
-        void this.router.navigate(['/escanear-qr']);
+        if (this.authService.isOrganizador()) {
+          void this.router.navigate(['/eventos', this.eventoId, 'inteligencia']);
+        } else {
+          void this.router.navigate(['/escanear-qr']);
+        }
 
         return;
 
@@ -1568,22 +1543,6 @@ export class EventoOperaciones implements OnInit {
         break;
 
     }
-
-  }
-
-
-
-  onNextStepAction(): void {
-
-    if (!this.readiness?.nextStep) {
-
-      this.verEventoPublico();
-
-      return;
-
-    }
-
-    this.onReadinessStepClick(this.readiness.nextStep);
 
   }
 

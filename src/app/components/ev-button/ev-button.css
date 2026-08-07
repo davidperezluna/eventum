@@ -6,7 +6,7 @@
   min-height: 2.75rem;
   min-width: 6.5rem;
   padding: 0.6rem 1.15rem;
-  border-radius: 10px;
+  border-radius: var(--ev-button-radius, 6px);
   border: 1px solid transparent;
   font-family: inherit;
   font-size: 0.875rem;
@@ -35,7 +35,7 @@
   min-width: 5rem;
   padding: 0.45rem 0.85rem;
   font-size: 0.8125rem;
-  border-radius: 8px;
+  border-radius: var(--ev-button-radius-sm, 5px);
 }
 
 .ev-button--full {
@@ -147,4 +147,14 @@
   .ev-drawer-footer .ev-button {
     min-height: 48px;
   }
+}
+
+a.ev-button {
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.ev-button .material-icons {
+  font-size: 1rem;
+  line-height: 1;
 }

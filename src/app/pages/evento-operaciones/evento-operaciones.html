@@ -188,26 +188,6 @@
           </button>
         </li>
       </ul>
-
-      <!-- Siguiente paso recomendado -->
-      <div
-        class="ev-ops-next"
-        [class.ev-ops-next--ready]="r.percent >= 100"
-      >
-        <div class="ev-ops-next__copy">
-          <p class="ev-ops-next__eyebrow">
-            {{ r.percent >= 100 ? 'Listo para operar' : 'Siguiente paso recomendado' }}
-          </p>
-          <p class="ev-ops-next__message">{{ nextStepMessage }}</p>
-        </div>
-        <button
-          type="button"
-          class="ev-btn-primary ev-ops-next__cta"
-          (click)="onNextStepAction()"
-        >
-          {{ nextStepActionLabel }}
-        </button>
-      </div>
     </section>
 
     <!-- 3. Barra de operaciones (desktop) -->
@@ -335,7 +315,7 @@
               <span class="material-icons ev-ops-advanced__chevron" aria-hidden="true">chevron_right</span>
             </button>
           </li>
-          <li>
+          <li *ngIf="!authService.isOrganizador()">
             <button type="button" class="ev-ops-advanced__btn" (click)="goToLectores()">
               <span class="material-icons" aria-hidden="true">qr_code_scanner</span>
               <span>
@@ -410,7 +390,7 @@
             <span class="ev-ops-sheet__label">Editar información</span>
           </button>
         </li>
-        <li>
+        <li *ngIf="!authService.isOrganizador()">
           <button type="button" class="ev-ops-sheet__btn" (click)="goToLectores(); closeMoreSheet()">
             <span class="material-icons" aria-hidden="true">qr_code_scanner</span>
             <span class="ev-ops-sheet__label">Lectores</span>

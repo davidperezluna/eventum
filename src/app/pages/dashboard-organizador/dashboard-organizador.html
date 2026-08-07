@@ -84,12 +84,12 @@
           <a
             *ngIf="proximoEventoOperacionesRoute as route"
             [routerLink]="route"
-            class="ev-intel-action-pill ev-intel-action-pill--accent"
+            class="ev-button ev-button--primary ev-button--sm"
           >
             <span class="material-icons" aria-hidden="true">event</span>
             Próximo evento
           </a>
-          <a routerLink="/eventos" class="ev-intel-action-pill ev-intel-action-pill--secondary">
+          <a routerLink="/eventos" class="ev-button ev-button--secondary ev-button--sm">
             <span class="material-icons" aria-hidden="true">add_circle_outline</span>
             Crear evento
           </a>
@@ -174,7 +174,7 @@
                 *ngIf="iv.actionNowRoute as route"
                 [routerLink]="route"
                 [queryParams]="actionNowQueryParams"
-                class="ev-intel-story__cta"
+                class="ev-button ev-button--primary ev-button--sm"
               >
                 {{ action.ctaLabel }}
                 <span class="material-icons" aria-hidden="true">arrow_forward</span>

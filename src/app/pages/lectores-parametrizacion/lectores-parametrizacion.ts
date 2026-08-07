@@ -57,7 +57,7 @@ export class LectoresParametrizacion implements OnInit {
   formPermitirProductos = false;
 
   constructor(
-    private authService: AuthService,
+    public authService: AuthService,
     private eventosService: EventosService,
     private boletasService: BoletasService,
     private usuariosService: UsuariosService,

@@ -371,10 +371,10 @@ export function buildActivityFeed(
     items.push({
       key: 'ops-scans',
       timeLabel: 'Operación en puerta',
-      action: 'Entradas escaneadas',
-      context: `${usadas} asistentes registrados`,
+      action: 'Asistentes registrados',
+      context: `${usadas} ingresos en puerta`,
       amount: null,
-      icon: 'qr_code_scanner',
+      icon: 'groups',
       accent: 'blue',
     });
   }

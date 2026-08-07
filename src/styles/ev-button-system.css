@@ -1,2 +1,7 @@
 /* EvButton — estilos globales (componente reutilizable en toda la app) */
+:root {
+  --ev-button-radius: 6px;
+  --ev-button-radius-sm: 5px;
+}
+
 @import '../app/components/ev-button/ev-button.css';

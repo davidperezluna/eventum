@@ -28,6 +28,8 @@ import { Evento, TipoBoleta, TipoEstadoEvento, DashboardStats, Producto } from '
 
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
+import { EvButton } from '../../components/ev-button';
+
 import { formatFinanzasMonedaExacta, formatFinanzasMontoExacto } from '../../utils/dashboard-finanzas.view';
 
 import {
@@ -116,7 +118,7 @@ interface ProductoRow {
 
   standalone: true,
 
-  imports: [CommonModule, RouterLink, DateFormatPipe],
+  imports: [CommonModule, RouterLink, DateFormatPipe, EvButton],
 
   templateUrl: './evento-inteligencia.html',
 
@@ -382,9 +384,13 @@ export class EventoInteligencia implements OnInit {
 
     this.finanzasHero = buildIntelFinanzasHero(this.stats, fmtFinanzas, fmtMonto);
 
-    this.pulseCards = buildPulseCards(this.reporte, this.stats, aforo);
+    this.pulseCards = buildPulseCards(this.reporte, this.stats, aforo, {
+      hideScanner: this.authService.isOrganizador(),
+    });
 
-    this.actionNow = buildActionNow(this.evento, this.reporte, aforo, hero);
+    this.actionNow = buildActionNow(this.evento, this.reporte, aforo, hero, {
+      hideScanner: this.authService.isOrganizador(),
+    });
 
     this.ventasSection = buildVentasSection(this.stats, fmtFinanzas);
 
@@ -609,6 +615,11 @@ export class EventoInteligencia implements OnInit {
 
 
   goToEscanear(): void {
+
+    if (this.authService.isOrganizador()) {
+      this.goToOperaciones();
+      return;
+    }
 
     void this.router.navigate(['/escanear-qr'], {
 

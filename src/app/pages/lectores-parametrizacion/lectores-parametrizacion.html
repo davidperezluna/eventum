@@ -13,7 +13,7 @@
       </p>
     </div>
     <div class="header-actions">
-      <a routerLink="/escanear-qr" class="btn-secondary btn-escanear">
+      <a *ngIf="!authService.isOrganizador()" routerLink="/escanear-qr" class="btn-secondary btn-escanear">
         <span class="material-icons">qr_code_scanner</span>
         Escanear QR
       </a>
