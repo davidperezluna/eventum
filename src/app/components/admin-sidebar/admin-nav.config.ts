@@ -61,54 +61,27 @@ export function buildAdminNavSections(coversEnabled: boolean): AdminNavSection[]
 }
 
 
-/** Menú organizador estándar. */
-export function buildOrganizadorNavSections(coversEnabled: boolean): AdminNavSection[] {
-  return [
-    {
-      entries: [{ kind: 'link', path: '/dashboard-organizador', label: 'Dashboard', icon: 'dashboard' }],
-    },
-    ...(coversEnabled
-      ? [
-        {
-          label: 'Catálogo',
-          entries: [{ kind: 'link' as const, path: '/covers-config', label: 'Covers', icon: 'local_bar' }],
-        },
-      ]
-      : []),
-  ];
+/** Menú organizador estándar — portafolio de eventos. */
+export function buildOrganizadorNavSections(_coversEnabled = false): AdminNavSection[] {
+  return buildOrganizadorNavCore(false);
 }
 
-/** Menú showcase organizador. */
+/** Menú showcase organizador — mismo núcleo + Laboratorio demo. */
 export function buildShowcaseNavSections(): AdminNavSection[] {
+  return buildOrganizadorNavCore(true);
+}
+
+function buildOrganizadorNavCore(showcase: boolean): AdminNavSection[] {
   return [
     {
-      entries: [{ kind: 'link', path: '/dashboard-organizador', label: 'Dashboard', icon: 'dashboard' }],
-    },
-    {
-      entries: [{ kind: 'link', path: '/demo-laboratorio', label: 'Laboratorio demo', icon: 'science' }],
-    },
-    {
-      entries: [{ kind: 'link', path: '/eventos', label: 'Mis Eventos', icon: 'event' }],
-    },
-    {
-      label: 'Operación',
       entries: [
-        { kind: 'link', path: '/lectores-parametrizacion', label: 'Lectores', icon: 'qr_code_scanner' },
-        { kind: 'link', path: '/escanear-qr', label: 'Escáner', icon: 'qr_code_2' },
-        { kind: 'link', path: '/boletas-usadas', label: 'Boletas usadas', icon: 'how_to_reg' },
-        { kind: 'link', path: '/boletas', label: 'Boletas sin usar', icon: 'confirmation_number' },
+        { kind: 'link', path: '/dashboard-organizador', label: 'Dashboard', icon: 'dashboard' },
+        { kind: 'link', path: '/eventos', label: 'Mis eventos', icon: 'event' },
+        ...(showcase
+          ? [{ kind: 'link' as const, path: '/demo-laboratorio', label: 'Laboratorio', icon: 'science' }]
+          : []),
+        { kind: 'link', path: '/perfil', label: 'Mi cuenta', icon: 'person' },
       ],
-    },
-    {
-      label: 'Catálogo',
-      entries: [
-        { kind: 'link', path: '/productos', label: 'Productos', icon: 'local_mall' },
-        { kind: 'link', path: '/palcos', label: 'Palcos', icon: 'event_seat' },
-      ],
-    },
-    {
-      label: 'Configuración',
-      entries: [{ kind: 'link', path: '/perfil', label: 'Mi Perfil', icon: 'person' }],
     },
   ];
 }

@@ -97,11 +97,20 @@ export class Layout implements OnInit, OnDestroy {
     return this.demoScenarioService.getActiveLabel() ?? 'Demo';
   }
 
+  /** En móvil el drawer siempre va expandido; el rail solo aplica en desktop. */
+  get effectiveSidebarCompact(): boolean {
+    if (this.adminSidebarMobileMq?.matches) return false;
+    return this.sidebarCompact;
+  }
+
   private routerSubscription?: any;
   private carritoSubscription?: any;
   private trasladosPendientesSubscription?: Subscription;
   private accesosPuertaSubscription?: Subscription;
   private unsubscribeAuthState?: () => void;
+  private readonly adminSidebarMobileMq =
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)') : null;
+  private adminSidebarMqListener?: () => void;
 
   constructor(
     public authService: AuthService,
@@ -205,6 +214,11 @@ export class Layout implements OnInit, OnDestroy {
       }
       this.cdr.detectChanges();
     });
+
+    if (this.adminSidebarMobileMq) {
+      this.adminSidebarMqListener = () => this.cdr.markForCheck();
+      this.adminSidebarMobileMq.addEventListener('change', this.adminSidebarMqListener);
+    }
   }
 
   get mostrarCarritoFab(): boolean {
@@ -324,6 +338,9 @@ export class Layout implements OnInit, OnDestroy {
     }
     if (this.unsubscribeAuthState) {
       this.unsubscribeAuthState();
+    }
+    if (this.adminSidebarMobileMq && this.adminSidebarMqListener) {
+      this.adminSidebarMobileMq.removeEventListener('change', this.adminSidebarMqListener);
     }
     forceUnlockBodyScroll();
   }

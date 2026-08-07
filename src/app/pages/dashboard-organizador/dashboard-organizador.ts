@@ -191,6 +191,14 @@ export class DashboardOrganizador implements OnInit {
     return id ? ['/eventos', id, 'inteligencia'] : ['/eventos'];
   }
 
+  /** Primer evento próximo — acceso rápido desde el portafolio sin rutas globales. */
+  get proximoEventoOperacionesRoute(): any[] | null {
+    const raw = this.stats.eventos_proximos?.[0]?.id;
+    const id = Number(raw);
+    if (!Number.isFinite(id) || id <= 0) return null;
+    return ['/eventos', id, 'operaciones'];
+  }
+
   private get filteredAttentionItems(): DashOrgAttentionItem[] {
     const hero = this.intel?.heroIdentity;
     if (!hero) return this.buildAttentionItems();

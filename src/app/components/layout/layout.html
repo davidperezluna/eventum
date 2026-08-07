@@ -2,7 +2,7 @@
   class="layout-container"
   [class.client-layout]="isCliente() || isLector() || !currentUser || !usuario"
   [class.admin-layout]="!isCliente() && !isLector() && currentUser && usuario"
-  [class.admin-layout--compact]="sidebarCompact"
+  [class.admin-layout--compact]="effectiveSidebarCompact"
 >
   
   <!-- Panel Administrativo / Organizador -->
@@ -10,7 +10,7 @@
     *ngIf="!isCliente() && !isLector() && currentUser && usuario"
     [sections]="adminNavSections"
     [open]="sidebarOpen"
-    [compact]="sidebarCompact"
+    [compact]="effectiveSidebarCompact"
     [userEmail]="userEmail"
     [userRole]="userRole"
     [panelTitle]="panelTitle"

@@ -117,14 +117,22 @@
   <!-- Footer -->
   <footer class="ev-admin-sidebar__footer">
     <div class="ev-admin-sidebar__account" *ngIf="userEmail">
-      <div class="ev-admin-sidebar__account-identity">
+      <div
+        class="ev-admin-sidebar__account-identity"
+        [attr.data-tooltip]="compact && userEmail ? userEmail : null"
+      >
         <span class="material-icons ev-admin-sidebar__account-icon" aria-hidden="true">account_circle</span>
         <div class="ev-admin-sidebar__account-text">
           <span class="ev-admin-sidebar__account-role" *ngIf="userRole">{{ userRole }}</span>
           <span class="ev-admin-sidebar__account-email">{{ userEmail }}</span>
         </div>
       </div>
-      <button type="button" class="ev-admin-sidebar__logout" (click)="logout.emit()">
+      <button
+        type="button"
+        class="ev-admin-sidebar__logout"
+        (click)="logout.emit()"
+        [attr.data-tooltip]="compact ? 'Cerrar sesión' : null"
+      >
         <span class="material-icons" aria-hidden="true">logout</span>
         <span class="ev-admin-sidebar__logout-label">Cerrar sesión</span>
       </button>

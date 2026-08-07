@@ -790,9 +790,13 @@ export class Eventos implements OnInit, OnDestroy {
   onSuccessAddProductos(): void {
     const eventoId = this.savedEvento?.id;
     this.closeModal();
-    void this.router.navigate(['/productos'], {
-      queryParams: eventoId ? { eventoId } : undefined,
-    });
+    if (eventoId) {
+      void this.router.navigate(['/eventos', eventoId, 'operaciones'], {
+        queryParams: { open: 'productos' },
+      });
+      return;
+    }
+    void this.router.navigate(['/eventos']);
   }
 
   onSuccessVerEvento(): void {

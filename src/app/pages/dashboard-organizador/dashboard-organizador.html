@@ -77,13 +77,17 @@
           </span>
           <a routerLink="/eventos" class="ev-intel-action-pill ev-intel-action-pill--hub">
             <span class="material-icons" aria-hidden="true">event</span>
-            Eventos
+            Mis eventos
           </a>
         </nav>
         <div class="ev-intel-hero__quick">
-          <a routerLink="/escanear-qr" class="ev-intel-action-pill ev-intel-action-pill--accent">
-            <span class="material-icons" aria-hidden="true">qr_code_scanner</span>
-            Escáner
+          <a
+            *ngIf="proximoEventoOperacionesRoute as route"
+            [routerLink]="route"
+            class="ev-intel-action-pill ev-intel-action-pill--accent"
+          >
+            <span class="material-icons" aria-hidden="true">event</span>
+            Próximo evento
           </a>
           <a routerLink="/eventos" class="ev-intel-action-pill ev-intel-action-pill--secondary">
             <span class="material-icons" aria-hidden="true">add_circle_outline</span>
