@@ -1719,18 +1719,24 @@
   }
 
   .ev-intel-hero__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
     width: 100%;
-    justify-content: flex-end;
+    justify-content: stretch;
   }
 
+  .ev-intel-hero__actions .ev-intel-action-pill,
   .ev-intel-hero__actions .ev-button {
-    flex: 1 1 auto;
+    width: 100%;
     min-width: 0;
     justify-content: center;
+    min-height: 2.5rem;
   }
 
-  .ev-intel-hero__actions .ev-button--primary {
-    min-width: 0;
+  .ev-intel-hero__actions .ev-intel-action-pill--accent,
+  .ev-intel-hero__actions .ev-button--primary:first-child {
+    grid-column: 1 / -1;
   }
 }
 

@@ -63,6 +63,10 @@ a.ev-intel-action-pill {
   text-decoration: none;
 }
 
+a.ev-intel-story__cta {
+  text-decoration: none;
+}
+
 /* Línea de tiempo — últimas ventas */
 .ev-intel-card--activity {
   padding-bottom: 0.25rem;

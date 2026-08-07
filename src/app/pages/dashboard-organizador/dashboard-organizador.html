@@ -15,15 +15,18 @@
         <span class="material-icons" aria-hidden="true">event</span>
         Mis eventos
       </a>
-      <button
-        type="button"
-        class="ev-intel-topbar__refresh"
-        [disabled]="isManualRefreshing"
-        (click)="loadStats({ manual: true })"
-        aria-label="Actualizar datos"
-      >
-        <span class="material-icons" [class.ev-intel-spin]="isManualRefreshing" aria-hidden="true">refresh</span>
-      </button>
+      <div class="ev-intel-topbar__actions">
+        <button
+          type="button"
+          class="ev-intel-topbar__icon-btn"
+          [disabled]="isManualRefreshing"
+          (click)="loadStats({ manual: true })"
+          aria-label="Actualizar datos"
+          title="Actualizar datos"
+        >
+          <span class="material-icons" [class.ev-intel-spin]="isManualRefreshing" aria-hidden="true">refresh</span>
+        </button>
+      </div>
     </header>
 
     <!-- Hero — mismo sistema que Inteligencia, alcance portafolio -->
@@ -80,16 +83,16 @@
             Mis eventos
           </a>
         </nav>
-        <div class="ev-intel-hero__quick">
+        <div class="ev-intel-hero__actions">
           <a
             *ngIf="proximoEventoOperacionesRoute as route"
             [routerLink]="route"
-            class="ev-button ev-button--primary ev-button--sm"
+            class="ev-intel-action-pill ev-intel-action-pill--accent"
           >
             <span class="material-icons" aria-hidden="true">event</span>
             Próximo evento
           </a>
-          <a routerLink="/eventos" class="ev-button ev-button--secondary ev-button--sm">
+          <a routerLink="/eventos" class="ev-intel-action-pill ev-intel-action-pill--secondary">
             <span class="material-icons" aria-hidden="true">add_circle_outline</span>
             Crear evento
           </a>
@@ -174,7 +177,7 @@
                 *ngIf="iv.actionNowRoute as route"
                 [routerLink]="route"
                 [queryParams]="actionNowQueryParams"
-                class="ev-button ev-button--primary ev-button--sm"
+                class="ev-intel-story__cta"
               >
                 {{ action.ctaLabel }}
                 <span class="material-icons" aria-hidden="true">arrow_forward</span>
