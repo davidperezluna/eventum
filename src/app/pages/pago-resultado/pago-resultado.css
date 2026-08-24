@@ -312,6 +312,16 @@
   border-color: #cbd5e1;
 }
 
+.btn:focus-visible,
+.pago-panel__guia-link:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--ec-accent, #8b5cf6) 38%, transparent);
+  outline-offset: 2px;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
 @media (min-width: 540px) {
   .pago-panel__actions {
     flex-direction: row;

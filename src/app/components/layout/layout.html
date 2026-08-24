@@ -286,15 +286,15 @@
     *ngIf="mostrarCarritoFab"
     routerLink="/carrito"
     class="carrito-fab"
-    aria-label="Continuar compra, total {{ formatCurrencyCarrito(subtotalCarrito) }}"
+    aria-label="Ver carrito, {{ carritoItemsLabel }}, subtotal {{ formatCurrencyCarrito(subtotalCarrito) }}"
   >
     <div class="carrito-fab__total">
-      <span class="carrito-fab__label">Total</span>
+      <span class="carrito-fab__label">{{ carritoItemsLabel }}</span>
       <span class="carrito-fab__amount">{{ formatCurrencyCarrito(subtotalCarrito) }}</span>
     </div>
     <span class="carrito-fab__btn">
       <span class="material-icons" aria-hidden="true">shopping_cart</span>
-      Continuar compra
+      Ver carrito
     </span>
   </a>
 

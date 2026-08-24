@@ -25,14 +25,14 @@ export async function confirmarCambioCarritoACovers(
 ): Promise<boolean> {
   const message =
     conflicto === 'evento'
-      ? `Tu carrito tiene entradas de ${etiquetaEvento(carrito)}. Si continúas, se vaciará para agregar covers de «${clubNombre}».`
-      : `Tu carrito tiene ${etiquetaCover(carrito)}. Si continúas, se vaciará para agregar covers de «${clubNombre}».`;
+      ? `Tu carrito actual corresponde a ${etiquetaEvento(carrito)}. Para comprar covers de «${clubNombre}» debes empezar un carrito nuevo.`
+      : `Tu carrito actual contiene ${etiquetaCover(carrito)}. Para comprar covers de «${clubNombre}» debes empezar un carrito nuevo.`;
 
   return confirmDialog.confirm({
     title: 'Cambiar carrito',
     message,
-    confirmText: 'Vaciar y continuar',
-    cancelText: 'Cancelar',
+    confirmText: 'Empezar carrito nuevo',
+    cancelText: 'Mantener carrito actual',
     icon: 'local_bar',
   });
 }
@@ -44,9 +44,9 @@ export async function confirmarCambioCarritoAEvento(
 ): Promise<boolean> {
   return confirmDialog.confirm({
     title: 'Cambiar carrito',
-    message: `Tienes ${etiquetaCover(carrito)} en el carrito. Si continúas, se vaciará para comprar en «${eventoTitulo}».`,
-    confirmText: 'Vaciar y continuar',
-    cancelText: 'Cancelar',
+    message: `Tu carrito actual contiene ${etiquetaCover(carrito)}. Para comprar en «${eventoTitulo}» debes empezar un carrito nuevo.`,
+    confirmText: 'Empezar carrito nuevo',
+    cancelText: 'Mantener carrito actual',
     icon: 'confirmation_number',
   });
 }

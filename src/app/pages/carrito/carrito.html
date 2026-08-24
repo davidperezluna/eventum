@@ -85,18 +85,6 @@
         </header>
 
         <div class="carrito-items">
-          <div
-            *ngIf="esCompraMixtaBoletasProductos"
-            class="carrito-info-note carrito-info-note--mixto"
-            role="note"
-          >
-            <span class="material-icons carrito-info-note__icon" aria-hidden="true">local_offer</span>
-            <div class="carrito-info-note__body">
-              <p class="carrito-info-note__title">{{ compraCopy.cuponMixtoTitulo }}</p>
-              <p class="carrito-info-note__text">{{ compraCopy.cuponMixtoTexto }}</p>
-            </div>
-          </div>
-
           <div *ngFor="let item of itemsCover" class="carrito-item">
             <div class="carrito-item-info">
               <div class="carrito-item-top">
@@ -110,19 +98,18 @@
                     type="button"
                     class="btn-remove-item-static"
                     (click)="eliminarCoverDelCarrito(item)"
-                    title="Quitar cover"
-                    aria-label="Quitar cover"
+                    [attr.aria-label]="'Eliminar ' + item.tipo_cover_nombre + ' del carrito'"
                   >
-                    <span class="material-icons">delete_outline</span>
+                    <span class="material-icons" aria-hidden="true">delete_outline</span>
                   </button>
                 </div>
               </div>
               <p class="carrito-item-unit">{{ formatCurrency(item.precio) }} x {{ item.cantidad }}</p>
               <div class="carrito-item-actions">
                 <div class="cantidad-controls">
-                  <button type="button" class="btn-cantidad" (click)="quitarCoverDelCarrito(item)">-</button>
-                  <span class="cantidad">{{ item.cantidad }}</span>
-                  <button type="button" class="btn-cantidad" (click)="agregarCoverAlCarrito(item)">+</button>
+                  <button type="button" class="btn-cantidad" (click)="quitarCoverDelCarrito(item)" [attr.aria-label]="'Quitar 1 ' + item.tipo_cover_nombre">−</button>
+                  <span class="cantidad" aria-live="polite">{{ item.cantidad }}</span>
+                  <button type="button" class="btn-cantidad" (click)="agregarCoverAlCarrito(item)" [attr.aria-label]="'Agregar 1 ' + item.tipo_cover_nombre">+</button>
                 </div>
               </div>
             </div>
@@ -163,23 +150,23 @@
                     type="button"
                     class="btn-remove-item-static"
                     (click)="eliminarDelCarrito(item)"
-                    title="Quitar entrada"
-                    aria-label="Quitar entrada"
+                    [attr.aria-label]="'Eliminar ' + item.tipo.nombre + ' del carrito'"
                   >
-                    <span class="material-icons">delete_outline</span>
+                    <span class="material-icons" aria-hidden="true">delete_outline</span>
                   </button>
                 </div>
               </div>
               <p class="carrito-item-unit">{{ formatCurrency(item.tipo.precio) }} x {{ item.cantidad }}</p>
               <div class="carrito-item-actions">
                 <div class="cantidad-controls">
-                  <button type="button" class="btn-cantidad" (click)="quitarDelCarrito(item)">-</button>
-                  <span class="cantidad">{{ item.cantidad }}</span>
+                  <button type="button" class="btn-cantidad" (click)="quitarDelCarrito(item)" [attr.aria-label]="'Quitar 1 ' + item.tipo.nombre">−</button>
+                  <span class="cantidad" aria-live="polite">{{ item.cantidad }}</span>
                   <button
                     type="button"
                     class="btn-cantidad"
                     (click)="agregarAlCarrito(item)"
                     [disabled]="item.cantidad >= maxCantidadLinea(item)"
+                    [attr.aria-label]="'Agregar 1 ' + item.tipo.nombre"
                   >+</button>
                 </div>
               </div>
@@ -204,6 +191,9 @@
                       {{ palcosSeleccionCompletos(item) ? 'check_circle' : 'touch_app' }}
                     </span>
                     {{ palcosSeleccionCompletos(item) ? 'Listo para pagar' : 'Selección pendiente' }}
+                  </span>
+                  <span class="palco-exp-progress" aria-live="polite">
+                    {{ palcosSeleccionadosCount(item) }} de {{ item.cantidad }} palcos seleccionados
                   </span>
                   <span class="palco-exp-chip palco-exp-chip--muted">
                     {{ cantidadPalcosReservados(item.tipo) }} reservados · {{ item.tipo.cantidad_disponibles }} disponibles
@@ -274,6 +264,7 @@
                         [ngClass]="claseCeldaPalco(p, item)"
                         [disabled]="!esPalcoClicableEnFoco(item, p)"
                         (click)="seleccionarPalcoCelda(item, p)"
+                        [attr.aria-label]="'Palco ' + p.numero + (item.palco_ids?.includes(p.id) ? ', seleccionado' : '')"
                       >
                         <span class="palco-cell-num">{{ p.numero }}</span>
                       </button>
@@ -322,10 +313,9 @@
                     type="button"
                     class="btn-remove-item-static"
                     (click)="eliminarProducto(item)"
-                    title="Quitar producto"
-                    aria-label="Quitar producto"
+                    [attr.aria-label]="'Eliminar ' + item.producto.nombre + ' del carrito'"
                   >
-                    <span class="material-icons">delete_outline</span>
+                    <span class="material-icons" aria-hidden="true">delete_outline</span>
                   </button>
                 </div>
               </div>
@@ -356,13 +346,14 @@
               </p>
               <div class="carrito-item-actions">
                 <div class="cantidad-controls">
-                  <button type="button" class="btn-cantidad" (click)="quitarProducto(item)">-</button>
-                  <span class="cantidad">{{ item.cantidad }}</span>
+                  <button type="button" class="btn-cantidad" (click)="quitarProducto(item)" [attr.aria-label]="'Quitar 1 ' + item.producto.nombre">−</button>
+                  <span class="cantidad" aria-live="polite">{{ item.cantidad }}</span>
                   <button
                     type="button"
                     class="btn-cantidad"
                     (click)="agregarProducto(item)"
                     [disabled]="item.cantidad >= getDisponiblesProducto(item.producto)"
+                    [attr.aria-label]="'Agregar 1 ' + item.producto.nombre"
                   >+</button>
                 </div>
               </div>
@@ -373,6 +364,36 @@
             <p class="carrito-section__empty" *ngIf="itemsProductos.length === 0 && mostrarAgregarMasProductos">
               Aún no tienes productos en este pedido.
             </p>
+          </section>
+
+          <section
+            *ngIf="tieneLicor()"
+            class="licor-legal-card"
+            [class.licor-legal-card--accepted]="terminosAceptados"
+            aria-labelledby="licor-requisito-title"
+          >
+            <div class="licor-legal-card__head">
+              <span class="licor-legal-badge" aria-hidden="true">+18</span>
+              <div class="licor-legal-card__titles">
+                <h3 id="licor-requisito-title">Requisito para retirar productos con licor</h3>
+                <p>El titular debe presentar su documento de identidad junto con el QR del pedido.</p>
+              </div>
+            </div>
+            <label class="licor-legal-check" [class.licor-legal-check--checked]="terminosAceptados">
+              <input
+                type="checkbox"
+                [checked]="terminosAceptados"
+                (change)="onTerminosLicorChange($event)"
+              />
+              <span class="licor-legal-check__box" aria-hidden="true"></span>
+              <span class="licor-legal-check__text">
+                Confirmo que soy mayor de 18 años y presentaré mi documento al retirar el producto.
+              </span>
+            </label>
+            <details class="licor-legal-details">
+              <summary>Leer condiciones para productos +18</summary>
+              <p *ngFor="let linea of terminosLicorLineas">{{ linea }}</p>
+            </details>
           </section>
 
           <button
@@ -395,25 +416,28 @@
         >
           <summary class="cupon-details__summary">
             <span class="material-icons cupon-details__icon" aria-hidden="true">local_offer</span>
-            <span class="cupon-details__title">Cupón de descuento</span>
+            <span class="cupon-details__title">¿Tienes un cupón?</span>
             <span *ngIf="cuponAplicado as cupon" class="cupon-details__badge">
               {{ cupon.codigo }}
               <ng-container *ngIf="getDescuento() > 0"> · −{{ formatCurrency(getDescuento()) }}</ng-container>
             </span>
-            <span *ngIf="!cuponAplicado" class="cupon-details__hint">Toca para aplicar</span>
+            <span *ngIf="!cuponAplicado" class="cupon-details__hint">Opcional</span>
             <span class="material-icons cupon-details__chevron" aria-hidden="true">expand_more</span>
           </summary>
 
           <div class="cupon-details__body">
-            <p class="cupon-details__note">Solo aplica sobre boletas y palcos, no sobre productos.</p>
+            <p class="cupon-details__note">
+              Descuenta tus boletas y palcos. El precio de los productos no cambia.
+            </p>
 
             <div class="cupon-input-group" *ngIf="!cuponAplicado">
               <input
                 type="text"
                 class="cupon-input"
+                aria-label="Código del cupón"
                 [ngModel]="codigoCupon"
                 (ngModelChange)="onCodigoCuponChange($event)"
-                placeholder="Código del cupón"
+                placeholder="Escribe tu código…"
                 autocomplete="off"
                 autocapitalize="characters"
                 (keyup.enter)="aplicarCupon()"
@@ -424,7 +448,7 @@
                 (click)="aplicarCupon()"
                 [disabled]="validandoCupon || !codigoCupon"
               >
-                {{ validandoCupon ? 'Validando…' : 'Aplicar' }}
+                {{ validandoCupon ? 'Validando…' : 'Aplicar cupón' }}
               </button>
             </div>
 
@@ -463,7 +487,7 @@
             <span>Valor productos:</span>
             <span>{{ formatCurrency(getSubtotalProductos()) }}</span>
           </div>
-          <div class="total-row descuento" *ngIf="usuario && cuponAplicado && !esCompraMixtaBoletasProductos">
+          <div class="total-row descuento" *ngIf="usuario && cuponAplicado">
             <span>Descuento (boletas):</span>
             <span>-{{ formatCurrency(getDescuento()) }}</span>
           </div>
@@ -475,20 +499,42 @@
             <span>Servicio ({{ getPorcentajeServicio() }}%):</span>
             <span>{{ formatCurrency(getValorServicio()) }}</span>
           </div>
-          <p class="carrito-servicio-hint">Cargo por procesamiento de pago en línea.</p>
+          <p class="carrito-servicio-hint">Incluye procesamiento del pago y operación de la plataforma.</p>
+          <div *ngIf="emailCuentaCompra" class="carrito-account-summary" role="note">
+            <span class="material-icons" aria-hidden="true">account_circle</span>
+            <div>
+              <span class="carrito-account-summary__label">La compra quedará en esta cuenta</span>
+              <strong>{{ emailCuentaCompra }}</strong>
+            </div>
+          </div>
           <div class="total-row main">
             <h3>Total: {{ formatCurrency(getTotal()) }}</h3>
           </div>
-          <button
-            *ngIf="!checkoutPendienteEnCurso"
-            type="button"
-            class="btn-comprar btn-comprar--inline"
-            (click)="procesarCompra()"
-            [disabled]="comprando || tienePalcosIncompletos()"
-          >
-            <span class="material-icons">{{ comprando ? 'hourglass_empty' : 'shopping_cart' }}</span>
-            {{ labelBotonFinalizarCompra }}
-          </button>
+          <ng-container *ngIf="!checkoutPendienteEnCurso">
+            <a
+              *ngIf="!usuario; else finalizarCompraInline"
+              routerLink="/login"
+              [queryParams]="{ returnUrl: '/carrito', motivo: 'pagar' }"
+              class="btn-comprar btn-comprar--inline"
+            >
+              <span class="material-icons" aria-hidden="true">login</span>
+              Entrar y continuar al pago
+            </a>
+            <ng-template #finalizarCompraInline>
+              <button
+                type="button"
+                class="btn-comprar btn-comprar--inline"
+                (click)="procesarCompra()"
+                [disabled]="comprando || tienePalcosIncompletos() || (tieneLicor() && !terminosAceptados)"
+              >
+                <span class="material-icons" aria-hidden="true">{{ comprando ? 'hourglass_empty' : 'shopping_cart' }}</span>
+                {{ labelBotonFinalizarCompra }}
+              </button>
+            </ng-template>
+          </ng-container>
+          <p *ngIf="!usuario && !checkoutPendienteEnCurso" class="carrito-accion-hint">
+            Tu carrito se conservará mientras ingresas o creas tu cuenta.
+          </p>
           <p *ngIf="hintAccionCompra as hint" class="carrito-accion-hint">{{ hint }}</p>
         </div>
       </section>
@@ -534,14 +580,14 @@
         class="carrito-checkout-bar__btn"
       >
         <span class="material-icons" aria-hidden="true">login</span>
-        Entrar para pagar
+        Entrar y continuar al pago
       </a>
       <ng-template #pagarStickyLoggedBtn>
         <button
           type="button"
           class="carrito-checkout-bar__btn"
           (click)="procesarCompra()"
-          [disabled]="comprando || tienePalcosIncompletos()"
+          [disabled]="comprando || tienePalcosIncompletos() || (tieneLicor() && !terminosAceptados)"
         >
           <span class="material-icons" aria-hidden="true">{{ comprando ? 'hourglass_empty' : 'shopping_cart' }}</span>
           {{ labelBotonFinalizarCompra }}
@@ -571,6 +617,9 @@
     >
       El plazo terminó. Revisa el estado o cancela para comprar de nuevo.
     </p>
+    <p *ngIf="!usuario && !checkoutPendienteEnCurso" class="carrito-checkout-bar__hint">
+      Tu carrito se conservará mientras ingresas o creas tu cuenta.
+    </p>
     <p *ngIf="!checkoutPendienteEnCurso && hintAccionCompra as hint" class="carrito-checkout-bar__hint">{{ hint }}</p>
   </div>
 
@@ -584,33 +633,5 @@
     </div>
   </div>
   </ng-container>
-</div>
-
-<div class="licor-modal-overlay" *ngIf="modalTerminosLicor" (click)="cerrarModalTerminosLicor()" role="presentation">
-  <div class="licor-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
-    aria-labelledby="licor-modal-title">
-    <header class="licor-modal__header">
-      <div class="licor-modal__header-text">
-        <span class="licor-legal-badge licor-legal-badge--modal">+18</span>
-        <h2 id="licor-modal-title">{{ terminosLicorTitulo }}</h2>
-        <p>Lee y acepta para continuar con tu compra.</p>
-      </div>
-      <button type="button" class="licor-modal__close" (click)="cerrarModalTerminosLicor()" aria-label="Cerrar">
-        <span class="material-icons">close</span>
-      </button>
-    </header>
-
-    <div class="licor-modal__body">
-      <p *ngFor="let linea of terminosLicorLineas" class="licor-modal__line">{{ linea }}</p>
-    </div>
-<footer class="licor-modal__footer">
-  <button type="button" class="btn-secondary licor-modal__btn" (click)="cerrarModalTerminosLicor()">
-    Volver al carrito
-  </button>
-  <button type="button" class="btn-primary-modal licor-modal__btn" (click)="aceptarTerminosLicor()">
-    Aceptar y continuar
-  </button>
-</footer>
-  </div>
 </div>
 

@@ -1261,12 +1261,20 @@
   align-items: center;
   gap: 0.45rem;
   cursor: pointer;
+  text-decoration: none;
+  box-sizing: border-box;
   box-shadow: none;
   transition: background-color 0.15s ease;
 }
 
 .btn-comprar:hover:not(:disabled) {
   background: var(--carrito-pay-bg-hover);
+}
+
+.btn-comprar:focus-visible,
+.carrito-checkout-bar__btn:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-secondary, #8b5cf6) 32%, transparent);
+  outline-offset: 3px;
 }
 
 .btn-comprar .material-icons {
@@ -1571,6 +1579,44 @@ a.carrito-checkout-bar__btn {
   font-size: 0.74rem;
 }
 
+.carrito-account-summary {
+  margin: 0.7rem 0 0.25rem;
+  padding: 0.7rem 0.75rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  border: 1px solid var(--ec-border, #e2e8f0);
+  border-radius: var(--ec-radius-control, 8px);
+  background: var(--ec-chip-surface, #fafbfc);
+  color: var(--ec-text-body, #334155);
+}
+
+.carrito-account-summary > .material-icons {
+  flex: 0 0 auto;
+  margin-top: 0.05rem;
+  color: var(--color-secondary, #8b5cf6);
+  font-size: 1.15rem;
+}
+
+.carrito-account-summary div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.carrito-account-summary__label {
+  color: var(--ec-text-muted, #64748b);
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+.carrito-account-summary strong {
+  overflow-wrap: anywhere;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
 .carrito-checkout-bar__hint {
   flex: 1 1 100%;
   order: 3;
@@ -1721,6 +1767,7 @@ a.carrito-checkout-bar__btn {
   border: 1px solid var(--ec-badge-warning-border, rgba(180, 83, 9, 0.32));
   border-radius: var(--ec-radius-card, 12px);
   padding: 1rem;
+  margin-top: 0.85rem;
 }
 
 .licor-legal-card--accepted {
@@ -1758,7 +1805,7 @@ a.carrito-checkout-bar__btn {
   min-width: 0;
 }
 
-.licor-legal-card__titles h5 {
+.licor-legal-card__titles h3 {
   margin: 0;
   font-size: 0.98rem;
   color: #1e293b;
@@ -1811,6 +1858,11 @@ a.carrito-checkout-bar__btn {
   pointer-events: none;
 }
 
+.licor-legal-check:focus-within {
+  outline: 3px solid color-mix(in srgb, var(--color-secondary, #8b5cf6) 28%, transparent);
+  outline-offset: 3px;
+}
+
 .licor-legal-check__box {
   flex-shrink: 0;
   width: 1.15rem;
@@ -1844,6 +1896,41 @@ a.carrito-checkout-bar__btn {
   color: #1e293b;
   font-weight: 600;
   line-height: 1.4;
+}
+
+.licor-legal-details {
+  margin-top: 0.75rem;
+  color: var(--ec-text-muted, #64748b);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.licor-legal-details summary {
+  width: fit-content;
+  color: var(--color-secondary-dark, #7c3aed);
+  font-weight: 650;
+  cursor: pointer;
+  text-underline-offset: 0.18em;
+}
+
+.licor-legal-details summary:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-secondary, #8b5cf6) 32%, transparent);
+  outline-offset: 3px;
+}
+
+.licor-legal-details p {
+  margin: 0.55rem 0 0;
+  max-width: 68ch;
+  text-wrap: pretty;
+}
+
+.palco-exp-progress {
+  display: block;
+  margin-top: 0.45rem;
+  color: var(--ec-text-muted, #64748b);
+  font-size: 0.8rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
 }
 
 .licor-legal-link {

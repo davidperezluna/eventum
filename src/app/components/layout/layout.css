@@ -826,7 +826,7 @@
   gap: 0.75rem;
   text-decoration: none;
   cursor: pointer;
-  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
 .carrito-fab:hover {
@@ -835,7 +835,12 @@
 }
 
 .carrito-fab:active {
-  transform: none;
+  transform: translateY(1px);
+}
+
+.carrito-fab:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-secondary, #8b5cf6) 32%, transparent);
+  outline-offset: 3px;
 }
 
 .carrito-fab__total {

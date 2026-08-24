@@ -35,7 +35,7 @@ import { irALoginCliente } from '../../core/login-redirect';
 import { CoversService } from '../../services/covers.service';
 import { TransaccionesCheckoutService } from '../../services/transacciones-checkout.service';
 import { labelSesionCover } from '../../core/covers-labels';
-import { TERMINOS_LICOR_TEXTO, TERMINOS_LICOR_TITULO } from '../../constants/productos.constants';
+import { TERMINOS_LICOR_TEXTO } from '../../constants/productos.constants';
 import {
   DetalleEventoState,
   DetalleEventoStateService,
@@ -73,8 +73,6 @@ export class Carrito implements OnInit, OnDestroy {
   comprando = false;
   vaciandoCarrito = false;
   terminosAceptados = false;
-  modalTerminosLicor = false;
-  readonly terminosLicorTitulo = TERMINOS_LICOR_TITULO;
   readonly terminosLicorTexto = TERMINOS_LICOR_TEXTO;
 
   palcosDisponiblesPorTipo = new Map<number, Palco[]>();
@@ -161,7 +159,6 @@ export class Carrito implements OnInit, OnDestroy {
           ...item,
           palco_ids: item.palco_ids ? [...item.palco_ids] : undefined
         }));
-        this.limpiarCuponSiCompraMixta();
         const eventoId = this.evento?.id ?? this.carritoCompraService.getEventoSnapshot()?.id;
         const tieneCache = !!(eventoId && this.detalleEventoStateService.getState(eventoId));
         void this.refrescarPalcosDisponibles({ background: tieneCache });
@@ -188,7 +185,6 @@ export class Carrito implements OnInit, OnDestroy {
           ...item,
           producto: { ...item.producto }
         }));
-        this.limpiarCuponSiCompraMixta();
       })
     );
 
@@ -372,17 +368,7 @@ export class Carrito implements OnInit, OnDestroy {
 
   get mostrarCupon(): boolean {
     if (this.itemsCompra.length === 0) return false;
-    if (this.esCompraMixtaBoletasProductos) return false;
     return !!this.usuario || !!this.authService.getCurrentUser();
-  }
-
-  /** El cupón solo aplica a boletas; en compra mixta se descarta. */
-  private limpiarCuponSiCompraMixta(): void {
-    if (!this.esCompraMixtaBoletasProductos) return;
-    if (this.cuponAplicado || this.codigoCupon.trim() || this.cuponAbierto) {
-      this.carritoCompraService.clearCupon();
-      this.cuponRestaurado = false;
-    }
   }
 
   /** Correo de la cuenta Eventum a la que se vincularán boletas/productos tras pagar. */
@@ -414,12 +400,19 @@ export class Carrito implements OnInit, OnDestroy {
 
   get labelBotonFinalizarCompra(): string {
     if (this.comprando) {
-      return 'Procesando…';
+      return 'Preparando el pago…';
     }
     if (this.checkoutPendienteEnCurso) {
       return 'Pago en curso: recupéralo o cancélalo';
     }
-    return 'Finalizar compra';
+    const total = this.getTotal();
+    if (total === 0) {
+      return 'Confirmar compra gratis';
+    }
+    if (this.tieneLicor() && !this.terminosAceptados) {
+      return `Revisar condiciones y pagar ${this.formatCurrency(total)}`;
+    }
+    return `Pagar ${this.formatCurrency(total)} con Wompi`;
   }
 
   totalUnidadesBoletasEnCarrito(): number {
@@ -527,14 +520,8 @@ export class Carrito implements OnInit, OnDestroy {
     this.carritoCompraService.eliminarProductoDelCarrito(item.producto.id);
   }
 
-  async aceptarTerminosLicor(): Promise<void> {
-    this.terminosAceptados = true;
-    this.cerrarModalTerminosLicor();
-    await this.procesarCompra();
-  }
-
-  cerrarModalTerminosLicor(): void {
-    this.modalTerminosLicor = false;
+  onTerminosLicorChange(event: Event): void {
+    this.terminosAceptados = (event.target as HTMLInputElement).checked;
   }
 
   get terminosLicorLineas(): string[] {
@@ -1273,7 +1260,7 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   getDescuento(): number {
-    if (!this.cuponAplicado || this.esCompraMixtaBoletasProductos) return 0;
+    if (!this.cuponAplicado) return 0;
     return (this.getSubtotalBoletas() * this.cuponAplicado.porcentaje_descuento) / 100;
   }
 
@@ -1439,11 +1426,6 @@ export class Carrito implements OnInit, OnDestroy {
 
   private async restaurarCuponDesdeCache(): Promise<void> {
     if (!this.usuario || !this.evento?.id || this.cuponRestaurado) return;
-    if (this.esCompraMixtaBoletasProductos) {
-      this.limpiarCuponSiCompraMixta();
-      return;
-    }
-
     const cuponCache = this.carritoCompraService.getCuponSnapshot();
     if (cuponCache.eventoId !== this.evento.id) return;
 
@@ -1644,6 +1626,10 @@ export class Carrito implements OnInit, OnDestroy {
     return ids.every((id) => id != null);
   }
 
+  palcosSeleccionadosCount(item: ItemCarritoEvento): number {
+    return (item.palco_ids || []).filter((id) => id != null).length;
+  }
+
   numeroPalcoPorId(item: ItemCarritoEvento, palcoId: number | null | undefined): number | null {
     if (palcoId == null) return null;
     const listCatalogo = this.palcosCatalogoPorTipo.get(item.tipo.id) || [];
@@ -1793,7 +1779,10 @@ export class Carrito implements OnInit, OnDestroy {
     }
 
     if (this.tieneLicor() && !this.terminosAceptados) {
-      this.modalTerminosLicor = true;
+      this.alertService.warning(
+        'Confirma el requisito de edad',
+        'Marca la casilla de productos +18 antes de continuar al pago.'
+      );
       return;
     }
 

@@ -16,11 +16,11 @@
       <h1 class="pago-panel__title">{{ errorTitulo }}</h1>
       <p class="pago-panel__lead">{{ error }}</p>
       <div class="pago-panel__actions">
-        <button type="button" class="btn btn-primary" (click)="router.navigate(['/mis-compras'])">
-          Ir a Mis compras
+        <button type="button" class="btn btn-primary" (click)="volverAIntentar()">
+          Volver a mi carrito
         </button>
-        <button type="button" class="btn btn-secondary" (click)="router.navigate(['/eventos-cliente'])">
-          Explorar eventos
+        <button type="button" class="btn btn-secondary" (click)="router.navigate(['/mis-compras'])">
+          Revisar Mis compras
         </button>
       </div>
     </article>
@@ -113,7 +113,7 @@
       <div class="pago-panel__actions">
         <ng-container *ngIf="getEstadoPagoReferencia() === 'completado'">
           <button type="button" class="btn btn-primary" (click)="router.navigate(['/mis-compras'])">
-            Ver en Mis compras
+            {{ labelAccionCompraConfirmada }}
           </button>
           <button type="button" class="btn btn-secondary" (click)="router.navigate(['/eventos-cliente'])">
             Explorar eventos
@@ -131,8 +131,8 @@
           </button>
         </ng-container>
         <ng-container *ngIf="getEstadoPagoReferencia() === 'fallido'">
-          <button type="button" class="btn btn-primary" (click)="router.navigate(['/eventos-cliente'])">
-            Intentar de nuevo desde eventos
+          <button type="button" class="btn btn-primary" (click)="volverAIntentar()">
+            Volver a mi carrito
           </button>
           <button type="button" class="btn btn-secondary" (click)="router.navigate(['/mis-compras'])">
             Ir a Mis compras

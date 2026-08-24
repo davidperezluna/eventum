@@ -45,7 +45,7 @@
           <div class="tipo-info">
             <div class="tipo-info-metricas" *ngIf="mostrarMetricasEntradasDisponibles">
               <span class="disponibles">{{ tipo.cantidad_disponibles }} disponibles</span>
-              <span class="reservados" [class.reservados--cero]="cantidadPalcosReservados(tipo) === 0">
+              <span *ngIf="cantidadPalcosReservados(tipo) > 0" class="reservados">
                 {{ cantidadPalcosReservados(tipo) }} reservados
               </span>
               <span *ngIf="tipo.cantidad_vendidas !== undefined && tipo.cantidad_vendidas > 0" class="vendidas">
@@ -53,8 +53,11 @@
               </span>
             </div>
             <span *ngIf="tipo.limite_por_persona" class="limite">Máx. {{ tipo.limite_por_persona }} por persona</span>
+            <span *ngIf="getPorcentajeServicio() > 0" class="precio-con-servicio">
+              Total con servicio: {{ formatCurrency(getPrecioBoletaConServicio(tipo)) }}
+            </span>
             <span *ngIf="esLineaPalcoMultipersona(tipo)" class="palco-badge">
-              Palco: {{ cuposPorPalco(tipo) }} pers. por unidad · inventario en palcos
+              Precio por palco · incluye {{ cuposPorPalco(tipo) }} personas · elegirás la ubicación antes de pagar
             </span>
             <div *ngIf="mostrarFinVentaTipo(tipo) && tipo.fecha_venta_fin" class="fin-venta-block">
               <span class="fin-venta-tipo">Fin de venta: {{ tipo.fecha_venta_fin | dateFormat:'short' }}</span>
@@ -63,17 +66,17 @@
           </div>
           <div class="tipo-actions">
             <div class="cantidad-controls" *ngIf="getCantidadBoleta(tipo.id) > 0">
-              <button type="button" class="btn-cantidad" (click)="quitarBoleta(tipo)" aria-label="Quitar uno">−</button>
+              <button type="button" class="btn-cantidad" (click)="quitarBoleta(tipo)" [attr.aria-label]="'Quitar 1 ' + tipo.nombre">−</button>
               <span class="cantidad">{{ getCantidadBoleta(tipo.id) }}</span>
               <button
                 type="button"
                 class="btn-cantidad"
                 (click)="agregarBoleta(tipo)"
                 [disabled]="!puedeAgregarMasBoletas(tipo)"
-                aria-label="Agregar uno"
+                [attr.aria-label]="'Agregar 1 ' + tipo.nombre"
               >+</button>
-              <button type="button" class="btn-remove" (click)="eliminarBoleta(tipo)" aria-label="Quitar del carrito">
-                <span class="material-icons">delete_outline</span>
+              <button type="button" class="btn-remove" (click)="eliminarBoleta(tipo)" [attr.aria-label]="'Eliminar ' + tipo.nombre + ' del carrito'">
+                <span class="material-icons" aria-hidden="true">delete_outline</span>
               </button>
             </div>
             <button *ngIf="getCantidadBoleta(tipo.id) === 0" type="button" class="btn-add" (click)="agregarBoleta(tipo)">

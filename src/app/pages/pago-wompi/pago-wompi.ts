@@ -1,7 +1,6 @@
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { CarritoCompraService } from '../../services/carrito-compra.service';
 import { ComprasProductoService } from '../../services/compras-producto.service';
 import { AlertService } from '../../services/alert.service';
 import { AuthService } from '../../services/auth.service';
@@ -83,7 +82,6 @@ export class PagoWompi implements OnInit, OnDestroy {
 
   constructor(
     public router: Router,
-    private carritoCompraService: CarritoCompraService,
     private comprasProductoService: ComprasProductoService,
     private alertService: AlertService,
     private authService: AuthService,
@@ -141,7 +139,7 @@ export class PagoWompi implements OnInit, OnDestroy {
     if (this.payload?.linkExpiro || this.isLinkExpirado()) {
       return this.compraCopy.pagoWompiGenerarNuevoLink;
     }
-    return this.compraCopy.pagoWompiContinuar;
+    return `${this.compraCopy.pagoWompiContinuar} ${this.formatCurrency(this.payload?.totalPago ?? 0)}`;
   }
 
   mostrarCountdownRecuperacion(): boolean {
@@ -240,9 +238,6 @@ export class PagoWompi implements OnInit, OnDestroy {
         throw new Error('No se obtuvo URL de checkout');
       }
 
-      if (!this.carritoCompraService.estaVacio()) {
-        this.carritoCompraService.vaciarCarrito();
-      }
       window.location.href = checkoutUrl;
     } catch (error: unknown) {
       this.redirigiendo = false;

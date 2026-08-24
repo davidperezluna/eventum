@@ -1,5 +1,6 @@
 import { Component, HostBinding, Input, Output, EventEmitter, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { ProductosService } from '../../services/productos.service';
 import { CarritoCompraService } from '../../services/carrito-compra.service';
@@ -14,7 +15,7 @@ export type ProductosCompraContexto = 'detalle' | 'carrito';
 
 @Component({
   selector: 'app-evento-productos-tab',
-  imports: [CommonModule, DateFormatPipe, EvNotice],
+  imports: [CommonModule, RouterLink, DateFormatPipe, EvNotice],
   templateUrl: './evento-productos-tab.html',
   styleUrl: './evento-productos-tab.css'
 })
@@ -144,6 +145,16 @@ export class EventoProductosTab implements OnInit, OnDestroy {
       return this.getPrecioEvento(producto);
     }
     return this.getPrecioPreventa(producto);
+  }
+
+  getPorcentajeServicio(): number {
+    const raw = Number(this.evento?.porcentaje_servicio ?? 0);
+    if (!Number.isFinite(raw)) return 0;
+    return Math.min(100, Math.max(0, raw));
+  }
+
+  getPrecioConServicio(producto: Producto): number {
+    return this.getPrecioVigente(producto) * (1 + this.getPorcentajeServicio() / 100);
   }
 
   tienePrecioDiferenciado(producto: Producto): boolean {

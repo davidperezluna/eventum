@@ -846,6 +846,10 @@ export class DetalleEvento implements OnInit, OnDestroy {
     return Math.min(100, Math.max(0, raw));
   }
 
+  getPrecioBoletaConServicio(tipo: TipoBoleta): number {
+    return Number(tipo.precio || 0) * (1 + this.getPorcentajeServicio() / 100);
+  }
+
   getBaseNetaBoletas(): number {
     return Math.max(0, this.getSubtotalBoletas() - this.getDescuento());
   }

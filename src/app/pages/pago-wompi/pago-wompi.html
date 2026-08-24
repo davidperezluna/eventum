@@ -10,7 +10,8 @@
         <span class="material-icons">lock</span>
       </div>
 
-      <h1 class="pago-wompi-panel__title">Confirma tu cuenta antes de pagar</h1>
+      <p class="pago-wompi-panel__step">Último paso</p>
+      <h1 class="pago-wompi-panel__title">Revisa y continúa al pago</h1>
       <p class="pago-wompi-panel__lead">{{ compraCopy.pagoWompiLead }}</p>
 
       <app-compra-vinculo-aviso
@@ -67,6 +68,14 @@
         </dl>
       </section>
 
+      <div class="pago-wompi-external" role="note">
+        <span class="material-icons" aria-hidden="true">open_in_new</span>
+        <p>
+          El pago se completa de forma segura en Wompi. Si cierras la pasarela o vuelves atrás,
+          tu carrito seguirá guardado.
+        </p>
+      </div>
+
       <div
         *ngIf="mostrarCountdownRecuperacion()"
         class="pago-wompi-vence-aviso"
@@ -114,6 +123,7 @@
           class="btn btn-primary"
           (click)="continuarAWompi()"
           [disabled]="redirigiendo || expirandoLink"
+          [attr.aria-label]="labelBotonContinuar"
         >
           <span class="material-icons" aria-hidden="true">{{ redirigiendo ? 'hourglass_empty' : 'payment' }}</span>
           {{ labelBotonContinuar }}

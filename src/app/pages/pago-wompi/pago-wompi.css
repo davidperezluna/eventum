@@ -67,6 +67,15 @@
   text-wrap: balance;
 }
 
+.pago-wompi-panel__step {
+  margin: 0 0 0.35rem;
+  color: var(--ec-accent-strong, #7c3aed);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .pago-wompi-panel__lead {
   margin: 0 0 1.15rem;
   max-width: 26rem;
@@ -202,6 +211,34 @@
   font-size: 1.05rem;
   font-weight: 800;
   color: var(--color-secondary, #8b5cf6);
+}
+
+.pago-wompi-external {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  width: 100%;
+  margin: -0.25rem 0 1rem;
+  padding: 0.75rem 0.85rem;
+  box-sizing: border-box;
+  border-radius: var(--ec-radius-control, 8px);
+  background: var(--ec-accent-soft, #f5f3ff);
+  color: var(--ec-text, #334155);
+  text-align: left;
+}
+
+.pago-wompi-external .material-icons {
+  flex: 0 0 auto;
+  margin-top: 0.05rem;
+  color: var(--ec-accent, #8b5cf6);
+  font-size: 1.15rem;
+}
+
+.pago-wompi-external p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  text-wrap: pretty;
 }
 
 .pago-wompi-vence-aviso {
@@ -388,6 +425,12 @@
 .btn-secondary:hover {
   background: var(--ec-surface-muted, #f1f5f9);
   border-color: #cbd5e1;
+}
+
+.btn:focus-visible,
+.pago-wompi-vence-aviso__cancelar:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--ec-accent, #8b5cf6) 38%, transparent);
+  outline-offset: 2px;
 }
 
 @media (min-width: 540px) {

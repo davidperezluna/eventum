@@ -224,6 +224,16 @@ export class CarritoAgregar implements OnInit, OnDestroy {
     }).format(value);
   }
 
+  getPorcentajeServicio(): number {
+    const raw = Number(this.evento?.porcentaje_servicio ?? 0);
+    if (!Number.isFinite(raw)) return 0;
+    return Math.min(100, Math.max(0, raw));
+  }
+
+  getPrecioBoletaConServicio(tipo: TipoBoleta): number {
+    return Number(tipo.precio || 0) * (1 + this.getPorcentajeServicio() / 100);
+  }
+
   async agregarBoleta(tipo: TipoBoleta): Promise<void> {
     if (!this.puedeAgregarMasBoletas(tipo) || !this.evento) return;
     const ok = await resolverConflictoEventoAntesDeAgregar(

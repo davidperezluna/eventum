@@ -131,7 +131,25 @@ export class PagoResultado implements OnInit {
   private limpiarReferenciasPendientes(): void {
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.removeItem(PAGO_PENDIENTE_STORAGE_KEY);
+      sessionStorage.removeItem('eventum_wompi_checkout');
     }
+  }
+
+  volverAIntentar(): void {
+    void this.router.navigate(['/carrito']);
+  }
+
+  get labelAccionCompraConfirmada(): string {
+    if (this.compra && (this.compraProducto || this.transaccionProducto)) {
+      return 'Ver compra y códigos QR';
+    }
+    if (this.compra) {
+      return 'Ver mis boletas';
+    }
+    if (this.compraProducto || this.transaccionProducto) {
+      return 'Ver pedido y código QR';
+    }
+    return 'Ver en Mis compras';
   }
 
   private vaciarCarritoTrasCompraExitosa(): void {
@@ -308,7 +326,9 @@ export class PagoResultado implements OnInit {
 
         this.loading = false;
         this.error = null;
-        this.limpiarReferenciasPendientes();
+        if (this.getEstadoPagoReferencia() === 'completado') {
+          this.limpiarReferenciasPendientes();
+        }
         this.vaciarCarritoTrasCompraExitosa();
         this.cdr.detectChanges();
         return;

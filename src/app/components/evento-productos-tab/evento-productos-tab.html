@@ -30,7 +30,7 @@
     >
       <div class="pc-card__inner" [class.pc-card__inner--sin-imagen]="!producto.imagen_url">
         <div class="pc-card__visual" *ngIf="producto.imagen_url">
-          <img [src]="producto.imagen_url" [alt]="producto.nombre" loading="lazy" />
+          <img [src]="producto.imagen_url" [alt]="producto.nombre" width="144" height="144" loading="lazy" />
         </div>
 
         <div class="pc-card__content">
@@ -69,6 +69,18 @@
             <span *ngIf="producto.es_licor" class="pc-chip pc-chip--licor">+18</span>
             <span *ngIf="!tieneExistencias(producto)" class="pc-chip pc-chip--soldout">Agotado</span>
           </div>
+          <p *ngIf="getPorcentajeServicio() > 0" class="pc-card__service-price">
+            Total con servicio: <strong>{{ formatCurrency(getPrecioConServicio(producto)) }}</strong>
+          </p>
+
+          <p class="pc-card__delivery">
+            <span class="material-icons" aria-hidden="true">qr_code_2</span>
+            <span class="pc-card__delivery-text">
+              Retira con el QR de tu pedido durante el evento.<ng-container *ngIf="producto.es_licor">
+                Presenta también tu documento de identidad.
+              </ng-container>
+            </span>
+          </p>
 
           <p *ngIf="producto.fecha_venta_fin" class="pc-card__fin-venta">
             Fin de venta {{ producto.fecha_venta_fin | dateFormat:'short' }}
@@ -82,23 +94,25 @@
             type="button"
             class="pc-stepper__btn"
             (click)="quitarDelCarrito(producto)"
-            aria-label="Quitar uno"
+            [attr.aria-label]="'Quitar 1 ' + producto.nombre"
           >−</button>
-          <span class="pc-stepper__qty">{{ cantidadEnCarrito(producto.id) }}</span>
+          <span class="pc-stepper__qty" aria-live="polite" [attr.aria-label]="cantidadEnCarrito(producto.id) + ' en el carrito'">
+            {{ cantidadEnCarrito(producto.id) }}
+          </span>
           <button
             type="button"
             class="pc-stepper__btn"
             (click)="agregarAlCarrito(producto)"
             [disabled]="!puedeAgregarMasProductos(producto)"
-            aria-label="Agregar uno"
+            [attr.aria-label]="'Agregar 1 ' + producto.nombre"
           >+</button>
           <button
             type="button"
             class="pc-stepper__remove"
             (click)="eliminarDelCarrito(producto)"
-            aria-label="Quitar del carrito"
+            [attr.aria-label]="'Eliminar ' + producto.nombre + ' del carrito'"
           >
-            <span class="material-icons">delete_outline</span>
+            <span class="material-icons" aria-hidden="true">delete_outline</span>
           </button>
         </div>
         <ng-template #pcAddBtn>
@@ -112,6 +126,11 @@
             Agregar al carrito
           </button>
         </ng-template>
+        <div *ngIf="cantidadEnCarrito(producto.id) > 0" class="pc-added" role="status" aria-live="polite">
+          <span class="material-icons" aria-hidden="true">check_circle</span>
+          <span>Agregado al carrito</span>
+          <a routerLink="/carrito">Ver carrito</a>
+        </div>
       </div>
     </li>
   </ul>

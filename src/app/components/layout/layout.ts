@@ -214,9 +214,6 @@ export class Layout implements OnInit, OnDestroy {
   }
 
   get mostrarCarritoFab(): boolean {
-    if (!this.currentUser || !this.usuario) {
-      return false;
-    }
     if (this.totalItemsCarrito <= 0 || this.enRutaCarrito || this.enRutaPagoWompi) {
       return false;
     }
@@ -228,6 +225,10 @@ export class Layout implements OnInit, OnDestroy {
       return false;
     }
     return true;
+  }
+
+  get carritoItemsLabel(): string {
+    return this.totalItemsCarrito === 1 ? '1 artículo' : `${this.totalItemsCarrito} artículos`;
   }
 
   irACarrito(): void {

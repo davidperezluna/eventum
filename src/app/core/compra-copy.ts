@@ -12,8 +12,8 @@ export const COMPRA_COPY = {
     'Si el recibo de la pasarela llegó a otro correo, es solo el comprobante del banco.',
   wompiReciboNotaPostPagoBoletas:
     'Si el recibo de la pasarela llegó a otro correo, es solo el comprobante del banco. Tus entradas no se envían por correo: consúltalas en Mis compras dentro de la app.',
-  pagoWompiContinuar: 'Continuar a la pasarela',
-  pagoWompiContinuarRecuperacion: 'Continuar al pago pendiente',
+  pagoWompiContinuar: 'Ir a Wompi y pagar',
+  pagoWompiContinuarRecuperacion: 'Retomar pago en Wompi',
   pagoWompiGenerarNuevoLink: 'Generar nuevo link de pago',
   pagoWompiCancelarPago: 'Cancelar pago',
   pagoWompiLinkExpiradoHint: 'El link de pago venció. Al continuar generamos uno nuevo.',
@@ -25,7 +25,7 @@ export const COMPRA_COPY = {
   cuponMixtoTitulo: 'Cupón no disponible en compra mixta',
   cuponMixtoTexto:
     'Boletas y productos se pagan en un solo pedido. Si quieres usar un descuento, compra cada tipo por separado.',
-  pagoWompiLead: 'Confirma que sea el correo donde quieres ver tu compra.',
+  pagoWompiLead: 'Revisa el total y la cuenta donde quedará guardada tu compra.',
   pagoResultadoLeadCompletado: 'Tu pago se procesó correctamente.',
   pagoResultadoLeadPendiente: 'Estamos confirmando el pago con tu banco o Wompi.',
   pagoResultadoLeadCompletadoSinEmail:

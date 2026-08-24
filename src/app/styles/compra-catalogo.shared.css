@@ -183,6 +183,12 @@
   font-weight: 600;
 }
 
+.tipo-info .precio-con-servicio {
+  color: var(--ec-text-body, #334155);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 .tipo-info .palco-badge {
   flex-basis: 100%;
   background: var(--ec-chip-surface, #fafbfc);
