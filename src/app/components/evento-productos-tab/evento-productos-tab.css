@@ -329,34 +329,42 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
-  min-height: 44px;
-  border-radius: 10px;
-  background: var(--ec-surface, #fff);
-  color: #5b21b6;
-  border: 1px solid #e9e5ff;
-  font-size: 0.88rem;
-  font-weight: 700;
+  gap: 0.4rem;
+  min-height: 2.875rem;
+  padding: 0.7rem 1rem;
+  border-radius: 0.65rem;
+  background: var(--de-ink, #17151d);
+  color: #fff;
+  border: 1px solid var(--de-ink, #17151d);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 750;
+  line-height: 1.2;
   cursor: pointer;
-  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
   box-shadow: none;
 }
 
 .pc-add-btn .material-icons {
   font-size: 1.1rem;
-  color: #7c3aed;
+  color: #fff;
 }
 
 .pc-add-btn:hover:not(:disabled) {
-  background: #faf5ff;
-  border-color: #ddd6fe;
-  color: #4c1d95;
-  filter: none;
+  background: #2a2631;
+  border-color: #2a2631;
+  color: #fff;
+  transform: translateY(-1px);
 }
 
 .pc-add-btn:active:not(:disabled) {
-  background: #f3e8ff;
-  transform: none;
+  background: #2a2631;
+  transform: translateY(1px);
+}
+
+.pc-add-btn:focus-visible {
+  outline: 2px solid var(--de-accent, #7548e8);
+  outline-offset: 3px;
 }
 
 .pc-add-btn:disabled {
@@ -485,5 +493,69 @@
 @media (min-width: 900px) {
   .pc-list {
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+}
+
+/* Jerarquía compartida con las tarjetas de entradas. */
+.pc-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+}
+
+.pc-card--licor {
+  border-left: 1px solid var(--ec-border, #e8edf3);
+}
+
+.pc-card__inner {
+  flex: 1;
+}
+
+.pc-card__head {
+  align-items: baseline;
+}
+
+.pc-card__head .pc-card__precio {
+  flex: 0 0 auto;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.pc-card__subtitle {
+  margin: -0.05rem 0 0.12rem;
+}
+
+.pc-card__pricing {
+  min-height: 1.35rem;
+}
+
+.pc-estado-precio {
+  padding: 0.15rem 0.4rem;
+}
+
+.pc-card__meta {
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--ec-border, #e8edf3);
+}
+
+.pc-card__delivery {
+  margin-top: auto;
+  padding-top: 0.45rem;
+}
+
+.pc-card__footer {
+  margin-top: auto;
+  padding: 0.7rem 0.85rem 0.85rem;
+}
+
+@media (max-width: 480px) {
+  .pc-card__head {
+    gap: 0.75rem;
+  }
+
+  .pc-card__title,
+  .pc-card__head .pc-card__precio {
+    font-size: 0.92rem;
   }
 }

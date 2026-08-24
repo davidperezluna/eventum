@@ -37,16 +37,17 @@
           <div class="pc-card__head">
             <div class="pc-card__title-block">
               <h3 class="pc-card__title">{{ producto.nombre }}</h3>
-              <p *ngIf="descripcionProductoVisible(producto)" class="pc-card__subtitle">{{ producto.descripcion }}</p>
             </div>
+            <span class="pc-card__precio">{{ formatCurrency(getPrecioVigente(producto)) }}</span>
+          </div>
+
+          <p *ngIf="descripcionProductoVisible(producto)" class="pc-card__subtitle">{{ producto.descripcion }}</p>
+
+          <div class="pc-card__pricing">
             <span
               class="pc-estado-precio"
               [class.pc-estado-precio--evento]="precioEventoVigente()"
             >{{ getEstadoPrecioLabel() }}</span>
-          </div>
-
-          <div class="pc-card__pricing">
-            <span class="pc-card__precio">{{ formatCurrency(getPrecioVigente(producto)) }}</span>
             <span
               *ngIf="tienePrecioDiferenciado(producto)"
               class="pc-card__precio-ref"

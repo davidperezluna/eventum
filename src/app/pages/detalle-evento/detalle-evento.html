@@ -47,6 +47,7 @@
         <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="eager" />
       </button>
       <div class="evento-info-header">
+        <p class="evento-overline">Eventum presenta</p>
         <div class="evento-title-section">
           <h1 class="evento-title-desktop">{{ evento.titulo }}</h1>
           <div class="evento-badges">
@@ -70,13 +71,16 @@
             <div class="cupos-hub-copy">
               <span class="material-icons cupos-hub-icon" aria-hidden="true">forum</span>
               <div>
+                <span class="cupos-hub-kicker">Comunidad Eventum</span>
                 <h2 id="cupos-hub-detalle-title" class="cupos-hub-title">{{ cuposLabels.module }}</h2>
                 <p class="cupos-hub-text">{{ cuposLabels.hubTextEvento }}</p>
               </div>
             </div>
             <div class="cupos-hub-actions">
-              <a [routerLink]="['/cupos-evento', evento.id]" class="cupos-hub-link">{{ cuposLabels.tablon }}</a>
-              <a routerLink="/cupos" class="cupos-hub-link">{{ cuposLabels.explorar }}</a>
+              <a [routerLink]="['/cupos-evento', evento.id]" class="cupos-hub-link">
+                Ver cupos disponibles
+                <span class="material-icons" aria-hidden="true">arrow_forward</span>
+              </a>
             </div>
           </div>
         </section>
@@ -84,7 +88,7 @@
           <span *ngFor="let tag of getTags()" class="evento-tag">{{ tag }}</span>
         </div>
         <div class="evento-meta">
-          <div class="meta-group">
+          <div class="meta-group meta-group--schedule">
             <p class="meta-group-label">Fecha y hora</p>
             <div class="meta-group-grid">
               <div class="meta-item">
@@ -110,7 +114,7 @@
               </div>
             </div>
           </div>
-          <div class="meta-group" *ngIf="evento.fecha_venta_inicio || evento.fecha_venta_fin">
+          <div class="meta-group meta-group--sales" *ngIf="evento.fecha_venta_inicio || evento.fecha_venta_fin">
             <p class="meta-group-label">Venta en linea</p>
             <div class="meta-group-grid">
               <div class="meta-item" *ngIf="evento.fecha_venta_inicio">

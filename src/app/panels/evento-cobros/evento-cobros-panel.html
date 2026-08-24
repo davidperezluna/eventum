@@ -29,13 +29,14 @@
             <ev-number-input
               id="cobros-servicio"
               mode="decimal"
-              [min]="0"
+              [min]="8"
               [max]="100"
               [(ngModel)]="porcentajeServicio"
               (ngModelChange)="onFormChange()"
-              placeholder="0"
+              placeholder="8"
               [disabled]="saving"
             />
+            <p class="ev-field__hint">Mínimo 8 %.</p>
           </div>
           <div class="ev-field">
             <label class="ev-field__label" for="cobros-wompi">

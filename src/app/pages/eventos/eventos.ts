@@ -680,7 +680,7 @@ export class Eventos implements OnInit, OnDestroy {
         es_gratis: false,
         edad_minima: 0,
         destacado: false,
-        porcentaje_servicio: 0
+        porcentaje_servicio: 8
       };
     }
     this.wizardSelectToken += 1;
@@ -1098,8 +1098,8 @@ export class Eventos implements OnInit, OnDestroy {
     }
 
     const porcentajeServicio = Number(this.formData.porcentaje_servicio ?? 0);
-    if (!Number.isFinite(porcentajeServicio) || porcentajeServicio < 0 || porcentajeServicio > 100) {
-      this.alertService.warning('Porcentaje inválido', 'El porcentaje de servicio debe estar entre 0 y 100');
+    if (!this.formData.es_gratis && (!Number.isFinite(porcentajeServicio) || porcentajeServicio < 8 || porcentajeServicio > 100)) {
+      this.alertService.warning('Porcentaje inválido', 'El porcentaje de servicio por venta online debe estar entre 8 % y 100 %.');
       return;
     }
 
@@ -1130,7 +1130,7 @@ export class Eventos implements OnInit, OnDestroy {
       organizador_id: this.formData.organizador_id || 0,
       // Agregar URL de imagen
       imagen_principal: imagenUrl || undefined,
-      porcentaje_servicio: porcentajeServicio,
+      porcentaje_servicio: this.formData.es_gratis ? 0 : porcentajeServicio,
       wompi_cuenta_id: this.isShowcaseMode ? null : (this.formData.wompi_cuenta_id ?? null)
     };
 

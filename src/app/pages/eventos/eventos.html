@@ -499,8 +499,9 @@
               </p>
               <div class="ev-form-grid ev-form-grid--2" *ngIf="!formData.es_gratis">
                 <div class="ev-field">
-                  <label class="ev-field__label" for="evento-servicio">Servicio (%)</label>
-                  <input id="evento-servicio" type="number" step="0.01" class="ev-input" [(ngModel)]="formData.porcentaje_servicio" min="0" max="100" placeholder="0" />
+                  <label class="ev-field__label" for="evento-servicio">Porcentaje de servicio por venta online</label>
+                  <input id="evento-servicio" type="number" step="0.01" class="ev-input" [(ngModel)]="formData.porcentaje_servicio" min="8" max="100" placeholder="8" />
+                  <p class="ev-field__hint">Mínimo 8 %.</p>
                 </div>
               </div>
               <div class="ev-form-grid ev-form-grid--2">

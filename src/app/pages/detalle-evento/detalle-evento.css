@@ -3743,3 +3743,597 @@
     line-height: 1.2;
   }
 }
+
+/* =========================================
+   DETALLE EVENTO — acceso premium v3
+   ========================================= */
+.detalle-evento-page {
+  --de-ink: #17151d;
+  --de-muted: #6f6a78;
+  --de-line: #e9e5ec;
+  --de-accent: #7548e8;
+  --de-accent-soft: #f6f2ff;
+  background: #fff;
+  color: var(--de-ink);
+}
+
+.evento-detalle {
+  max-width: 72rem;
+  margin-inline: auto;
+}
+
+.evento-overline,
+.cupos-hub-kicker {
+  margin: 0;
+  color: var(--de-accent);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.evento-title-desktop,
+.client-page-header__title,
+.section-heading-row h2,
+.tipo-boleta-header h3,
+.detalle-zone-title {
+  color: var(--de-ink);
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.evento-header {
+  border: 1px solid var(--de-line);
+  background: #fff;
+  box-shadow: 0 1rem 3rem rgba(44, 34, 62, 0.07);
+}
+
+.evento-info-header {
+  background: #fff;
+}
+
+.evento-chip--categoria,
+.evento-header-tags {
+  display: none;
+}
+
+.cupos-hub--detalle {
+  margin: 0;
+}
+
+.cupos-hub--detalle .cupos-hub-inner {
+  position: relative;
+  align-items: center;
+  padding: 0.95rem 0;
+  border: 0;
+  border-top: 1px solid var(--de-line);
+  border-bottom: 1px solid var(--de-line);
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.cupos-hub--detalle .cupos-hub-inner::after {
+  content: "";
+  position: absolute;
+  right: 0.3rem;
+  width: 3.8rem;
+  height: 3.8rem;
+  border: 1px solid #ece5ff;
+  border-radius: 50%;
+  transform: translateX(55%);
+  pointer-events: none;
+}
+
+.cupos-hub--detalle .cupos-hub-copy {
+  gap: 0.7rem;
+}
+
+.cupos-hub--detalle .cupos-hub-icon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 0.55rem;
+  background: var(--de-ink);
+  color: #fff;
+  font-size: 1rem;
+  box-shadow: 0 0.35rem 0.8rem rgba(23, 21, 29, 0.16);
+}
+
+.cupos-hub--detalle .cupos-hub-title {
+  margin-top: 0.18rem;
+  color: var(--de-ink);
+  font-size: 0.88rem;
+  letter-spacing: -0.02em;
+}
+
+.cupos-hub--detalle .cupos-hub-text {
+  margin-top: 0.14rem;
+  max-width: 36ch;
+  color: var(--de-muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.cupos-hub--detalle .cupos-hub-link {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--de-accent);
+  font-size: 0.72rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.cupos-hub--detalle .cupos-hub-link .material-icons {
+  font-size: 0.95rem;
+  transition: transform 180ms ease;
+}
+
+.cupos-hub--detalle .cupos-hub-link:hover .material-icons {
+  transform: translateX(0.18rem);
+}
+
+.evento-meta {
+  border-top: 0;
+}
+
+.meta-group {
+  min-width: 0;
+}
+
+.meta-group-label {
+  color: #8a8491;
+  font-size: 0.62rem;
+  letter-spacing: 0.13em;
+}
+
+.meta-item .material-icons {
+  color: var(--de-ink);
+}
+
+.meta-item strong {
+  color: #8a8491;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.meta-item span:last-child,
+.meta-precio-texto {
+  color: var(--de-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.detalle-zone--compra {
+  margin-top: 1.15rem;
+}
+
+.detalle-compra-tabs {
+  padding: 0.25rem;
+  border: 1px solid var(--de-line);
+  border-radius: 0.75rem;
+  background: #f8f7fa;
+}
+
+.detalle-compra-tab {
+  min-height: 2.75rem;
+  border-radius: 0.56rem;
+  color: var(--de-muted);
+  transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+
+.detalle-compra-tab.active {
+  background: #fff;
+  color: var(--de-ink);
+  box-shadow: 0 0.18rem 0.7rem rgba(44, 34, 62, 0.08);
+}
+
+.detalle-compra-tab.active::after {
+  display: none;
+}
+
+.entradas-panel {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.tipo-boleta-card {
+  border-color: var(--de-line);
+  border-radius: 0.8rem;
+  transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.tipo-boleta-card:hover {
+  transform: translateY(-2px);
+  border-color: #d9cef5;
+  box-shadow: 0 0.85rem 1.8rem rgba(44, 34, 62, 0.08);
+}
+
+.btn-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: 2.875rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--de-ink);
+  border-radius: 0.65rem;
+  background: var(--de-ink);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 750;
+  line-height: 1.2;
+  box-shadow: none;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.btn-add .material-icons {
+  color: #fff;
+}
+
+.btn-add:hover:not(:disabled) {
+  border-color: var(--de-ink);
+  background: #2a2631;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.btn-add:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn-add:focus-visible,
+.detalle-compra-tab:focus-visible,
+.cupos-hub-link:focus-visible {
+  outline: 2px solid var(--de-accent);
+  outline-offset: 3px;
+}
+
+@media (min-width: 769px) {
+  .evento-detalle {
+    padding-inline: 1.25rem;
+  }
+
+  .btn-back--desktop {
+    margin: 1.4rem 0 0.8rem;
+  }
+
+  .evento-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 0.92fr);
+    height: clamp(32rem, 42vw, 36rem);
+    min-height: 0;
+    border-radius: 1rem;
+    overflow: hidden;
+  }
+
+  .evento-hero-image {
+    height: 100%;
+    min-height: 0;
+    aspect-ratio: auto;
+  }
+
+  .evento-hero-image img {
+    height: 100%;
+    min-height: 0;
+    object-fit: cover;
+  }
+
+  .evento-info-header {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1rem;
+    padding: clamp(2rem, 3.2vw, 3rem);
+  }
+
+  .evento-title-section {
+    margin: 0;
+  }
+
+  .evento-title-desktop {
+    max-width: 12ch;
+    font-size: clamp(2.15rem, 3.4vw, 3.35rem);
+    font-weight: 900;
+    line-height: 0.94;
+  }
+
+  .evento-subtitle {
+    max-width: 42ch;
+    margin: 0;
+    color: var(--de-muted);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .evento-meta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem;
+    margin-top: 0;
+    padding-top: 0.2rem;
+  }
+
+  .meta-group--schedule {
+    grid-column: 1;
+  }
+
+  .meta-group--sales {
+    grid-column: 1 / -1;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--de-line);
+  }
+
+  .meta-group--sales .meta-group-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .meta-group--precio {
+    grid-column: 2;
+    grid-row: 1;
+    padding-left: 1rem;
+    border-left: 1px solid var(--de-line);
+  }
+
+  .meta-precio-texto {
+    white-space: nowrap;
+  }
+
+  .detalle-zone--compra {
+    max-width: 60rem;
+    margin-inline: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .detalle-evento-page {
+    background: #fff;
+  }
+
+  .detalle-page-header {
+    padding-top: 0.85rem;
+    padding-bottom: 0.55rem;
+  }
+
+  .client-page-header__title {
+    font-size: 1.28rem;
+    font-weight: 900;
+    line-height: 1.05;
+  }
+
+  .client-page-header__subtitle--short {
+    max-width: 34ch;
+    margin-top: 0.35rem;
+    color: var(--de-muted);
+    font-size: 0.76rem;
+    line-height: 1.4;
+  }
+
+  .evento-header {
+    margin-inline: 0.75rem;
+    border: 0;
+    border-radius: 0.85rem;
+    box-shadow: none;
+  }
+
+  .evento-hero-image {
+    border-radius: 0.85rem;
+    overflow: hidden;
+  }
+
+  .evento-hero-image img {
+    height: clamp(12.5rem, 52vw, 14rem);
+  }
+
+  .evento-info-header {
+    padding: 1rem 0 0;
+  }
+
+  .evento-overline,
+  .evento-title-section,
+  .evento-subtitle {
+    display: none;
+  }
+
+  .cupos-hub--detalle {
+    order: 3;
+    margin-top: 1rem;
+  }
+
+  .cupos-hub--detalle .cupos-hub-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    padding: 0.85rem 0;
+  }
+
+  .cupos-hub--detalle .cupos-hub-text {
+    display: none;
+  }
+
+  .cupos-hub--detalle .cupos-hub-link {
+    font-size: 0;
+  }
+
+  .cupos-hub--detalle .cupos-hub-link .material-icons {
+    font-size: 1.1rem;
+  }
+
+  .evento-meta {
+    order: 2;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem;
+    margin: 0;
+    padding: 1rem 0 0;
+    border: 0;
+  }
+
+  .meta-group--schedule {
+    grid-column: 1;
+  }
+
+  .meta-group--precio {
+    grid-column: 2;
+    grid-row: 1;
+    padding-left: 1rem;
+    border-left: 1px solid var(--de-line);
+  }
+
+  .meta-group--sales {
+    grid-column: 1 / -1;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--de-line);
+  }
+
+  .meta-group--sales .meta-group-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+
+  .meta-group--sales .meta-item {
+    padding: 0;
+  }
+
+  .meta-group--sales .meta-item .material-icons {
+    display: none;
+  }
+
+  .meta-precio-texto {
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+
+  .detalle-zone--compra {
+    margin-top: 1.25rem;
+  }
+
+  .detalle-compra-tabs {
+    margin-inline: 0.75rem;
+  }
+
+  .entradas-panel {
+    padding-top: 1.25rem;
+  }
+
+  .tipo-boleta-card {
+    padding: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tipo-boleta-card,
+  .btn-add,
+  .cupos-hub-link .material-icons {
+    transition: none;
+  }
+}
+
+/* Selector de catálogo: pestañas integradas, sin apariencia de control genérico. */
+.detalle-compra-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--de-line, #e9e5ec);
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.detalle-compra-tab {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  min-height: 3.1rem;
+  padding: 0.7rem 0.75rem 0.82rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #77717f;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.detalle-compra-tab + .detalle-compra-tab::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.85rem;
+  bottom: 0.85rem;
+  width: 1px;
+  background: var(--de-line, #e9e5ec);
+}
+
+.detalle-compra-tab.active {
+  background: transparent;
+  color: var(--de-ink, #17151d);
+  box-shadow: none;
+  font-weight: 800;
+}
+
+.detalle-compra-tab.active::after {
+  content: "";
+  position: absolute;
+  display: block;
+  left: 18%;
+  right: 18%;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--de-accent, #7548e8);
+}
+
+.detalle-compra-tab .material-icons {
+  color: #9a94a1;
+  font-size: 1rem;
+}
+
+.detalle-compra-tab.active .material-icons {
+  color: var(--de-accent, #7548e8);
+}
+
+.detalle-compra-tab:hover:not(.active) {
+  background: #faf9fb;
+  color: var(--de-ink, #17151d);
+}
+
+.detalle-compra-tab:focus-visible {
+  outline: 0;
+  border-radius: 0;
+  background: var(--de-accent-soft, #f6f2ff);
+  box-shadow: none;
+}
+
+.detalle-compra-tab.active:focus-visible {
+  background: transparent;
+}
+
+@media (max-width: 768px) {
+  .detalle-compra-tabs {
+    width: calc(100% - 1.5rem);
+    margin-inline: auto;
+    top: calc(env(safe-area-inset-top, 0px) + 4.4rem);
+    z-index: 120;
+    isolation: isolate;
+    background: #fff;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: 0 0.45rem 0.85rem -0.85rem rgba(35, 28, 45, 0.4);
+  }
+}

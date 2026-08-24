@@ -111,8 +111,8 @@ export class EventoCobrosPanel implements OnInit, EvDrawerContent {
     }
 
     const porcentajeServicio = Number(this.porcentajeServicio ?? 0);
-    if (!this.esGratis && (!Number.isFinite(porcentajeServicio) || porcentajeServicio < 0 || porcentajeServicio > 100)) {
-      this.alertService.warning('Porcentaje inválido', 'El porcentaje de servicio debe estar entre 0 y 100');
+    if (!this.esGratis && (!Number.isFinite(porcentajeServicio) || porcentajeServicio < 8 || porcentajeServicio > 100)) {
+      this.alertService.warning('Porcentaje inválido', 'El porcentaje de servicio por venta online debe estar entre 8 % y 100 %.');
       return;
     }
 
