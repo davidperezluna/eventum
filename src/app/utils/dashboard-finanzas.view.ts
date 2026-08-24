@@ -126,6 +126,11 @@ export function buildFinanzasOrganizadorView(
     }
   }
 
+  // El porcentaje configurado se aplica sobre el subtotal de la venta, antes
+  // de sumar el servicio. Dividir por el total cobrado (que ya incluye el
+  // servicio) convierte erróneamente una tarifa de 8 % en 7,4 %.
+  const baseVentaSinServicio = Math.max(0, recaudoBruto - servicioEventum);
+
   return {
     recaudoBruto,
     recaudoBrutoBoletas,
@@ -133,7 +138,9 @@ export function buildFinanzasOrganizadorView(
     descuentosEstimados,
     servicioEventum,
     comisionWompi,
-    servicioPct: recaudoBruto > 0 ? Math.round((servicioEventum / recaudoBruto) * 100) : 0,
+    servicioPct: baseVentaSinServicio > 0
+      ? Math.round((servicioEventum / baseVentaSinServicio) * 100)
+      : 0,
     wompiPct: recaudoBruto > 0 ? Math.round((comisionWompi / recaudoBruto) * 100) : 0,
     saldoEstimadoRecibir,
     saldoEstimadoRecibirBoletas,
