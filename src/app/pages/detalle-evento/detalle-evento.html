@@ -132,10 +132,10 @@
           <div class="meta-group meta-group--precio">
             <p class="meta-group-label">Rango de precio</p>
             <p *ngIf="evento.es_gratis" class="meta-precio-texto precio-gratis">Gratis</p>
-            <p *ngIf="!evento.es_gratis && evento.precio_minimo && evento.precio_maximo" class="meta-precio-texto">
+            <p *ngIf="!evento.es_gratis && evento.precio_minimo && evento.precio_maximo && evento.precio_minimo !== evento.precio_maximo" class="meta-precio-texto">
               {{ formatCurrency(evento.precio_minimo) }} – {{ formatCurrency(evento.precio_maximo) }}
             </p>
-            <p *ngIf="!evento.es_gratis && evento.precio_minimo && !evento.precio_maximo" class="meta-precio-texto meta-precio-texto--desde">
+            <p *ngIf="!evento.es_gratis && evento.precio_minimo && (!evento.precio_maximo || evento.precio_minimo === evento.precio_maximo)" class="meta-precio-texto meta-precio-texto--desde">
               Desde {{ formatCurrency(evento.precio_minimo) }}
             </p>
           </div>

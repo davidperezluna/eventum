@@ -1156,6 +1156,10 @@ export class Eventos implements OnInit, OnDestroy {
     delete (eventoData as any).id;
     delete (eventoData as any).fecha_creacion;
     delete (eventoData as any).fecha_actualizacion;
+    // El rango es un dato derivado de los tipos de boleta activos, no editable
+    // directamente desde el evento.
+    delete eventoData.precio_minimo;
+    delete eventoData.precio_maximo;
 
     if (this.editingEvento) {
       this.saveEventoInternal(this.editingEvento.id, eventoData, true);

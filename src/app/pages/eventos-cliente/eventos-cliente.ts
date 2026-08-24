@@ -31,6 +31,7 @@ export class EventosCliente implements OnInit, OnDestroy {
   eventos: Evento[] = [];
   eventosFiltrados: Evento[] = [];
   eventosFinalizados: Evento[] = [];
+  mostrarTodosFinalizados = false;
   categorias: CategoriaEvento[] = [];
   loading = false;
   isRefreshing = false;
@@ -159,9 +160,10 @@ export class EventosCliente implements OnInit, OnDestroy {
     this.cdr.detectChanges();
 
     try {
-      // Carga inicial: categorías y eventos en paralelo (solo la primera vez, searchTerm === undefined)
+      // Carga inicial del catálogo. Las categorías se mantienen fuera de la UI
+      // mientras el volumen de eventos no justifique ese filtro.
       if (searchTerm === undefined) {
-        await Promise.all([this.loadCategorias(), this.executeLoadEventos(searchTerm)]);
+        await this.executeLoadEventos(searchTerm);
       } else {
         await this.executeLoadEventos(searchTerm);
       }
@@ -592,6 +594,10 @@ export class EventosCliente implements OnInit, OnDestroy {
 
   trackByEventoId(_: number, evento: Evento): number {
     return evento.id;
+  }
+
+  toggleEventosFinalizados(): void {
+    this.mostrarTodosFinalizados = !this.mostrarTodosFinalizados;
   }
 
   trackByCategoriaId(_: number, categoria: CategoriaEvento): number {

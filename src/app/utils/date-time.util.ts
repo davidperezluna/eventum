@@ -3,6 +3,8 @@
  * Soluciona problemas de conversión entre UTC y zona horaria local
  */
 
+import { DateTime } from 'luxon';
+
 export class DateTimeUtil {
   /** Zona horaria de negocio (Colombia). */
   static readonly APP_TIMEZONE = 'America/Bogota';
@@ -234,11 +236,12 @@ export class DateTimeUtil {
    */
   static datetimeLocalToISO(dateTimeLocalString: string): string {
     if (!dateTimeLocalString) return '';
-    // new Date() interpreta el string datetime-local como hora local
-    // toISOString() lo convierte correctamente a UTC
-    const date = new Date(dateTimeLocalString);
-    if (isNaN(date.getTime())) return '';
-    return date.toISOString();
+    // La operación del negocio ocurre en Colombia. Interpretar el valor con la
+    // zona del navegador hacía que un administrador fuera de Colombia guardara
+    // un instante distinto y la venta apareciera como si todavía no iniciara.
+    const date = DateTime.fromISO(dateTimeLocalString, { zone: this.APP_TIMEZONE });
+    if (!date.isValid) return '';
+    return date.toUTC().toISO() ?? '';
   }
 
   /**
@@ -249,33 +252,20 @@ export class DateTimeUtil {
    */
   static isoToDatetimeLocal(isoString: string): string {
     if (!isoString) return '';
-    
-    // Asegurar que el string se interprete como UTC
-    // Si no termina en Z y no tiene offset, agregar Z para forzar interpretación UTC
+
+    // Asegurar que los valores antiguos sin offset se interpreten como UTC.
     let dateStr = isoString.trim();
     if (dateStr.includes('T') && !dateStr.endsWith('Z') && !dateStr.includes('+') && !dateStr.includes('-', 10)) {
-      // Formato ISO sin Z ni offset - asumir UTC y agregar Z
       dateStr = dateStr + 'Z';
     }
-    
-    // Crear objeto Date desde el string ISO (que está en UTC)
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) {
+
+    const date = DateTime.fromISO(dateStr, { setZone: true });
+    if (!date.isValid) {
       console.warn('Fecha inválida en isoToDatetimeLocal:', isoString);
       return '';
     }
-    
-    // Usar métodos locales para convertir correctamente de UTC a hora local
-    // getFullYear(), getMonth(), getDate(), getHours(), getMinutes() devuelven valores en zona horaria local
-    // Esto asegura que si el usuario ingresó "2024-01-06T00:00" en Colombia (UTC-5),
-    // que se guardó como "2024-01-06T05:00:00.000Z", se muestre de vuelta como "2024-01-06T00:00"
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+
+    return date.setZone(this.APP_TIMEZONE).toFormat("yyyy-MM-dd'T'HH:mm");
   }
 
   /**

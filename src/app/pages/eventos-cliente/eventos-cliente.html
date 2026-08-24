@@ -1,17 +1,22 @@
 <div class="eventos-cliente-page">
-  <header
-    class="client-page-header client-page-header--compact client-page-header--in-nav eventos-page-header"
-  >
-    <h1 class="client-page-header__title">Eventos</h1>
-    <p class="client-page-header__subtitle client-page-header__subtitle--full">
-      Descubre conciertos, festivales y experiencias culturales cerca de ti.
-    </p>
-    <p class="client-page-header__subtitle client-page-header__subtitle--short">
-      Conciertos, festivales y cultura.
-    </p>
-  </header>
-
   <div class="eventos-shell">
+    <header class="eventos-hero">
+      <div class="eventos-hero__copy">
+        <p class="eventos-hero__eyebrow">
+          <span aria-hidden="true"></span>
+          Eventos cerca de ti
+        </p>
+        <h1>Encuentra tu próximo evento.</h1>
+        <p class="eventos-hero__lead">
+          Compra tus entradas y productos en un solo lugar.
+        </p>
+      </div>
+      <div class="eventos-hero__index" *ngIf="!initialBootstrapLoading" aria-label="Resumen de la agenda">
+        <span class="eventos-hero__number">{{ eventos.length }}</span>
+        <span class="eventos-hero__label">próximos<br />eventos</span>
+      </div>
+    </header>
+
     <div class="eventos-toolbar">
       <label class="eventos-search" for="eventos-search-input">
         <span class="material-icons eventos-search__icon" aria-hidden="true">search</span>
@@ -20,14 +25,12 @@
           type="search"
           [(ngModel)]="searchTerm"
           (ngModelChange)="onSearchChange()"
-          placeholder="Buscar eventos, conciertos…"
+          placeholder="¿Qué plan tienes en mente?"
           class="eventos-search__input"
           autocomplete="off"
         />
       </label>
-      <p class="eventos-desktop-lead" aria-hidden="true">
-        Descubre y asegura tu lugar en los mejores eventos.
-      </p>
+      <p class="eventos-desktop-lead">Busca por nombre, lugar o tipo de experiencia.</p>
     </div>
     <section
       *ngIf="cuposEventumEnabled && !initialBootstrapLoading"
@@ -36,14 +39,20 @@
     >
       <div class="cupos-hub-inner">
         <div class="cupos-hub-copy">
-          <span class="material-icons cupos-hub-icon" aria-hidden="true">forum</span>
+          <span class="cupos-hub-icon" aria-hidden="true">
+            <span class="material-icons">confirmation_number</span>
+          </span>
           <div>
-            <h2 id="cupos-hub-title" class="cupos-hub-title">{{ cuposLabels.module }}</h2>
-            <p class="cupos-hub-text">{{ cuposLabels.hubText }}</p>
+            <p class="cupos-hub-eyebrow">Comunidad Eventum</p>
+            <h2 id="cupos-hub-title" class="cupos-hub-title">¿Buscas o tienes un cupo?</h2>
+            <p class="cupos-hub-text">Encuentra ofertas y solicitudes para el evento al que quieres ir.</p>
           </div>
         </div>
         <div class="cupos-hub-actions">
-          <a routerLink="/cupos" class="cupos-hub-link">{{ cuposLabels.explorar }}</a>
+          <a routerLink="/cupos" class="cupos-hub-link cupos-hub-link--primary">
+            Explorar cupos
+            <span class="material-icons" aria-hidden="true">arrow_forward</span>
+          </a>
           <a *ngIf="clienteLogueado" routerLink="/mis-cupos" class="cupos-hub-link">
             {{ cuposLabels.misPublicaciones }}
             <span
@@ -57,56 +66,16 @@
       </div>
     </section>
 
-    <!-- Categories Carousel (tras primera carga: categorías + eventos + finalizados) -->
-    <section class="categories-section" *ngIf="!initialBootstrapLoading">
-      <div class="cat-carousel-wrap">
-        <button type="button" class="cat-nav cat-nav--prev" (click)="scrollCategories(-1)"
-          aria-label="Categorías anteriores">
-          <span class="material-icons" aria-hidden="true">chevron_left</span>
-        </button>
-        <div class="cat-carousel-container">
-          <div class="cat-track" #carouselTrack>
-            <!-- 'All' Card -->
-            <div class="cat-card" [class.active]="categoriaFiltro === null" (click)="setCategoria(null)">
-              <div class="icon-contain">
-                <ion-icon name="apps"></ion-icon>
-              </div>
-              <div class="cat-card-copy">
-                <span class="cat-card-title">Todo</span>
-                <span class="cat-card-sub">Todas las experiencias</span>
-              </div>
-            </div>
-
-            <!-- Dynamic Categories -->
-            <div *ngFor="let cat of categorias; trackBy: trackByCategoriaId" class="cat-card" [class.active]="categoriaFiltro === cat.id"
-              (click)="setCategoria(cat.id)">
-
-              <div class="icon-contain">
-                <ion-icon [name]="getCategoryIcon(cat)"></ion-icon>
-              </div>
-              <div class="cat-card-copy">
-                <span class="cat-card-title">{{ cat.nombre.trim() }}</span>
-                <span class="cat-card-sub">Explorar eventos</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <button type="button" class="cat-nav cat-nav--next" (click)="scrollCategories(1)" aria-label="Más categorías">
-          <span class="material-icons" aria-hidden="true">chevron_right</span>
-        </button>
-      </div>
-    </section>
-
     <!-- Loading State -->
-    <div *ngIf="loading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Cargando experiencias...</p>
+    <div *ngIf="loading" class="eventos-skeleton" aria-live="polite" aria-busy="true">
+      <span class="sr-only">Cargando experiencias…</span>
+      <div class="eventos-skeleton__card" *ngFor="let item of [1, 2, 3]"></div>
     </div>
 
     <!-- Featured Events -->
     <section class="events-section" *ngIf="!loading && !searchTerm && !categoriaFiltro && eventosDestacados.length > 0">
       <div class="section-header">
-        <h2>Destacados</h2>
+        <div><p class="section-kicker">Selección Eventum</p><h2>Destacados</h2></div>
       </div>
 
       <div class="events-grid featured">
@@ -137,36 +106,6 @@
               </div>
             </div>
           </div>
-          <nav
-            *ngIf="cuposEventumEnabled || tieneProductosEvento(evento.id)"
-            class="event-quick-actions"
-            aria-label="Accesos rápidos del evento"
-          >
-            <a
-              *ngIf="cuposEventumEnabled"
-              class="event-quick-action event-quick-action--cupos"
-              [routerLink]="['/cupos-evento', evento.id]"
-              (click)="$event.stopPropagation()"
-              [attr.aria-label]="cuposLabels.tablonAria"
-              [attr.title]="cuposLabels.tablon"
-            >
-              <span class="material-icons" aria-hidden="true">forum</span>
-              <span class="event-quick-action__label">{{ cuposLabels.tablon }}</span>
-            </a>
-            <a
-              *ngIf="tieneProductosEvento(evento.id)"
-              class="event-quick-action event-quick-action--productos"
-              [class.event-quick-action--activo]="precioEventoActivo(evento)"
-              [routerLink]="['/detalle-evento', evento.id]"
-              [queryParams]="{ tab: 'productos' }"
-              (click)="$event.stopPropagation()"
-              [attr.aria-label]="getProductosChipCardLabel(evento)"
-              [attr.title]="getProductosChipCardLabel(evento)"
-            >
-              <span class="material-icons" aria-hidden="true">{{ getProductosChipIcon(evento) }}</span>
-              <span class="event-quick-action__label">{{ getProductosChipShortLabel(evento) }}</span>
-            </a>
-          </nav>
         </article>
       </div>
     </section>
@@ -174,15 +113,20 @@
     <!-- Regular Events -->
     <section class="events-section" *ngIf="!loading">
       <div class="section-header">
-        <h2>{{ categoriaFiltro ? 'Resultados' : 'Próximos Eventos' }}</h2>
+        <div>
+          <p class="section-kicker">{{ categoriaFiltro || searchTerm ? 'Tu búsqueda' : 'Disponibles ahora' }}</p>
+          <h2>{{ categoriaFiltro || searchTerm ? 'Eventos encontrados' : 'Próximos eventos' }}</h2>
+        </div>
+        <span class="section-count" *ngIf="eventosRegulares.length">{{ eventosRegulares.length }}</span>
       </div>
 
       <div class="events-grid">
-        <article *ngFor="let evento of eventosRegulares; trackBy: trackByEventoId" class="event-card"
+        <article *ngFor="let evento of eventosRegulares; let first = first; trackBy: trackByEventoId" class="event-card"
+          [class.event-card--lead]="first && !searchTerm && !categoriaFiltro"
           [routerLink]="['/detalle-evento', evento.id]">
           <div class="event-card__main">
             <div class="event-thumb">
-              <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
+              <img [src]="getImageUrl(evento)" [alt]="evento.titulo" [attr.loading]="first ? 'eager' : 'lazy'" />
             </div>
             <div class="event-body">
               <h3 class="event-title">{{ evento.titulo }}</h3>
@@ -205,36 +149,6 @@
               </div>
             </div>
           </div>
-          <nav
-            *ngIf="cuposEventumEnabled || tieneProductosEvento(evento.id)"
-            class="event-quick-actions"
-            aria-label="Accesos rápidos del evento"
-          >
-            <a
-              *ngIf="cuposEventumEnabled"
-              class="event-quick-action event-quick-action--cupos"
-              [routerLink]="['/cupos-evento', evento.id]"
-              (click)="$event.stopPropagation()"
-              [attr.aria-label]="cuposLabels.tablonAria"
-              [attr.title]="cuposLabels.tablon"
-            >
-              <span class="material-icons" aria-hidden="true">forum</span>
-              <span class="event-quick-action__label">{{ cuposLabels.tablon }}</span>
-            </a>
-            <a
-              *ngIf="tieneProductosEvento(evento.id)"
-              class="event-quick-action event-quick-action--productos"
-              [class.event-quick-action--activo]="precioEventoActivo(evento)"
-              [routerLink]="['/detalle-evento', evento.id]"
-              [queryParams]="{ tab: 'productos' }"
-              (click)="$event.stopPropagation()"
-              [attr.aria-label]="getProductosChipCardLabel(evento)"
-              [attr.title]="getProductosChipCardLabel(evento)"
-            >
-              <span class="material-icons" aria-hidden="true">{{ getProductosChipIcon(evento) }}</span>
-              <span class="event-quick-action__label">{{ getProductosChipShortLabel(evento) }}</span>
-            </a>
-          </nav>
         </article>
 
         <!-- Empty State -->
@@ -257,59 +171,39 @@
       class="events-section products-panel"
       *ngIf="!loading && !searchTerm && !categoriaFiltro && eventosConProductosPreview.length > 0"
     >
-      <div class="section-header">
-        <h2>
-          <span class="material-icons" aria-hidden="true">storefront</span>
-          Productos destacados
-        </h2>
-      </div>
-      <p class="products-panel-subtitle">
-        Descubre eventos con productos disponibles y aprovecha precios de preventa antes del inicio.
-      </p>
-      <div class="products-panel-list">
-        <a
-          class="products-panel-item"
-          *ngFor="let evento of eventosConProductosPreview; trackBy: trackByEventoId"
-          [routerLink]="['/detalle-evento', evento.id]"
-          [queryParams]="{ tab: 'productos' }"
-        >
-          <div class="products-panel-item__thumb" aria-hidden="true">
-            <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
-          </div>
-          <div class="products-panel-item__main">
-            <div class="products-panel-item__title">{{ evento.titulo }}</div>
-            <div class="products-panel-item__chips">
-              <span
-                class="products-panel-chip"
-                [class.products-panel-chip--activo]="precioEventoActivo(evento)"
-              >
-                <span class="material-icons" aria-hidden="true">{{ getProductosChipIcon(evento) }}</span>
-                <span class="products-panel-chip__label">{{ getProductosChipShortLabel(evento) }}</span>
-              </span>
-              <span class="products-panel-chip products-panel-chip--count">
-                <span class="material-icons" aria-hidden="true">inventory_2</span>
-                <span class="products-panel-chip__label">{{ getCantidadProductosLabel(evento.id) }}</span>
-              </span>
-            </div>
-            <div class="products-panel-item__meta">
-              Desde {{ formatCurrency(getPrecioMinimoProductoEvento(evento.id)) }}
-            </div>
-          </div>
-          <span class="products-panel-item__cta">
-            Ver
+      <div class="products-reminder">
+        <div class="products-reminder__mark" aria-hidden="true">
+          <span class="material-icons">local_mall</span>
+        </div>
+        <div class="products-reminder__copy">
+          <p class="section-kicker">Antes de llegar</p>
+          <h2>Completa tu experiencia</h2>
+          <p>Compra con anticipación y retira tus productos durante el evento con el QR de tu pedido.</p>
+        </div>
+        <div class="products-reminder__events">
+          <a
+            *ngFor="let evento of eventosConProductosPreview; trackBy: trackByEventoId"
+            [routerLink]="['/detalle-evento', evento.id]"
+            [queryParams]="{ tab: 'productos' }"
+            class="products-reminder__link"
+          >
+            <span>
+              <small>Productos para</small>
+              <strong>{{ evento.titulo }}</strong>
+            </span>
             <span class="material-icons" aria-hidden="true">arrow_forward</span>
-          </span>
-        </a>
+          </a>
+        </div>
       </div>
     </section>
 
     <!-- Eventos Finalizados -->
-    <section class="events-section" *ngIf="!loading && !searchTerm && !categoriaFiltro && eventosFinalizados.length > 0">
+    <section class="events-section events-section--past" *ngIf="!loading && !searchTerm && !categoriaFiltro && eventosFinalizados.length > 0">
       <div class="section-header">
-        <h2>Eventos Finalizados</h2>
+        <div><p class="section-kicker">Archivo Eventum</p><h2>Eventos finalizados</h2></div>
       </div>
 
-      <div class="events-grid">
+      <div class="events-grid events-grid--past" [class.events-grid--past-expanded]="mostrarTodosFinalizados">
         <article *ngFor="let evento of eventosFinalizados; trackBy: trackByEventoId" class="event-card event-finalizado"
           [routerLink]="['/detalle-evento', evento.id]">
           <div class="event-thumb">
@@ -340,6 +234,18 @@
           </div>
         </article>
       </div>
+
+      <button
+        *ngIf="eventosFinalizados.length > 4"
+        type="button"
+        class="events-past-toggle"
+        [attr.aria-expanded]="mostrarTodosFinalizados"
+        (click)="toggleEventosFinalizados()">
+        <span>{{ mostrarTodosFinalizados ? 'Mostrar menos' : 'Ver eventos anteriores' }}</span>
+        <span class="material-icons" aria-hidden="true">
+          {{ mostrarTodosFinalizados ? 'expand_less' : 'arrow_forward' }}
+        </span>
+      </button>
     </section>
 
   </div>

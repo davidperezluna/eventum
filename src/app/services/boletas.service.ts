@@ -329,8 +329,10 @@ export class BoletasService {
       if (response.error) {
         throw response.error;
       }
-      
-      return response.data as TipoBoleta;
+
+      const created = response.data as TipoBoleta;
+      await this.sincronizarRangoPrecioEvento(created.evento_id);
+      return created;
     } catch (error) {
       console.error('Error en createTipoBoleta:', error);
       throw error;
@@ -352,12 +354,39 @@ export class BoletasService {
       if (response.error) {
         throw response.error;
       }
-      
-      return response.data as TipoBoleta;
+
+      const updated = response.data as TipoBoleta;
+      await this.sincronizarRangoPrecioEvento(updated.evento_id);
+      return updated;
     } catch (error) {
       console.error('Error en updateTipoBoleta:', error);
       throw error;
     }
+  }
+
+  /** Mantiene el precio visible del evento derivado de sus tipos de boleta activos. */
+  private async sincronizarRangoPrecioEvento(eventoId: number): Promise<void> {
+    const { data: tipos, error: tiposError } = await this.supabase
+      .from('tipos_boleta')
+      .select('precio')
+      .eq('evento_id', eventoId)
+      .eq('activo', true);
+
+    if (tiposError) throw tiposError;
+
+    const precios = (tipos || [])
+      .map((tipo) => Number(tipo.precio))
+      .filter((precio) => Number.isFinite(precio) && precio >= 0);
+    const rango = precios.length
+      ? { precio_minimo: Math.min(...precios), precio_maximo: Math.max(...precios) }
+      : { precio_minimo: null, precio_maximo: null };
+
+    const { error: eventoError } = await this.supabase
+      .from('eventos')
+      .update(rango)
+      .eq('id', eventoId);
+
+    if (eventoError) throw eventoError;
   }
 
   /**

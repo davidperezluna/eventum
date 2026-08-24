@@ -487,36 +487,17 @@
             </ev-form-section>
 
             <!-- Paso 4: Configuración -->
-            <ev-form-section *ngSwitchCase="3" icon="tune" title="Configuración" description="Precios, cobros y publicación.">
+            <ev-form-section *ngSwitchCase="3" icon="tune" title="Configuración" description="Cobros y publicación.">
               <div class="ev-check-row ev-wizard__gratis-toggle">
                 <label class="ev-check">
                   <input type="checkbox" [(ngModel)]="formData.es_gratis" />
                   Evento gratis
                 </label>
               </div>
+              <p class="ev-hint" *ngIf="!formData.es_gratis">
+                El rango de precios se calcula automáticamente con los tipos de boleta activos.
+              </p>
               <div class="ev-form-grid ev-form-grid--2" *ngIf="!formData.es_gratis">
-                <div class="ev-field">
-                  <label class="ev-field__label" for="evento-precio-min">Precio mínimo</label>
-                  <ev-number-input
-                    id="evento-precio-min"
-                    mode="integer"
-                    prefix="$"
-                    [min]="0"
-                    [(ngModel)]="formData.precio_minimo"
-                    placeholder="0"
-                  />
-                </div>
-                <div class="ev-field">
-                  <label class="ev-field__label" for="evento-precio-max">Precio máximo</label>
-                  <ev-number-input
-                    id="evento-precio-max"
-                    mode="integer"
-                    prefix="$"
-                    [min]="0"
-                    [(ngModel)]="formData.precio_maximo"
-                    placeholder="0"
-                  />
-                </div>
                 <div class="ev-field">
                   <label class="ev-field__label" for="evento-servicio">Servicio (%)</label>
                   <input id="evento-servicio" type="number" step="0.01" class="ev-input" [(ngModel)]="formData.porcentaje_servicio" min="0" max="100" placeholder="0" />
