@@ -1765,7 +1765,7 @@
   }
 
   .events-section--past > .section-header {
-    margin-bottom: 0.65rem;
+    margin-bottom: 0.9rem;
     padding-bottom: 0;
     border: 0;
   }
@@ -3950,7 +3950,7 @@
   .eventos-cliente-page .events-section--upcoming .section-kicker,
   .eventos-cliente-page .products-reminder__copy .section-kicker,
   .eventos-cliente-page .events-section--past .section-kicker {
-    margin-bottom: 0.42rem;
+    margin-bottom: 0.6rem;
     color: #7655aa;
     letter-spacing: 0.16em;
   }
@@ -4673,6 +4673,34 @@
   letter-spacing: -0.035em;
 }
 
+/* Más aire en los títulos de sección (Disponibles ahora / Próximos eventos) */
+.eventos-cliente-page .events-section > .section-header {
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.15rem;
+}
+
+.eventos-cliente-page .events-section .section-kicker {
+  margin-bottom: 0.8rem;
+  letter-spacing: 0.18em;
+}
+
+/* Contador de sección con acabado premium */
+.eventos-cliente-page .events-section .section-count {
+  min-width: 2.6rem;
+  height: 1.7rem;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--ev5-violet), var(--ev5-fuchsia));
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    0 0.5rem 1.15rem -0.4rem rgba(117, 72, 242, 0.6);
+}
+
 .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card {
   position: relative;
   min-height: 25rem;
@@ -5009,18 +5037,8 @@
 /* Próximos eventos móvil — cartelera panorámica */
 @media (max-width: 700px) {
   .eventos-cliente-page .events-section--upcoming > .section-header {
-    margin-bottom: 0.7rem;
-    padding-bottom: 0;
-  }
-
-  .eventos-cliente-page .events-section--upcoming .section-count {
-    min-width: 3rem;
-    height: 2.15rem;
-    padding: 0 0.85rem;
-    border: 1px solid #ded0fa;
-    border-radius: 999px;
-    color: #6732d4;
-    background: #f2edff;
+    margin-bottom: 1rem;
+    padding-bottom: 0.6rem;
   }
 
   .eventos-cliente-page .events-section--upcoming .events-grid .event-card {
