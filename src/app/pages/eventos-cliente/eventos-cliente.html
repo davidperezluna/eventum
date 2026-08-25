@@ -1,12 +1,13 @@
 <div class="eventos-cliente-page">
   <div class="eventos-shell">
-    <header class="eventos-hero">
+    <div class="eventos-discovery">
+      <header class="eventos-hero">
       <div class="eventos-hero__copy">
         <p class="eventos-hero__eyebrow">
           <span aria-hidden="true"></span>
           Eventos cerca de ti
         </p>
-        <h1>Encuentra tu próximo evento.</h1>
+        <h1>Encuentra<br />tu próximo<br />evento</h1>
         <p class="eventos-hero__lead">
           Compra tus entradas y productos en un solo lugar.
         </p>
@@ -15,22 +16,26 @@
         <span class="eventos-hero__number">{{ eventos.length }}</span>
         <span class="eventos-hero__label">próximos<br />eventos</span>
       </div>
-    </header>
+      </header>
 
-    <div class="eventos-toolbar">
-      <label class="eventos-search" for="eventos-search-input">
-        <span class="material-icons eventos-search__icon" aria-hidden="true">search</span>
-        <input
-          id="eventos-search-input"
-          type="search"
-          [(ngModel)]="searchTerm"
-          (ngModelChange)="onSearchChange()"
-          placeholder="¿Qué plan tienes en mente?"
-          class="eventos-search__input"
-          autocomplete="off"
-        />
-      </label>
-      <p class="eventos-desktop-lead">Busca por nombre, lugar o tipo de experiencia.</p>
+      <div class="eventos-toolbar">
+        <label class="eventos-search" for="eventos-search-input">
+          <span class="material-icons eventos-search__icon" aria-hidden="true">search</span>
+          <input
+            id="eventos-search-input"
+            type="search"
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="onSearchChange()"
+            placeholder="¿Qué plan tienes en mente?"
+            class="eventos-search__input"
+            autocomplete="off"
+          />
+          <span class="eventos-search__go" aria-hidden="true">
+            <span class="material-icons">arrow_forward</span>
+          </span>
+        </label>
+        <p class="eventos-desktop-lead">Busca por nombre, lugar o tipo de experiencia.</p>
+      </div>
     </div>
     <section
       *ngIf="cuposEventumEnabled && !initialBootstrapLoading"
@@ -44,13 +49,13 @@
           </span>
           <div>
             <p class="cupos-hub-eyebrow">Comunidad Eventum</p>
-            <h2 id="cupos-hub-title" class="cupos-hub-title">¿Buscas o tienes un cupo?</h2>
-            <p class="cupos-hub-text">Encuentra ofertas y solicitudes para el evento al que quieres ir.</p>
+            <h2 id="cupos-hub-title" class="cupos-hub-title">Cupos entre asistentes</h2>
+            <p class="cupos-hub-text">Encuentra un cupo disponible o publica el tuyo.</p>
           </div>
         </div>
         <div class="cupos-hub-actions">
           <a routerLink="/cupos" class="cupos-hub-link cupos-hub-link--primary">
-            Explorar cupos
+            Ver cupos
             <span class="material-icons" aria-hidden="true">arrow_forward</span>
           </a>
           <a *ngIf="clienteLogueado" routerLink="/mis-cupos" class="cupos-hub-link">
@@ -62,6 +67,10 @@
             >{{ respuestasCupos }}</span>
           </a>
           <a *ngIf="!clienteLogueado" routerLink="/login" class="cupos-hub-link">Entrar</a>
+        </div>
+        <div class="cupos-hub-visual" aria-hidden="true">
+          <span class="material-icons">confirmation_number</span>
+          <span class="cupos-hub-visual__plus material-icons">add</span>
         </div>
       </div>
     </section>
@@ -111,7 +120,7 @@
     </section>
 
     <!-- Regular Events -->
-    <section class="events-section" *ngIf="!loading">
+    <section class="events-section events-section--upcoming" *ngIf="!loading">
       <div class="section-header">
         <div>
           <p class="section-kicker">{{ categoriaFiltro || searchTerm ? 'Tu búsqueda' : 'Disponibles ahora' }}</p>
@@ -128,6 +137,11 @@
             <div class="event-thumb">
               <img [src]="getImageUrl(evento)" [alt]="evento.titulo" [attr.loading]="first ? 'eager' : 'lazy'" />
             </div>
+            <span class="event-card__latest" *ngIf="first && !searchTerm && !categoriaFiltro">Más reciente</span>
+            <div class="event-card__date" *ngIf="evento.fecha_inicio" aria-hidden="true">
+              <strong>{{ getEventDay(evento.fecha_inicio) }}</strong>
+              <span>{{ getEventMonth(evento.fecha_inicio) }}</span>
+            </div>
             <div class="event-body">
               <h3 class="event-title">{{ evento.titulo }}</h3>
               <div class="event-meta">
@@ -143,7 +157,7 @@
               <div class="event-footer-main">
                 <span class="price">{{ formatCurrency(evento.precio_minimo) }}</span>
                 <span class="event-cta" aria-hidden="true">
-                  <span class="event-cta-text">Ver</span>
+                  <span class="event-cta-text">Ver evento</span>
                   <ion-icon name="arrow-forward-outline"></ion-icon>
                 </span>
               </div>
@@ -188,7 +202,7 @@
             class="products-reminder__link"
           >
             <span>
-              <small>Productos para</small>
+              <small>Ver productos</small>
               <strong>{{ evento.titulo }}</strong>
             </span>
             <span class="material-icons" aria-hidden="true">arrow_forward</span>
@@ -201,6 +215,7 @@
     <section class="events-section events-section--past" *ngIf="!loading && !searchTerm && !categoriaFiltro && eventosFinalizados.length > 0">
       <div class="section-header">
         <div><p class="section-kicker">Archivo Eventum</p><h2>Eventos finalizados</h2></div>
+        <span class="section-count">{{ eventosFinalizados.length }}</span>
       </div>
 
       <div class="events-grid events-grid--past" [class.events-grid--past-expanded]="mostrarTodosFinalizados">
@@ -208,6 +223,10 @@
           [routerLink]="['/detalle-evento', evento.id]">
           <div class="event-thumb">
             <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="lazy" />
+          </div>
+          <div class="event-card__date" *ngIf="evento.fecha_fin" aria-hidden="true">
+            <strong>{{ getEventDay(evento.fecha_fin) }}</strong>
+            <span>{{ getEventMonth(evento.fecha_fin) }}</span>
           </div>
           <div class="event-body">
             <div class="event-card-head">

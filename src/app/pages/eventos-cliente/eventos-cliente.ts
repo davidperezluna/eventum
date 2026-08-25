@@ -473,6 +473,21 @@ export class EventosCliente implements OnInit, OnDestroy {
     return evento.imagen_principal || '/assets/placeholder-event.jpg';
   }
 
+  getEventDay(value: string | Date): string {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '' : String(date.getDate()).padStart(2, '0');
+  }
+
+  getEventMonth(value: string | Date): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return new Intl.DateTimeFormat('es-CO', { month: 'short' })
+      .format(date)
+      .replace('.', '')
+      .toUpperCase();
+  }
+
   scrollCategories(direction: -1 | 1) {
     const el = this.carouselTrack?.nativeElement as HTMLElement | undefined;
     if (!el) return;
