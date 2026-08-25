@@ -511,18 +511,27 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getEventDay(value: string | Date): string {
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? '' : String(date.getDate()).padStart(2, '0');
+    const date = this.parseEventoDate(value);
+    return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota', day: '2-digit' }).format(date);
   }
 
   getEventMonth(value: string | Date): string {
-    const date = new Date(value);
+    const date = this.parseEventoDate(value);
     if (Number.isNaN(date.getTime())) return '';
 
-    return new Intl.DateTimeFormat('es-CO', { month: 'short' })
+    return new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', month: 'short' })
       .format(date)
       .replace('.', '')
       .toUpperCase();
+  }
+
+  private parseEventoDate(value: string | Date): Date {
+    if (typeof value !== 'string') return value;
+    const dateStr = value.trim();
+    if (dateStr.includes('T') && !dateStr.endsWith('Z') && !dateStr.includes('+') && !dateStr.includes('-', 10)) {
+      return new Date(dateStr + 'Z');
+    }
+    return new Date(dateStr);
   }
 
   scrollCategories(direction: -1 | 1) {
