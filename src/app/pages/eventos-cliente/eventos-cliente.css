@@ -4787,6 +4787,99 @@
 
 .eventos-cliente-page .events-grid:not(.events-grid--past) .event-cta-text { display: none; }
 
+/* Escritorio: paridad con el lenguaje visual móvil (headers y tarjetas) */
+@media (min-width: 701px) {
+  .eventos-cliente-page .section-header h2 {
+    font-weight: 900;
+    line-height: 1.02;
+    letter-spacing: -0.05em;
+  }
+
+  .eventos-cliente-page .events-section > .section-header {
+    padding-bottom: 1.25rem;
+  }
+
+  .eventos-cliente-page .events-section .section-count {
+    height: 1.85rem;
+    font-size: 0.78rem;
+  }
+
+  /* Chip "Más reciente" con gradiente */
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card__latest {
+    position: absolute;
+    top: 1rem;
+    left: 1.05rem;
+    z-index: 3;
+    padding: 0.34rem 0.62rem;
+    border-radius: 0.45rem;
+    background: linear-gradient(135deg, #a832e5, #ed32a6);
+    box-shadow: 0 0.45rem 1rem -0.35rem rgba(237, 50, 166, 0.65);
+    color: #fff;
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  /* Chip de fecha estilo cristal */
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card__date {
+    position: absolute;
+    top: 2.95rem;
+    left: 1.05rem;
+    z-index: 3;
+    display: grid;
+    place-content: center;
+    gap: 0.18rem;
+    width: 3.9rem;
+    height: 4.25rem;
+    border: 1px solid rgba(196, 133, 255, 0.55);
+    border-radius: 0.85rem;
+    background: rgba(24, 7, 42, 0.44);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0.6rem 1.4rem -0.5rem rgba(12, 3, 24, 0.8);
+    color: #fff;
+    text-align: center;
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card__date strong {
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card__date span {
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    opacity: 0.82;
+  }
+
+  /* Acento fucsia en los metadatos */
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-meta-line .material-icons {
+    color: #ed35b2;
+  }
+
+  /* CTA circular con gradiente y brillo */
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-cta {
+    border-color: transparent;
+    background: linear-gradient(135deg, #a62ee5, #ed36aa);
+    box-shadow: 0 0.55rem 1.2rem -0.4rem rgba(237, 54, 170, 0.7);
+  }
+
+  /* Tarjetas más contenidas en desktop */
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card {
+    min-height: 20.5rem;
+  }
+
+  /* Con un solo evento, la destacada no ocupa 2 columnas */
+  .eventos-cliente-page .events-grid:not(.events-grid--past):has(> .event-card:only-child) .event-card--lead {
+    grid-column: auto;
+  }
+}
+
 @media (min-width: 701px) {
   .eventos-cliente-page .events-grid:not(.events-grid--past) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
