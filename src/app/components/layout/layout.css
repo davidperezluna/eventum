@@ -935,6 +935,11 @@
   overflow: visible;
 }
 
+/* El outlet solo marca dónde Angular inserta la página; no debe crear una línea vacía. */
+.public-content > router-outlet {
+  display: none;
+}
+
 /* ============================================
    MEDIA QUERIES
    ============================================ */
@@ -1129,7 +1134,11 @@
 }
 
 .layout-notice-wrap {
-  margin: 0 0 1rem;
+  margin: 0;
+}
+
+.layout-notice-wrap:has(ev-notice) {
+  margin-bottom: 1rem;
 }
 
 @media (min-width: 769px) {

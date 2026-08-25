@@ -1,0 +1,799 @@
+/* Overrides finales de escritorio. Se carga después de la composición base. */
+@media (max-width: 900px) {
+  .eventos-cliente-page .fanpage-essentials { display: contents; }
+  .eventos-cliente-page .fanpage-essential--products { display: none; }
+}
+
+@media (min-width: 901px) {
+  .eventos-cliente-page .eventos-shell {
+    display: flex;
+    flex-direction: column;
+    padding-top: 0;
+  }
+
+  .eventos-cliente-page .eventos-discovery { order: 1; }
+  .eventos-cliente-page .eventos-skeleton { order: 2; }
+  .eventos-cliente-page .events-section:not(.events-section--upcoming):not(.events-section--past):not(.products-panel) { order: 3; }
+  .eventos-cliente-page .events-section--upcoming { order: 4; }
+  .eventos-cliente-page .fanpage-essentials { order: 5; }
+  .eventos-cliente-page .events-section--past { order: 6; }
+
+  .eventos-cliente-page .events-section--upcoming {
+    margin-bottom: 2.5rem;
+  }
+
+  .eventos-cliente-page .eventos-discovery {
+    width: 100vw;
+    max-width: none;
+    min-height: calc(100dvh - 5rem);
+    margin-right: calc(50% - 50vw);
+    margin-left: calc(50% - 50vw);
+    border: 0;
+    border-radius: 0;
+    box-shadow: 0 1.5rem 4rem rgba(55, 29, 79, 0.12);
+  }
+
+  .eventos-cliente-page .eventos-hero {
+    min-height: calc(100dvh - 5rem);
+    padding-top: clamp(4.5rem, 9vh, 7.5rem);
+    padding-right: max(clamp(2rem, 4vw, 4.75rem), calc((100vw - 92rem) / 2 + 4.75rem));
+    padding-bottom: 9rem;
+    padding-left: max(clamp(2rem, 4vw, 4.75rem), calc((100vw - 92rem) / 2 + 4.75rem));
+  }
+
+  .eventos-cliente-page .eventos-toolbar {
+    left: max(clamp(2rem, 4vw, 4.75rem), calc((100vw - 92rem) / 2 + 4.75rem));
+    bottom: clamp(2.5rem, 5vh, 4rem);
+    width: min(39rem, calc(100vw - 4rem));
+  }
+
+  .eventos-cliente-page .products-panel--mobile-order { display: none; }
+
+  .eventos-cliente-page .fanpage-essentials {
+    position: relative;
+    z-index: 4;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(calc(100% - 5rem), 74rem);
+    margin: 0 auto 4.75rem;
+    border: 1px solid rgba(81, 47, 112, 0.13);
+    border-radius: 0.55rem 1.5rem 0.55rem 0.55rem;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(151, 86, 214, 0.12), transparent 18rem),
+      rgba(249, 246, 252, 0.97);
+    box-shadow: 0 1.2rem 3rem rgba(59, 32, 82, 0.12);
+    overflow: hidden;
+    animation: fanpageEssentialsIn 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .eventos-cliente-page .fanpage-essentials::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1px;
+    height: calc(100% - 2.5rem);
+    background: linear-gradient(transparent, rgba(92, 56, 126, 0.17), transparent);
+    transform: translate(-50%, -50%);
+  }
+
+  .eventos-cliente-page .fanpage-essential {
+    min-width: 0;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .eventos-cliente-page .fanpage-essential .products-reminder {
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr);
+    align-content: center;
+    gap: 0.55rem 1rem;
+    min-height: 10.5rem;
+    padding: 1.5rem 1.65rem;
+    border: 0;
+    background: transparent;
+  }
+
+  .eventos-cliente-page .fanpage-essential .products-reminder__mark {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: start;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.3rem 0.9rem 0.3rem 0.3rem;
+    color: #fff;
+    background: #7040df;
+    box-shadow: 0 0.5rem 1.1rem rgba(82, 42, 151, 0.16);
+    transition: transform 240ms ease, box-shadow 240ms ease;
+  }
+
+  .eventos-cliente-page .fanpage-essential:hover .products-reminder__mark {
+    box-shadow: 0 0.8rem 1.5rem rgba(82, 42, 151, 0.22);
+    transform: translateY(-0.18rem) rotate(-2deg);
+  }
+
+  .eventos-cliente-page .fanpage-essential .products-reminder__copy {
+    grid-column: 2;
+    min-width: 0;
+  }
+
+  .eventos-cliente-page .fanpage-essential .section-kicker {
+    margin-bottom: 0.35rem;
+    color: #7655a5;
+    font-size: 0.52rem;
+  }
+
+  .eventos-cliente-page .fanpage-essential .products-reminder__copy h2 {
+    max-width: none;
+    color: #241a2a;
+    font-size: 1.3rem;
+    line-height: 1;
+  }
+
+  .eventos-cliente-page .fanpage-essential .products-reminder__copy > p:last-child {
+    max-width: 38ch;
+    margin-top: 0.38rem;
+    color: #746a7b;
+    font-size: 0.65rem;
+    line-height: 1.4;
+  }
+
+  .eventos-cliente-page .fanpage-essential .products-reminder__events {
+    grid-column: 2;
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.45rem;
+  }
+
+  .eventos-cliente-page .fanpage-essential .products-reminder__link {
+    flex: 0 1 12.5rem;
+    width: auto;
+    min-width: 9rem;
+    min-height: 2.65rem;
+    padding: 0.45rem 0.65rem;
+    border: 1px solid rgba(91, 53, 127, 0.13);
+    border-radius: 0.3rem 0.75rem 0.3rem 0.3rem;
+    color: #2b2030;
+    background: rgba(255, 255, 255, 0.7);
+    box-shadow: none;
+    transition: border-color 200ms ease, background 200ms ease, transform 200ms ease;
+  }
+
+  .eventos-cliente-page .fanpage-essential .products-reminder__link:hover {
+    border-color: rgba(111, 63, 232, 0.3);
+    background: #fff;
+    transform: translateX(0.18rem);
+  }
+
+  .eventos-cliente-page .fanpage-essential .products-reminder__link small {
+    color: #7655a5;
+    font-size: 0.48rem;
+  }
+
+  .eventos-cliente-page .fanpage-essential .products-reminder__link strong {
+    overflow: hidden;
+    color: #2b2030;
+    font-size: 0.68rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .eventos-cliente-page .fanpage-essential .products-reminder__link .material-icons {
+    color: #7040df;
+    font-size: 0.9rem;
+    transition: transform 200ms ease;
+  }
+
+  .eventos-cliente-page .fanpage-essential .products-reminder__link:hover .material-icons {
+    transform: translateX(0.15rem);
+  }
+
+  .eventos-cliente-page .fanpage-essential--products {
+    animation: fanpageEssentialItemIn 520ms 180ms ease-out both;
+  }
+
+  .eventos-cliente-page .fanpage-essential--community {
+    animation: fanpageEssentialItemIn 520ms 80ms ease-out both;
+  }
+
+  .eventos-cliente-page section#productos-destacados {
+    width: min(100%, 72rem);
+    min-height: 0;
+    margin: 0 auto 4rem;
+    border-radius: 0.55rem 1.25rem 0.55rem 0.55rem;
+    background: linear-gradient(90deg, rgba(111, 63, 232, 0.1), transparent 62%), #faf8fc;
+    box-shadow: 0 0.8rem 2rem rgba(60, 34, 83, 0.07);
+  }
+
+  .eventos-cliente-page section#productos-destacados::before { content: none; }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder {
+    display: flex;
+    align-items: center;
+    gap: 1.15rem;
+    min-height: 0;
+    height: auto;
+    padding: 1.35rem 1.5rem;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__mark {
+    align-self: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 0.3rem 0.9rem 0.3rem 0.3rem;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__copy .section-kicker {
+    margin-bottom: 0.3rem;
+    font-size: 0.54rem;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__copy h2 {
+    max-width: none;
+    font-size: clamp(1.4rem, 1.8vw, 1.9rem);
+    line-height: 1;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__copy > p:last-child {
+    max-width: 43ch;
+    margin-top: 0.4rem;
+    font-size: 0.68rem;
+    line-height: 1.38;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__copy {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__events {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    width: auto;
+    height: auto;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__link {
+    flex: 0 0 13rem;
+    align-self: center;
+    width: 13rem;
+    max-width: 13rem;
+    min-width: 0;
+    height: 3.4rem;
+    min-height: 3.4rem;
+    max-height: 3.4rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.35rem 0.8rem 0.35rem 0.35rem;
+    box-shadow: none;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__link small {
+    font-size: 0.52rem;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__link strong {
+    font-size: 0.74rem;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__link .material-icons {
+    font-size: 0.9rem;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__link strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@keyframes fanpageEssentialsIn {
+  from { opacity: 0; transform: translateY(1rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fanpageEssentialItemIn {
+  from { opacity: 0; transform: translateY(0.6rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eventos-cliente-page .fanpage-essentials,
+  .eventos-cliente-page .fanpage-essential {
+    animation: none;
+  }
+
+  .eventos-cliente-page .fanpage-essential .products-reminder__mark,
+  .eventos-cliente-page .fanpage-essential .products-reminder__link,
+  .eventos-cliente-page .fanpage-essential .products-reminder__link .material-icons {
+    transition: none;
+  }
+}
+
+/* Activación fiable al entrar en pantalla (IntersectionObserver). */
+.eventos-cliente-page .eventos-footer--motion-ready .eventos-footer__brand,
+.eventos-cliente-page .eventos-footer--motion-ready .eventos-footer__statement,
+.eventos-cliente-page .eventos-footer--motion-ready .eventos-footer__group,
+.eventos-cliente-page .eventos-footer--motion-ready .eventos-footer__base {
+  animation: none !important;
+  opacity: 0;
+  transition:
+    opacity 650ms cubic-bezier(0.22, 1, 0.36, 1) var(--footer-motion-delay, 0ms),
+    transform 750ms cubic-bezier(0.22, 1, 0.36, 1) var(--footer-motion-delay, 0ms),
+    filter 650ms ease var(--footer-motion-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.eventos-cliente-page .eventos-footer--motion-ready .eventos-footer__brand {
+  transform: translate3d(0, 3rem, 0) scale(0.93);
+  filter: blur(7px);
+}
+
+.eventos-cliente-page .eventos-footer--motion-ready .eventos-footer__statement,
+.eventos-cliente-page .eventos-footer--motion-ready .eventos-footer__group {
+  transform: translate3d(0, 2rem, 0);
+  filter: blur(4px);
+}
+
+.eventos-cliente-page .eventos-footer--motion-ready .eventos-footer__base {
+  transform: translate3d(0, 1rem, 0) scaleX(0.82);
+  transform-origin: left center;
+}
+
+.eventos-cliente-page .eventos-footer--motion-ready .is-visible {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+@media (min-width: 901px) and (max-width: 1120px) {
+  .eventos-cliente-page section#productos-destacados .products-reminder {
+    flex-wrap: wrap;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__events {
+    width: 100%;
+    padding-left: 4.4rem;
+    justify-content: flex-start;
+  }
+}
+
+/* Movimiento editorial ligado al scroll — navegadores compatibles. */
+@media (min-width: 901px) {
+  .eventos-cliente-page .eventos-discovery::before {
+    background:
+      linear-gradient(90deg, #fbf9fd 0%, rgba(251, 249, 253, 0.98) 32%, rgba(251, 249, 253, 0.78) 43%, rgba(251, 249, 253, 0.1) 61%, transparent 75%),
+      linear-gradient(0deg, rgba(77, 38, 115, 0.13) 0%, rgba(90, 48, 132, 0.04) 10%, transparent 22%);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (min-width: 901px) {
+    .eventos-cliente-page .events-section--upcoming > .section-header,
+    .eventos-cliente-page .events-section--past > .section-header {
+      animation-name: fanpageScrollHeading;
+      animation-duration: 1ms;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 4% cover 26%;
+      will-change: transform, opacity;
+    }
+
+    .eventos-cliente-page .events-section--upcoming .event-card,
+    .eventos-cliente-page .events-grid--past .event-card {
+      animation-name: fanpageScrollCard;
+      animation-duration: 1ms;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 3% cover 24%;
+      will-change: transform, opacity;
+    }
+
+    .eventos-cliente-page .events-section--upcoming .event-card:nth-child(3n + 2),
+    .eventos-cliente-page .events-grid--past .event-card:nth-child(4n + 2) {
+      animation-range: entry 7% cover 28%;
+    }
+
+    .eventos-cliente-page .events-section--upcoming .event-card:nth-child(3n + 3),
+    .eventos-cliente-page .events-grid--past .event-card:nth-child(4n + 3) {
+      animation-range: entry 11% cover 32%;
+    }
+
+    .eventos-cliente-page .events-grid--past .event-card:nth-child(4n) {
+      animation-range: entry 14% cover 34%;
+    }
+
+    .eventos-cliente-page .fanpage-essentials {
+      animation-name: fanpageScrollPanel;
+      animation-duration: 1ms;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 5% cover 28%;
+      will-change: transform, opacity;
+    }
+
+    .eventos-cliente-page .fanpage-essential--community .products-reminder,
+    .eventos-cliente-page .fanpage-essential--products .products-reminder {
+      animation-name: fanpageScrollInner;
+      animation-duration: 1ms;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 12% cover 32%;
+    }
+
+    .eventos-cliente-page .fanpage-essential--products .products-reminder {
+      animation-range: entry 18% cover 37%;
+    }
+
+    .eventos-cliente-page .eventos-discovery::after {
+      animation-name: fanpageHeroDrift;
+      animation-duration: 1ms;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 95%;
+      will-change: transform, filter;
+    }
+
+    .eventos-cliente-page .eventos-hero__copy {
+      animation-name: fanpageHeroCopyScroll;
+      animation-duration: 1ms;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 72%;
+      will-change: transform, opacity;
+    }
+
+    .eventos-cliente-page .eventos-toolbar {
+      animation-name: fanpageHeroSearchScroll;
+      animation-duration: 1ms;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 68%;
+      will-change: transform, opacity;
+    }
+
+    .eventos-cliente-page .events-past-toggle {
+      animation-name: fanpageScrollButton;
+      animation-duration: 1ms;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 8% cover 28%;
+    }
+  }
+}
+
+@keyframes fanpageScrollHeading {
+  from { opacity: 0; transform: translate3d(-1.4rem, 1rem, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes fanpageScrollCard {
+  from { opacity: 0; transform: translate3d(0, 2rem, 0) scale(0.975); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes fanpageScrollPanel {
+  from { opacity: 0; transform: translate3d(0, 1.8rem, 0) scale(0.985); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes fanpageScrollInner {
+  from { opacity: 0; transform: translate3d(0, 1rem, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes fanpageHeroDrift {
+  from { transform: scale(1); filter: saturate(0.88) contrast(1.04); }
+  to { transform: scale(1.08) translate3d(0, 2.2rem, 0); filter: saturate(1.05) contrast(1.08); }
+}
+
+@keyframes fanpageHeroCopyScroll {
+  from { opacity: 1; transform: translate3d(0, 0, 0); }
+  to { opacity: 0.3; transform: translate3d(0, -2.4rem, 0); }
+}
+
+@keyframes fanpageHeroSearchScroll {
+  from { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  to { opacity: 0.5; transform: translate3d(0, -1rem, 0) scale(0.985); }
+}
+
+@keyframes fanpageScrollButton {
+  from { opacity: 0; transform: translateY(0.8rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eventos-cliente-page .events-section--upcoming > .section-header,
+  .eventos-cliente-page .events-section--past > .section-header,
+  .eventos-cliente-page .events-section--upcoming .event-card,
+  .eventos-cliente-page .events-grid--past .event-card,
+  .eventos-cliente-page .fanpage-essentials,
+  .eventos-cliente-page .fanpage-essential .products-reminder,
+  .eventos-cliente-page .eventos-discovery::after,
+  .eventos-cliente-page .eventos-hero__copy,
+  .eventos-cliente-page .eventos-toolbar,
+  .eventos-cliente-page .events-past-toggle {
+    animation: none;
+  }
+}
+
+/* Archivo de la fanpage — eventos finalizados. */
+@media (min-width: 901px) {
+  .eventos-cliente-page .events-section--past {
+    width: min(100%, 82rem);
+    margin: 0 auto 5.5rem;
+    padding-top: 2.25rem;
+    border-top: 1px solid rgba(75, 43, 106, 0.13);
+    opacity: 1;
+  }
+
+  .eventos-cliente-page .events-section--past > .section-header {
+    position: relative;
+    margin-bottom: 1.6rem;
+    padding: 0 0 1rem 1rem;
+    border-bottom: 0;
+  }
+
+  .eventos-cliente-page .events-section--past > .section-header::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.1rem;
+    bottom: 1rem;
+    width: 0.2rem;
+    border-radius: 1rem;
+    background: #9b8aaa;
+  }
+
+  .eventos-cliente-page .events-section--past .section-kicker {
+    color: #887594;
+  }
+
+  .eventos-cliente-page .events-section--past .section-header h2 {
+    color: #302735;
+    font-size: clamp(2rem, 3vw, 3.1rem);
+  }
+
+  .eventos-cliente-page .events-section--past .section-count {
+    display: grid;
+    place-items: center;
+    width: 2.35rem;
+    height: 2.35rem;
+    border: 1px solid rgba(91, 65, 109, 0.16);
+    border-radius: 50%;
+    color: #766681;
+    background: #f7f3f9;
+  }
+
+  .eventos-cliente-page .events-grid--past {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .eventos-cliente-page .events-grid--past .event-card.event-finalizado {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    border: 1px solid rgba(73, 48, 88, 0.12);
+    border-radius: 0.45rem 1.05rem 0.45rem 0.45rem;
+    background: #fff;
+    box-shadow: 0 0.65rem 1.6rem rgba(54, 34, 66, 0.07);
+    overflow: hidden;
+    transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+  }
+
+  .eventos-cliente-page .events-grid--past .event-card.event-finalizado:hover {
+    border-color: rgba(111, 78, 132, 0.25);
+    box-shadow: 0 1rem 2.2rem rgba(54, 34, 66, 0.12);
+    transform: translateY(-0.25rem);
+  }
+
+  .eventos-cliente-page .events-grid--past .event-thumb {
+    position: relative;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+  }
+
+  .eventos-cliente-page .events-grid--past .event-thumb::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 58%, rgba(25, 17, 29, 0.24));
+  }
+
+  .eventos-cliente-page .events-grid--past .event-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(0.42) contrast(0.96);
+    transition: filter 260ms ease, transform 450ms ease;
+  }
+
+  .eventos-cliente-page .events-grid--past .event-card:hover .event-thumb img {
+    filter: saturate(0.78) contrast(1.02);
+    transform: scale(1.035);
+  }
+
+  .eventos-cliente-page .events-grid--past .event-card__date {
+    position: absolute;
+    top: 0.7rem;
+    left: 0.7rem;
+    z-index: 2;
+    display: grid;
+    place-content: center;
+    width: 2.8rem;
+    height: 3.1rem;
+    border: 1px solid rgba(255, 255, 255, 0.42);
+    border-radius: 0.35rem 0.75rem 0.35rem 0.35rem;
+    color: #fff;
+    background: rgba(31, 20, 36, 0.58);
+    backdrop-filter: blur(9px);
+    text-align: center;
+  }
+
+  .eventos-cliente-page .events-grid--past .event-card__date strong {
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .eventos-cliente-page .events-grid--past .event-card__date span {
+    margin-top: 0.16rem;
+    font-size: 0.48rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+  }
+
+  .eventos-cliente-page .events-grid--past .event-body {
+    position: static;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 0.9rem 0.95rem 1rem;
+    color: #302735;
+    background: #fff;
+  }
+
+  .eventos-cliente-page .events-grid--past .event-title {
+    color: #302735;
+    font-size: 1rem;
+    line-height: 1.08;
+  }
+
+  .eventos-cliente-page .events-grid--past .event-past-chip {
+    padding: 0.25rem 0.42rem;
+    border-radius: 0.25rem;
+    color: #766681;
+    background: #f0eaf3;
+    font-size: 0.5rem;
+  }
+
+  .eventos-cliente-page .events-grid--past .event-meta {
+    margin-top: 0.65rem;
+    color: #7a7080;
+    font-size: 0.68rem;
+  }
+
+  .eventos-cliente-page .events-grid--past .event-meta-line .material-icons {
+    color: #9b8aaa;
+    font-size: 0.85rem;
+  }
+
+  .eventos-cliente-page .events-grid--past .event-footer {
+    margin-top: auto;
+    padding-top: 0.7rem;
+    border-top: 1px solid rgba(74, 48, 90, 0.09);
+  }
+
+  .eventos-cliente-page .events-grid--past .price {
+    color: #5e5265;
+    font-size: 0.72rem;
+  }
+
+  .eventos-cliente-page .events-grid--past .event-cta {
+    color: #7040df;
+  }
+
+  .eventos-cliente-page .events-past-toggle {
+    margin: 1.5rem auto 0;
+    border-color: rgba(91, 60, 111, 0.16);
+    color: #66546f;
+    background: #f8f5fa;
+  }
+
+  .eventos-cliente-page .events-past-toggle:hover {
+    border-color: rgba(111, 63, 232, 0.28);
+    color: #7040df;
+    background: #fff;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1120px) {
+  .eventos-cliente-page .events-grid--past {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Entrada editorial del footer ligada al scroll. */
+@supports (animation-timeline: view()) {
+  .eventos-cliente-page .eventos-footer__brand,
+  .eventos-cliente-page .eventos-footer__statement,
+  .eventos-cliente-page .eventos-footer__group,
+  .eventos-cliente-page .eventos-footer__base {
+    animation-duration: 1ms;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: view();
+    will-change: transform, opacity;
+  }
+
+  .eventos-cliente-page .eventos-footer__brand {
+    animation-name: fanpageFooterBrand;
+    animation-range: entry 0% entry 100%;
+  }
+
+  .eventos-cliente-page .eventos-footer__statement {
+    animation-name: fanpageFooterRise;
+    animation-range: entry 0% entry 100%;
+  }
+
+  .eventos-cliente-page .eventos-footer__group {
+    animation-name: fanpageFooterRise;
+    animation-range: entry 0% entry 100%;
+  }
+
+  .eventos-cliente-page .eventos-footer__group:nth-child(2) {
+    animation-range: entry 15% cover 38%;
+  }
+
+  .eventos-cliente-page .eventos-footer__base {
+    animation-name: fanpageFooterLine;
+    animation-range: entry 0% entry 100%;
+    transform-origin: left center;
+  }
+}
+
+@keyframes fanpageFooterBrand {
+  from { opacity: 0; transform: translate3d(0, 3.5rem, 0) scale(0.92); filter: blur(8px); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes fanpageFooterRise {
+  from { opacity: 0; transform: translate3d(0, 2.5rem, 0); filter: blur(5px); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes fanpageFooterLine {
+  from { opacity: 0; transform: scaleX(0.72); }
+  to { opacity: 1; transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eventos-cliente-page .eventos-footer__brand,
+  .eventos-cliente-page .eventos-footer__statement,
+  .eventos-cliente-page .eventos-footer__group,
+  .eventos-cliente-page .eventos-footer__base {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+    will-change: auto;
+  }
+}

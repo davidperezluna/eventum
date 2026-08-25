@@ -2,11 +2,17 @@
    EVENTOS CLIENTE — UI cliente (--ec-*)
    ============================================ */
 
+:host {
+  display: block;
+}
+
 .eventos-cliente-page {
   font-family: inherit;
   color: var(--ec-text-primary, #0f172a);
   background: var(--ec-page-bg, #f8fafc);
   overflow-x: clip;
+  /* Evita saltos cuando terminan de cargar eventos, imágenes o paneles asíncronos. */
+  overflow-anchor: none;
   width: 100%;
   --eventos-gutter: var(--ec-content-pad, clamp(0.75rem, 4vw, 1rem));
   --eventos-max: var(--ec-content-max, 72rem);
@@ -5897,7 +5903,7 @@
 /* Banner y búsqueda — composición exclusiva de escritorio */
 @media (min-width: 701px) {
   .eventos-cliente-page .eventos-shell {
-    padding-top: clamp(2rem, 4vw, 3.5rem);
+    padding-top: 0;
   }
 
   .eventos-cliente-page .eventos-discovery {
@@ -6139,5 +6145,179 @@
     margin: 0;
     padding: 0;
     white-space: nowrap;
+  }
+}
+
+/* Footer fanpage — cierre editorial de la experiencia pública. */
+.eventos-cliente-page footer.eventos-footer {
+  position: relative;
+  margin-top: clamp(1.75rem, 4vw, 3.5rem);
+  overflow: hidden;
+  border-top: 0;
+  color: #f8f5fb;
+  background:
+    radial-gradient(circle at 12% 120%, rgba(125, 73, 177, 0.3), transparent 34rem),
+    #100d15;
+}
+
+.eventos-cliente-page .eventos-footer::before {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #7047ff 0%, #cf55ef 48%, #ff5ea7 100%);
+  background-size: 200% 100%;
+  animation: eventosFooterGlow 3.8s linear infinite;
+}
+
+@keyframes eventosFooterGlow {
+  from { background-position: 200% 0; }
+  to { background-position: 0 0; }
+}
+
+.eventos-cliente-page .eventos-footer__inner {
+  width: min(100%, 92rem);
+  max-width: 92rem;
+  margin: 0 auto;
+  padding: clamp(2.25rem, 4vw, 3.75rem) clamp(1.25rem, 5vw, 4.75rem)
+    calc(1.1rem + env(safe-area-inset-bottom, 0px));
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(22rem, 0.75fr);
+  gap: clamp(2.25rem, 5vw, 5.5rem);
+  align-items: start;
+  text-align: left;
+}
+
+.eventos-cliente-page .eventos-footer__lead {
+  min-width: 0;
+}
+
+.eventos-cliente-page .eventos-footer__brand {
+  display: inline-block;
+  color: #f8f5fb;
+  text-decoration: none;
+  font-size: clamp(2.75rem, 6.5vw, 6rem);
+  font-weight: 950;
+  line-height: 0.78;
+  letter-spacing: -0.085em;
+}
+
+.eventos-cliente-page .eventos-footer__brand span {
+  color: #e879f9;
+}
+
+.eventos-cliente-page .eventos-footer__brand:focus-visible {
+  outline: 3px solid #c084fc;
+  outline-offset: 0.5rem;
+}
+
+.eventos-cliente-page .eventos-footer__statement {
+  margin: clamp(1.25rem, 2.5vw, 2rem) 0 0;
+  color: #b9afc1;
+  font-size: clamp(1rem, 1.5vw, 1.25rem);
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+
+.eventos-cliente-page .eventos-footer__nav-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem clamp(1.5rem, 3vw, 3rem);
+}
+
+.eventos-cliente-page .eventos-footer__group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.eventos-cliente-page .eventos-footer__label {
+  margin: 0 0 0.45rem;
+  color: #e879f9;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.eventos-cliente-page footer.eventos-footer .eventos-footer__link {
+  position: relative;
+  color: #c8c0ce;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.35;
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.eventos-cliente-page footer.eventos-footer .eventos-footer__link:hover,
+.eventos-cliente-page footer.eventos-footer .eventos-footer__link:focus-visible {
+  color: #ffffff;
+  transform: translateX(0.2rem);
+}
+
+.eventos-cliente-page footer.eventos-footer .eventos-footer__link:focus-visible {
+  outline: 2px solid #c084fc;
+  outline-offset: 0.25rem;
+}
+
+.eventos-cliente-page .eventos-footer__base {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: clamp(0.75rem, 2vw, 1.5rem);
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.eventos-cliente-page .eventos-footer__copy,
+.eventos-cliente-page .eventos-footer__version {
+  margin: 0;
+  color: #817789;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 760px) {
+  .eventos-cliente-page footer.eventos-footer {
+    margin-top: 1.75rem;
+  }
+
+  .eventos-cliente-page .eventos-footer__inner {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding-top: 2.5rem;
+  }
+
+  .eventos-cliente-page .eventos-footer__brand {
+    font-size: clamp(2.65rem, 14vw, 4rem);
+  }
+
+  .eventos-cliente-page .eventos-footer__nav-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.35rem 1rem;
+  }
+
+  .eventos-cliente-page .eventos-footer__base {
+    grid-column: 1;
+    flex-direction: column;
+    margin-top: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eventos-cliente-page .eventos-footer::before {
+    animation: none;
+  }
+
+  .eventos-cliente-page footer.eventos-footer .eventos-footer__link {
+    transition: none;
   }
 }

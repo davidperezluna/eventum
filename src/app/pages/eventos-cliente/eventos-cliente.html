@@ -37,9 +37,10 @@
         <p class="eventos-desktop-lead">Busca por nombre, lugar o tipo de experiencia.</p>
       </div>
     </div>
+    <div class="fanpage-essentials">
     <section
       *ngIf="cuposEventumEnabled && !initialBootstrapLoading"
-      class="events-section products-panel"
+      class="events-section products-panel fanpage-essential fanpage-essential--community"
       aria-labelledby="cupos-hub-title"
     >
       <div class="products-reminder">
@@ -62,6 +63,38 @@
         </div>
       </div>
     </section>
+
+    <section
+      class="events-section products-panel fanpage-essential fanpage-essential--products"
+      *ngIf="!loading && !searchTerm && !categoriaFiltro && eventosConProductosPreview.length > 0"
+      aria-labelledby="productos-fanpage-title"
+    >
+      <div class="products-reminder">
+        <div class="products-reminder__mark" aria-hidden="true">
+          <span class="material-icons">local_mall</span>
+        </div>
+        <div class="products-reminder__copy">
+          <p class="section-kicker">Antes de llegar</p>
+          <h2 id="productos-fanpage-title">Completa tu experiencia</h2>
+          <p>Compra con anticipación y retira tus productos durante el evento con el QR de tu pedido.</p>
+        </div>
+        <div class="products-reminder__events">
+          <a
+            *ngFor="let evento of eventosConProductosPreview; trackBy: trackByEventoId"
+            [routerLink]="['/detalle-evento', evento.id]"
+            [queryParams]="{ tab: 'productos' }"
+            class="products-reminder__link"
+          >
+            <span>
+              <small>Ver productos</small>
+              <strong>{{ evento.titulo }}</strong>
+            </span>
+            <span class="material-icons" aria-hidden="true">arrow_forward</span>
+          </a>
+        </div>
+      </div>
+    </section>
+    </div>
 
     <!-- Loading State -->
     <div *ngIf="loading" class="eventos-skeleton" aria-live="polite" aria-busy="true">
@@ -170,7 +203,7 @@
 
     <section
       id="productos-destacados"
-      class="events-section products-panel"
+      class="events-section products-panel products-panel--mobile-order"
       *ngIf="!loading && !searchTerm && !categoriaFiltro && eventosConProductosPreview.length > 0"
     >
       <div class="products-reminder">
@@ -259,17 +292,34 @@
 
   <footer class="eventos-footer" role="contentinfo">
     <div class="eventos-footer__inner">
-      <p class="eventos-footer__copy">&copy; {{ currentYear }} Eventum</p>
-      <p class="eventos-footer__version" aria-label="Versión de la aplicación">v{{ appVersion }}</p>
-      <nav class="eventos-footer__links" aria-label="Enlaces legales">
-        <a routerLink="/eventos-cliente" class="eventos-footer__link">Eventos</a>
-        <a routerLink="/organizadores" class="eventos-footer__link">Para Organizadores</a>
-        <a routerLink="/conocenos" class="eventos-footer__link">Conócenos</a>
-        <a routerLink="/conocenos" fragment="pagos-wompi" class="eventos-footer__link">Pagos Wompi</a>
-        <a href="#" class="eventos-footer__link">Términos</a>
-        <a href="#" class="eventos-footer__link">Privacidad</a>
-        <a href="#" class="eventos-footer__link">Ayuda</a>
-      </nav>
+      <div class="eventos-footer__lead">
+        <a routerLink="/eventos-cliente" class="eventos-footer__brand" aria-label="Eventum, inicio">
+          EVENTUM<span aria-hidden="true">.</span>
+        </a>
+        <p class="eventos-footer__statement">Tu próxima historia<br />empieza en vivo.</p>
+      </div>
+
+      <div class="eventos-footer__nav-grid">
+        <nav class="eventos-footer__group" aria-label="Explorar Eventum">
+          <p class="eventos-footer__label">Explora</p>
+          <a routerLink="/eventos-cliente" class="eventos-footer__link">Eventos</a>
+          <a routerLink="/organizadores" class="eventos-footer__link">Para organizadores</a>
+          <a routerLink="/conocenos" class="eventos-footer__link">Conócenos</a>
+        </nav>
+
+        <nav class="eventos-footer__group" aria-label="Información y ayuda">
+          <p class="eventos-footer__label">Información</p>
+          <a routerLink="/conocenos" fragment="pagos-wompi" class="eventos-footer__link">Pagos Wompi</a>
+          <a href="#" class="eventos-footer__link">Privacidad</a>
+          <a href="#" class="eventos-footer__link">Términos</a>
+          <a href="#" class="eventos-footer__link">Ayuda</a>
+        </nav>
+      </div>
+
+      <div class="eventos-footer__base">
+        <p class="eventos-footer__copy">&copy; {{ currentYear }} Eventum · Experiencias únicas</p>
+        <p class="eventos-footer__version" aria-label="Versión de la aplicación">v{{ appVersion }}</p>
+      </div>
     </div>
   </footer>
 </div>

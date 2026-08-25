@@ -1,4 +1,5 @@
 /* Importar sistema de temas */
+@import './styles/eventos-client-header-fanpage.css';
 @import './styles/themes.css';
 @import './styles/client-tokens.css';
 @import './app/components/admin-sidebar/admin-shell.tokens.css';

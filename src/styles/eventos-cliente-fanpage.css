@@ -1,0 +1,1173 @@
+/* ==========================================================
+   FANPAGE DESKTOP
+   Capa aislada: la experiencia móvil conserva su composición.
+   ========================================================== */
+@media (min-width: 901px) {
+  .eventos-cliente-page {
+    --fan-ink: #f7f3ff;
+    --fan-muted: #afa5bb;
+    --fan-night: #100d15;
+    --fan-panel: #19141f;
+    --fan-line: rgba(255, 255, 255, 0.12);
+    --fan-accent: #d4ff47;
+    color: var(--fan-ink);
+    background:
+      radial-gradient(circle at 78% 7%, rgba(119, 72, 167, 0.2), transparent 27rem),
+      linear-gradient(180deg, #17111d 0, var(--fan-night) 44rem);
+  }
+
+  .eventos-cliente-page .eventos-shell {
+    max-width: 92rem;
+    padding: 0 clamp(2rem, 4vw, 4.75rem) 5rem;
+  }
+
+  .eventos-cliente-page .eventos-discovery {
+    width: 100%;
+    min-height: min(42rem, calc(100dvh - 7rem));
+    margin: 0 auto 5.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 0.4rem 4rem 0.4rem 0.4rem;
+    background: #21162b;
+    box-shadow: 0 2.25rem 6rem rgba(0, 0, 0, 0.34);
+    isolation: isolate;
+  }
+
+  .eventos-cliente-page .eventos-discovery::after {
+    display: block;
+    inset: 0;
+    z-index: -2;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: inherit;
+    background-image: url('/images/eventos/eventos-hero-concierto-v2.png');
+    background-position: 69% center;
+    background-size: cover;
+    filter: saturate(0.78) contrast(1.08);
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .eventos-cliente-page .eventos-discovery::before {
+    z-index: -1;
+    background:
+      linear-gradient(90deg, rgba(16, 13, 21, 0.99) 0%, rgba(16, 13, 21, 0.93) 31%, rgba(16, 13, 21, 0.42) 57%, rgba(16, 13, 21, 0.08) 82%),
+      linear-gradient(0deg, rgba(16, 13, 21, 0.88) 0%, transparent 43%);
+  }
+
+  .eventos-cliente-page .eventos-hero {
+    min-height: min(42rem, calc(100dvh - 7rem));
+    padding: clamp(4.5rem, 8vh, 7rem) clamp(3.25rem, 6vw, 6.75rem) 8.5rem;
+  }
+
+  .eventos-cliente-page .eventos-hero::after {
+    display: none;
+  }
+
+  .eventos-cliente-page .eventos-hero__copy {
+    max-width: 42rem;
+  }
+
+  .eventos-cliente-page .eventos-hero__copy::before {
+    content: 'EVENTUM  /  CULTURA EN VIVO';
+    display: block;
+    margin-bottom: clamp(2.25rem, 5vh, 4rem);
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.24em;
+  }
+
+  .eventos-cliente-page .eventos-hero__eyebrow {
+    margin-bottom: 1rem;
+    color: var(--fan-accent);
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+  }
+
+  .eventos-cliente-page .eventos-hero__eyebrow span {
+    background: var(--fan-accent);
+  }
+
+  .eventos-cliente-page .eventos-hero h1 {
+    max-width: 8ch;
+    color: #fff;
+    font-size: clamp(4.25rem, 6.6vw, 7.4rem);
+    font-weight: 900;
+    line-height: 0.78;
+    letter-spacing: -0.075em;
+    text-wrap: balance;
+    text-shadow: 0 0.15rem 1.2rem rgba(0, 0, 0, 0.18);
+  }
+
+  .eventos-cliente-page .eventos-hero h1::after {
+    display: none;
+  }
+
+  .eventos-cliente-page .eventos-hero__lead {
+    max-width: 32ch;
+    margin-top: 1.8rem;
+    color: rgba(255, 255, 255, 0.73);
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  .eventos-cliente-page .eventos-hero__index {
+    right: clamp(3rem, 5vw, 5.5rem);
+    top: clamp(3rem, 6vh, 5.5rem);
+    padding-left: 1.25rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.32);
+    color: #fff;
+  }
+
+  .eventos-cliente-page .eventos-hero__number {
+    color: var(--fan-accent);
+    font-size: 2.6rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .eventos-cliente-page .eventos-hero__label {
+    color: rgba(255, 255, 255, 0.64);
+  }
+
+  .eventos-cliente-page .eventos-toolbar {
+    left: clamp(3.25rem, 6vw, 6.75rem);
+    right: clamp(3.25rem, 6vw, 6.75rem);
+    bottom: 2.6rem;
+    display: grid;
+    grid-template-columns: minmax(24rem, 39rem) 1fr;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .eventos-cliente-page .eventos-search {
+    min-height: 4.5rem;
+    padding: 0.45rem 0.45rem 0.45rem 1.4rem;
+    border-color: rgba(255, 255, 255, 0.22);
+    border-radius: 0.25rem 1.4rem 0.25rem 0.25rem;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.25);
+  }
+
+  .eventos-cliente-page .eventos-search:focus-within {
+    border-color: var(--fan-accent);
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.28), 0 0 0 3px rgba(212, 255, 71, 0.22);
+  }
+
+  .eventos-cliente-page .eventos-search__go {
+    width: 3.55rem;
+    height: 3.55rem;
+    border-radius: 0.15rem 1rem 0.15rem 0.15rem;
+    color: #16120f;
+    background: var(--fan-accent);
+    box-shadow: none;
+  }
+
+  .eventos-cliente-page .eventos-desktop-lead {
+    display: block;
+    max-width: 27ch;
+    color: rgba(255, 255, 255, 0.64);
+    font-size: 0.78rem;
+    line-height: 1.55;
+  }
+
+  .eventos-cliente-page .events-section {
+    margin-bottom: 6.5rem;
+  }
+
+  .eventos-cliente-page .events-section > .section-header {
+    margin-bottom: 2.2rem;
+    padding-bottom: 1.1rem;
+    border-bottom-color: var(--fan-line);
+  }
+
+  .eventos-cliente-page .events-section .section-kicker {
+    margin-bottom: 0.7rem;
+    color: var(--fan-accent);
+    font-size: 0.63rem;
+  }
+
+  .eventos-cliente-page .events-section .section-header h2 {
+    color: var(--fan-ink);
+    font-size: clamp(2.35rem, 3.4vw, 4rem);
+    font-weight: 850;
+    line-height: 0.92;
+    letter-spacing: -0.055em;
+  }
+
+  .eventos-cliente-page .events-section .section-count {
+    height: auto;
+    min-width: 0;
+    padding: 0;
+    color: var(--fan-muted);
+    background: transparent;
+    box-shadow: none;
+    font-size: 1rem;
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past),
+  .eventos-cliente-page .events-grid.featured {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-auto-flow: dense;
+    gap: 1.25rem;
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card {
+    grid-column: span 4;
+    min-height: 31rem;
+    border: 1px solid var(--fan-line);
+    border-radius: 0.25rem 2rem 0.25rem 0.25rem;
+    background: var(--fan-panel);
+    box-shadow: none;
+    transform: translateZ(0);
+    transition: transform 260ms ease, border-color 260ms ease;
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card:nth-child(5n + 1) {
+    grid-column: span 8;
+    min-height: 38rem;
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card:nth-child(5n + 2) {
+    min-height: 38rem;
+  }
+
+  /* La regla heredada de escritorio convertía un único evento en 1/12 de columna. */
+  .eventos-cliente-page .events-grid:not(.events-grid--past):has(> .event-card:only-child) {
+    grid-template-columns: minmax(0, 8fr) minmax(17rem, 4fr);
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past):has(> .event-card:only-child) .event-card,
+  .eventos-cliente-page .events-grid:not(.events-grid--past):has(> .event-card:only-child) .event-card--lead {
+    grid-column: 1;
+    width: 100%;
+    min-height: clamp(31rem, 52vw, 40rem);
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card:hover {
+    border-color: rgba(212, 255, 71, 0.5);
+    transform: translateY(-0.4rem);
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-thumb::after {
+    background: linear-gradient(180deg, rgba(16, 13, 21, 0.02) 25%, rgba(16, 13, 21, 0.34) 54%, rgba(16, 13, 21, 0.98) 100%);
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-thumb img {
+    filter: saturate(0.88);
+    transition: transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 300ms ease;
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card:hover .event-thumb img {
+    filter: saturate(1.05);
+    transform: scale(1.035);
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-body {
+    padding: clamp(1.5rem, 2.4vw, 2.3rem);
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-title {
+    max-width: 14ch;
+    font-size: clamp(1.75rem, 2.6vw, 3.1rem);
+    line-height: 0.95;
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-meta {
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-meta-line .material-icons {
+    color: var(--fan-accent);
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-footer-main {
+    border-top-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-cta {
+    color: #16120f;
+    border-color: var(--fan-accent);
+    background: var(--fan-accent);
+    box-shadow: none;
+  }
+
+  .eventos-cliente-page .products-panel {
+    border-top: 1px solid var(--fan-line);
+    border-bottom: 1px solid var(--fan-line);
+  }
+
+  .eventos-cliente-page .products-reminder {
+    min-height: 7rem;
+    padding: 1.6rem 0;
+    border: 0;
+    color: var(--fan-ink);
+    background: transparent;
+  }
+
+  .eventos-cliente-page .products-reminder__mark {
+    border-radius: 0.2rem 1rem 0.2rem 0.2rem;
+    color: #16120f;
+    background: var(--fan-accent);
+    box-shadow: none;
+  }
+
+  .eventos-cliente-page .products-reminder__copy h2 {
+    color: var(--fan-ink);
+  }
+
+  .eventos-cliente-page .products-reminder__copy > p:last-child {
+    color: var(--fan-muted);
+  }
+
+  .eventos-cliente-page .products-reminder__link {
+    border-color: var(--fan-line);
+    border-radius: 0.2rem 1rem 0.2rem 0.2rem;
+    color: var(--fan-ink);
+    background: rgba(255, 255, 255, 0.055);
+    backdrop-filter: blur(12px);
+  }
+
+  .eventos-cliente-page .products-reminder__link:hover {
+    border-color: rgba(212, 255, 71, 0.46);
+    background: rgba(212, 255, 71, 0.08);
+    box-shadow: none;
+  }
+
+  .eventos-cliente-page .products-reminder__link small,
+  .eventos-cliente-page .products-reminder__link .material-icons {
+    color: var(--fan-accent);
+  }
+
+  .eventos-cliente-page .events-section--past {
+    opacity: 0.78;
+  }
+
+  .eventos-cliente-page .eventos-footer {
+    color: var(--fan-muted);
+    background: #0b090e;
+    border-top-color: var(--fan-line);
+  }
+
+  .eventos-cliente-page .eventos-footer__link {
+    color: var(--fan-muted);
+  }
+
+  .eventos-cliente-page .eventos-footer__link:hover,
+  .eventos-cliente-page .eventos-footer__link:focus-visible {
+    color: var(--fan-accent);
+  }
+}
+
+/* Regla final — versión integrada y compacta de productos. */
+@media (min-width: 901px) {
+  .eventos-cliente-page section#productos-destacados {
+    min-height: 0;
+    margin: 0 auto 4rem;
+    border-radius: 0.55rem 1.25rem 0.55rem 0.55rem;
+    background:
+      linear-gradient(90deg, rgba(111, 63, 232, 0.1), rgba(111, 63, 232, 0.025) 34%, transparent 65%),
+      #faf8fc;
+    box-shadow: 0 0.8rem 2rem rgba(60, 34, 83, 0.07);
+  }
+
+  .eventos-cliente-page section#productos-destacados::before {
+    content: none;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder {
+    display: grid;
+    grid-template-columns: 3.25rem minmax(15rem, 0.8fr) minmax(22rem, 1.2fr);
+    align-items: center;
+    gap: 1.15rem;
+    min-height: 0;
+    height: auto;
+    padding: 1.35rem 1.5rem;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__mark {
+    align-self: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 0.3rem 0.9rem 0.3rem 0.3rem;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__copy .section-kicker {
+    margin-bottom: 0.3rem;
+    font-size: 0.54rem;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__copy h2 {
+    max-width: none;
+    font-size: clamp(1.4rem, 1.8vw, 1.9rem);
+    line-height: 1;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__copy > p:last-child {
+    max-width: 43ch;
+    margin-top: 0.4rem;
+    font-size: 0.68rem;
+    line-height: 1.38;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__events {
+    display: flex;
+    grid-column: auto;
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__link {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 4rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: 0.35rem 0.8rem 0.35rem 0.35rem;
+    box-shadow: none;
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__link strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1120px) {
+  .eventos-cliente-page section#productos-destacados .products-reminder {
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+  }
+
+  .eventos-cliente-page section#productos-destacados .products-reminder__events {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Ajuste 03 — transición hero → comunidad → agenda. */
+@media (min-width: 901px) {
+  .eventos-cliente-page .eventos-discovery {
+    margin-bottom: 0;
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel {
+    position: relative;
+    z-index: 3;
+    width: min(calc(100% - 5rem), 74rem);
+    margin: -1.9rem auto 4.75rem;
+    border: 0;
+    border-radius: 0.45rem 1.5rem 0.45rem 0.45rem;
+    color: #fff;
+    background:
+      radial-gradient(circle at 82% 20%, rgba(216, 118, 255, 0.28), transparent 14rem),
+      linear-gradient(115deg, #4c25ad 0%, #6f3fe8 57%, #8144d1 100%);
+    box-shadow: 0 1.4rem 3.2rem rgba(69, 34, 111, 0.24);
+    overflow: hidden;
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel::after {
+    content: '';
+    position: absolute;
+    right: -3.5rem;
+    bottom: -6.5rem;
+    width: 14rem;
+    aspect-ratio: 1;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    box-shadow: 0 0 0 2.8rem rgba(255, 255, 255, 0.035);
+    pointer-events: none;
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel .products-reminder {
+    position: relative;
+    z-index: 1;
+    min-height: 0;
+    padding: 1.35rem 1.5rem;
+    color: #fff;
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel .products-reminder__mark {
+    color: #6b38dc;
+    background: #fff;
+    box-shadow: 0 0.65rem 1.4rem rgba(39, 13, 82, 0.25);
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel .section-kicker {
+    color: #ded0ff;
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel .products-reminder__copy h2 {
+    color: #fff;
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel .products-reminder__copy > p:last-child {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel .products-reminder__link {
+    min-width: 14rem;
+    border-color: rgba(255, 255, 255, 0.24);
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel .products-reminder__link:hover {
+    border-color: rgba(255, 255, 255, 0.48);
+    background: rgba(255, 255, 255, 0.17);
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel .products-reminder__link small {
+    color: #d9c9ff;
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel .products-reminder__link .material-icons {
+    color: #fff;
+  }
+
+  .eventos-cliente-page .events-section--upcoming {
+    width: min(100%, 82rem);
+    margin: 0 auto 6.5rem;
+  }
+
+  .eventos-cliente-page .events-section--upcoming > .section-header {
+    position: relative;
+    margin-bottom: 1.7rem;
+    padding: 0 0 1.2rem 1.15rem;
+    border-bottom-color: rgba(88, 51, 130, 0.16);
+  }
+
+  .eventos-cliente-page .events-section--upcoming > .section-header::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.15rem;
+    bottom: 1.2rem;
+    width: 0.28rem;
+    border-radius: 1rem;
+    background: linear-gradient(#7342ed, #d34bb7);
+  }
+
+  .eventos-cliente-page .events-section--upcoming .section-header h2 {
+    font-size: clamp(2.7rem, 4vw, 4.5rem);
+  }
+
+  .eventos-cliente-page .events-section--upcoming .section-count {
+    display: grid;
+    place-items: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border: 1px solid rgba(111, 63, 232, 0.22);
+    border-radius: 50%;
+    color: #6f3fe8;
+    background: #fff;
+  }
+}
+
+/* Ajuste 04 — agenda compacta con lenguaje de fanpage. */
+@media (min-width: 901px) {
+  .eventos-cliente-page .events-section--upcoming .events-grid:not(.events-grid--past),
+  .eventos-cliente-page .events-grid.featured {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-flow: row;
+    gap: clamp(1rem, 1.6vw, 1.5rem);
+  }
+
+  .eventos-cliente-page .events-section--upcoming .events-grid:not(.events-grid--past) .event-card,
+  .eventos-cliente-page .events-section--upcoming .events-grid:not(.events-grid--past) .event-card:nth-child(n),
+  .eventos-cliente-page .events-grid.featured .event-card:nth-child(n) {
+    grid-column: auto;
+    width: 100%;
+    min-height: 25rem;
+    border: 0;
+    border-radius: 0.55rem 1.4rem 0.55rem 0.55rem;
+    box-shadow: 0 1rem 2.4rem rgba(53, 28, 78, 0.14);
+  }
+
+  .eventos-cliente-page .events-section--upcoming .events-grid:not(.events-grid--past):has(> .event-card:only-child) {
+    display: grid;
+    grid-template-columns: minmax(19rem, 27rem) 1fr;
+  }
+
+  .eventos-cliente-page .events-section--upcoming .events-grid:not(.events-grid--past):has(> .event-card:only-child) .event-card,
+  .eventos-cliente-page .events-section--upcoming .events-grid:not(.events-grid--past):has(> .event-card:only-child) .event-card--lead {
+    grid-column: 1;
+    min-height: 27rem;
+    max-height: 31rem;
+  }
+
+  .eventos-cliente-page .events-section--upcoming .event-card::after,
+  .eventos-cliente-page .events-grid.featured .event-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .eventos-cliente-page .events-section--upcoming .event-card:hover,
+  .eventos-cliente-page .events-grid.featured .event-card:hover {
+    box-shadow: 0 1.5rem 3.2rem rgba(61, 31, 91, 0.22);
+    transform: translateY(-0.35rem);
+  }
+
+  .eventos-cliente-page .events-section--upcoming .event-card .event-body,
+  .eventos-cliente-page .events-grid.featured .event-card .event-body {
+    padding: 1.35rem;
+  }
+
+  .eventos-cliente-page .events-section--upcoming .event-card .event-title,
+  .eventos-cliente-page .events-grid.featured .event-card .event-title {
+    max-width: 16ch;
+    font-size: clamp(1.45rem, 1.8vw, 2rem);
+    line-height: 0.98;
+  }
+
+  .eventos-cliente-page .events-section--upcoming .event-card__latest {
+    top: 0.85rem;
+    left: 0.85rem;
+    padding: 0.4rem 0.65rem;
+    border-radius: 0.3rem 0.7rem 0.3rem 0.3rem;
+    background: #6f3fe8;
+    box-shadow: 0 0.55rem 1.2rem rgba(50, 20, 86, 0.25);
+  }
+
+  .eventos-cliente-page .events-section--upcoming .event-card__date {
+    top: 2.9rem;
+    left: 0.85rem;
+    width: 3.35rem;
+    height: 3.7rem;
+    border-radius: 0.45rem 0.9rem 0.45rem 0.45rem;
+    background: rgba(30, 12, 45, 0.66);
+  }
+
+  .eventos-cliente-page .events-section--upcoming .event-footer-main {
+    margin-top: 0.7rem;
+    padding-top: 0.65rem;
+  }
+
+  .eventos-cliente-page .events-section--upcoming .event-cta {
+    width: 2.55rem;
+    height: 2.55rem;
+    border-radius: 0.35rem 0.85rem 0.35rem 0.35rem;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1120px) {
+  .eventos-cliente-page .events-section--upcoming .events-grid:not(.events-grid--past),
+  .eventos-cliente-page .events-grid.featured {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Ajuste 07 — barra de productos compacta y llamativa. */
+@media (min-width: 901px) {
+  .eventos-cliente-page #productos-destacados {
+    margin-top: 0;
+    margin-bottom: 4.5rem;
+    border-radius: 0.5rem 1.35rem 0.5rem 0.5rem;
+    background:
+      linear-gradient(90deg, rgba(111, 63, 232, 0.1), transparent 32%),
+      #f8f4fb;
+    box-shadow: 0 0.9rem 2.3rem rgba(60, 34, 83, 0.08);
+  }
+
+  .eventos-cliente-page #productos-destacados::before {
+    top: 0.9rem;
+    right: 1.25rem;
+    font-size: 0.5rem;
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder {
+    grid-template-columns: 3.25rem minmax(14rem, 0.7fr) minmax(24rem, 1.3fr);
+    gap: 1.15rem;
+    min-height: 0;
+    padding: 1.45rem 1.6rem;
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__mark {
+    align-self: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 0.3rem 0.95rem 0.3rem 0.3rem;
+    box-shadow: 0 0.55rem 1.2rem rgba(87, 44, 155, 0.16);
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__mark .material-icons {
+    font-size: 1.3rem;
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__copy .section-kicker {
+    margin-bottom: 0.35rem;
+    font-size: 0.55rem;
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__copy h2 {
+    max-width: none;
+    font-size: clamp(1.45rem, 2vw, 2rem);
+    line-height: 0.98;
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__copy > p:last-child {
+    max-width: 39ch;
+    margin-top: 0.45rem;
+    font-size: 0.7rem;
+    line-height: 1.4;
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__events {
+    display: flex;
+    align-items: stretch;
+    gap: 0.6rem;
+    min-width: 0;
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__link {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 4.2rem;
+    padding: 0.75rem 0.85rem;
+    border-radius: 0.35rem 0.85rem 0.35rem 0.35rem;
+    box-shadow: none;
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__link:hover {
+    box-shadow: 0 0.65rem 1.45rem rgba(58, 32, 79, 0.1);
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__link strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1120px) {
+  .eventos-cliente-page #productos-destacados .products-reminder {
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+    padding: 1.25rem 1.4rem;
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__events {
+    grid-column: 1 / -1;
+  }
+}
+
+
+/* Ajuste 05 — Comunidad Eventum como puente, no como segundo hero. */
+@media (min-width: 901px) {
+  .eventos-cliente-page .eventos-discovery + .products-panel {
+    width: min(calc(100% - 7rem), 71rem);
+    margin-top: -1.25rem;
+    border: 1px solid rgba(91, 54, 137, 0.13);
+    color: #211727;
+    background:
+      radial-gradient(circle at 88% 15%, rgba(141, 87, 210, 0.1), transparent 13rem),
+      rgba(246, 242, 250, 0.96);
+    box-shadow: 0 0.85rem 2.2rem rgba(61, 34, 85, 0.1);
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel::after {
+    border-color: rgba(111, 63, 232, 0.1);
+    box-shadow: 0 0 0 2.8rem rgba(111, 63, 232, 0.018);
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel .products-reminder {
+    padding-block: 1.1rem;
+    color: #211727;
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel .products-reminder__mark {
+    color: #fff;
+    background: #7040df;
+    box-shadow: 0 0.45rem 1rem rgba(87, 45, 161, 0.16);
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel .section-kicker {
+    color: #7555a3;
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel .products-reminder__copy h2 {
+    color: #211727;
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel .products-reminder__copy > p:last-child {
+    color: #746a7c;
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel .products-reminder__link {
+    border-color: rgba(91, 54, 137, 0.14);
+    color: #2b2031;
+    background: rgba(255, 255, 255, 0.7);
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel .products-reminder__link:hover {
+    border-color: rgba(111, 63, 232, 0.3);
+    background: #fff;
+  }
+
+  .eventos-cliente-page .eventos-discovery + .products-panel .products-reminder__link small,
+  .eventos-cliente-page .eventos-discovery + .products-panel .products-reminder__link .material-icons {
+    color: #7040df;
+  }
+}
+
+/* Ajuste 06 — “Antes de llegar” como bloque editorial de fanpage. */
+@media (min-width: 901px) {
+  .eventos-cliente-page #productos-destacados {
+    position: relative;
+    width: min(100%, 82rem);
+    margin: 1rem auto 6.5rem;
+    padding: 0;
+    border: 1px solid rgba(77, 45, 109, 0.13);
+    border-radius: 0.65rem 2rem 0.65rem 0.65rem;
+    background:
+      radial-gradient(circle at 8% 115%, rgba(143, 83, 219, 0.13), transparent 18rem),
+      linear-gradient(120deg, #f4eff9 0%, #fbf9fd 48%, #f7f2fa 100%);
+    box-shadow: 0 1.25rem 3.25rem rgba(60, 34, 83, 0.1);
+    overflow: hidden;
+  }
+
+  .eventos-cliente-page #productos-destacados::before {
+    content: 'PREVENTA  /  EXPERIENCIA';
+    position: absolute;
+    top: 1.3rem;
+    right: 1.75rem;
+    color: rgba(84, 54, 111, 0.44);
+    font-size: 0.56rem;
+    font-weight: 850;
+    letter-spacing: 0.2em;
+    pointer-events: none;
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder {
+    display: grid;
+    grid-template-columns: 4.25rem minmax(17rem, 0.8fr) minmax(23rem, 1.2fr);
+    align-items: center;
+    gap: clamp(1.25rem, 2.5vw, 2.5rem);
+    min-height: 15rem;
+    padding: 3.25rem clamp(2rem, 4vw, 4rem) 2.75rem;
+    border: 0;
+    background: transparent;
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__mark {
+    align-self: start;
+    display: grid;
+    place-items: center;
+    width: 4.25rem;
+    height: 4.25rem;
+    border-radius: 0.35rem 1.3rem 0.35rem 0.35rem;
+    color: #fff;
+    background: linear-gradient(145deg, #6f3fe8, #9b47cf);
+    box-shadow: 0 0.8rem 1.8rem rgba(87, 44, 155, 0.2);
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__mark .material-icons {
+    font-size: 1.6rem;
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__copy .section-kicker {
+    margin-bottom: 0.65rem;
+    color: #7040df;
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__copy h2 {
+    max-width: 9ch;
+    color: #211727;
+    font-size: clamp(2rem, 3vw, 3.4rem);
+    font-weight: 900;
+    line-height: 0.92;
+    letter-spacing: -0.055em;
+    text-wrap: balance;
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__copy > p:last-child {
+    max-width: 35ch;
+    margin-top: 0.9rem;
+    color: #6f6577;
+    font-size: 0.83rem;
+    line-height: 1.55;
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__events {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__link {
+    min-height: 5.2rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid rgba(81, 46, 116, 0.13);
+    border-radius: 0.4rem 1rem 0.4rem 0.4rem;
+    color: #24192a;
+    background: rgba(255, 255, 255, 0.76);
+    box-shadow: 0 0.65rem 1.6rem rgba(58, 32, 79, 0.07);
+    backdrop-filter: blur(12px);
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__link:hover {
+    border-color: rgba(111, 63, 232, 0.32);
+    background: #fff;
+    box-shadow: 0 0.9rem 2rem rgba(58, 32, 79, 0.12);
+    transform: translateY(-0.2rem);
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__link small {
+    color: #7950c3;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__link strong {
+    margin-top: 0.25rem;
+    color: #24192a;
+    line-height: 1.2;
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__link .material-icons {
+    color: #7040df;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1120px) {
+  .eventos-cliente-page #productos-destacados .products-reminder {
+    grid-template-columns: 3.75rem minmax(0, 1fr);
+  }
+
+  .eventos-cliente-page #productos-destacados .products-reminder__events {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 901px) {
+  .eventos-cliente-page .eventos-discovery::before {
+    background:
+      linear-gradient(90deg, #fbf9fd 0%, rgba(251, 249, 253, 0.98) 32%, rgba(251, 249, 253, 0.8) 44%, rgba(251, 249, 253, 0.12) 63%, transparent 78%),
+      linear-gradient(0deg, rgba(246, 242, 249, 0.48) 0%, transparent 28%);
+  }
+
+  .eventos-cliente-page .eventos-discovery::after {
+    background-position: 72% center;
+    filter: saturate(0.88) contrast(1.04);
+  }
+}
+
+/* Ajuste 01 — hero claro, compacto y legible. */
+@media (min-width: 901px) {
+  .eventos-cliente-page .eventos-shell {
+    padding-top: 1.4rem;
+  }
+
+  .eventos-cliente-page .eventos-discovery {
+    width: min(100%, 82rem);
+    min-height: 35rem;
+    margin-top: 0;
+    margin-bottom: 4.25rem;
+    border-radius: 0.75rem;
+  }
+
+  .eventos-cliente-page .eventos-discovery::after {
+    background-position: 72% center;
+    filter: saturate(0.88) contrast(1.04);
+  }
+
+  .eventos-cliente-page .eventos-discovery::before {
+    background:
+      linear-gradient(90deg, #fbf9fd 0%, rgba(251, 249, 253, 0.98) 32%, rgba(251, 249, 253, 0.8) 44%, rgba(251, 249, 253, 0.12) 63%, transparent 78%),
+      linear-gradient(0deg, rgba(246, 242, 249, 0.48) 0%, transparent 28%);
+  }
+
+  .eventos-cliente-page .eventos-hero {
+    min-height: 35rem;
+    padding: 4.25rem clamp(3rem, 5vw, 5.25rem) 8.25rem;
+  }
+
+  .eventos-cliente-page .eventos-hero__copy {
+    max-width: 31rem;
+  }
+
+  .eventos-cliente-page .eventos-hero__copy::before {
+    margin-bottom: 2.35rem;
+    font-size: 0.59rem;
+    letter-spacing: 0.22em;
+  }
+
+  .eventos-cliente-page .eventos-hero__eyebrow {
+    margin-bottom: 1.15rem;
+    font-size: 0.65rem;
+  }
+
+  .eventos-cliente-page .eventos-hero h1 {
+    max-width: 9ch;
+    font-size: clamp(3.6rem, 5.15vw, 5.6rem);
+    line-height: 0.88;
+    letter-spacing: -0.068em;
+  }
+
+  .eventos-cliente-page .eventos-hero__lead {
+    max-width: 27ch;
+    margin-top: 1.45rem;
+    font-size: 0.92rem;
+  }
+
+  .eventos-cliente-page .eventos-hero__index {
+    display: none;
+  }
+
+  .eventos-cliente-page .eventos-toolbar {
+    left: clamp(3rem, 5vw, 5.25rem);
+    right: auto;
+    bottom: 2.4rem;
+    display: block;
+    width: min(39rem, calc(100% - 6rem));
+  }
+
+  .eventos-cliente-page .eventos-search {
+    min-height: 4.25rem;
+    padding-left: 1.35rem;
+    border-radius: 0.55rem 1.2rem 0.55rem 0.55rem;
+  }
+
+  .eventos-cliente-page .eventos-search__go {
+    width: 3.45rem;
+    height: 3.45rem;
+    border-radius: 0.35rem 0.9rem 0.35rem 0.35rem;
+  }
+
+  .eventos-cliente-page .eventos-desktop-lead {
+    display: none;
+  }
+}
+
+/* Fanpage de escritorio en modo claro. */
+@media (min-width: 901px) {
+  .eventos-cliente-page {
+    --fan-ink: #17121f;
+    --fan-muted: #746c7d;
+    --fan-night: #f8f6fb;
+    --fan-panel: #ffffff;
+    --fan-line: rgba(64, 37, 91, 0.14);
+    --fan-accent: #6f3fe8;
+    color: var(--fan-ink);
+    background:
+      radial-gradient(circle at 82% 4%, rgba(126, 79, 232, 0.12), transparent 29rem),
+      #fbfaff;
+  }
+
+  .eventos-cliente-page .eventos-discovery {
+    border-color: rgba(75, 45, 105, 0.12);
+    background: #f2edf7;
+    box-shadow: 0 2rem 5rem rgba(54, 30, 79, 0.13);
+  }
+
+  .eventos-cliente-page .eventos-discovery::after {
+    filter: saturate(0.82) contrast(1.02);
+  }
+
+  .eventos-cliente-page .eventos-discovery::before {
+    background:
+      linear-gradient(90deg, rgba(250, 248, 252, 0.99) 0%, rgba(250, 248, 252, 0.96) 31%, rgba(250, 248, 252, 0.65) 49%, rgba(250, 248, 252, 0.06) 76%),
+      linear-gradient(0deg, rgba(247, 244, 251, 0.84) 0%, transparent 40%);
+  }
+
+  .eventos-cliente-page .eventos-hero__copy::before {
+    color: #756984;
+  }
+
+  .eventos-cliente-page .eventos-hero__eyebrow,
+  .eventos-cliente-page .eventos-hero__number {
+    color: var(--fan-accent);
+  }
+
+  .eventos-cliente-page .eventos-hero__eyebrow span {
+    background: var(--fan-accent);
+  }
+
+  .eventos-cliente-page .eventos-hero h1 {
+    color: #17121f;
+    text-shadow: none;
+  }
+
+  .eventos-cliente-page .eventos-hero__lead {
+    color: #675e70;
+  }
+
+  .eventos-cliente-page .eventos-hero__index {
+    border-left-color: rgba(64, 37, 91, 0.2);
+    color: #17121f;
+  }
+
+  .eventos-cliente-page .eventos-hero__label,
+  .eventos-cliente-page .eventos-desktop-lead {
+    color: #756c7e;
+  }
+
+  .eventos-cliente-page .eventos-search {
+    border-color: rgba(74, 44, 106, 0.13);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 1rem 2.8rem rgba(54, 30, 79, 0.14);
+  }
+
+  .eventos-cliente-page .eventos-search:focus-within {
+    border-color: var(--fan-accent);
+    box-shadow: 0 1rem 2.8rem rgba(54, 30, 79, 0.15), 0 0 0 3px rgba(111, 63, 232, 0.13);
+  }
+
+  .eventos-cliente-page .eventos-search__go,
+  .eventos-cliente-page .products-reminder__mark {
+    color: #fff;
+    background: var(--fan-accent);
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card {
+    border-color: rgba(64, 37, 91, 0.12);
+    box-shadow: 0 1.2rem 3rem rgba(54, 30, 79, 0.13);
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card:hover {
+    border-color: rgba(111, 63, 232, 0.42);
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-meta-line .material-icons {
+    color: #d96ab9;
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-cta {
+    color: #fff;
+    border-color: var(--fan-accent);
+    background: var(--fan-accent);
+  }
+
+  .eventos-cliente-page .products-reminder__link {
+    color: var(--fan-ink);
+    background: rgba(255, 255, 255, 0.72);
+  }
+
+  .eventos-cliente-page .products-reminder__link:hover {
+    border-color: rgba(111, 63, 232, 0.38);
+    background: #fff;
+  }
+
+  .eventos-cliente-page .products-reminder__link small,
+  .eventos-cliente-page .products-reminder__link .material-icons {
+    color: var(--fan-accent);
+  }
+
+  .eventos-cliente-page .eventos-footer {
+    color: #756c7e;
+    background: #f3eff7;
+    border-top-color: rgba(64, 37, 91, 0.12);
+  }
+
+  .eventos-cliente-page .eventos-footer__link {
+    color: #675e70;
+  }
+
+  .eventos-cliente-page .eventos-footer__link:hover,
+  .eventos-cliente-page .eventos-footer__link:focus-visible {
+    color: var(--fan-accent);
+  }
+}

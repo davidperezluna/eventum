@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef, CUSTOM_ELEMENTS_SCHEMA, OnDestroy } from '@angular/core';
+import { AfterViewInit, Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef, CUSTOM_ELEMENTS_SCHEMA, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -22,10 +22,14 @@ import { CUPOS_LABELS } from '../../core/cupos-labels';
   selector: 'app-eventos-cliente',
   imports: [CommonModule, RouterModule, FormsModule, DateFormatPipe, PreventaLicorFlyer],
   templateUrl: './eventos-cliente.html',
-  styleUrl: './eventos-cliente.css',
+  styleUrls: [
+    './eventos-cliente.css',
+    '../../../styles/eventos-cliente-fanpage.css',
+    '../../../styles/eventos-cliente-fanpage-final.css'
+  ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
-export class EventosCliente implements OnInit, OnDestroy {
+export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('carouselTrack') carouselTrack!: ElementRef;
 
   eventos: Evento[] = [];
@@ -46,6 +50,7 @@ export class EventosCliente implements OnInit, OnDestroy {
   private searchSubject = new Subject<string>();
   private searchSubscription: Subscription | null = null;
   private refreshIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
+  private footerObserver: IntersectionObserver | null = null;
   private readonly refreshIndicatorDelayMs = 800;
   private readonly maxProductosDestacados = 4;
   currentYear = new Date().getFullYear();
@@ -64,7 +69,8 @@ export class EventosCliente implements OnInit, OnDestroy {
     private productosService: ProductosService,
     private authService: AuthService,
     private cuposEventoService: CuposEventoService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private hostElement: ElementRef<HTMLElement>
   ) { }
 
   get clienteLogueado(): boolean {
@@ -99,6 +105,35 @@ export class EventosCliente implements OnInit, OnDestroy {
     }
   }
 
+  ngAfterViewInit(): void {
+    const footer = this.hostElement.nativeElement.querySelector<HTMLElement>('.eventos-footer');
+    if (!footer || typeof IntersectionObserver === 'undefined') return;
+
+    const targets = Array.from(
+      footer.querySelectorAll<HTMLElement>(
+        '.eventos-footer__brand, .eventos-footer__statement, .eventos-footer__group, .eventos-footer__base'
+      )
+    );
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      targets.forEach(target => target.classList.add('is-visible'));
+      return;
+    }
+
+    footer.classList.add('eventos-footer--motion-ready');
+    targets.forEach((target, index) => {
+      target.style.setProperty('--footer-motion-delay', `${index * 90}ms`);
+    });
+
+    this.footerObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        (entry.target as HTMLElement).classList.toggle('is-visible', entry.isIntersecting);
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -3% 0px' });
+
+    targets.forEach(target => this.footerObserver?.observe(target));
+  }
+
   private async cargarResumenCupos(): Promise<void> {
     try {
       const r = await this.cuposEventoService.resumenMisCupos();
@@ -112,6 +147,8 @@ export class EventosCliente implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.persistState();
     this.stopSilentRefreshIndicator();
+    this.footerObserver?.disconnect();
+    this.footerObserver = null;
 
     if (this.searchSubscription) {
       this.searchSubscription.unsubscribe();
