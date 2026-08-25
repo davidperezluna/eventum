@@ -39,38 +39,26 @@
     </div>
     <section
       *ngIf="cuposEventumEnabled && !initialBootstrapLoading"
-      class="cupos-hub"
+      class="events-section products-panel"
       aria-labelledby="cupos-hub-title"
     >
-      <div class="cupos-hub-inner">
-        <div class="cupos-hub-copy">
-          <span class="cupos-hub-icon" aria-hidden="true">
-            <span class="material-icons">confirmation_number</span>
-          </span>
-          <div>
-            <p class="cupos-hub-eyebrow">Comunidad Eventum</p>
-            <h2 id="cupos-hub-title" class="cupos-hub-title">Cupos entre asistentes</h2>
-            <p class="cupos-hub-text">Encuentra un cupo disponible o publica el tuyo.</p>
-          </div>
+      <div class="products-reminder">
+        <div class="products-reminder__mark" aria-hidden="true">
+          <span class="material-icons">confirmation_number</span>
         </div>
-        <div class="cupos-hub-actions">
-          <a routerLink="/cupos" class="cupos-hub-link cupos-hub-link--primary">
-            Ver cupos
+        <div class="products-reminder__copy">
+          <p class="section-kicker">Comunidad Eventum</p>
+          <h2 id="cupos-hub-title">Cupos entre asistentes</h2>
+          <p>Encuentra un cupo disponible o publica el tuyo.</p>
+        </div>
+        <div class="products-reminder__events">
+          <a routerLink="/cupos" class="products-reminder__link">
+            <span>
+              <small>Ver cupos</small>
+              <strong>Cupos disponibles</strong>
+            </span>
             <span class="material-icons" aria-hidden="true">arrow_forward</span>
           </a>
-          <a *ngIf="clienteLogueado" routerLink="/mis-cupos" class="cupos-hub-link">
-            {{ cuposLabels.misPublicaciones }}
-            <span
-              *ngIf="respuestasCupos > 0"
-              class="cupos-hub-badge"
-              [attr.aria-label]="respuestasCupos + ' respuestas'"
-            >{{ respuestasCupos }}</span>
-          </a>
-          <a *ngIf="!clienteLogueado" routerLink="/login" class="cupos-hub-link">Entrar</a>
-        </div>
-        <div class="cupos-hub-visual" aria-hidden="true">
-          <span class="material-icons">confirmation_number</span>
-          <span class="cupos-hub-visual__plus material-icons">add</span>
         </div>
       </div>
     </section>

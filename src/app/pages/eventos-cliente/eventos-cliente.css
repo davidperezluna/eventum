@@ -4878,6 +4878,178 @@
   .eventos-cliente-page .events-grid:not(.events-grid--past):has(> .event-card:only-child) .event-card--lead {
     grid-column: auto;
   }
+
+  /* "Antes de llegar / Completa tu experiencia" — paridad ev5 en desktop */
+  .eventos-cliente-page .products-reminder {
+    border-color: var(--ev5-line);
+    background: linear-gradient(90deg, transparent, rgba(80, 48, 133, 0.04), transparent);
+  }
+
+  .eventos-cliente-page .products-reminder__mark {
+    background: linear-gradient(135deg, var(--ev5-violet), var(--ev5-fuchsia));
+    box-shadow: 0 0.4rem 1rem -0.25rem rgba(117, 72, 242, 0.55);
+  }
+
+  .eventos-cliente-page .products-reminder__copy .section-kicker {
+    color: #755b91;
+    letter-spacing: 0.18em;
+  }
+
+  .eventos-cliente-page .products-reminder__copy h2 {
+    color: var(--ev5-ink);
+    font-weight: 900;
+    line-height: 1.02;
+    letter-spacing: -0.05em;
+  }
+
+  .eventos-cliente-page .products-reminder__link {
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--ev5-line);
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+
+  .eventos-cliente-page .products-reminder__link:hover {
+    box-shadow: 0 0.6rem 1.5rem -0.4rem rgba(36, 20, 49, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .eventos-cliente-page .products-reminder__link .material-icons {
+    color: var(--ev5-fuchsia);
+  }
+
+  /* "Comunidad Eventum / Cupos entre asistentes" — COPIA EXACTA de "Antes de llegar" */
+  .eventos-cliente-page .cupos-hub {
+    margin-top: 1.25rem;
+    margin-bottom: clamp(2.5rem, 5vw, 4rem);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) minmax(15rem, auto);
+    align-items: center;
+    gap: 1rem;
+    padding: 1.2rem clamp(1.5rem, 5vw, 3rem);
+    border-top: 1px solid var(--ev5-line);
+    border-bottom: 1px solid var(--ev5-line);
+    background: linear-gradient(90deg, transparent, rgba(80, 48, 133, 0.04), transparent);
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+  }
+
+  .eventos-cliente-page .cupos-hub-inner,
+  .eventos-cliente-page .cupos-hub-copy {
+    display: contents;
+    width: auto;
+    max-width: none;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .eventos-cliente-page .cupos-hub-inner::after,
+  .eventos-cliente-page .cupos-hub-visual,
+  .eventos-cliente-page .cupos-hub-text {
+    display: none;
+  }
+
+  /* Icono = products-reminder__mark → COL 1 */
+  .eventos-cliente-page .cupos-hub-icon {
+    grid-column: 1;
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--ev5-violet), var(--ev5-fuchsia));
+    box-shadow: 0 0.4rem 1rem -0.25rem rgba(117, 72, 242, 0.55);
+    color: #fff;
+  }
+  .eventos-cliente-page .cupos-hub-icon .material-icons {
+    font-size: 1.2rem;
+  }
+
+  /* Kickers = section-kicker → COL 2 */
+  .eventos-cliente-page .cupos-hub-eyebrow {
+    grid-column: 2;
+    margin: 0;
+    color: #755b91;
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  /* Título = h2 → COL 2 (apilado bajo eyebrow) */
+  .eventos-cliente-page .cupos-hub-title {
+    grid-column: 2;
+    margin: 0;
+    color: var(--ev5-ink);
+    font-size: 1.2rem;
+    font-weight: 900;
+    line-height: 1.02;
+    letter-spacing: -0.05em;
+  }
+
+  /* Acciones = products-reminder__events → COL 3 */
+  .eventos-cliente-page .cupos-hub-actions {
+    grid-column: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  /* Links = products-reminder__link (todos iguales) */
+  .eventos-cliente-page .cupos-hub-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--ev5-line);
+    color: var(--ev5-ink);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+
+  .eventos-cliente-page .cupos-hub-link:hover {
+    box-shadow: 0 0.6rem 1.5rem -0.4rem rgba(36, 20, 49, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .eventos-cliente-page .cupos-hub-link .material-icons {
+    color: var(--ev5-fuchsia);
+    font-size: 1.1rem;
+  }
+
+  /* Primario = mismo estilo pero con gradiente de fondo */
+  .eventos-cliente-page .cupos-hub-link--primary {
+    background: linear-gradient(135deg, var(--ev5-violet), var(--ev5-fuchsia));
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 0.4rem 1rem -0.25rem rgba(117, 72, 242, 0.55);
+  }
+  .eventos-cliente-page .cupos-hub-link--primary:hover {
+    box-shadow: 0 0.6rem 1.4rem -0.3rem rgba(117, 72, 242, 0.7);
+    transform: translateY(-2px);
+  }
+  .eventos-cliente-page .cupos-hub-link--primary .material-icons {
+    color: #fff;
+    transition: transform 0.2s ease;
+  }
+  .eventos-cliente-page .cupos-hub-link--primary:hover .material-icons {
+    transform: translateX(2px);
+  }
 }
 
 @media (min-width: 701px) {
