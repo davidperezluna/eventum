@@ -4099,7 +4099,7 @@
   margin-bottom: 1rem;
   border-radius: 0 0 1.15rem 1.15rem;
   background-color: #f7f4fb;
-  background-image: url('/images/eventos/eventos-hero-concierto-v2.png');
+  background-image: var(--eventos-hero-image, url('/images/eventos/eventos-hero-concierto-v2.png'));
   background-position: center right;
   background-size: cover;
   overflow: hidden;
@@ -4435,7 +4435,7 @@
     height: 24rem;
     border: 0;
     border-radius: 0;
-    background-image: url('/images/eventos/eventos-hero-concierto-v2.png');
+    background-image: var(--eventos-hero-image, url('/images/eventos/eventos-hero-concierto-v2.png'));
     background-position: 68% center;
     background-size: cover;
     box-shadow: none;
@@ -5913,7 +5913,7 @@
     border: 0;
     border-radius: 1.65rem 1.65rem 0.65rem 1.65rem;
     background-color: #f7f4fb;
-    background-image: url('/images/eventos/eventos-hero-concierto-v2.png');
+    background-image: var(--eventos-hero-image, url('/images/eventos/eventos-hero-concierto-v2.png'));
     background-position: 66% center;
     background-size: cover;
     box-shadow: 0 1.75rem 4.5rem rgba(49, 27, 77, 0.14);
@@ -6020,7 +6020,7 @@
     aspect-ratio: auto;
     border: 0;
     border-radius: inherit;
-    background-image: url('/images/eventos/eventos-hero-concierto-v2.png');
+    background-image: var(--eventos-hero-image, url('/images/eventos/eventos-hero-concierto-v2.png'));
     background-position: 66% center;
     background-size: cover;
     box-shadow: none;

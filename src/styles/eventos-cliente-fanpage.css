@@ -40,7 +40,7 @@
     height: 100%;
     border: 0;
     border-radius: inherit;
-    background-image: url('/images/eventos/eventos-hero-concierto-v2.png');
+    background-image: var(--eventos-hero-image, url('/images/eventos/eventos-hero-concierto-v2.png'));
     background-position: 69% center;
     background-size: cover;
     filter: saturate(0.78) contrast(1.08);

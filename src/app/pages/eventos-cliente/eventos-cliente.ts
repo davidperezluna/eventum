@@ -25,12 +25,16 @@ import { CUPOS_LABELS } from '../../core/cupos-labels';
   styleUrls: [
     './eventos-cliente.css',
     '../../../styles/eventos-cliente-fanpage.css',
-    '../../../styles/eventos-cliente-fanpage-final.css'
+    '../../../styles/eventos-cliente-fanpage-final.css',
+    '../../../styles/eventos-cliente-fanpage-integrated.css'
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('carouselTrack') carouselTrack!: ElementRef;
+
+  readonly heroTitleLines = ['Encuentra', 'tu próximo', 'evento'];
+  readonly heroBackgroundImage = this.pickNextHeroBackground();
 
   eventos: Evento[] = [];
   eventosFiltrados: Evento[] = [];
@@ -50,6 +54,7 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
   private searchSubject = new Subject<string>();
   private searchSubscription: Subscription | null = null;
   private refreshIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
+  private heroTitleObserver: IntersectionObserver | null = null;
   private footerObserver: IntersectionObserver | null = null;
   private readonly refreshIndicatorDelayMs = 800;
   private readonly maxProductosDestacados = 4;
@@ -84,10 +89,10 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
       this.initialBootstrapLoading = false;
       this.loading = false;
       void this.cargarPreventaLicorFlyer();
-      setTimeout(() => window.scrollTo({ top: cachedState.scrollY, behavior: 'auto' }), 0);
     } else {
       this.loading = true;
     }
+    this.restoreInitialScroll(cachedState?.scrollY ?? 0);
 
     const useBackgroundRefresh = !!cachedState;
     void this.loadEventos(undefined, { background: useBackgroundRefresh });
@@ -106,6 +111,8 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
+    this.setupHeroTitleAnimation();
+
     const footer = this.hostElement.nativeElement.querySelector<HTMLElement>('.eventos-footer');
     if (!footer || typeof IntersectionObserver === 'undefined') return;
 
@@ -134,6 +141,64 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
     targets.forEach(target => this.footerObserver?.observe(target));
   }
 
+  private setupHeroTitleAnimation(): void {
+    const title = this.hostElement.nativeElement.querySelector<HTMLElement>('.eventos-hero__title');
+    if (!title) return;
+
+    if (
+      typeof IntersectionObserver === 'undefined' ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      title.classList.add('is-visible');
+      return;
+    }
+
+    title.classList.add('eventos-hero__title--motion-ready');
+    this.heroTitleObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        entry.target.classList.toggle('is-visible', entry.isIntersecting);
+      });
+    }, {
+      threshold: 0.35,
+      rootMargin: '-5% 0px -8% 0px'
+    });
+    this.heroTitleObserver.observe(title);
+  }
+
+  private restoreInitialScroll(cachedScrollY: number): void {
+    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+    const isPageReload = navigation?.type === 'reload';
+    const targetScrollY = isPageReload ? 0 : cachedScrollY;
+
+    // Dos frames evitan que la restauración nativa del navegador vuelva a mover
+    // la página después de que Angular haya pintado el contenido cacheado.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: targetScrollY, behavior: 'auto' });
+      });
+    });
+  }
+
+  private pickNextHeroBackground(): string {
+    const backgrounds = [
+      '/images/eventos/eventos-hero-concierto-v2.png',
+      '/images/eventos/eventos-hero-festival-v3.png',
+      '/images/eventos/eventos-hero-electronica-v4.png'
+    ];
+    const storageKey = 'eventum:eventos-cliente:hero-index';
+
+    try {
+      const previousIndex = Number.parseInt(sessionStorage.getItem(storageKey) ?? '', 10);
+      const nextIndex = Number.isInteger(previousIndex)
+        ? (previousIndex + 1) % backgrounds.length
+        : Math.floor(Math.random() * backgrounds.length);
+      sessionStorage.setItem(storageKey, String(nextIndex));
+      return `url('${backgrounds[nextIndex]}')`;
+    } catch {
+      return `url('${backgrounds[Math.floor(Math.random() * backgrounds.length)]}')`;
+    }
+  }
+
   private async cargarResumenCupos(): Promise<void> {
     try {
       const r = await this.cuposEventoService.resumenMisCupos();
@@ -147,6 +212,8 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy() {
     this.persistState();
     this.stopSilentRefreshIndicator();
+    this.heroTitleObserver?.disconnect();
+    this.heroTitleObserver = null;
     this.footerObserver?.disconnect();
     this.footerObserver = null;
 
