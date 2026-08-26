@@ -1,0 +1,2232 @@
+/* Terminal fanpage overrides extracted from eventos-cliente.css. Keep loaded immediately after the base sheet. */
+/* =========================================
+   DESCUBRIMIENTO EVENTUM — hero visual v4
+   ========================================= */
+.eventos-cliente-page .eventos-discovery {
+  position: relative;
+  min-height: 25rem;
+  margin-bottom: 1rem;
+  border-radius: 0 0 1.15rem 1.15rem;
+  background-color: #f7f4fb;
+  background-image: var(--eventos-hero-image, url('/images/eventos/eventos-hero-concierto-v2.png'));
+  background-position: center right;
+  background-size: cover;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.eventos-cliente-page .eventos-discovery::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(90deg, rgba(250, 248, 253, 0.99) 0%, rgba(250, 248, 253, 0.96) 30%, rgba(250, 248, 253, 0.48) 58%, rgba(20, 11, 30, 0.08) 100%),
+    linear-gradient(0deg, rgba(20, 11, 30, 0.28) 0%, transparent 34%);
+}
+
+.eventos-cliente-page .eventos-discovery::after {
+  content: "";
+  position: absolute;
+  right: -5rem;
+  top: -7rem;
+  z-index: -1;
+  width: 24rem;
+  aspect-ratio: 1;
+  border: 1px solid rgba(213, 86, 223, 0.35);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 3.5rem rgba(255, 255, 255, 0.04),
+    0 0 0 7rem rgba(198, 95, 230, 0.08);
+  pointer-events: none;
+}
+
+.eventos-cliente-page .eventos-hero {
+  position: relative;
+  display: block;
+  min-height: 0;
+  padding: clamp(3.25rem, 6vw, 5.5rem) clamp(1.5rem, 5vw, 4rem) 7rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.eventos-cliente-page .eventos-hero::before,
+.eventos-cliente-page .eventos-hero::after {
+  display: none;
+}
+
+.eventos-cliente-page .eventos-hero__copy {
+  max-width: 31rem;
+}
+
+.eventos-cliente-page .eventos-hero__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0 0 1.1rem;
+  color: #7047e8;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.eventos-cliente-page .eventos-hero__eyebrow span {
+  display: block;
+  width: 1.1rem;
+  height: 2px;
+  background: #7047e8;
+}
+
+.eventos-cliente-page .eventos-hero h1 {
+  max-width: 8.5ch;
+  margin: 0;
+  color: #17131d;
+  font-size: clamp(3.2rem, 6vw, 5.5rem);
+  font-weight: 950;
+  letter-spacing: -0.065em;
+  line-height: 0.93;
+  text-wrap: balance;
+}
+
+.eventos-cliente-page .eventos-hero h1::after {
+  content: "";
+  display: inline-block;
+  width: 0.18em;
+  height: 0.18em;
+  margin-left: 0.06em;
+  border-radius: 50%;
+  background: #f23cae;
+  vertical-align: 0.08em;
+}
+
+.eventos-cliente-page .eventos-hero__lead {
+  max-width: 25ch;
+  margin: 1rem 0 0;
+  color: #6e6877;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.eventos-cliente-page .eventos-hero__index {
+  display: none;
+}
+
+.eventos-cliente-page .eventos-toolbar {
+  position: absolute;
+  left: clamp(1rem, 4vw, 3rem);
+  right: clamp(1rem, 4vw, 3rem);
+  bottom: 1.25rem;
+  z-index: 2;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.eventos-cliente-page .eventos-search {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 4rem;
+  padding: 0.35rem 0.45rem 0.35rem 1.15rem;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 1.1rem 2.4rem rgba(46, 24, 66, 0.18);
+  backdrop-filter: blur(12px);
+}
+
+.eventos-cliente-page .eventos-search__icon {
+  color: #7b4de8;
+  font-size: 1.35rem;
+}
+
+.eventos-cliente-page .eventos-search__input {
+  width: 100%;
+  padding: 0 0.75rem;
+  border: 0;
+  background: transparent;
+  color: #211b29;
+  font-size: 0.9rem;
+  font-weight: 550;
+  outline: 0;
+}
+
+.eventos-cliente-page .eventos-search__input::placeholder {
+  color: #898294;
+  opacity: 1;
+}
+
+.eventos-cliente-page .eventos-search__go {
+  display: grid;
+  width: 3.15rem;
+  height: 3.15rem;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7548e8 0%, #f238ae 100%);
+  color: #fff;
+  box-shadow: 0 0.55rem 1.25rem rgba(164, 57, 210, 0.28);
+}
+
+.eventos-cliente-page .eventos-search__go .material-icons {
+  font-size: 1.2rem;
+}
+
+.eventos-cliente-page .eventos-desktop-lead {
+  display: none;
+}
+
+.eventos-cliente-page .cupos-hub {
+  margin: 0 0 2.25rem;
+}
+
+.eventos-cliente-page .cupos-hub-inner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(9rem, 12rem);
+  align-items: center;
+  gap: 1.25rem;
+  min-height: 10rem;
+  padding: 1.4rem 1.6rem;
+  border: 1px solid #ece7f0;
+  border-radius: 1.1rem;
+  background:
+    radial-gradient(circle at 82% 58%, rgba(118, 72, 232, 0.08), transparent 28%),
+    #fff;
+  box-shadow: 0 1rem 2.5rem rgba(46, 24, 66, 0.07);
+  overflow: hidden;
+}
+
+.eventos-cliente-page .cupos-hub-inner::after {
+  display: block;
+  right: 8%;
+  bottom: -30%;
+  width: 11rem;
+  height: 11rem;
+  border: 1px dotted rgba(117, 72, 232, 0.28);
+  border-radius: 50%;
+  background: transparent;
+}
+
+.eventos-cliente-page .cupos-hub-copy {
+  align-items: center;
+  gap: 1rem;
+}
+
+.eventos-cliente-page .cupos-hub-icon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 4rem;
+  height: 4rem;
+  place-items: center;
+  border-radius: 0.95rem;
+  background: #fff;
+  color: #8247ea;
+  box-shadow: 0 0.8rem 1.6rem rgba(69, 38, 91, 0.11);
+  transform: rotate(-6deg);
+}
+
+.eventos-cliente-page .cupos-hub-icon .material-icons {
+  font-size: 2.1rem;
+}
+
+.eventos-cliente-page .cupos-hub-eyebrow {
+  margin-bottom: 0.3rem;
+  color: #7749e7;
+  font-size: 0.62rem;
+  letter-spacing: 0.13em;
+}
+
+.eventos-cliente-page .cupos-hub-title {
+  color: #18131e;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+}
+
+.eventos-cliente-page .cupos-hub-text {
+  max-width: 34ch;
+  margin-top: 0.3rem;
+  color: #746d7c;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.eventos-cliente-page .cupos-hub-actions {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.eventos-cliente-page .cupos-hub-link,
+.eventos-cliente-page .cupos-hub-link--primary,
+.eventos-cliente-page .cupos-hub-actions .cupos-hub-link:not(.cupos-hub-link--primary) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #7548e8;
+  font-size: 0.75rem;
+  font-weight: 800;
+  box-shadow: none;
+}
+
+.eventos-cliente-page .cupos-hub-visual {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 6rem;
+  height: 6rem;
+  place-items: center;
+  justify-self: center;
+  border: 0.4rem solid rgba(255, 255, 255, 0.86);
+  border-radius: 50%;
+  background: linear-gradient(145deg, #7650ea, #df3bc0);
+  color: #fff;
+  box-shadow: 0 0.9rem 2rem rgba(91, 45, 176, 0.24);
+}
+
+.eventos-cliente-page .cupos-hub-visual > .material-icons {
+  font-size: 2.25rem;
+  font-weight: 300;
+}
+
+.eventos-cliente-page .cupos-hub-visual__plus {
+  position: absolute;
+  right: -0.4rem;
+  bottom: -0.25rem;
+  display: grid;
+  width: 2.15rem;
+  height: 2.15rem;
+  place-items: center;
+  border: 0.2rem solid #fff;
+  border-radius: 50%;
+  background: #f238ae;
+  color: #fff;
+  font-size: 1rem !important;
+}
+
+@media (max-width: 700px) {
+  .eventos-cliente-page .eventos-shell {
+    padding-top: 0;
+  }
+
+  .eventos-cliente-page .eventos-discovery {
+    width: 100vw;
+    min-height: 24rem;
+    margin-top: -1rem;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    margin-bottom: 0.85rem;
+    border-radius: 0;
+    background-image: none;
+    overflow: visible;
+  }
+
+  .eventos-cliente-page .eventos-discovery::before {
+    height: 24rem;
+    z-index: -1;
+    overflow: hidden;
+    background:
+      linear-gradient(90deg, #fbf9fd 0%, rgba(251, 249, 253, 0.97) 34%, rgba(251, 249, 253, 0.62) 56%, rgba(31, 13, 50, 0.08) 100%),
+      linear-gradient(0deg, rgba(24, 10, 38, 0.42) 0%, rgba(24, 10, 38, 0.12) 27%, transparent 48%);
+  }
+
+  .eventos-cliente-page .eventos-discovery::after {
+    right: 0;
+    top: 0;
+    z-index: -2;
+    width: 100%;
+    height: 24rem;
+    border: 0;
+    border-radius: 0;
+    background-image: var(--eventos-hero-image, url('/images/eventos/eventos-hero-concierto-v2.png'));
+    background-position: 68% center;
+    background-size: cover;
+    box-shadow: none;
+    clip-path: none;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .eventos-cliente-page .eventos-hero {
+    min-height: 24rem;
+    padding: 2.65rem 1.5rem 5.35rem;
+    box-sizing: border-box;
+  }
+
+  .eventos-cliente-page .eventos-hero__eyebrow {
+    margin-bottom: 1rem;
+    font-size: 0.62rem;
+  }
+
+  .eventos-cliente-page .eventos-hero h1 {
+    max-width: 8.2ch;
+    font-size: clamp(2.65rem, 11.8vw, 3.25rem);
+    line-height: 0.95;
+  }
+
+  .eventos-cliente-page .eventos-hero__lead {
+    max-width: 24ch;
+    font-size: 0.74rem;
+    line-height: 1.4;
+  }
+
+  .eventos-cliente-page .eventos-toolbar {
+    position: absolute;
+    left: 1.25rem;
+    right: 1.25rem;
+    bottom: 1rem;
+    margin: 0;
+  }
+
+  .eventos-cliente-page .eventos-search {
+    min-height: 3.7rem;
+    padding-left: 0.9rem;
+    border-radius: 0.95rem;
+  }
+
+  .eventos-cliente-page .eventos-search__input {
+    font-size: 0.78rem;
+  }
+
+  .eventos-cliente-page .eventos-search__go {
+    width: 2.9rem;
+    height: 2.9rem;
+  }
+
+  .eventos-cliente-page .cupos-hub {
+    margin: 0 0 2rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-inner {
+    grid-template-columns: minmax(0, 1fr) 4.5rem;
+    gap: 0.45rem;
+    min-height: 10.5rem;
+    padding: 1.15rem 1rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-copy {
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-icon {
+    width: 3.25rem;
+    height: 3.25rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-icon .material-icons {
+    font-size: 1.65rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-title {
+    font-size: 0.9rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-text {
+    max-width: 25ch;
+    font-size: 0.68rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-actions {
+    grid-column: 1;
+    padding-left: 4rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-actions .cupos-hub-link:not(.cupos-hub-link--primary) {
+    display: none;
+  }
+
+  .eventos-cliente-page .cupos-hub-visual {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    width: 4.45rem;
+    height: 4.45rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-visual > .material-icons {
+    font-size: 1.9rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eventos-cliente-page .eventos-search__go,
+  .eventos-cliente-page .cupos-hub-visual {
+    transition: none;
+  }
+}
+
+/* ==========================================================
+   EVENTUM HOME v5 — sistema orbital premium
+   Capa final intencional para unificar descubrimiento y agenda
+   ========================================================== */
+.eventos-cliente-page {
+  --ev5-ink: #17121f;
+  --ev5-violet: #7548f2;
+  --ev5-violet-deep: #4c25b6;
+  --ev5-fuchsia: #ef3bad;
+  --ev5-paper: #fbfaff;
+  --ev5-line: rgba(80, 48, 133, 0.13);
+  background:
+    radial-gradient(circle at 88% 4%, rgba(117, 72, 242, 0.09), transparent 24rem),
+    var(--ev5-paper);
+}
+
+.eventos-cliente-page .eventos-discovery {
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  box-shadow: 0 1.5rem 4rem rgba(67, 37, 109, 0.13);
+}
+
+.eventos-cliente-page .eventos-hero::after {
+  content: "";
+  position: absolute;
+  display: block;
+  width: clamp(18rem, 42vw, 34rem);
+  aspect-ratio: 1;
+  right: clamp(-10rem, -9vw, -5rem);
+  top: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 3.8rem rgba(197, 92, 238, 0.08),
+    0 0 0 7.5rem rgba(117, 72, 242, 0.055);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.eventos-cliente-page .eventos-hero__eyebrow {
+  color: var(--ev5-violet-deep);
+}
+
+.eventos-cliente-page .eventos-hero h1 {
+  color: var(--ev5-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.eventos-cliente-page .eventos-search {
+  border-color: rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 1rem 2.5rem rgba(37, 18, 62, 0.17),
+    inset 0 0 0 1px rgba(117, 72, 242, 0.06);
+}
+
+.eventos-cliente-page .eventos-search:focus-within {
+  box-shadow:
+    0 1rem 2.5rem rgba(37, 18, 62, 0.18),
+    0 0 0 3px rgba(117, 72, 242, 0.16);
+}
+
+.eventos-cliente-page .eventos-search__go {
+  background: linear-gradient(145deg, #8a52f5 8%, var(--ev5-fuchsia) 100%);
+  box-shadow: 0 0.65rem 1.5rem rgba(205, 49, 177, 0.3);
+}
+
+.eventos-cliente-page .cupos-hub-inner {
+  color: #fff;
+  background:
+    radial-gradient(circle at 88% 40%, rgba(245, 90, 198, 0.36), transparent 7rem),
+    radial-gradient(circle at 18% -20%, rgba(185, 139, 255, 0.36), transparent 10rem),
+    linear-gradient(135deg, #2c174d 0%, #5527a9 58%, #712fc0 100%);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 1.35rem 3rem rgba(55, 25, 98, 0.2);
+  overflow: hidden;
+}
+
+.eventos-cliente-page .cupos-hub-inner::before {
+  content: "";
+  position: absolute;
+  width: 13rem;
+  aspect-ratio: 1;
+  right: -4rem;
+  bottom: -7rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2.75rem rgba(255, 255, 255, 0.035);
+}
+
+.eventos-cliente-page .cupos-hub-eyebrow,
+.eventos-cliente-page .cupos-hub-title,
+.eventos-cliente-page .cupos-hub-text {
+  color: #fff;
+}
+
+.eventos-cliente-page .cupos-hub-eyebrow { color: #d8c4ff; }
+.eventos-cliente-page .cupos-hub-text { color: rgba(255, 255, 255, 0.72); }
+
+.eventos-cliente-page .cupos-hub-icon {
+  color: #6a35d8;
+  background: #fff;
+  box-shadow: 0 0.75rem 1.5rem rgba(25, 11, 45, 0.25);
+}
+
+.eventos-cliente-page .cupos-hub-link--primary {
+  color: #fff;
+}
+
+.eventos-cliente-page .cupos-hub-visual {
+  color: #fff;
+  background: linear-gradient(145deg, #9862ff, #ec3eaf);
+  box-shadow: 0 0 0 0.55rem rgba(255, 255, 255, 0.1), 0 1rem 2rem rgba(22, 9, 43, 0.28);
+}
+
+.eventos-cliente-page .section-header {
+  border-bottom-color: var(--ev5-line);
+}
+
+.eventos-cliente-page .section-kicker {
+  color: #755b91;
+  letter-spacing: 0.16em;
+}
+
+.eventos-cliente-page .section-header h2 {
+  color: var(--ev5-ink);
+  letter-spacing: -0.035em;
+}
+
+/* Más aire en los títulos de sección (Disponibles ahora / Próximos eventos) */
+.eventos-cliente-page .events-section > .section-header {
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.15rem;
+}
+
+.eventos-cliente-page .events-section .section-kicker {
+  margin-bottom: 0.8rem;
+  letter-spacing: 0.18em;
+}
+
+/* Contador de sección con acabado premium */
+.eventos-cliente-page .events-section .section-count {
+  min-width: 2.6rem;
+  height: 1.7rem;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--ev5-violet), var(--ev5-fuchsia));
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    0 0.5rem 1.15rem -0.4rem rgba(117, 72, 242, 0.6);
+}
+
+.eventos-cliente-page .events-grid:not(.events-grid--past) .event-card {
+  position: relative;
+  min-height: 25rem;
+  border: 0;
+  border-radius: 1.35rem 1.35rem 0.55rem 1.35rem;
+  background: #241431;
+  box-shadow: 0 1.1rem 2.8rem rgba(47, 26, 70, 0.18);
+  overflow: hidden;
+}
+
+.eventos-cliente-page .events-grid:not(.events-grid--past) .event-card__main {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.eventos-cliente-page .events-grid:not(.events-grid--past) .event-thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+.eventos-cliente-page .events-grid:not(.events-grid--past) .event-thumb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 35%, rgba(18, 8, 28, 0.22) 57%, rgba(18, 8, 28, 0.96) 100%);
+}
+
+.eventos-cliente-page .events-grid:not(.events-grid--past) .event-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.eventos-cliente-page .events-grid:not(.events-grid--past) .event-body {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: 1.25rem;
+  color: #fff;
+  background: transparent;
+}
+
+.eventos-cliente-page .events-grid:not(.events-grid--past) .event-title,
+.eventos-cliente-page .events-grid:not(.events-grid--past) .event-meta-line,
+.eventos-cliente-page .events-grid:not(.events-grid--past) .price,
+.eventos-cliente-page .events-grid:not(.events-grid--past) .event-cta {
+  color: #fff;
+}
+
+.eventos-cliente-page .events-grid:not(.events-grid--past) .event-title {
+  max-width: 15ch;
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.eventos-cliente-page .events-grid:not(.events-grid--past) .event-meta {
+  margin-top: 0.65rem;
+  opacity: 0.78;
+}
+
+.eventos-cliente-page .events-grid:not(.events-grid--past) .event-footer-main {
+  margin-top: 0.8rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.eventos-cliente-page .events-grid:not(.events-grid--past) .event-cta {
+  display: inline-flex;
+  width: 2.4rem;
+  height: 2.4rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 50%;
+  backdrop-filter: blur(8px);
+}
+
+.eventos-cliente-page .events-grid:not(.events-grid--past) .event-cta-text { display: none; }
+
+/* Escritorio: paridad con el lenguaje visual móvil (headers y tarjetas) */
+@media (min-width: 701px) {
+  .eventos-cliente-page .section-header h2 {
+    font-weight: 900;
+    line-height: 1.02;
+    letter-spacing: -0.05em;
+  }
+
+  .eventos-cliente-page .events-section > .section-header {
+    padding-bottom: 1.25rem;
+  }
+
+  .eventos-cliente-page .events-section .section-count {
+    height: 1.85rem;
+    font-size: 0.78rem;
+  }
+
+  /* Chip "Más reciente" con gradiente */
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card__latest {
+    position: absolute;
+    top: 1rem;
+    left: 1.05rem;
+    z-index: 3;
+    padding: 0.34rem 0.62rem;
+    border-radius: 0.45rem;
+    background: linear-gradient(135deg, #a832e5, #ed32a6);
+    box-shadow: 0 0.45rem 1rem -0.35rem rgba(237, 50, 166, 0.65);
+    color: #fff;
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  /* Chip de fecha estilo cristal */
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card__date {
+    position: absolute;
+    top: 2.95rem;
+    left: 1.05rem;
+    z-index: 3;
+    display: grid;
+    place-content: center;
+    gap: 0.18rem;
+    width: 3.9rem;
+    height: 4.25rem;
+    border: 1px solid rgba(196, 133, 255, 0.55);
+    border-radius: 0.85rem;
+    background: rgba(24, 7, 42, 0.44);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0.6rem 1.4rem -0.5rem rgba(12, 3, 24, 0.8);
+    color: #fff;
+    text-align: center;
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card__date strong {
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card__date span {
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    opacity: 0.82;
+  }
+
+  /* Acento fucsia en los metadatos */
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-meta-line .material-icons {
+    color: #ed35b2;
+  }
+
+  /* CTA circular con gradiente y brillo */
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-cta {
+    border-color: transparent;
+    background: linear-gradient(135deg, #a62ee5, #ed36aa);
+    box-shadow: 0 0.55rem 1.2rem -0.4rem rgba(237, 54, 170, 0.7);
+  }
+
+  /* Tarjetas más contenidas en desktop */
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card {
+    min-height: 20.5rem;
+  }
+
+  /* Con un solo evento, la destacada no ocupa 2 columnas */
+  .eventos-cliente-page .events-grid:not(.events-grid--past):has(> .event-card:only-child) .event-card--lead {
+    grid-column: auto;
+  }
+
+  /* "Antes de llegar / Completa tu experiencia" — paridad ev5 en desktop */
+  .eventos-cliente-page .products-reminder {
+    border-color: var(--ev5-line);
+    background: linear-gradient(90deg, transparent, rgba(80, 48, 133, 0.04), transparent);
+  }
+
+  .eventos-cliente-page .products-reminder__mark {
+    background: linear-gradient(135deg, var(--ev5-violet), var(--ev5-fuchsia));
+    box-shadow: 0 0.4rem 1rem -0.25rem rgba(117, 72, 242, 0.55);
+  }
+
+  .eventos-cliente-page .products-reminder__copy .section-kicker {
+    color: #755b91;
+    letter-spacing: 0.18em;
+  }
+
+  .eventos-cliente-page .products-reminder__copy h2 {
+    color: var(--ev5-ink);
+    font-weight: 900;
+    line-height: 1.02;
+    letter-spacing: -0.05em;
+  }
+
+  .eventos-cliente-page .products-reminder__link {
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--ev5-line);
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+
+  .eventos-cliente-page .products-reminder__link:hover {
+    box-shadow: 0 0.6rem 1.5rem -0.4rem rgba(36, 20, 49, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .eventos-cliente-page .products-reminder__link .material-icons {
+    color: var(--ev5-fuchsia);
+  }
+
+  /* "Comunidad Eventum / Cupos entre asistentes" — COPIA EXACTA de "Antes de llegar" */
+  .eventos-cliente-page .cupos-hub {
+    margin-top: 1.25rem;
+    margin-bottom: clamp(2.5rem, 5vw, 4rem);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) minmax(15rem, auto);
+    align-items: center;
+    gap: 1rem;
+    padding: 1.2rem clamp(1.5rem, 5vw, 3rem);
+    border-top: 1px solid var(--ev5-line);
+    border-bottom: 1px solid var(--ev5-line);
+    background: linear-gradient(90deg, transparent, rgba(80, 48, 133, 0.04), transparent);
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+  }
+
+  .eventos-cliente-page .cupos-hub-inner,
+  .eventos-cliente-page .cupos-hub-copy {
+    display: contents;
+    width: auto;
+    max-width: none;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .eventos-cliente-page .cupos-hub-inner::after,
+  .eventos-cliente-page .cupos-hub-visual,
+  .eventos-cliente-page .cupos-hub-text {
+    display: none;
+  }
+
+  /* Icono = products-reminder__mark → COL 1 */
+  .eventos-cliente-page .cupos-hub-icon {
+    grid-column: 1;
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--ev5-violet), var(--ev5-fuchsia));
+    box-shadow: 0 0.4rem 1rem -0.25rem rgba(117, 72, 242, 0.55);
+    color: #fff;
+  }
+  .eventos-cliente-page .cupos-hub-icon .material-icons {
+    font-size: 1.2rem;
+  }
+
+  /* Kickers = section-kicker → COL 2 */
+  .eventos-cliente-page .cupos-hub-eyebrow {
+    grid-column: 2;
+    margin: 0;
+    color: #755b91;
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  /* Título = h2 → COL 2 (apilado bajo eyebrow) */
+  .eventos-cliente-page .cupos-hub-title {
+    grid-column: 2;
+    margin: 0;
+    color: var(--ev5-ink);
+    font-size: 1.2rem;
+    font-weight: 900;
+    line-height: 1.02;
+    letter-spacing: -0.05em;
+  }
+
+  /* Acciones = products-reminder__events → COL 3 */
+  .eventos-cliente-page .cupos-hub-actions {
+    grid-column: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  /* Links = products-reminder__link (todos iguales) */
+  .eventos-cliente-page .cupos-hub-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--ev5-line);
+    color: var(--ev5-ink);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+
+  .eventos-cliente-page .cupos-hub-link:hover {
+    box-shadow: 0 0.6rem 1.5rem -0.4rem rgba(36, 20, 49, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .eventos-cliente-page .cupos-hub-link .material-icons {
+    color: var(--ev5-fuchsia);
+    font-size: 1.1rem;
+  }
+
+  /* Primario = mismo estilo pero con gradiente de fondo */
+  .eventos-cliente-page .cupos-hub-link--primary {
+    background: linear-gradient(135deg, var(--ev5-violet), var(--ev5-fuchsia));
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 0.4rem 1rem -0.25rem rgba(117, 72, 242, 0.55);
+  }
+  .eventos-cliente-page .cupos-hub-link--primary:hover {
+    box-shadow: 0 0.6rem 1.4rem -0.3rem rgba(117, 72, 242, 0.7);
+    transform: translateY(-2px);
+  }
+  .eventos-cliente-page .cupos-hub-link--primary .material-icons {
+    color: #fff;
+    transition: transform 0.2s ease;
+  }
+  .eventos-cliente-page .cupos-hub-link--primary:hover .material-icons {
+    transform: translateX(2px);
+  }
+}
+
+@media (min-width: 701px) {
+  .eventos-cliente-page .events-grid:not(.events-grid--past) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.15rem;
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card--lead {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 700px) {
+  .eventos-cliente-page {
+    --eventos-gutter: 0.9rem;
+  }
+
+  .eventos-cliente-page .eventos-shell {
+    padding: 0 var(--eventos-gutter) 0.75rem;
+  }
+
+  .eventos-cliente-page .eventos-discovery {
+    width: auto;
+    min-height: 24rem;
+    margin: -1rem 0 0.9rem;
+    border-radius: 0 0 1.5rem 1.5rem;
+    overflow: hidden;
+  }
+
+  .eventos-cliente-page .eventos-discovery::before,
+  .eventos-cliente-page .eventos-discovery::after {
+    height: 24rem;
+  }
+
+  .eventos-cliente-page .eventos-hero {
+    min-height: 24rem;
+    padding: 2.75rem 1.25rem 5.4rem;
+  }
+
+  .eventos-cliente-page .eventos-hero::after {
+    width: 17rem;
+    right: -10.5rem;
+    top: 44%;
+  }
+
+  .eventos-cliente-page .eventos-hero h1 {
+    max-width: 7.8ch;
+    font-size: clamp(2.45rem, 11vw, 3rem);
+  }
+
+  .eventos-cliente-page .eventos-toolbar {
+    left: 0.8rem;
+    right: 0.8rem;
+    bottom: 0.8rem;
+  }
+
+  .eventos-cliente-page .eventos-search {
+    min-height: 3.5rem;
+    border-radius: 1rem 1rem 0.45rem 1rem;
+  }
+
+  .eventos-cliente-page .cupos-hub {
+    margin: 0 0 2.35rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-inner {
+    min-height: 11.25rem;
+    border-radius: 1.35rem 1.35rem 0.55rem 1.35rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-text {
+    max-width: 22ch;
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .eventos-cliente-page .events-grid:not(.events-grid--past) .event-card {
+    min-height: 26.5rem;
+  }
+
+  .eventos-cliente-page .events-section {
+    margin-bottom: 2.75rem;
+  }
+}
+
+/* Referencia móvil aprobada — composición hero + comunidad */
+@media (max-width: 700px) {
+  .eventos-cliente-page {
+    --eventos-gutter: 0.85rem;
+    background: #fbfaff;
+  }
+
+  .eventos-cliente-page .eventos-discovery {
+    min-height: 20.75rem;
+    margin-top: -1rem;
+    margin-bottom: 0.75rem;
+    border: 0;
+    border-radius: 0 0 1.25rem 1.25rem;
+    background: #fbf9fd;
+    box-shadow: 0 1rem 2.5rem rgba(65, 35, 96, 0.1);
+  }
+
+  .eventos-cliente-page .eventos-discovery::before {
+    height: 20.75rem;
+    background:
+      linear-gradient(90deg, #fbf9fd 0%, rgba(251, 249, 253, 0.98) 35%, rgba(251, 249, 253, 0.76) 49%, rgba(251, 249, 253, 0.05) 80%),
+      linear-gradient(0deg, rgba(65, 26, 89, 0.2) 0%, transparent 32%);
+  }
+
+  .eventos-cliente-page .eventos-discovery::after {
+    right: -8%;
+    top: 0;
+    width: 75%;
+    height: 20.75rem;
+    border-radius: 48% 0 0 48%;
+    background-position: 61% center;
+    background-size: cover;
+  }
+
+  .eventos-cliente-page .eventos-hero {
+    min-height: 20.75rem;
+    padding: 3.45rem 1.05rem 5.35rem;
+  }
+
+  .eventos-cliente-page .eventos-hero::after,
+  .eventos-cliente-page .eventos-hero__eyebrow {
+    display: none;
+  }
+
+  .eventos-cliente-page .eventos-hero h1 {
+    max-width: 7.35ch;
+    font-size: clamp(2.45rem, 11.3vw, 3rem);
+    line-height: 0.96;
+    letter-spacing: -0.058em;
+  }
+
+  .eventos-cliente-page .eventos-hero__lead {
+    max-width: 23ch;
+    margin-top: 0.9rem;
+    color: #756c7e;
+    font-size: 0.74rem;
+    line-height: 1.45;
+  }
+
+  .eventos-cliente-page .eventos-toolbar {
+    left: 0.8rem;
+    right: 0.8rem;
+    bottom: 0.7rem;
+  }
+
+  .eventos-cliente-page .eventos-search {
+    min-height: 3.45rem;
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    border-radius: 1.15rem;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 0.85rem 1.8rem rgba(57, 28, 87, 0.2);
+  }
+
+  .eventos-cliente-page .eventos-search__go {
+    width: 2.65rem;
+    height: 2.65rem;
+  }
+
+  .eventos-cliente-page .cupos-hub {
+    margin: 0 0 2.35rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-inner {
+    grid-template-columns: minmax(0, 1fr) 5.9rem;
+    grid-template-rows: auto auto;
+    gap: 0.35rem 0.5rem;
+    min-height: 10.1rem;
+    padding: 1.2rem 1rem 1.05rem;
+    border: 0;
+    border-radius: 0.75rem;
+    background:
+      radial-gradient(circle at 84% 48%, rgba(216, 92, 255, 0.38), transparent 5.6rem),
+      linear-gradient(135deg, #43208f 0%, #6328b8 62%, #822dc1 100%);
+    box-shadow: 0 1rem 2.2rem rgba(65, 30, 113, 0.2);
+  }
+
+  .eventos-cliente-page .cupos-hub-inner::before {
+    width: 9.5rem;
+    right: -1.7rem;
+    bottom: -3.35rem;
+    box-shadow: 0 0 0 1.75rem rgba(255, 255, 255, 0.035);
+  }
+
+  .eventos-cliente-page .cupos-hub-copy {
+    grid-column: 1;
+    grid-row: 1;
+    display: block;
+  }
+
+  .eventos-cliente-page .cupos-hub-icon {
+    display: none;
+  }
+
+  .eventos-cliente-page .cupos-hub-title {
+    max-width: 12ch;
+    margin-top: 0.18rem;
+    font-size: 1.12rem;
+    line-height: 1.04;
+    letter-spacing: -0.035em;
+  }
+
+  .eventos-cliente-page .cupos-hub-text {
+    max-width: 24ch;
+    margin-top: 0.5rem;
+    font-size: 0.66rem;
+    line-height: 1.42;
+  }
+
+  .eventos-cliente-page .cupos-hub-actions {
+    grid-column: 1;
+    grid-row: 2;
+    padding: 0;
+  }
+
+  .eventos-cliente-page .cupos-hub-link--primary {
+    gap: 0.45rem;
+    color: #fff;
+    font-size: 0.72rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-visual {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    width: 4.75rem;
+    height: 4.75rem;
+    border: 0.28rem solid rgba(255, 255, 255, 0.88);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 0 0 0.65rem rgba(255, 255, 255, 0.08),
+      0 0 2rem rgba(238, 73, 209, 0.38);
+  }
+
+  .eventos-cliente-page .cupos-hub-visual__plus {
+    right: -0.55rem;
+    bottom: -0.35rem;
+  }
+}
+
+/* Próximos eventos móvil — cartelera panorámica */
+@media (max-width: 700px) {
+  .eventos-cliente-page .events-section--upcoming > .section-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.6rem;
+  }
+
+  .eventos-cliente-page .events-section--upcoming .events-grid .event-card {
+    min-height: 12.5rem;
+    border-radius: 1.2rem 1.2rem 0.5rem 1.2rem;
+  }
+
+  .eventos-cliente-page .events-section--upcoming .events-grid .event-thumb::after {
+    background:
+      linear-gradient(90deg, rgba(20, 5, 36, 0.96) 0%, rgba(31, 7, 49, 0.78) 47%, rgba(25, 6, 42, 0.08) 82%),
+      linear-gradient(0deg, rgba(18, 5, 29, 0.72) 0%, transparent 55%);
+  }
+
+  .eventos-cliente-page .events-section--upcoming .events-grid .event-card__latest {
+    position: absolute;
+    top: 0.65rem;
+    left: 0.7rem;
+    z-index: 3;
+    padding: 0.3rem 0.55rem;
+    border-radius: 0.38rem;
+    color: #fff;
+    background: linear-gradient(135deg, #a832e5, #ed32a6);
+    font-size: 0.56rem;
+    font-weight: 800;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .eventos-cliente-page .events-section--upcoming .events-grid .event-card__date {
+    position: absolute;
+    top: 2.75rem;
+    left: 0.75rem;
+    z-index: 3;
+    display: grid;
+    place-content: center;
+    width: 3.8rem;
+    height: 4.15rem;
+    border: 1px solid rgba(196, 133, 255, 0.62);
+    border-radius: 0.75rem;
+    color: #fff;
+    background: rgba(24, 7, 42, 0.48);
+    text-align: center;
+  }
+
+  .eventos-cliente-page .events-section--upcoming .events-grid .event-card__date strong {
+    font-size: 1.7rem;
+    line-height: 1;
+  }
+
+  .eventos-cliente-page .events-section--upcoming .events-grid .event-card__date span {
+    margin-top: 0.2rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+  }
+
+  .eventos-cliente-page .events-section--upcoming .events-grid .event-body {
+    top: 2.6rem;
+    bottom: auto;
+    left: 5.15rem;
+    right: 0.75rem;
+    padding: 0;
+  }
+
+  .eventos-cliente-page .events-section--upcoming .events-grid .event-title {
+    max-width: 12ch;
+    font-size: 1.25rem;
+    line-height: 1.05;
+  }
+
+  .eventos-cliente-page .events-section--upcoming .events-grid .event-meta {
+    gap: 0.25rem;
+    margin-top: 0.45rem;
+  }
+
+  .eventos-cliente-page .events-section--upcoming .events-grid .event-meta-line {
+    font-size: 0.68rem;
+  }
+
+  .eventos-cliente-page .events-section--upcoming .events-grid .event-meta-line .material-icons {
+    color: #ed35b2;
+    font-size: 0.9rem;
+  }
+
+  .eventos-cliente-page .events-section--upcoming .events-grid .event-footer-main {
+    justify-content: flex-start;
+    gap: 0.75rem;
+    margin-top: 0.65rem;
+    padding: 0;
+    border: 0;
+  }
+
+  .eventos-cliente-page .events-section--upcoming .events-grid .event-cta {
+    width: auto;
+    height: 2rem;
+    gap: 0.35rem;
+    padding: 0 0.8rem;
+    border: 0;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #a62ee5, #ed36aa);
+  }
+
+  .eventos-cliente-page .events-section--upcoming .events-grid .event-cta-text {
+    display: inline;
+    font-size: 0.67rem;
+    font-weight: 750;
+  }
+}
+
+@media (min-width: 701px) {
+  .eventos-cliente-page section.cupos-hub > .cupos-hub-inner {
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: 0.55rem 0.9rem;
+    width: min(100%, 34rem);
+    min-height: 0 !important;
+    height: auto;
+    margin: 0;
+    padding: 0.75rem 0 0.85rem;
+    border-top: 0;
+    justify-content: start;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-icon {
+    display: none;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-copy {
+    grid-column: 2;
+    align-self: center;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-actions {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+    justify-self: start;
+    white-space: nowrap;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-visual {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+    width: 2.45rem;
+    height: 2.45rem;
+  }
+}
+
+@media (max-width: 700px) {
+  .eventos-cliente-page .cupos-hub-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 3.25rem;
+    grid-template-rows: auto auto;
+    gap: 0.65rem 1rem;
+    min-height: 8.6rem;
+    padding: 1.15rem 1rem 1rem 1.15rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.4rem 1.1rem 1.1rem 1.1rem;
+    background: linear-gradient(112deg, #351873 0%, #4b2093 72%, #55239b 100%);
+    box-shadow: 0 1rem 2.2rem rgba(48, 23, 87, 0.18);
+    overflow: hidden;
+  }
+
+  .eventos-cliente-page .cupos-hub-inner::before {
+    content: "";
+    position: absolute;
+    left: 1.15rem;
+    right: 1rem;
+    bottom: 2.55rem;
+    width: auto;
+    height: 1px;
+    border: 0;
+    border-radius: 0;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.18), transparent 82%);
+    box-shadow: none;
+  }
+
+  .eventos-cliente-page .cupos-hub-inner::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 5rem;
+    height: 100%;
+    display: block;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 70%);
+    pointer-events: none;
+  }
+
+  .eventos-cliente-page .cupos-hub-copy {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .eventos-cliente-page .cupos-hub-eyebrow {
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 0.52rem;
+    letter-spacing: 0.16em;
+  }
+
+  .eventos-cliente-page .cupos-hub-title {
+    max-width: none;
+    margin-top: 0.28rem;
+    font-size: 1.08rem;
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+  }
+
+  .eventos-cliente-page .cupos-hub-text {
+    max-width: 29ch;
+    margin-top: 0.48rem;
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 0.64rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-actions {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin: 0;
+    padding-top: 0.15rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-link--primary {
+    color: #fff;
+    font-size: 0.69rem;
+    letter-spacing: 0.01em;
+  }
+
+  .eventos-cliente-page .cupos-hub-visual {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.26);
+    border-radius: 0.7rem;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.07);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+    transform: rotate(3deg);
+  }
+
+  .eventos-cliente-page .cupos-hub-visual > .material-icons {
+    font-size: 1.35rem;
+    transform: rotate(-3deg);
+  }
+
+  .eventos-cliente-page .cupos-hub-visual__plus {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .eventos-cliente-page .cupos-hub {
+    margin: 0 0 2.25rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-inner {
+    display: grid;
+    grid-template-columns: 2.85rem minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: 0.7rem 0.85rem;
+    min-height: 0;
+    padding: 1rem 0 0.9rem;
+    border: 0;
+    border-top: 1px solid rgba(64, 37, 91, 0.13);
+    border-bottom: 1px solid rgba(64, 37, 91, 0.13);
+    border-radius: 0;
+    color: #17121f;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .eventos-cliente-page .cupos-hub-inner::before,
+  .eventos-cliente-page .cupos-hub-inner::after {
+    display: none;
+    content: none;
+  }
+
+  .eventos-cliente-page .cupos-hub-visual {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+    width: 2.65rem;
+    height: 2.65rem;
+    border: 0;
+    border-radius: 0.75rem 0.75rem 0.25rem 0.75rem;
+    color: #6535ce;
+    background: #eee8fb;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .eventos-cliente-page .cupos-hub-visual > .material-icons {
+    font-size: 1.3rem;
+    transform: none;
+  }
+
+  .eventos-cliente-page .cupos-hub-copy {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .eventos-cliente-page .cupos-hub-eyebrow {
+    color: #7655aa;
+    font-size: 0.51rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-title {
+    margin-top: 0.22rem;
+    color: #17121f;
+    font-size: 1rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-text {
+    max-width: 31ch;
+    margin-top: 0.38rem;
+    color: #746c7d;
+    font-size: 0.64rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-actions {
+    grid-column: 2;
+    grid-row: 2;
+    padding: 0;
+  }
+
+  .eventos-cliente-page .cupos-hub-link--primary {
+    width: fit-content;
+    color: #6535ce;
+    font-size: 0.68rem;
+  }
+}
+
+@media (max-width: 700px) {
+  .eventos-cliente-page .cupos-hub-inner {
+    grid-template-columns: minmax(0, 1fr) 4.6rem;
+    grid-template-rows: minmax(0, 1fr) auto;
+    column-gap: 0.85rem;
+    min-height: 9.4rem;
+    padding: 1.05rem 0.95rem 0.95rem;
+    border-radius: 0.95rem 0.95rem 0.35rem 0.95rem;
+    background:
+      radial-gradient(circle at 88% 38%, rgba(213, 91, 255, 0.34), transparent 5.25rem),
+      linear-gradient(135deg, #3b1c83 0%, #5725a8 58%, #772cbc 100%);
+  }
+
+  .eventos-cliente-page .cupos-hub-inner::before {
+    width: 7.8rem;
+    right: -1.55rem;
+    bottom: -2.9rem;
+    border-color: rgba(255, 255, 255, 0.24);
+    box-shadow: 0 0 0 1.45rem rgba(255, 255, 255, 0.025);
+  }
+
+  .eventos-cliente-page .cupos-hub-copy,
+  .eventos-cliente-page .cupos-hub-copy > div {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .eventos-cliente-page .cupos-hub-eyebrow {
+    font-size: 0.55rem;
+    letter-spacing: 0.14em;
+  }
+
+  .eventos-cliente-page .cupos-hub-title {
+    max-width: 15ch;
+    margin-top: 0.22rem;
+    font-size: 1.03rem;
+    line-height: 1.05;
+    text-wrap: balance;
+  }
+
+  .eventos-cliente-page .cupos-hub-text {
+    max-width: 25ch;
+    margin-top: 0.48rem;
+    font-size: 0.63rem;
+    line-height: 1.38;
+    text-wrap: pretty;
+  }
+
+  .eventos-cliente-page .cupos-hub-actions {
+    align-self: end;
+    margin-top: 0.5rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-link--primary {
+    min-height: 1.35rem;
+    font-size: 0.68rem;
+    font-weight: 750;
+  }
+
+  .eventos-cliente-page .cupos-hub-visual {
+    width: 3.8rem;
+    height: 3.8rem;
+    border-width: 0.22rem;
+    box-shadow:
+      0 0 0 0.48rem rgba(255, 255, 255, 0.07),
+      0 0.85rem 1.75rem rgba(29, 10, 67, 0.26);
+  }
+
+  .eventos-cliente-page .cupos-hub-visual > .material-icons {
+    font-size: 1.65rem;
+  }
+
+  .eventos-cliente-page .cupos-hub-visual__plus {
+    right: -0.48rem;
+    bottom: -0.28rem;
+    width: 1.65rem;
+    height: 1.65rem;
+    border-width: 0.15rem;
+    font-size: 0.9rem !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .eventos-cliente-page .eventos-discovery {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    border: 0;
+    border-radius: 0;
+    background: #fbfaff;
+    box-shadow: none;
+  }
+
+  .eventos-cliente-page .eventos-discovery::after {
+    right: 0;
+    width: 100%;
+    border-radius: 0;
+    background-position: 62% center;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 68%, rgba(0, 0, 0, 0.72) 79%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 68%, rgba(0, 0, 0, 0.72) 79%, transparent 100%);
+  }
+
+  .eventos-cliente-page .eventos-discovery::before {
+    background:
+      linear-gradient(0deg, #fbfaff 0%, rgba(251, 250, 255, 0.9) 9%, rgba(251, 250, 255, 0.32) 23%, transparent 39%),
+      linear-gradient(90deg, rgba(251, 249, 253, 0.98) 0%, rgba(251, 249, 253, 0.9) 30%, rgba(251, 249, 253, 0.52) 50%, rgba(251, 249, 253, 0.06) 78%);
+  }
+}
+
+/* Comunidad Eventum — franja editorial final */
+@media (max-width: 700px) {
+  .eventos-cliente-page section.cupos-hub {
+    margin: 0 0 2.25rem;
+  }
+
+  .eventos-cliente-page section.cupos-hub > .cupos-hub-inner {
+    position: relative;
+    display: grid;
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: 0.65rem 0.85rem;
+    width: 100%;
+    min-height: 0;
+    padding: 1rem 0 0.9rem;
+    border: 0;
+    border-top: 1px solid rgba(66, 39, 94, 0.14);
+    border-bottom: 1px solid rgba(66, 39, 94, 0.14);
+    border-radius: 0;
+    color: #17121f;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .eventos-cliente-page section.cupos-hub > .cupos-hub-inner::before,
+  .eventos-cliente-page section.cupos-hub > .cupos-hub-inner::after {
+    content: none;
+    display: none;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-copy {
+    grid-column: 2;
+    grid-row: 1;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-copy > div {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-visual {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+    width: 2.55rem;
+    height: 2.55rem;
+    border: 0;
+    border-radius: 0.7rem 0.7rem 0.22rem 0.7rem;
+    color: #6535ce;
+    background: #eee8fb;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-visual > .material-icons {
+    color: #6535ce;
+    font-size: 1.25rem;
+    transform: none;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-visual__plus {
+    display: none;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-eyebrow {
+    margin: 0;
+    color: #7655aa;
+    font-size: 0.51rem;
+    letter-spacing: 0.15em;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-title {
+    max-width: none;
+    margin: 0.22rem 0 0;
+    color: #17121f;
+    font-size: 1rem;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-text {
+    max-width: 32ch;
+    margin: 0.4rem 0 0;
+    color: #746c7d;
+    font-size: 0.64rem;
+    line-height: 1.42;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-actions {
+    grid-column: 2;
+    grid-row: 2;
+    display: flex;
+    margin: 0;
+    padding: 0;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-link--primary {
+    width: fit-content;
+    min-height: 1.25rem;
+    padding: 0;
+    color: #6535ce;
+    background: transparent;
+    font-size: 0.68rem;
+    font-weight: 750;
+    box-shadow: none;
+  }
+}
+
+/* Unión visual hero → comunidad */
+@media (max-width: 700px) {
+  .eventos-cliente-page,
+  .eventos-cliente-page .eventos-shell,
+  .eventos-cliente-page .eventos-discovery {
+    background: #fbfaff;
+  }
+
+  .eventos-cliente-page .eventos-discovery {
+    margin-bottom: 1.75rem;
+    overflow: visible;
+  }
+
+  .eventos-cliente-page .eventos-toolbar {
+    bottom: -0.8rem;
+  }
+
+  .eventos-cliente-page section.cupos-hub {
+    margin-top: 0;
+  }
+
+  .eventos-cliente-page section.cupos-hub > .cupos-hub-inner {
+    padding-top: 0.65rem;
+    border-top: 0;
+  }
+
+  .eventos-cliente-page .eventos-search {
+    box-shadow: 0 0.65rem 1.25rem rgba(57, 28, 87, 0.14);
+  }
+}
+
+/* Banner y búsqueda — composición exclusiva de escritorio */
+@media (min-width: 701px) {
+  .eventos-cliente-page .eventos-shell {
+    padding-top: 0;
+  }
+
+  .eventos-cliente-page .eventos-discovery {
+    width: min(100%, 76rem);
+    min-height: 31rem;
+    margin: 0 auto 2rem;
+    border: 0;
+    border-radius: 1.65rem 1.65rem 0.65rem 1.65rem;
+    background-color: #f7f4fb;
+    background-image: var(--eventos-hero-image, url('/images/eventos/eventos-hero-concierto-v2.png'));
+    background-position: 66% center;
+    background-size: cover;
+    box-shadow: 0 1.75rem 4.5rem rgba(49, 27, 77, 0.14);
+    overflow: hidden;
+  }
+
+  .eventos-cliente-page .eventos-discovery::before {
+    inset: 0;
+    height: auto;
+    background:
+      linear-gradient(90deg, rgba(249, 247, 252, 0.99) 0%, rgba(249, 247, 252, 0.96) 30%, rgba(249, 247, 252, 0.7) 43%, rgba(249, 247, 252, 0.08) 72%),
+      linear-gradient(0deg, rgba(23, 10, 37, 0.32) 0%, transparent 35%);
+  }
+
+  .eventos-cliente-page .eventos-discovery::after {
+    display: none;
+  }
+
+  .eventos-cliente-page .eventos-hero {
+    min-height: 31rem;
+    padding: 4.1rem 4.25rem 7rem;
+    box-sizing: border-box;
+  }
+
+  .eventos-cliente-page .eventos-hero::after {
+    display: block;
+    width: 27rem;
+    right: -8.5rem;
+    top: 48%;
+    border-color: rgba(255, 255, 255, 0.26);
+    box-shadow:
+      0 0 0 4.5rem rgba(197, 92, 238, 0.045),
+      0 0 0 8rem rgba(117, 72, 242, 0.035);
+  }
+
+  .eventos-cliente-page .eventos-hero__copy {
+    max-width: 31rem;
+  }
+
+  .eventos-cliente-page .eventos-hero__eyebrow {
+    margin-bottom: 1.5rem;
+    font-size: 0.66rem;
+  }
+
+  .eventos-cliente-page .eventos-hero h1 {
+    max-width: 8ch;
+    font-size: clamp(3.75rem, 4.7vw, 4.85rem);
+    line-height: 0.92;
+    letter-spacing: -0.062em;
+  }
+
+  .eventos-cliente-page .eventos-hero__lead {
+    max-width: 25ch;
+    margin-top: 1.15rem;
+    font-size: 0.86rem;
+  }
+
+  .eventos-cliente-page .eventos-toolbar {
+    left: 3.25rem;
+    right: 3.25rem;
+    bottom: 1.65rem;
+    max-width: none;
+  }
+
+  .eventos-cliente-page .eventos-search {
+    min-height: 4.35rem;
+    border-radius: 1.2rem 1.2rem 0.5rem 1.2rem;
+    box-shadow: 0 1.15rem 2.6rem rgba(34, 16, 54, 0.2);
+  }
+
+  .eventos-cliente-page .eventos-search__input {
+    font-size: 0.94rem;
+  }
+
+  .eventos-cliente-page .eventos-search__go {
+    width: 3.45rem;
+    height: 3.45rem;
+  }
+}
+
+@media (min-width: 1440px) {
+  .eventos-cliente-page .eventos-discovery {
+    min-height: 32rem;
+  }
+
+  .eventos-cliente-page .eventos-hero {
+    min-height: 32rem;
+  }
+}
+
+@media (min-width: 701px) {
+  .eventos-cliente-page .eventos-discovery {
+    border-radius: 1.65rem 1.65rem 0 0;
+    background-image: none;
+    box-shadow: none;
+  }
+
+  .eventos-cliente-page .eventos-discovery::after {
+    display: block;
+    inset: 0;
+    z-index: -2;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    border: 0;
+    border-radius: inherit;
+    background-image: var(--eventos-hero-image, url('/images/eventos/eventos-hero-concierto-v2.png'));
+    background-position: 66% center;
+    background-size: cover;
+    box-shadow: none;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 69%, rgba(0, 0, 0, 0.7) 82%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 69%, rgba(0, 0, 0, 0.7) 82%, transparent 100%);
+  }
+
+  .eventos-cliente-page .eventos-discovery::before {
+    background:
+      linear-gradient(0deg, rgba(247, 244, 251, 0.9) 0%, rgba(247, 244, 251, 0.3) 17%, transparent 34%),
+      linear-gradient(90deg, rgba(249, 247, 252, 0.99) 0%, rgba(249, 247, 252, 0.96) 30%, rgba(249, 247, 252, 0.7) 43%, rgba(249, 247, 252, 0.08) 72%);
+  }
+}
+
+/* Regla terminal: Comunidad Eventum desktop */
+@media (min-width: 901px) {
+  .eventos-cliente-page section.cupos-hub {
+    width: min(100%, 76rem);
+    margin: 0 auto 3.25rem;
+  }
+
+  .eventos-cliente-page section.cupos-hub > .cupos-hub-inner {
+    display: grid;
+    grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+    grid-template-rows: 1fr;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    min-height: 0 !important;
+    height: auto;
+    margin: 0;
+    padding: 1rem 1.2rem;
+    border: 1px solid rgba(73, 45, 104, 0.1);
+    border-radius: 0.85rem;
+    background: rgba(255, 255, 255, 0.52);
+    box-shadow: none;
+  }
+
+  .eventos-cliente-page section.cupos-hub > .cupos-hub-inner::before,
+  .eventos-cliente-page section.cupos-hub > .cupos-hub-inner::after {
+    content: none;
+    display: none;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-icon {
+    display: none;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-visual {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+    width: 2.45rem;
+    height: 2.45rem;
+    border: 0;
+    border-radius: 0.7rem 0.7rem 0.22rem 0.7rem;
+    color: #6535ce;
+    background: #eee8fb;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-copy {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-title {
+    max-width: none;
+    color: #17121f;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-text {
+    max-width: none;
+    color: #746c7d;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-actions {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: center;
+    justify-self: end;
+    display: flex;
+    gap: 1.4rem;
+    margin: 0;
+    padding: 0;
+    white-space: nowrap;
+  }
+}
+
+/* Regla terminal: Comunidad Eventum móvil */
+@media (max-width: 700px) {
+  .eventos-cliente-page section.cupos-hub > .cupos-hub-inner {
+    grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+    grid-template-rows: 1fr;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-visual {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-copy {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+  }
+
+  .eventos-cliente-page section.cupos-hub .cupos-hub-actions {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: center;
+    justify-self: end;
+    margin: 0;
+    padding: 0;
+    white-space: nowrap;
+  }
+}
+
+/* Footer fanpage — cierre editorial de la experiencia pública. */
+.eventos-cliente-page footer.eventos-footer {
+  position: relative;
+  margin-top: clamp(1.75rem, 4vw, 3.5rem);
+  overflow: hidden;
+  border-top: 0;
+  color: #f8f5fb;
+  background:
+    radial-gradient(circle at 12% 120%, rgba(125, 73, 177, 0.3), transparent 34rem),
+    #100d15;
+}
+
+.eventos-cliente-page .eventos-footer::before {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #7047ff 0%, #cf55ef 48%, #ff5ea7 100%);
+  background-size: 200% 100%;
+  animation: eventosFooterGlow 3.8s linear infinite;
+}
+
+@keyframes eventosFooterGlow {
+  from { background-position: 200% 0; }
+  to { background-position: 0 0; }
+}
+
+.eventos-cliente-page .eventos-footer__inner {
+  width: min(100%, 92rem);
+  max-width: 92rem;
+  margin: 0 auto;
+  padding: clamp(2.25rem, 4vw, 3.75rem) clamp(1.25rem, 5vw, 4.75rem)
+    calc(1.1rem + env(safe-area-inset-bottom, 0px));
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(22rem, 0.75fr);
+  gap: clamp(2.25rem, 5vw, 5.5rem);
+  align-items: start;
+  text-align: left;
+}
+
+.eventos-cliente-page .eventos-footer__lead {
+  min-width: 0;
+}
+
+.eventos-cliente-page .eventos-footer__brand {
+  display: inline-block;
+  color: #f8f5fb;
+  text-decoration: none;
+  font-size: clamp(2.75rem, 6.5vw, 6rem);
+  font-weight: 950;
+  line-height: 0.78;
+  letter-spacing: -0.085em;
+}
+
+.eventos-cliente-page .eventos-footer__brand span {
+  color: #e879f9;
+}
+
+.eventos-cliente-page .eventos-footer__brand:focus-visible {
+  outline: 3px solid #c084fc;
+  outline-offset: 0.5rem;
+}
+
+.eventos-cliente-page .eventos-footer__statement {
+  margin: clamp(1.25rem, 2.5vw, 2rem) 0 0;
+  color: #b9afc1;
+  font-size: clamp(1rem, 1.5vw, 1.25rem);
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+
+.eventos-cliente-page .eventos-footer__nav-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem clamp(1.5rem, 3vw, 3rem);
+}
+
+.eventos-cliente-page .eventos-footer__group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.eventos-cliente-page .eventos-footer__label {
+  margin: 0 0 0.45rem;
+  color: #e879f9;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.eventos-cliente-page footer.eventos-footer .eventos-footer__link {
+  position: relative;
+  color: #c8c0ce;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.35;
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.eventos-cliente-page footer.eventos-footer .eventos-footer__link:hover,
+.eventos-cliente-page footer.eventos-footer .eventos-footer__link:focus-visible {
+  color: #ffffff;
+  transform: translateX(0.2rem);
+}
+
+.eventos-cliente-page footer.eventos-footer .eventos-footer__link:focus-visible {
+  outline: 2px solid #c084fc;
+  outline-offset: 0.25rem;
+}
+
+.eventos-cliente-page .eventos-footer__base {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: clamp(0.75rem, 2vw, 1.5rem);
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.eventos-cliente-page .eventos-footer__copy,
+.eventos-cliente-page .eventos-footer__version {
+  margin: 0;
+  color: #817789;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 760px) {
+  .eventos-cliente-page footer.eventos-footer {
+    margin-top: 1.75rem;
+  }
+
+  .eventos-cliente-page .eventos-footer__inner {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding-top: 2.5rem;
+  }
+
+  .eventos-cliente-page .eventos-footer__brand {
+    font-size: clamp(2.65rem, 14vw, 4rem);
+  }
+
+  .eventos-cliente-page .eventos-footer__nav-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.35rem 1rem;
+  }
+
+  .eventos-cliente-page .eventos-footer__base {
+    grid-column: 1;
+    flex-direction: column;
+    margin-top: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eventos-cliente-page .eventos-footer::before {
+    animation: none;
+  }
+
+  .eventos-cliente-page footer.eventos-footer .eventos-footer__link {
+    transition: none;
+  }
+}

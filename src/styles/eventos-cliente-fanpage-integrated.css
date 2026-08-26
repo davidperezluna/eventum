@@ -3,6 +3,10 @@
  * Archivo deliberadamente cargado al final para aislar esta composición
  * de los estilos históricos de products-panel.
  */
+@media (max-width: 900px) {
+  .eventos-cliente-page .fanpage-essentials__intro { display: none; }
+}
+
 @media (min-width: 901px) {
   .eventos-cliente-page .fanpage-essentials.fanpage-essentials--integrated {
     position: relative;

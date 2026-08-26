@@ -23,7 +23,9 @@ import { CUPOS_LABELS } from '../../core/cupos-labels';
   imports: [CommonModule, RouterModule, FormsModule, DateFormatPipe, PreventaLicorFlyer],
   templateUrl: './eventos-cliente.html',
   styleUrls: [
+    // Cascada intencional: base → terminales extraídos → fanpage → overrides → módulo aislado.
     './eventos-cliente.css',
+    './eventos-cliente-fanpage-terminal.css',
     '../../../styles/eventos-cliente-fanpage.css',
     '../../../styles/eventos-cliente-fanpage-final.css',
     '../../../styles/eventos-cliente-fanpage-integrated.css'
