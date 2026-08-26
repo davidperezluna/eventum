@@ -479,7 +479,6 @@
 .dx-loading__content span:nth-child(2) { width: 88%; height: 4rem; }
 .dx-loading__content span:last-child { width: 70%; }
 .dx-side-skeleton { height: 4rem; border-radius: .5rem; background: #f0edf3; }
-.dx-mobile-action { display: none; }
 
 .detalle-evento-page :is(a,button):focus-visible { outline: 2px solid var(--dx-accent); outline-offset: 3px; }
 @keyframes dx-shimmer { to { background-position: -200% 0; } }
@@ -530,10 +529,6 @@
   .dx-story__lead { font-size: .9rem; }
   .dx-video { grid-row: 1; }
   .dx-legal__list { grid-template-columns: 1fr; }
-  .dx-mobile-action { position: fixed; right: .75rem; bottom: calc(.75rem + env(safe-area-inset-bottom,0px)); left: .75rem; z-index: 50; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .65rem .7rem .65rem 1rem; border: 1px solid rgba(255,255,255,.13); border-radius: .85rem; background: rgba(25,23,32,.94); color: #fff; box-shadow: 0 .9rem 2rem rgba(25,23,32,.24); backdrop-filter: blur(16px); }
-  .dx-mobile-action small { display: block; color: #aaa4b2; font-size: .53rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
-  .dx-mobile-action strong { display: block; margin-top: .18rem; font-size: .78rem; }
-  .dx-mobile-action a { display: inline-flex; min-height: 2.45rem; align-items: center; padding: .65rem 1.15rem; border-radius: .58rem; background: #fff; color: var(--dx-ink); font-size: .72rem; font-weight: 850; text-decoration: none; }
   .dx-loading { grid-template-columns: 1fr; margin: 1rem auto; }
   .dx-loading__image { min-height: 19rem; }
   .dx-loading__content { padding: 1.5rem; }
@@ -560,6 +555,91 @@
   .detalle-evento-page .dx-hero__media img {
     min-height: 0;
   }
+}
+
+/* Selector premium integrado al módulo de compra. */
+.detalle-evento-page .detalle-compra-tabs {
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: .35rem;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--dx-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.detalle-evento-page .detalle-compra-tab {
+  position: relative;
+  display: inline-flex;
+  width: auto;
+  min-width: 7.8rem;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  padding: .7rem 1rem .82rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--dx-faint);
+  font-size: .72rem;
+  font-weight: 750;
+  box-shadow: none;
+  transition: color .2s ease, background .2s ease;
+}
+
+.detalle-evento-page .detalle-compra-tab::after {
+  content: '';
+  position: absolute;
+  right: 1rem;
+  bottom: -1px;
+  left: 1rem;
+  display: block;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: transparent;
+  transition: background .2s ease, transform .2s ease;
+}
+
+.detalle-evento-page .detalle-compra-tab + .detalle-compra-tab::before { display: none; }
+.detalle-evento-page .detalle-compra-tab:hover:not(.active) { background: var(--dx-panel-tint); color: var(--dx-subtle); }
+.detalle-evento-page .detalle-compra-tab.active { background: transparent; color: var(--dx-ink); box-shadow: none; }
+.detalle-evento-page .detalle-compra-tab.active::after { background: var(--dx-accent); }
+.detalle-evento-page .detalle-compra-tab .material-icons { color: var(--dx-faint); font-size: 1rem; }
+.detalle-evento-page .detalle-compra-tab.active .material-icons { color: var(--dx-accent); }
+.detalle-evento-page .detalle-compra-tab:focus-visible { border-radius: .45rem; outline: 2px solid var(--dx-accent); outline-offset: -2px; }
+
+@media (max-width: 768px) {
+  .detalle-evento-page .detalle-compra-tabs { gap: 0; margin-bottom: 1rem; }
+  .detalle-evento-page .detalle-compra-tab { flex: 1 1 0; min-width: 0; padding-inline: .55rem; }
+  .detalle-evento-page .detalle-compra-tab::after { right: .55rem; left: .55rem; }
+}
+
+@media (min-width: 769px) {
+  .detalle-evento-page .detalle-compra-tabs {
+    width: 100%;
+    margin-top: .2rem;
+    padding: 0;
+    border: 0;
+    border-bottom: 1px solid var(--dx-line);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .detalle-evento-page .detalle-compra-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 3rem;
+    padding: .7rem 1rem .82rem;
+    border-radius: 0;
+  }
+
+  .detalle-evento-page .detalle-compra-tab::after { right: 18%; bottom: -1px; left: 18%; display: block; }
+  .detalle-evento-page .detalle-compra-tab:hover:not(.active) { background: var(--dx-panel-tint); }
+  .detalle-evento-page .detalle-compra-tab.active { background: transparent; color: var(--dx-ink); box-shadow: none; }
 }
 
 /* Selector de entradas: tarjeta compacta inspirada en el checkout oscuro. */

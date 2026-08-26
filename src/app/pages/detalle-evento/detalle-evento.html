@@ -223,10 +223,6 @@
       </div>
     </section>
 
-    <div class="dx-mobile-action" *ngIf="!isEventoFinalizado() && getCantidadTotalCarrito() === 0">
-      <div><small>Entradas</small><strong *ngIf="evento.es_gratis">Gratis</strong><strong *ngIf="!evento.es_gratis && evento.precio_minimo">Desde {{ formatCurrency(evento.precio_minimo) }}</strong></div>
-      <a [routerLink]="[]" fragment="comprar">Elegir</a>
-    </div>
   </article>
 
   <div class="palco-mapa-overlay" *ngIf="mapaAmpliado as mapa" (click)="cerrarMapaAmpliado()">
