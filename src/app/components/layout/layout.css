@@ -918,6 +918,26 @@
   }
 }
 
+/* En escritorio el carrito funciona como barra de acción global. */
+@media (min-width: 769px) {
+  .layout-content--cart-fab ~ .carrito-fab {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    justify-content: space-between;
+    padding: .7rem 1.25rem;
+    border-radius: 0;
+  }
+
+  .layout-content--cart-fab ~ .carrito-fab .carrito-fab__btn {
+    flex: 0 0 auto;
+    min-width: 12rem;
+  }
+}
+
 /* ============================================
    PUBLIC HEADER STYLES (No autenticado)
    ============================================ */

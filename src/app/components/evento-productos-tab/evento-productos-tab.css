@@ -10,11 +10,11 @@
 }
 
 .productos-compra-panel:not(.productos-compra-panel--carrito) {
-  border-radius: 1rem;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: var(--ec-surface, #fff);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  padding: 1.15rem;
+  border-radius: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
   margin-bottom: 0.9rem;
 }
 
@@ -557,5 +557,202 @@
   .pc-card__title,
   .pc-card__head .pc-card__precio {
     font-size: 0.92rem;
+  }
+}
+
+/* En el detalle del evento, productos y entradas comparten la misma dirección. */
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: 1fr;
+  align-items: center;
+  min-height: 6.9rem;
+  height: auto;
+  box-sizing: border-box;
+  border-radius: 1rem;
+  box-shadow: none;
+}
+
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__visual,
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__subtitle,
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__pricing,
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__ahorro,
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__meta,
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__service-price,
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__delivery,
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__fin-venta,
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-added {
+  display: none;
+}
+
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__inner {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  padding: 1.2rem 1.25rem;
+}
+
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__content {
+  gap: 0.72rem;
+}
+
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__head {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.72rem;
+}
+
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__title {
+  position: relative;
+  padding-left: 1.05rem;
+  font-size: 1.03rem;
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__title::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: var(--ec-accent, #8b5cf6);
+  transform: translateY(-50%);
+}
+
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__head .pc-card__precio {
+  position: relative;
+  padding-top: 0.85rem;
+  color: var(--ec-accent-strong, #7c3aed);
+  font-size: 1.42rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__head .pc-card__precio::before {
+  content: "PRECIO";
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--ec-text-muted, #64748b);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__footer {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0;
+  padding: 1.2rem 1.25rem 1.2rem 0.5rem;
+  border-top: 0;
+  background: transparent;
+}
+
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-stepper {
+  width: 6.4rem;
+  height: 2.4rem;
+  box-sizing: border-box;
+  gap: 0;
+  padding: 0 0.35rem;
+  border: 1px solid var(--ec-border, #e2e8f0);
+  border-radius: 0.65rem;
+  background: var(--ec-surface-muted, #f1f5f9);
+}
+
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-stepper__btn {
+  width: 1.8rem;
+  height: 2.2rem;
+  border: 0;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: var(--ec-text-muted, #64748b);
+  font-size: 1.3rem;
+  font-weight: 500;
+}
+
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-stepper__btn:hover:not(:disabled) {
+  background: var(--ec-surface, #fff);
+  color: var(--ec-text-primary, #0f172a);
+}
+
+.productos-compra-panel:not(.productos-compra-panel--carrito) .pc-stepper__qty {
+  flex: 1 1 auto;
+  min-width: 1.5rem;
+  color: var(--ec-text-primary, #0f172a);
+  font-size: 0.98rem;
+}
+
+@media (max-width: 520px) {
+  .productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 1fr;
+    align-items: center;
+  }
+
+  .productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__inner {
+    grid-column: 1;
+    grid-row: 1;
+    width: auto;
+    box-sizing: border-box;
+  }
+
+  .productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__footer {
+    grid-column: 2;
+    grid-row: 1;
+    display: block;
+    width: auto;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__inner {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 1rem 0.75rem;
+  }
+
+  .productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__footer {
+    grid-column: 1;
+    grid-row: 2;
+    padding: 1rem 0.75rem 1rem 0.25rem;
+  }
+
+  .productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__precio {
+    font-size: 1.12rem;
+  }
+
+  .productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__title {
+    font-size: 0.96rem;
+  }
+}
+
+/* En el detalle, el selector de productos acompaña al precio, igual que una boleta. */
+@media (max-width: 520px) {
+  .productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 1fr;
+  }
+
+  .productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__inner {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__footer {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+    padding: 1rem .75rem 1rem 0;
   }
 }

@@ -935,7 +935,7 @@ export class DetalleEvento implements OnInit, OnDestroy {
     for (const pattern of patterns) {
       const match = url.match(pattern);
       if (match && match[1]) {
-        return `https://www.youtube.com/embed/${match[1]}`;
+        return `https://www.youtube.com/embed/${match[1]}?autoplay=1&mute=0&playsinline=1&controls=1&rel=0`;
       }
     }
     

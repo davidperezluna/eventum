@@ -1,4 +1,4 @@
-<div class="eventos-cliente-page">
+<div class="eventos-cliente-page" [style.--eventos-hero-image]="heroBackgroundImage">
   <div class="eventos-shell">
     <div class="eventos-discovery">
       <header class="eventos-hero">
@@ -7,7 +7,21 @@
           <span aria-hidden="true"></span>
           Eventos cerca de ti
         </p>
-        <h1>Encuentra<br />tu próximo<br />evento</h1>
+        <h1 class="eventos-hero__title" aria-label="Encuentra tu próximo evento">
+          <span
+            *ngFor="let line of heroTitleLines; let lineIndex = index"
+            class="eventos-hero__title-line"
+            [class.eventos-hero__title-line--last]="lineIndex === heroTitleLines.length - 1"
+            aria-hidden="true"
+          >
+            <span
+              *ngFor="let letter of line.split(''); let letterIndex = index"
+              class="eventos-hero__letter"
+              [class.eventos-hero__letter--space]="letter === ' '"
+              [style.--hero-letter-index]="lineIndex * 10 + letterIndex"
+            >{{ letter === ' ' ? '\u00a0' : letter }}</span>
+          </span>
+        </h1>
         <p class="eventos-hero__lead">
           Compra tus entradas y productos en un solo lugar.
         </p>
@@ -37,7 +51,12 @@
         <p class="eventos-desktop-lead">Busca por nombre, lugar o tipo de experiencia.</p>
       </div>
     </div>
-    <div class="fanpage-essentials">
+    <div class="fanpage-essentials fanpage-essentials--integrated">
+    <header class="fanpage-essentials__intro">
+      <p class="section-kicker">Tu experiencia Eventum</p>
+      <h2>Todo empieza antes de llegar.</h2>
+      <p>Conecta con otros asistentes y prepara lo que vas a disfrutar ese día.</p>
+    </header>
     <section
       *ngIf="cuposEventumEnabled && !initialBootstrapLoading"
       class="events-section products-panel fanpage-essential fanpage-essential--community"

@@ -1,4 +1,50 @@
 /* Overrides finales de escritorio. Se carga después de la composición base. */
+.eventos-cliente-page .eventos-hero__title-line {
+  display: block;
+  white-space: nowrap;
+}
+
+.eventos-cliente-page .eventos-hero__letter {
+  display: inline-block;
+}
+
+.eventos-cliente-page .eventos-hero__title--motion-ready .eventos-hero__letter {
+  opacity: 0;
+  transform: translate3d(0, 0.24em, 0);
+  will-change: opacity, transform;
+}
+
+.eventos-cliente-page .eventos-hero__title--motion-ready::after {
+  opacity: 0;
+  transform: translate3d(0, 0.24em, 0);
+  will-change: opacity, transform;
+}
+
+.eventos-cliente-page .eventos-hero__title--motion-ready.is-visible .eventos-hero__letter {
+  animation: eventosHeroLetterIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(70ms + var(--hero-letter-index, 0) * 22ms);
+}
+
+.eventos-cliente-page .eventos-hero__title--motion-ready.is-visible::after {
+  animation: eventosHeroLetterIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 520ms;
+}
+
+.eventos-cliente-page .eventos-hero__letter--space {
+  width: 0.28em;
+}
+
+@keyframes eventosHeroLetterIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0.24em, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
 @media (max-width: 900px) {
   .eventos-cliente-page .fanpage-essentials { display: contents; }
   .eventos-cliente-page .fanpage-essential--products { display: none; }
@@ -304,6 +350,20 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .eventos-cliente-page .eventos-hero__title--motion-ready .eventos-hero__letter {
+    opacity: 1;
+    transform: none;
+    animation: none;
+    will-change: auto;
+  }
+
+  .eventos-cliente-page .eventos-hero__title--motion-ready::after {
+    opacity: 1;
+    transform: none;
+    animation: none;
+    will-change: auto;
+  }
+
   .eventos-cliente-page .fanpage-essentials,
   .eventos-cliente-page .fanpage-essential {
     animation: none;
@@ -313,6 +373,13 @@
   .eventos-cliente-page .fanpage-essential .products-reminder__link,
   .eventos-cliente-page .fanpage-essential .products-reminder__link .material-icons {
     transition: none;
+  }
+}
+
+/* En móvil, el punto pertenece visualmente a la última palabra del titular. */
+@media (max-width: 700px) {
+  .eventos-cliente-page .eventos-hero__title-line--last {
+    display: inline-block;
   }
 }
 
