@@ -273,8 +273,12 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
       } else {
         await this.executeLoadEventos(searchTerm);
       }
-      // El dashboard del cliente solo muestra eventos vigentes.
-      this.eventosFinalizados = [];
+      // Cargar el archivo de eventos finalizados solo en la vista general.
+      if (!this.searchTerm?.trim() && !this.categoriaFiltro) {
+        await this.loadEventosFinalizados({ background: true });
+      } else {
+        this.eventosFinalizados = [];
+      }
       this.persistState(Date.now());
     } finally {
       this.loading = false;
@@ -284,7 +288,7 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
           durationMs: Date.now() - refreshStartedAt,
           eventos: this.eventos.length,
           filtrados: this.eventosFiltrados.length,
-          finalizados: 0
+          finalizados: this.eventosFinalizados.length
         });
       }
       if (searchTerm === undefined && this.initialBootstrapLoading) {
@@ -535,7 +539,9 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
   setCategoria(id: number | null) {
     this.categoriaFiltro = id;
     this.aplicarFiltrosLocales();
-    
+    if (id === null) {
+      void this.loadEventosFinalizados({ background: true });
+    }
   }
 
   onSearchChange() {
@@ -601,8 +607,7 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
     el.scrollBy({ left: direction * step, behavior: 'smooth' });
   }
 
-  /* Eventos finalizados no se cargan en el dashboard del cliente. */
-  /* async loadEventosFinalizados(options?: { background?: boolean }) {
+  async loadEventosFinalizados(options?: { background?: boolean }) {
     // Solo cargar eventos finalizados si no hay búsqueda activa ni filtro de categoría
     if (this.searchTerm?.trim() || this.categoriaFiltro) {
       this.eventosFinalizados = [];
@@ -667,7 +672,7 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
       this.loadingFinalizados = false;
       this.cdr.detectChanges();
     }
-  } */
+  }
 
   private applyCachedState(state: {
     eventos: Evento[];
@@ -716,6 +721,10 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
 
   trackByEventoId(_: number, evento: Evento): number {
     return evento.id;
+  }
+
+  toggleEventosFinalizados(): void {
+    this.mostrarTodosFinalizados = !this.mostrarTodosFinalizados;
   }
 
   trackByCategoriaId(_: number, categoria: CategoriaEvento): number {

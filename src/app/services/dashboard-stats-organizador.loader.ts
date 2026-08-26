@@ -167,7 +167,9 @@ export async function loadDashboardStatsForOrganizador(
         .from('compras')
         .select('total, valor_servicio, porcentaje_servicio, evento_id, eventos!inner(organizador_id)')
         .eq('estado_pago', 'completado')
-        .eq('eventos.organizador_id', organizadorId));
+        .eq('eventos.organizador_id', organizadorId)
+        .eq('eventos.activo', true)
+        .gte('eventos.fecha_fin', now));
 
       if (response.error) {
         console.error('Error en ingresos/agregados financieros:', response.error);
@@ -227,7 +229,9 @@ export async function loadDashboardStatsForOrganizador(
         .from('compras_productos')
         .select('total, valor_servicio, porcentaje_servicio, evento_id, eventos!inner(organizador_id)')
         .eq('estado_pago', 'completado')
-        .eq('eventos.organizador_id', organizadorId));
+        .eq('eventos.organizador_id', organizadorId)
+        .eq('eventos.activo', true)
+        .gte('eventos.fecha_fin', now));
 
       if (response.error) {
         console.error('Error en ingresos/agregados de productos:', response.error);
@@ -430,6 +434,7 @@ export async function loadDashboardStatsForOrganizador(
         .select('*')
         .eq('organizador_id', organizadorId)
         .eq('activo', true)
+        .neq('estado', 'finalizado')
         .gte('fecha_inicio', now)
         .order('fecha_inicio', { ascending: true })
         .limit(5), 'id');
@@ -446,7 +451,10 @@ export async function loadDashboardStatsForOrganizador(
       const response = await withEventFilter(supabase
         .from('eventos')
         .select('*', { count: 'exact' })
-        .eq('organizador_id', organizadorId), 'id');
+        .eq('organizador_id', organizadorId)
+        .eq('activo', true)
+        .neq('estado', 'finalizado')
+        .gte('fecha_fin', now), 'id');
       
       return response.error ? 0 : (response.count || 0);
     }, 0);
@@ -536,7 +544,9 @@ export async function loadDashboardStatsForOrganizador(
         const { data: tiposData, error: tiposError } = await withEventFilter(supabase
           .from('tipos_boleta')
           .select('id, evento_id, eventos!inner(organizador_id)')
-          .eq('eventos.organizador_id', organizadorId));
+        .eq('eventos.organizador_id', organizadorId)
+        .eq('eventos.activo', true)
+        .gte('eventos.fecha_fin', now));
 
         if (tiposError || !tiposData || tiposData.length === 0) {
           return [];
