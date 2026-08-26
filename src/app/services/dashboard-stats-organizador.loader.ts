@@ -582,17 +582,23 @@ export async function loadDashboardStatsForOrganizador(
         // Obtener eventos del organizador
         const { data: eventosData, error: eventosError } = await withEventFilter(supabase
           .from('eventos')
-          .select('id, titulo, imagen_principal')
+          .select('id, titulo, imagen_principal, estado, fecha_fin')
           .eq('organizador_id', organizadorId)
-          .eq('activo', true), 'id');
+          .eq('activo', true)
+          .neq('estado', 'finalizado'), 'id');
 
         if (eventosError || !eventosData || eventosData.length === 0) {
           return [];
         }
 
+        const ahora = new Date();
+        const eventosVigentes = eventosData.filter((evento: any) =>
+          !evento.fecha_fin || new Date(evento.fecha_fin) >= ahora
+        );
+
         // Para cada evento, contar boletas vendidas
         const eventosConVentas = await Promise.all(
-          eventosData.map(async (evento: any) => {
+          eventosVigentes.map(async (evento: any) => {
             // Obtener tipos de boleta del evento
             const { data: tiposData } = await supabase
               .from('tipos_boleta')

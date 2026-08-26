@@ -290,7 +290,7 @@ export class DashboardOrganizador implements OnInit {
 
   private get cacheKey(): string | null {
     if (!this.organizadorId) return null;
-    return `eventum:cache:v1:dashboard-organizador:user:${this.organizadorId}`;
+    return `eventum:cache:v2:dashboard-organizador:user:${this.organizadorId}`;
   }
 
   private getCachedState(): { stats: DashboardStats; lastUpdated: number } | null {
