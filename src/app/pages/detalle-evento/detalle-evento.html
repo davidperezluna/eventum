@@ -1,532 +1,245 @@
-<div class="detalle-evento-page">
-  <div *ngIf="loading" class="loading-state">
-    <div class="spinner"></div>
-    <p>Cargando evento...</p>
-  </div>
+<main class="detalle-evento-page" id="detalle-evento-main">
+  <section *ngIf="loading" class="dx-loading" aria-live="polite" aria-label="Cargando evento">
+    <div class="dx-loading__image"></div>
+    <div class="dx-loading__content"><span></span><span></span><span></span></div>
+  </section>
 
-  <div *ngIf="!loading && evento" class="evento-detalle">
-    <header class="client-page-header client-page-header--compact client-page-header--subpage detalle-page-header">
-      <button type="button" class="detalle-page-back" (click)="volverAEventos()">
-        <span class="material-icons" aria-hidden="true">arrow_back</span>
-        {{ volverLabel }}
+  <article *ngIf="!loading && evento" class="evento-detalle">
+    <header class="dx-topbar">
+      <button type="button" class="dx-back" (click)="volverAEventos()">
+        <span class="material-icons" aria-hidden="true">arrow_back</span>{{ volverLabelDesktop }}
       </button>
-      <h1 class="client-page-header__title">{{ evento.titulo }}</h1>
-      <p
-        *ngIf="evento.descripcion_corta"
-        class="client-page-header__subtitle client-page-header__subtitle--short"
-      >{{ evento.descripcion_corta }}</p>
+      <div class="dx-topbar__trail" aria-label="Ubicación actual">
+        <span>Eventos</span><span class="material-icons" aria-hidden="true">chevron_right</span><strong>{{ evento.titulo }}</strong>
+      </div>
     </header>
-
-    <button type="button" class="btn-back btn-back--desktop" (click)="volverAEventos()">
-      <span class="material-icons" aria-hidden="true">arrow_back</span>
-      {{ volverLabelDesktop }}
-    </button>
 
     <ev-notice *ngIf="modoPruebaCompraAdmin" variant="info" icon="science" density="compact">
       <span>Modo prueba admin — flujo de compra igual al de un cliente (incluye Wompi).</span>
       <div evNoticeActions class="admin-prueba-banner__links">
         <button type="button" class="admin-prueba-link" (click)="router.navigate(['/carrito'])">
-          <span class="material-icons">shopping_cart</span>
-          Mi carrito
+          <span class="material-icons">shopping_cart</span>Mi carrito
           <span *ngIf="getCantidadTotalCarrito() > 0" class="admin-prueba-badge">{{ getCantidadTotalCarrito() }}</span>
         </button>
         <button type="button" class="admin-prueba-link" (click)="router.navigate(['/mis-compras'])">
-          <span class="material-icons">confirmation_number</span>
-          Mis compras
+          <span class="material-icons">confirmation_number</span>Mis compras
         </button>
       </div>
     </ev-notice>
 
-    <div class="evento-header">
-      <button
-        type="button"
-        class="evento-hero-image"
-        (click)="abrirImagenModal()"
-        [attr.aria-label]="'Ver imagen de ' + evento.titulo"
-      >
+    <section class="dx-hero" aria-labelledby="evento-title">
+      <button type="button" class="dx-hero__media" (click)="abrirImagenModal()" [attr.aria-label]="'Ampliar imagen de ' + evento.titulo">
         <img [src]="getImageUrl(evento)" [alt]="evento.titulo" loading="eager" />
+        <span class="dx-hero__zoom"><span class="material-icons" aria-hidden="true">open_in_full</span>Ampliar</span>
       </button>
-      <div class="evento-info-header">
-        <p class="evento-overline">Eventum presenta</p>
-        <div class="evento-title-section">
-          <h1 class="evento-title-desktop">{{ evento.titulo }}</h1>
-          <div class="evento-badges">
-            <span class="evento-chip evento-chip--categoria" *ngIf="categoria">
-              <ion-icon [name]="getCategoryIcon(categoria)"></ion-icon>
-              {{ categoria.nombre }}
-            </span>
-            <span class="evento-chip evento-chip--destacado" *ngIf="evento.destacado">
-              <span class="material-icons" aria-hidden="true">star</span>
-              Destacado
-            </span>
-          </div>
+
+      <div class="dx-hero__body">
+        <div class="dx-hero__eyebrow"><span class="dx-live-dot" aria-hidden="true"></span>Disponible en Eventum</div>
+        <h1 id="evento-title">{{ evento.titulo }}</h1>
+        <p *ngIf="evento.descripcion_corta" class="dx-hero__summary">{{ evento.descripcion_corta }}</p>
+
+        <div class="dx-hero__chips" *ngIf="categoria || evento.destacado || getTags().length > 0">
+          <span class="dx-chip" *ngIf="categoria"><ion-icon [name]="getCategoryIcon(categoria)"></ion-icon>{{ categoria.nombre }}</span>
+          <span class="dx-chip dx-chip--featured" *ngIf="evento.destacado"><span class="material-icons" aria-hidden="true">star</span>Destacado</span>
+          <span *ngFor="let tag of getTags()" class="dx-chip">{{ tag }}</span>
         </div>
-        <p *ngIf="evento.descripcion_corta" class="evento-subtitle">{{ evento.descripcion_corta }}</p>
-        <section
-          *ngIf="cuposEventumEnabled"
-          class="cupos-hub cupos-hub--detalle"
-          aria-labelledby="cupos-hub-detalle-title"
-        >
-          <div class="cupos-hub-inner">
-            <div class="cupos-hub-copy">
-              <span class="material-icons cupos-hub-icon" aria-hidden="true">forum</span>
-              <div>
-                <span class="cupos-hub-kicker">Comunidad Eventum</span>
-                <h2 id="cupos-hub-detalle-title" class="cupos-hub-title">{{ cuposLabels.module }}</h2>
-                <p class="cupos-hub-text">{{ cuposLabels.hubTextEvento }}</p>
+
+        <div class="dx-hero__facts">
+          <div class="dx-fact"><span class="material-icons" aria-hidden="true">calendar_month</span><div><small>Cuándo</small><strong>{{ evento.fecha_inicio | dateFormat:'short' }}</strong></div></div>
+          <div class="dx-fact" *ngIf="lugar"><span class="material-icons" aria-hidden="true">location_on</span><div><small>Dónde</small><strong>{{ lugar.nombre }}</strong></div></div>
+          <div class="dx-fact" *ngIf="evento.edad_minima && evento.edad_minima > 0"><span class="material-icons" aria-hidden="true">person</span><div><small>Ingreso</small><strong>Mayores de {{ evento.edad_minima }}</strong></div></div>
+        </div>
+
+        <div class="dx-hero__checkout">
+          <div>
+            <small>Entradas</small>
+            <strong *ngIf="evento.es_gratis">Entrada gratuita</strong>
+            <strong *ngIf="!evento.es_gratis && evento.precio_minimo">Desde {{ formatCurrency(evento.precio_minimo) }}</strong>
+          </div>
+          <a [routerLink]="[]" fragment="comprar" class="dx-primary-cta">Elegir entradas<span class="material-icons" aria-hidden="true">arrow_downward</span></a>
+        </div>
+      </div>
+
+      <div class="dx-pass" aria-hidden="true"><span>EVENTUM</span><span>LIVE ACCESS</span><span>{{ evento.id }}</span></div>
+    </section>
+
+    <div class="dx-workspace" id="comprar">
+      <section class="dx-purchase" aria-labelledby="purchase-title">
+        <div class="dx-section-heading">
+          <div><span class="dx-section-kicker">Compra en línea</span><h2 id="purchase-title">Arma tu experiencia</h2><p>Selecciona entradas o productos. Verás el total antes de pagar.</p></div>
+        </div>
+
+        <nav class="detalle-compra-tabs" *ngIf="mostrarTabsCompra" aria-label="Secciones de compra">
+          <button type="button" class="detalle-compra-tab" [class.active]="tabCompra === 'entradas'" (click)="setTabCompra('entradas')">
+            <span class="material-icons" aria-hidden="true">confirmation_number</span>Entradas
+          </button>
+          <button type="button" class="detalle-compra-tab" [class.detalle-compra-tab--loading]="loadingProductosFlag" [class.active]="tabCompra === 'productos'" (click)="setTabCompra('productos')">
+            <span class="material-icons" aria-hidden="true">storefront</span><span>Productos</span>
+            <span *ngIf="loadingProductosFlag" class="tab-loading-pill" aria-live="polite">Cargando…</span>
+          </button>
+        </nav>
+
+        <div class="entradas-panel detalle-tab-panel" [hidden]="tabCompra !== 'entradas' || isEventoFinalizado() || mostrarSoloProductos">
+          <div *ngIf="loadingBoletas" class="dx-inline-loading"><span></span><span></span></div>
+          <div *ngIf="!loadingBoletas && tiposBoletaDisponibles.length > 0" class="tipos-boleta-grid">
+            <article *ngFor="let tipo of tiposBoletaDisponibles" class="tipo-boleta-card">
+              <div class="tipo-boleta-header">
+                <div><span class="dx-ticket-label">Acceso</span><h3>{{ tipo.nombre }}</h3></div>
+                <span class="precio">{{ formatCurrency(tipo.precio) }}</span>
+              </div>
+              <p *ngIf="descripcionTipoVisible(tipo)" class="tipo-descripcion">{{ tipo.descripcion }}</p>
+              <div class="tipo-info">
+                <div class="tipo-info-metricas" *ngIf="mostrarMetricasEntradasDisponibles">
+                  <span class="disponibles">{{ tipo.cantidad_disponibles }} disponibles</span>
+                  <span *ngIf="cantidadPalcosReservados(tipo) > 0" class="reservados">{{ cantidadPalcosReservados(tipo) }} reservados</span>
+                  <span *ngIf="tipo.cantidad_vendidas !== undefined && tipo.cantidad_vendidas > 0" class="vendidas">{{ tipo.cantidad_vendidas }} vendidas de {{ tipo.cantidad_total }}</span>
+                </div>
+                <span *ngIf="tipo.limite_por_persona" class="limite">Máximo {{ tipo.limite_por_persona }} por persona</span>
+                <span *ngIf="getPorcentajeServicio() > 0" class="precio-con-servicio">Con servicio: {{ formatCurrency(getPrecioBoletaConServicio(tipo)) }}</span>
+                <span *ngIf="esLineaPalcoMultipersona(tipo)" class="palco-badge">Palco para {{ cuposPorPalco(tipo) }} personas · elegirás la ubicación antes de pagar</span>
+                <div *ngIf="mostrarFinVentaTipo(tipo) && tipo.fecha_venta_fin" class="fin-venta-block">
+                  <span class="fin-venta-tipo">Disponible hasta {{ tipo.fecha_venta_fin | dateFormat:'short' }}</span><span class="fin-venta-nota">O hasta agotar existencias</span>
+                </div>
+              </div>
+              <div class="tipo-actions">
+                <div class="cantidad-controls">
+                  <button type="button" class="btn-cantidad" (click)="quitarDelCarrito(tipo)" [attr.aria-label]="'Quitar 1 ' + tipo.nombre">−</button>
+                  <span class="cantidad">{{ getCantidadEnCarrito(tipo) }}</span>
+                  <button type="button" class="btn-cantidad" (click)="agregarAlCarrito(tipo)" [disabled]="!puedeAgregarMasBoletas(tipo)" [attr.aria-label]="'Agregar 1 ' + tipo.nombre">+</button>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div *ngIf="!loadingBoletas && tiposBoleta.length === 0" class="dx-empty">
+            <span class="material-icons">confirmation_number</span><h3>Aún no hay entradas publicadas</h3><p>Vuelve pronto para revisar la disponibilidad.</p>
+          </div>
+          <p *ngIf="!loadingBoletas && tiposBoletaDisponibles.length === 0 && tiposBoletaAgotados.length > 0" class="entradas-agotadas-hint">No hay entradas a la venta en este momento.</p>
+        </div>
+
+        <div class="etapas-agotadas-zone detalle-tab-panel" *ngIf="!loadingBoletas && tiposBoletaAgotados.length > 0 && !mostrarSoloProductos" [hidden]="tabCompra !== 'entradas' || isEventoFinalizado()">
+          <div class="evento-accordion etapas-agotadas-accordion">
+            <button class="accordion-header" (click)="toggleAcordeon('etapasAgotadas')" type="button">
+              <h3><span class="material-icons">history</span>Etapas agotadas</h3><span class="material-icons accordion-icon" [class.open]="acordeones.etapasAgotadas">expand_more</span>
+            </button>
+            <div class="accordion-content" [class.open]="acordeones.etapasAgotadas">
+              <div class="tipos-boleta-grid tipos-boleta-grid--agotados">
+                <article *ngFor="let tipo of tiposBoletaAgotados" class="tipo-boleta-card tipo-boleta-card--agotado">
+                  <div class="tipo-boleta-header"><h3>{{ tipo.nombre }}</h3><span class="precio precio--agotado">{{ formatCurrency(tipo.precio) }}</span></div>
+                  <p *ngIf="descripcionTipoVisible(tipo)" class="tipo-descripcion">{{ tipo.descripcion }}</p><span class="soldout-badge">Agotado</span>
+                </article>
               </div>
             </div>
-            <div class="cupos-hub-actions">
-              <a [routerLink]="['/cupos-evento', evento.id]" class="cupos-hub-link">
-                Ver cupos disponibles
-                <span class="material-icons" aria-hidden="true">arrow_forward</span>
-              </a>
-            </div>
+          </div>
+        </div>
+
+        <app-evento-productos-tab
+          *ngIf="evento && tieneProductos"
+          [hidden]="!mostrarPanelProductos"
+          class="detalle-tab-panel"
+          [evento]="evento"
+          [eventoFinalizado]="isEventoFinalizado()"
+          [productosIniciales]="productosCache"
+          [refrescoSilenciosoInicial]="productosCache.length > 0"
+          contexto="detalle"
+          [mostrarIntro]="false"
+          (productosActualizados)="onProductosActualizados($event)"
+        ></app-evento-productos-tab>
+
+        <div *ngIf="mostrarPanelProductos && loadingProductosFlag" class="productos-pending-state dx-inline-loading" aria-live="polite"><span></span><span></span></div>
+        <div *ngIf="mostrarPanelProductos && !loadingProductosFlag && !tieneProductos" class="dx-empty">
+          <span class="material-icons">inventory_2</span><h3>No hay productos disponibles</h3><p>Este evento todavía no tiene productos en preventa.</p>
+          <button type="button" class="dx-text-button" (click)="setTabCompra('entradas')">Ver entradas</button>
+        </div>
+
+        <div class="evento-accordion detalle-tab-panel" [hidden]="tabCompra !== 'entradas' || !isEventoFinalizado()">
+          <button class="accordion-header" (click)="toggleAcordeon('eventoFinalizado')" type="button">
+            <h3><span class="material-icons">event_busy</span>Evento finalizado</h3><span class="material-icons accordion-icon" [class.open]="acordeones.eventoFinalizado">expand_more</span>
+          </button>
+          <div class="accordion-content" [class.open]="acordeones.eventoFinalizado"><div class="evento-finalizado-message"><p>Este evento ya terminó. Las entradas no están disponibles para compra.</p></div></div>
+        </div>
+      </section>
+
+      <aside class="dx-sidebar" aria-label="Resumen del evento">
+        <section class="dx-side-card dx-side-card--schedule">
+          <div class="dx-side-card__heading"><span class="material-icons">calendar_month</span><h2>Tu plan</h2></div>
+          <div class="dx-timeline">
+            <div><span></span><small>Comienza</small><strong>{{ evento.fecha_inicio | dateFormat:'short' }}</strong></div>
+            <div><span></span><small>Termina</small><strong>{{ evento.fecha_fin | dateFormat:'short' }}</strong></div>
+          </div>
+          <div class="dx-sale-window" *ngIf="evento.fecha_venta_inicio || evento.fecha_venta_fin">
+            <span class="material-icons">schedule</span><div><small>Venta en línea</small><p *ngIf="evento.fecha_venta_fin">Hasta {{ evento.fecha_venta_fin | dateFormat:'short' }}</p></div>
           </div>
         </section>
-        <div class="evento-header-tags" *ngIf="getTags().length > 0" role="group" aria-label="Etiquetas del evento">
-          <span *ngFor="let tag of getTags()" class="evento-tag">{{ tag }}</span>
-        </div>
-        <div class="evento-meta">
-          <div class="meta-group meta-group--schedule">
-            <p class="meta-group-label">Fecha y hora</p>
-            <div class="meta-group-grid">
-              <div class="meta-item">
-                <span class="material-icons">calendar_today</span>
-                <div>
-                  <strong>Inicio</strong>
-                  <span>{{ evento.fecha_inicio | dateFormat:'short' }}</span>
-                </div>
-              </div>
-              <div class="meta-item">
-                <span class="material-icons">event</span>
-                <div>
-                  <strong>Fin</strong>
-                  <span>{{ evento.fecha_fin | dateFormat:'short' }}</span>
-                </div>
-              </div>
-              <div class="meta-item" *ngIf="evento.edad_minima && evento.edad_minima > 0">
-                <span class="material-icons">person</span>
-                <div>
-                  <strong>Edad mínima</strong>
-                  <span>+{{ evento.edad_minima }} años</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="meta-group meta-group--sales" *ngIf="evento.fecha_venta_inicio || evento.fecha_venta_fin">
-            <p class="meta-group-label">Venta en linea</p>
-            <div class="meta-group-grid">
-              <div class="meta-item" *ngIf="evento.fecha_venta_inicio">
-                <span class="material-icons">shopping_cart</span>
-                <div>
-                  <strong>Venta inicia</strong>
-                  <span>{{ evento.fecha_venta_inicio | dateFormat:'short' }}</span>
-                </div>
-              </div>
-              <div class="meta-item" *ngIf="evento.fecha_venta_fin">
-                <span class="material-icons">schedule</span>
-                <div>
-                  <strong>Venta termina</strong>
-                  <span>{{ evento.fecha_venta_fin | dateFormat:'short' }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="meta-group meta-group--precio">
-            <p class="meta-group-label">Rango de precio</p>
-            <p *ngIf="evento.es_gratis" class="meta-precio-texto precio-gratis">Gratis</p>
-            <p *ngIf="!evento.es_gratis && evento.precio_minimo && evento.precio_maximo && evento.precio_minimo !== evento.precio_maximo" class="meta-precio-texto">
-              {{ formatCurrency(evento.precio_minimo) }} – {{ formatCurrency(evento.precio_maximo) }}
-            </p>
-            <p *ngIf="!evento.es_gratis && evento.precio_minimo && (!evento.precio_maximo || evento.precio_minimo === evento.precio_maximo)" class="meta-precio-texto meta-precio-texto--desde">
-              Desde {{ formatCurrency(evento.precio_minimo) }}
-            </p>
-          </div>
-        </div>
-      </div>
+
+        <section *ngIf="lugar || loadingLugar" class="dx-side-card">
+          <div class="dx-side-card__heading"><span class="material-icons">location_on</span><h2>Lugar</h2></div>
+          <div *ngIf="loadingLugar" class="dx-side-skeleton"></div>
+          <ng-container *ngIf="!loadingLugar && lugar">
+            <h3>{{ lugar.nombre }}</h3><p>{{ lugar.direccion }}</p>
+            <p *ngIf="lugar.ciudad">{{ lugar.ciudad }}<span *ngIf="lugar.pais">, {{ lugar.pais }}</span></p>
+            <button type="button" class="dx-text-button" *ngIf="lugar.latitud && lugar.longitud" (click)="abrirGoogleMaps(lugar.latitud, lugar.longitud)">Abrir en Maps <span class="material-icons">north_east</span></button>
+          </ng-container>
+        </section>
+
+        <section *ngIf="cuposEventumEnabled" class="dx-side-card dx-side-card--community">
+          <div class="dx-side-card__heading"><span class="material-icons">forum</span><h2>{{ cuposLabels.module }}</h2></div>
+          <p>{{ cuposLabels.hubTextEvento }}</p>
+          <a [routerLink]="['/cupos-evento', evento.id]" class="dx-community-link">Ver cupos disponibles <span class="material-icons">arrow_forward</span></a>
+        </section>
+      </aside>
     </div>
 
-    <!-- Compra primero (entradas y carrito) -->
-    <div class="detalle-zone detalle-zone--compra">
-      <nav class="detalle-compra-tabs" *ngIf="mostrarTabsCompra" aria-label="Secciones de compra">
-        <button
-          type="button"
-          class="detalle-compra-tab"
-          [class.active]="tabCompra === 'entradas'"
-          (click)="setTabCompra('entradas')"
-        >
-          <span class="material-icons" aria-hidden="true">confirmation_number</span>
-          Entradas
-        </button>
-        <button
-          type="button"
-          class="detalle-compra-tab"
-          [class.detalle-compra-tab--loading]="loadingProductosFlag"
-          [class.active]="tabCompra === 'productos'"
-          (click)="setTabCompra('productos')"
-        >
-          <span class="material-icons" aria-hidden="true">storefront</span>
-          <span>Productos</span>
-          <span *ngIf="loadingProductosFlag" class="tab-loading-pill" aria-live="polite">Cargando…</span>
-        </button>
-      </nav>
-
-      <!-- Tipos de boleta disponibles -->
-      <div class="entradas-panel evento-section detalle-tab-panel" [hidden]="tabCompra !== 'entradas' || isEventoFinalizado() || mostrarSoloProductos">
-      <div class="section-heading-row">
-        <div>
-          <h2>Entradas</h2>
-          <p class="section-kicker" *ngIf="getCantidadTotalCarrito() === 0">
-            Selecciona tus boletas y revisa el total antes de pagar.
-          </p>
-        </div>
-        <button
-          type="button"
-          class="btn-carrito-rapido btn-carrito-rapido--desktop-only"
-          *ngIf="getCantidadTotalCarrito() > 0"
-          (click)="irACarrito()"
-          aria-label="Ir al carrito de compra"
-        >
-          <span class="material-icons">shopping_cart</span>
-          <span class="btn-carrito-rapido-texto">
-            {{ getCantidadTotalCarrito() }} artículo(s) · {{ formatCurrency(getTotal()) }}
-          </span>
-          <span class="material-icons">arrow_forward</span>
-        </button>
-      </div>
-      <div *ngIf="loadingBoletas" class="loading-small">
-        <p>Cargando tipos de boleta...</p>
-      </div>
-      <div *ngIf="!loadingBoletas && tiposBoletaDisponibles.length > 0" class="tipos-boleta-grid">
-        <div *ngFor="let tipo of tiposBoletaDisponibles" class="tipo-boleta-card">
-          <div class="tipo-boleta-header">
-            <h3>{{ tipo.nombre }}</h3>
-            <span class="precio">{{ formatCurrency(tipo.precio) }}</span>
-          </div>
-          <p *ngIf="descripcionTipoVisible(tipo)" class="tipo-descripcion">{{ tipo.descripcion }}</p>
-          <div class="tipo-info">
-            <div class="tipo-info-metricas" *ngIf="mostrarMetricasEntradasDisponibles">
-              <span class="disponibles">{{ tipo.cantidad_disponibles }} disponibles</span>
-              <span *ngIf="cantidadPalcosReservados(tipo) > 0" class="reservados">
-                {{ cantidadPalcosReservados(tipo) }} reservados
-              </span>
-              <span *ngIf="tipo.cantidad_vendidas !== undefined && tipo.cantidad_vendidas > 0" class="vendidas">{{ tipo.cantidad_vendidas }} vendidas de {{ tipo.cantidad_total }} totales</span>
-            </div>
-            <span *ngIf="tipo.limite_por_persona" class="limite">Máx. {{ tipo.limite_por_persona }} por persona</span>
-            <span *ngIf="getPorcentajeServicio() > 0" class="precio-con-servicio">
-              Total con servicio: {{ formatCurrency(getPrecioBoletaConServicio(tipo)) }}
-            </span>
-            <span *ngIf="esLineaPalcoMultipersona(tipo)" class="palco-badge">
-              Precio por palco · incluye {{ cuposPorPalco(tipo) }} personas · elegirás la ubicación antes de pagar
-            </span>
-            <div *ngIf="mostrarFinVentaTipo(tipo) && tipo.fecha_venta_fin" class="fin-venta-block">
-              <span class="fin-venta-tipo">Fin de venta: {{ tipo.fecha_venta_fin | dateFormat:'short' }}</span>
-              <span class="fin-venta-nota">Hasta agotar existencias por etapa</span>
-            </div>
-          </div>
-          <div class="tipo-actions">
-            <div class="cantidad-controls">
-              <button type="button" class="btn-cantidad" (click)="quitarDelCarrito(tipo)" [attr.aria-label]="'Quitar 1 ' + tipo.nombre">−</button>
-              <span class="cantidad">{{ getCantidadEnCarrito(tipo) }}</span>
-              <button
-                type="button"
-                class="btn-cantidad"
-                (click)="agregarAlCarrito(tipo)"
-                [disabled]="!puedeAgregarMasBoletas(tipo)"
-                [attr.aria-label]="'Agregar 1 ' + tipo.nombre"
-              >+</button>
-            </div>
+    <section id="informacion" class="dx-information" *ngIf="!!evento.descripcion || !!(evento.url_video && getYoutubeEmbedUrl(evento.url_video)) || lugar" aria-labelledby="information-title">
+      <div class="dx-section-heading dx-section-heading--wide"><div><span class="dx-section-kicker">Antes de asistir</span><h2 id="information-title">Conoce el evento</h2></div></div>
+      <div class="dx-information__grid">
+        <div class="dx-story" *ngIf="evento.descripcion">
+          <p class="dx-story__lead">{{ evento.descripcion }}</p>
+          <div *ngIf="lugar" class="dx-venue-details">
+            <div *ngIf="lugar.capacidad_maxima"><small>Capacidad</small><strong>{{ lugar.capacidad_maxima }} personas</strong></div>
+            <div *ngIf="lugar.telefono"><small>Teléfono</small><strong>{{ lugar.telefono }}</strong></div>
+            <div *ngIf="lugar.email"><small>Contacto</small><strong>{{ lugar.email }}</strong></div>
           </div>
         </div>
-      </div>
-
-      <p
-        *ngIf="!loadingBoletas && tiposBoletaDisponibles.length === 0 && tiposBoletaAgotados.length > 0"
-        class="entradas-agotadas-hint"
-      >
-        No hay entradas a la venta en este momento.
-      </p>
-
-      <div *ngIf="!loadingBoletas && tiposBoleta.length === 0" class="empty-state">
-        <p>No hay boletas disponibles para este evento</p>
-      </div>
-      </div>
-
-      <div
-        class="etapas-agotadas-zone detalle-tab-panel"
-        *ngIf="!loadingBoletas && tiposBoletaAgotados.length > 0 && !mostrarSoloProductos"
-        [hidden]="tabCompra !== 'entradas' || isEventoFinalizado()"
-      >
-        <div class="evento-section evento-accordion etapas-agotadas-accordion">
-          <button class="accordion-header" (click)="toggleAcordeon('etapasAgotadas')" type="button">
-            <h2>
-              <span class="material-icons">history</span>
-              Etapas agotadas
-            </h2>
-            <span class="material-icons accordion-icon" [class.open]="acordeones.etapasAgotadas">expand_more</span>
-          </button>
-          <div class="accordion-content" [class.open]="acordeones.etapasAgotadas">
-            <div class="tipos-boleta-grid tipos-boleta-grid--agotados">
-              <article *ngFor="let tipo of tiposBoletaAgotados" class="tipo-boleta-card tipo-boleta-card--agotado">
-                <div class="tipo-boleta-header">
-                  <h3>{{ tipo.nombre }}</h3>
-                  <span class="precio precio--agotado">{{ formatCurrency(tipo.precio) }}</span>
-                </div>
-                <p *ngIf="descripcionTipoVisible(tipo)" class="tipo-descripcion">{{ tipo.descripcion }}</p>
-                <div class="tipo-info">
-                  <div class="tipo-info-metricas">
-                    <span *ngIf="tipo.cantidad_vendidas !== undefined && tipo.cantidad_vendidas > 0" class="vendidas">
-                      {{ tipo.cantidad_vendidas }} vendidas de {{ tipo.cantidad_total }} totales
-                    </span>
-                    <span *ngIf="mostrarFinVentaTipo(tipo) && tipo.fecha_venta_fin" class="fin-venta-tipo">
-                      Fin de venta: {{ tipo.fecha_venta_fin | dateFormat:'short' }}
-                    </span>
-                  </div>
-                  <span class="soldout-badge">Agotado</span>
-                </div>
-              </article>
-            </div>
-          </div>
+        <div class="dx-video" *ngIf="evento.url_video && getYoutubeEmbedUrl(evento.url_video)">
+          <iframe [src]="getYoutubeEmbedUrl(evento.url_video) | safe" frameborder="0" title="Video del evento" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
         </div>
       </div>
-
-      <app-evento-productos-tab
-        *ngIf="evento && tieneProductos"
-        [hidden]="!mostrarPanelProductos"
-        class="detalle-tab-panel"
-        [evento]="evento"
-        [eventoFinalizado]="isEventoFinalizado()"
-        [productosIniciales]="productosCache"
-        [refrescoSilenciosoInicial]="productosCache.length > 0"
-        contexto="detalle"
-        (productosActualizados)="onProductosActualizados($event)"
-      ></app-evento-productos-tab>
-
-      <div
-        *ngIf="mostrarPanelProductos && loadingProductosFlag"
-        class="evento-section detalle-tab-panel productos-pending-state"
-        aria-live="polite"
-      >
-        <div class="loading-small">
-          <p>Estamos cargando los productos de este evento...</p>
-        </div>
-      </div>
-
-      <div
-        *ngIf="mostrarPanelProductos && !loadingProductosFlag && !tieneProductos"
-        class="evento-section detalle-tab-panel productos-pending-state"
-      >
-        <div class="empty-state">
-          <p>Este evento no tiene productos disponibles por ahora.</p>
-          <button type="button" class="btn-add" (click)="setTabCompra('entradas')">
-            Ver entradas
-          </button>
-        </div>
-      </div>
-
-      <!-- Mensaje si el evento está finalizado -->
-      <div class="evento-section evento-accordion detalle-tab-panel" [hidden]="tabCompra !== 'entradas' || !isEventoFinalizado()">
-      <button class="accordion-header" (click)="toggleAcordeon('eventoFinalizado')" type="button">
-        <h2>
-          <span class="material-icons">event_busy</span>
-          Evento finalizado
-        </h2>
-        <span class="material-icons accordion-icon" [class.open]="acordeones.eventoFinalizado">expand_more</span>
-      </button>
-      <div class="accordion-content" [class.open]="acordeones.eventoFinalizado">
-        <div class="evento-finalizado-message">
-          <p>Este evento ya terminó. Las boletas no están disponibles para compra.</p>
-        </div>
-      </div>
-      </div>
-
-    </div>
-
-    <section
-      class="detalle-zone detalle-zone--info"
-      *ngIf="(lugar || loadingLugar) || !!evento.descripcion || !!(evento.url_video && getYoutubeEmbedUrl(evento.url_video))"
-      aria-labelledby="detalle-info-heading"
-    >
-      <h2 id="detalle-info-heading" class="detalle-zone-title">Detalles del evento</h2>
-
-    <!-- Información del Lugar -->
-    <div class="evento-section evento-accordion" *ngIf="lugar || loadingLugar">
-      <button class="accordion-header" (click)="toggleAcordeon('ubicacion')" type="button">
-        <h2>
-          <span class="material-icons">place</span>
-          Ubicacion
-        </h2>
-        <span class="material-icons accordion-icon" [class.open]="acordeones.ubicacion">expand_more</span>
-      </button>
-      <div class="accordion-content" [class.open]="acordeones.ubicacion">
-        <div *ngIf="loadingLugar" class="loading-small">
-          <p>Cargando información del lugar...</p>
-        </div>
-        <div *ngIf="!loadingLugar && lugar" class="lugar-info">
-          <div class="lugar-header">
-            <h3>{{ lugar.nombre }}</h3>
-          </div>
-          <div class="lugar-details">
-            <div class="lugar-item">
-              <span class="material-icons">location_on</span>
-              <div class="lugar-item-content">
-                <strong>Dirección</strong>
-                <p>{{ lugar.direccion }}</p>
-              </div>
-            </div>
-            <div class="lugar-item" *ngIf="lugar.ciudad">
-              <span class="material-icons">location_city</span>
-              <div class="lugar-item-content">
-                <strong>Ciudad</strong>
-                <p>{{ lugar.ciudad }}<span *ngIf="lugar.pais">, {{ lugar.pais }}</span></p>
-              </div>
-            </div>
-            <div class="lugar-item" *ngIf="lugar.telefono">
-              <span class="material-icons">phone</span>
-              <div class="lugar-item-content">
-                <strong>Teléfono</strong>
-                <p>{{ lugar.telefono }}</p>
-              </div>
-            </div>
-            <div class="lugar-item" *ngIf="lugar.email">
-              <span class="material-icons">email</span>
-              <div class="lugar-item-content">
-                <strong>Email</strong>
-                <p>{{ lugar.email }}</p>
-              </div>
-            </div>
-            <div class="lugar-item" *ngIf="lugar.capacidad_maxima">
-              <span class="material-icons">people</span>
-              <div class="lugar-item-content">
-                <strong>Capacidad</strong>
-                <p>{{ lugar.capacidad_maxima }} personas</p>
-              </div>
-            </div>
-            <div class="lugar-item" *ngIf="lugar.descripcion">
-              <span class="material-icons">description</span>
-              <div class="lugar-item-content">
-                <strong>Descripción</strong>
-                <p>{{ lugar.descripcion }}</p>
-              </div>
-            </div>
-            <div class="lugar-buttons" *ngIf="lugar.latitud && lugar.longitud || lugar.sitio_web">
-              <button type="button" class="btn-google-maps" *ngIf="lugar.latitud && lugar.longitud"
-                (click)="abrirGoogleMaps(lugar.latitud, lugar.longitud)">
-                <span class="material-icons">map</span>
-                <span>Ver en Google Maps</span>
-              </button>
-              <button type="button" class="btn-sitio-web" *ngIf="lugar.sitio_web"
-                (click)="abrirSitioWeb(lugar.sitio_web)">
-                <span class="material-icons">language</span>
-                <span>Visitar Sitio Web</span>
-              </button>
-            </div>
-          </div>
-        </div>
-        <div *ngIf="!loadingLugar && !lugar && evento.lugar_id" class="error-message">
-          <span class="material-icons">error</span>
-          <p>No se pudo cargar la información del lugar</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Descripción -->
-    <div class="evento-section evento-accordion" *ngIf="evento.descripcion">
-      <button class="accordion-header" (click)="toggleAcordeon('descripcion')" type="button">
-        <h2>
-          <span class="material-icons">description</span>
-          Descripcion
-        </h2>
-        <span class="material-icons accordion-icon" [class.open]="acordeones.descripcion">expand_more</span>
-      </button>
-      <div class="accordion-content" [class.open]="acordeones.descripcion">
-        <p class="evento-descripcion">{{ evento.descripcion }}</p>
-      </div>
-    </div>
-
-    <!-- Video de YouTube -->
-    <div class="evento-section" *ngIf="evento.url_video && getYoutubeEmbedUrl(evento.url_video)">
-      <h2>
-        <span class="material-icons">play_circle</span>
-        Video
-      </h2>
-      <div class="video-container">
-        <iframe 
-          [src]="getYoutubeEmbedUrl(evento.url_video) | safe" 
-          frameborder="0" 
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-          allowfullscreen
-          class="youtube-embed">
-        </iframe>
-      </div>
-    </div>
-
     </section>
 
-    <section
-      class="detalle-zone detalle-zone--legal"
-      *ngIf="evento.terminos_condiciones || evento.politica_reembolso"
-      aria-labelledby="detalle-legal-heading"
-    >
-      <h2 id="detalle-legal-heading" class="detalle-zone-title">Politicas y terminos</h2>
-
-    <!-- Términos y Condiciones -->
-    <div class="evento-section evento-accordion" *ngIf="evento.terminos_condiciones">
-      <button class="accordion-header" (click)="toggleAcordeon('terminos')" type="button">
-        <h2>
-          <span class="material-icons">gavel</span>
-          Terminos y condiciones
-        </h2>
-        <span class="material-icons accordion-icon" [class.open]="acordeones.terminos">expand_more</span>
-      </button>
-      <div class="accordion-content" [class.open]="acordeones.terminos">
-        <div class="evento-descripcion">{{ evento.terminos_condiciones }}</div>
+    <section id="condiciones" class="dx-legal" *ngIf="evento.terminos_condiciones || evento.politica_reembolso" aria-labelledby="legal-title">
+      <div class="dx-section-heading dx-section-heading--wide">
+        <div><span class="dx-section-kicker">Información importante</span><h2 id="legal-title">Condiciones de compra</h2></div><p>Revisa estas condiciones antes de confirmar tu pedido.</p>
       </div>
-    </div>
-
-    <!-- Política de Reembolso -->
-    <div class="evento-section evento-accordion" *ngIf="evento.politica_reembolso">
-      <button class="accordion-header" (click)="toggleAcordeon('politica')" type="button">
-        <h2>
-          <span class="material-icons">undo</span>
-          Politica de reembolso
-        </h2>
-        <span class="material-icons accordion-icon" [class.open]="acordeones.politica">expand_more</span>
-      </button>
-      <div class="accordion-content" [class.open]="acordeones.politica">
-        <div class="evento-descripcion">{{ evento.politica_reembolso }}</div>
+      <div class="dx-legal__list">
+        <div class="evento-accordion" *ngIf="evento.terminos_condiciones">
+          <button class="accordion-header" (click)="toggleAcordeon('terminos')" type="button"><h3><span class="material-icons">gavel</span>Términos y condiciones</h3><span class="material-icons accordion-icon" [class.open]="acordeones.terminos">expand_more</span></button>
+          <div class="accordion-content" [class.open]="acordeones.terminos"><div class="evento-descripcion">{{ evento.terminos_condiciones }}</div></div>
+        </div>
+        <div class="evento-accordion" *ngIf="evento.politica_reembolso">
+          <button class="accordion-header" (click)="toggleAcordeon('politica')" type="button"><h3><span class="material-icons">undo</span>Política de reembolso</h3><span class="material-icons accordion-icon" [class.open]="acordeones.politica">expand_more</span></button>
+          <div class="accordion-content" [class.open]="acordeones.politica"><div class="evento-descripcion">{{ evento.politica_reembolso }}</div></div>
+        </div>
       </div>
-    </div>
-
     </section>
-  </div>
 
-  <!-- Mapa de palcos a pantalla completa -->
+    <div class="dx-mobile-action" *ngIf="!isEventoFinalizado() && getCantidadTotalCarrito() === 0">
+      <div><small>Entradas</small><strong *ngIf="evento.es_gratis">Gratis</strong><strong *ngIf="!evento.es_gratis && evento.precio_minimo">Desde {{ formatCurrency(evento.precio_minimo) }}</strong></div>
+      <a [routerLink]="[]" fragment="comprar">Elegir</a>
+    </div>
+  </article>
+
   <div class="palco-mapa-overlay" *ngIf="mapaAmpliado as mapa" (click)="cerrarMapaAmpliado()">
     <div class="palco-mapa-dialog" (click)="$event.stopPropagation()">
-      <button type="button" class="palco-mapa-close" (click)="cerrarMapaAmpliado()" aria-label="Cerrar plano">
-        <span class="material-icons">close</span>
-      </button>
-      <p class="palco-mapa-dialog-title" *ngIf="mapa.titulo">{{ mapa.titulo }}</p>
-      <img [src]="mapa.url" alt="Plano de palcos ampliado" class="palco-mapa-dialog-img" />
+      <button type="button" class="palco-mapa-close" (click)="cerrarMapaAmpliado()" aria-label="Cerrar plano"><span class="material-icons">close</span></button>
+      <p class="palco-mapa-dialog-title" *ngIf="mapa.titulo">{{ mapa.titulo }}</p><img [src]="mapa.url" alt="Plano de palcos ampliado" class="palco-mapa-dialog-img" />
     </div>
   </div>
 
-  <!-- Modal de imagen -->
-  <div
-    class="image-modal"
-    *ngIf="imagenModalAbierta"
-    role="dialog"
-    aria-modal="true"
-    aria-label="Imagen del evento"
-    (click)="cerrarImagenModal()"
-  >
+  <div class="image-modal" *ngIf="imagenModalAbierta" role="dialog" aria-modal="true" aria-label="Imagen del evento" (click)="cerrarImagenModal()">
     <div class="image-modal-content" (click)="$event.stopPropagation()">
-      <button class="image-modal-close" (click)="cerrarImagenModal()" type="button" aria-label="Cerrar imagen">
-        <span class="material-icons">close</span>
-      </button>
+      <button class="image-modal-close" (click)="cerrarImagenModal()" type="button" aria-label="Cerrar imagen"><span class="material-icons">close</span></button>
       <img *ngIf="evento" [src]="getImageUrl(evento)" [alt]="evento.titulo" />
     </div>
   </div>
-</div>
+</main>

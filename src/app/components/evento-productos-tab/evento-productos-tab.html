@@ -4,7 +4,7 @@
   [class.productos-compra-panel--carrito]="esContextoCarrito"
 >
   <header class="productos-compra-intro">
-    <ng-container *ngIf="!esContextoCarrito">
+    <ng-container *ngIf="!esContextoCarrito && mostrarIntro">
       <h2>Productos</h2>
       <p class="section-kicker">Selecciona tus productos y revisa el total antes de pagar.</p>
     </ng-container>

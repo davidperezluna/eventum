@@ -26,6 +26,8 @@ export class EventoProductosTab implements OnInit, OnDestroy {
   @Input() refrescoSilenciosoInicial = false;
   /** `detalle`: pestaña en detalle-evento. `carrito`: pantalla agregar productos. */
   @Input() contexto: ProductosCompraContexto = 'detalle';
+  /** En el detalle, la pestaña ya aporta el contexto y no repetimos el título. */
+  @Input() mostrarIntro = true;
   /** @deprecated Usar `contexto="carrito"`. */
   @Input() embebidoEnCarrito = false;
   @Output() productosActualizados = new EventEmitter<Producto[]>();

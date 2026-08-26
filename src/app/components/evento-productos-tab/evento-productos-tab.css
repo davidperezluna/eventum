@@ -736,3 +736,23 @@
     font-size: 0.96rem;
   }
 }
+
+/* En el detalle, el selector de productos acompaña al precio, igual que una boleta. */
+@media (max-width: 520px) {
+  .productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 1fr;
+  }
+
+  .productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__inner {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .productos-compra-panel:not(.productos-compra-panel--carrito) .pc-card__footer {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+    padding: 1rem .75rem 1rem 0;
+  }
+}
