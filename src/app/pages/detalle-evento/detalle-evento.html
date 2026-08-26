@@ -84,7 +84,7 @@
           <div *ngIf="!loadingBoletas && tiposBoletaDisponibles.length > 0" class="tipos-boleta-grid">
             <article *ngFor="let tipo of tiposBoletaDisponibles" class="tipo-boleta-card">
               <div class="tipo-boleta-header">
-                <div><span class="dx-ticket-label">Acceso</span><h3>{{ tipo.nombre }}</h3></div>
+                <div><h3>{{ tipo.nombre }}</h3></div>
                 <span class="precio">{{ formatCurrency(tipo.precio) }}</span>
               </div>
               <p *ngIf="descripcionTipoVisible(tipo)" class="tipo-descripcion">{{ tipo.descripcion }}</p>

@@ -289,8 +289,8 @@
 .detalle-evento-page .tipo-boleta-header h3 { font-size: .94rem; }
 .detalle-evento-page .tipo-boleta-header .precio { color: var(--de-violet-dark); font-size: 1.1rem; }
 .detalle-evento-page .tipo-info { color: var(--de-muted); font-size: .7rem; }
-.detalle-evento-page .tipo-actions { border-top: 1px solid var(--de-line); }
-.detalle-evento-page .btn-cantidad { width: 2rem; height: 2rem; border: 1px solid var(--de-line); border-radius: .55rem; background: #fff; color: var(--de-ink); }
+.detalle-evento-page .tipo-actions { }
+.detalle-evento-page .btn-cantidad { width: 2rem; height: 2rem; border: 1px solid var(--de-line); border-radius: .35rem; background: #fff; color: var(--de-ink); }
 .detalle-evento-page .btn-cantidad:hover:not(:disabled) { border-color: var(--de-violet); color: var(--de-violet); }
 
 @media (max-width: 768px) {
@@ -413,9 +413,9 @@
 .detalle-evento-page .tipo-info-metricas { display: flex; flex-wrap: wrap; gap: .3rem; }
 .detalle-evento-page .disponibles { color: var(--dx-success); font-weight: 750; }
 .detalle-evento-page .precio-con-servicio { color: var(--dx-ink); font-weight: 750; }
-.detalle-evento-page .tipo-actions { display: flex; align-items: center; justify-content: flex-end; margin-top: auto; padding-top: .75rem; border-top: 1px dashed var(--dx-line); }
+.detalle-evento-page .tipo-actions { display: flex; align-items: center; justify-content: flex-end; margin-top: auto; padding-top: .75rem; }
 .detalle-evento-page .cantidad-controls { display: grid; grid-template-columns: 2rem 2rem 2rem; align-items: center; }
-.detalle-evento-page .btn-cantidad { display: grid; width: 2rem; height: 2rem; place-items: center; padding: 0; border: 1px solid var(--dx-line); border-radius: .48rem; background: #fff; color: var(--dx-ink); font-size: 1rem; cursor: pointer; }
+.detalle-evento-page .btn-cantidad { display: grid; width: 2rem; height: 2rem; place-items: center; padding: 0; border: 1px solid var(--dx-line); border-radius: .35rem; background: #fff; color: var(--dx-ink); font-size: 1rem; cursor: pointer; }
 .detalle-evento-page .btn-cantidad:hover:not(:disabled) { border-color: var(--dx-accent); background: var(--dx-accent-soft); color: var(--dx-accent-dark); }
 .detalle-evento-page .cantidad { text-align: center; font-size: .78rem; font-weight: 850; font-variant-numeric: tabular-nums; }
 
@@ -743,6 +743,7 @@
   width: 1.8rem;
   height: 2.2rem;
   border: 0;
+  border-radius: 0;
   background: transparent;
   color: var(--ec-text-muted, #64748b);
   font-size: 1.3rem;
@@ -2514,7 +2515,7 @@
 .btn-cantidad {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: 6px;
   border: 1px solid #e2e8f0;
   background: #fff;
   color: #0f172a;
