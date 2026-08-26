@@ -226,7 +226,7 @@
             </div>
           </div>
           <div class="tipo-actions">
-            <div class="cantidad-controls" *ngIf="getCantidadEnCarrito(tipo) > 0">
+            <div class="cantidad-controls">
               <button type="button" class="btn-cantidad" (click)="quitarDelCarrito(tipo)" [attr.aria-label]="'Quitar 1 ' + tipo.nombre">−</button>
               <span class="cantidad">{{ getCantidadEnCarrito(tipo) }}</span>
               <button
@@ -236,14 +236,7 @@
                 [disabled]="!puedeAgregarMasBoletas(tipo)"
                 [attr.aria-label]="'Agregar 1 ' + tipo.nombre"
               >+</button>
-              <button type="button" class="btn-remove" (click)="eliminarDelCarrito(tipo)" [attr.aria-label]="'Eliminar ' + tipo.nombre + ' del carrito'">
-                <span class="material-icons" aria-hidden="true">delete_outline</span>
-              </button>
             </div>
-            <button *ngIf="getCantidadEnCarrito(tipo) === 0" type="button" class="btn-add" (click)="agregarAlCarrito(tipo)">
-              <span class="material-icons">add</span>
-              Agregar al carrito
-            </button>
           </div>
         </div>
       </div>

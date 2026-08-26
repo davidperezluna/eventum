@@ -90,7 +90,7 @@
       </div>
 
       <div class="pc-card__footer">
-        <div class="pc-stepper" *ngIf="cantidadEnCarrito(producto.id) > 0; else pcAddBtn">
+        <div class="pc-stepper">
           <button
             type="button"
             class="pc-stepper__btn"
@@ -107,26 +107,7 @@
             [disabled]="!puedeAgregarMasProductos(producto)"
             [attr.aria-label]="'Agregar 1 ' + producto.nombre"
           >+</button>
-          <button
-            type="button"
-            class="pc-stepper__remove"
-            (click)="eliminarDelCarrito(producto)"
-            [attr.aria-label]="'Eliminar ' + producto.nombre + ' del carrito'"
-          >
-            <span class="material-icons" aria-hidden="true">delete_outline</span>
-          </button>
         </div>
-        <ng-template #pcAddBtn>
-          <button
-            type="button"
-            class="pc-add-btn"
-            (click)="agregarAlCarrito(producto)"
-            [disabled]="!puedeAgregarMasProductos(producto)"
-          >
-            <span class="material-icons" aria-hidden="true">add</span>
-            Agregar al carrito
-          </button>
-        </ng-template>
         <div *ngIf="cantidadEnCarrito(producto.id) > 0" class="pc-added" role="status" aria-live="polite">
           <span class="material-icons" aria-hidden="true">check_circle</span>
           <span>Agregado al carrito</span>
