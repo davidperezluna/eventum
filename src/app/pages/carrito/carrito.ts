@@ -162,6 +162,10 @@ export class Carrito implements OnInit, OnDestroy {
         const eventoId = this.evento?.id ?? this.carritoCompraService.getEventoSnapshot()?.id;
         const tieneCache = !!(eventoId && this.detalleEventoStateService.getState(eventoId));
         void this.refrescarPalcosDisponibles({ background: tieneCache });
+
+        if (this.mostrarEstadoCarritoVacio && this.itemsCover.length === 0) {
+          void this.router.navigate(['/eventos-cliente']);
+        }
       })
     );
 
