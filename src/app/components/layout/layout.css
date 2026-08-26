@@ -1007,6 +1007,10 @@
     display: none;
   }
 
+  .public-header .client-user-menu {
+    display: none;
+  }
+
   .public-header .header-container {
     align-items: center;
     gap: 0.5rem;
