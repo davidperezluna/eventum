@@ -30,6 +30,8 @@ export class EventoProductosTab implements OnInit, OnDestroy {
   @Input() mostrarIntro = true;
   /** @deprecated Usar `contexto="carrito"`. */
   @Input() embebidoEnCarrito = false;
+  @Input() soloCarrito = false;
+  @Input() ocultarEstadoPrecio = false;
   @Output() productosActualizados = new EventEmitter<Producto[]>();
 
   @HostBinding('class')
@@ -67,7 +69,9 @@ export class EventoProductosTab implements OnInit, OnDestroy {
     }
 
     this.startCountdownTicker();
-    this.loadProductos({ background: this.refrescoSilenciosoInicial || this.productosCargados });
+    if (!this.soloCarrito) {
+      this.loadProductos({ background: this.refrescoSilenciosoInicial || this.productosCargados });
+    }
   }
 
   ngOnDestroy(): void {
@@ -226,6 +230,10 @@ export class EventoProductosTab implements OnInit, OnDestroy {
 
   trackByProductoId(_index: number, producto: Producto): number {
     return producto.id;
+  }
+
+  productosParaMostrar(): Producto[] {
+    return this.soloCarrito ? this.productos.filter((producto) => this.getCantidadEnCarrito(producto.id) > 0) : this.productos;
   }
 
   async agregarAlCarrito(producto: Producto): Promise<void> {

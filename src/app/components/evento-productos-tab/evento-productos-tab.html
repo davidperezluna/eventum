@@ -9,6 +9,7 @@
       <p class="section-kicker">Selecciona tus productos y revisa el total antes de pagar.</p>
     </ng-container>
     <ev-notice
+      *ngIf="!ocultarEstadoPrecio"
       [variant]="preventaUrgente() ? 'warning' : 'info'"
       density="inline"
       [icon]="preventaActiva() ? 'schedule' : 'local_offer'"
@@ -20,9 +21,9 @@
     <p>Cargando productos...</p>
   </div>
 
-  <ul *ngIf="!loading && productos.length > 0" class="pc-list" role="list">
+  <ul *ngIf="!loading && productosParaMostrar().length > 0" class="pc-list" role="list">
     <li
-      *ngFor="let producto of productos; trackBy: trackByProductoId"
+      *ngFor="let producto of productosParaMostrar(); trackBy: trackByProductoId"
       class="pc-card"
       [class.pc-card--licor]="producto.es_licor"
       [class.pc-card--agotado]="!tieneExistencias(producto)"
@@ -43,7 +44,7 @@
 
           <p *ngIf="descripcionProductoVisible(producto)" class="pc-card__subtitle">{{ producto.descripcion }}</p>
 
-          <div class="pc-card__pricing">
+          <div class="pc-card__pricing" *ngIf="!ocultarEstadoPrecio">
             <span
               class="pc-estado-precio"
               [class.pc-estado-precio--evento]="precioEventoVigente()"
@@ -117,7 +118,7 @@
     </li>
   </ul>
 
-  <div *ngIf="!loading && productos.length === 0" class="pc-empty">
+  <div *ngIf="!loading && productosParaMostrar().length === 0" class="pc-empty">
     <span class="material-icons" aria-hidden="true">inventory_2</span>
     <p>No hay productos disponibles para este evento</p>
   </div>

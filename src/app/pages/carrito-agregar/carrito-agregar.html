@@ -36,7 +36,18 @@
       </div>
 
       <div *ngIf="!loadingBoletas && tiposBoletaDisponibles.length > 0" class="tipos-boleta-grid">
-        <div *ngFor="let tipo of tiposBoletaDisponibles" class="tipo-boleta-card">
+        <app-evento-boleta-card
+          *ngFor="let tipo of tiposBoletaDisponibles"
+          [tipo]="tipo"
+          [cantidad]="getCantidadBoleta(tipo.id)"
+          [maxCantidad]="maxCantidadBoleta(tipo)"
+          [mostrarDescripcion]="true"
+          [mostrarEliminar]="true"
+          (aumentar)="agregarBoleta(tipo)"
+          (disminuir)="quitarBoleta(tipo)"
+          (eliminar)="eliminarBoleta(tipo)"
+        ></app-evento-boleta-card>
+        <div *ngFor="let tipo of tiposBoletaDisponibles" hidden class="tipo-boleta-card">
           <div class="tipo-boleta-header">
             <h3>{{ tipo.nombre }}</h3>
             <span class="precio">{{ formatCurrency(tipo.precio) }}</span>
@@ -109,7 +120,14 @@
           </button>
           <div class="accordion-content" [class.open]="etapasAgotadasAbierto">
             <div class="tipos-boleta-grid tipos-boleta-grid--agotados">
-              <article *ngFor="let tipo of tiposBoletaAgotadosList" class="tipo-boleta-card tipo-boleta-card--agotado">
+              <app-evento-boleta-card
+                *ngFor="let tipo of tiposBoletaAgotadosList"
+                [tipo]="tipo"
+                [agotada]="true"
+                [mostrarDescripcion]="true"
+                [mostrarEliminar]="false"
+              ></app-evento-boleta-card>
+              <article *ngFor="let tipo of tiposBoletaAgotadosList" hidden class="tipo-boleta-card tipo-boleta-card--agotado">
                 <div class="tipo-boleta-header">
                   <h3>{{ tipo.nombre }}</h3>
                   <span class="precio precio--agotado">{{ formatCurrency(tipo.precio) }}</span>
@@ -139,7 +157,8 @@
         [eventoFinalizado]="eventoFinalizado"
         [productosIniciales]="productosCache"
         [refrescoSilenciosoInicial]="productosCache.length > 0"
-        contexto="carrito"
+        contexto="detalle"
+        [ocultarEstadoPrecio]="true"
         (productosActualizados)="onProductosActualizados($event)"
       ></app-evento-productos-tab>
     </section>

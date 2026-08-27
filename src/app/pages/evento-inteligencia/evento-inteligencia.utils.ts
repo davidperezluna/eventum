@@ -639,7 +639,9 @@ function countVentasHoyDesdeRecientes(stats: DashboardStats | null): { entradas:
     if (tipo === 'productos') {
       productos += 1;
     } else {
-      entradas += 1;
+      // Una compra puede contener varias boletas; contar unidades, no compras.
+      const cantidad = Number(venta?.boletas_vendidas ?? venta?.boletas ?? 1);
+      entradas += Number.isFinite(cantidad) && cantidad > 0 ? cantidad : 1;
     }
   }
   return { entradas, productos };

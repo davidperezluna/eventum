@@ -308,7 +308,7 @@ export async function loadDashboardStatsForOrganizador(
       const [comprasRes, comprasProductosRes] = await Promise.all([
         withEventFilter(supabase
           .from('compras')
-          .select('id, cliente_id, evento_id, numero_transaccion, total, estado_pago, fecha_compra, evento:eventos!inner(id, titulo, organizador_id)')
+          .select('id, cliente_id, evento_id, numero_transaccion, total, estado_pago, fecha_compra, evento:eventos!inner(id, titulo, organizador_id), boletas_compradas(id)')
           .eq('evento.organizador_id', organizadorId)
           .eq('estado_pago', 'completado')
           .order('fecha_compra', { ascending: false })
@@ -353,6 +353,7 @@ export async function loadDashboardStatsForOrganizador(
           evento_id: c.evento_id,
           fecha_compra: c.fecha_compra,
           total: Number(c.total || 0),
+          boletas_vendidas: Array.isArray(c.boletas_compradas) ? c.boletas_compradas.length : 0,
           estado_pago: c.estado_pago || 'completado',
           numero_transaccion: String(c.numero_transaccion || `COMP-${c.id}`),
           seed: extractSeed(c.numero_transaccion),
@@ -411,6 +412,7 @@ export async function loadDashboardStatsForOrganizador(
             ...latest,
             numero_transaccion: ventaBase.numero_transaccion || latest.numero_transaccion,
             total: arr.reduce((sum, r) => sum + Number(r.total || 0), 0),
+            boletas_vendidas: arr.reduce((sum, r) => sum + Number(r.boletas_vendidas || 0), 0),
             tipo_venta: 'mixta'
           });
         } else {

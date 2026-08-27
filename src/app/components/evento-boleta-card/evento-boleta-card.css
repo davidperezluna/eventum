@@ -1,0 +1,16 @@
+:host { display: block; }
+.boleta-card { border: 1px solid #e8edf3; border-radius: 1rem; background: #fff; box-shadow: 0 1px 4px rgba(15,23,42,.06); overflow: hidden; }
+.boleta-card--agotada { opacity: .72; }
+.boleta-card__body { padding: 1rem 1.1rem; }
+.boleta-card__head, .boleta-card__bottom { display: flex; align-items: center; justify-content: space-between; gap: .8rem; }
+.boleta-card__eyebrow, .boleta-card__label { display: block; margin: 0 0 .25rem; color: #64748b; font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; }
+h3 { margin: 0; color: #0f172a; font-size: 1rem; }
+.boleta-card__description, .boleta-card__state { margin: .55rem 0; color: #64748b; font-size: .82rem; line-height: 1.4; }
+.boleta-card__state { color: #7c3aed; font-weight: 700; }
+.boleta-card__price { color: #7c3aed; font-size: 1.2rem; }
+.boleta-card__remove { border: 0; background: transparent; color: #94a3b8; cursor: pointer; }
+.boleta-card__stepper { display: flex; align-items: center; gap: .5rem; }
+.boleta-card__stepper button, .boleta-card__add { min-width: 2.25rem; height: 2.25rem; border: 1px solid #e4e0ea; border-radius: .45rem; background: #fff; color: #0f172a; font-size: 1.1rem; font-weight: 700; box-shadow: 0 .18rem .35rem rgba(45,35,65,.12); cursor: pointer; }
+.boleta-card__stepper span { min-width: 1.4rem; text-align: center; font-weight: 800; }
+.boleta-card__stepper button:disabled, .boleta-card__add:disabled { cursor: not-allowed; opacity: .45; }
+.boleta-card__add { padding: 0 1rem; font-size: .82rem; }

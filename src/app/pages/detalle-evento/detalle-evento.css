@@ -10,6 +10,54 @@
   padding-bottom: 4rem;
 }
 
+/* Selector de cantidad: controles simples, blancos y con relieve sutil. */
+.detalle-evento-page .entradas-panel .cantidad-controls {
+  width: auto;
+  height: 2.4rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.detalle-evento-page .entradas-panel .btn-cantidad {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 1px solid #e4e0ea;
+  border-radius: .45rem;
+  background: #fff;
+  color: var(--dx-ink, #191720);
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 .18rem .35rem rgba(45, 35, 65, .12);
+}
+
+.detalle-evento-page .entradas-panel .btn-cantidad:hover:not(:disabled) {
+  background: #fff;
+  color: var(--dx-accent-dark, #5e42bd);
+  transform: translateY(-1px);
+  box-shadow: 0 .3rem .55rem rgba(45, 35, 65, .16);
+}
+
+.detalle-evento-page .entradas-panel .btn-cantidad:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 .08rem .16rem rgba(45, 35, 65, .12);
+}
+
+.detalle-evento-page .entradas-panel .cantidad {
+  min-width: 2rem;
+  padding: 0;
+  background: transparent;
+  color: var(--dx-ink, #191720);
+  font-size: .95rem;
+  font-weight: 800;
+  box-shadow: none;
+}
+
 /* =========================================
    HEADER & HERO
    ========================================= */
@@ -400,9 +448,6 @@
 .detalle-evento-page .entradas-panel { padding: 0; }
 .detalle-evento-page .tipos-boleta-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .75rem; }
 .detalle-evento-page .tipo-boleta-card { position: relative; display: flex; min-width: 0; flex-direction: column; padding: 1rem; overflow: hidden; border: 1px solid var(--dx-line); border-radius: .85rem; background: var(--dx-panel-tint); box-shadow: none; transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
-.detalle-evento-page .tipo-boleta-card::before, .detalle-evento-page .tipo-boleta-card::after { content: ''; position: absolute; right: -7px; width: 14px; height: 14px; border: 1px solid var(--dx-line); border-radius: 50%; background: #fff; }
-.detalle-evento-page .tipo-boleta-card::before { top: 42%; }
-.detalle-evento-page .tipo-boleta-card::after { bottom: 19%; }
 .detalle-evento-page .tipo-boleta-card:hover { transform: translateY(-2px); border-color: #cfc3f5; box-shadow: 0 .8rem 1.7rem rgba(80,51,179,.08); }
 .detalle-evento-page .tipo-boleta-header { align-items: flex-start; }
 .dx-ticket-label { display: block; margin-bottom: .35rem; color: var(--dx-faint); font-size: .55rem; font-weight: 850; letter-spacing: .13em; text-transform: uppercase; }

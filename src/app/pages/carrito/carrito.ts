@@ -12,6 +12,8 @@ import {
 } from '../pago-wompi/pago-wompi';
 import { COMPRA_COPY } from '../../core/compra-copy';
 import { CarritoEmptyCard } from '../../components/carrito-empty-card/carrito-empty-card';
+import { EventoProductosTab } from '../../components/evento-productos-tab/evento-productos-tab';
+import { EventoBoletaCard } from '../../components/evento-boleta-card/evento-boleta-card';
 import { Subscription } from 'rxjs';
 import { BoletasService } from '../../services/boletas.service';
 import {
@@ -53,7 +55,7 @@ import {
 
 @Component({
   selector: 'app-carrito',
-  imports: [CommonModule, FormsModule, RouterModule, CarritoEmptyCard],
+  imports: [CommonModule, FormsModule, RouterModule, CarritoEmptyCard, EventoProductosTab, EventoBoletaCard],
   templateUrl: './carrito.html',
   styleUrl: './carrito.css'
 })
@@ -64,6 +66,10 @@ export class Carrito implements OnInit, OnDestroy {
   itemsCompra: ItemCarritoEvento[] = [];
   itemsCover: ItemCarritoCover[] = [];
   itemsProductos: ItemCarritoProducto[] = [];
+
+  get productosCarritoCatalogo() {
+    return this.itemsProductos.map((item) => item.producto);
+  }
 
   codigoCupon = '';
   cuponAplicado: CuponDescuento | null = null;

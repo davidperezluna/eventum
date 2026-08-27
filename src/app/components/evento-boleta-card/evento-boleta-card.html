@@ -1,0 +1,27 @@
+<article class="boleta-card" [class.boleta-card--agotada]="agotada">
+  <div class="boleta-card__body">
+    <div class="boleta-card__head">
+      <div>
+        <p class="boleta-card__eyebrow">{{ tipo.es_palco ? 'Experiencia' : 'Entrada' }}</p>
+        <h3>{{ tipo.nombre }}</h3>
+      </div>
+      <button *ngIf="mostrarEliminar && cantidad > 0" type="button" class="boleta-card__remove" (click)="eliminar.emit()" aria-label="Eliminar del carrito">
+        <span class="material-icons" aria-hidden="true">delete_outline</span>
+      </button>
+    </div>
+    <p *ngIf="mostrarDescripcionReal" class="boleta-card__description">{{ tipo.descripcion }}</p>
+    <p *ngIf="mostrarEstado && estado" class="boleta-card__state">{{ estado }}</p>
+    <div class="boleta-card__bottom">
+      <div>
+        <span class="boleta-card__label">Precio</span>
+        <strong class="boleta-card__price">{{ tipo.precio | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
+      </div>
+      <div class="boleta-card__stepper" *ngIf="cantidad > 0">
+        <button type="button" (click)="disminuir.emit()" aria-label="Quitar una unidad">−</button>
+        <span aria-live="polite">{{ cantidad }}</span>
+        <button type="button" (click)="aumentar.emit()" [disabled]="!puedeAumentar" aria-label="Agregar una unidad">+</button>
+      </div>
+      <button *ngIf="cantidad === 0" type="button" class="boleta-card__add" (click)="aumentar.emit()" [disabled]="agotada">Agregar</button>
+    </div>
+  </div>
+</article>

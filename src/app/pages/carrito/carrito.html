@@ -9,11 +9,32 @@
     class="client-page-header client-page-header--compact client-page-header--in-nav carrito-page-header"
     [class.carrito-page-header--has-items]="tieneContenidoCarritoVisible"
   >
-    <h1 class="client-page-header__title">Mi carrito</h1>
-    <p class="client-page-header__subtitle client-page-header__subtitle--full">
-      Revisa tu pedido, confirma tu cuenta y finaliza el pago de forma segura.
+    <p class="carrito-page-header__eyebrow">
+      <span class="material-icons" aria-hidden="true">confirmation_number</span>
+      Tu compra en Eventum
     </p>
-    <p class="client-page-header__subtitle client-page-header__subtitle--short">Revisa y paga con seguridad.</p>
+    <h1 class="client-page-header__title">
+      {{ carritoVacio ? 'Tu próxima historia empieza aquí' : 'Tu experiencia, casi lista' }}
+    </h1>
+    <p class="client-page-header__subtitle client-page-header__subtitle--full">
+      Revisa lo que elegiste, confirma tus datos y paga con tranquilidad.
+    </p>
+    <p class="client-page-header__subtitle client-page-header__subtitle--short">Revisa tu selección y continúa al pago.</p>
+
+    <ol class="carrito-steps" *ngIf="!carritoVacio" aria-label="Progreso de compra">
+      <li class="carrito-step carrito-step--active">
+        <span class="carrito-step__number">1</span>
+        <span><small>Ahora</small><strong>Revisa</strong></span>
+      </li>
+      <li class="carrito-step" [class.carrito-step--ready]="!!usuario">
+        <span class="carrito-step__number">2</span>
+        <span><small>Después</small><strong>Confirma</strong></span>
+      </li>
+      <li class="carrito-step">
+        <span class="carrito-step__number">3</span>
+        <span><small>Final</small><strong>Paga</strong></span>
+      </li>
+    </ol>
   </header>
 
   <section class="carrito-shell">
@@ -77,7 +98,18 @@
     <ng-container *ngIf="!carritoVacio">
       <section class="carrito-evento-block">
         <header class="carrito-evento-header">
-          <h2 class="carrito-evento-title">{{ evento?.titulo || (lugarCover ? 'Covers — ' + lugarCover.nombre : 'Mi carrito') }}</h2>
+          <div class="carrito-evento-identity">
+            <div class="carrito-evento-poster" *ngIf="evento?.imagen_principal as imagenEvento">
+              <img [src]="imagenEvento" [alt]="evento?.titulo || 'Evento'" />
+            </div>
+            <div class="carrito-evento-copy">
+              <p class="carrito-evento-kicker">Tu selección para</p>
+              <h2 class="carrito-evento-title">{{ evento?.titulo || (lugarCover ? 'Covers — ' + lugarCover.nombre : 'Mi carrito') }}</h2>
+              <p class="carrito-evento-support">
+                Puedes ajustar cantidades antes de continuar. Guardamos tu selección mientras completas el pago.
+              </p>
+            </div>
+          </div>
           <p *ngIf="shouldShowPreventaHintProducto()" class="carrito-preventa-chip carrito-preventa-chip--urgent">
             <span class="material-icons" aria-hidden="true">local_offer</span>
             Preventa · {{ getPreventaCountdownLabelProducto() }}
@@ -137,42 +169,18 @@
             </header>
 
             <div class="carrito-section__list" *ngIf="itemsCompra.length > 0">
-          <div *ngFor="let item of itemsCompra" class="carrito-item">
-            <div class="carrito-item-info">
-              <div class="carrito-item-top">
-                <div class="carrito-item-top__copy">
-                  <h4 class="carrito-item-title">{{ item.tipo.nombre }}</h4>
-                  <p *ngIf="item.sesion_cover_label" class="carrito-item-session">{{ item.sesion_cover_label }}</p>
-                </div>
-                <div class="carrito-item-top__end">
-                  <p class="carrito-subtotal">{{ formatCurrency(item.tipo.precio * item.cantidad) }}</p>
-                  <button
-                    type="button"
-                    class="btn-remove-item-static"
-                    (click)="eliminarDelCarrito(item)"
-                    [attr.aria-label]="'Eliminar ' + item.tipo.nombre + ' del carrito'"
-                  >
-                    <span class="material-icons" aria-hidden="true">delete_outline</span>
-                  </button>
-                </div>
-              </div>
-              <p class="carrito-item-unit">{{ formatCurrency(item.tipo.precio) }} x {{ item.cantidad }}</p>
-              <div class="carrito-item-actions">
-                <div class="cantidad-controls">
-                  <button type="button" class="btn-cantidad" (click)="quitarDelCarrito(item)" [attr.aria-label]="'Quitar 1 ' + item.tipo.nombre">−</button>
-                  <span class="cantidad" aria-live="polite">{{ item.cantidad }}</span>
-                  <button
-                    type="button"
-                    class="btn-cantidad"
-                    (click)="agregarAlCarrito(item)"
-                    [disabled]="item.cantidad >= maxCantidadLinea(item)"
-                    [attr.aria-label]="'Agregar 1 ' + item.tipo.nombre"
-                  >+</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="palco-experiencia" *ngIf="esLineaPalcoMultipersona(item.tipo)">
+          <div *ngFor="let item of itemsCompra" class="carrito-item carrito-item--boleta">
+            <app-evento-boleta-card
+              [tipo]="item.tipo"
+              [cantidad]="item.cantidad"
+              [maxCantidad]="maxCantidadLinea(item)"
+              [mostrarDescripcion]="false"
+              (aumentar)="agregarAlCarrito(item)"
+              (disminuir)="quitarDelCarrito(item)"
+              (eliminar)="eliminarDelCarrito(item)"
+            ></app-evento-boleta-card>
+            <ng-container *ngIf="esLineaPalcoMultipersona(item.tipo)">
+            <div class="palco-experiencia">
               <header class="palco-exp-header">
                 <div class="palco-exp-header-text">
                   <p class="palco-exp-kicker">
@@ -273,8 +281,9 @@
                 </div>
               </div>
             </div>
+            </ng-container>
           </div>
-            </div>
+          </div>
 
             <p class="carrito-section__empty" *ngIf="itemsCompra.length === 0 && mostrarAgregarMasBoletas">
               Aún no tienes boletas en este pedido.
@@ -303,7 +312,17 @@
             </header>
 
             <div class="carrito-section__list" *ngIf="itemsProductos.length > 0">
-          <div *ngFor="let item of itemsProductos" class="carrito-item carrito-item--producto">
+              <app-evento-productos-tab
+                *ngIf="evento"
+                [evento]="evento"
+                [productosIniciales]="productosCarritoCatalogo"
+                [refrescoSilenciosoInicial]="true"
+                contexto="detalle"
+                [soloCarrito]="true"
+                [ocultarEstadoPrecio]="true"
+                [mostrarIntro]="false"
+              ></app-evento-productos-tab>
+          <div *ngFor="let item of itemsProductos" hidden class="carrito-item carrito-item--producto">
             <div class="carrito-item-info">
               <div class="carrito-item-top">
                 <h4 class="carrito-item-title">{{ item.producto.nombre }}</h4>

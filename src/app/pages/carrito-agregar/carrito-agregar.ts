@@ -29,12 +29,13 @@ import { Evento, Palco, Producto, TipoBoleta } from '../../types';
 import { environment } from '../../../environments/environment';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { EventoProductosTab } from '../../components/evento-productos-tab/evento-productos-tab';
+import { EventoBoletaCard } from '../../components/evento-boleta-card/evento-boleta-card';
 
 type CatalogoTipo = 'boletas' | 'productos';
 
 @Component({
   selector: 'app-carrito-agregar',
-  imports: [CommonModule, RouterModule, DateFormatPipe, EventoProductosTab],
+  imports: [CommonModule, RouterModule, DateFormatPipe, EventoProductosTab, EventoBoletaCard],
   templateUrl: './carrito-agregar.html',
   styleUrl: './carrito-agregar.css',
 })
