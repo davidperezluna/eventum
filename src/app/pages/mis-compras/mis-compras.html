@@ -64,7 +64,7 @@
   <ng-container *ngIf="!loading && !vistaActividad">
   <header
     class="client-page-header client-page-header--compact client-page-header--in-nav"
-    *ngIf="!eventoDetalleKey && !lugarCoverDetalleKey"
+    *ngIf="!eventoDetalleKey && !lugarCoverDetalleKey && (tieneContenidoMisBoletas() || totalTrasladosPendientesRecibir() > 0)"
   >
     <h1 class="client-page-header__title">Mis Compras</h1>
     <a

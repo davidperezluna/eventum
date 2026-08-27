@@ -804,6 +804,12 @@
   overflow: visible;
 }
 
+.client-content--recibidos {
+  background:
+    radial-gradient(circle at 78% -8%, rgba(118, 87, 219, 0.13), transparent 30rem),
+    #f6f4f8;
+}
+
 .layout-content--cart-fab {
   padding-bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
 }

@@ -1,5 +1,9 @@
 :host {
   display: block;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 78% -8%, rgba(118, 87, 219, 0.13), transparent 30rem),
+    #f6f4f8;
 }
 
 .recibidos-page {
@@ -10,7 +14,9 @@
   padding: 0 var(--recibidos-gutter) 2.5rem;
   box-sizing: border-box;
   min-height: 100vh;
-  background: var(--ec-page-bg, #f8fafc);
+  background:
+    radial-gradient(circle at 78% -8%, rgba(118, 87, 219, 0.13), transparent 30rem),
+    #f6f4f8;
   color: var(--ec-text-primary, #0f172a);
 }
 
@@ -657,5 +663,59 @@
     max-width: 20rem;
     margin-left: auto;
     margin-right: auto;
+  }
+}
+
+/* Estado vacío alineado con la tarjeta vacía del carrito. */
+.recibidos-empty {
+  max-width: 32rem;
+  margin: 0.5rem auto 0;
+  padding: 1.75rem 1.15rem 1.35rem;
+  border: 1px solid var(--ec-border, #e8edf3);
+  border-radius: var(--ec-radius-card, 12px);
+  background: var(--ec-surface, #fff);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+
+@media (max-width: 768px) {
+  .recibidos-empty {
+    max-width: none;
+    margin-top: 0.35rem;
+    padding: 2rem 1rem 1.6rem;
+  }
+}
+
+/* El lienzo y la columna siguen la misma geometría que /carrito. */
+.recibidos-page {
+  max-width: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.recibidos-header,
+.recibidos-body,
+.recibidos-loading {
+  width: 100%;
+  max-width: var(--recibidos-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--recibidos-gutter);
+  padding-right: var(--recibidos-gutter);
+  box-sizing: border-box;
+}
+
+.recibidos-empty {
+  width: calc(100% - (2 * var(--recibidos-gutter)));
+}
+
+@media (min-width: 769px) {
+  .recibidos-empty {
+    margin-top: 5.9rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .recibidos-page {
+    padding-top: 1.35rem;
   }
 }

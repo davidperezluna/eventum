@@ -2,10 +2,20 @@
    MIS COMPRAS - CLIENT STYLES
    ============================================ */
 
+:host {
+  display: block;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 78% -8%, rgba(118, 87, 219, 0.13), transparent 30rem),
+    #f6f4f8;
+}
+
 .mis-compras-page {
   font-family: inherit;
   color: var(--ec-text-primary, var(--color-text-primary));
-  background: var(--ec-page-bg);
+  background:
+    radial-gradient(circle at 78% -8%, rgba(118, 87, 219, 0.13), transparent 30rem),
+    #f6f4f8;
   min-height: 100vh;
   padding-bottom: 4rem;
   --mc-gutter: var(--ec-content-pad);
@@ -113,10 +123,10 @@
   justify-content: center;
   gap: 0.3rem;
   text-decoration: none;
-  background: #f5f3ff;
-  color: #7c3aed;
-  border: 1px solid #dbe4ff;
-  border-radius: 999px;
+  background: var(--ec-accent-strong, #7c3aed);
+  color: #fff;
+  border: 1px solid transparent;
+  border-radius: 10px;
   padding: 0.35rem 0.6rem;
   font-size: 0.74rem;
   font-weight: 600;
@@ -124,7 +134,7 @@
 }
 
 .guia-resumen-link--ghost {
-  background: #f8fafc;
+  background: #fff;
   border-color: #e2e8f0;
   color: #475569;
 }
@@ -137,8 +147,8 @@
 }
 
 .guia-resumen-link:hover {
-  background: #ede9fe;
-  border-color: #ddd6fe;
+  background: #6d28d9;
+  border-color: transparent;
 }
 
 .guia-resumen-link--ghost:hover {
@@ -2895,11 +2905,45 @@
   padding: 2.25rem 1.35rem;
   background: #fff;
   border-radius: 16px;
-  box-shadow: none;
-  border: 1px dashed #e2e8f0;
-  max-width: none;
-  margin: 0 auto 1.6rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  border: 1px solid #e8edf3;
+  max-width: 32rem;
+  margin: 0.5rem auto 1.6rem;
   box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .mis-compras-page {
+    padding-top: 1.35rem;
+  }
+
+  .mis-compras-page .empty-state {
+    width: calc(100% - (2 * var(--mc-gutter)));
+    max-width: none;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (min-width: 769px) {
+  .empty-state { margin-top: 0.5rem; }
+}
+
+/* En el estado vacío, la guía acompaña a la tarjeta con el mismo ancho. */
+.mis-compras-page .guia-entradas-section {
+  max-width: 32rem;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+@media (min-width: 769px) {
+  .mis-compras-page {
+    padding-top: 5.9rem;
+  }
+
+  .mis-compras-page .guia-entradas-section {
+    margin-top: 0;
+  }
 }
 
 .empty-state::before { display: none; }
@@ -4475,5 +4519,25 @@
 
   .eventos-list .evento-card-toggle {
     align-items: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .mis-compras-page {
+    padding-top: 1.35rem;
+  }
+
+  .mis-compras-page .empty-state {
+    width: calc(100% - 1.5rem);
+    max-width: none;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .mis-compras-page .guia-entradas-section {
+    width: calc(100% - 1.5rem);
+    max-width: none;
+    padding-left: 0;
+    padding-right: 0;
   }
 }

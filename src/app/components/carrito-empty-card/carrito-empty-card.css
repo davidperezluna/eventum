@@ -88,7 +88,7 @@
   color: #fff;
 }
 
-.carrito-vacio-card__btn--primary .material-icons { color: inherit; }
+.carrito-vacio-card__btn--primary .material-icons { color: #fff; }
 
 .carrito-vacio-card__btn--secondary {
   border-color: transparent;
@@ -106,6 +106,10 @@
   font-size: 1.05rem;
   flex-shrink: 0;
   color: var(--ec-text-muted, #64748b);
+}
+
+.carrito-vacio-card__btn.carrito-vacio-card__btn--primary .material-icons {
+  color: #fff;
 }
 
 .carrito-vacio-card__btn:hover {

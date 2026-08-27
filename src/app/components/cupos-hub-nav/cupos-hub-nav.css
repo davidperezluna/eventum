@@ -52,7 +52,10 @@
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1.2;
-  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .cupos-hub-nav-tab .material-icons {
@@ -115,5 +118,77 @@
 @media (min-width: 769px) {
   :host.cupos-hub-nav-host {
     margin: 0.75rem auto 1rem;
+  }
+}
+
+/* Variante editorial del nuevo explorador de cupos. */
+:host-context(.cupos-page--explorar).cupos-hub-nav-host {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+:host-context(.cupos-page--explorar) .cupos-hub-nav {
+  justify-content: flex-start;
+  gap: 1.7rem;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid #dddae5;
+  border-radius: 0;
+  background: transparent;
+}
+
+:host-context(.cupos-page--explorar) .cupos-hub-nav-tab {
+  position: relative;
+  flex: 0 0 auto;
+  gap: 0.4rem;
+  min-height: 3.2rem;
+  padding: 0.7rem 0.1rem;
+  border-radius: 0;
+  color: #747182;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+:host-context(.cupos-page--explorar) .cupos-hub-nav-tab::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: #7254d6;
+  transform: scaleX(0);
+  transition: transform 180ms ease;
+}
+
+:host-context(.cupos-page--explorar) .cupos-hub-nav-tab.active {
+  background: transparent;
+  color: #171625;
+  box-shadow: none;
+}
+
+:host-context(.cupos-page--explorar) .cupos-hub-nav-tab.active::after {
+  transform: scaleX(1);
+}
+
+:host-context(.cupos-page--explorar) .cupos-hub-nav-tab .material-icons,
+:host-context(.cupos-page--explorar) .cupos-hub-nav-tab.active .material-icons {
+  color: currentColor;
+  font-size: 1rem;
+}
+
+@media (max-width: 760px) {
+  :host-context(.cupos-page--explorar) .cupos-hub-nav {
+    justify-content: stretch;
+    gap: 0;
+  }
+
+  :host-context(.cupos-page--explorar) .cupos-hub-nav-tab {
+    flex: 1 1 0;
+    gap: 0.28rem;
+    min-height: 2.9rem;
+    padding-inline: 0.3rem;
+    font-size: 0.68rem;
   }
 }

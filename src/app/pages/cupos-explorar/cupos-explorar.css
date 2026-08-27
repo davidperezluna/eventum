@@ -1,30 +1,537 @@
-﻿.cupos-global-event {
+:host {
+  display: block;
+  --cupos-paper: #f4f4f8;
+  --cupos-surface: #ffffff;
+  --cupos-ink: #171625;
+  --cupos-body: #403e4e;
+  --cupos-muted: #747182;
+  --cupos-line: #dddae5;
+  --cupos-brand: #7254d6;
+  --cupos-brand-strong: #5d3fc0;
+  --cupos-brand-soft: #eeeafd;
+  --cupos-shadow: rgba(39, 29, 70, 0.12);
+}
+
+.cupos-page--explorar {
+  position: relative;
+  min-height: calc(100dvh - 4.5rem);
+  padding: clamp(1.25rem, 3vw, 2.5rem) 0 calc(8rem + env(safe-area-inset-bottom, 0px));
+  overflow: hidden;
+  color: var(--cupos-ink);
+  background:
+    radial-gradient(circle at 82% 7%, rgba(114, 84, 214, 0.1), transparent 23rem),
+    var(--cupos-paper);
+}
+
+.cupos-page--explorar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.28;
+  background-image: radial-gradient(rgba(23, 22, 37, 0.16) 0.55px, transparent 0.55px);
+  background-size: 8px 8px;
+  mask-image: linear-gradient(to bottom, #000, transparent 30rem);
+}
+
+.cupos-explorer-shell {
+  position: relative;
+  z-index: 1;
+  width: min(calc(100% - 2rem), 74rem);
+  margin-inline: auto;
+}
+
+.cupos-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(19rem, 24rem);
+  align-items: center;
+  gap: clamp(2rem, 6vw, 6rem);
+  min-height: 24rem;
+  padding: 1rem clamp(0rem, 2vw, 1.5rem) 2.25rem;
+}
+
+.cupos-intro-copy {
+  padding-block: 1rem;
+}
+
+.cupos-eyebrow,
+.cupos-feed-kicker,
+.cupos-global-event-overline,
+.cupos-empty-label,
+.cupos-modal-kicker,
+.cupos-ticket-serial {
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.cupos-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0 0 1.25rem;
+  color: var(--cupos-body);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.cupos-eyebrow-mark {
+  width: 1.75rem;
+  height: 0.45rem;
+  background: var(--cupos-brand);
+  transform: skewX(-24deg);
+}
+
+.cupos-intro h1 {
+  max-width: 10ch;
+  margin: 0;
+  font-family: 'Arial Narrow', 'Aptos Narrow', 'Franklin Gothic Medium', sans-serif;
+  font-size: clamp(3.35rem, 7vw, 6.6rem);
+  font-stretch: condensed;
+  font-weight: 900;
+  line-height: 0.84;
+  letter-spacing: -0.075em;
+  text-wrap: balance;
+}
+
+.cupos-intro h1 span {
+  display: block;
+  color: var(--cupos-brand);
+}
+
+.cupos-intro-lead {
+  max-width: 35rem;
+  margin: 1.6rem 0 1.1rem;
+  color: var(--cupos-body);
+  font-size: clamp(1rem, 1.6vw, 1.12rem);
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.cupos-events-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--cupos-ink);
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-decoration: none;
+  border-bottom: 1px solid var(--cupos-ink);
+  padding-bottom: 0.22rem;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    gap 180ms ease;
+}
+
+.cupos-events-link .material-icons {
+  font-size: 1rem;
+}
+
+.cupos-events-link:hover {
+  gap: 0.7rem;
+  color: var(--cupos-brand-strong);
+  border-color: var(--cupos-brand-strong);
+}
+
+.cupos-action-ticket {
+  position: relative;
+  padding: 1.6rem 1.4rem 1.4rem 2rem;
+  background: var(--cupos-surface);
+  border: 1px solid var(--cupos-line);
+  border-radius: 0.4rem 1.2rem 1.2rem 0.4rem;
+  box-shadow: 0 1.4rem 3.5rem var(--cupos-shadow);
+}
+
+.cupos-action-ticket::before {
+  content: '';
+  position: absolute;
+  top: 0.7rem;
+  bottom: 0.7rem;
+  left: 0.55rem;
+  border-left: 2px dashed #cbc6d6;
+}
+
+.cupos-action-ticket::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.8);
+}
+
+.cupos-ticket-serial {
+  margin-bottom: 1.3rem;
+  color: #9894a3;
+  font-size: 0.6rem;
+  font-weight: 800;
+}
+
+.cupos-action-ticket-copy span {
+  display: block;
+  margin-bottom: 0.28rem;
+  color: var(--cupos-muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.cupos-action-ticket-copy h2 {
+  margin: 0 0 1.15rem;
+  font-size: 1.5rem;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+.cupos-quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.cupos-quick-action {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 3.55rem;
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.68rem 0.8rem;
+  border: 1px solid var(--cupos-line);
+  border-radius: 0.65rem;
+  background: #fff;
+  color: var(--cupos-ink);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.cupos-quick-action > .material-icons:first-child {
+  font-size: 1.25rem;
+  color: var(--cupos-brand);
+}
+
+.cupos-quick-action strong,
+.cupos-quick-action small {
+  display: block;
+}
+
+.cupos-quick-action strong {
+  font-size: 0.86rem;
+  line-height: 1.2;
+}
+
+.cupos-quick-action small {
+  margin-top: 0.1rem;
+  color: var(--cupos-muted);
+  font-size: 0.69rem;
+}
+
+.cupos-quick-action--primary {
+  background: var(--cupos-brand);
+  border-color: var(--cupos-brand);
+  color: #fff;
+}
+
+.cupos-quick-action--primary > .material-icons:first-child,
+.cupos-quick-action--primary small {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.cupos-quick-arrow {
+  font-size: 1rem;
+  opacity: 0.68;
+}
+
+.cupos-quick-action:hover {
+  transform: translateX(0.18rem);
+  border-color: var(--cupos-brand);
+  background: var(--cupos-brand-soft);
+}
+
+.cupos-quick-action--primary:hover {
+  background: var(--cupos-brand-strong);
+}
+
+.cupos-workspace {
+  display: grid;
+  grid-template-columns: 16rem minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  padding-top: 2.5rem;
+}
+
+.cupos-controls {
+  position: sticky;
+  top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cupos-filter-panel {
+  padding-bottom: 1.2rem;
+  border-bottom: 1px solid var(--cupos-line);
+}
+
+.cupos-filter-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.cupos-filter-heading > .material-icons {
+  margin-top: 0.05rem;
+  color: var(--cupos-brand);
+  font-size: 1.15rem;
+}
+
+.cupos-filter-heading h2 {
+  margin: 0;
+  font-size: 0.92rem;
+  letter-spacing: -0.01em;
+}
+
+.cupos-filter-heading p {
+  margin: 0.15rem 0 0;
+  color: var(--cupos-muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.cupos-filter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cupos-filter-option {
+  width: 100%;
+  min-height: 2.75rem;
+  display: grid;
+  grid-template-columns: 1.45rem 1fr 1rem;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.65rem;
+  border: 0;
+  border-radius: 0.55rem;
+  background: transparent;
+  color: var(--cupos-body);
+  font-size: 0.78rem;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+.cupos-filter-icon {
+  font-size: 1.05rem;
+  color: #9894a3;
+}
+
+.cupos-filter-check {
+  font-size: 0.95rem;
+  opacity: 0;
+}
+
+.cupos-filter-option:hover {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.cupos-filter-option.active {
+  background: var(--cupos-surface);
+  color: var(--cupos-brand-strong);
+  box-shadow: 0 0.35rem 1rem rgba(39, 29, 70, 0.06);
+}
+
+.cupos-filter-option.active .cupos-filter-icon,
+.cupos-filter-option.active .cupos-filter-check {
+  color: var(--cupos-brand);
+  opacity: 1;
+}
+
+.cupos-page--explorar .cupos-safety {
+  margin: 0;
+  padding: 0;
+}
+
+.cupos-page--explorar .cupos-safety-summary {
+  gap: 0.6rem;
+  padding: 0.75rem 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--cupos-body);
+}
+
+.cupos-page--explorar .cupos-safety-summary > .material-icons:first-child {
+  color: var(--cupos-brand);
+  font-size: 1.15rem;
+}
+
+.cupos-safety-summary > span:nth-child(2) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.cupos-safety-summary strong {
+  font-size: 0.76rem;
+}
+
+.cupos-safety-summary small {
+  color: var(--cupos-muted);
+  font-size: 0.67rem;
+  font-weight: 500;
+}
+
+.cupos-page--explorar .cupos-safety-body,
+.cupos-page--explorar .cupos-safety[open] .cupos-safety-body {
+  padding: 0 0 0.75rem 1.75rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--cupos-muted);
+  font-size: 0.73rem;
+}
+
+.cupos-page--explorar .cupos-safety[open] .cupos-safety-summary {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--cupos-ink);
+}
+
+.cupos-feed {
+  min-width: 0;
+}
+
+.cupos-feed-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--cupos-line);
+}
+
+.cupos-feed-kicker {
+  margin: 0 0 0.22rem;
+  color: var(--cupos-brand-strong);
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.cupos-feed-header h2 {
+  margin: 0;
+  font-size: clamp(1.45rem, 2.5vw, 2rem);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.cupos-feed-count {
+  flex-shrink: 0;
+  color: var(--cupos-muted);
+  font-size: 0.73rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.cupos-page--explorar .cupos-list,
+.cupos-skeleton-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 1rem;
+  max-width: none;
+  margin: 0;
+  padding: 0 0 2rem;
+  list-style: none;
+}
+
+.cupos-page--explorar .cupos-card--global {
+  position: relative;
+  height: auto;
+  padding: 0;
+  overflow: visible;
+  border: 1px solid var(--cupos-line);
+  border-radius: 0.85rem;
+  background: var(--cupos-surface);
+  box-shadow: 0 0.65rem 1.8rem rgba(39, 29, 70, 0.055);
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease,
+    border-color 200ms ease;
+}
+
+.cupos-page--explorar .cupos-card--global:hover {
+  transform: translateY(-0.2rem);
+  border-color: #c9c3d7;
+  box-shadow: 0 1rem 2.4rem rgba(39, 29, 70, 0.1);
+}
+
+.cupos-page--explorar .cupos-global-event {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.85rem 1rem;
-  text-decoration: none;
+  min-height: 5.25rem;
+  padding: 0.8rem 0.9rem;
+  border: 0;
+  border-bottom: 1px dashed #cbc6d6;
+  border-radius: 0.85rem 0.85rem 0 0;
+  background: #faf9fc;
   color: inherit;
-  background: var(--ec-surface-muted, #f1f5f9);
-  border-bottom: 1px solid var(--ec-border, #e2e8f0);
-  transition: background 0.15s ease;
+  text-decoration: none;
+  transition: background-color 180ms ease;
 }
 
-.cupos-global-event:active {
-  background: var(--ec-accent-soft, #f5f3ff);
+.cupos-page--explorar .cupos-global-event::before,
+.cupos-page--explorar .cupos-global-event::after {
+  content: '';
+  position: absolute;
+  bottom: -0.45rem;
+  z-index: 2;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: var(--cupos-paper);
 }
 
-.cupos-global-event-media {
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: var(--ec-radius-control, 8px);
-  overflow: hidden;
+.cupos-page--explorar .cupos-global-event::before {
+  left: -0.45rem;
+  border-right: 1px solid var(--cupos-line);
+}
+
+.cupos-page--explorar .cupos-global-event::after {
+  right: -0.45rem;
+  border-left: 1px solid var(--cupos-line);
+}
+
+.cupos-page--explorar .cupos-global-event:hover {
+  background: var(--cupos-brand-soft);
+}
+
+.cupos-page--explorar .cupos-global-event-media {
+  width: 3.25rem;
+  height: 3.25rem;
   flex-shrink: 0;
-  background: var(--ec-accent-soft, #f5f3ff);
-  border: 1px solid var(--ec-accent-border, #ddd6fe);
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0.35rem;
+  background: var(--cupos-brand-soft);
 }
 
 .cupos-global-event-media img {
@@ -33,114 +540,1081 @@
   object-fit: cover;
 }
 
-.cupos-global-event-media .material-icons {
-  font-size: 1.25rem;
-  color: var(--ec-accent, #8b5cf6);
+.cupos-page--explorar .cupos-global-event-media .material-icons {
+  color: var(--cupos-brand);
 }
 
-.cupos-global-event-copy {
+.cupos-page--explorar .cupos-global-event-copy {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.12rem;
 }
 
-.cupos-global-event-title {
-  font-size: 0.875rem;
-  font-weight: 700;
-  line-height: 1.3;
-  color: var(--ec-text-primary, #0f172a);
+.cupos-global-event-overline {
+  color: var(--cupos-muted);
+  font-size: 0.55rem;
+  font-weight: 800;
+}
+
+.cupos-page--explorar .cupos-global-event-title {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  overflow: hidden;
+  color: var(--cupos-ink);
+  font-size: 0.88rem;
+  font-weight: 800;
+  line-height: 1.25;
   -webkit-box-orient: vertical;
-  overflow: hidden;
+  -webkit-line-clamp: 2;
 }
 
-.cupos-global-event-date {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--ec-text-muted, #64748b);
+.cupos-page--explorar .cupos-global-event-date {
+  color: var(--cupos-muted);
+  font-size: 0.67rem;
+  font-weight: 600;
 }
 
-.cupos-global-event-chevron {
-  font-size: 1.25rem;
-  color: var(--ec-text-subtle, #94a3b8);
-  flex-shrink: 0;
+.cupos-page--explorar .cupos-global-event-chevron {
+  color: var(--cupos-brand);
+  font-size: 1rem;
 }
 
-.cupos-card--global {
-  padding: 0;
-  overflow: hidden;
+.cupos-page--explorar .cupos-global-body {
+  padding: 1.15rem 1rem 1rem;
 }
 
-.cupos-global-body {
-  padding: 1rem 1rem 1.1rem;
-}
-
-.cupos-global-status-row {
+.cupos-page--explorar .cupos-global-status-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.8rem;
 }
 
-.cupos-global-desc {
-  margin: 0 0 0.75rem;
-  font-size: 0.9375rem;
-  line-height: 1.55;
-  color: var(--ec-text-body, #1e293b);
-}
-
-.cupos-global-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
-}
-
-.cupos-global-chip {
+.cupos-page--explorar .cupos-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
-  padding: 0.28rem 0.55rem;
-  border-radius: var(--ec-radius-badge, 6px);
-  background: var(--ec-surface-muted, #f1f5f9);
-  border: 1px solid var(--ec-border, #e2e8f0);
+  gap: 0.3rem;
+  padding: 0.28rem 0.5rem;
+  border: 1px solid #d9d3ef;
+  border-radius: 0.35rem;
+  background: var(--cupos-brand-soft);
+  color: var(--cupos-brand-strong);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.cupos-page--explorar .cupos-badge[data-tipo] {
+  background: var(--cupos-brand-soft);
+  color: var(--cupos-brand-strong);
+}
+
+.cupos-page--explorar .cupos-badge .material-icons {
+  font-size: 0.86rem;
+}
+
+.cupos-page--explorar .cupos-time {
+  color: var(--cupos-muted);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.cupos-page--explorar .cupos-global-desc {
+  min-height: 4.25rem;
+  margin: 0 0 1rem;
+  color: var(--cupos-body);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.cupos-ticket-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 0 0 1rem;
+  padding: 0.65rem 0;
+  border-top: 1px solid #ece9f0;
+  border-bottom: 1px solid #ece9f0;
+}
+
+.cupos-ticket-details > div {
+  min-width: 0;
+  padding: 0 0.55rem;
+  border-left: 1px solid #ece9f0;
+}
+
+.cupos-ticket-details > div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.cupos-ticket-details dt {
+  margin-bottom: 0.18rem;
+  color: var(--cupos-muted);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cupos-ticket-details dd {
+  overflow: hidden;
+  color: var(--cupos-ink);
+  font-size: 0.74rem;
+  font-weight: 750;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.cupos-author-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cupos-author {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.48rem;
+}
+
+.cupos-author > .material-icons {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 0.45rem;
+  background: #f0eff3;
+  color: #7f7b8b;
+  font-size: 1rem;
+}
+
+.cupos-author small,
+.cupos-author strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cupos-author small {
+  color: var(--cupos-muted);
+  font-size: 0.58rem;
+}
+
+.cupos-author strong {
+  max-width: 7rem;
+  color: var(--cupos-body);
   font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--ec-text-muted, #64748b);
-  max-width: 100%;
 }
 
-.cupos-global-chip .material-icons {
-  font-size: 0.85rem;
-  color: var(--ec-text-subtle, #94a3b8);
+.cupos-page--explorar .cupos-global-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.38rem;
+  flex-shrink: 0;
 }
 
-.cupos-global-chip--author {
-  background: var(--ec-surface, #fff);
+.cupos-page--explorar .cupos-btn-secondary--main,
+.cupos-page--explorar .cupos-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 2.45rem;
+  padding: 0.58rem 0.85rem;
+  border: 1px solid var(--cupos-brand);
+  border-radius: 0.55rem;
+  background: var(--cupos-brand);
+  color: #fff;
+  font-size: 0.73rem;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease;
 }
 
-.cupos-global-actions {
+.cupos-btn-secondary--main .material-icons,
+.cupos-btn-primary .material-icons {
+  font-size: 0.95rem;
+}
+
+.cupos-page--explorar .cupos-btn-secondary--main:hover,
+.cupos-page--explorar .cupos-btn-primary:hover {
+  background: var(--cupos-brand-strong);
+  border-color: var(--cupos-brand-strong);
+}
+
+.cupos-page--explorar .cupos-btn-secondary,
+.cupos-page--explorar .cupos-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.4rem;
+  padding: 0.52rem 0.78rem;
+  border: 1px solid var(--cupos-line);
+  border-radius: 0.55rem;
+  background: #fff;
+  color: var(--cupos-body);
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.cupos-report-action,
+.cupos-page--explorar .cupos-reporte-enviado {
+  width: 2.45rem;
+  height: 2.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid var(--cupos-line);
+  border-radius: 0.55rem;
+  background: #fff;
+  color: #918d9c;
+  cursor: pointer;
+}
+
+.cupos-report-action .material-icons,
+.cupos-page--explorar .cupos-reporte-enviado .material-icons {
+  font-size: 1rem;
+}
+
+.cupos-report-action:hover {
+  border-color: #e0aaa7;
+  color: #a63f38;
+}
+
+.cupos-page--explorar .cupos-interes-enviado {
+  padding: 0.52rem 0.65rem;
+  border: 1px solid #c7dfd0;
+  border-radius: 0.55rem;
+  background: #eff8f2;
+  color: #277048;
+  font-size: 0.68rem;
+}
+
+.cupos-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.cupos-skeleton-list {
+  overflow: hidden;
+}
+
+.cupos-skeleton-card {
+  min-height: 22rem;
+  overflow: hidden;
+  border: 1px solid #e5e2ea;
+  border-radius: 0.85rem;
+  background: #fff;
+}
+
+.cupos-skeleton-event,
+.cupos-skeleton-body {
+  position: relative;
+  overflow: hidden;
+}
+
+.cupos-skeleton-event::after,
+.cupos-skeleton-body::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+  animation: cupos-shimmer 1.45s infinite;
+}
+
+.cupos-skeleton-event {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border-bottom: 1px dashed #d8d4df;
+  background: #f7f6f9;
+}
+
+.cupos-skeleton-event span {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 0.35rem;
+  background: #e5e2ea;
+}
+
+.cupos-skeleton-event i {
+  width: 60%;
+  height: 1rem;
+  margin-top: 0.55rem;
+  border-radius: 0.25rem;
+  background: #e5e2ea;
+}
+
+.cupos-skeleton-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 1.2rem 1rem;
+}
+
+.cupos-skeleton-body span {
+  height: 0.85rem;
+  border-radius: 0.2rem;
+  background: #e9e6ed;
+}
+
+.cupos-skeleton-body span:nth-child(1) {
+  width: 35%;
+}
+.cupos-skeleton-body span:nth-child(2) {
+  width: 92%;
+}
+.cupos-skeleton-body span:nth-child(3) {
+  width: 68%;
+}
+
+@keyframes cupos-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.cupos-page--explorar .cupos-empty {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: center;
+  max-width: none;
+  min-height: 21rem;
+  margin: 0;
+  padding: clamp(2rem, 5vw, 4.5rem);
+  border: 1px dashed #c9c4d0;
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--cupos-body);
+  text-align: left;
+}
+
+.cupos-empty-stub {
+  height: 11rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  border: 1px solid var(--cupos-brand);
+  border-radius: 0.5rem;
+  background: var(--cupos-brand-soft);
+  color: var(--cupos-brand-strong);
+  transform: rotate(-3deg);
+  box-shadow: 0.7rem 0.7rem 0 #ded8f6;
+}
+
+.cupos-empty-stub::after {
+  content: '';
+  width: 70%;
+  border-top: 1px dashed var(--cupos-brand);
+}
+
+.cupos-empty-stub .material-icons {
+  margin: 0;
+  color: inherit;
+  font-size: 2.4rem;
+}
+
+.cupos-empty-stub span:last-child {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.56rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  writing-mode: vertical-rl;
+}
+
+.cupos-empty-label {
+  display: block;
+  margin-bottom: 0.55rem;
+  color: var(--cupos-brand-strong);
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.cupos-page--explorar .cupos-empty h2 {
+  max-width: 15ch;
+  margin: 0 0 0.65rem;
+  color: var(--cupos-ink);
+  font-size: clamp(1.5rem, 3vw, 2.35rem);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+.cupos-empty-copy p {
+  max-width: 29rem;
+  margin: 0;
+  color: var(--cupos-muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.cupos-empty-actions {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.65rem;
+  gap: 0.5rem;
+  margin-top: 1.2rem;
 }
 
-@media (min-width: 640px) {
-  .cupos-global-event {
-    padding: 0.9rem 1.15rem;
+/* Modal reconstruido sobre las acciones existentes. */
+.cupos-page--explorar .cupos-overlay {
+  z-index: 1200;
+  padding: 1rem;
+  background: rgba(23, 22, 37, 0.64);
+  backdrop-filter: blur(5px);
+}
+
+.cupos-page--explorar .cupos-modal {
+  width: min(100%, 31rem);
+  max-width: 31rem;
+  max-height: min(92dvh, 48rem);
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 2rem 5rem rgba(23, 22, 37, 0.28);
+}
+
+.cupos-page--explorar .cupos-modal--wide {
+  max-width: 36rem;
+}
+
+.cupos-page--explorar .cupos-modal-head {
+  padding: 1.25rem 1.35rem 1rem;
+  border: 0;
+}
+
+.cupos-modal-kicker {
+  display: block;
+  margin-bottom: 0.32rem;
+  color: var(--cupos-brand-strong);
+  font-size: 0.58rem;
+  font-weight: 850;
+}
+
+.cupos-page--explorar .cupos-modal-head h2 {
+  margin: 0;
+  color: var(--cupos-ink);
+  font-size: 1.45rem;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+.cupos-page--explorar .cupos-modal-close {
+  width: 2.35rem;
+  height: 2.35rem;
+  border: 1px solid var(--cupos-line);
+  border-radius: 0.55rem;
+  background: #fff;
+  color: var(--cupos-body);
+}
+
+.cupos-modal-progress {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.3rem;
+  padding: 0 1.35rem;
+}
+
+.cupos-modal-progress span {
+  height: 0.2rem;
+  border-radius: 1rem;
+  background: #e7e4eb;
+}
+
+.cupos-modal-progress span.active {
+  background: var(--cupos-brand);
+}
+
+.cupos-page--explorar .cupos-modal-body {
+  padding: 1.15rem 1.35rem 1.3rem;
+}
+
+.cupos-page--explorar .cupos-hint {
+  margin: 0 0 0.9rem;
+  color: var(--cupos-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.cupos-page--explorar .cupos-evento-pick-list {
+  gap: 0.45rem;
+  max-height: min(53dvh, 23rem);
+  padding-right: 0.2rem;
+}
+
+.cupos-page--explorar .cupos-evento-pick {
+  min-height: 4.2rem;
+  padding: 0.55rem;
+  border-color: var(--cupos-line);
+  border-radius: 0.65rem;
+  background: #fff;
+}
+
+.cupos-page--explorar .cupos-evento-pick:hover {
+  border-color: var(--cupos-brand);
+  background: var(--cupos-brand-soft);
+}
+
+.cupos-page--explorar .cupos-evento-pick-thumb {
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.35rem;
+}
+
+.cupos-evento-pick-thumb--empty {
+  background: var(--cupos-brand-soft);
+  color: var(--cupos-brand);
+}
+
+.cupos-page--explorar .cupos-evento-pick-copy strong {
+  color: var(--cupos-ink);
+}
+
+.cupos-page--explorar .cupos-evento-pick-arrow {
+  color: var(--cupos-brand);
+  font-size: 1rem;
+}
+
+.cupos-modal-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2.2rem 1rem;
+  border: 1px dashed var(--cupos-line);
+  border-radius: 0.75rem;
+  color: var(--cupos-muted);
+  text-align: center;
+}
+
+.cupos-modal-empty .material-icons {
+  color: var(--cupos-brand);
+  font-size: 2rem;
+}
+
+.cupos-modal-empty p {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.cupos-page--explorar .cupos-modal-back {
+  color: var(--cupos-brand-strong);
+}
+
+.cupos-page--explorar .cupos-evento-pick-selected {
+  border: 1px solid #ddd7f3;
+  border-radius: 0.55rem;
+  background: var(--cupos-brand-soft);
+  color: var(--cupos-brand-strong);
+}
+
+.cupos-type-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.cupos-type-fieldset legend,
+.cupos-page--explorar .cupos-label {
+  display: block;
+  margin-bottom: 0.42rem;
+  color: var(--cupos-body);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.cupos-page--explorar .cupos-label span {
+  color: var(--cupos-muted);
+  font-size: 0.62rem;
+  font-weight: 600;
+}
+
+.cupos-page--explorar .cupos-tipo-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.cupos-page--explorar .cupos-tipo-opt {
+  min-height: 4.5rem;
+  padding: 0.55rem 0.35rem;
+  border: 1px solid var(--cupos-line);
+  border-radius: 0.6rem;
+  color: var(--cupos-body);
+}
+
+.cupos-page--explorar .cupos-tipo-opt.active {
+  border-color: var(--cupos-brand);
+  background: var(--cupos-brand-soft);
+  color: var(--cupos-brand-strong);
+  box-shadow: inset 0 0 0 1px var(--cupos-brand);
+}
+
+.cupos-page--explorar .cupos-type-hint {
+  min-height: 2.25rem;
+  margin-top: 0.35rem;
+}
+
+.cupos-page--explorar .cupos-textarea,
+.cupos-page--explorar .cupos-input {
+  min-height: 2.8rem;
+  padding: 0.68rem 0.75rem;
+  border-color: var(--cupos-line);
+  border-radius: 0.55rem;
+  color: var(--cupos-ink);
+  font-size: 0.84rem;
+  resize: vertical;
+}
+
+.cupos-page--explorar .cupos-textarea:focus,
+.cupos-page--explorar .cupos-input:focus {
+  outline: 3px solid rgba(114, 84, 214, 0.16);
+  border-color: var(--cupos-brand);
+}
+
+.cupos-page--explorar .cupos-hint--warn {
+  padding: 0.7rem 0.75rem;
+  border: 0;
+  border-left: 3px solid #bc7833;
+  border-radius: 0.25rem;
+  background: #fff7ea;
+  color: #72461d;
+}
+
+.cupos-interest-event {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+  padding: 0.75rem;
+  border-radius: 0.6rem;
+  background: var(--cupos-brand-soft);
+  color: var(--cupos-brand-strong);
+}
+
+.cupos-interest-event > .material-icons {
+  font-size: 1.25rem;
+}
+
+.cupos-interest-event small,
+.cupos-interest-event strong {
+  display: block;
+}
+
+.cupos-interest-event small {
+  margin-bottom: 0.08rem;
+  font-size: 0.62rem;
+}
+
+.cupos-interest-event strong {
+  font-size: 0.8rem;
+}
+
+.cupos-page--explorar .cupos-modal-foot {
+  gap: 0.55rem;
+  padding: 0.9rem 1.35rem 1.25rem;
+  border-color: #eeebf1;
+}
+
+.cupos-page--explorar button:focus-visible,
+.cupos-page--explorar a:focus-visible,
+.cupos-page--explorar summary:focus-visible,
+.cupos-page--explorar textarea:focus-visible,
+.cupos-page--explorar input:focus-visible {
+  outline: 3px solid rgba(114, 84, 214, 0.28);
+  outline-offset: 2px;
+}
+
+.cupos-page--explorar button:active,
+.cupos-page--explorar a:active {
+  transform: translateY(1px);
+}
+
+@media (max-width: 980px) {
+  .cupos-intro {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 21rem);
+    gap: 2rem;
   }
 
-  .cupos-global-event-media {
-    width: 3rem;
-    height: 3rem;
+  .cupos-workspace {
+    grid-template-columns: 13.5rem minmax(0, 1fr);
+    gap: 1.5rem;
   }
 
-  .cupos-global-body {
-    padding: 1.1rem 1.15rem 1.2rem;
+  .cupos-page--explorar .cupos-list,
+  .cupos-skeleton-list {
+    grid-template-columns: 1fr;
+  }
+
+  .cupos-page--explorar .cupos-global-desc {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .cupos-page--explorar {
+    padding-top: 0.7rem;
+  }
+
+  .cupos-page--explorar.cupos-page--empty {
+    padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .cupos-explorer-shell {
+    width: min(calc(100% - 1.25rem), 42rem);
+  }
+
+  .cupos-intro {
+    display: block;
+    min-height: 0;
+    padding: 1.35rem 0 1.25rem;
+  }
+
+  .cupos-intro-copy {
+    padding: 0 0 1.4rem;
+  }
+
+  .cupos-eyebrow {
+    margin-bottom: 0.85rem;
+  }
+
+  .cupos-intro h1 {
+    max-width: 9ch;
+    font-size: clamp(3.3rem, 16vw, 5.2rem);
+  }
+
+  .cupos-intro-lead {
+    margin: 1.15rem 0 0.9rem;
+    font-size: 0.93rem;
+    line-height: 1.55;
+  }
+
+  .cupos-action-ticket {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .cupos-action-ticket::before,
+  .cupos-action-ticket::after {
+    display: none;
+  }
+
+  .cupos-ticket-serial {
+    display: none;
+  }
+
+  .cupos-action-ticket-copy {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .cupos-action-ticket-copy span {
+    order: 2;
+    margin: 0;
+    font-size: 0.62rem;
+  }
+
+  .cupos-action-ticket-copy h2 {
+    margin: 0;
+    font-size: 1.3rem;
+    letter-spacing: -0.035em;
+  }
+
+  .cupos-quick-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+
+  .cupos-quick-action {
+    min-height: 6.7rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.9rem 0.85rem;
+    border-radius: 0.8rem;
+    box-shadow: 0 0.55rem 1.5rem rgba(39, 29, 70, 0.07);
+  }
+
+  .cupos-quick-action--primary {
+    grid-column: 1 / -1;
+    min-height: 4.8rem;
+    display: grid;
+    grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+    align-items: center;
+    justify-content: initial;
+    gap: 0.75rem;
+    padding: 0.8rem 0.95rem;
+    box-shadow: 0 0.8rem 1.8rem rgba(72, 47, 151, 0.22);
+  }
+
+  .cupos-quick-action > .material-icons:first-child {
+    font-size: 1.3rem;
+  }
+
+  .cupos-quick-action--primary > .material-icons:first-child {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.65rem;
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+  }
+
+  .cupos-quick-action strong {
+    font-size: 0.8rem;
+    line-height: 1.15;
+  }
+
+  .cupos-quick-action small {
+    display: block;
+    margin-top: 0.18rem;
+    font-size: 0.64rem;
+    line-height: 1.25;
+  }
+
+  .cupos-quick-arrow {
+    display: none;
+  }
+
+  .cupos-quick-action--primary .cupos-quick-arrow {
+    display: inline-block;
+    font-size: 1.15rem;
+  }
+
+  .cupos-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 1.35rem;
+    padding-top: 1.35rem;
+  }
+
+  .cupos-controls {
+    position: static;
+    width: 100%;
+  }
+
+  .cupos-filter-panel {
+    padding: 0;
+    border: 0;
+  }
+
+  .cupos-filter-heading {
+    margin-bottom: 0.65rem;
+  }
+
+  .cupos-filter-heading p,
+  .cupos-filter-heading > .material-icons {
+    display: none;
+  }
+
+  .cupos-filter-heading h2 {
+    font-size: 0.8rem;
+  }
+
+  .cupos-filter-list {
+    flex-direction: row;
+    gap: 0.4rem;
+    padding: 0.08rem 0.05rem 0.35rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .cupos-filter-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cupos-filter-option {
+    width: auto;
+    min-width: max-content;
+    min-height: 2.55rem;
+    grid-template-columns: 1rem auto;
+    gap: 0.4rem;
+    padding: 0.5rem 0.72rem;
+    border: 1px solid var(--cupos-line);
+    border-radius: 0.6rem;
+    background: rgba(255, 255, 255, 0.7);
+    font-size: 0.7rem;
+  }
+
+  .cupos-filter-check {
+    display: none;
+  }
+
+  .cupos-filter-option.active {
+    border-color: var(--cupos-brand);
+    background: var(--cupos-brand);
+    color: #fff;
+  }
+
+  .cupos-filter-option.active .cupos-filter-icon {
+    color: #fff;
+  }
+
+  .cupos-page--explorar .cupos-safety-summary {
+    padding: 0.75rem;
+    border: 1px solid #ddd7f3;
+    border-radius: 0.65rem;
+    background: var(--cupos-brand-soft);
+  }
+
+  .cupos-page--explorar .cupos-safety[open] .cupos-safety-summary {
+    border: 1px solid #ddd7f3;
+    border-radius: 0.65rem 0.65rem 0 0;
+    background: var(--cupos-brand-soft);
+  }
+
+  .cupos-page--explorar .cupos-safety-body,
+  .cupos-page--explorar .cupos-safety[open] .cupos-safety-body {
+    padding: 0.75rem;
+    border: 1px solid #ddd7f3;
+    border-top: 0;
+    border-radius: 0 0 0.65rem 0.65rem;
+    background: #fff;
+  }
+
+  .cupos-feed {
+    width: 100%;
+  }
+
+  .cupos-feed-header {
+    margin-bottom: 0.85rem;
+  }
+
+  .cupos-feed-header h2 {
+    font-size: 1.45rem;
+  }
+
+  .cupos-page--explorar .cupos-list,
+  .cupos-skeleton-list {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .cupos-page--explorar .cupos-empty {
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    gap: 1.2rem;
+    min-height: auto;
+    padding: 1.4rem 1rem 0.8rem;
+  }
+
+  .cupos-empty-stub {
+    height: 8.5rem;
+  }
+
+  .cupos-empty-stub span:last-child {
+    display: none;
+  }
+
+  .cupos-empty-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cupos-empty-actions > * {
+    width: 100%;
+  }
+
+  .cupos-page--explorar .cupos-empty-actions .cupos-btn-primary .material-icons {
+    margin: 0;
+    color: #fff;
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .cupos-page--explorar .cupos-overlay {
+    align-items: flex-end;
+    padding: 0.5rem 0 0;
+  }
+
+  .cupos-page--explorar .cupos-modal,
+  .cupos-page--explorar .cupos-modal--wide {
+    width: 100%;
+    max-width: none;
+    max-height: 92dvh;
+    border-radius: 1rem 1rem 0 0;
+  }
+}
+
+@media (max-width: 430px) {
+  .cupos-page--explorar .cupos-global-body {
+    padding: 1rem 0.85rem 0.85rem;
+  }
+
+  .cupos-author-row {
+    align-items: flex-end;
+  }
+
+  .cupos-author strong {
+    max-width: 5.3rem;
+  }
+
+  .cupos-page--explorar .cupos-btn-secondary--main {
+    padding-inline: 0.68rem;
+  }
+
+  .cupos-page--explorar .cupos-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .cupos-page--explorar .cupos-modal-foot {
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cupos-page--explorar *,
+  .cupos-page--explorar *::before,
+  .cupos-page--explorar *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

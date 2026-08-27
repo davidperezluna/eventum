@@ -9,17 +9,17 @@
     class="client-page-header client-page-header--compact client-page-header--in-nav carrito-page-header"
     [class.carrito-page-header--has-items]="tieneContenidoCarritoVisible"
   >
-    <p class="carrito-page-header__eyebrow">
+    <p *ngIf="!carritoVacio" class="carrito-page-header__eyebrow">
       <span class="material-icons" aria-hidden="true">confirmation_number</span>
       Tu compra en Eventum
     </p>
-    <h1 class="client-page-header__title">
+    <h1 *ngIf="!carritoVacio" class="client-page-header__title">
       {{ carritoVacio ? 'Tu próxima historia empieza aquí' : 'Tu experiencia, casi lista' }}
     </h1>
-    <p class="client-page-header__subtitle client-page-header__subtitle--full">
+    <p *ngIf="!carritoVacio" class="client-page-header__subtitle client-page-header__subtitle--full">
       Revisa lo que elegiste, confirma tus datos y paga con tranquilidad.
     </p>
-    <p class="client-page-header__subtitle client-page-header__subtitle--short">Revisa tu selección y continúa al pago.</p>
+    <p *ngIf="!carritoVacio" class="client-page-header__subtitle client-page-header__subtitle--short">Revisa tu selección y continúa al pago.</p>
 
   </header>
 

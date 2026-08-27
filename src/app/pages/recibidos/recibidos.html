@@ -1,5 +1,5 @@
 <div class="recibidos-page">
-  <header class="recibidos-header">
+  <header *ngIf="loading || totalPendientes > 0" class="recibidos-header">
     <div class="recibidos-header__main">
       <div class="recibidos-header__top">
         <h1 class="recibidos-header__title">Recibidos</h1>
@@ -127,6 +127,9 @@
     <div class="recibidos-empty__actions">
       <a routerLink="/mis-compras" class="recibidos-btn recibidos-btn--primary recibidos-btn--link">
         Ir a Mis compras
+      </a>
+      <a routerLink="/mis-compras/actividad" class="recibidos-btn recibidos-btn--soft recibidos-btn--link">
+        Ver historial de traslados
       </a>
       <a routerLink="/eventos-cliente" class="recibidos-empty__secondary">
         Explorar eventos

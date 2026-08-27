@@ -1,196 +1,362 @@
-<div class="cupos-page">
-  <header class="client-page-header client-page-header--compact client-page-header--in-nav cupos-page-header">
-    <h1 class="client-page-header__title">{{ cuposLabels.explorar }}</h1>
-    <p class="client-page-header__subtitle client-page-header__subtitle--full">{{ cuposLabels.explorarSubtitle }}</p>
-    <p class="client-page-header__subtitle client-page-header__subtitle--short">{{ cuposLabels.explorarSubtitleShort }}</p>
-  </header>
-
-  <div class="cupos-content-shell">
-  <app-cupos-hub-nav seccion="explorar" [respuestasCupos]="respuestasCupos" />
-
-  <div class="cupos-toolbar">
-    <div class="cupos-segmented cupos-segmented--filters" role="tablist" aria-label="Filtrar avisos">
-      <button type="button" class="cupos-segmented-tab" [class.active]="filtro === 'todos'" (click)="setFiltro('todos')">
-        Todos
-      </button>
-      <button
-        *ngFor="let t of tipos"
-        type="button"
-        class="cupos-segmented-tab"
-        [class.active]="filtro === t"
-        (click)="setFiltro(t)"
-        [attr.aria-label]="tipoLabels[t]"
-      >
-        <span class="material-icons" aria-hidden="true">{{ tipoIcons[t] }}</span>
-        <span class="cupos-segmented-tab-label cupos-segmented-tab-label--short">{{ tipoLabelsShort[t] }}</span>
-        <span class="cupos-segmented-tab-label cupos-segmented-tab-label--full">{{ tipoLabels[t] }}</span>
-      </button>
-    </div>
-  </div>
-
-  <details class="cupos-safety">
-    <summary class="cupos-safety-summary">
-      <span class="material-icons" aria-hidden="true">info</span>
-      Consejo de seguridad
-      <span class="material-icons cupos-safety-chevron" aria-hidden="true">expand_more</span>
-    </summary>
-    <div class="cupos-safety-body">
-      <p>Eventum no recibe pagos entre usuarios. Para publicar, usa el tablón del evento. Tus respuestas están en Mis publicaciones.</p>
-    </div>
-  </details>
-
-  <div *ngIf="loading" class="cupos-loading">
-    <div class="cupos-spinner" aria-hidden="true"></div>
-    <p>Cargando publicaciones…</p>
-  </div>
-
-  <div *ngIf="!loading && avisos.length === 0" class="cupos-empty">
-    <span class="material-icons" aria-hidden="true">forum</span>
-    <h2>Aún no hay avisos publicados</h2>
-    <p>Sé el primero: elige un evento y publica en su tablón.</p>
-    <a routerLink="/eventos-cliente" class="cupos-btn-primary">Ver eventos</a>
-  </div>
-
-  <ul *ngIf="!loading && avisos.length > 0" class="cupos-list cupos-list--global">
-    <li *ngFor="let aviso of avisos; trackBy: trackAviso" class="cupos-card cupos-card--global">
-      <a [routerLink]="['/cupos-evento', aviso.evento_id]" class="cupos-global-event">
-        <div class="cupos-global-event-media" aria-hidden="true">
-          <img
-            *ngIf="aviso.evento_imagen_principal; else eventoSinImagen"
-            [src]="aviso.evento_imagen_principal"
-            alt=""
-            loading="lazy"
-          />
-          <ng-template #eventoSinImagen>
-            <span class="material-icons">event</span>
-          </ng-template>
-        </div>
-        <div class="cupos-global-event-copy">
-          <span class="cupos-global-event-title">{{ aviso.evento_titulo }}</span>
-          <span *ngIf="aviso.evento_fecha_inicio" class="cupos-global-event-date">
-            {{ aviso.evento_fecha_inicio | dateFormat:'shortDate' }}
-          </span>
-        </div>
-        <span class="material-icons cupos-global-event-chevron" aria-hidden="true">chevron_right</span>
-      </a>
-
-      <div class="cupos-global-body">
-        <div class="cupos-global-status-row">
-          <span class="cupos-badge" [attr.data-tipo]="aviso.tipo">
-            <span class="material-icons" aria-hidden="true">{{ tipoIcons[aviso.tipo] }}</span>
-            {{ tipoLabels[aviso.tipo] }}
-          </span>
-          <span class="cupos-time">{{ tiempoRelativo(aviso.fecha_creacion) }}</span>
-        </div>
-
-        <p class="cupos-global-desc">{{ aviso.descripcion }}</p>
-
-        <div class="cupos-global-chips">
-          <span class="cupos-global-chip">
-            <span class="material-icons" aria-hidden="true">confirmation_number</span>
-            {{ aviso.cupos }} cupo{{ aviso.cupos === 1 ? '' : 's' }}
-          </span>
-          <span *ngIf="aviso.zona_texto" class="cupos-global-chip">
-            <span class="material-icons" aria-hidden="true">place</span>
-            {{ aviso.zona_texto }}
-          </span>
-          <span *ngIf="aviso.precio_referencia_cop" class="cupos-global-chip">
-            <span class="material-icons" aria-hidden="true">payments</span>
-            {{ formatPrecio(aviso.precio_referencia_cop) }}
-          </span>
-          <span class="cupos-global-chip cupos-global-chip--author">
-            <span class="material-icons" aria-hidden="true">person</span>
-            {{ aviso.autor_display }}
-          </span>
-        </div>
-
-        <div class="cupos-global-actions">
-          <ng-container *ngIf="!aviso.es_mio; else soyAutor">
-            <button
-              *ngIf="!aviso.ya_interesado; else interesYaEnviado"
-              type="button"
-              class="cupos-btn-secondary"
-              (click)="abrirInteres(aviso)"
-            >
-              Me interesa
-            </button>
-            <ng-template #interesYaEnviado>
-              <span class="cupos-interes-enviado">
-                <span class="material-icons" aria-hidden="true">check_circle</span>
-                Interés enviado
-              </span>
-            </ng-template>
-            <button
-              *ngIf="!aviso.ya_reportado; else reporteYaEnviado"
-              type="button"
-              class="cupos-btn-ghost cupos-btn-ghost--danger"
-              (click)="reportarAviso(aviso)"
-            >
-              Reportar
-            </button>
-            <ng-template #reporteYaEnviado>
-              <span class="cupos-reporte-enviado">
-                <span class="material-icons" aria-hidden="true">flag</span>
-                Reportado
-              </span>
-            </ng-template>
-          </ng-container>
-          <ng-template #soyAutor>
-            <a routerLink="/mis-cupos" class="cupos-btn-secondary">Ver en Mis publicaciones</a>
-            <button type="button" class="cupos-btn-ghost" (click)="publicarEnEvento(aviso)">{{ cuposLabels.tablonDelEvento }}</button>
-          </ng-template>
-        </div>
+<div
+  class="cupos-page cupos-page--explorar"
+  [class.cupos-page--empty]="!loading && avisos.length === 0"
+>
+  <div class="cupos-explorer-shell">
+    <header class="cupos-intro">
+      <div class="cupos-intro-copy">
+        <p class="cupos-eyebrow">
+          <span class="cupos-eyebrow-mark" aria-hidden="true"></span>
+          Cupos Eventum
+        </p>
+        <h1>Tu próximo plan <span>empieza aquí.</span></h1>
+        <p class="cupos-intro-lead">
+          Encuentra a alguien que tiene el cupo que buscas, completa tu grupo o comparte el espacio
+          que te sobra.
+        </p>
       </div>
-    </li>
-  </ul>
+
+      <section class="cupos-action-ticket" aria-labelledby="cupos-action-title">
+        <div class="cupos-ticket-serial" aria-hidden="true">EV · OPEN BOARD</div>
+        <div class="cupos-action-ticket-copy">
+          <span>Publica en menos de un minuto</span>
+          <h2 id="cupos-action-title">¿Qué necesitas?</h2>
+        </div>
+        <div class="cupos-quick-actions">
+          <button
+            type="button"
+            class="cupos-quick-action cupos-quick-action--primary"
+            (click)="abrirNuevoAviso('busco_cupo')"
+          >
+            <span class="material-icons" aria-hidden="true">person_search</span>
+            <span><strong>Busco un cupo</strong><small>Quiero sumarme</small></span>
+            <span class="material-icons cupos-quick-arrow" aria-hidden="true">arrow_forward</span>
+          </button>
+          <button
+            type="button"
+            class="cupos-quick-action"
+            (click)="abrirNuevoAviso('ofrezco_cupo')"
+          >
+            <span class="material-icons" aria-hidden="true">confirmation_number</span>
+            <span><strong>Tengo un cupo</strong><small>Quiero compartirlo</small></span>
+            <span class="material-icons cupos-quick-arrow" aria-hidden="true">arrow_forward</span>
+          </button>
+          <button type="button" class="cupos-quick-action" (click)="abrirNuevoAviso('busco_grupo')">
+            <span class="material-icons" aria-hidden="true">groups</span>
+            <span><strong>Busco un grupo</strong><small>Quiero completar el plan</small></span>
+            <span class="material-icons cupos-quick-arrow" aria-hidden="true">arrow_forward</span>
+          </button>
+        </div>
+      </section>
+    </header>
+
+    <app-cupos-hub-nav seccion="explorar" [respuestasCupos]="respuestasCupos" />
+
+    <div class="cupos-workspace">
+      <aside class="cupos-controls" aria-label="Controles del tablón">
+        <section class="cupos-filter-panel" aria-labelledby="cupos-filter-title">
+          <div class="cupos-filter-heading">
+            <span class="material-icons" aria-hidden="true">tune</span>
+            <div>
+              <h2 id="cupos-filter-title">Filtrar avisos</h2>
+              <p>Elige qué quieres encontrar.</p>
+            </div>
+          </div>
+
+          <div class="cupos-filter-list" role="group" aria-label="Tipo de aviso">
+            <button
+              type="button"
+              class="cupos-filter-option"
+              [class.active]="filtro === 'todos'"
+              [attr.aria-pressed]="filtro === 'todos'"
+              (click)="setFiltro('todos')"
+            >
+              <span class="cupos-filter-icon material-icons" aria-hidden="true">apps</span>
+              <span>Todos</span>
+              <span class="material-icons cupos-filter-check" aria-hidden="true">check</span>
+            </button>
+            <button
+              *ngFor="let t of tipos"
+              type="button"
+              class="cupos-filter-option"
+              [class.active]="filtro === t"
+              [attr.aria-pressed]="filtro === t"
+              (click)="setFiltro(t)"
+            >
+              <span class="cupos-filter-icon material-icons" aria-hidden="true">{{
+                tipoIcons[t]
+              }}</span>
+              <span>{{ tipoLabels[t] }}</span>
+              <span class="material-icons cupos-filter-check" aria-hidden="true">check</span>
+            </button>
+          </div>
+        </section>
+
+        <details class="cupos-safety">
+          <summary class="cupos-safety-summary">
+            <span class="material-icons" aria-hidden="true">verified_user</span>
+            <span
+              ><strong>Coordina con seguridad</strong
+              ><small>Antes de contactar a alguien</small></span
+            >
+            <span class="material-icons cupos-safety-chevron" aria-hidden="true">expand_more</span>
+          </summary>
+          <div class="cupos-safety-body">
+            <p>
+              Eventum no recibe pagos entre usuarios. Confirma la entrada y usa siempre el traslado
+              oficial.
+            </p>
+          </div>
+        </details>
+      </aside>
+
+      <section class="cupos-feed" aria-labelledby="cupos-feed-title" aria-live="polite">
+        <header class="cupos-feed-header">
+          <div>
+            <p class="cupos-feed-kicker">Tablón abierto</p>
+            <h2 id="cupos-feed-title">Avisos recientes</h2>
+          </div>
+          <span *ngIf="!loading" class="cupos-feed-count">
+            {{ avisos.length }} {{ avisos.length === 1 ? 'aviso' : 'avisos' }}
+          </span>
+        </header>
+
+        <ul *ngIf="loading" class="cupos-skeleton-list" aria-label="Cargando avisos">
+          <li *ngFor="let item of [1, 2, 3]" class="cupos-skeleton-card" aria-hidden="true">
+            <div class="cupos-skeleton-event"><span></span><i></i></div>
+            <div class="cupos-skeleton-body"><span></span><span></span><span></span></div>
+          </li>
+        </ul>
+
+        <div *ngIf="!loading && avisos.length === 0" class="cupos-empty">
+          <div class="cupos-empty-stub" aria-hidden="true">
+            <span class="material-icons">confirmation_number</span>
+            <span>ADMIT ONE</span>
+          </div>
+          <div class="cupos-empty-copy">
+            <span class="cupos-empty-label">El tablón está disponible</span>
+            <h2>
+              {{
+                filtro === 'todos'
+                  ? 'Todavía no hay avisos publicados'
+                  : 'No hay avisos con este filtro'
+              }}
+            </h2>
+            <p>
+              {{
+                filtro === 'todos'
+                  ? 'Publica lo que necesitas o revisa los eventos disponibles.'
+                  : 'Prueba con todos los avisos o publica lo que estás buscando.'
+              }}
+            </p>
+            <div class="cupos-empty-actions">
+              <button type="button" class="cupos-btn-primary" (click)="abrirNuevoAviso()">
+                <span class="material-icons" aria-hidden="true">add</span>
+                Publicar aviso
+              </button>
+              <button
+                *ngIf="filtro !== 'todos'"
+                type="button"
+                class="cupos-btn-ghost"
+                (click)="setFiltro('todos')"
+              >
+                Ver todos
+              </button>
+              <a *ngIf="filtro === 'todos'" routerLink="/eventos-cliente" class="cupos-btn-ghost"
+                >Ver eventos</a
+              >
+            </div>
+          </div>
+        </div>
+
+        <ul *ngIf="!loading && avisos.length > 0" class="cupos-list cupos-list--global">
+          <li
+            *ngFor="let aviso of avisos; trackBy: trackAviso"
+            class="cupos-card cupos-card--global"
+            [attr.data-tipo]="aviso.tipo"
+          >
+            <article>
+              <a [routerLink]="['/cupos-evento', aviso.evento_id]" class="cupos-global-event">
+                <div class="cupos-global-event-media" aria-hidden="true">
+                  <img
+                    *ngIf="aviso.evento_imagen_principal; else eventoSinImagen"
+                    [src]="aviso.evento_imagen_principal"
+                    alt=""
+                    loading="lazy"
+                  />
+                  <ng-template #eventoSinImagen>
+                    <span class="material-icons">event</span>
+                  </ng-template>
+                </div>
+                <div class="cupos-global-event-copy">
+                  <span class="cupos-global-event-overline">Evento</span>
+                  <span class="cupos-global-event-title">{{ aviso.evento_titulo }}</span>
+                  <span *ngIf="aviso.evento_fecha_inicio" class="cupos-global-event-date">
+                    {{ aviso.evento_fecha_inicio | dateFormat: 'shortDate' }}
+                  </span>
+                </div>
+                <span class="material-icons cupos-global-event-chevron" aria-hidden="true"
+                  >arrow_outward</span
+                >
+              </a>
+
+              <div class="cupos-global-body">
+                <div class="cupos-global-status-row">
+                  <span class="cupos-badge" [attr.data-tipo]="aviso.tipo">
+                    <span class="material-icons" aria-hidden="true">{{
+                      tipoIcons[aviso.tipo]
+                    }}</span>
+                    {{ tipoLabels[aviso.tipo] }}
+                  </span>
+                  <span class="cupos-time">{{ tiempoRelativo(aviso.fecha_creacion) }}</span>
+                </div>
+
+                <p class="cupos-global-desc">{{ aviso.descripcion }}</p>
+
+                <dl class="cupos-ticket-details">
+                  <div>
+                    <dt>Cupos</dt>
+                    <dd>{{ aviso.cupos }}</dd>
+                  </div>
+                  <div *ngIf="aviso.zona_texto">
+                    <dt>Zona</dt>
+                    <dd>{{ aviso.zona_texto }}</dd>
+                  </div>
+                  <div *ngIf="aviso.precio_referencia_cop">
+                    <dt>Referencia</dt>
+                    <dd>{{ formatPrecio(aviso.precio_referencia_cop) }}</dd>
+                  </div>
+                </dl>
+
+                <div class="cupos-author-row">
+                  <span class="cupos-author">
+                    <span class="material-icons" aria-hidden="true">person</span>
+                    <span
+                      ><small>Publicado por</small><strong>{{ aviso.autor_display }}</strong></span
+                    >
+                  </span>
+
+                  <div class="cupos-global-actions">
+                    <ng-container *ngIf="!aviso.es_mio; else soyAutor">
+                      <button
+                        *ngIf="!aviso.ya_interesado; else interesYaEnviado"
+                        type="button"
+                        class="cupos-btn-secondary cupos-btn-secondary--main"
+                        (click)="abrirInteres(aviso)"
+                      >
+                        Coordinar
+                        <span class="material-icons" aria-hidden="true">arrow_forward</span>
+                      </button>
+                      <ng-template #interesYaEnviado>
+                        <span class="cupos-interes-enviado">
+                          <span class="material-icons" aria-hidden="true">check_circle</span>
+                          Interés enviado
+                        </span>
+                      </ng-template>
+                      <button
+                        *ngIf="!aviso.ya_reportado; else reporteYaEnviado"
+                        type="button"
+                        class="cupos-report-action"
+                        (click)="reportarAviso(aviso)"
+                        aria-label="Reportar este aviso"
+                      >
+                        <span class="material-icons" aria-hidden="true">flag</span>
+                      </button>
+                      <ng-template #reporteYaEnviado>
+                        <span class="cupos-reporte-enviado" title="Aviso reportado">
+                          <span class="material-icons" aria-hidden="true">flag</span>
+                          <span class="cupos-visually-hidden">Reportado</span>
+                        </span>
+                      </ng-template>
+                    </ng-container>
+                    <ng-template #soyAutor>
+                      <a routerLink="/mis-cupos" class="cupos-btn-secondary">Ver mi publicación</a>
+                      <button
+                        type="button"
+                        class="cupos-report-action"
+                        (click)="publicarEnEvento(aviso)"
+                        [attr.aria-label]="cuposLabels.tablonDelEvento"
+                      >
+                        <span class="material-icons" aria-hidden="true">arrow_outward</span>
+                      </button>
+                    </ng-template>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </li>
+        </ul>
+      </section>
+    </div>
   </div>
 
-  <button
-    *ngIf="!loading && !showCrear"
-    type="button"
-    class="cupos-fab"
-    (click)="abrirNuevoAviso()"
-    aria-label="Publicar nuevo aviso"
+  <div
+    *ngIf="showCrear"
+    class="cupos-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="explorar-crear-title"
   >
-    <span class="material-icons">add</span>
-  </button>
-
-  <div *ngIf="showCrear" class="cupos-overlay" role="dialog" aria-modal="true" aria-labelledby="explorar-crear-title">
     <div class="cupos-modal" [class.cupos-modal--wide]="crearPaso === 'evento'">
       <header class="cupos-modal-head">
-        <h2 id="explorar-crear-title">
-          <ng-container *ngIf="crearPaso === 'evento'; else tituloFormExplorar">Elegir evento</ng-container>
-          <ng-template #tituloFormExplorar>Publicar aviso</ng-template>
-        </h2>
+        <div>
+          <span class="cupos-modal-kicker"
+            >Nuevo aviso · paso {{ crearPaso === 'evento' ? '1' : '2' }} de 2</span
+          >
+          <h2 id="explorar-crear-title">
+            <ng-container *ngIf="crearPaso === 'evento'; else tituloFormExplorar"
+              >¿Para qué evento?</ng-container
+            >
+            <ng-template #tituloFormExplorar>Cuéntanos qué necesitas</ng-template>
+          </h2>
+        </div>
         <button type="button" class="cupos-modal-close" (click)="cerrarCrear()" aria-label="Cerrar">
-          <span class="material-icons">close</span>
+          <span class="material-icons" aria-hidden="true">close</span>
         </button>
       </header>
 
+      <div class="cupos-modal-progress" aria-hidden="true">
+        <span class="active"></span><span [class.active]="crearPaso === 'formulario'"></span>
+      </div>
+
       <div class="cupos-modal-body" *ngIf="crearPaso === 'evento'">
-        <p class="cupos-hint">Selecciona el evento donde quedará visible tu aviso.</p>
+        <p class="cupos-hint">El aviso aparecerá en el tablón del evento que elijas.</p>
         <div *ngIf="loadingEventos" class="cupos-respuestas-loading">
           <div class="cupos-spinner cupos-spinner--sm" aria-hidden="true"></div>
           Cargando eventos…
         </div>
-        <p *ngIf="!loadingEventos && eventosParaPublicar.length === 0" class="cupos-hint">
-          No hay eventos abiertos en este momento. Revisa
-          <a routerLink="/eventos-cliente" class="cupos-inline-link" (click)="cerrarCrear()">Eventos</a>.
-        </p>
-        <ul *ngIf="!loadingEventos && eventosParaPublicar.length > 0" class="cupos-evento-pick-list">
+        <div *ngIf="!loadingEventos && eventosParaPublicar.length === 0" class="cupos-modal-empty">
+          <span class="material-icons" aria-hidden="true">event_busy</span>
+          <p>No hay eventos abiertos en este momento.</p>
+          <a routerLink="/eventos-cliente" class="cupos-inline-link" (click)="cerrarCrear()"
+            >Revisar eventos</a
+          >
+        </div>
+        <ul
+          *ngIf="!loadingEventos && eventosParaPublicar.length > 0"
+          class="cupos-evento-pick-list"
+        >
           <li *ngFor="let e of eventosParaPublicar; trackBy: trackEvento">
             <button type="button" class="cupos-evento-pick" (click)="elegirEvento(e.id)">
-              <div class="cupos-evento-pick-thumb" *ngIf="e.imagen_principal">
-                <img [src]="e.imagen_principal" alt="" loading="lazy" />
+              <div
+                class="cupos-evento-pick-thumb"
+                [class.cupos-evento-pick-thumb--empty]="!e.imagen_principal"
+              >
+                <img *ngIf="e.imagen_principal" [src]="e.imagen_principal" alt="" loading="lazy" />
+                <span *ngIf="!e.imagen_principal" class="material-icons" aria-hidden="true"
+                  >event</span
+                >
               </div>
               <div class="cupos-evento-pick-copy">
                 <strong>{{ e.titulo }}</strong>
                 <span *ngIf="e.fecha_inicio">
-                  <span class="material-icons" aria-hidden="true">event</span>
-                  {{ e.fecha_inicio | dateFormat:'shortDate' }}
+                  <span class="material-icons" aria-hidden="true">calendar_today</span>
+                  {{ e.fecha_inicio | dateFormat: 'shortDate' }}
                 </span>
               </div>
-              <span class="material-icons cupos-evento-pick-arrow" aria-hidden="true">chevron_right</span>
+              <span class="material-icons cupos-evento-pick-arrow" aria-hidden="true"
+                >arrow_forward</span
+              >
             </button>
           </li>
         </ul>
@@ -205,20 +371,25 @@
           <span class="material-icons" aria-hidden="true">event</span>
           {{ eventoSeleccionado.titulo }}
         </p>
-        <label class="cupos-label">Tipo</label>
-        <div class="cupos-tipo-grid">
-          <button
-            *ngFor="let t of tipos"
-            type="button"
-            class="cupos-tipo-opt"
-            [class.active]="crearTipo === t"
-            (click)="crearTipo = t"
-          >
-            <span class="material-icons">{{ tipoIcons[t] }}</span>
-            <span class="cupos-tipo-opt-label">{{ tipoLabels[t] }}</span>
-          </button>
-        </div>
-        <p class="cupos-hint">{{ tipoHints[crearTipo] }}</p>
+
+        <fieldset class="cupos-type-fieldset">
+          <legend>Tipo de aviso</legend>
+          <div class="cupos-tipo-grid">
+            <button
+              *ngFor="let t of tipos"
+              type="button"
+              class="cupos-tipo-opt"
+              [class.active]="crearTipo === t"
+              [attr.aria-pressed]="crearTipo === t"
+              (click)="crearTipo = t"
+            >
+              <span class="material-icons" aria-hidden="true">{{ tipoIcons[t] }}</span>
+              <span class="cupos-tipo-opt-label">{{ tipoLabels[t] }}</span>
+            </button>
+          </div>
+        </fieldset>
+        <p class="cupos-hint cupos-type-hint">{{ tipoHints[crearTipo] }}</p>
+
         <label class="cupos-label" for="explorar-desc">Descripción</label>
         <textarea
           id="explorar-desc"
@@ -229,56 +400,103 @@
         ></textarea>
         <div class="cupos-row">
           <div>
-            <label class="cupos-label" for="explorar-cupos-n">Cupos</label>
-            <input id="explorar-cupos-n" type="number" class="cupos-input" min="1" max="50" [(ngModel)]="crearCupos" />
+            <label class="cupos-label" for="explorar-cupos-n">Cantidad de cupos</label>
+            <input
+              id="explorar-cupos-n"
+              type="number"
+              class="cupos-input"
+              min="1"
+              max="50"
+              [(ngModel)]="crearCupos"
+            />
           </div>
           <div>
-            <label class="cupos-label" for="explorar-zona">Zona / palco (opcional)</label>
-            <input id="explorar-zona" type="text" class="cupos-input" [(ngModel)]="crearZona" placeholder="Ej. Palco 12" />
+            <label class="cupos-label" for="explorar-zona"
+              >Zona o palco <span>Opcional</span></label
+            >
+            <input
+              id="explorar-zona"
+              type="text"
+              class="cupos-input"
+              [(ngModel)]="crearZona"
+              placeholder="Ej. Palco 12"
+            />
           </div>
         </div>
-        <label class="cupos-label" for="explorar-precio">Precio referencia COP (opcional)</label>
+        <label class="cupos-label" for="explorar-precio"
+          >Precio de referencia <span>Opcional · COP</span></label
+        >
         <input
           id="explorar-precio"
           type="number"
           class="cupos-input"
           min="0"
           [(ngModel)]="crearPrecio"
-          placeholder="Solo orientativo"
+          placeholder="Solo como referencia"
         />
       </div>
 
       <footer class="cupos-modal-foot" *ngIf="crearPaso === 'formulario'">
         <button type="button" class="cupos-btn-ghost" (click)="cerrarCrear()">Cancelar</button>
-        <button type="button" class="cupos-btn-primary" (click)="publicarNuevoAviso()">Publicar</button>
+        <button type="button" class="cupos-btn-primary" (click)="publicarNuevoAviso()">
+          Publicar aviso
+          <span class="material-icons" aria-hidden="true">arrow_forward</span>
+        </button>
       </footer>
     </div>
   </div>
 
-  <div *ngIf="showInteres && interesAviso" class="cupos-overlay" role="dialog" aria-modal="true">
-    <div class="cupos-modal">
+  <div
+    *ngIf="showInteres && interesAviso"
+    class="cupos-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cupos-interes-title"
+  >
+    <div class="cupos-modal cupos-modal--interest">
       <header class="cupos-modal-head">
-        <h2>Me interesa</h2>
-        <button type="button" class="cupos-modal-close" (click)="cerrarInteres()" aria-label="Cerrar">
-          <span class="material-icons">close</span>
+        <div>
+          <span class="cupos-modal-kicker">Contacto seguro</span>
+          <h2 id="cupos-interes-title">Coordinar cupo</h2>
+        </div>
+        <button
+          type="button"
+          class="cupos-modal-close"
+          (click)="cerrarInteres()"
+          aria-label="Cerrar"
+        >
+          <span class="material-icons" aria-hidden="true">close</span>
         </button>
       </header>
       <div class="cupos-modal-body">
+        <div class="cupos-interest-event">
+          <span class="material-icons" aria-hidden="true">event</span>
+          <span
+            ><small>Estás respondiendo en</small
+            ><strong>{{ interesAviso.evento_titulo }}</strong></span
+          >
+        </div>
         <p class="cupos-hint cupos-hint--warn">
-          Aviso en <strong>{{ interesAviso.evento_titulo }}</strong>. No pagues por fuera hasta tener entrada oficial.
+          No envíes dinero por fuera. Confirma primero que la entrada pueda trasladarse
+          oficialmente.
         </p>
-        <label class="cupos-label" for="msg-global">Mensaje para {{ interesAviso.autor_display }}</label>
+        <label class="cupos-label" for="msg-global"
+          >Mensaje para {{ interesAviso.autor_display }}</label
+        >
         <textarea
           id="msg-global"
           class="cupos-textarea"
-          rows="3"
+          rows="4"
           [(ngModel)]="interesMensaje"
-          placeholder="Hola, me interesa coordinar contigo…"
+          placeholder="Hola, me interesa. ¿Cómo coordinamos?"
         ></textarea>
       </div>
       <footer class="cupos-modal-foot">
         <button type="button" class="cupos-btn-ghost" (click)="cerrarInteres()">Cancelar</button>
-        <button type="button" class="cupos-btn-primary" (click)="enviarInteres()">Enviar interés</button>
+        <button type="button" class="cupos-btn-primary" (click)="enviarInteres()">
+          Enviar interés
+          <span class="material-icons" aria-hidden="true">send</span>
+        </button>
       </footer>
     </div>
   </div>

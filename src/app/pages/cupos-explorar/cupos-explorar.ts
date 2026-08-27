@@ -142,7 +142,10 @@ export class CuposExplorar implements OnInit {
     try {
       await this.cuposService.registrarInteres(this.interesAviso.id, msg);
       this.cerrarInteres();
-      void this.alertService.success('Interés enviado', 'El autor verá tu mensaje en Mis publicaciones.');
+      void this.alertService.success(
+        'Interés enviado',
+        'El autor verá tu mensaje en Mis publicaciones.',
+      );
       await this.loadAvisos();
     } catch (e: unknown) {
       void this.alertService.error('No se envió', e instanceof Error ? e.message : 'Error');
@@ -164,7 +167,9 @@ export class CuposExplorar implements OnInit {
   }
 
   publicarEnEvento(aviso: AvisoCupoConEvento): void {
-    void this.router.navigate(['/cupos-evento', aviso.evento_id], { queryParams: { publicar: '1' } });
+    void this.router.navigate(['/cupos-evento', aviso.evento_id], {
+      queryParams: { publicar: '1' },
+    });
   }
 
   get eventoSeleccionado(): Evento | null {
@@ -172,11 +177,11 @@ export class CuposExplorar implements OnInit {
     return this.eventosParaPublicar.find((e) => e.id === this.eventoSeleccionadoId) ?? null;
   }
 
-  abrirNuevoAviso(): void {
+  abrirNuevoAviso(tipo: TipoAvisoCupo = 'busco_cupo'): void {
     if (!this.requiereLogin('publicar')) return;
     this.crearPaso = 'evento';
     this.eventoSeleccionadoId = null;
-    this.crearTipo = 'busco_cupo';
+    this.crearTipo = tipo;
     this.crearDescripcion = '';
     this.crearCupos = 1;
     this.crearZona = '';
@@ -252,7 +257,10 @@ export class CuposExplorar implements OnInit {
         precioReferenciaCop: this.crearPrecio,
       });
       this.cerrarCrear();
-      void this.alertService.success('Aviso publicado', 'Ya aparece en Explorar y en el tablón del evento.');
+      void this.alertService.success(
+        'Aviso publicado',
+        'Ya aparece en Explorar y en el tablón del evento.',
+      );
       await this.loadAvisos();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Error al publicar';
