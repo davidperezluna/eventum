@@ -3150,7 +3150,6 @@ export class MisCompras implements OnInit, OnDestroy {
 
     this.restaurarProductosDesdeSnapshot(productosSnapshot);
     this.fusionarProductosEnEventos();
-    this.guiaEntradasAbierta = this.eventosConBoletas.length === 0;
   }
 
   private capturarProductosPorEvento(): Map<string, EventoBoletasGrupo> {
@@ -4867,7 +4866,6 @@ export class MisCompras implements OnInit, OnDestroy {
     this.eventoExpandidoKey = state.eventoExpandidoKey ?? null;
     this.loadingBoletasDetalle = this.eventosConBoletas.length > 0;
     this.loadingCovers = coversEventumEnabled && this.boletasCover.length === 0;
-    this.guiaEntradasAbierta = this.eventosConBoletas.length === 0;
     this.fusionarProductosEnEventos();
     this.syncTabMisComprasPrincipal();
     this.syncTrasladosPendientesNavBadge();

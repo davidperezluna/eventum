@@ -225,6 +225,7 @@ export class PagoWompi implements OnInit, OnDestroy {
         }
         if (Object.keys(pending).length > 0) {
           sessionStorage.setItem(PAGO_PENDIENTE_STORAGE_KEY, JSON.stringify(pending));
+          localStorage.setItem(PAGO_PENDIENTE_STORAGE_KEY, JSON.stringify(pending));
         }
 
         this.persistirPayloadCheckout(checkoutUrl, {
@@ -287,6 +288,10 @@ export class PagoWompi implements OnInit, OnDestroy {
       if (typeof sessionStorage !== 'undefined') {
         sessionStorage.removeItem(PAGO_PENDIENTE_STORAGE_KEY);
         sessionStorage.removeItem(WOMPI_CHECKOUT_STORAGE_KEY);
+      }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(PAGO_PENDIENTE_STORAGE_KEY);
+        localStorage.removeItem(WOMPI_CHECKOUT_STORAGE_KEY);
       }
 
       void this.router.navigate(['/carrito']);
@@ -632,6 +637,7 @@ export class PagoWompi implements OnInit, OnDestroy {
       pending['transaccion_checkout_id'] = payload.transaccionCheckoutId;
     }
     sessionStorage.setItem(PAGO_PENDIENTE_STORAGE_KEY, JSON.stringify(pending));
+    localStorage.setItem(PAGO_PENDIENTE_STORAGE_KEY, JSON.stringify(pending));
   }
 
   private esPayloadValido(payload: WompiCheckoutPayload | null): payload is WompiCheckoutPayload {

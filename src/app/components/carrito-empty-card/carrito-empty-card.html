@@ -7,14 +7,14 @@
     Agrega boletas, palcos, productos o covers desde el detalle del evento o club.
   </p>
   <div class="carrito-vacio-card__actions">
-    <a routerLink="/eventos-cliente" class="carrito-vacio-card__btn">
+    <a routerLink="/eventos-cliente" class="carrito-vacio-card__btn carrito-vacio-card__btn--primary">
       <span class="material-icons" aria-hidden="true">event</span>
       Ver eventos
     </a>
     <a
       *ngIf="coversEventumEnabled"
       routerLink="/clubes"
-      class="carrito-vacio-card__btn"
+      class="carrito-vacio-card__btn carrito-vacio-card__btn--secondary"
     >
       <span class="material-icons" aria-hidden="true">nightlife</span>
       Explorar clubes

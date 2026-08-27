@@ -75,6 +75,7 @@ export class Carrito implements OnInit, OnDestroy {
   cuponAplicado: CuponDescuento | null = null;
   cuponAbierto = false;
   validandoCupon = false;
+  ayudaCuentaAbierta = false;
   private cuponRestaurado = false;
   comprando = false;
   vaciandoCarrito = false;
@@ -96,6 +97,7 @@ export class Carrito implements OnInit, OnDestroy {
   } | null = null;
   cancelandoCheckoutPendiente = false;
   recuperandoCheckoutPendiente = false;
+  private redirigiendoAWompi = false;
   /** Solo bloquea la vista si no hay datos locales del carrito ni cache del evento. */
   inicializandoCarrito = false;
   private cancelacionCheckoutSeq = 0;
@@ -131,6 +133,7 @@ export class Carrito implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.hidratarCheckoutPendienteLocal();
     this.usuario = this.authService.getUsuario();
     this.hidratarDesdeCacheDetalleEvento();
 
@@ -150,7 +153,18 @@ export class Carrito implements OnInit, OnDestroy {
       this.usuario = usuario;
       if (usuario) {
         void this.restaurarCuponDesdeCache();
-        void this.cargarCheckoutPendienteEnCarrito();
+        // Si el carrito local está vacío, mantener la pantalla de carga hasta
+        // terminar de revisar si existe un pago pendiente fuera del carrito.
+        const carritoLocalVacio = this.carritoCompraService.estaVacio();
+        if (carritoLocalVacio) {
+          this.inicializandoCarrito = true;
+        }
+        void this.cargarCheckoutPendienteEnCarrito().finally(() => {
+          if (carritoLocalVacio) {
+            this.inicializandoCarrito = false;
+            this.cdr.detectChanges();
+          }
+        });
       } else {
         this.cuponRestaurado = false;
         this.checkoutPendienteEnCurso = null;
@@ -169,9 +183,6 @@ export class Carrito implements OnInit, OnDestroy {
         const tieneCache = !!(eventoId && this.detalleEventoStateService.getState(eventoId));
         void this.refrescarPalcosDisponibles({ background: tieneCache });
 
-        if (this.mostrarEstadoCarritoVacio && this.itemsCover.length === 0) {
-          void this.router.navigate(['/eventos-cliente']);
-        }
       })
     );
 
@@ -227,17 +238,26 @@ export class Carrito implements OnInit, OnDestroy {
     );
 
     const tieneDatosLocales = !this.carritoCompraService.estaVacio() || !!this.carritoCompraService.getEventoSnapshot();
+    // Solo mostramos carga cuando no hay artículos locales y debemos comprobar
+    // si existe un pago pendiente para restaurar.
     this.inicializandoCarrito = !tieneDatosLocales;
     void this.bootstrapCarrito({ background: tieneDatosLocales });
   }
 
   private async bootstrapCarrito(options?: { background?: boolean }): Promise<void> {
     const background = options?.background ?? false;
+    const startedAt = Date.now();
     if (background) {
       this.startSilentRefreshIndicator();
     }
     try {
       await this.validarSesionEnSegundoPlano();
+      if (!background) {
+        const remainingMs = Math.max(0, 280 - (Date.now() - startedAt));
+        if (remainingMs > 0) {
+          await new Promise<void>((resolve) => setTimeout(resolve, remainingMs));
+        }
+      }
     } finally {
       this.inicializandoCarrito = false;
       this.stopSilentRefreshIndicator();
@@ -246,7 +266,9 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   get mostrarLoadingCarrito(): boolean {
-    return this.inicializandoCarrito;
+    // El estado inicial del carrito se restaura desde localStorage; no
+    // mostramos una pantalla intermedia que provoque saltos visuales.
+    return false;
   }
 
   private hidratarDesdeCacheDetalleEvento(eventoId?: number): void {
@@ -390,6 +412,61 @@ export class Carrito implements OnInit, OnDestroy {
     return (this.usuario?.documento_identidad || '').trim();
   }
 
+  private hidratarCheckoutPendienteLocal(): void {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(PAGO_PENDIENTE_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as any;
+      const ui = parsed?.checkout_ui || {};
+      const id = Number(parsed?.transaccion_checkout_id ?? ui.transaccionCheckoutId);
+      if (!Number.isFinite(id) || id <= 0) return;
+      const expiresAtMs = Number(ui.expiresAtMs);
+      if (Number.isFinite(expiresAtMs) && expiresAtMs <= Date.now()) {
+        localStorage.removeItem(PAGO_PENDIENTE_STORAGE_KEY);
+        return;
+      }
+      this.checkoutPendienteEnCurso = {
+        transaccionCheckoutId: id,
+        checkoutUrl: ui.checkoutUrl ? String(ui.checkoutUrl) : null,
+        expiro: Number.isFinite(expiresAtMs) && expiresAtMs <= Date.now(),
+        expiresAtMs: Number.isFinite(expiresAtMs) ? expiresAtMs : null,
+        totalPago: Number(ui.totalPago) || 0,
+        eventoTitulo: ui.eventoTitulo ? String(ui.eventoTitulo) : null,
+      };
+    } catch {
+      localStorage.removeItem(PAGO_PENDIENTE_STORAGE_KEY);
+    }
+  }
+
+  get mostrarBarraCheckout(): boolean {
+    return this.tieneContenidoCarritoVisible;
+  }
+
+  async cambiarCuentaCompra(): Promise<void> {
+    const confirmado = await this.alertService.confirm(
+      'Cambiar cuenta',
+      'La compra quedará asociada a la cuenta con la que ingreses. ¿Continuar?',
+      'Cambiar cuenta',
+      'Cancelar',
+    );
+    if (!confirmado) {
+      return;
+    }
+
+    const { error } = await this.authService.cambiarCuentaGoogle('/carrito');
+    if (error) {
+      void this.alertService.warning(
+        'No se pudo cambiar de cuenta',
+        'Intenta de nuevo o cierra sesión desde Mi perfil.',
+      );
+    }
+  }
+
+  toggleAyudaCuenta(): void {
+    this.ayudaCuentaAbierta = !this.ayudaCuentaAbierta;
+  }
+
   readonly compraCopy = COMPRA_COPY;
 
   tienePalcosIncompletos(): boolean {
@@ -423,6 +500,10 @@ export class Carrito implements OnInit, OnDestroy {
       return `Revisar condiciones y pagar ${this.formatCurrency(total)}`;
     }
     return `Pagar ${this.formatCurrency(total)} con Wompi`;
+  }
+
+  get labelBotonFlotante(): string {
+    return this.labelBotonFinalizarCompra.replace(/\s+con Wompi$/, '');
   }
 
   totalUnidadesBoletasEnCarrito(): number {
@@ -731,6 +812,10 @@ export class Carrito implements OnInit, OnDestroy {
         'eventum_pago_pendiente',
         JSON.stringify({ transaccion_checkout_id: pendiente.transaccionCheckoutId })
       );
+      localStorage.setItem(
+        PAGO_PENDIENTE_STORAGE_KEY,
+        JSON.stringify({ transaccion_checkout_id: pendiente.transaccionCheckoutId, checkout_ui: pendiente })
+      );
     }
 
     const debeVaciar = options?.vaciarCarrito ?? true;
@@ -813,7 +898,7 @@ export class Carrito implements OnInit, OnDestroy {
       this.cdr.detectChanges();
       try {
         const ui = await this.resolverUiRecuperacionPago(pendiente);
-        this.navegarAPagoWompi({
+        this.guardarPayloadWompi({
           checkoutUrl: pendiente.checkoutUrl,
           totalPago: pendiente.totalPago,
           eventoTitulo: pendiente.eventoTitulo,
@@ -821,8 +906,14 @@ export class Carrito implements OnInit, OnDestroy {
           expiresAtMs: pendiente.expiresAtMs,
           ...ui,
         });
+        if (typeof window !== 'undefined') {
+          this.redirigiendoAWompi = true;
+          window.location.href = pendiente.checkoutUrl;
+        }
       } finally {
-        this.recuperandoCheckoutPendiente = false;
+        if (!this.redirigiendoAWompi) {
+          this.recuperandoCheckoutPendiente = false;
+        }
         this.cdr.detectChanges();
       }
       return;
@@ -1016,7 +1107,7 @@ export class Carrito implements OnInit, OnDestroy {
     return lineas;
   }
 
-  private navegarAPagoWompi(opts: {
+  private guardarPayloadWompi(opts: {
     checkoutUrl?: string;
     wompiBody?: Record<string, unknown>;
     totalPago: number;
@@ -1053,7 +1144,75 @@ export class Carrito implements OnInit, OnDestroy {
         }),
       );
     }
-    void this.router.navigate(['/pago-wompi']);
+  }
+
+  private async abrirCheckoutWompiDirecto(
+    wompiBody: Record<string, unknown>,
+    totalPago: number,
+  ): Promise<void> {
+    const resultado = await this.comprasProductoService.iniciarCheckoutDesdeBody(wompiBody);
+    const checkoutUrl = resultado.checkout_url?.trim();
+    if (!resultado.success || !checkoutUrl) {
+      throw new Error(resultado.error || 'No se pudo iniciar el pago en Wompi');
+    }
+
+    let expiresAtMs: number | null = null;
+    if (resultado.transaccion_checkout_id) {
+      const tx = await this.comprasProductoService.getTransaccionCheckoutById(
+        resultado.transaccion_checkout_id,
+      );
+      expiresAtMs = tx?.expires_at ? new Date(tx.expires_at).getTime() : null;
+    }
+
+    const itemsResumen = this.buildResumenPayload();
+    const vinculo = this.buildVinculoPayload();
+    const subtotalCompra = this.getSubtotalNeta();
+    const valorServicio = this.getValorServicio();
+    const eventoTitulo = this.evento?.titulo || this.lugarCover?.nombre || null;
+
+    this.guardarPayloadWompi({
+      checkoutUrl,
+      wompiBody,
+      totalPago,
+      eventoTitulo,
+      transaccionCheckoutId: resultado.transaccion_checkout_id ?? null,
+      expiresAtMs,
+      itemsResumen,
+      vinculo,
+      subtotalCompra,
+      valorServicio,
+    });
+
+    if (typeof sessionStorage !== 'undefined') {
+      const pendiente: Record<string, unknown> = {
+        checkout_ui: {
+          itemsResumen,
+          subtotalCompra,
+          valorServicio,
+          vinculo,
+          emailCuenta: this.emailCuentaCompra,
+          documentoIdentidad: this.documentoCuentaCompra,
+          eventoTitulo,
+          totalPago,
+          checkoutUrl,
+          transaccionCheckoutId: resultado.transaccion_checkout_id ?? null,
+          expiresAtMs,
+        } satisfies PagoPendienteCheckoutUi,
+      };
+      if (resultado.transaccion_checkout_id) {
+        pendiente['transaccion_checkout_id'] = Number(resultado.transaccion_checkout_id);
+      }
+      if (resultado.transaccion_producto_id) {
+        pendiente['transaccion_producto_id'] = Number(resultado.transaccion_producto_id);
+      }
+      sessionStorage.setItem(PAGO_PENDIENTE_STORAGE_KEY, JSON.stringify(pendiente));
+    }
+
+    if (typeof window === 'undefined') {
+      throw new Error('No se pudo abrir la pasarela de pago');
+    }
+    this.redirigiendoAWompi = true;
+    window.location.href = checkoutUrl;
   }
 
   ocultarAvisoCheckoutPendiente(): void {
@@ -1064,6 +1223,9 @@ export class Carrito implements OnInit, OnDestroy {
     this.checkoutPendienteEnCurso = null;
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.removeItem('eventum_pago_pendiente');
+    }
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(PAGO_PENDIENTE_STORAGE_KEY);
     }
   }
 
@@ -1807,8 +1969,12 @@ export class Carrito implements OnInit, OnDestroy {
       }
     }
 
+    this.comprando = true;
+    this.cdr.detectChanges();
+
     const clienteId = await this.requerirSesionActiva();
     if (!clienteId) {
+      this.comprando = false;
       return;
     }
 
@@ -1820,6 +1986,7 @@ export class Carrito implements OnInit, OnDestroy {
       this.alertService.snackbar(
         'Tienes un pago en curso. Recupéralo o cancélalo para poder finalizar una compra nueva.'
       );
+      this.comprando = false;
       return;
     }
     this.checkoutPendienteEnCurso = null;
@@ -1829,6 +1996,7 @@ export class Carrito implements OnInit, OnDestroy {
         const pids = item.palco_ids || [];
         if (pids.length !== item.cantidad || pids.some((x) => x == null)) {
           this.alertService.warning('Palcos incompletos', `Debes seleccionar todos los palcos en "${item.tipo.nombre}"`);
+          this.comprando = false;
           return;
         }
       }
@@ -1880,7 +2048,6 @@ export class Carrito implements OnInit, OnDestroy {
       precio_unitario: item.producto.precio
     }));
 
-    this.comprando = true;
     let compraBoletasId: number | null = null;
     let compraProductosId: number | null = null;
     const tieneProductosEnCarrito = this.itemsProductos.length > 0;
@@ -2015,11 +2182,7 @@ export class Carrito implements OnInit, OnDestroy {
         throw new Error('No hay items para procesar');
       }
 
-      this.navegarAPagoWompi({
-        wompiBody,
-        totalPago,
-        eventoTitulo: this.evento?.titulo || this.lugarCover?.nombre || null,
-      });
+      await this.abrirCheckoutWompiDirecto(wompiBody, totalPago);
     } catch (error: any) {
       console.error('Error procesando compra:', error);
       if (this.authService.isAuthOrRlsError(error?.message)) {
@@ -2029,7 +2192,9 @@ export class Carrito implements OnInit, OnDestroy {
       }
       this.alertService.error('Error al procesar compra', error?.message || 'Error desconocido');
     } finally {
-      this.comprando = false;
+      if (!this.redirigiendoAWompi) {
+        this.comprando = false;
+      }
     }
   }
 }

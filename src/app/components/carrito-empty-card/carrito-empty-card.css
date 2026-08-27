@@ -1,4 +1,7 @@
 .carrito-vacio-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   background: var(--ec-surface, #fff);
   border: 1px solid var(--ec-border, #e8edf3);
   border-radius: var(--ec-radius-card, 12px);
@@ -10,19 +13,19 @@
 }
 
 .carrito-vacio-card__icon {
-  width: 3.25rem;
-  height: 3.25rem;
+  width: 4.25rem;
+  height: 4.25rem;
   margin: 0 auto 0.85rem;
-  border-radius: 10px;
+  border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #f5f3ff;
-  border: 1px solid #e9e5ff;
+  border: 0;
 }
 
 .carrito-vacio-card__icon .material-icons {
-  font-size: 1.65rem;
+  font-size: 2.1rem;
   color: #8b5cf6;
 }
 
@@ -47,8 +50,10 @@
 .carrito-vacio-card__actions {
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
-  margin-top: 1.15rem;
+  gap: 0.65rem;
+  width: 100%;
+  max-width: 24rem;
+  margin-top: 1.35rem;
 }
 
 .carrito-vacio-card__btn {
@@ -57,11 +62,11 @@
   justify-content: center;
   gap: 0.45rem;
   width: 100%;
-  min-height: 44px;
-  padding: 0.62rem 1rem;
+  min-height: 40px;
+  padding: 0 0.85rem;
   border-radius: 10px;
   font-size: 0.88rem;
-  font-weight: 700;
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
@@ -69,6 +74,32 @@
   border: 1px solid var(--ec-border, #e2e8f0);
   background: var(--ec-surface, #fff);
   color: var(--ec-text-body, #1e293b);
+}
+
+.carrito-vacio-card__btn--primary {
+  border-color: transparent;
+  background: var(--ec-accent-strong, #7c3aed);
+  color: #fff;
+}
+
+.carrito-vacio-card__btn--primary:hover {
+  background: #6d28d9;
+  border-color: transparent;
+  color: #fff;
+}
+
+.carrito-vacio-card__btn--primary .material-icons { color: inherit; }
+
+.carrito-vacio-card__btn--secondary {
+  border-color: transparent;
+  background: transparent;
+  color: #64748b;
+}
+
+.carrito-vacio-card__btn--secondary:hover {
+  background: transparent;
+  border-color: transparent;
+  color: #7c3aed;
 }
 
 .carrito-vacio-card__btn .material-icons {
@@ -86,7 +117,7 @@
   .carrito-vacio-card {
     max-width: none;
     margin-top: 0.35rem;
-    padding: 1.5rem 1rem 1.25rem;
+    padding: 2rem 1rem 1.6rem;
   }
 
   .carrito-vacio-card__title {

@@ -2722,27 +2722,132 @@ a.carrito-checkout-bar__btn {
 
 .carrito-account-summary {
   margin: .8rem 0;
-  padding: .7rem;
+  padding: .75rem 0;
   border: 0;
-  border-radius: .65rem;
-  background: var(--cx-accent-soft);
-  color: var(--cx-accent-dark);
+  border-top: 1px solid var(--cx-line);
+  border-bottom: 1px solid var(--cx-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--cx-ink);
 }
 
-.carrito-account-summary .material-icons { color: var(--cx-accent-dark); }
-.carrito-account-summary__label { color: var(--cx-muted); font-size: .58rem; }
+.carrito-account-summary__main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.carrito-account-summary__copy {
+  min-width: 0;
+  display: grid;
+  gap: .15rem;
+}
+
+.carrito-account-summary__copy strong {
+  overflow-wrap: anywhere;
+  font-size: .78rem;
+}
+
+.carrito-account-summary__label {
+  color: var(--cx-ink);
+  font-size: .68rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+.carrito-account-summary__actions { display: flex; align-items: center; gap: .2rem; flex: 0 0 auto; }
+
+.carrito-account-summary__change {
+  padding: .4rem .55rem;
+  border: 0;
+  border-radius: .45rem;
+  background: transparent;
+  color: var(--cx-accent-dark);
+  font-size: .7rem;
+  font-weight: 750;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: .18rem;
+}
+
+.carrito-account-summary__change:hover { background: rgba(118, 87, 219, .08); }
+.carrito-account-summary__change:focus-visible { outline: 2px solid var(--cx-accent); outline-offset: 2px; }
+
+.carrito-account-summary__help {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--cx-muted);
+  cursor: pointer;
+}
+
+.carrito-account-summary__help .material-icons { font-size: 1.15rem; }
+.carrito-account-summary__help:hover { background: var(--cx-accent-soft); color: var(--cx-accent-dark); }
+.carrito-account-summary__help:focus-visible { outline: 2px solid var(--cx-accent); outline-offset: 2px; }
+
+.carrito-account-summary__help-text {
+  margin: .7rem 0 0;
+  padding-top: .7rem;
+  border-top: 1px dashed var(--cx-line);
+  color: var(--cx-muted);
+  font-size: .7rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.carrito-account-summary__help-text strong { color: var(--cx-ink); }
+
+/* La fila principal no debe heredar el apilado del texto interno. */
+.carrito-account-summary > .carrito-account-summary__main {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.carrito-account-summary .carrito-account-summary__copy {
+  display: grid;
+  flex: 1 1 auto;
+  gap: .15rem;
+}
+
+.carrito-account-summary .carrito-account-summary__actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: center;
+  gap: .2rem;
+}
+
+.carrito-account-summary {
+  display: block;
+  border-bottom: 0;
+}
+
+.carrito-account-summary__help-text {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
 
 .carrito-total .total-row.main {
   margin: .9rem 0 0;
-  padding: .9rem;
+  padding: .9rem 0 0;
   border: 0;
-  border-radius: .72rem;
-  background: var(--cx-ink);
+  border-top: 1px solid var(--cx-line);
+  border-radius: 0;
+  background: transparent;
 }
 
 .carrito-total .total-row.main h3 {
   width: 100%;
-  color: #fff;
+  color: var(--cx-ink);
   font-size: 1.15rem;
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -2766,6 +2871,54 @@ a.carrito-checkout-bar__btn:hover {
 
 .btn-comprar:active:not(:disabled),
 .carrito-checkout-bar__btn:active:not(:disabled) { transform: translateY(1px); }
+
+/* El botón secundario conserva contraste aunque el estilo visual del checkout
+   aplique el fondo oscuro común a todos los botones flotantes. */
+.carrito-checkout-bar--pendiente .carrito-checkout-bar__btn--secondary {
+  background: #fff;
+  color: var(--cx-ink, #191720);
+  border: 1px solid var(--ec-border, #e2e8f0);
+}
+
+.carrito-checkout-bar--pendiente .carrito-checkout-bar__btn--secondary:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.carrito-checkout-bar--pendiente .carrito-checkout-bar__btn--secondary:disabled {
+  background: #94a3b8;
+  border-color: #94a3b8;
+  color: #fff;
+}
+
+.carrito-checkout-bar--pendiente .carrito-checkout-bar__btn--recover {
+  background: var(--color-secondary, #8b5cf6);
+  border-color: var(--color-secondary, #8b5cf6);
+}
+
+.carrito-checkout-bar--pendiente .carrito-checkout-bar__btn--recover:hover:not(:disabled) {
+  background: var(--color-secondary-dark, #7c3aed);
+  border-color: var(--color-secondary-dark, #7c3aed);
+}
+
+/* La barra flotante usa siempre la jerarquía visual de acciones del carrito:
+   principal morada y secundaria blanca. */
+.carrito-checkout-bar .carrito-checkout-bar__btn:not(.carrito-checkout-bar__btn--secondary) {
+  background: var(--color-secondary, #8b5cf6);
+  color: #fff;
+  border-color: var(--color-secondary, #8b5cf6);
+}
+
+.carrito-checkout-bar .carrito-checkout-bar__btn:not(.carrito-checkout-bar__btn--secondary):hover:not(:disabled) {
+  background: var(--color-secondary-dark, #7c3aed);
+  border-color: var(--color-secondary-dark, #7c3aed);
+}
+
+.carrito-checkout-bar .carrito-checkout-bar__btn--secondary {
+  background: #fff;
+  color: var(--cx-ink, #191720);
+  border-color: var(--ec-border, #e2e8f0);
+}
 
 .checkout-pendiente-alert,
 .licor-legal-card {
@@ -2846,6 +2999,12 @@ a.carrito-checkout-bar__btn:hover {
   .carrito-page .carrito-steps {
     width: 100%;
     max-width: none;
+  }
+}
+
+@media (min-width: 960px) {
+  .carrito-checkout-bar.carrito-checkout-bar--pendiente {
+    display: flex !important;
   }
 }
 

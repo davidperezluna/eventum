@@ -709,10 +709,12 @@
 
   <!-- Empty state -->
   <div *ngIf="!loading && !vistaActividad && !tieneContenidoMisBoletas()" class="empty-state">
-    <span class="material-icons empty-state__lead-icon" aria-hidden="true">shopping_bag</span>
+    <div class="empty-state__icon-wrap" aria-hidden="true">
+      <span class="material-icons">inbox</span>
+    </div>
     <p class="empty-state__title">Aún no tienes compras</p>
     <p class="empty-subtitle">
-      Explora eventos o clubes y adquiere boletas, productos o covers. Tras pagar, todo aparecerá aquí en unos minutos.
+      Cuando compres una entrada, producto o cover, lo encontrarás aquí.
     </p>
     <div class="empty-state__actions">
       <a routerLink="/eventos-cliente" class="btn-primary empty-state__cta">

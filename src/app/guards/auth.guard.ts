@@ -44,6 +44,7 @@ function clienteTienePermisoParaRuta(router: Router, url: string): boolean {
   if (a === 'perfil' && segments.length === 1) return true;
   if (a === 'completar-perfil' && segments.length === 1) return true;
   if (a === 'accesos-puerta' && segments.length === 1) return true;
+  if (a === 'carrito' && segments.length === 1) return true;
 
   return false;
 }

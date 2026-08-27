@@ -21,20 +21,6 @@
     </p>
     <p class="client-page-header__subtitle client-page-header__subtitle--short">Revisa tu selección y continúa al pago.</p>
 
-    <ol class="carrito-steps" *ngIf="!carritoVacio" aria-label="Progreso de compra">
-      <li class="carrito-step carrito-step--active">
-        <span class="carrito-step__number">1</span>
-        <span><small>Ahora</small><strong>Revisa</strong></span>
-      </li>
-      <li class="carrito-step" [class.carrito-step--ready]="!!usuario">
-        <span class="carrito-step__number">2</span>
-        <span><small>Después</small><strong>Confirma</strong></span>
-      </li>
-      <li class="carrito-step">
-        <span class="carrito-step__number">3</span>
-        <span><small>Final</small><strong>Paga</strong></span>
-      </li>
-    </ol>
   </header>
 
   <section class="carrito-shell">
@@ -175,6 +161,7 @@
               [cantidad]="item.cantidad"
               [maxCantidad]="maxCantidadLinea(item)"
               [mostrarDescripcion]="false"
+              [mostrarEliminar]="false"
               (aumentar)="agregarAlCarrito(item)"
               (disminuir)="quitarDelCarrito(item)"
               (eliminar)="eliminarDelCarrito(item)"
@@ -520,11 +507,31 @@
           </div>
           <p class="carrito-servicio-hint">Incluye procesamiento del pago y operación de la plataforma.</p>
           <div *ngIf="emailCuentaCompra" class="carrito-account-summary" role="note">
-            <span class="material-icons" aria-hidden="true">account_circle</span>
-            <div>
-              <span class="carrito-account-summary__label">La compra quedará en esta cuenta</span>
-              <strong>{{ emailCuentaCompra }}</strong>
+            <div class="carrito-account-summary__main">
+              <div class="carrito-account-summary__copy">
+                <span class="carrito-account-summary__label">La encontrarás en Mis compras</span>
+                <strong>{{ emailCuentaCompra }}</strong>
+              </div>
+              <div class="carrito-account-summary__actions">
+                <button type="button" class="carrito-account-summary__change" (click)="cambiarCuentaCompra()">
+                  Cambiar
+                </button>
+                <button
+                  type="button"
+                  class="carrito-account-summary__help"
+                  (click)="toggleAyudaCuenta()"
+                  [attr.aria-expanded]="ayudaCuentaAbierta"
+                  aria-controls="ayuda-cuenta-compra"
+                  aria-label="Ayuda sobre dónde encontrar la compra"
+                >
+                  <span class="material-icons" aria-hidden="true">help_outline</span>
+                </button>
+              </div>
             </div>
+            <p *ngIf="ayudaCuentaAbierta" id="ayuda-cuenta-compra" class="carrito-account-summary__help-text" aria-live="polite">
+              Tus entradas y productos aparecerán en <strong>Mis compras</strong> de esta cuenta. No se envían por correo.
+              Si al pagar escribes otro correo, allí solo llegará el comprobante del pago.
+            </p>
           </div>
           <div class="total-row main">
             <h3>Total: {{ formatCurrency(getTotal()) }}</h3>
@@ -557,12 +564,13 @@
           <p *ngIf="hintAccionCompra as hint" class="carrito-accion-hint">{{ hint }}</p>
         </div>
       </section>
-    </ng-container>
-  </section>
+  </ng-container>
+
+</section>
 
   <div
     class="carrito-checkout-bar"
-    *ngIf="tieneContenidoCarritoVisible"
+    *ngIf="mostrarBarraCheckout"
     [class.carrito-checkout-bar--pendiente]="!!checkoutPendienteEnCurso"
     aria-label="Resumen de pago"
   >
@@ -609,7 +617,7 @@
           [disabled]="comprando || tienePalcosIncompletos() || (tieneLicor() && !terminosAceptados)"
         >
           <span class="material-icons" aria-hidden="true">{{ comprando ? 'hourglass_empty' : 'shopping_cart' }}</span>
-          {{ labelBotonFinalizarCompra }}
+          {{ labelBotonFlotante }}
         </button>
       </ng-template>
     </ng-template>
@@ -628,7 +636,6 @@
         <span class="material-icons" aria-hidden="true">timer</span>
         Vence en <strong>{{ getCheckoutCountdownLabel() }}</strong>
       </span>
-      <span class="carrito-checkout-bar__hint-text">Reanuda el pago antes de que venza el tiempo.</span>
     </p>
     <p
       *ngIf="checkoutPendienteEnCurso?.expiro"
