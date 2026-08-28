@@ -328,14 +328,14 @@ export async function loadDashboardStatsForOrganizador(
           .eq('evento.organizador_id', organizadorId)
           .eq('estado_pago', 'completado')
           .order('fecha_compra', { ascending: false })
-          .limit(20)),
+          .limit(100)),
         withEventFilter(supabase
           .from('compras_productos')
           .select('id, cliente_id, evento_id, numero_pedido, total, estado_pago, fecha_compra, evento:eventos!inner(id, titulo, organizador_id)')
           .eq('evento.organizador_id', organizadorId)
           .eq('estado_pago', 'completado')
           .order('fecha_compra', { ascending: false })
-          .limit(20))
+          .limit(100))
       ]);
 
       if (comprasRes.error) {
@@ -374,7 +374,7 @@ export async function loadDashboardStatsForOrganizador(
             ? new Set(c.boletas_compradas.filter((b: any) => b.grupo_palco_id || b.palco_id || b.tipos_boleta?.es_palco || b.tipos_boleta?.personas_por_unidad > 1).map((b: any) => b.grupo_palco_id || b.palco_id || b.id)).size
             : 0,
           palcos_numeros: Array.isArray(c.boletas_compradas)
-            ? [...new Set(c.boletas_compradas.map((b: any) => Array.isArray(b.palcos) ? b.palcos[0]?.numero : b.palcos?.numero).filter((n: any) => n != null))]
+            ? [...new Set(c.boletas_compradas.map((b: any) => (Array.isArray(b.palcos) ? b.palcos[0]?.numero : b.palcos?.numero) ?? b.palco_id).filter((n: any) => n != null))]
             : [],
           estado_pago: c.estado_pago || 'completado',
           numero_transaccion: String(c.numero_transaccion || `COMP-${c.id}`),
