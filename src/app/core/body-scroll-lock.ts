@@ -5,7 +5,8 @@ const ROOT_CLASS = 'client-menu-open';
 
 /** Zonas que sí pueden hacer scroll con el menú abierto. */
 const SCROLLABLE_MENU_SELECTOR =
-  '.sidebar, .sidebar-nav, .client-mobile-menu, .client-mobile-nav';
+  '.sidebar, .sidebar-nav, .client-mobile-menu, .client-mobile-nav, ' +
+  '.ev-admin-sidebar__nav, .ev-admin-sidebar__submenu-inner';
 
 function onTouchMoveWhileLocked(event: TouchEvent): void {
   const target = event.target;

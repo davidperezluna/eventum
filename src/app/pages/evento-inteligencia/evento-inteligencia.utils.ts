@@ -692,7 +692,12 @@ export function buildHoySection(
   const ingresosHoy = stats?.ingresos_dia_actual ?? hoyData?.ingresos ?? 0;
   const ayer = stats?.ingresos_dia_anterior ?? 0;
   const ventasHoy = countVentasHoyDesdeRecientes(stats);
-  const entradasHoy = hoyData?.boletas_vendidas ?? ventasHoy.entradas;
+  // Las ventas recientes contienen la cantidad real de boletas por compra.
+  // La serie diaria (`ventas`) representa transacciones, por eso solo se usa
+  // como respaldo cuando no hay detalle reciente del día.
+  const entradasHoy = ventasHoy.entradas > 0
+    ? ventasHoy.entradas
+    : Number(hoyData?.boletas_vendidas ?? 0);
   const productosHoy = ventasHoy.productos;
 
   type InsightDraft = IntelHoyInsight;
