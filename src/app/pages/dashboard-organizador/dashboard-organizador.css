@@ -49,6 +49,12 @@
   align-items: flex-start;
 }
 
+.ev-intel-leaderboard__hero .ev-intel-leaderboard__metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
 .dash-org-zoom-link {
   flex-shrink: 0;
   margin-left: auto;

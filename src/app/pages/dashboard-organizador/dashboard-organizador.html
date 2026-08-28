@@ -274,7 +274,9 @@
                     {{ top.nombre }}
                   </a>
                   <p class="ev-intel-leaderboard__metrics">
-                    <strong>{{ top.vendidas | number }}</strong> vendidas · <strong>{{ top.pct }}%</strong> · {{ top.clientesPagaron }}
+                    <span><strong>{{ top.vendidas | number }}</strong> vendidas</span>
+                    <span><strong>{{ top.pct }}%</strong> del aforo</span>
+                    <span>{{ top.clientesPagaron }} clientes</span>
                   </p>
                 </div>
                 <a [routerLink]="eventoIntelRoute(0)" class="ev-intel-story__link dash-org-zoom-link">
