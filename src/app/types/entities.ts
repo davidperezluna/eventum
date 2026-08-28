@@ -39,6 +39,9 @@ export interface Usuario {
   fecha_creacion?: Date | string;
   fecha_actualizacion?: Date | string;
   auth_user_id?: string;
+  tratamiento_datos_aceptado?: boolean;
+  tratamiento_datos_fecha?: Date | string;
+  tratamiento_datos_version?: string;
 }
 
 /**

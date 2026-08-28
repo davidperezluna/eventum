@@ -18,15 +18,32 @@ import {
   validarFechaNacimiento,
 } from '../../core/fecha-nacimiento';
 import { esGeneroUsuarioValido, perfilListoParaComprar } from '../../core/perfil-completo';
+import {
+  datosConsentimientoParaGuardar,
+  usuarioTieneConsentimientoDatos,
+} from '../../core/tratamiento-datos';
+import {
+  TRATAMIENTO_DATOS_CHECKBOX,
+  TRATAMIENTO_DATOS_LINEAS,
+  TRATAMIENTO_DATOS_RESUMEN,
+} from '../../constants/tratamiento-datos.constants';
 import { validarTelefonoColombia, normalizarTelefonoColombia } from '../../core/telefono-colombia';
 import { TelefonoColombiaInputComponent } from '../telefono-colombia-input/telefono-colombia-input';
 import { EvDatePicker } from '../ev-date-picker/ev-date-picker';
+import { EvSelect } from '../ev-select/ev-select';
 
-type CampoPerfilForm = 'nombre' | 'apellido' | 'documento' | 'telefono' | 'fechaNacimiento' | 'genero';
+type CampoPerfilForm =
+  | 'nombre'
+  | 'apellido'
+  | 'documento'
+  | 'telefono'
+  | 'fechaNacimiento'
+  | 'genero'
+  | 'tratamientoDatos';
 
 @Component({
   selector: 'app-completar-perfil-form',
-  imports: [CommonModule, FormsModule, TelefonoColombiaInputComponent, EvDatePicker],
+  imports: [CommonModule, FormsModule, TelefonoColombiaInputComponent, EvDatePicker, EvSelect],
   templateUrl: './completar-perfil-form.html',
   styleUrl: './completar-perfil-form.css',
 })
@@ -36,18 +53,24 @@ export class CompletarPerfilFormComponent implements OnInit {
   @Output() guardado = new EventEmitter<Usuario>();
   @Output() cancelado = new EventEmitter<void>();
 
-  readonly generosOpciones = [
+  readonly generoOptions = [
     { value: TipoGenero.MASCULINO, label: 'Masculino' },
     { value: TipoGenero.FEMENINO, label: 'Femenino' },
     { value: TipoGenero.OTRO, label: 'Otro' },
   ];
+
+  readonly tratamientoDatosResumen = TRATAMIENTO_DATOS_RESUMEN;
+  readonly tratamientoDatosLineas = TRATAMIENTO_DATOS_LINEAS;
+  readonly tratamientoDatosCheckbox = TRATAMIENTO_DATOS_CHECKBOX;
 
   nombre = '';
   apellido = '';
   documento = '';
   telefono = '';
   fechaNacimiento = '';
-  genero = '';
+  genero: TipoGenero | null = null;
+  aceptaTratamientoDatos = false;
+  consentimientoDatosPrevio = false;
   guardando = false;
   error: string | null = null;
   intentadoEnviar = false;
@@ -58,6 +81,7 @@ export class CompletarPerfilFormComponent implements OnInit {
     telefono: false,
     fechaNacimiento: false,
     genero: false,
+    tratamientoDatos: false,
   };
 
   constructor(
@@ -74,13 +98,14 @@ export class CompletarPerfilFormComponent implements OnInit {
     this.camposTocados[campo] = true;
   }
 
-  seleccionarGenero(valor: TipoGenero): void {
-    this.genero = valor;
-    this.marcarTocado('genero');
+  mostrarMensajeError(campo: CampoPerfilForm): boolean {
+    return this.intentadoEnviar || this.camposTocados[campo];
   }
 
-  mostrarErrorCampo(campo: CampoPerfilForm): boolean {
-    return this.intentadoEnviar || this.camposTocados[campo];
+  onTratamientoDatosChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.aceptaTratamientoDatos = input.checked;
+    this.marcarTocado('tratamientoDatos');
   }
 
   errorNombre(): string | null {
@@ -119,6 +144,13 @@ export class CompletarPerfilFormComponent implements OnInit {
     return null;
   }
 
+  errorTratamientoDatos(): string | null {
+    if (this.consentimientoDatosPrevio || this.aceptaTratamientoDatos) {
+      return null;
+    }
+    return 'Debes aceptar el tratamiento de datos personales para continuar.';
+  }
+
   private formularioValido(): boolean {
     return (
       !this.errorNombre() &&
@@ -126,7 +158,8 @@ export class CompletarPerfilFormComponent implements OnInit {
       !this.errorDocumento() &&
       !this.errorTelefono() &&
       !this.errorFechaNacimiento() &&
-      !this.errorGenero()
+      !this.errorGenero() &&
+      !this.errorTratamientoDatos()
     );
   }
 
@@ -149,7 +182,9 @@ export class CompletarPerfilFormComponent implements OnInit {
     this.documento = String(usuario.documento_identidad ?? '').trim();
     this.telefono = normalizarTelefonoColombia(String(usuario.telefono ?? ''));
     this.fechaNacimiento = formatFechaNacimientoParaInput(usuario.fecha_nacimiento);
-    this.genero = esGeneroUsuarioValido(usuario.genero) ? String(usuario.genero) : '';
+    this.genero = esGeneroUsuarioValido(usuario.genero) ? (usuario.genero as TipoGenero) : null;
+    this.consentimientoDatosPrevio = usuarioTieneConsentimientoDatos(usuario);
+    this.aceptaTratamientoDatos = this.consentimientoDatosPrevio;
   }
 
   private mensajeErrorGuardar(err: unknown): string {
@@ -202,7 +237,8 @@ export class CompletarPerfilFormComponent implements OnInit {
       documento_identidad: validacionDocumento.normalizado,
       telefono: validacionTelefono.normalizado,
       fecha_nacimiento: validacionFechaNacimiento.normalizado,
-      genero: this.genero as TipoGenero,
+      genero: this.genero ?? undefined,
+      ...(this.consentimientoDatosPrevio ? {} : datosConsentimientoParaGuardar()),
     };
 
     this.guardando = true;

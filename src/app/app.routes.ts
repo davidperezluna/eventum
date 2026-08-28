@@ -37,6 +37,7 @@ import { Categorias } from './pages/categorias/categorias';
 import { Lugares } from './pages/lugares/lugares';
 import { Calificaciones } from './pages/calificaciones/calificaciones';
 import { Notificaciones } from './pages/notificaciones/notificaciones';
+import { ProbarEmail } from './pages/probar-email/probar-email';
 import { Reportes } from './pages/reportes/reportes';
 import { ReporteVentasCompletadas } from './pages/reporte-ventas-completadas/reporte-ventas-completadas';
 import { DashboardEventos } from './pages/dashboard-eventos/dashboard-eventos';
@@ -198,6 +199,7 @@ const appRoutes: Routes = [
       },
       { path: 'calificaciones', component: Calificaciones },
       { path: 'notificaciones', component: Notificaciones },
+      { path: 'probar-email', component: ProbarEmail, data: { adminOnly: true } },
       { path: 'reportes', component: Reportes },
       { path: 'reportes/ventas-completadas', component: ReporteVentasCompletadas },
       { path: 'demo-laboratorio', component: DemoLaboratorio },

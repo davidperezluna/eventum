@@ -1,0 +1,239 @@
+.probar-email-page {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.probar-email-page__header h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.35rem;
+  font-size: 1.45rem;
+  color: var(--color-text-primary, #0f172a);
+}
+
+.probar-email-page__header p {
+  margin: 0 0 1rem;
+  color: var(--color-text-secondary, #64748b);
+  font-size: 0.92rem;
+}
+
+.probar-email-card {
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border-light, #e2e8f0);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 0.85rem;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(15, 23, 42, 0.06));
+}
+
+.probar-email-card--hint {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  background: #f8fafc;
+  font-size: 0.84rem;
+  color: #475569;
+}
+
+.probar-email-card--hint .material-icons {
+  color: #64748b;
+  font-size: 1.2rem;
+}
+
+.probar-email-card--hint p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.probar-email-card--success {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.probar-email-card__title {
+  margin: 0 0 0.85rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.probar-email-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.probar-email-field__label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.probar-email-field input,
+.probar-email-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font: inherit;
+  color: #0f172a;
+  background: #fff;
+}
+
+.probar-email-field textarea {
+  resize: vertical;
+  min-height: 8rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+}
+
+.probar-email-field input:focus,
+.probar-email-field textarea:focus {
+  outline: none;
+  border-color: #8b9aef;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+}
+
+.probar-email-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.probar-email-loading {
+  font-size: 0.84rem;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+
+.probar-email-results {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.probar-email-result {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 0;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.probar-email-result:last-child {
+  border-bottom: 0;
+}
+
+.probar-email-result:hover {
+  background: #f8fafc;
+}
+
+.probar-email-result__name {
+  font-size: 0.88rem;
+  color: #0f172a;
+}
+
+.probar-email-result__meta {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.probar-email-selected {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: 1px solid #c4b5fd;
+  background: #faf5ff;
+}
+
+.probar-email-selected__label {
+  margin: 0 0 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7c3aed;
+}
+
+.probar-email-selected__value {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.probar-email-selected__meta {
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+  word-break: break-all;
+}
+
+.probar-email-targeting {
+  border: 0;
+  margin: 0 0 0.85rem;
+  padding: 0;
+}
+
+.probar-email-targeting legend {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.45rem;
+}
+
+.probar-email-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.84rem;
+  color: #334155;
+  margin-bottom: 0.35rem;
+}
+
+.probar-email-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.probar-email-footer .ev-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.probar-email-btn-spinner {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  animation: probar-email-spin 0.8s linear infinite;
+}
+
+@keyframes probar-email-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+code {
+  font-size: 0.85em;
+}

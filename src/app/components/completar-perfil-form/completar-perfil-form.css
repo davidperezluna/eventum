@@ -25,66 +25,141 @@
   align-items: start;
 }
 
-.completar-perfil-form__genero-label {
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: #475569;
-}
-
-.completar-perfil-form__genero {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.5rem;
-}
-
-.completar-perfil-form__genero-btn {
-  box-sizing: border-box;
-  padding: 0.68rem 0.5rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  background: #fff;
-  color: #475569;
-  font-family: inherit;
-  font-size: 0.88rem;
-  font-weight: 600;
-  line-height: 1.2;
-  text-align: center;
-  cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.completar-perfil-form__genero-btn:hover:not(:disabled) {
-  border-color: #c7d2fe;
-  background: #f8fafc;
-}
-
-.completar-perfil-form__genero-btn--active {
-  border-color: #8b9aef;
-  background: #eef2ff;
-  color: #4338ca;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.14);
-}
-
-.completar-perfil-form__genero-btn:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-.completar-perfil-form__field--error .completar-perfil-form__genero-btn {
-  border-color: #fca5a5;
-  background: #fef2f2;
-}
-
-.completar-perfil-form__field--error .completar-perfil-form__genero-btn--active {
-  border-color: #ef4444;
-  background: #fee2e2;
-  color: #b91c1c;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
-}
-
 .completar-perfil-form__row .legal-modal__field {
   margin-top: 0;
   min-width: 0;
+}
+
+.completar-perfil-form__section--legal {
+  background: #fff;
+  border-color: #e8edf3;
+}
+
+.completar-perfil-form__legal-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.completar-perfil-form__legal-icon {
+  flex-shrink: 0;
+  font-size: 1.35rem;
+  color: #7c3aed;
+}
+
+.completar-perfil-form__legal-titles {
+  min-width: 0;
+}
+
+.completar-perfil-form__legal-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.completar-perfil-form__legal-resumen {
+  margin: 0.3rem 0 0;
+  font-size: 0.82rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.completar-perfil-form__legal-details {
+  border: 1px solid #e8edf3;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 0.55rem 0.75rem;
+}
+
+.completar-perfil-form__legal-details summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.completar-perfil-form__legal-details summary:focus-visible {
+  outline: 2px solid #94a3b8;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.completar-perfil-form__legal-list {
+  margin: 0.65rem 0 0;
+  padding-left: 1.1rem;
+  color: #334155;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.completar-perfil-form__legal-list li + li {
+  margin-top: 0.45rem;
+}
+
+.completar-perfil-form__legal-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fafbfc;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.completar-perfil-form__legal-check--checked {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.completar-perfil-form__legal-check input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.completar-perfil-form__legal-check:focus-within {
+  outline: 2px solid color-mix(in srgb, #16a34a 35%, transparent);
+  outline-offset: 2px;
+}
+
+.completar-perfil-form__legal-check-box {
+  flex-shrink: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.1rem;
+  border: 2px solid #cbd5e1;
+  border-radius: 4px;
+  background: #fff;
+  position: relative;
+}
+
+.completar-perfil-form__legal-check--checked .completar-perfil-form__legal-check-box {
+  border-color: #16a34a;
+  background: #16a34a;
+}
+
+.completar-perfil-form__legal-check--checked .completar-perfil-form__legal-check-box::after {
+  content: '';
+  position: absolute;
+  left: 0.2rem;
+  top: 0.02rem;
+  width: 0.28rem;
+  height: 0.55rem;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.completar-perfil-form__legal-check-text {
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #1e293b;
 }
 
 .completar-perfil-form__footer {
@@ -94,6 +169,29 @@
   margin-top: 0.25rem;
   padding-top: 0.85rem;
   border-top: 1px solid #f1f5f9;
+}
+
+.completar-perfil-form__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.completar-perfil-form__btn-spinner {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  animation: completar-perfil-form-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes completar-perfil-form-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .completar-perfil-form__field-error {
@@ -127,16 +225,21 @@
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
 }
 
-.completar-perfil-form__field--error > input,
-.completar-perfil-form__field--error > select {
+.completar-perfil-form .legal-modal__field.completar-perfil-form__field--incomplete > input,
+.completar-perfil-form .legal-modal__field.completar-perfil-form__field--incomplete > select {
   border-color: #fca5a5;
   background: #fef2f2;
 }
 
-.completar-perfil-form__field--error > input:focus,
-.completar-perfil-form__field--error > select:focus {
+.completar-perfil-form .legal-modal__field.completar-perfil-form__field--incomplete > input:focus,
+.completar-perfil-form .legal-modal__field.completar-perfil-form__field--incomplete > select:focus {
   border-color: #ef4444;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+}
+
+.completar-perfil-form__legal-check--incomplete {
+  border-color: #fca5a5;
+  background: #fef2f2;
 }
 
 :host ::ng-deep app-telefono-colombia-input .telefono-input-group {
@@ -167,15 +270,8 @@
     gap: 0.75rem;
   }
 
-  .completar-perfil-form .legal-modal__field label,
-  .completar-perfil-form__genero-label {
+  .completar-perfil-form .legal-modal__field label {
     font-size: 0.8rem;
-  }
-
-  .completar-perfil-form__genero-btn {
-    padding: 0.8rem 0.65rem;
-    font-size: 0.92rem;
-    border-radius: 12px;
   }
 
   .completar-perfil-form .legal-modal__field input,

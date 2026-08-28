@@ -13,7 +13,7 @@
 
   <section *ngIf="!loading && usuario" class="completar-perfil-card" aria-label="Formulario de datos personales">
     <p class="completar-perfil-card__intro">
-      Hola{{ usuario.nombre ? ', ' + usuario.nombre : '' }}. Confirma tu nombre, apellido, cédula, teléfono, fecha de nacimiento y género para continuar.
+      Hola{{ usuario.nombre ? ', ' + usuario.nombre : '' }}. Completa tus datos y acepta el tratamiento de datos personales para continuar.
     </p>
     <app-completar-perfil-form
       textoBotonPrimario="Guardar y continuar"

@@ -303,11 +303,7 @@ export class AuthService {
         this.clearForcedLogoutFlag();
         this.setUsuario(usuario);
         console.log('Datos del usuario cargados correctamente:', usuario);
-        this.oneSignalIdentity.syncLoggedInUser(
-          authUserId,
-          usuario,
-          this.currentUser?.email
-        );
+        this.syncOneSignalIdentity(usuario);
       });
     } catch (error) {
       this.ngZone.run(() => {
@@ -957,13 +953,30 @@ export class AuthService {
       }
 
       if (data) {
+        const usuario = data as Usuario;
         this.ngZone.run(() => {
-          this.setUsuario(data as Usuario);
+          this.setUsuario(usuario);
+          this.syncOneSignalIdentity(usuario);
         });
       }
     } catch (error) {
       console.error('Error en refreshUsuario:', error);
     }
+  }
+
+  /** Re-sincroniza External ID, email y SMS en OneSignal tras actualizar el perfil. */
+  private syncOneSignalIdentity(usuario?: Usuario | null): void {
+    const profile = usuario ?? this.usuario;
+    if (!profile) {
+      return;
+    }
+
+    const authUserId = this.currentUser?.id ?? profile.auth_user_id;
+    if (!authUserId) {
+      return;
+    }
+
+    this.oneSignalIdentity.syncLoggedInUser(authUserId, profile, this.currentUser?.email);
   }
 }
 

@@ -3,7 +3,7 @@
     <div class="completar-perfil-form__row">
       <div
         class="legal-modal__field"
-        [class.completar-perfil-form__field--error]="mostrarErrorCampo('nombre') && errorNombre()"
+        [class.completar-perfil-form__field--incomplete]="!!errorNombre()"
       >
         <label for="completar-perfil-nombre">Nombre *</label>
         <input
@@ -16,13 +16,17 @@
           [disabled]="guardando"
           (blur)="marcarTocado('nombre')"
         />
-        <p class="completar-perfil-form__field-error" *ngIf="mostrarErrorCampo('nombre') && errorNombre()" role="alert">
+        <p
+          class="completar-perfil-form__field-error"
+          *ngIf="mostrarMensajeError('nombre') && errorNombre()"
+          role="alert"
+        >
           {{ errorNombre() }}
         </p>
       </div>
       <div
         class="legal-modal__field"
-        [class.completar-perfil-form__field--error]="mostrarErrorCampo('apellido') && errorApellido()"
+        [class.completar-perfil-form__field--incomplete]="!!errorApellido()"
       >
         <label for="completar-perfil-apellido">Apellido *</label>
         <input
@@ -35,7 +39,11 @@
           [disabled]="guardando"
           (blur)="marcarTocado('apellido')"
         />
-        <p class="completar-perfil-form__field-error" *ngIf="mostrarErrorCampo('apellido') && errorApellido()" role="alert">
+        <p
+          class="completar-perfil-form__field-error"
+          *ngIf="mostrarMensajeError('apellido') && errorApellido()"
+          role="alert"
+        >
           {{ errorApellido() }}
         </p>
       </div>
@@ -45,7 +53,7 @@
   <section class="completar-perfil-form__section" aria-label="Identificación y contacto">
     <div
       class="legal-modal__field"
-      [class.completar-perfil-form__field--error]="mostrarErrorCampo('documento') && errorDocumento()"
+      [class.completar-perfil-form__field--incomplete]="!!errorDocumento()"
     >
       <label for="completar-perfil-documento">Documento de identidad *</label>
       <input
@@ -62,7 +70,7 @@
       />
       <p
         class="completar-perfil-form__field-error"
-        *ngIf="mostrarErrorCampo('documento') && errorDocumento()"
+        *ngIf="mostrarMensajeError('documento') && errorDocumento()"
         role="alert"
       >
         {{ errorDocumento() }}
@@ -71,20 +79,20 @@
 
     <div
       class="legal-modal__field"
-      [class.completar-perfil-form__field--error]="mostrarErrorCampo('telefono') && errorTelefono()"
+      [class.completar-perfil-form__field--incomplete]="!!errorTelefono()"
     >
       <label for="completar-perfil-telefono">Teléfono *</label>
       <app-telefono-colombia-input
         inputId="completar-perfil-telefono"
         [(ngModel)]="telefono"
         name="telefono"
-        [hasError]="mostrarErrorCampo('telefono') && !!errorTelefono()"
+        [hasError]="!!errorTelefono()"
         [disabled]="guardando"
         (blurred)="marcarTocado('telefono')"
       />
       <p
         class="completar-perfil-form__field-error"
-        *ngIf="mostrarErrorCampo('telefono') && errorTelefono()"
+        *ngIf="mostrarMensajeError('telefono') && errorTelefono()"
         role="alert"
       >
         {{ errorTelefono() }}
@@ -93,7 +101,7 @@
 
     <div
       class="legal-modal__field"
-      [class.completar-perfil-form__field--error]="mostrarErrorCampo('fechaNacimiento') && errorFechaNacimiento()"
+      [class.completar-perfil-form__field--incomplete]="!!errorFechaNacimiento()"
     >
       <label for="completar-perfil-fecha">Fecha de nacimiento *</label>
       <ev-date-picker
@@ -101,48 +109,80 @@
         [(ngModel)]="fechaNacimiento"
         name="fechaNacimiento"
         [disabled]="guardando"
-        [hasError]="mostrarErrorCampo('fechaNacimiento') && !!errorFechaNacimiento()"
+        [hasError]="!!errorFechaNacimiento()"
         (click)="marcarTocado('fechaNacimiento')"
       />
       <p
         class="completar-perfil-form__field-error"
-        *ngIf="mostrarErrorCampo('fechaNacimiento') && errorFechaNacimiento()"
+        *ngIf="mostrarMensajeError('fechaNacimiento') && errorFechaNacimiento()"
         role="alert"
       >
         {{ errorFechaNacimiento() }}
       </p>
     </div>
 
-    <div
-      class="legal-modal__field"
-      [class.completar-perfil-form__field--error]="mostrarErrorCampo('genero') && errorGenero()"
-    >
-      <span class="completar-perfil-form__genero-label" id="completar-perfil-genero-label">Género *</span>
-      <div
-        class="completar-perfil-form__genero"
-        role="radiogroup"
-        aria-labelledby="completar-perfil-genero-label"
-      >
-        <button
-          type="button"
-          *ngFor="let generoOpcion of generosOpciones"
-          class="completar-perfil-form__genero-btn"
-          [class.completar-perfil-form__genero-btn--active]="genero === generoOpcion.value"
-          [attr.aria-pressed]="genero === generoOpcion.value"
-          [disabled]="guardando"
-          (click)="seleccionarGenero(generoOpcion.value)"
-        >
-          {{ generoOpcion.label }}
-        </button>
-      </div>
+    <div class="legal-modal__field">
+      <label for="completar-perfil-genero">Género *</label>
+      <ev-select
+        id="completar-perfil-genero"
+        [(ngModel)]="genero"
+        name="genero"
+        [options]="generoOptions"
+        placeholder="Selecciona tu género"
+        ariaLabel="Género"
+        mobileSheetTitle="Género"
+        [searchable]="false"
+        [fullWidth]="true"
+        [disabled]="guardando"
+        [hasError]="!!errorGenero()"
+        (selectionChange)="marcarTocado('genero')"
+      />
       <p
         class="completar-perfil-form__field-error"
-        *ngIf="mostrarErrorCampo('genero') && errorGenero()"
+        *ngIf="mostrarMensajeError('genero') && errorGenero()"
         role="alert"
       >
         {{ errorGenero() }}
       </p>
     </div>
+  </section>
+
+  <section
+    *ngIf="!consentimientoDatosPrevio"
+    class="completar-perfil-form__section completar-perfil-form__section--legal"
+    aria-label="Autorización de datos personales"
+  >
+    <p class="completar-perfil-form__legal-resumen">{{ tratamientoDatosResumen }}</p>
+
+    <label
+      class="completar-perfil-form__legal-check"
+      [class.completar-perfil-form__legal-check--checked]="aceptaTratamientoDatos"
+      [class.completar-perfil-form__legal-check--incomplete]="!!errorTratamientoDatos()"
+    >
+      <input
+        type="checkbox"
+        [checked]="aceptaTratamientoDatos"
+        [disabled]="guardando"
+        (change)="onTratamientoDatosChange($event)"
+      />
+      <span class="completar-perfil-form__legal-check-box" aria-hidden="true"></span>
+      <span class="completar-perfil-form__legal-check-text">{{ tratamientoDatosCheckbox }}</span>
+    </label>
+
+    <details class="completar-perfil-form__legal-details">
+      <summary>Ver detalle</summary>
+      <ul class="completar-perfil-form__legal-list">
+        <li *ngFor="let linea of tratamientoDatosLineas">{{ linea }}</li>
+      </ul>
+    </details>
+
+    <p
+      class="completar-perfil-form__field-error"
+      *ngIf="mostrarMensajeError('tratamientoDatos') && errorTratamientoDatos()"
+      role="alert"
+    >
+      {{ errorTratamientoDatos() }}
+    </p>
   </section>
 
   <p class="legal-modal__error" *ngIf="error" role="alert">{{ error }}</p>
@@ -159,9 +199,11 @@
     </button>
     <button
       type="submit"
-      class="legal-modal__btn legal-modal__btn-primary"
+      class="legal-modal__btn legal-modal__btn-primary completar-perfil-form__submit"
       [disabled]="guardando || !puedeEnviar"
+      [attr.aria-busy]="guardando"
     >
+      <span class="completar-perfil-form__btn-spinner" *ngIf="guardando" aria-hidden="true"></span>
       {{ guardando ? 'Guardando…' : textoBotonPrimario }}
     </button>
   </footer>

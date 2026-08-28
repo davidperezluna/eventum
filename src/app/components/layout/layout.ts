@@ -68,6 +68,7 @@ export class Layout implements OnInit, OnDestroy {
   enRutaCupos = false;
   enRutaRecibidos = false;
   enRutaPagoWompi = false;
+  enRutaCompletarPerfil = false;
   mostrarNavAccesosPuerta = false;
   clientePerfilIncompleto = false;
 
@@ -216,7 +217,13 @@ export class Layout implements OnInit, OnDestroy {
   }
 
   get mostrarCarritoFab(): boolean {
-    if (this.totalItemsCarrito <= 0 || this.enRutaCarrito || this.enRutaPagoWompi || this.enRutaCupos) {
+    if (
+      this.totalItemsCarrito <= 0 ||
+      this.enRutaCarrito ||
+      this.enRutaPagoWompi ||
+      this.enRutaCupos ||
+      this.enRutaCompletarPerfil
+    ) {
       return false;
     }
     if (this.isLector()) {
@@ -252,6 +259,7 @@ export class Layout implements OnInit, OnDestroy {
     this.enRutaCupos = path === '/cupos';
     this.enRutaRecibidos = path === '/recibidos';
     this.enRutaPagoWompi = path === '/pago-wompi';
+    this.enRutaCompletarPerfil = path === '/completar-perfil';
   }
 
   private verificarRedireccionCompletarPerfil(url: string): void {
@@ -415,9 +423,12 @@ export class Layout implements OnInit, OnDestroy {
   }
 
   clientNavFor(surface: 'mobile' | 'desktop'): ClientNavItem[] {
-    return this.clientNavItems.filter((item) =>
-      surface === 'mobile' ? item.mobile !== false : item.desktop !== false
-    );
+    return this.clientNavItems.filter((item) => {
+      if (this.enRutaCompletarPerfil && item.path === '/carrito') {
+        return false;
+      }
+      return surface === 'mobile' ? item.mobile !== false : item.desktop !== false;
+    });
   }
 
   navItemHasBadge(item: ClientNavItem): boolean {

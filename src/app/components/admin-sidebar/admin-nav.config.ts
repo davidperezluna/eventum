@@ -50,6 +50,7 @@ export function buildAdminNavSections(coversEnabled: boolean): AdminNavSection[]
         { kind: 'link', path: '/lugares', label: 'Lugares', icon: 'place' },
         { kind: 'link', path: '/calificaciones', label: 'Calificaciones', icon: 'star' },
         { kind: 'link', path: '/notificaciones', label: 'Notificaciones', icon: 'notifications' },
+        { kind: 'link', path: '/probar-email', label: 'Probar email', icon: 'mail' },
         { kind: 'link', path: '/reportes', label: 'Reportes', icon: 'assessment' },
       ],
     },

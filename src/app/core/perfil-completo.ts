@@ -3,6 +3,7 @@ import { esFechaNacimientoUsuarioValida } from './fecha-nacimiento';
 import { esTelefonoColombiaValido } from './telefono-colombia';
 import { TipoGenero } from '../types/enums';
 import { Usuario } from '../types/entities';
+import { usuarioTieneConsentimientoDatos } from './tratamiento-datos';
 
 export type CampoPerfilRequerido =
   | 'nombre'
@@ -49,7 +50,7 @@ export function camposPerfilFaltantes(usuario: Usuario | null | undefined): Camp
 }
 
 export function perfilListoParaComprar(usuario: Usuario | null | undefined): boolean {
-  return camposPerfilFaltantes(usuario).length === 0;
+  return camposPerfilFaltantes(usuario).length === 0 && usuarioTieneConsentimientoDatos(usuario);
 }
 
 export function esClienteConPerfilIncompleto(usuario: Usuario | null | undefined): boolean {

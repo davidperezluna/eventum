@@ -17,6 +17,7 @@ const usuarioBase: Usuario = {
   telefono: '3001234567',
   fecha_nacimiento: '1995-06-20',
   genero: TipoGenero.FEMENINO,
+  tratamiento_datos_aceptado: true,
 };
 
 describe('perfil-completo', () => {
@@ -45,6 +46,15 @@ describe('perfil-completo', () => {
         genero: TipoGenero.NO_ESPECIFICADO,
       })
     ).toEqual(['genero']);
+  });
+
+  it('requiere consentimiento de datos para considerar el perfil listo', () => {
+    expect(
+      perfilListoParaComprar({
+        ...usuarioBase,
+        tratamiento_datos_aceptado: false,
+      })
+    ).toBe(false);
   });
 
   it('redirige a completar perfil cuando faltan datos', () => {
