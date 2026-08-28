@@ -343,7 +343,10 @@ export function buildActivityFeed(
     let accent: DashOrgAccent = 'violet';
 
     if (Number(venta?.palcos_vendidos ?? 0) > 0) {
-      action = Number(venta.palcos_vendidos) === 1 ? 'Palco vendido' : `${Number(venta.palcos_vendidos)} palcos vendidos`;
+      const numeros = Array.isArray(venta?.palcos_numeros) ? venta.palcos_numeros : [];
+      action = numeros.length > 0
+        ? `Palco vendido #${numeros.join(', #')}`
+        : Number(venta.palcos_vendidos) === 1 ? 'Palco vendido' : `${Number(venta.palcos_vendidos)} palcos vendidos`;
       icon = 'table_restaurant';
       accent = 'amber';
     }

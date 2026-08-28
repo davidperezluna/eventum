@@ -692,6 +692,9 @@ export function buildHoySection(
   const ingresosHoy = stats?.ingresos_dia_actual ?? hoyData?.ingresos ?? 0;
   const ayer = stats?.ingresos_dia_anterior ?? 0;
   const ventasHoy = countVentasHoyDesdeRecientes(stats);
+  const palcosHoy = [...new Set((stats?.ventas_recientes ?? [])
+    .filter((venta) => isTodayLocal(venta?.fecha_compra))
+    .flatMap((venta) => Array.isArray(venta?.palcos_numeros) ? venta.palcos_numeros : []))];
   // Las ventas recientes contienen la cantidad real de boletas por compra.
   // La serie diaria (`ventas`) representa transacciones, por eso solo se usa
   // como respaldo cuando no hay detalle reciente del día.
@@ -710,7 +713,7 @@ export function buildHoySection(
     insights.push({ id, icon, text, emphasis });
   };
 
-  const hasActividad = entradasHoy > 0 || ingresosHoy > 0 || productosHoy > 0;
+  const hasActividad = entradasHoy > 0 || ingresosHoy > 0 || productosHoy > 0 || palcosHoy.length > 0;
 
   if (!hasActividad && ayer === 0) {
     push('sin-actividad', 'hourglass_empty', 'Sin ventas registradas hoy todavía.', true);
@@ -749,6 +752,17 @@ export function buildHoySection(
       'entradas',
       'confirmation_number',
       entradasHoy === 1 ? '1 entrada vendida hoy.' : `${entradasHoy.toLocaleString('es-CO')} entradas vendidas hoy.`,
+      true,
+    );
+  }
+
+  if (palcosHoy.length > 0) {
+    push(
+      'palcos',
+      'table_restaurant',
+      palcosHoy.length === 1
+        ? `Se vendió el palco #${palcosHoy[0]} hoy.`
+        : `Se vendieron los palcos ${palcosHoy.map((numero) => `#${numero}`).join(', ')} hoy.`,
       true,
     );
   }
