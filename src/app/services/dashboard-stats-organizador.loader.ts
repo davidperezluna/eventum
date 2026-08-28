@@ -328,14 +328,14 @@ export async function loadDashboardStatsForOrganizador(
           .eq('evento.organizador_id', organizadorId)
           .eq('estado_pago', 'completado')
           .order('fecha_compra', { ascending: false })
-          .limit(100)),
+          .limit(1000)),
         withEventFilter(supabase
           .from('compras_productos')
           .select('id, cliente_id, evento_id, numero_pedido, total, estado_pago, fecha_compra, evento:eventos!inner(id, titulo, organizador_id)')
           .eq('evento.organizador_id', organizadorId)
           .eq('estado_pago', 'completado')
           .order('fecha_compra', { ascending: false })
-          .limit(100))
+          .limit(1000))
       ]);
 
       if (comprasRes.error) {
@@ -449,8 +449,7 @@ export async function loadDashboardStatsForOrganizador(
 
       return merged
         .filter((v) => !(Number(v.cliente_id) === 5 && Number(v.total || 0) === 0))
-        .sort((a, b) => normalizarFecha(b.fecha_compra) - normalizarFecha(a.fecha_compra))
-        .slice(0, 5);
+        .sort((a, b) => normalizarFecha(b.fecha_compra) - normalizarFecha(a.fecha_compra));
     }, []);
 
     // Eventos próximos del organizador (próximos 5)
