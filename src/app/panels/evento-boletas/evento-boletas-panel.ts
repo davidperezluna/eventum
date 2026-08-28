@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DrawerRef, EV_DRAWER_DATA, EvDrawerContent } from '../../core/drawer';
+import { DrawerRef, DrawerService, EV_DRAWER_DATA, EvDrawerContent } from '../../core/drawer';
 import { BoletasService } from '../../services/boletas.service';
 import { StorageService } from '../../services/storage.service';
 import { TimezoneService } from '../../services/timezone.service';
@@ -35,7 +35,7 @@ import {
 } from './evento-boletas.utils';
 import { formatGroupedNumber } from '../../core/number-input-format';
 import { eventoTieneVentanaVentaGlobal } from '../../core/catalogo-compra-evento';
-import { Router } from '@angular/router';
+import { openEventoPalcosDrawer } from '../evento-palcos';
 
 @Component({
   selector: 'app-evento-boletas-panel',
@@ -67,7 +67,7 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
   private readonly authService = inject(AuthService);
   private readonly alertService = inject(AlertService);
   private readonly cdr = inject(ChangeDetectorRef);
-  private readonly router = inject(Router);
+  private readonly drawerService = inject(DrawerService);
   readonly drawerRef = inject(DrawerRef<EventoBoletasDrawerResult>);
   readonly data = inject<EventoBoletasPanelData>(EV_DRAWER_DATA);
 
@@ -565,7 +565,11 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
       tiposBoleta: this.dataChanged ? this.tipos : undefined,
     });
     if (closed) {
-      void this.router.navigate(['/eventos', this.data.eventoId, 'reservar-palcos']);
+      await this.drawerRef.afterClosed();
+      openEventoPalcosDrawer(this.drawerService, {
+        id: this.data.eventoId,
+        titulo: this.data.eventoTitulo,
+      });
     }
   }
 

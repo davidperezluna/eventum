@@ -1,5 +1,6 @@
-<main class="org-box-page">
-  <header class="org-box-topbar">
+<div [class.ev-panel]="isDrawer">
+<main class="org-box-page" [class.org-box-page--drawer]="isDrawer" [class.ev-panel__body]="isDrawer">
+  <header class="org-box-topbar" *ngIf="!isDrawer">
     <a [routerLink]="['/eventos', eventoId, 'operaciones']">
       <span class="material-icons" aria-hidden="true">arrow_back</span>
       Operaciones
@@ -14,7 +15,7 @@
   </section>
 
   <ng-container *ngIf="!loading && evento as ev">
-    <header class="org-box-hero">
+    <header class="org-box-hero" *ngIf="!isDrawer">
       <div>
         <p>Reserva operativa · {{ ev.titulo }}</p>
         <h1>Reserva los palcos que no quieres vender</h1>
@@ -22,10 +23,24 @@
       </div>
       <div class="org-box-summary" aria-label="Resumen de disponibilidad">
         <div><strong>{{ disponibles }}</strong><span>Disponibles</span></div>
-        <div><strong>{{ reservados }}</strong><span>Reservados</span></div>
+        <div class="is-manual"><strong>{{ reservasManuales }}</strong><span>Reservados por ti</span></div>
+        <div class="is-checkout"><strong>{{ reservasCheckout }}</strong><span>Compra en curso</span></div>
         <div><strong>{{ vendidos }}</strong><span>Vendidos</span></div>
       </div>
     </header>
+
+    <section class="org-box-drawer-intro" *ngIf="isDrawer">
+      <div>
+        <strong>Bloquea palcos para la venta pública</strong>
+        <span>Selecciona los disponibles que quieras reservar. Podrás liberarlos aquí mismo.</span>
+      </div>
+      <div class="org-box-summary" aria-label="Resumen de disponibilidad">
+        <div><strong>{{ disponibles }}</strong><span>Disponibles</span></div>
+        <div class="is-manual"><strong>{{ reservasManuales }}</strong><span>Reservados por ti</span></div>
+        <div class="is-checkout"><strong>{{ reservasCheckout }}</strong><span>Compra en curso</span></div>
+        <div><strong>{{ vendidos }}</strong><span>Vendidos</span></div>
+      </div>
+    </section>
 
     <section class="org-box-empty" *ngIf="tiposPalco.length === 0">
       <span class="material-icons" aria-hidden="true">table_restaurant</span>
@@ -58,25 +73,63 @@
         <div class="org-box-control-column">
         <div class="org-box-selector">
           <div class="org-box-section-head">
-            <div><p>Selección</p><h2>{{ tipo.nombre }}</h2></div>
-            <span>{{ seleccionados.size }} seleccionado{{ seleccionados.size === 1 ? '' : 's' }}</span>
+            <div>
+              <p>Disponibilidad de {{ tipo.nombre }}</p>
+              <h2>Selecciona los palcos</h2>
+            </div>
+            <span>{{ palcosVisibles.length }} de {{ palcos.length }} visibles</span>
           </div>
 
           <div class="org-box-legend" aria-label="Estados">
             <span><i class="is-available"></i>Disponible</span>
             <span><i class="is-selected"></i>Seleccionado</span>
-            <span><i class="is-reserved"></i>Reservado</span>
+            <span><i class="is-manual"></i>Reservado por ti</span>
+            <span><i class="is-checkout"></i>Compra en curso</span>
             <span><i class="is-sold"></i>Vendido</span>
           </div>
 
-          <div class="org-box-grid" *ngIf="!loadingPalcos && palcos.length > 0">
+          <div class="org-box-tools" *ngIf="!loadingPalcos && palcos.length > 0">
+            <label class="org-box-search">
+              <span class="material-icons" aria-hidden="true">search</span>
+              <span class="sr-only">Buscar palco por número</span>
+              <input
+                type="search"
+                inputmode="numeric"
+                [(ngModel)]="busqueda"
+                placeholder="Buscar número"
+                aria-label="Buscar palco por número"
+              />
+            </label>
+
+            <div class="org-box-status-filter">
+              <span>Estado</span>
+              <ev-select
+                variant="toolbar"
+                size="sm"
+                [fullWidth]="true"
+                [(ngModel)]="filtroEstado"
+                [options]="filtroEstadoOptions"
+                [searchable]="false"
+                [clearable]="false"
+                placeholder="Todos"
+                ariaLabel="Filtrar palcos por estado"
+                mobileSheetTitle="Filtrar palcos por estado"
+              />
+            </div>
+
+            <button class="org-box-clear" type="button" *ngIf="seleccionados.size > 0" (click)="limpiarSeleccion()">
+              Limpiar selección
+            </button>
+          </div>
+
+          <div class="org-box-grid" *ngIf="!loadingPalcos && palcosVisibles.length > 0">
             <div
-              *ngFor="let palco of palcos; trackBy: trackPalco"
+              *ngFor="let palco of palcosVisibles; trackBy: trackPalco"
               class="org-box-seat"
               [class.is-available]="esDisponible(palco)"
               [class.is-selected]="seleccionados.has(palco.id)"
               [class.is-manual]="esReservaManual(palco)"
-              [class.is-reserved]="!esReservaManual(palco) && palco.estado === 'reservado'"
+              [class.is-reserved]="esReservaCheckout(palco)"
               [class.is-sold]="palco.estado === 'vendido'"
             >
               <button
@@ -87,6 +140,7 @@
                 [attr.aria-pressed]="seleccionados.has(palco.id)"
                 [attr.aria-label]="'Palco ' + palco.numero + ', ' + estadoLabel(palco)"
               >
+                <span class="material-icons org-box-seat__icon" aria-hidden="true">{{ estadoIcon(palco) }}</span>
                 <strong>#{{ palco.numero }}</strong>
                 <small>{{ estadoLabel(palco) }}</small>
               </button>
@@ -104,12 +158,18 @@
 
           <div class="org-box-loading org-box-loading--inline" *ngIf="loadingPalcos">Actualizando disponibilidad…</div>
           <div class="org-box-no-inventory" *ngIf="!loadingPalcos && palcos.length === 0">No hay unidades numeradas configuradas para este tipo.</div>
-        </div>
+          <div class="org-box-no-results" *ngIf="!loadingPalcos && palcos.length > 0 && palcosVisibles.length === 0">
+            <span class="material-icons" aria-hidden="true">search_off</span>
+            <strong>No encontramos ese palco</strong>
+            <span>Cambia el número o selecciona otro estado.</span>
+            <button type="button" (click)="busqueda = ''; seleccionarFiltroEstado('todos')">Ver todos</button>
+          </div>
 
           <footer class="org-box-actionbar" *ngIf="palcos.length > 0">
             <div>
-              <span>Selección actual</span>
-              <strong>{{ seleccionados.size }} palco{{ seleccionados.size === 1 ? '' : 's' }}</strong>
+              <strong *ngIf="seleccionados.size > 0">{{ seleccionados.size }} palco{{ seleccionados.size === 1 ? '' : 's' }} listo{{ seleccionados.size === 1 ? '' : 's' }} para reservar</strong>
+              <strong *ngIf="seleccionados.size === 0">Selecciona un palco disponible</strong>
+              <span>{{ seleccionados.size > 0 ? 'Quedarán bloqueados para la venta pública.' : 'Puedes elegir varios antes de confirmar.' }}</span>
             </div>
             <button type="button" (click)="reservarSeleccion()" [disabled]="seleccionados.size === 0 || saving">
               <span class="material-icons" aria-hidden="true">lock</span>
@@ -117,7 +177,13 @@
             </button>
           </footer>
         </div>
+        </div>
       </section>
     </ng-container>
   </ng-container>
 </main>
+
+<ev-drawer-footer *ngIf="isDrawer">
+  <ev-button variant="ghost" (click)="closePanel()">Cerrar</ev-button>
+</ev-drawer-footer>
+</div>

@@ -27,6 +27,7 @@ import { AlertService } from '../../services/alert.service';
 import { DrawerService } from '../../core/drawer';
 
 import { openEventoCuponesDrawer } from '../../panels/evento-cupones';
+import { openEventoPalcosDrawer } from '../../panels/evento-palcos';
 import { openEventoImagenDrawer } from '../../panels/evento-imagen';
 import { openEventoCobrosDrawer } from '../../panels/evento-cobros';
 import { openEventoBoletasDrawer } from '../../panels/evento-boletas';
@@ -841,7 +842,7 @@ export class EventoOperaciones implements OnInit {
 
       case 'reservar-palcos':
 
-        void this.router.navigate(['/eventos', this.eventoId, 'reservar-palcos']);
+        this.openPalcosDrawer();
 
         break;
 
@@ -884,6 +885,32 @@ export class EventoOperaciones implements OnInit {
     this.showMoreSheet = false;
 
     const ref = openEventoCuponesDrawer(this.drawerService, this.evento);
+
+    void ref.afterClosed().then((changed) => {
+
+      if (changed) {
+
+        void this.loadPage();
+
+      }
+
+    });
+
+  }
+
+
+
+  openPalcosDrawer(): void {
+
+    if (!this.evento) {
+
+      return;
+
+    }
+
+    this.showMoreSheet = false;
+
+    const ref = openEventoPalcosDrawer(this.drawerService, this.evento);
 
     void ref.afterClosed().then((changed) => {
 
