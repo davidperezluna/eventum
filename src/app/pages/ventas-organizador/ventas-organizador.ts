@@ -42,6 +42,13 @@ export class VentasOrganizador implements OnInit {
   busqueda = '';
   pagina = 1;
   readonly ventasPorPagina = 10;
+  private ventasFiltradasCache: {
+    ventas: VentaOrganizadorItem[];
+    filtro: FiltroVenta;
+    rango: RangoVenta;
+    busqueda: string;
+    resultado: VentaOrganizadorItem[];
+  } | null = null;
 
   readonly filtros: Array<{ id: FiltroVenta; label: string; icon: string }> = [
     { id: 'todas', label: 'Todas', icon: 'receipt_long' },
@@ -84,8 +91,8 @@ export class VentasOrganizador implements OnInit {
     if (!background) this.loading = true;
     this.error = null;
     try {
-      const stats = await this.demoDataProvider.getOrganizerDashboardStats(organizadorId);
-      this.ventas = (stats.ventas_recientes ?? []).map((venta: any, index: number) => ({
+      const ventas = await this.demoDataProvider.getOrganizerSales(organizadorId);
+      this.ventas = ventas.map((venta: any, index: number) => ({
         key: String(venta?.numero_transaccion || venta?.id || index),
         fecha: String(venta?.fecha_compra || ''),
         evento: String(venta?.evento?.titulo || 'Evento sin nombre'),
@@ -107,13 +114,30 @@ export class VentasOrganizador implements OnInit {
 
   get ventasVisibles(): VentaOrganizadorItem[] {
     const query = this.busqueda.trim().toLocaleLowerCase('es');
-    return this.ventas.filter((venta) => {
+    const cached = this.ventasFiltradasCache;
+    if (
+      cached?.ventas === this.ventas &&
+      cached.filtro === this.filtro &&
+      cached.rango === this.rango &&
+      cached.busqueda === query
+    ) {
+      return cached.resultado;
+    }
+    const resultado = this.ventas.filter((venta) => {
       if (!this.coincideFiltro(venta, this.filtro) || !this.coincideRango(venta)) return false;
       if (!query) return true;
       return `${venta.evento} ${venta.transaccion} ${venta.palcosNumeros.join(' ')}`
         .toLocaleLowerCase('es')
         .includes(query);
     });
+    this.ventasFiltradasCache = {
+      ventas: this.ventas,
+      filtro: this.filtro,
+      rango: this.rango,
+      busqueda: query,
+      resultado,
+    };
+    return resultado;
   }
 
   get totalVisible(): number {

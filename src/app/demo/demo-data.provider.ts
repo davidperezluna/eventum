@@ -36,6 +36,15 @@ export class DemoDataProvider {
     return scenario.buildOrganizerDashboard(ctx, params);
   }
 
+  async getOrganizerSales(organizadorId: number): Promise<any[]> {
+    const scenario = this.activeScenario();
+    if (!scenario) {
+      return this.dashboardService.getVentasOrganizador(organizadorId);
+    }
+    const stats = await this.getOrganizerDashboardStats(organizadorId);
+    return stats.ventas_recientes ?? [];
+  }
+
   async getEventDashboardStats(organizadorId: number | null, eventoId: number): Promise<DashboardStats | null> {
     const scenario = this.activeScenario();
     if (!scenario) {
