@@ -310,6 +310,11 @@ export class Layout implements OnInit, OnDestroy {
     return joined.length > 0 ? joined : null;
   }
 
+  inicialesCliente(): string {
+    const nombre = this.nombreCliente() ?? this.userEmail;
+    return nombre.split(/\s+/).filter(Boolean).slice(0, 2).map((parte) => parte.charAt(0).toUpperCase()).join('') || 'E';
+  }
+
   /** Solo el nombre (sin apellido) para el pie del panel admin/organizador */
   nombrePanelSidebar(): string | null {
     const u = this.usuario as { nombre?: string } | null;

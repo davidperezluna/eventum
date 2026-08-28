@@ -1050,6 +1050,17 @@
 
 /* ── Móvil: sin modo rail ni botón de compactar ── */
 @media (max-width: 768px) {
+  .ev-admin-sidebar {
+    touch-action: pan-y;
+  }
+
+  .ev-admin-sidebar__nav {
+    min-height: 0;
+    overflow-y: scroll;
+    touch-action: pan-y;
+    overscroll-behavior-y: contain;
+  }
+
   .ev-admin-sidebar__compact-toggle {
     display: none !important;
   }

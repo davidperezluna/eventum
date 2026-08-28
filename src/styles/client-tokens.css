@@ -146,6 +146,11 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.client-header.public-header .btn-login-public .material-icons {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
 .client-header.public-header .btn-login-public:hover {
   background: var(--ec-accent-hover, #ede9fe);
   border-color: var(--ec-accent-strong, #7c3aed);
@@ -162,5 +167,9 @@
     min-height: 2rem;
     padding: 0.38rem 0.72rem;
     font-size: 0.75rem;
+  }
+
+  .client-header.public-header .btn-login-public .material-icons {
+    display: none;
   }
 }

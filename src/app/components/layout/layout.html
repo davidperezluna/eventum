@@ -95,7 +95,7 @@
       </div>
     </aside>
 
-    <header class="client-header">
+    <header class="client-header public-header">
       <div class="header-container">
         <button
           type="button"
@@ -124,6 +124,17 @@
             </a>
           </ng-container>
         </nav>
+        <div class="client-user-menu client-account-dropdown">
+          <button type="button" class="client-account-trigger" (click)="clientMenuOpen = !clientMenuOpen" [attr.aria-expanded]="clientMenuOpen" aria-label="Abrir menú de cuenta">
+            <span class="client-account-avatar">{{ inicialesCliente() }}</span>
+            <span class="material-icons client-account-chevron" aria-hidden="true">expand_more</span>
+          </button>
+          <div *ngIf="clientMenuOpen" class="client-account-panel">
+            <strong>{{ nombreCliente() || userEmail }}</strong>
+            <a routerLink="/perfil" (click)="closeClientMenu()"><span class="material-icons">person</span> Mi perfil</a>
+            <button type="button" (click)="logout()"><span class="material-icons">logout</span> Salir</button>
+          </div>
+        </div>
       </div>
     </header>
   </ng-container>
@@ -250,7 +261,7 @@
             routerLink="/login"
             [queryParams]="headerLoginQueryParams"
             class="btn-login-public"
-          >Entrar</a>
+          ><span class="material-icons" aria-hidden="true">login</span> Entrar</a>
         </div>
       </div>
     </header>
