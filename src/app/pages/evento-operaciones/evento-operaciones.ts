@@ -822,7 +822,11 @@ export class EventoOperaciones implements OnInit {
 
       case 'ventas':
 
-        void this.router.navigate(['/ventas'], { queryParams: { eventoId: this.eventoId } });
+        if (this.authService.isOrganizador()) {
+          void this.router.navigate(['/ventas-organizador']);
+        } else {
+          void this.router.navigate(['/ventas'], { queryParams: { eventoId: this.eventoId } });
+        }
 
         break;
 

@@ -275,8 +275,7 @@
                   </a>
                   <p class="ev-intel-leaderboard__metrics">
                     <span><strong>{{ top.vendidas | number }}</strong> vendidas</span>
-                    <span><strong>{{ top.pct }}%</strong> del aforo</span>
-                    <span>{{ top.clientesPagaron }} clientes</span>
+                    <span>{{ top.clientesPagaron }}</span>
                   </p>
                 </div>
                 <a [routerLink]="eventoIntelRoute(0)" class="ev-intel-story__link dash-org-zoom-link">
@@ -290,7 +289,7 @@
                   <a class="ev-intel-leaderboard__row-name ev-intel-leaderboard__row-name--link" [routerLink]="eventoIntelRoute(i + 1)">
                     {{ row.nombre }}
                   </a>
-                  <span class="ev-intel-leaderboard__row-meta">{{ row.vendidas | number }} · {{ row.pct }}% · {{ row.clientesPagaron }}</span>
+                  <span class="ev-intel-leaderboard__row-meta">{{ row.vendidas | number }} vendidas · {{ row.clientesPagaron }}</span>
                 </li>
               </ol>
             </div>

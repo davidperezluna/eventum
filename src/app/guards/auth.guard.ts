@@ -181,6 +181,13 @@ export const authGuard: CanActivateFn = async (route, state) => {
       }
     }
 
+    const organizerOnly = route.data?.['organizerOnly'] === true;
+    if (organizerOnly && !authService.isOrganizador()) {
+      console.log('Auth Guard - Ruta solo organizador bloqueada para usuario:', usuario.tipo_usuario_id);
+      router.navigate([authService.isAdministrador() ? '/dashboard' : '/eventos-cliente']);
+      return false;
+    }
+
     console.log('Auth Guard - Acceso permitido');
     return true;
   } catch (error) {

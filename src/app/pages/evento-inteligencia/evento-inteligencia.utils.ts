@@ -6,6 +6,7 @@ import {
   resolveMostrarProductos,
   formatFinanzasMonedaExacta,
 } from '../../utils/dashboard-finanzas.view';
+import { DateTimeUtil } from '../../utils/date-time.util';
 import {
   IntelActionNow,
   IntelAforoTotals,
@@ -598,23 +599,13 @@ export function buildProductosRankingSection(
 }
 
 function todayIsoLocal(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  return DateTimeUtil.toCalendarDateKey(new Date().toISOString());
 }
 
 function isTodayLocal(fecha: string | Date | null | undefined): boolean {
   if (!fecha) return false;
-  const d = new Date(typeof fecha === 'string' ? fecha : fecha.toISOString());
-  if (Number.isNaN(d.getTime())) return false;
-  const now = new Date();
-  return (
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate()
-  );
+  const raw = typeof fecha === 'string' ? fecha : fecha.toISOString();
+  return DateTimeUtil.toCalendarDateKey(raw) === todayIsoLocal();
 }
 
 function hoyFormatRelativeTime(fecha: string | Date | null | undefined): string {

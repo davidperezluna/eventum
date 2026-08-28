@@ -1,0 +1,123 @@
+<main class="org-sales-page">
+  <header class="org-sales-topbar">
+    <a routerLink="/dashboard-organizador" class="org-sales-back">
+      <span class="material-icons" aria-hidden="true">arrow_back</span>
+      Dashboard
+    </a>
+    <button type="button" class="org-sales-refresh" (click)="actualizar()" [disabled]="refreshing" aria-label="Actualizar ventas">
+      <span class="material-icons" [class.org-sales-spin]="refreshing" aria-hidden="true">refresh</span>
+    </button>
+  </header>
+
+  <section class="org-sales-intro" aria-labelledby="org-sales-title">
+    <div>
+      <p class="org-sales-eyebrow">Registro comercial</p>
+      <h1 id="org-sales-title">Tus ventas, sin complicaciones</h1>
+      <p>Revisa cada movimiento de boletas, palcos y productos de todos tus eventos.</p>
+    </div>
+    <div class="org-sales-ledger" *ngIf="!loading && !error">
+      <span>Resultado visible</span>
+      <strong>{{ formatCurrency(totalVisible) }}</strong>
+      <small>{{ ventasVisibles.length }} movimiento{{ ventasVisibles.length === 1 ? '' : 's' }}</small>
+    </div>
+  </section>
+
+  <div class="org-sales-loading" *ngIf="loading" aria-busy="true">
+    <span class="org-sales-loading__line"></span>
+    <span class="org-sales-loading__line"></span>
+    <span class="org-sales-loading__line"></span>
+  </div>
+
+  <section class="org-sales-error" *ngIf="error">
+    <span class="material-icons" aria-hidden="true">error_outline</span>
+    <p>{{ error }}</p>
+  </section>
+
+  <ng-container *ngIf="!loading && !error">
+    <nav class="org-sales-tabs" aria-label="Filtrar ventas">
+      <button
+        *ngFor="let item of filtros"
+        type="button"
+        [class.is-active]="filtro === item.id"
+        (click)="seleccionarFiltro(item.id)"
+        [attr.aria-pressed]="filtro === item.id"
+      >
+        <span class="material-icons" aria-hidden="true">{{ item.icon }}</span>
+        <span>{{ item.label }}</span>
+        <small>{{ cantidadFiltro(item.id) }}</small>
+      </button>
+    </nav>
+
+    <section class="org-sales-tools" aria-label="Buscar y acotar ventas">
+      <label class="org-sales-search">
+        <span class="material-icons" aria-hidden="true">search</span>
+        <input [(ngModel)]="busqueda" (ngModelChange)="reiniciarPaginacion()" type="search" placeholder="Buscar evento o referencia" aria-label="Buscar evento o referencia" />
+      </label>
+      <label class="org-sales-range">
+        <span>Periodo</span>
+        <select [(ngModel)]="rango" (ngModelChange)="reiniciarPaginacion()" aria-label="Periodo de ventas">
+          <option value="todas">Todo el historial</option>
+          <option value="hoy">Hoy</option>
+          <option value="7d">Últimos 7 días</option>
+          <option value="30d">Últimos 30 días</option>
+        </select>
+      </label>
+    </section>
+
+    <article class="ev-intel-card ev-intel-card--activity org-sales-activity-card" aria-live="polite">
+      <header class="ev-intel-card__head ev-intel-card__head--bar">
+        <div class="ev-intel-card__head-left">
+          <span class="ev-intel-card__icon material-icons" aria-hidden="true">history</span>
+          <p class="ev-intel-card__question">Qué acaba de pasar</p>
+        </div>
+        <span class="ev-intel-card__badge" *ngIf="ventasVisibles.length > 0">
+          {{ rangoPagina }}
+        </span>
+      </header>
+
+      <ol class="ev-intel-timeline" *ngIf="ventasVisibles.length > 0; else emptySales">
+        <li
+          *ngFor="let venta of ventasPaginadas; let last = last; trackBy: trackVenta"
+          class="ev-intel-timeline__item"
+          [class.ev-intel-timeline__item--last]="last"
+        >
+          <div
+            class="ev-intel-timeline__icon"
+            [class.ev-intel-timeline__icon--violet]="claseVenta(venta) === 'boleta'"
+            [class.ev-intel-timeline__icon--green]="claseVenta(venta) === 'producto'"
+            [class.ev-intel-timeline__icon--amber]="claseVenta(venta) === 'palco' || claseVenta(venta) === 'mixta'"
+          >
+            <span class="material-icons" aria-hidden="true">{{ iconoVenta(venta) }}</span>
+          </div>
+          <div class="ev-intel-timeline__content">
+            <p class="ev-intel-timeline__time" [attr.title]="fechaCompleta(venta.fecha)">{{ fechaRelativa(venta.fecha) }}</p>
+            <p class="ev-intel-timeline__action">{{ tituloVenta(venta) }}</p>
+            <p class="ev-intel-timeline__context">{{ venta.evento }} · {{ venta.transaccion }}</p>
+          </div>
+          <p class="ev-intel-timeline__amount">{{ formatCurrency(venta.total) }}</p>
+        </li>
+      </ol>
+
+      <nav class="org-sales-pagination" *ngIf="ventasVisibles.length > ventasPorPagina" aria-label="Paginación de ventas">
+        <button type="button" (click)="paginaAnterior()" [disabled]="pagina === 1" aria-label="Página anterior">
+          <span class="material-icons" aria-hidden="true">chevron_left</span>
+          <span>Anterior</span>
+        </button>
+        <p>Página <strong>{{ pagina }}</strong> de {{ totalPaginas }}</p>
+        <button type="button" (click)="paginaSiguiente()" [disabled]="pagina === totalPaginas" aria-label="Página siguiente">
+          <span>Siguiente</span>
+          <span class="material-icons" aria-hidden="true">chevron_right</span>
+        </button>
+      </nav>
+
+      <ng-template #emptySales>
+        <div class="org-sales-empty">
+          <span class="material-icons" aria-hidden="true">search_off</span>
+          <h3>No hay ventas con estos filtros</h3>
+          <p>Cambia el tipo, el periodo o la búsqueda para volver a revisar tus movimientos.</p>
+          <button type="button" (click)="filtro = 'todas'; rango = 'todas'; busqueda = ''; reiniciarPaginacion()">Limpiar filtros</button>
+        </div>
+      </ng-template>
+    </article>
+  </ng-container>
+</main>

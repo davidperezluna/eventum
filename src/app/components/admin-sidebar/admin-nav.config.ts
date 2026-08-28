@@ -73,6 +73,7 @@ function buildOrganizadorNavCore(showcase: boolean): AdminNavSection[] {
       entries: [
         { kind: 'link', path: '/dashboard-organizador', label: 'Dashboard', icon: 'dashboard' },
         { kind: 'link', path: '/eventos', label: 'Mis eventos', icon: 'event' },
+        { kind: 'link', path: '/ventas-organizador', label: 'Mis ventas', icon: 'payments' },
         ...(showcase
           ? [{ kind: 'link' as const, path: '/demo-laboratorio', label: 'Laboratorio', icon: 'science' }]
           : []),

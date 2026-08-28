@@ -168,6 +168,44 @@ a.ev-intel-story__cta {
 }
 
 @media (max-width: 640px) {
+  .ev-intel-card--boletas {
+    padding-inline: 1rem;
+  }
+
+  .ev-intel-leaderboard__hero {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 0.75rem;
+    row-gap: 0.65rem;
+    padding: 1rem;
+  }
+
+  .ev-intel-leaderboard__hero-body {
+    min-width: 0;
+  }
+
+  .ev-intel-leaderboard__name {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+
+  .ev-intel-leaderboard__hero .ev-intel-leaderboard__metrics {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.2rem 0.65rem;
+    line-height: 1.35;
+  }
+
+  .ev-intel-leaderboard__metrics span {
+    white-space: nowrap;
+  }
+
+  .dash-org-zoom-link {
+    grid-column: 2;
+    margin: 0;
+    justify-self: start;
+  }
+
   .ev-intel-timeline__item {
     grid-template-columns: auto 1fr;
   }
