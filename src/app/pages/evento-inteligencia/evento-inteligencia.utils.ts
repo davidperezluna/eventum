@@ -693,10 +693,18 @@ export function buildHoySection(
   const ayer = stats?.ingresos_dia_anterior ?? 0;
   const ventasHoy = countVentasHoyDesdeRecientes(stats);
   const ventasPalcosHoy = (stats?.ventas_recientes ?? [])
-    .filter((venta) => isTodayLocal(venta?.fecha_compra) && Number(venta?.palcos_vendidos ?? 0) > 0);
+    .filter((venta) => {
+      if (!isTodayLocal(venta?.fecha_compra)) return false;
+      const numeros = Array.isArray(venta?.palcos_numeros) ? venta.palcos_numeros : [];
+      return Number(venta?.palcos_vendidos ?? 0) > 0 || numeros.length > 0;
+    });
   const palcosHoy = [...new Set(ventasPalcosHoy
     .flatMap((venta) => Array.isArray(venta?.palcos_numeros) ? venta.palcos_numeros : []))];
-  const cantidadPalcosHoy = ventasPalcosHoy.reduce((total, venta) => total + Number(venta?.palcos_vendidos ?? 0), 0);
+  const cantidadPalcosHoy = ventasPalcosHoy.reduce((total, venta) => {
+    const cantidad = Number(venta?.palcos_vendidos ?? 0);
+    const numeros = Array.isArray(venta?.palcos_numeros) ? venta.palcos_numeros : [];
+    return total + (cantidad > 0 ? cantidad : numeros.length);
+  }, 0);
   // Las ventas recientes contienen la cantidad real de boletas por compra.
   // La serie diaria (`ventas`) representa transacciones, por eso solo se usa
   // como respaldo cuando no hay detalle reciente del día.
