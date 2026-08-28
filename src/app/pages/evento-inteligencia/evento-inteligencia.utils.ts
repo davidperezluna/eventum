@@ -692,9 +692,10 @@ export function buildHoySection(
   const ingresosHoy = stats?.ingresos_dia_actual ?? hoyData?.ingresos ?? 0;
   const ayer = stats?.ingresos_dia_anterior ?? 0;
   const ventasHoy = countVentasHoyDesdeRecientes(stats);
+  // Reutiliza exactamente las mismas ventas recientes que alimentan
+  // “Qué acaba de pasar”, donde ya se identifica correctamente el palco y su número.
   const ventasPalcosHoy = (stats?.ventas_recientes ?? [])
     .filter((venta) => {
-      if (!isTodayLocal(venta?.fecha_compra)) return false;
       const numeros = Array.isArray(venta?.palcos_numeros) ? venta.palcos_numeros : [];
       return Number(venta?.palcos_vendidos ?? 0) > 0 || numeros.length > 0;
     });
