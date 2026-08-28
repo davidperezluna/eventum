@@ -43,6 +43,9 @@ export class EventosService {
       if (filters?.estado) {
         query = query.eq('estado', filters.estado);
       }
+      if (filters?.excluir_finalizados) {
+        query = query.neq('estado', TipoEstadoEvento.FINALIZADO);
+      }
       if (filters?.destacado !== undefined) {
         query = query.eq('destacado', filters.destacado);
       }

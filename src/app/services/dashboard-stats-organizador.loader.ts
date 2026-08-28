@@ -324,7 +324,7 @@ export async function loadDashboardStatsForOrganizador(
       const [comprasRes, comprasProductosRes] = await Promise.all([
         withEventFilter(supabase
           .from('compras')
-          .select('id, cliente_id, evento_id, numero_transaccion, total, estado_pago, fecha_compra, evento:eventos!inner(id, titulo, organizador_id), boletas_compradas(id)')
+          .select('id, cliente_id, evento_id, numero_transaccion, total, estado_pago, fecha_compra, evento:eventos!inner(id, titulo, organizador_id), boletas_compradas(id, grupo_palco_id, palco_id, tipos_boleta(nombre, personas_por_unidad, es_palco))')
           .eq('evento.organizador_id', organizadorId)
           .eq('estado_pago', 'completado')
           .order('fecha_compra', { ascending: false })
@@ -370,6 +370,9 @@ export async function loadDashboardStatsForOrganizador(
           fecha_compra: c.fecha_compra,
           total: Number(c.total || 0),
           boletas_vendidas: Array.isArray(c.boletas_compradas) ? c.boletas_compradas.length : 0,
+          palcos_vendidos: Array.isArray(c.boletas_compradas)
+            ? new Set(c.boletas_compradas.filter((b: any) => b.grupo_palco_id || b.palco_id || b.tipos_boleta?.es_palco || b.tipos_boleta?.personas_por_unidad > 1).map((b: any) => b.grupo_palco_id || b.palco_id || b.id)).size
+            : 0,
           estado_pago: c.estado_pago || 'completado',
           numero_transaccion: String(c.numero_transaccion || `COMP-${c.id}`),
           seed: extractSeed(c.numero_transaccion),
@@ -429,6 +432,7 @@ export async function loadDashboardStatsForOrganizador(
             numero_transaccion: ventaBase.numero_transaccion || latest.numero_transaccion,
             total: arr.reduce((sum, r) => sum + Number(r.total || 0), 0),
             boletas_vendidas: arr.reduce((sum, r) => sum + Number(r.boletas_vendidas || 0), 0),
+            palcos_vendidos: arr.reduce((sum, r) => sum + Number(r.palcos_vendidos || 0), 0),
             tipo_venta: 'mixta'
           });
         } else {

@@ -59,6 +59,7 @@ export interface EventoFilters extends BaseFilters {
   fecha_inicio?: Date | string;
   fecha_fin?: Date | string;
   activo?: boolean;
+  excluir_finalizados?: boolean;
 }
 
 /**

@@ -342,6 +342,12 @@ export function buildActivityFeed(
     let icon = 'confirmation_number';
     let accent: DashOrgAccent = 'violet';
 
+    if (Number(venta?.palcos_vendidos ?? 0) > 0) {
+      action = Number(venta.palcos_vendidos) === 1 ? 'Palco vendido' : `${Number(venta.palcos_vendidos)} palcos vendidos`;
+      icon = 'table_restaurant';
+      accent = 'amber';
+    }
+
     if (tipo === 'productos') {
       action = 'Producto vendido';
       icon = 'local_mall';

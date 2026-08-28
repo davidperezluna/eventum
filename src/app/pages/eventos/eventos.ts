@@ -559,6 +559,7 @@ export class Eventos implements OnInit, OnDestroy {
     
     // Si es organizador, agregar filtro de organizador_id
     if (this.authService.isOrganizador()) {
+      if (!this.estadoFiltro) filters.excluir_finalizados = true;
       const organizadorId = this.authService.getUsuarioId();
       if (organizadorId) {
         filters.organizador_id = organizadorId;
