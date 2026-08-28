@@ -772,10 +772,10 @@ export function buildHoySection(
       'palcos',
       'table_restaurant',
       palcosHoy.length === 1
-        ? `Se vendió el palco #${palcosHoy[0]} hoy.`
+        ? `Se vendió el palco #${palcosHoy[0]}.`
         : palcosHoy.length > 1
-          ? `Se vendieron los palcos ${palcosHoy.map((numero) => `#${numero}`).join(', ')} hoy.`
-          : cantidadPalcosHoy === 1 ? 'Se vendió un palco hoy.' : `Se vendieron ${cantidadPalcosHoy} palcos hoy.`,
+          ? `Se vendieron los palcos ${palcosHoy.map((numero) => `#${numero}`).join(', ')}.`
+          : cantidadPalcosHoy === 1 ? 'Se vendió un palco.' : `Se vendieron ${cantidadPalcosHoy} palcos.`,
       true,
     );
   }

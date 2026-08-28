@@ -1,4 +1,5 @@
 import { DashboardStats } from '../../types';
+import { DateTimeUtil } from '../../utils/date-time.util';
 
 export type DashOrgTone = 'warn' | 'ok' | 'info' | 'neutral';
 export type DashOrgAccent = 'violet' | 'green' | 'amber' | 'blue';
@@ -407,14 +408,23 @@ export function filterAttentionForHero(
 
 export function formatRelativeTime(fecha: string | Date | null | undefined): string {
   if (!fecha) return 'Recientemente';
-  const then = new Date(typeof fecha === 'string' ? fecha : fecha.toISOString()).getTime();
-  if (!Number.isFinite(then)) return 'Recientemente';
-  const diffMs = Date.now() - then;
-  if (diffMs < 60_000) return 'Hace un momento';
-  const mins = Math.floor(diffMs / 60_000);
-  if (mins < 60) return mins === 1 ? 'Hace 1 min' : `Hace ${mins} min`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return hours === 1 ? 'Hace 1 h' : `Hace ${hours} h`;
+  const date = typeof fecha === 'string'
+    ? DateTimeUtil.parseStoredDate(fecha)
+    : fecha;
+  if (Number.isNaN(date.getTime())) return 'Recientemente';
+
+  // Una diferencia negativa pequeña puede ocurrir por desfase entre el reloj
+  // del navegador y el servidor. En ese caso se considera una venta reciente.
+  const diffMs = Math.max(0, Date.now() - date.getTime());
+  const minutes = Math.floor(diffMs / 60_000);
+
+  if (minutes < 1) return 'Hace un momento';
+  if (minutes < 5) return 'Hace unos minutos';
+  if (minutes < 60) return `Hace ${minutes} minutos`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return hours === 1 ? 'Hace 1 hora' : `Hace ${hours} horas`;
+
   const days = Math.floor(hours / 24);
   return days === 1 ? 'Hace 1 día' : `Hace ${days} días`;
 }
