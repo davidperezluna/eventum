@@ -92,6 +92,15 @@ export async function loadDashboardStatsForOrganizador(
       }
     }, 0);
 
+    const aforoTotal = safeExecute(async () => {
+      const { data, error } = await withEventFilter(supabase
+        .from('tipos_boleta')
+        .select('cantidad_total, eventos!inner(organizador_id)')
+        .eq('eventos.organizador_id', organizadorId));
+      if (error || !Array.isArray(data)) return 0;
+      return data.reduce((sum: number, tipo: any) => sum + Math.max(0, Number(tipo.cantidad_total ?? 0)), 0);
+    }, 0);
+
     const eventosDelOrganizadorIds = safeExecute(async () => {
       const response = await withEventFilter(supabase
         .from('eventos')
@@ -640,6 +649,7 @@ export async function loadDashboardStatsForOrganizador(
     const [
       eventos_activos,
       boletas_vendidas,
+      aforo_total,
       productos_vendidos,
       pedidos_productos,
       tiene_productos,
@@ -658,6 +668,7 @@ export async function loadDashboardStatsForOrganizador(
     ] = await Promise.all([
       eventosActivos,
       boletasVendidas,
+      aforoTotal,
       productosVendidos,
       pedidosProductos,
       tieneProductos,
@@ -678,6 +689,7 @@ export async function loadDashboardStatsForOrganizador(
     return {
       eventos_activos,
       boletas_vendidas,
+      aforo_total,
       productos_vendidos,
       pedidos_productos,
       tiene_productos,

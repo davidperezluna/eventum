@@ -119,6 +119,7 @@ export interface CompraProductoFilters extends BaseFilters {
 export interface DashboardStats {
   eventos_activos: number;
   boletas_vendidas: number;
+  aforo_total?: number;
   productos_vendidos?: number;
   pedidos_productos?: number;
   /** Indica si existen productos configurados para el alcance actual del dashboard. */

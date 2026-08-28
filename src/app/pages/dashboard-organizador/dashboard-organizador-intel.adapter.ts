@@ -32,8 +32,6 @@ import {
   getVariacionPorcentual,
 } from './dashboard-organizador.view';
 
-const AFORO_REF = 300;
-
 function ventas7dFromStats(stats: DashboardStats): ReporteVentas[] {
   const series = stats.ventas_por_dia ?? [];
   if (series.length === 0) return [];
@@ -78,9 +76,7 @@ export interface BuildDashboardOrgIntelInput {
 
 export function buildOrgAforoTotals(stats: DashboardStats): IntelAforoTotals {
   const vendidas = stats.boletas_vendidas ?? 0;
-  const activos = Math.max(stats.eventos_activos ?? 0, (stats.top_eventos ?? []).length, 1);
-  const totalFromActivos = activos * AFORO_REF;
-  const total = totalFromActivos > 0 ? totalFromActivos : vendidas > 0 ? vendidas : 0;
+  const total = Math.max(0, Number(stats.aforo_total ?? 0));
   const pct = total > 0 ? Math.min(100, Math.round((vendidas / total) * 100)) : 0;
   return { vendidas, total, pct };
 }
@@ -166,7 +162,7 @@ function buildEventosRankingSection(
   const ranking = top.map((e) => ({
     nombre: String(e.titulo || 'Evento'),
     vendidas: Number(e.boletas_vendidas ?? 0),
-    total: AFORO_REF,
+    total: aforo.total,
     pct: 0,
     ingresosEst:
       boletasTotal > 0 && ingresosTotal > 0
