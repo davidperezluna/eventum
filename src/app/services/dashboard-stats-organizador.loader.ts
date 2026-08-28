@@ -95,10 +95,17 @@ export async function loadDashboardStatsForOrganizador(
     const aforoTotal = safeExecute(async () => {
       const { data, error } = await withEventFilter(supabase
         .from('tipos_boleta')
-        .select('cantidad_total, eventos!inner(organizador_id)')
+        .select('cantidad_total, activo, eventos!inner(organizador_id, activo, estado, fecha_fin)')
         .eq('eventos.organizador_id', organizadorId));
       if (error || !Array.isArray(data)) return 0;
-      return data.reduce((sum: number, tipo: any) => sum + Math.max(0, Number(tipo.cantidad_total ?? 0)), 0);
+      const now = Date.now();
+      return data.reduce((sum: number, tipo: any) => {
+        const evento = Array.isArray(tipo.eventos) ? tipo.eventos[0] : tipo.eventos;
+        const vigente = evento?.activo === true && evento?.estado === 'publicado' &&
+          (!evento.fecha_fin || new Date(evento.fecha_fin).getTime() >= now);
+        if (!vigente || tipo.activo === false) return sum;
+        return sum + Math.max(0, Number(tipo.cantidad_total ?? 0));
+      }, 0);
     }, 0);
 
     const eventosDelOrganizadorIds = safeExecute(async () => {
