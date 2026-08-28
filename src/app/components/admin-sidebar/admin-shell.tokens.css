@@ -5,24 +5,24 @@
 :root {
   --ev-admin-sidebar-width: 272px;
   --ev-admin-sidebar-width-compact: 72px;
-  --ev-admin-sidebar-bg: #f7f8fb;
+  --ev-admin-sidebar-bg: #f6f7f9;
   --ev-admin-sidebar-bg-elevated: #ffffff;
   --ev-admin-sidebar-surface: #ffffff;
-  --ev-admin-sidebar-border: rgba(15, 23, 42, 0.07);
-  --ev-admin-sidebar-border-strong: rgba(15, 23, 42, 0.1);
-  --ev-admin-sidebar-ink: #0f172a;
-  --ev-admin-sidebar-muted: #64748b;
-  --ev-admin-sidebar-soft: rgba(15, 23, 42, 0.04);
-  --ev-admin-sidebar-soft-hover: rgba(15, 23, 42, 0.06);
-  --ev-admin-sidebar-accent: var(--color-secondary, #8b5cf6);
-  --ev-admin-sidebar-accent-strong: #7c3aed;
-  --ev-admin-sidebar-accent-soft: #ede9fe;
-  --ev-admin-sidebar-accent-ring: rgba(124, 58, 237, 0.18);
-  --ev-admin-sidebar-active-bg: #ede9fe;
-  --ev-admin-sidebar-active-ink: #6d28d9;
-  --ev-admin-sidebar-radius: 12px;
-  --ev-admin-sidebar-radius-sm: 9px;
-  --ev-admin-sidebar-radius-lg: 20px;
+  --ev-admin-sidebar-border: rgba(30, 41, 59, 0.09);
+  --ev-admin-sidebar-border-strong: rgba(30, 41, 59, 0.14);
+  --ev-admin-sidebar-ink: #182230;
+  --ev-admin-sidebar-muted: #667085;
+  --ev-admin-sidebar-soft: rgba(30, 41, 59, 0.045);
+  --ev-admin-sidebar-soft-hover: rgba(30, 41, 59, 0.07);
+  --ev-admin-sidebar-accent: #344054;
+  --ev-admin-sidebar-accent-strong: #344054;
+  --ev-admin-sidebar-accent-soft: #f0f2f5;
+  --ev-admin-sidebar-accent-ring: rgba(52, 64, 84, 0.13);
+  --ev-admin-sidebar-active-bg: #e9edf2;
+  --ev-admin-sidebar-active-ink: #253247;
+  --ev-admin-sidebar-radius: 9px;
+  --ev-admin-sidebar-radius-sm: 7px;
+  --ev-admin-sidebar-radius-lg: 14px;
   --ev-admin-sidebar-shadow:
     0 1px 2px rgba(15, 23, 42, 0.04),
     0 8px 32px rgba(15, 23, 42, 0.06),
