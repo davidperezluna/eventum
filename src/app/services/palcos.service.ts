@@ -157,6 +157,25 @@ export class PalcosService {
     }
   }
 
+  async reservarPalcosOrganizador(eventoId: number, palcoIds: number[]): Promise<number> {
+    const ids = [...new Set(palcoIds.filter((id) => Number.isFinite(id) && id > 0))];
+    if (ids.length === 0) throw new Error('Selecciona al menos un palco.');
+    const { data, error } = await this.supabase.getClient().rpc('reservar_palcos_organizador', {
+      p_evento_id: eventoId,
+      p_palco_ids: ids,
+    });
+    if (error) throw error;
+    return Number(data || 0);
+  }
+
+  async liberarPalcoOrganizador(eventoId: number, palcoId: number): Promise<void> {
+    const { error } = await this.supabase.getClient().rpc('liberar_palco_organizador', {
+      p_evento_id: eventoId,
+      p_palco_id: palcoId,
+    });
+    if (error) throw error;
+  }
+
   /**
    * Ventas registradas como boleta de tipo palco con 1 persona por unidad:
    * no eligen cupo en `palcos`, por eso no aparecen en el listado de inventario numerado.

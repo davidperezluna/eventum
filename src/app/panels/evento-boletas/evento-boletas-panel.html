@@ -90,6 +90,9 @@
                 <span class="material-icons" aria-hidden="true">more_horiz</span>
               </button>
               <div *ngIf="menuOpenTipoId === tipo.id" class="ev-panel-card__menu" (click)="$event.stopPropagation()">
+                <button *ngIf="puedeReservarPalcos(tipo)" type="button" (click)="irAReservarPalcos()">
+                  Reservar palcos
+                </button>
                 <button type="button" (click)="desactivarTipo(tipo)" [disabled]="tipo.activo === false">
                   Desactivar
                 </button>

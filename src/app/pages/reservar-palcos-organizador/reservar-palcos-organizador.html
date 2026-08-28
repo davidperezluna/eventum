@@ -1,0 +1,123 @@
+<main class="org-box-page">
+  <header class="org-box-topbar">
+    <a [routerLink]="['/eventos', eventoId, 'operaciones']">
+      <span class="material-icons" aria-hidden="true">arrow_back</span>
+      Operaciones
+    </a>
+  </header>
+
+  <div class="org-box-loading" *ngIf="loading" aria-busy="true">Cargando palcos…</div>
+
+  <section class="org-box-error" *ngIf="error && !loading">
+    <span class="material-icons" aria-hidden="true">error_outline</span>
+    <p>{{ error }}</p>
+  </section>
+
+  <ng-container *ngIf="!loading && evento as ev">
+    <header class="org-box-hero">
+      <div>
+        <p>Reserva operativa · {{ ev.titulo }}</p>
+        <h1>Reserva los palcos que no quieres vender</h1>
+        <span>Selecciona uno o varios lugares disponibles. Podrás liberarlos después desde esta misma página.</span>
+      </div>
+      <div class="org-box-summary" aria-label="Resumen de disponibilidad">
+        <div><strong>{{ disponibles }}</strong><span>Disponibles</span></div>
+        <div><strong>{{ reservados }}</strong><span>Reservados</span></div>
+        <div><strong>{{ vendidos }}</strong><span>Vendidos</span></div>
+      </div>
+    </header>
+
+    <section class="org-box-empty" *ngIf="tiposPalco.length === 0">
+      <span class="material-icons" aria-hidden="true">table_restaurant</span>
+      <h2>Este evento no tiene palcos configurados</h2>
+      <p>Primero crea un tipo de boleta marcado como palco desde la configuración de boletas.</p>
+      <a [routerLink]="['/eventos', eventoId, 'operaciones']">Volver a operaciones</a>
+    </section>
+
+    <ng-container *ngIf="tiposPalco.length > 0">
+      <nav class="org-box-types" aria-label="Tipos de palco">
+        <button
+          *ngFor="let tipo of tiposPalco; trackBy: trackTipo"
+          type="button"
+          [class.is-active]="tipoSeleccionadoId === tipo.id"
+          (click)="seleccionarTipo(tipo.id)"
+        >
+          <span>{{ tipo.nombre }}</span>
+          <small>{{ tipo.personas_por_unidad || 1 }} persona{{ (tipo.personas_por_unidad || 1) === 1 ? '' : 's' }}</small>
+        </button>
+      </nav>
+
+      <section class="org-box-workspace" [class.org-box-workspace--no-map]="!tipo.imagen_mapa_palcos" *ngIf="tipoSeleccionado as tipo">
+        <div class="org-box-map" *ngIf="tipo.imagen_mapa_palcos">
+          <div class="org-box-section-head">
+            <div><p>Plano</p><h2>Ubica el número antes de reservar</h2></div>
+          </div>
+          <img [src]="tipo.imagen_mapa_palcos" [alt]="'Plano de palcos de ' + tipo.nombre" />
+        </div>
+
+        <div class="org-box-control-column">
+        <div class="org-box-selector">
+          <div class="org-box-section-head">
+            <div><p>Selección</p><h2>{{ tipo.nombre }}</h2></div>
+            <span>{{ seleccionados.size }} seleccionado{{ seleccionados.size === 1 ? '' : 's' }}</span>
+          </div>
+
+          <div class="org-box-legend" aria-label="Estados">
+            <span><i class="is-available"></i>Disponible</span>
+            <span><i class="is-selected"></i>Seleccionado</span>
+            <span><i class="is-reserved"></i>Reservado</span>
+            <span><i class="is-sold"></i>Vendido</span>
+          </div>
+
+          <div class="org-box-grid" *ngIf="!loadingPalcos && palcos.length > 0">
+            <div
+              *ngFor="let palco of palcos; trackBy: trackPalco"
+              class="org-box-seat"
+              [class.is-available]="esDisponible(palco)"
+              [class.is-selected]="seleccionados.has(palco.id)"
+              [class.is-manual]="esReservaManual(palco)"
+              [class.is-reserved]="!esReservaManual(palco) && palco.estado === 'reservado'"
+              [class.is-sold]="palco.estado === 'vendido'"
+            >
+              <button
+                type="button"
+                class="org-box-seat__main"
+                [disabled]="!esDisponible(palco) || saving"
+                (click)="togglePalco(palco)"
+                [attr.aria-pressed]="seleccionados.has(palco.id)"
+                [attr.aria-label]="'Palco ' + palco.numero + ', ' + estadoLabel(palco)"
+              >
+                <strong>#{{ palco.numero }}</strong>
+                <small>{{ estadoLabel(palco) }}</small>
+              </button>
+              <button
+                *ngIf="esReservaManual(palco)"
+                type="button"
+                class="org-box-seat__release"
+                (click)="liberar(palco)"
+                [disabled]="liberandoId != null"
+              >
+                {{ liberandoId === palco.id ? 'Liberando…' : 'Liberar' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="org-box-loading org-box-loading--inline" *ngIf="loadingPalcos">Actualizando disponibilidad…</div>
+          <div class="org-box-no-inventory" *ngIf="!loadingPalcos && palcos.length === 0">No hay unidades numeradas configuradas para este tipo.</div>
+        </div>
+
+          <footer class="org-box-actionbar" *ngIf="palcos.length > 0">
+            <div>
+              <span>Selección actual</span>
+              <strong>{{ seleccionados.size }} palco{{ seleccionados.size === 1 ? '' : 's' }}</strong>
+            </div>
+            <button type="button" (click)="reservarSeleccion()" [disabled]="seleccionados.size === 0 || saving">
+              <span class="material-icons" aria-hidden="true">lock</span>
+              {{ saving ? 'Reservando…' : 'Reservar selección' }}
+            </button>
+          </footer>
+        </div>
+      </section>
+    </ng-container>
+  </ng-container>
+</main>

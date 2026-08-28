@@ -474,6 +474,15 @@ export class EventoOperaciones implements OnInit {
 
       },
 
+      ...(this.authService.isOrganizador() && !this.isShowcaseMode && this.tiposBoleta.some((tipo) => !!tipo.es_palco)
+        ? [{
+            id: 'reservar-palcos',
+            label: 'Reservar palcos',
+            icon: 'table_restaurant',
+            badge: 'Bloqueo manual',
+          } as OpsAction]
+        : []),
+
       {
 
         id: 'cupones',
@@ -827,6 +836,12 @@ export class EventoOperaciones implements OnInit {
         } else {
           void this.router.navigate(['/ventas'], { queryParams: { eventoId: this.eventoId } });
         }
+
+        break;
+
+      case 'reservar-palcos':
+
+        void this.router.navigate(['/eventos', this.eventoId, 'reservar-palcos']);
 
         break;
 

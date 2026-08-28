@@ -190,6 +190,7 @@ export interface Palco {
   numero: number;
   estado: EstadoPalco | string;
   compra_id?: number | null;
+  transaccion_checkout_id?: number | null;
   fecha_creacion?: Date | string;
   fecha_actualizacion?: Date | string;
   /** Metadatos del tipo (join Supabase); puede existir aunque el tipo esté inactivo. */

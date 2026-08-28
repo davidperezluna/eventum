@@ -35,6 +35,7 @@ import {
 } from './evento-boletas.utils';
 import { formatGroupedNumber } from '../../core/number-input-format';
 import { eventoTieneVentanaVentaGlobal } from '../../core/catalogo-compra-evento';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-evento-boletas-panel',
@@ -66,6 +67,7 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
   private readonly authService = inject(AuthService);
   private readonly alertService = inject(AlertService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly router = inject(Router);
   readonly drawerRef = inject(DrawerRef<EventoBoletasDrawerResult>);
   readonly data = inject<EventoBoletasPanelData>(EV_DRAWER_DATA);
 
@@ -549,6 +551,21 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
     } catch (err: unknown) {
       console.error('Error desactivando tipo de boleta:', err);
       this.alertService.error('Error', 'No se pudo desactivar el tipo de boleta');
+    }
+  }
+
+  puedeReservarPalcos(tipo: TipoBoleta): boolean {
+    return this.authService.isOrganizador() && !!tipo.es_palco;
+  }
+
+  async irAReservarPalcos(): Promise<void> {
+    this.closeMenu();
+    const closed = await this.drawerRef.close({
+      changed: this.dataChanged,
+      tiposBoleta: this.dataChanged ? this.tipos : undefined,
+    });
+    if (closed) {
+      void this.router.navigate(['/eventos', this.data.eventoId, 'reservar-palcos']);
     }
   }
 
