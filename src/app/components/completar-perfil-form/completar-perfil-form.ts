@@ -30,7 +30,6 @@ import {
 import { validarTelefonoColombia, normalizarTelefonoColombia } from '../../core/telefono-colombia';
 import { TelefonoColombiaInputComponent } from '../telefono-colombia-input/telefono-colombia-input';
 import { EvDatePicker } from '../ev-date-picker/ev-date-picker';
-import { EvSelect } from '../ev-select/ev-select';
 
 type CampoPerfilForm =
   | 'nombre'
@@ -43,7 +42,7 @@ type CampoPerfilForm =
 
 @Component({
   selector: 'app-completar-perfil-form',
-  imports: [CommonModule, FormsModule, TelefonoColombiaInputComponent, EvDatePicker, EvSelect],
+  imports: [CommonModule, FormsModule, TelefonoColombiaInputComponent, EvDatePicker],
   templateUrl: './completar-perfil-form.html',
   styleUrl: './completar-perfil-form.css',
 })
@@ -106,6 +105,11 @@ export class CompletarPerfilFormComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     this.aceptaTratamientoDatos = input.checked;
     this.marcarTocado('tratamientoDatos');
+  }
+
+  seleccionarGenero(value: TipoGenero): void {
+    this.genero = value;
+    this.marcarTocado('genero');
   }
 
   errorNombre(): string | null {

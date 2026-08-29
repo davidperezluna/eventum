@@ -122,24 +122,34 @@
     </div>
 
     <div
-      class="legal-modal__field"
+      class="legal-modal__field completar-perfil-form__genero-field"
       [class.completar-perfil-form__field--incomplete]="!!errorGenero()"
     >
-      <label for="completar-perfil-genero">Género *</label>
-      <ev-select
-        id="completar-perfil-genero"
-        [(ngModel)]="genero"
-        name="genero"
-        [options]="generoOptions"
-        placeholder="Selecciona tu género"
-        ariaLabel="Género"
-        mobileSheetTitle="Género"
-        [searchable]="false"
-        [fullWidth]="true"
-        [disabled]="guardando"
-        [hasError]="!!errorGenero()"
-        (selectionChange)="marcarTocado('genero')"
-      />
+      <fieldset
+        class="completar-perfil-form__genero-fieldset"
+        [class.completar-perfil-form__genero-fieldset--incomplete]="mostrarMensajeError('genero') && !!errorGenero()"
+      >
+        <legend class="completar-perfil-form__genero-legend">Género *</legend>
+        <div class="completar-perfil-form__genero-options" role="radiogroup" aria-label="Género">
+          <label
+            *ngFor="let option of generoOptions"
+            class="completar-perfil-form__choice-check"
+            [class.completar-perfil-form__choice-check--checked]="genero === option.value"
+            [class.completar-perfil-form__choice-check--disabled]="guardando"
+          >
+            <input
+              type="radio"
+              name="genero"
+              [value]="option.value"
+              [checked]="genero === option.value"
+              [disabled]="guardando"
+              (change)="seleccionarGenero(option.value)"
+            />
+            <span class="completar-perfil-form__choice-check-box" aria-hidden="true"></span>
+            <span class="completar-perfil-form__choice-check-text">{{ option.label }}</span>
+          </label>
+        </div>
+      </fieldset>
       <p
         class="completar-perfil-form__field-error"
         *ngIf="mostrarMensajeError('genero') && errorGenero()"
