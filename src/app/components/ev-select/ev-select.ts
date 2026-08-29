@@ -85,6 +85,8 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
   private mobilePanelEl: HTMLElement | null = null;
   private mobileHeadEl: HTMLElement | null = null;
   private mobileCloseHandler: (() => void) | null = null;
+  private mobileContainerEl: HTMLElement | null = null;
+  private mobileTouchStartHandler: ((event: TouchEvent) => void) | null = null;
 
   constructor(
     private readonly hostRef: ElementRef<HTMLElement>,
@@ -248,6 +250,7 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
 
   private applyMobileKeyboardGuard(): void {
     if (!this.isMobileViewport) {
+      this.teardownMobileContainerOpen();
       return;
     }
 
@@ -263,6 +266,8 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
           this.guardMobileInput(node);
         });
       }
+
+      this.bindMobileContainerOpen();
     });
   }
 
@@ -281,12 +286,60 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
 
     input.addEventListener(
       'focus',
-      (event) => {
-        event.preventDefault();
-        input.blur();
+      () => {
+        if (!this.isMobileViewport || this.disabled) {
+          return;
+        }
+
+        input.readOnly = true;
+        if (!this.isOpen) {
+          queueMicrotask(() => this.ngSelect?.open());
+        }
       },
       { capture: true },
     );
+  }
+
+  private bindMobileContainerOpen(): void {
+    const container = this.hostRef.nativeElement.querySelector(
+      '.ng-select-container',
+    ) as HTMLElement | null;
+
+    if (!container) {
+      return;
+    }
+
+    if (this.mobileContainerEl === container && this.mobileTouchStartHandler) {
+      return;
+    }
+
+    this.teardownMobileContainerOpen();
+    this.mobileContainerEl = container;
+
+    this.mobileTouchStartHandler = (event: TouchEvent) => {
+      if (this.disabled || this.isOpen) {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('.ng-clear-wrapper')) {
+        return;
+      }
+
+      event.preventDefault();
+      this.ngSelect?.open();
+    };
+
+    container.addEventListener('touchstart', this.mobileTouchStartHandler, { passive: false });
+  }
+
+  private teardownMobileContainerOpen(): void {
+    if (this.mobileContainerEl && this.mobileTouchStartHandler) {
+      this.mobileContainerEl.removeEventListener('touchstart', this.mobileTouchStartHandler);
+    }
+
+    this.mobileContainerEl = null;
+    this.mobileTouchStartHandler = null;
   }
 
   private decoratePanel(panel: HTMLElement): void {
