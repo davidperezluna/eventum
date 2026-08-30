@@ -1,121 +1,62 @@
 .probar-email-page {
-  max-width: 720px;
+  max-width: var(--content-max-width, 720px);
   margin: 0 auto;
+  padding: 0 var(--spacing-md, 1rem) var(--spacing-2xl, 2rem);
 }
 
-.probar-email-page__header h1 {
+.probar-email-page__header {
+  margin-bottom: var(--spacing-lg, 1.25rem);
+}
+
+.probar-email-page__title {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin: 0 0 0.35rem;
-  font-size: 1.45rem;
+  gap: var(--spacing-sm, 0.5rem);
+  margin: 0 0 var(--spacing-xs, 0.35rem);
+  font-size: var(--font-size-2xl, 1.45rem);
+  font-weight: 700;
   color: var(--color-text-primary, #0f172a);
 }
 
-.probar-email-page__header p {
-  margin: 0 0 1rem;
-  color: var(--color-text-secondary, #64748b);
-  font-size: 0.92rem;
+.probar-email-page__title .material-icons {
+  font-size: 1.75rem;
+  color: var(--color-primary, #7c3aed);
 }
 
-.probar-email-card {
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-border-light, #e2e8f0);
-  border-radius: 12px;
-  padding: 1rem;
-  margin-bottom: 0.85rem;
-  box-shadow: var(--shadow-sm, 0 1px 3px rgba(15, 23, 42, 0.06));
-}
-
-.probar-email-card--hint {
-  display: flex;
-  gap: 0.65rem;
-  align-items: flex-start;
-  background: #f8fafc;
-  font-size: 0.84rem;
-  color: #475569;
-}
-
-.probar-email-card--hint .material-icons {
-  color: #64748b;
-  font-size: 1.2rem;
-}
-
-.probar-email-card--hint p {
+.probar-email-page__subtitle {
   margin: 0;
-  line-height: 1.45;
+  max-width: 36rem;
+  color: var(--color-text-secondary, #64748b);
+  font-size: var(--font-size-sm, 0.92rem);
+  line-height: 1.5;
 }
 
-.probar-email-card--success {
-  border-color: #86efac;
-  background: #f0fdf4;
-}
-
-.probar-email-card__title {
-  margin: 0 0 0.85rem;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.probar-email-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin-bottom: 0.75rem;
-}
-
-.probar-email-field__label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #475569;
-}
-
-.probar-email-field input,
-.probar-email-field textarea {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.65rem 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  font: inherit;
-  color: #0f172a;
-  background: #fff;
-}
-
-.probar-email-field textarea {
-  resize: vertical;
-  min-height: 8rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.82rem;
-}
-
-.probar-email-field input:focus,
-.probar-email-field textarea:focus {
-  outline: none;
-  border-color: #8b9aef;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
-}
-
-.probar-email-hint {
-  margin: 0 0 0.75rem;
-  font-size: 0.78rem;
-  color: #64748b;
+.probar-email-form {
+  margin-top: var(--spacing-lg, 1.25rem);
 }
 
 .probar-email-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
   font-size: 0.84rem;
-  color: #64748b;
-  margin-bottom: 0.5rem;
+  color: var(--ev-form-muted, #64748b);
+}
+
+.probar-email-loading__icon {
+  font-size: 1rem;
+  animation: probar-email-spin 1s linear infinite;
 }
 
 .probar-email-results {
   list-style: none;
-  margin: 0 0 0.75rem;
+  margin: 0;
   padding: 0;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border: 1px solid var(--ev-form-border, #e8ecf3);
+  border-radius: var(--ev-form-radius, 12px);
   overflow: hidden;
+  box-shadow: var(--ev-form-control-shadow, 0 1px 2px rgba(15, 23, 42, 0.04));
 }
 
 .probar-email-result {
@@ -124,12 +65,14 @@
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.65rem 0.75rem;
+  padding: 0.75rem 0.95rem;
   border: 0;
-  border-bottom: 1px solid #f1f5f9;
-  background: #fff;
+  border-bottom: 1px solid var(--ev-form-border, #e8ecf3);
+  background: var(--ev-form-surface, #fff);
   text-align: left;
   cursor: pointer;
+  font: inherit;
+  transition: background 0.15s ease;
 }
 
 .probar-email-result:last-child {
@@ -137,17 +80,22 @@
 }
 
 .probar-email-result:hover {
-  background: #f8fafc;
+  background: var(--ev-form-canvas, #fafbfc);
+}
+
+.probar-email-result:focus-visible {
+  outline: 2px solid var(--ev-form-accent, #8b5cf6);
+  outline-offset: -2px;
 }
 
 .probar-email-result__name {
-  font-size: 0.88rem;
-  color: #0f172a;
+  font-size: 0.9rem;
+  color: var(--ev-form-ink, #0f172a);
 }
 
 .probar-email-result__meta {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--ev-form-subtle, #94a3b8);
   flex-shrink: 0;
 }
 
@@ -155,77 +103,136 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  border-radius: 10px;
-  border: 1px solid #c4b5fd;
-  background: #faf5ff;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--ev-form-radius, 12px);
+  border: 1px solid color-mix(in srgb, var(--ev-form-accent, #8b5cf6) 22%, var(--ev-form-border, #e8ecf3));
+  background: color-mix(in srgb, var(--ev-form-accent, #8b5cf6) 5%, #fff);
+}
+
+.probar-email-selected__copy {
+  min-width: 0;
 }
 
 .probar-email-selected__label {
   margin: 0 0 0.2rem;
-  font-size: 0.72rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #7c3aed;
+  letter-spacing: 0.03em;
+  color: var(--ev-form-accent-strong, #7c3aed);
 }
 
 .probar-email-selected__value {
   margin: 0;
-  font-size: 0.92rem;
+  font-size: 0.9375rem;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--ev-form-ink, #0f172a);
 }
 
 .probar-email-selected__meta {
-  margin: 0.25rem 0 0;
+  margin: 0.35rem 0 0;
   font-size: 0.78rem;
-  color: #64748b;
+  color: var(--ev-form-muted, #64748b);
+  line-height: 1.45;
   word-break: break-all;
 }
 
 .probar-email-targeting {
   border: 0;
-  margin: 0 0 0.85rem;
+  margin: 0;
   padding: 0;
 }
 
 .probar-email-targeting legend {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #475569;
-  margin-bottom: 0.45rem;
+  padding: 0;
+  margin-bottom: 0.5rem;
 }
 
-.probar-email-radio {
+.probar-email-targeting__options {
   display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.84rem;
-  color: #334155;
-  margin-bottom: 0.35rem;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.probar-email-footer {
+.probar-email-targeting__option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--ev-form-border, #e8ecf3);
+  border-radius: var(--ev-form-radius, 12px);
+  background: var(--ev-form-surface, #fff);
+  font-size: 0.875rem;
+  color: var(--ev-form-ink, #0f172a);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.probar-email-targeting__option:has(input:checked) {
+  border-color: color-mix(in srgb, var(--ev-form-accent, #8b5cf6) 35%, var(--ev-form-border, #e8ecf3));
+  background: color-mix(in srgb, var(--ev-form-accent, #8b5cf6) 6%, #fff);
+}
+
+.probar-email-targeting__option input {
+  margin-top: 0.15rem;
+  accent-color: var(--ev-form-accent-strong, #7c3aed);
+}
+
+.probar-email-targeting__option code {
+  font-size: 0.82em;
+}
+
+.probar-email-textarea {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  min-height: 10rem;
+}
+
+.probar-email-page__actions {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 1rem;
+  padding-top: 0.25rem;
 }
 
-.probar-email-footer .ev-btn-primary {
-  display: inline-flex;
+.probar-email-success {
+  margin-top: var(--spacing-lg, 1.25rem);
+  padding: 1rem 1.1rem;
+  border-radius: var(--ev-form-radius-lg, 16px);
+  border: 1px solid #86efac;
+  background: #f0fdf4;
+}
+
+.probar-email-success__head {
+  display: flex;
   align-items: center;
   gap: 0.45rem;
+  margin-bottom: 0.5rem;
 }
 
-.probar-email-btn-spinner {
-  width: 1rem;
-  height: 1rem;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  border-top-color: #fff;
-  animation: probar-email-spin 0.8s linear infinite;
+.probar-email-success__head .material-icons {
+  color: #16a34a;
+  font-size: 1.25rem;
+}
+
+.probar-email-success__head h2 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #14532d;
+}
+
+.probar-email-success p {
+  margin: 0.25rem 0 0;
+  font-size: 0.84rem;
+  color: #166534;
+  line-height: 1.45;
+}
+
+.probar-email-success code {
+  font-size: 0.85em;
 }
 
 @keyframes probar-email-spin {
@@ -234,6 +241,12 @@
   }
 }
 
-code {
-  font-size: 0.85em;
+@media (min-width: 640px) {
+  .probar-email-targeting__options {
+    flex-direction: row;
+  }
+
+  .probar-email-targeting__option {
+    flex: 1;
+  }
 }

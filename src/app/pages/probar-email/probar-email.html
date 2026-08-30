@@ -1,121 +1,156 @@
 <div class="probar-email-page">
   <header class="probar-email-page__header">
-    <div>
-      <h1>
-        <span class="material-icons" aria-hidden="true">mail</span>
-        Probar correo OneSignal
-      </h1>
-      <p>Envía un correo transaccional de prueba a un usuario desde el panel admin.</p>
-    </div>
+    <h1 class="probar-email-page__title">
+      <span class="material-icons" aria-hidden="true">mail</span>
+      Probar correo OneSignal
+    </h1>
+    <p class="probar-email-page__subtitle">
+      Envía un correo transaccional de prueba a un usuario desde el panel admin.
+    </p>
   </header>
 
-  <section class="probar-email-card probar-email-card--hint">
-    <span class="material-icons" aria-hidden="true">info</span>
-    <p>
-      Requiere <code>ONESIGNAL_APP_ID</code> y <code>ONESIGNAL_REST_API_KEY</code> en Supabase → Edge Functions → Secrets.
-      Despliega la función <code>onesignal-send-email</code> antes de probar.
-    </p>
-  </section>
+  <ev-notice
+    variant="info"
+    icon="settings"
+    title="Configuración en Supabase"
+    message="Requiere ONESIGNAL_APP_ID y ONESIGNAL_REST_API_KEY en Edge Functions → Secrets. Despliega la función onesignal-send-email antes de probar."
+  />
 
-  <section class="probar-email-card">
-    <h2 class="probar-email-card__title">1. Destinatario</h2>
+  <div class="ev-form probar-email-form">
+    <section class="ev-form-section">
+      <div class="ev-form-section__head">
+        <div class="ev-form-section__identity">
+          <span class="ev-form-section__icon" aria-hidden="true">
+            <span class="material-icons">person_search</span>
+          </span>
+          <div class="ev-form-section__copy">
+            <h2 class="ev-form-section__title">1. Destinatario</h2>
+            <p class="ev-form-section__desc">Busca por correo, nombre o documento y selecciona un usuario.</p>
+          </div>
+        </div>
+      </div>
 
-    <label class="probar-email-field">
-      <span class="probar-email-field__label">Buscar usuario</span>
-      <input
-        type="search"
-        [(ngModel)]="searchTerm"
-        (ngModelChange)="onSearchChange()"
-        placeholder="Correo, nombre o documento…"
-        autocomplete="off"
-        [disabled]="enviando"
-      />
-    </label>
+      <div class="ev-form-section__body">
+        <label class="ev-field">
+          <span class="ev-field__label">Buscar usuario</span>
+          <input
+            class="ev-input"
+            type="search"
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="onSearchChange()"
+            placeholder="Correo, nombre o documento…"
+            autocomplete="off"
+            [disabled]="enviando"
+          />
+        </label>
 
-    <p class="probar-email-hint" *ngIf="searchTerm.trim().length > 0 && searchTerm.trim().length < 2">
-      Escribe al menos 2 caracteres para buscar.
-    </p>
+        <p class="ev-field__hint" *ngIf="searchTerm.trim().length > 0 && searchTerm.trim().length < 2">
+          Escribe al menos 2 caracteres para buscar.
+        </p>
 
-    <div class="probar-email-loading" *ngIf="searchLoading">Buscando…</div>
+        <p class="probar-email-loading" *ngIf="searchLoading">
+          <span class="material-icons probar-email-loading__icon" aria-hidden="true">hourglass_empty</span>
+          Buscando…
+        </p>
 
-    <ul class="probar-email-results" *ngIf="!searchLoading && resultados.length > 0">
-      <li *ngFor="let usuario of resultados">
-        <button type="button" class="probar-email-result" (click)="seleccionarUsuario(usuario)">
-          <span class="probar-email-result__name">{{ etiquetaUsuario(usuario) }}</span>
-          <span class="probar-email-result__meta">ID {{ usuario.id }}</span>
-        </button>
-      </li>
-    </ul>
+        <ul class="probar-email-results" *ngIf="!searchLoading && resultados.length > 0">
+          <li *ngFor="let usuario of resultados">
+            <button type="button" class="probar-email-result" (click)="seleccionarUsuario(usuario)">
+              <span class="probar-email-result__name">{{ etiquetaUsuario(usuario) }}</span>
+              <span class="probar-email-result__meta">ID {{ usuario.id }}</span>
+            </button>
+          </li>
+        </ul>
 
-    <div class="probar-email-selected" *ngIf="usuarioSeleccionado">
-      <div>
-        <p class="probar-email-selected__label">Usuario seleccionado</p>
-        <p class="probar-email-selected__value">{{ etiquetaUsuario(usuarioSeleccionado) }}</p>
-        <p class="probar-email-selected__meta">
-          Correo: {{ usuarioSeleccionado.email || '—' }}
-          · External ID: {{ usuarioSeleccionado.auth_user_id || 'sin auth_user_id' }}
+        <div class="probar-email-selected" *ngIf="usuarioSeleccionado">
+          <div class="probar-email-selected__copy">
+            <p class="probar-email-selected__label">Usuario seleccionado</p>
+            <p class="probar-email-selected__value">{{ etiquetaUsuario(usuarioSeleccionado) }}</p>
+            <p class="probar-email-selected__meta">
+              Correo: {{ usuarioSeleccionado.email || '—' }}
+              · External ID: {{ usuarioSeleccionado.auth_user_id || 'sin auth_user_id' }}
+            </p>
+          </div>
+          <ev-button variant="ghost" size="sm" [disabled]="enviando" (click)="limpiarSeleccion()">
+            Cambiar
+          </ev-button>
+        </div>
+      </div>
+    </section>
+
+    <section class="ev-form-section">
+      <div class="ev-form-section__head">
+        <div class="ev-form-section__identity">
+          <span class="ev-form-section__icon" aria-hidden="true">
+            <span class="material-icons">edit_note</span>
+          </span>
+          <div class="ev-form-section__copy">
+            <h2 class="ev-form-section__title">2. Contenido (OneSignal)</h2>
+            <p class="ev-form-section__desc">Asunto y cuerpo HTML, o un Template ID del dashboard de OneSignal.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="ev-form-section__body">
+        <fieldset class="probar-email-targeting">
+          <legend class="ev-field__label">Modo de envío</legend>
+          <div class="probar-email-targeting__options">
+            <label class="probar-email-targeting__option">
+              <input type="radio" name="targeting" value="email" [(ngModel)]="targeting" [disabled]="enviando" />
+              <span>Por correo (<code>email_to</code>)</span>
+            </label>
+            <label class="probar-email-targeting__option">
+              <input
+                type="radio"
+                name="targeting"
+                value="external_id"
+                [(ngModel)]="targeting"
+                [disabled]="enviando"
+              />
+              <span>Por External ID (<code>include_aliases</code>)</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <label class="ev-field">
+          <span class="ev-field__label">Asunto</span>
+          <input class="ev-input" type="text" [(ngModel)]="emailSubject" [disabled]="enviando" />
+        </label>
+
+        <label class="ev-field">
+          <span class="ev-field__label">Template ID (opcional)</span>
+          <input
+            class="ev-input"
+            type="text"
+            [(ngModel)]="templateId"
+            placeholder="UUID de plantilla en OneSignal"
+            [disabled]="enviando"
+          />
+        </label>
+
+        <label class="ev-field" *ngIf="!templateId.trim()">
+          <span class="ev-field__label">Cuerpo HTML</span>
+          <textarea class="ev-textarea probar-email-textarea" rows="10" [(ngModel)]="emailBody" [disabled]="enviando"></textarea>
+        </label>
+
+        <p class="ev-field__hint" *ngIf="templateId.trim()">
+          Con template ID no hace falta cuerpo HTML; OneSignal usa la plantilla del dashboard.
         </p>
       </div>
-      <button type="button" class="ev-btn-ghost ev-btn-sm" (click)="limpiarSeleccion()" [disabled]="enviando">
-        Cambiar
-      </button>
+    </section>
+
+    <div class="probar-email-page__actions">
+      <ev-button variant="primary" [loading]="enviando" [disabled]="!puedeEnviar" (click)="enviarCorreo()">
+        {{ enviando ? 'Enviando…' : 'Enviar correo de prueba' }}
+      </ev-button>
     </div>
-  </section>
+  </div>
 
-  <section class="probar-email-card">
-    <h2 class="probar-email-card__title">2. Contenido (OneSignal)</h2>
-
-    <fieldset class="probar-email-targeting">
-      <legend>Modo de envío</legend>
-      <label class="probar-email-radio">
-        <input type="radio" name="targeting" value="email" [(ngModel)]="targeting" [disabled]="enviando" />
-        Por correo (<code>email_to</code>)
-      </label>
-      <label class="probar-email-radio">
-        <input type="radio" name="targeting" value="external_id" [(ngModel)]="targeting" [disabled]="enviando" />
-        Por External ID (<code>include_aliases</code>)
-      </label>
-    </fieldset>
-
-    <label class="probar-email-field">
-      <span class="probar-email-field__label">Asunto</span>
-      <input type="text" [(ngModel)]="emailSubject" [disabled]="enviando" />
-    </label>
-
-    <label class="probar-email-field">
-      <span class="probar-email-field__label">Template ID (opcional)</span>
-      <input
-        type="text"
-        [(ngModel)]="templateId"
-        placeholder="UUID de plantilla en OneSignal"
-        [disabled]="enviando"
-      />
-    </label>
-
-    <label class="probar-email-field" *ngIf="!templateId.trim()">
-      <span class="probar-email-field__label">Cuerpo HTML</span>
-      <textarea rows="10" [(ngModel)]="emailBody" [disabled]="enviando"></textarea>
-    </label>
-
-    <p class="probar-email-hint" *ngIf="templateId.trim()">
-      Con template ID no hace falta cuerpo HTML; OneSignal usa la plantilla del dashboard.
-    </p>
-  </section>
-
-  <footer class="probar-email-footer">
-    <button
-      type="button"
-      class="ev-btn-primary"
-      (click)="enviarCorreo()"
-      [disabled]="!puedeEnviar"
-    >
-      <span class="probar-email-btn-spinner" *ngIf="enviando" aria-hidden="true"></span>
-      {{ enviando ? 'Enviando…' : 'Enviar correo de prueba' }}
-    </button>
-  </footer>
-
-  <section class="probar-email-card probar-email-card--success" *ngIf="ultimoEnvio">
-    <h2 class="probar-email-card__title">Último envío</h2>
+  <section class="probar-email-success" *ngIf="ultimoEnvio">
+    <div class="probar-email-success__head">
+      <span class="material-icons" aria-hidden="true">check_circle</span>
+      <h2>Último envío</h2>
+    </div>
     <p>OneSignal ID: <code>{{ ultimoEnvio.onesignalId || '—' }}</code></p>
     <p>Destinatarios reportados: {{ ultimoEnvio.recipients ?? '—' }}</p>
   </section>

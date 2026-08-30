@@ -8,11 +8,13 @@ import {
   OneSignalEmailTargeting,
 } from '../../services/onesignal-email.service';
 import { Usuario } from '../../types';
+import { EvButton } from '../../components/ev-button/ev-button';
+import { EvNotice } from '../../components/ev-notice';
 
 @Component({
   selector: 'app-probar-email',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, EvButton, EvNotice],
   templateUrl: './probar-email.html',
   styleUrl: './probar-email.css',
 })
