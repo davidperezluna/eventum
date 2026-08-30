@@ -105,7 +105,7 @@ export function validarFechaNacimiento(valor: string): ValidacionFechaNacimiento
     return {
       valido: false,
       normalizado: raw,
-      mensaje: 'Debes tener al menos 18 años.',
+      mensaje: 'Debes ser mayor de 18 años para crear una cuenta.',
     };
   }
 

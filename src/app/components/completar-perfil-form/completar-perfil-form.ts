@@ -30,6 +30,7 @@ import {
 import { validarTelefonoColombia, normalizarTelefonoColombia } from '../../core/telefono-colombia';
 import { TelefonoColombiaInputComponent } from '../telefono-colombia-input/telefono-colombia-input';
 import { EvDatePicker } from '../ev-date-picker/ev-date-picker';
+import { EvSelect, EvSelectOption } from '../ev-select/ev-select';
 
 type CampoPerfilForm =
   | 'nombre'
@@ -42,7 +43,7 @@ type CampoPerfilForm =
 
 @Component({
   selector: 'app-completar-perfil-form',
-  imports: [CommonModule, FormsModule, TelefonoColombiaInputComponent, EvDatePicker],
+  imports: [CommonModule, FormsModule, TelefonoColombiaInputComponent, EvDatePicker, EvSelect],
   templateUrl: './completar-perfil-form.html',
   styleUrl: './completar-perfil-form.css',
 })
@@ -52,7 +53,7 @@ export class CompletarPerfilFormComponent implements OnInit {
   @Output() guardado = new EventEmitter<Usuario>();
   @Output() cancelado = new EventEmitter<void>();
 
-  readonly generoOptions = [
+  readonly generoOptions: EvSelectOption<TipoGenero>[] = [
     { value: TipoGenero.MASCULINO, label: 'Masculino' },
     { value: TipoGenero.FEMENINO, label: 'Femenino' },
     { value: TipoGenero.OTRO, label: 'Otro' },
@@ -107,11 +108,6 @@ export class CompletarPerfilFormComponent implements OnInit {
     this.marcarTocado('tratamientoDatos');
   }
 
-  seleccionarGenero(value: TipoGenero): void {
-    this.genero = value;
-    this.marcarTocado('genero');
-  }
-
   errorNombre(): string | null {
     if (!this.nombre.trim()) {
       return 'Ingresa tu nombre.';
@@ -139,6 +135,11 @@ export class CompletarPerfilFormComponent implements OnInit {
   errorFechaNacimiento(): string | null {
     const validacion = validarFechaNacimiento(this.fechaNacimiento);
     return validacion.valido ? null : (validacion.mensaje ?? 'Ingresa una fecha de nacimiento válida.');
+  }
+
+  esErrorMenorDeEdad(): boolean {
+    const mensaje = this.errorFechaNacimiento();
+    return !!mensaje && /mayor de 18|18 años/i.test(mensaje);
   }
 
   errorGenero(): string | null {

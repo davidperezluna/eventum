@@ -104,16 +104,18 @@
       [class.completar-perfil-form__field--incomplete]="!!errorFechaNacimiento()"
     >
       <label for="completar-perfil-fecha">Fecha de nacimiento *</label>
+      <p class="completar-perfil-form__field-hint">Solo mayores de 18 años.</p>
       <ev-date-picker
         id="completar-perfil-fecha"
         [(ngModel)]="fechaNacimiento"
         name="fechaNacimiento"
         [disabled]="guardando"
         [hasError]="!!errorFechaNacimiento()"
-        (click)="marcarTocado('fechaNacimiento')"
+        (ngModelChange)="marcarTocado('fechaNacimiento')"
       />
       <p
         class="completar-perfil-form__field-error"
+        [class.completar-perfil-form__field-error--edad]="esErrorMenorDeEdad()"
         *ngIf="mostrarMensajeError('fechaNacimiento') && errorFechaNacimiento()"
         role="alert"
       >
@@ -122,34 +124,23 @@
     </div>
 
     <div
-      class="legal-modal__field completar-perfil-form__genero-field"
+      class="legal-modal__field"
       [class.completar-perfil-form__field--incomplete]="!!errorGenero()"
     >
-      <fieldset
-        class="completar-perfil-form__genero-fieldset"
-        [class.completar-perfil-form__genero-fieldset--incomplete]="mostrarMensajeError('genero') && !!errorGenero()"
-      >
-        <legend class="completar-perfil-form__genero-legend">Género *</legend>
-        <div class="completar-perfil-form__genero-options" role="radiogroup" aria-label="Género">
-          <label
-            *ngFor="let option of generoOptions"
-            class="completar-perfil-form__choice-check"
-            [class.completar-perfil-form__choice-check--checked]="genero === option.value"
-            [class.completar-perfil-form__choice-check--disabled]="guardando"
-          >
-            <input
-              type="radio"
-              name="genero"
-              [value]="option.value"
-              [checked]="genero === option.value"
-              [disabled]="guardando"
-              (change)="seleccionarGenero(option.value)"
-            />
-            <span class="completar-perfil-form__choice-check-box" aria-hidden="true"></span>
-            <span class="completar-perfil-form__choice-check-text">{{ option.label }}</span>
-          </label>
-        </div>
-      </fieldset>
+      <label for="completar-perfil-genero">Género *</label>
+      <ev-select
+        id="completar-perfil-genero"
+        [(ngModel)]="genero"
+        name="genero"
+        [options]="generoOptions"
+        placeholder="Selecciona género"
+        [disabled]="guardando"
+        [hasError]="!!errorGenero()"
+        [fullWidth]="true"
+        [searchable]="false"
+        ariaLabel="Género"
+        (selectionChange)="marcarTocado('genero')"
+      />
       <p
         class="completar-perfil-form__field-error"
         *ngIf="mostrarMensajeError('genero') && errorGenero()"
