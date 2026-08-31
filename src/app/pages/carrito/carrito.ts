@@ -1802,6 +1802,11 @@ export class Carrito implements OnInit, OnDestroy {
     return (item.palco_ids || []).filter((id) => id != null).length;
   }
 
+  palcoProgresoPct(item: ItemCarritoEvento): number {
+    if (!item.cantidad) return 0;
+    return Math.round((this.palcosSeleccionadosCount(item) / item.cantidad) * 100);
+  }
+
   numeroPalcoPorId(item: ItemCarritoEvento, palcoId: number | null | undefined): number | null {
     if (palcoId == null) return null;
     const listCatalogo = this.palcosCatalogoPorTipo.get(item.tipo.id) || [];

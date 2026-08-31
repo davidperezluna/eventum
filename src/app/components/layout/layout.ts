@@ -30,6 +30,7 @@ import {
 } from '../admin-sidebar/admin-nav.config';
 import { LOGIN_QUERY_CARRITO_PAGAR } from '../../core/login-redirect';
 import { DemoScenarioService } from '../../demo/demo-scenario.service';
+import { AlertService } from '../../services/alert.service';
 
 type ClientNavItem = {
   path: string;
@@ -122,6 +123,7 @@ export class Layout implements OnInit, OnDestroy {
     private accesosPuertaService: AccesosPuertaService,
     public router: Router,
     private demoScenarioService: DemoScenarioService,
+    private alertService: AlertService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -479,6 +481,12 @@ export class Layout implements OnInit, OnDestroy {
   }
 
   async logout() {
+    this.closeClientMenu();
+    this.closeSidebar();
+    const confirmed = await this.alertService.presetConfirm('logout');
+    if (!confirmed) {
+      return;
+    }
     await this.authService.logout('/eventos-cliente');
   }
 }

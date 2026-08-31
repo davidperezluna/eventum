@@ -6,10 +6,11 @@ import { Subject } from 'rxjs';
 import { AlertService } from '../../services/alert.service';
 import { AuthService } from '../../services/auth.service';
 import { BoletasService } from '../../services/boletas.service';
+import { EventosService } from '../../services/eventos.service';
 import { PalcosService, VentaPalcoIndividualListado } from '../../services/palcos.service';
 import { Router } from '@angular/router';
 
-import { EstadoPalco, Palco, PaginatedResponse, TipoBoleta } from '../../types';
+import { EstadoPalco, Evento, Palco, PaginatedResponse, TipoBoleta } from '../../types';
 
 @Component({
   selector: 'app-palcos',
@@ -23,6 +24,7 @@ export class Palcos implements OnInit, OnDestroy {
   tiposPalco: TipoBoleta[] = [];
   palcos: Palco[] = [];
   tiposMap = new Map<number, TipoBoleta>();
+  eventosFiltro: Evento[] = [];
 
   loading = false;
   error = '';
@@ -38,6 +40,7 @@ export class Palcos implements OnInit, OnDestroy {
   ventasIndividualError = '';
 
   searchTerm = '';
+  eventoFiltro: number | null = null;
   tipoFiltro: number | null = null;
   estadoFiltro: EstadoPalco | null = null;
 
@@ -49,6 +52,7 @@ export class Palcos implements OnInit, OnDestroy {
 
   constructor(
     private boletasService: BoletasService,
+    private eventosService: EventosService,
     private palcosService: PalcosService,
     private alertService: AlertService,
     private authService: AuthService,
@@ -64,24 +68,45 @@ export class Palcos implements OnInit, OnDestroy {
       return;
     }
 
-    this.loadTiposPalco();
+    void this.loadTiposYEventos();
   }
 
-  private loadTiposPalco() {
-    // Sin filtrar por activo: los palcos pueden seguir ligados a tipos inactivos y deben mostrarse igual.
-    this.boletasService
-      .getAllTiposBoleta()
-      .then((tipos) => {
-        const lista = tipos || [];
-        this.tiposMap = new Map(lista.map((t) => [t.id, t]));
-        // Filtro del desplegable: solo líneas de tipo palco; incluye activas e inactivas.
-        this.tiposPalco = lista.filter((t) => !!t.es_palco);
-        this.tipoFiltro = null;
-      })
-      .finally(() => {
-        this.loadPalcos();
-        this.cdr.detectChanges();
-      });
+  private async loadTiposYEventos(): Promise<void> {
+    try {
+      const [tipos, eventosRes] = await Promise.all([
+        this.boletasService.getAllTiposBoleta(),
+        this.eventosService.getEventos({
+          page: 1,
+          limit: 500,
+          sortBy: 'titulo',
+          sortOrder: 'asc',
+        }),
+      ]);
+      const lista = tipos || [];
+      this.tiposMap = new Map(lista.map((t) => [t.id, t]));
+      // Filtro del desplegable: solo líneas de tipo palco; incluye activas e inactivas.
+      this.tiposPalco = lista.filter((t) => !!t.es_palco);
+      this.tipoFiltro = null;
+      this.eventosFiltro = this.eventosParaFiltro(eventosRes.data || []);
+    } catch (err) {
+      console.error('Error cargando tipos/eventos de palcos:', err);
+      this.eventosFiltro = [];
+    } finally {
+      this.loadPalcos();
+      this.cdr.detectChanges();
+    }
+  }
+
+  /** Eventos que tienen al menos un tipo palco, para no llenar el filtro con irrelevantes. */
+  private eventosParaFiltro(eventos: Evento[]): Evento[] {
+    const idsConPalco = new Set(this.tiposPalco.map((t) => t.evento_id).filter((id) => Number.isFinite(id)));
+    const filtrados = eventos.filter((e) => idsConPalco.has(e.id));
+    return filtrados.length > 0 ? filtrados : eventos;
+  }
+
+  get tiposPalcoFiltrados(): TipoBoleta[] {
+    if (this.eventoFiltro == null) return this.tiposPalco;
+    return this.tiposPalco.filter((t) => t.evento_id === this.eventoFiltro);
   }
 
   async loadPalcos() {
@@ -103,6 +128,7 @@ export class Palcos implements OnInit, OnDestroy {
       const response: PaginatedResponse<Palco> = await this.palcosService.getPalcos({
         page: this.page,
         limit: this.limit,
+        evento_id: this.eventoFiltro ?? undefined,
         tipo_boleta_id: this.tipoFiltro ?? undefined,
         estado: this.estadoFiltro ?? undefined,
         search: this.searchTerm || undefined
@@ -128,6 +154,7 @@ export class Palcos implements OnInit, OnDestroy {
       const v = await this.palcosService.getVentasPalcoIndividual({
         page: this.pageVentasInd,
         limit: this.limit,
+        evento_id: this.eventoFiltro ?? undefined,
         tipo_boleta_id: this.tipoFiltro ?? undefined,
         estado_pago: estadoPago
       });
@@ -189,9 +216,19 @@ export class Palcos implements OnInit, OnDestroy {
   }
 
   onFiltersChange() {
+    this.syncTipoFiltroConEvento();
     this.page = 1;
     this.pageVentasInd = 1;
     this.loadPalcos();
+  }
+
+  /** Si el tipo elegido no pertenece al evento, se limpia para no dejar un filtro imposible. */
+  private syncTipoFiltroConEvento(): void {
+    if (this.tipoFiltro == null) return;
+    const sigueValido = this.tiposPalcoFiltrados.some((t) => t.id === this.tipoFiltro);
+    if (!sigueValido) {
+      this.tipoFiltro = null;
+    }
   }
 
   getTipoNombre(palco: Palco): string {

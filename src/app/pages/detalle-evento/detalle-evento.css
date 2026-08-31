@@ -430,7 +430,9 @@
 .dx-pass span:last-child { font-size: .7rem; }
 
 .dx-workspace { display: grid; grid-template-columns: minmax(0,1.65fr) minmax(17rem,.7fr); gap: 1.25rem; align-items: start; padding-top: 2rem; scroll-margin-top: 5rem; }
+.dx-purchase-stack { display: grid; gap: 1rem; min-width: 0; }
 .dx-purchase { min-width: 0; padding: clamp(1.25rem,2.5vw,2rem); border: 1px solid var(--dx-line); border-radius: 1.15rem; background: var(--dx-panel); box-shadow: 0 1rem 2.8rem rgba(55,38,91,.06); }
+.etapas-agotadas-zone { margin: 0; overflow: hidden; border: 1px solid var(--dx-line); border-radius: 1.15rem; background: var(--dx-panel); box-shadow: 0 1rem 2.8rem rgba(55,38,91,.06); }
 .dx-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.2rem; margin-bottom: 1.5rem; }
 .dx-section-kicker { display: block; margin-bottom: .35rem; color: var(--dx-accent-dark); font-size: .6rem; font-weight: 850; letter-spacing: .14em; text-transform: uppercase; }
 .dx-section-heading h2 { margin: 0; color: var(--dx-ink); font-family: var(--dx-display); font-size: clamp(1.65rem,3vw,2.35rem); line-height: 1; letter-spacing: -.055em; }
@@ -558,7 +560,9 @@
   .dx-fact { grid-template-columns: 1.7rem minmax(0,1fr); }
   .dx-hero__checkout { display: none; }
   .dx-workspace { display: flex; flex-direction: column; gap: 1rem; padding-top: 1rem; }
+  .dx-purchase-stack { width: 100%; gap: 1rem; }
   .dx-purchase { width: 100%; padding: 1rem; border-radius: .9rem; }
+  .etapas-agotadas-zone { border-radius: .9rem; }
   .dx-section-heading { margin-bottom: 1rem; }
   .dx-section-heading h2 { font-size: 1.65rem; }
   .dx-section-heading p { font-size: .72rem; }
@@ -688,12 +692,14 @@
 }
 
 /* Selector de entradas: tarjeta compacta inspirada en el checkout oscuro. */
-.entradas-panel .tipos-boleta-grid {
+.entradas-panel .tipos-boleta-grid,
+.etapas-agotadas-zone .tipos-boleta-grid {
   grid-template-columns: 1fr;
   gap: 1.25rem;
 }
 
-.entradas-panel .tipo-boleta-card {
+.entradas-panel .tipo-boleta-card,
+.etapas-agotadas-zone .tipo-boleta-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-rows: auto 1fr;
@@ -714,7 +720,8 @@
   box-shadow: 0 4px 14px rgba(91, 33, 182, 0.08);
 }
 
-.entradas-panel .tipo-boleta-header {
+.entradas-panel .tipo-boleta-header,
+.etapas-agotadas-zone .tipo-boleta-header {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -725,7 +732,8 @@
   margin: 0;
 }
 
-.entradas-panel .tipo-boleta-header h3 {
+.entradas-panel .tipo-boleta-header h3,
+.etapas-agotadas-zone .tipo-boleta-header h3 {
   position: relative;
   padding-left: 1.05rem;
   color: var(--ec-text-primary, #0f172a);
@@ -734,7 +742,8 @@
   letter-spacing: 0;
 }
 
-.entradas-panel .tipo-boleta-header h3::before {
+.entradas-panel .tipo-boleta-header h3::before,
+.etapas-agotadas-zone .tipo-boleta-header h3::before {
   content: "";
   position: absolute;
   left: 0;
@@ -746,7 +755,8 @@
   transform: translateY(-50%);
 }
 
-.entradas-panel .tipo-boleta-header .precio {
+.entradas-panel .tipo-boleta-header .precio,
+.etapas-agotadas-zone .tipo-boleta-header .precio {
   position: relative;
   padding-top: 0.85rem;
   color: var(--ec-accent-strong, #7c3aed);
@@ -755,7 +765,8 @@
   line-height: 1;
 }
 
-.entradas-panel .tipo-boleta-header .precio::before {
+.entradas-panel .tipo-boleta-header .precio::before,
+.etapas-agotadas-zone .tipo-boleta-header .precio::before {
   content: "PRECIO";
   position: absolute;
   top: 0;
@@ -766,10 +777,12 @@
   letter-spacing: 0.04em;
 }
 
-.entradas-panel .tipo-actions {
+.entradas-panel .tipo-actions,
+.etapas-agotadas-zone .tipo-actions {
   grid-column: 2;
   grid-row: 1 / -1;
   margin: 0;
+  padding: 0;
 }
 
 .entradas-panel .cantidad-controls {
@@ -815,31 +828,38 @@
 }
 
 .entradas-panel .tipo-descripcion,
-.entradas-panel .tipo-info {
+.entradas-panel .tipo-info,
+.etapas-agotadas-zone .tipo-descripcion,
+.etapas-agotadas-zone .tipo-info {
   grid-column: 1 / -1;
   display: none;
 }
 
 @media (max-width: 520px) {
-  .entradas-panel .tipos-boleta-grid {
+  .entradas-panel .tipos-boleta-grid,
+  .etapas-agotadas-zone .tipos-boleta-grid {
     gap: 1rem;
   }
 
-  .entradas-panel .tipo-boleta-card {
+  .entradas-panel .tipo-boleta-card,
+  .etapas-agotadas-zone .tipo-boleta-card {
     min-height: 6rem;
     padding: 1rem 0.75rem;
     border-radius: 0.9rem;
   }
 
-  .entradas-panel .tipo-boleta-header {
+  .entradas-panel .tipo-boleta-header,
+  .etapas-agotadas-zone .tipo-boleta-header {
     gap: 0.58rem;
   }
 
-  .entradas-panel .tipo-boleta-header h3 {
+  .entradas-panel .tipo-boleta-header h3,
+  .etapas-agotadas-zone .tipo-boleta-header h3 {
     font-size: 0.96rem;
   }
 
-  .entradas-panel .tipo-boleta-header .precio {
+  .entradas-panel .tipo-boleta-header .precio,
+  .etapas-agotadas-zone .tipo-boleta-header .precio {
     font-size: 1.12rem;
   }
 
@@ -2469,85 +2489,99 @@
   color: #64748b;
 }
 
-.etapas-agotadas-zone {
-  margin-top: 0.15rem;
-}
-
-.etapas-agotadas-zone .evento-section.evento-accordion {
+.etapas-agotadas-zone .evento-accordion {
   padding: 0;
-  margin-bottom: 0.9rem;
-  border-radius: 0.9rem;
+  margin: 0;
   overflow: hidden;
+  border: 0;
+  background: transparent;
 }
 
 .etapas-agotadas-zone .accordion-header {
-  padding: 0.88rem 1rem;
-  min-height: 58px;
-  background: #fff;
+  display: flex;
+  width: 100%;
+  min-height: 3.6rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.15rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
 }
 
-.etapas-agotadas-zone .accordion-header h2 {
+.etapas-agotadas-zone .accordion-header:hover {
+  background: var(--dx-panel-tint, #f8fafc);
+}
+
+.etapas-agotadas-zone .accordion-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin: 0;
-  font-size: 1rem;
-  gap: 0.55rem;
-  font-weight: 650;
-  color: #0f172a;
+  color: var(--dx-ink);
+  font-size: 0.88rem;
+  font-weight: 750;
 }
 
-.etapas-agotadas-zone .accordion-header h2 .material-icons {
-  font-size: 1.15rem;
-  color: #8b5cf6;
+.etapas-agotadas-zone .accordion-header h3 .material-icons {
+  color: var(--dx-accent);
+  font-size: 1.1rem;
   background: transparent;
   padding: 0;
 }
 
 .etapas-agotadas-zone .accordion-icon {
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   margin-left: 0.45rem;
+  color: var(--dx-faint);
+  transition: transform 0.2s ease;
+}
+
+.etapas-agotadas-zone .accordion-icon.open {
+  transform: rotate(180deg);
 }
 
 .etapas-agotadas-zone .accordion-content {
-  padding: 0 1rem;
+  max-height: 0;
+  overflow: hidden;
+  padding: 0 1.15rem;
 }
 
 .etapas-agotadas-zone .accordion-content.open {
-  padding: 0.85rem 1rem 1rem;
-  border-top: 1px solid #f1f5f9;
+  max-height: 70rem;
+  overflow: auto;
+  padding: 0.85rem 1.15rem 1.15rem;
+  border-top: 1px solid var(--dx-line);
 }
 
 .etapas-agotadas-zone .tipos-boleta-grid--agotados {
-  gap: 0.85rem;
   grid-template-columns: 1fr;
 }
 
-@media (min-width: 640px) {
-  .etapas-agotadas-zone .tipos-boleta-grid--agotados {
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  }
-}
-
-.tipo-boleta-card--agotado {
-  background: #f8fafc;
-  border-color: #e2e8f0;
-  box-shadow: none;
-}
-
-.tipo-boleta-card--agotado:hover {
+.etapas-agotadas-zone .tipo-boleta-card--agotado,
+.etapas-agotadas-zone .tipo-boleta-card--agotado:hover {
   transform: none;
-  box-shadow: none;
-  border-color: #e2e8f0;
+  background: var(--ec-surface, #fff);
+  border-color: var(--ec-border-strong, #e5e7eb);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
-.tipo-boleta-card--agotado .tipo-boleta-header h3 {
+.etapas-agotadas-zone .soldout-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 6.4rem;
+  height: 2.4rem;
+  padding: 0 0.7rem;
+  border: 1px solid #e4e0ea;
+  border-radius: 0.65rem;
+  background: #f8f7fb;
   color: #64748b;
-}
-
-.tipo-boleta-card--agotado .precio--agotado {
-  color: #94a3b8;
-}
-
-.tipo-boleta-card--agotado .tipo-descripcion {
-  color: #94a3b8;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: none;
 }
 
 .cantidad-controls {

@@ -10,6 +10,7 @@ import { BaseFilters, EstadoPalco, PaginatedResponse, Palco } from '../types';
 export interface PalcosFilters extends BaseFilters {
   tipo_boleta_id?: number;
   estado?: EstadoPalco | string;
+  evento_id?: number;
 }
 
 /** Boleta que representa venta de “palco” de 1 persona (sin fila numerada en `palcos`). */
@@ -28,6 +29,7 @@ export interface VentaPalcoIndividualListado {
 
 export interface VentasPalcoIndividualFilters extends BaseFilters {
   tipo_boleta_id?: number;
+  evento_id?: number;
   /** Si viene, filtra por `compras.estado_pago` (p. ej. pendiente / completado). */
   estado_pago?: string;
 }
@@ -49,9 +51,18 @@ export class PalcosService {
     const limit = filters?.limit ?? 10;
     const search = (filters?.search ?? '').trim();
 
+    const hasEvento = filters?.evento_id != null;
+    const tiposEmbed = hasEvento
+      ? 'tipos_boleta!inner(id, nombre, es_palco, activo, evento_id)'
+      : 'tipos_boleta(id, nombre, es_palco, activo, evento_id)';
+
     let query = this.supabase
       .from('palcos')
-      .select('*, tipos_boleta(id, nombre, es_palco, activo)', { count: 'exact' });
+      .select(`*, ${tiposEmbed}`, { count: 'exact' });
+
+    if (hasEvento) {
+      query = query.eq('tipos_boleta.evento_id', filters.evento_id);
+    }
 
     if (filters?.tipo_boleta_id !== undefined && filters?.tipo_boleta_id !== null) {
       query = query.eq('tipo_boleta_id', filters.tipo_boleta_id);
@@ -191,7 +202,7 @@ export class PalcosService {
       .select(
         `id, compra_id, tipo_boleta_id, fecha_creacion, palco_id,
          compras!inner(estado_pago, estado_compra),
-         tipos_boleta!inner(id, nombre, es_palco, personas_por_unidad)`,
+         tipos_boleta!inner(id, nombre, es_palco, personas_por_unidad, evento_id)`,
         { count: 'exact' }
       )
       .eq('consume_inventario', true)
@@ -199,6 +210,9 @@ export class PalcosService {
       .lte('tipos_boleta.personas_por_unidad', 1)
       .is('palco_id', null);
 
+    if (filters?.evento_id != null) {
+      query = query.eq('tipos_boleta.evento_id', filters.evento_id);
+    }
     if (filters?.tipo_boleta_id != null) {
       query = query.eq('tipo_boleta_id', filters.tipo_boleta_id);
     }

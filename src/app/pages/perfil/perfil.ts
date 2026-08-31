@@ -476,6 +476,10 @@ export class Perfil implements OnInit, OnDestroy {
 
   async cerrarSesion(): Promise<void> {
     if (this.cerrandoSesion) return;
+    const confirmed = await this.alertService.presetConfirm('logout');
+    if (!confirmed) {
+      return;
+    }
     this.cerrandoSesion = true;
     this.cdr.detectChanges();
     try {

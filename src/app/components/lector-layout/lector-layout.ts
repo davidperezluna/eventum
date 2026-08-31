@@ -9,7 +9,9 @@ import {
 import { CommonModule } from '@angular/common';
 import { filter, Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+import { AlertService } from '../../services/alert.service';
 import { forceUnlockBodyScroll, lockBodyScroll, unlockBodyScroll } from '../../core/body-scroll-lock';
+import { EvDialogHost } from '../ev-dialog/ev-dialog-host';
 
 export const LECTOR_MENU_ITEMS = [
   { path: '/lector/inicio', label: 'Inicio', icon: 'home', exact: true },
@@ -18,7 +20,7 @@ export const LECTOR_MENU_ITEMS = [
 
 @Component({
   selector: 'app-lector-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, EvDialogHost],
   templateUrl: './lector-layout.html',
   styleUrls: ['../layout/layout.css', './lector-layout.css'],
   encapsulation: ViewEncapsulation.None,
@@ -33,6 +35,7 @@ export class LectorLayout implements OnInit, OnDestroy {
 
   constructor(
     private authService: AuthService,
+    private alertService: AlertService,
     private router: Router
   ) {}
 
@@ -67,6 +70,10 @@ export class LectorLayout implements OnInit, OnDestroy {
 
   async logout(): Promise<void> {
     this.closeClientMenu();
+    const confirmed = await this.alertService.presetConfirm('logout');
+    if (!confirmed) {
+      return;
+    }
     await this.authService.logout('/eventos-cliente');
   }
 

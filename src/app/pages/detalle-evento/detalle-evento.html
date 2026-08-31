@@ -64,6 +64,7 @@
     </section>
 
     <div class="dx-workspace" id="comprar">
+      <div class="dx-purchase-stack">
       <section class="dx-purchase" aria-labelledby="purchase-title">
         <div class="dx-section-heading">
           <div><span class="dx-section-kicker">Compra en línea</span><h2 id="purchase-title">Arma tu experiencia</h2><p>Selecciona entradas o productos. Verás el total antes de pagar.</p></div>
@@ -117,22 +118,6 @@
           <p *ngIf="!loadingBoletas && tiposBoletaDisponibles.length === 0 && tiposBoletaAgotados.length > 0" class="entradas-agotadas-hint">No hay entradas a la venta en este momento.</p>
         </div>
 
-        <div class="etapas-agotadas-zone detalle-tab-panel" *ngIf="!loadingBoletas && tiposBoletaAgotados.length > 0 && !mostrarSoloProductos" [hidden]="tabCompra !== 'entradas' || isEventoFinalizado()">
-          <div class="evento-accordion etapas-agotadas-accordion">
-            <button class="accordion-header" (click)="toggleAcordeon('etapasAgotadas')" type="button">
-              <h3><span class="material-icons">history</span>Etapas agotadas</h3><span class="material-icons accordion-icon" [class.open]="acordeones.etapasAgotadas">expand_more</span>
-            </button>
-            <div class="accordion-content" [class.open]="acordeones.etapasAgotadas">
-              <div class="tipos-boleta-grid tipos-boleta-grid--agotados">
-                <article *ngFor="let tipo of tiposBoletaAgotados" class="tipo-boleta-card tipo-boleta-card--agotado">
-                  <div class="tipo-boleta-header"><h3>{{ tipo.nombre }}</h3><span class="precio precio--agotado">{{ formatCurrency(tipo.precio) }}</span></div>
-                  <p *ngIf="descripcionTipoVisible(tipo)" class="tipo-descripcion">{{ tipo.descripcion }}</p><span class="soldout-badge">Agotado</span>
-                </article>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <app-evento-productos-tab
           *ngIf="evento && tieneProductos"
           [hidden]="!mostrarPanelProductos"
@@ -159,6 +144,34 @@
           <div class="accordion-content" [class.open]="acordeones.eventoFinalizado"><div class="evento-finalizado-message"><p>Este evento ya terminó. Las entradas no están disponibles para compra.</p></div></div>
         </div>
       </section>
+
+      <section
+        class="etapas-agotadas-zone detalle-tab-panel"
+        *ngIf="!loadingBoletas && tiposBoletaAgotados.length > 0 && !mostrarSoloProductos"
+        [hidden]="tabCompra !== 'entradas' || isEventoFinalizado()"
+        aria-label="Etapas agotadas"
+      >
+        <div class="evento-accordion etapas-agotadas-accordion">
+          <button class="accordion-header" (click)="toggleAcordeon('etapasAgotadas')" type="button">
+            <h3><span class="material-icons" aria-hidden="true">history</span>Etapas agotadas</h3>
+            <span class="material-icons accordion-icon" [class.open]="acordeones.etapasAgotadas">expand_more</span>
+          </button>
+          <div class="accordion-content" [class.open]="acordeones.etapasAgotadas">
+            <div class="tipos-boleta-grid tipos-boleta-grid--agotados">
+              <article *ngFor="let tipo of tiposBoletaAgotados" class="tipo-boleta-card tipo-boleta-card--agotado">
+                <div class="tipo-boleta-header">
+                  <div><h3>{{ tipo.nombre }}</h3></div>
+                  <span class="precio precio--agotado">{{ formatCurrency(tipo.precio) }}</span>
+                </div>
+                <div class="tipo-actions">
+                  <span class="soldout-badge">Agotado</span>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+      </div>
 
       <aside class="dx-sidebar" aria-label="Resumen del evento">
         <section class="dx-side-card dx-side-card--schedule">

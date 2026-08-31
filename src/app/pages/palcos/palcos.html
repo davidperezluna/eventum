@@ -15,10 +15,23 @@
 
   <div class="filters-card">
     <div class="filter-group">
+      <label class="filter-label" for="filtro-evento-palcos">Evento</label>
+      <select
+        id="filtro-evento-palcos"
+        [(ngModel)]="eventoFiltro"
+        (ngModelChange)="onFiltersChange()"
+        class="select-input"
+      >
+        <option [ngValue]="null">Todos los eventos</option>
+        <option *ngFor="let evento of eventosFiltro" [ngValue]="evento.id">{{ evento.titulo }}</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
       <label class="filter-label">Tipo de palco</label>
       <select [(ngModel)]="tipoFiltro" (ngModelChange)="onFiltersChange()" class="select-input">
         <option [ngValue]="null">Todos los tipos</option>
-        <option *ngFor="let tipo of tiposPalco" [ngValue]="tipo.id">
+        <option *ngFor="let tipo of tiposPalcoFiltrados" [ngValue]="tipo.id">
           {{ tipo.nombre }}{{ tipo.activo === false ? ' (inactivo)' : '' }}
         </option>
       </select>

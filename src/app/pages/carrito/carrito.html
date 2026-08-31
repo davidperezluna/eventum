@@ -167,32 +167,51 @@
               (eliminar)="eliminarDelCarrito(item)"
             ></app-evento-boleta-card>
             <ng-container *ngIf="esLineaPalcoMultipersona(item.tipo)">
-            <div class="palco-experiencia">
+            <div
+              class="palco-experiencia"
+              [class.palco-experiencia--ready]="palcosSeleccionCompletos(item)"
+            >
               <header class="palco-exp-header">
                 <div class="palco-exp-header-text">
                   <p class="palco-exp-kicker">
-                    <span class="material-icons palco-exp-kicker-icon">weekend</span>
+                    <span class="material-icons palco-exp-kicker-icon" aria-hidden="true">weekend</span>
                     Experiencia palco
                   </p>
-                  <h5 class="palco-exp-title">Selecciona tus palcos numerados</h5>
+                  <h5 class="palco-exp-title">
+                    {{ item.cantidad === 1 ? 'Elige tu palco' : 'Elige tus palcos' }}
+                  </h5>
                   <p class="palco-exp-desc">
-                    Elige un palco por cada unidad. Cada palco incluye
-                    <strong>{{ cuposPorPalco(item.tipo) }} acceso(s)</strong>.
+                    Un número por cada unidad. Cada palco incluye
+                    <strong>{{ cuposPorPalco(item.tipo) }} accesos</strong>.
                   </p>
                 </div>
-                <div class="palco-exp-badges">
+                <div class="palco-exp-status">
                   <span class="palco-exp-chip" [class.palco-exp-chip--ok]="palcosSeleccionCompletos(item)">
-                    <span class="material-icons">
+                    <span class="material-icons" aria-hidden="true">
                       {{ palcosSeleccionCompletos(item) ? 'check_circle' : 'touch_app' }}
                     </span>
                     {{ palcosSeleccionCompletos(item) ? 'Listo para pagar' : 'Selección pendiente' }}
                   </span>
-                  <span class="palco-exp-progress" aria-live="polite">
-                    {{ palcosSeleccionadosCount(item) }} de {{ item.cantidad }} palcos seleccionados
-                  </span>
-                  <span class="palco-exp-chip palco-exp-chip--muted">
-                    {{ cantidadPalcosReservados(item.tipo) }} reservados · {{ item.tipo.cantidad_disponibles }} disponibles
-                  </span>
+                  <p class="palco-exp-progress" aria-live="polite">
+                    <strong>{{ palcosSeleccionadosCount(item) }}/{{ item.cantidad }}</strong>
+                    seleccionados
+                  </p>
+                  <div
+                    class="palco-exp-track"
+                    role="progressbar"
+                    [attr.aria-valuenow]="palcosSeleccionadosCount(item)"
+                    [attr.aria-valuemin]="0"
+                    [attr.aria-valuemax]="item.cantidad"
+                    [attr.aria-label]="'Palcos seleccionados'"
+                  >
+                    <span class="palco-exp-track__fill" [style.width.%]="palcoProgresoPct(item)"></span>
+                  </div>
+                  <p class="palco-exp-meta">
+                    {{ item.tipo.cantidad_disponibles }} disponibles
+                    <span *ngIf="cantidadPalcosReservados(item.tipo) > 0">
+                      · {{ cantidadPalcosReservados(item.tipo) }} reservados
+                    </span>
+                  </p>
                 </div>
               </header>
 
@@ -205,14 +224,15 @@
                     [attr.aria-label]="'Ampliar mapa de palcos ' + item.tipo.nombre"
                   >
                     <img [src]="mapUrl" alt="Plano numerado de palcos" class="palco-mapa-img" />
-                    <div class="palco-mapa-caption">
-                      <span class="material-icons">zoom_in_map</span>
-                      <span>Toca para ampliar</span>
-                    </div>
+                    <span class="palco-mapa-caption">
+                      <span class="material-icons" aria-hidden="true">zoom_in_map</span>
+                      Ampliar plano
+                    </span>
                   </button>
                 </div>
 
                 <div class="palco-exp-picker">
+                  <p class="palco-exp-picker__label">Tu selección</p>
                   <div
                     class="carrito-segmented carrito-segmented--palcos"
                     role="tablist"
@@ -246,12 +266,29 @@
                         (click)="limpiarPalcoSlot(item, ui); $event.stopPropagation()"
                         [attr.aria-label]="'Quitar palco ' + (ui + 1)"
                       >
-                        <span class="material-icons">close</span>
+                        <span class="material-icons" aria-hidden="true">close</span>
                       </button>
                     </div>
                   </div>
 
                   <div class="palco-grid-wrap" *ngIf="palcosGridCatalogo(item).length > 0">
+                    <div class="palco-grid-head">
+                      <p class="palco-exp-picker__label">Toca un número</p>
+                      <div class="palco-legend" aria-hidden="true">
+                        <span class="palco-legend__item">
+                          <i class="palco-legend__swatch palco-legend__swatch--free"></i>
+                          Libre
+                        </span>
+                        <span class="palco-legend__item">
+                          <i class="palco-legend__swatch palco-legend__swatch--sel"></i>
+                          Elegido
+                        </span>
+                        <span class="palco-legend__item">
+                          <i class="palco-legend__swatch palco-legend__swatch--off"></i>
+                          Ocupado
+                        </span>
+                      </div>
+                    </div>
                     <div class="palco-grid">
                       <button
                         type="button"
