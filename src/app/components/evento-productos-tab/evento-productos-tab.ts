@@ -32,6 +32,7 @@ export class EventoProductosTab implements OnInit, OnDestroy {
   @Input() embebidoEnCarrito = false;
   @Input() soloCarrito = false;
   @Input() ocultarEstadoPrecio = false;
+  @Input() mostrarDescripcion = true;
   @Output() productosActualizados = new EventEmitter<Producto[]>();
 
   @HostBinding('class')
@@ -218,6 +219,7 @@ export class EventoProductosTab implements OnInit, OnDestroy {
   }
 
   descripcionProductoVisible(producto: Producto): boolean {
+    if (!this.mostrarDescripcion) return false;
     const descripcion = (producto.descripcion || '').trim();
     if (!descripcion) return false;
     const nombre = (producto.nombre || '').trim();

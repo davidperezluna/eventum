@@ -203,11 +203,11 @@
         <a
           routerLink="/login"
           [queryParams]="headerLoginQueryParams"
-          class="nav-item"
+          class="client-menu-login"
           (click)="closeClientMenu()"
         >
-          <span class="material-icons nav-icon">login</span>
-          <span class="nav-label">Entrar</span>
+          <span class="material-icons" aria-hidden="true">login</span>
+          Entrar
         </a>
         <p class="client-menu-copyright">&copy; {{ currentYear }} Eventum</p>
       </div>

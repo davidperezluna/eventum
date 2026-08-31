@@ -8,7 +8,7 @@
   --catalogo-max: min(40rem, 100%);
   max-width: var(--catalogo-max);
   margin: 0 auto;
-  padding: 0.75rem var(--catalogo-gutter) calc(5.25rem + env(safe-area-inset-bottom, 0px));
+  padding: 0.75rem var(--catalogo-gutter);
 }
 
 .catalogo-header {
@@ -106,92 +106,6 @@
   font-size: 0.86rem;
 }
 
-.evento-accordion {
-  border: 1px solid var(--ec-border, #e2e8f0);
-  border-radius: var(--ec-radius-card, 12px);
-  overflow: hidden;
-  background: var(--ec-surface, #fff);
-}
-
-.accordion-header {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  border: none;
-  background: transparent;
-  padding: 0.88rem 1rem;
-  cursor: pointer;
-  text-align: left;
-}
-
-.accordion-header h2 {
-  margin: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  font-size: 1rem;
-  font-weight: 650;
-  color: var(--ec-text-primary, #0f172a);
-}
-
-.accordion-header h2 .material-icons {
-  font-size: 1.15rem;
-  color: var(--ec-accent, #8b5cf6);
-}
-
-.accordion-icon {
-  font-size: 1.3rem;
-  color: var(--ec-text-muted, #64748b);
-  transition: transform 0.2s ease;
-}
-
-.accordion-icon.open {
-  transform: rotate(180deg);
-}
-
-.accordion-content {
-  max-height: 0;
-  overflow: hidden;
-  padding: 0 1rem;
-  transition: max-height 0.25s ease, padding 0.25s ease;
-}
-
-.accordion-content.open {
-  max-height: 5000px;
-  padding: 0.85rem 1rem 1rem;
-  border-top: 1px solid var(--ec-border, #f1f5f9);
-}
-
-.etapas-agotadas-zone {
-  margin-top: 0.15rem;
-}
-
-.etapas-agotadas-zone .evento-section.evento-accordion {
-  padding: 0;
-  margin-bottom: 0.9rem;
-}
-
-.etapas-agotadas-zone .tipos-boleta-grid--agotados {
-  gap: 0.85rem;
-  grid-template-columns: 1fr;
-}
-
-.tipo-boleta-card--agotado {
-  opacity: 0.72;
-  border-style: dashed;
-}
-
-.tipo-boleta-card--agotado:hover {
-  box-shadow: none;
-  border-color: var(--ec-border, #e2e8f0);
-}
-
-.tipo-boleta-card--agotado .precio--agotado {
-  color: var(--ec-text-muted, #64748b);
-}
-
 .catalogo-empty {
   margin: 1.5rem 0;
   padding: 1rem;
@@ -202,74 +116,6 @@
   font-size: 0.86rem;
   color: var(--ec-text-muted, #64748b);
   line-height: 1.45;
-}
-
-.catalogo-footer {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 900;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.65rem var(--catalogo-gutter);
-  padding-bottom: calc(0.65rem + env(safe-area-inset-bottom, 0px));
-  background: var(--ec-surface, #fff);
-  border-top: 1px solid var(--ec-border, #e2e8f0);
-  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.06);
-}
-
-.catalogo-footer__total {
-  display: flex;
-  flex-direction: column;
-  gap: 0.05rem;
-  min-width: 5.5rem;
-  flex-shrink: 0;
-}
-
-.catalogo-footer__label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--ec-text-muted, #64748b);
-}
-
-.catalogo-footer__amount {
-  font-size: 1rem;
-  font-weight: 800;
-  color: var(--ec-text-primary, #0f172a);
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-}
-
-.catalogo-footer__btn {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  background: var(--color-secondary, #8b5cf6);
-  color: #fff;
-  border-radius: var(--ec-radius-control, 8px);
-  min-height: 46px;
-  padding: 0.65rem 0.85rem;
-  font-weight: 700;
-  font-size: 0.9rem;
-  font-family: inherit;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.catalogo-footer__btn:hover {
-  background: var(--color-secondary-dark, #7c3aed);
-}
-
-.catalogo-footer__btn .material-icons {
-  font-size: 1.05rem;
 }
 
 @media (min-width: 769px) {

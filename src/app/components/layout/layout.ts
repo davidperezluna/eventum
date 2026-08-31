@@ -257,7 +257,7 @@ export class Layout implements OnInit, OnDestroy {
 
   private syncRutaCarrito(url: string): void {
     const path = (url || '').split('?')[0];
-    this.enRutaCarrito = path === '/carrito' || path.startsWith('/carrito/');
+    this.enRutaCarrito = path === '/carrito';
     this.enRutaCupos = path === '/cupos';
     this.enRutaRecibidos = path === '/recibidos';
     this.enRutaPagoWompi = path === '/pago-wompi';

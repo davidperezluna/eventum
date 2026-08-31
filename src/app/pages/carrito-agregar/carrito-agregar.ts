@@ -16,7 +16,6 @@ import { resolverConflictoEventoAntesDeAgregar } from '../../core/carrito-confli
 import {
   cantidadPalcosReservadosTipo,
   cuposPorPalcoTipo,
-  descripcionTipoBoletaVisible,
   esLineaPalcoMultipersonaTipo,
   eventoCompraFinalizado,
   mostrarFinVentaTipoBoleta,
@@ -50,7 +49,6 @@ export class CarritoAgregar implements OnInit, OnDestroy {
   tiposBoleta: TipoBoleta[] = [];
   productosCache: Producto[] = [];
   tieneProductos = false;
-  etapasAgotadasAbierto = false;
 
   private currentEventoId: number | null = null;
   private palcosDisponiblesPorTipo = new Map<number, Palco[]>();
@@ -142,17 +140,6 @@ export class CarritoAgregar implements OnInit, OnDestroy {
     return this.catalogoCompraListo && this.tieneEntradasEnVenta && this.tieneProductos;
   }
 
-  get totalItemsCarrito(): number {
-    return (
-      this.carritoCompraService.getItemsSnapshot().reduce((acc, item) => acc + item.cantidad, 0) +
-      this.carritoCompraService.getItemsProductosSnapshot().reduce((acc, item) => acc + item.cantidad, 0)
-    );
-  }
-
-  get subtotalCarrito(): number {
-    return this.carritoCompraService.getSubtotalCombinado();
-  }
-
   get eventoFinalizado(): boolean {
     return this.evento ? eventoCompraFinalizado(this.evento) : false;
   }
@@ -165,14 +152,6 @@ export class CarritoAgregar implements OnInit, OnDestroy {
     if (!this.evento?.id) return;
     const tipo: CatalogoTipo = this.esBoletas ? 'productos' : 'boletas';
     void this.router.navigate(['/carrito/agregar', this.evento.id, tipo]);
-  }
-
-  toggleEtapasAgotadas(): void {
-    this.etapasAgotadasAbierto = !this.etapasAgotadasAbierto;
-  }
-
-  descripcionTipoVisible(tipo: TipoBoleta): boolean {
-    return descripcionTipoBoletaVisible(tipo);
   }
 
   mostrarFinVentaTipo(tipo: TipoBoleta): boolean {

@@ -41,8 +41,8 @@
           [tipo]="tipo"
           [cantidad]="getCantidadBoleta(tipo.id)"
           [maxCantidad]="maxCantidadBoleta(tipo)"
-          [mostrarDescripcion]="true"
-          [mostrarEliminar]="true"
+          [mostrarDescripcion]="false"
+          [mostrarEliminar]="false"
           (aumentar)="agregarBoleta(tipo)"
           (disminuir)="quitarBoleta(tipo)"
           (eliminar)="eliminarBoleta(tipo)"
@@ -52,7 +52,6 @@
             <h3>{{ tipo.nombre }}</h3>
             <span class="precio">{{ formatCurrency(tipo.precio) }}</span>
           </div>
-          <p *ngIf="descripcionTipoVisible(tipo)" class="tipo-descripcion">{{ tipo.descripcion }}</p>
           <div class="tipo-info">
             <div class="tipo-info-metricas" *ngIf="mostrarMetricasEntradasDisponibles">
               <span class="disponibles">{{ tipo.cantidad_disponibles }} disponibles</span>
@@ -108,47 +107,6 @@
       <div *ngIf="!loadingBoletas && tiposBoleta.length === 0" class="empty-state">
         <p>No hay boletas disponibles para este evento</p>
       </div>
-
-      <div class="etapas-agotadas-zone" *ngIf="!loadingBoletas && tiposBoletaAgotadosList.length > 0">
-        <div class="evento-section evento-accordion etapas-agotadas-accordion">
-          <button class="accordion-header" (click)="toggleEtapasAgotadas()" type="button">
-            <h2>
-              <span class="material-icons">history</span>
-              Etapas agotadas
-            </h2>
-            <span class="material-icons accordion-icon" [class.open]="etapasAgotadasAbierto">expand_more</span>
-          </button>
-          <div class="accordion-content" [class.open]="etapasAgotadasAbierto">
-            <div class="tipos-boleta-grid tipos-boleta-grid--agotados">
-              <app-evento-boleta-card
-                *ngFor="let tipo of tiposBoletaAgotadosList"
-                [tipo]="tipo"
-                [agotada]="true"
-                [mostrarDescripcion]="true"
-                [mostrarEliminar]="false"
-              ></app-evento-boleta-card>
-              <article *ngFor="let tipo of tiposBoletaAgotadosList" hidden class="tipo-boleta-card tipo-boleta-card--agotado">
-                <div class="tipo-boleta-header">
-                  <h3>{{ tipo.nombre }}</h3>
-                  <span class="precio precio--agotado">{{ formatCurrency(tipo.precio) }}</span>
-                </div>
-                <p *ngIf="descripcionTipoVisible(tipo)" class="tipo-descripcion">{{ tipo.descripcion }}</p>
-                <div class="tipo-info">
-                  <div class="tipo-info-metricas">
-                    <span *ngIf="tipo.cantidad_vendidas !== undefined && tipo.cantidad_vendidas > 0" class="vendidas">
-                      {{ tipo.cantidad_vendidas }} vendidas de {{ tipo.cantidad_total }} totales
-                    </span>
-                    <span *ngIf="mostrarFinVentaTipo(tipo) && tipo.fecha_venta_fin" class="fin-venta-tipo">
-                      Fin de venta: {{ tipo.fecha_venta_fin | dateFormat:'short' }}
-                    </span>
-                  </div>
-                  <span class="soldout-badge">Agotado</span>
-                </div>
-              </article>
-            </div>
-          </div>
-        </div>
-      </div>
     </section>
 
     <section *ngIf="!esBoletas && !eventoFinalizado && evento" class="catalogo-productos" aria-label="Productos disponibles">
@@ -158,20 +116,11 @@
         [productosIniciales]="productosCache"
         [refrescoSilenciosoInicial]="productosCache.length > 0"
         contexto="detalle"
+        [mostrarIntro]="false"
         [ocultarEstadoPrecio]="true"
+        [mostrarDescripcion]="false"
         (productosActualizados)="onProductosActualizados($event)"
       ></app-evento-productos-tab>
     </section>
-
-    <footer class="catalogo-footer">
-      <div class="catalogo-footer__total" *ngIf="totalItemsCarrito > 0">
-        <span class="catalogo-footer__label">Total</span>
-        <span class="catalogo-footer__amount">{{ formatCurrency(subtotalCarrito) }}</span>
-      </div>
-      <button type="button" class="catalogo-footer__btn" (click)="volverAlCarrito()">
-        <span class="material-icons" aria-hidden="true">shopping_cart</span>
-        Volver al carrito
-      </button>
-    </footer>
   </ng-container>
 </div>
