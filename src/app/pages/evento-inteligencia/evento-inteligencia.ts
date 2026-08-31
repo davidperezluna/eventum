@@ -761,7 +761,7 @@ export class EventoInteligencia implements OnInit {
 
       });
 
-      this.alertService.error('No se pudo generar el QR', 'Intenta nuevamente en unos segundos.');
+      this.alertService.error('No se pudo crear el QR', 'Intenta de nuevo en unos segundos.');
 
     }
 
@@ -799,7 +799,7 @@ export class EventoInteligencia implements OnInit {
 
       if (result === 'downloaded') {
 
-        this.alertService.success('Imagen descargada', 'Guardamos el QR con el título del evento en tu dispositivo.');
+        this.alertService.success('Imagen lista', 'La descargamos para que la puedas compartir.');
 
       }
 
@@ -809,7 +809,7 @@ export class EventoInteligencia implements OnInit {
 
       console.error('Error compartiendo QR del evento:', err);
 
-      this.alertService.error('No se pudo compartir', 'Prueba descargando la imagen desde la vista previa.');
+      this.alertService.error('No se pudo compartir', 'Cierra y vuelve a abrir el QR para intentarlo de nuevo.');
 
     } finally {
 

@@ -110,7 +110,7 @@ export async function shareEventoQrPoster(
   if (typeof navigator.share === 'function' && navigator.canShare?.({ files: [file] })) {
     await navigator.share({
       title: titulo,
-      text: `Escanea para ver ${titulo}`,
+      text: titulo,
       files: [file],
     });
     return 'shared';

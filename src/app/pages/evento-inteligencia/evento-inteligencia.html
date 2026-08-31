@@ -24,8 +24,8 @@
           type="button"
           class="ev-intel-topbar__icon-btn"
           (click)="abrirCompartirQrEvento()"
-          aria-label="Compartir QR del evento"
-          title="Compartir QR del evento"
+          aria-label="QR del evento"
+          title="QR del evento"
         >
           <span class="material-icons" aria-hidden="true">qr_code_2</span>
         </button>
@@ -416,9 +416,9 @@
   >
     <header class="ev-intel-qr-modal__head">
       <div>
-        <p class="ev-intel-qr-modal__eyebrow">Compartir QR</p>
-        <h2 id="ev-intel-qr-modal-title">Código del evento</h2>
-        <p class="ev-intel-qr-modal__desc">Título arriba y QR abajo, listo para difundir en redes o impresión.</p>
+        <p class="ev-intel-qr-modal__eyebrow">Invitación</p>
+        <h2 id="ev-intel-qr-modal-title">QR del evento</h2>
+        <p class="ev-intel-qr-modal__desc">Quien lo escanee entra directo a la página de compra.</p>
       </div>
       <button
         type="button"
@@ -434,7 +434,7 @@
       @if (qrPosterLoading) {
         <div class="ev-intel-qr-modal__loading" aria-live="polite">
           <span class="ev-intel-qr-modal__spinner" aria-hidden="true"></span>
-          <p>Generando QR…</p>
+          <p>Preparando imagen…</p>
         </div>
       } @else if (qrPosterUrl) {
         <figure class="ev-intel-qr-modal__preview">
@@ -453,7 +453,7 @@
         [disabled]="!qrPosterUrl || qrPosterLoading || qrPosterSharing"
         (click)="compartirQrPoster()"
       >
-        {{ qrPosterSharing ? 'Compartiendo…' : 'Compartir imagen' }}
+        {{ qrPosterSharing ? 'Compartiendo…' : 'Compartir' }}
       </button>
     </footer>
   </div>
