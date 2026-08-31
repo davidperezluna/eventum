@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
 
@@ -29,6 +29,12 @@ import { Evento, TipoBoleta, TipoEstadoEvento, DashboardStats, Producto } from '
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 
 import { EvButton } from '../../components/ev-button';
+
+import {
+  buildEventoQrPosterDataUrl,
+  getEventoPublicUrl,
+  shareEventoQrPoster,
+} from '../../core/evento-qr-poster';
 
 import { formatFinanzasMonedaExacta, formatFinanzasMontoExacto } from '../../utils/dashboard-finanzas.view';
 
@@ -170,6 +176,14 @@ export class EventoInteligencia implements OnInit {
 
   eventoId = 0;
 
+  qrModalOpen = false;
+
+  qrPosterLoading = false;
+
+  qrPosterSharing = false;
+
+  qrPosterUrl: string | null = null;
+
 
 
   readonly padCountdown = padCountdown;
@@ -203,6 +217,8 @@ export class EventoInteligencia implements OnInit {
     private alertService: AlertService,
 
     private cdr: ChangeDetectorRef,
+
+    private ngZone: NgZone,
 
   ) {}
 
@@ -383,11 +399,11 @@ export class EventoInteligencia implements OnInit {
     this.finanzasHero = buildIntelFinanzasHero(this.stats, fmtFinanzas, fmtMonto);
 
     this.pulseCards = buildPulseCards(this.reporte, this.stats, aforo, {
-      hideScanner: this.authService.isOrganizador(),
+      hideScanner: true,
     });
 
     this.actionNow = buildActionNow(this.evento, this.reporte, aforo, hero, {
-      hideScanner: this.authService.isOrganizador(),
+      hideScanner: true,
     });
 
     this.ventasSection = buildVentasSection(this.stats, fmtFinanzas);
@@ -667,7 +683,7 @@ export class EventoInteligencia implements OnInit {
 
     if (!this.evento) return;
 
-    const url = `${window.location.origin}/detalle-evento/${this.evento.id}`;
+    const url = getEventoPublicUrl(this.evento.id);
 
     const title = this.evento.titulo ?? 'Evento';
 
@@ -692,6 +708,118 @@ export class EventoInteligencia implements OnInit {
       if ((err as Error)?.name === 'AbortError') return;
 
       this.alertService.info('Compartir', url);
+
+    }
+
+  }
+
+
+
+  async abrirCompartirQrEvento(): Promise<void> {
+
+    if (!this.evento) return;
+
+    this.qrModalOpen = true;
+
+    this.qrPosterLoading = true;
+
+    this.qrPosterUrl = null;
+
+    this.cdr.detectChanges();
+
+    const titulo = this.evento.titulo ?? 'Evento';
+
+    const url = getEventoPublicUrl(this.evento.id);
+
+    try {
+
+      const dataUrl = await buildEventoQrPosterDataUrl(titulo, url);
+
+      this.ngZone.run(() => {
+
+        this.qrPosterUrl = dataUrl;
+
+        this.qrPosterLoading = false;
+
+        this.cdr.markForCheck();
+
+      });
+
+    } catch (err) {
+
+      console.error('Error generando QR del evento:', err);
+
+      this.ngZone.run(() => {
+
+        this.qrModalOpen = false;
+
+        this.qrPosterLoading = false;
+
+        this.qrPosterUrl = null;
+
+        this.cdr.markForCheck();
+
+      });
+
+      this.alertService.error('No se pudo generar el QR', 'Intenta nuevamente en unos segundos.');
+
+    }
+
+  }
+
+
+
+  cerrarCompartirQrEvento(): void {
+
+    this.qrModalOpen = false;
+
+    this.qrPosterLoading = false;
+
+    this.qrPosterSharing = false;
+
+    this.qrPosterUrl = null;
+
+  }
+
+
+
+  async compartirQrPoster(): Promise<void> {
+
+    if (!this.evento || !this.qrPosterUrl || this.qrPosterSharing) return;
+
+    this.qrPosterSharing = true;
+
+    this.ngZone.run(() => this.cdr.markForCheck());
+
+    try {
+
+      const titulo = this.evento.titulo ?? 'Evento';
+
+      const result = await shareEventoQrPoster(titulo, this.qrPosterUrl);
+
+      if (result === 'downloaded') {
+
+        this.alertService.success('Imagen descargada', 'Guardamos el QR con el título del evento en tu dispositivo.');
+
+      }
+
+    } catch (err) {
+
+      if ((err as Error)?.name === 'AbortError') return;
+
+      console.error('Error compartiendo QR del evento:', err);
+
+      this.alertService.error('No se pudo compartir', 'Prueba descargando la imagen desde la vista previa.');
+
+    } finally {
+
+      this.ngZone.run(() => {
+
+        this.qrPosterSharing = false;
+
+        this.cdr.markForCheck();
+
+      });
 
     }
 

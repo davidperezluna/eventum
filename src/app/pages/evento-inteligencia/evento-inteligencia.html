@@ -23,6 +23,15 @@
         <button
           type="button"
           class="ev-intel-topbar__icon-btn"
+          (click)="abrirCompartirQrEvento()"
+          aria-label="Compartir QR del evento"
+          title="Compartir QR del evento"
+        >
+          <span class="material-icons" aria-hidden="true">qr_code_2</span>
+        </button>
+        <button
+          type="button"
+          class="ev-intel-topbar__icon-btn"
           [disabled]="refreshing"
           (click)="refresh()"
           aria-label="Actualizar datos"
@@ -93,12 +102,6 @@
             Operaciones
           </a>
         </nav>
-        <div class="ev-intel-hero__actions" *ngIf="!authService.isOrganizador()">
-          <ev-button variant="primary" size="sm" (click)="goToEscanear()">
-            <span class="material-icons" aria-hidden="true">qr_code_scanner</span>
-            Escáner
-          </ev-button>
-        </div>
       </div>
 
       <!-- Métricas — una fila -->
@@ -396,4 +399,62 @@
 
     </div>
   </ng-container>
+</div>
+
+<div
+  class="ev-intel-qr-modal"
+  *ngIf="qrModalOpen"
+  (click)="cerrarCompartirQrEvento()"
+  role="presentation"
+>
+  <div
+    class="ev-intel-qr-modal__sheet"
+    (click)="$event.stopPropagation()"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="ev-intel-qr-modal-title"
+  >
+    <header class="ev-intel-qr-modal__head">
+      <div>
+        <p class="ev-intel-qr-modal__eyebrow">Compartir QR</p>
+        <h2 id="ev-intel-qr-modal-title">Código del evento</h2>
+        <p class="ev-intel-qr-modal__desc">Título arriba y QR abajo, listo para difundir en redes o impresión.</p>
+      </div>
+      <button
+        type="button"
+        class="ev-intel-qr-modal__close"
+        (click)="cerrarCompartirQrEvento()"
+        aria-label="Cerrar"
+      >
+        <span class="material-icons" aria-hidden="true">close</span>
+      </button>
+    </header>
+
+    <div class="ev-intel-qr-modal__body">
+      @if (qrPosterLoading) {
+        <div class="ev-intel-qr-modal__loading" aria-live="polite">
+          <span class="ev-intel-qr-modal__spinner" aria-hidden="true"></span>
+          <p>Generando QR…</p>
+        </div>
+      } @else if (qrPosterUrl) {
+        <figure class="ev-intel-qr-modal__preview">
+          <img [src]="qrPosterUrl" [alt]="'QR de ' + (evento?.titulo || 'evento')" />
+        </figure>
+      }
+    </div>
+
+    <footer class="ev-intel-qr-modal__footer">
+      <button type="button" class="ev-btn-ghost ev-btn-sm" (click)="cerrarCompartirQrEvento()">
+        Cerrar
+      </button>
+      <button
+        type="button"
+        class="ev-btn-primary ev-btn-sm"
+        [disabled]="!qrPosterUrl || qrPosterLoading || qrPosterSharing"
+        (click)="compartirQrPoster()"
+      >
+        {{ qrPosterSharing ? 'Compartiendo…' : 'Compartir imagen' }}
+      </button>
+    </footer>
+  </div>
 </div>

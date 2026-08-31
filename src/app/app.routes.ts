@@ -166,7 +166,7 @@ const appRoutes: Routes = [
       { path: 'usuarios', component: Usuarios },
       { path: 'eventos', component: Eventos },
       { path: 'eventos/:id/operaciones', component: EventoOperaciones },
-      { path: 'eventos/:id/reservar-palcos', component: ReservarPalcosOrganizador, data: { organizerOnly: true } },
+      { path: 'eventos/:id/reservar-palcos', component: ReservarPalcosOrganizador },
       { path: 'eventos/:id/inteligencia', component: EventoInteligencia },
       ...cuposProtectedRoutes,
       { path: 'mis-compras/actividad', component: MisCompras }, // Cliente: traslados / actividad

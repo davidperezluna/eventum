@@ -372,6 +372,14 @@ export class EventoOperaciones implements OnInit {
 
   }
 
+  private puedeReservarPalcosOperaciones(): boolean {
+    return (
+      (this.authService.isOrganizador() || this.authService.isAdministrador())
+      && !this.isShowcaseMode
+      && this.tiposBoleta.some((tipo) => !!tipo.es_palco)
+    );
+  }
+
 
 
   private rebuildReadiness(): void {
@@ -475,7 +483,7 @@ export class EventoOperaciones implements OnInit {
 
       },
 
-      ...(this.authService.isOrganizador() && !this.isShowcaseMode && this.tiposBoleta.some((tipo) => !!tipo.es_palco)
+      ...(this.puedeReservarPalcosOperaciones()
         ? [{
             id: 'reservar-palcos',
             label: 'Reservar palcos',

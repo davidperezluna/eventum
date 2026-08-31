@@ -555,7 +555,7 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
   }
 
   puedeReservarPalcos(tipo: TipoBoleta): boolean {
-    return this.authService.isOrganizador() && !!tipo.es_palco;
+    return (this.authService.isOrganizador() || this.authService.isAdministrador()) && !!tipo.es_palco;
   }
 
   async irAReservarPalcos(): Promise<void> {

@@ -70,7 +70,11 @@ export class ReservarPalcosOrganizador implements OnInit, EvDrawerContent {
     try {
       await this.authService.waitForInitialization();
       const usuario = this.authService.getUsuario();
-      if (!usuario || usuario.tipo_usuario_id !== 2 || !this.eventoId || this.authService.isShowcaseOrganizador()) {
+      const puedeOperarPalcos =
+        !!usuario
+        && (this.authService.isOrganizador() || this.authService.isAdministrador())
+        && !this.authService.isShowcaseOrganizador();
+      if (!puedeOperarPalcos || !this.eventoId) {
         if (this.isDrawer) {
           this.error = 'No tienes acceso a la reserva operativa de palcos.';
         } else {
@@ -83,7 +87,10 @@ export class ReservarPalcosOrganizador implements OnInit, EvDrawerContent {
         this.eventosService.getEventoById(this.eventoId),
         this.boletasService.getTiposBoleta(this.eventoId),
       ]);
-      if (Number(evento.organizador_id) !== Number(usuario.id)) {
+      if (
+        this.authService.isOrganizador()
+        && Number(evento.organizador_id) !== Number(usuario.id)
+      ) {
         throw new Error('Este evento no pertenece a tu cuenta.');
       }
 
