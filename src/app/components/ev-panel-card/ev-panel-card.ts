@@ -10,8 +10,15 @@ import { CommonModule } from '@angular/common';
 })
 export class EvPanelCard {
   @Input() inactive = false;
+  @Input() noSale = false;
 
   get classNames(): string {
-    return ['ev-panel-card', this.inactive ? 'ev-panel-card--inactive' : ''].filter(Boolean).join(' ');
+    return [
+      'ev-panel-card',
+      this.inactive ? 'ev-panel-card--inactive' : '',
+      this.noSale ? 'ev-panel-card--no-sale' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
   }
 }

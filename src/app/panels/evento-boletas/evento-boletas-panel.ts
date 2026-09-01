@@ -32,6 +32,8 @@ import {
   getPalcoLabel,
   getTipoBoletaBadge,
   isVentaActiva,
+  sortTiposBoletaPanel,
+  ventaStatusLabel,
 } from './evento-boletas.utils';
 import { formatGroupedNumber } from '../../core/number-input-format';
 import { eventoTieneVentanaVentaGlobal } from '../../core/catalogo-compra-evento';
@@ -94,6 +96,7 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
   readonly getOcupacionPct = computeOcupacionPct;
   readonly getTipoBoletaBadge = getTipoBoletaBadge;
   readonly isVentaActiva = isVentaActiva;
+  readonly ventaStatusLabel = ventaStatusLabel;
   readonly getPalcoLabel = getPalcoLabel;
   readonly formatPrecio = formatGroupedNumber;
 
@@ -140,8 +143,24 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
     }
   }
 
-  statusDotClass(active: boolean): string {
-    return active ? 'ev-panel-card__status-dot--success' : '';
+  statusDotClass(tipo: TipoBoleta): string {
+    if (this.isVentaActiva(tipo)) {
+      return 'ev-panel-card__status-dot--success';
+    }
+    if (tipo.activo === false) {
+      return '';
+    }
+    return 'ev-panel-card__status-dot--warning';
+  }
+
+  saleStatusClass(tipo: TipoBoleta): string {
+    if (this.isVentaActiva(tipo)) {
+      return 'ev-boleta-sale-status--active';
+    }
+    if (tipo.activo === false) {
+      return 'ev-boleta-sale-status--inactive';
+    }
+    return 'ev-boleta-sale-status--paused';
   }
 
   get isCreateMode(): boolean {
@@ -194,7 +213,7 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
       case 'agotandose':
         return 'Agotándose';
       case 'inactiva':
-        return 'Inactiva';
+        return 'Oculta';
       default:
         return '';
     }
@@ -241,9 +260,11 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
       this.drawerRef.setLoading(true);
     }
     try {
-      this.tipos = await this.boletasService.getTiposBoleta(this.data.eventoId, {
-        includeInactive: true,
-      });
+      this.tipos = sortTiposBoletaPanel(
+        await this.boletasService.getTiposBoleta(this.data.eventoId, {
+          includeInactive: true,
+        }),
+      );
       this.resumen = computeBoletasResumen(this.tipos);
     } catch (err) {
       console.error('Error cargando tipos de boleta:', err);

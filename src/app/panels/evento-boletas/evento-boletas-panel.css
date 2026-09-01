@@ -5,3 +5,54 @@
   min-height: 0;
   height: 100%;
 }
+
+.ev-boleta-sale-status {
+  font-size: 0.875rem;
+  font-weight: 600;
+  gap: 0.5rem;
+}
+
+.ev-boleta-sale-status--active {
+  color: #047857;
+  font-weight: 700;
+}
+
+.ev-boleta-sale-status--active .ev-panel-card__status-dot {
+  width: 9px;
+  height: 9px;
+  animation: ev-boleta-sale-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes ev-boleta-sale-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.75;
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+    transform: scale(1.1);
+  }
+}
+
+.ev-boleta-sale-status--paused {
+  color: #b45309;
+  font-weight: 700;
+}
+
+.ev-boleta-sale-status--inactive {
+  color: #94a3b8;
+}
+
+.ev-boleta-sale-status--inactive .ev-panel-card__status-dot {
+  background: #94a3b8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ev-boleta-sale-status--active .ev-panel-card__status-dot {
+    animation: none;
+  }
+}

@@ -42,6 +42,35 @@ export function isVentaActiva(tipo: TipoBoleta): boolean {
   return tipo.activo !== false && (tipo.cantidad_disponibles ?? 0) > 0;
 }
 
+/** Activa → inactiva; dentro de cada grupo, con venta → sin venta; luego por nombre. */
+export function sortTiposBoletaPanel(tipos: TipoBoleta[]): TipoBoleta[] {
+  return [...tipos].sort((a, b) => {
+    const aActivo = a.activo !== false ? 0 : 1;
+    const bActivo = b.activo !== false ? 0 : 1;
+    if (aActivo !== bActivo) {
+      return aActivo - bActivo;
+    }
+
+    const aVenta = isVentaActiva(a) ? 0 : 1;
+    const bVenta = isVentaActiva(b) ? 0 : 1;
+    if (aVenta !== bVenta) {
+      return aVenta - bVenta;
+    }
+
+    return (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' });
+  });
+}
+
+export function ventaStatusLabel(tipo: TipoBoleta): string {
+  if (tipo.activo === false) {
+    return 'No está a la venta';
+  }
+  if ((tipo.cantidad_disponibles ?? 0) <= 0) {
+    return 'Se agotó';
+  }
+  return 'En venta';
+}
+
 export function getPalcoLabel(tipo: TipoBoleta): string | null {
   const personas = tipo.personas_por_unidad ?? 1;
   if (tipo.es_palco || personas > 1) {

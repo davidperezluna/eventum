@@ -41,3 +41,13 @@
 .ev-panel-card--inactive .ev-panel-card__progress-fill {
   background: #cbd5e1;
 }
+
+.ev-panel-card--no-sale {
+  border-color: rgba(245, 158, 11, 0.45);
+  background: #fffbeb;
+}
+
+.ev-panel-card--no-sale:hover {
+  border-color: rgba(245, 158, 11, 0.55);
+  box-shadow: 0 1px 4px rgba(245, 158, 11, 0.12);
+}

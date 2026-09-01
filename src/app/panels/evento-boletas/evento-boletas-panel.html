@@ -42,7 +42,11 @@
       </ev-empty-state>
 
       <div *ngIf="tipos.length > 0" class="ev-panel__grid">
-        <ev-panel-card *ngFor="let tipo of tipos" [inactive]="tipo.activo === false">
+        <ev-panel-card
+          *ngFor="let tipo of tipos"
+          [inactive]="tipo.activo === false"
+          [noSale]="tipo.activo !== false && !isVentaActiva(tipo)"
+        >
           <header class="ev-panel-card__head">
             <div class="ev-panel-card__meta">
               <h3 class="ev-panel-card__name">{{ tipo.nombre }}</h3>
@@ -72,9 +76,9 @@
           </div>
           <p class="ev-panel-card__pct">{{ getOcupacionPct(tipo) }}% ocupación</p>
 
-          <p class="ev-panel-card__status">
-            <span class="ev-panel-card__status-dot" [ngClass]="statusDotClass(isVentaActiva(tipo))"></span>
-            {{ isVentaActiva(tipo) ? 'Venta activa' : 'Sin venta activa' }}
+          <p class="ev-panel-card__status ev-boleta-sale-status" [ngClass]="saleStatusClass(tipo)" role="status">
+            <span class="ev-panel-card__status-dot" [ngClass]="statusDotClass(tipo)" aria-hidden="true"></span>
+            {{ ventaStatusLabel(tipo) }}
           </p>
 
           <footer class="ev-panel-card__actions">
