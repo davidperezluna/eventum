@@ -241,7 +241,9 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
       this.drawerRef.setLoading(true);
     }
     try {
-      this.tipos = await this.boletasService.getTiposBoleta(this.data.eventoId);
+      this.tipos = await this.boletasService.getTiposBoleta(this.data.eventoId, {
+        includeInactive: true,
+      });
       this.resumen = computeBoletasResumen(this.tipos);
     } catch (err) {
       console.error('Error cargando tipos de boleta:', err);
@@ -551,6 +553,21 @@ export class EventoBoletasPanel implements OnInit, EvDrawerContent {
     } catch (err: unknown) {
       console.error('Error desactivando tipo de boleta:', err);
       this.alertService.error('Error', 'No se pudo desactivar el tipo de boleta');
+    }
+  }
+
+  async activarTipo(tipo: TipoBoleta): Promise<void> {
+    this.closeMenu();
+
+    try {
+      await this.boletasService.updateTipoBoleta(tipo.id, { activo: true });
+      this.dataChanged = true;
+      this.alertService.success('Activado', 'El tipo de boleta volvió a estar disponible en venta.');
+      await this.loadTipos();
+      this.notifyParentChange();
+    } catch (err: unknown) {
+      console.error('Error activando tipo de boleta:', err);
+      this.alertService.error('Error', 'No se pudo activar el tipo de boleta');
     }
   }
 

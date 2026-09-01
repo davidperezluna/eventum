@@ -249,16 +249,25 @@ export class BoletasService {
   }
 
   /**
-   * Obtiene los tipos de boleta de un evento
+   * Obtiene los tipos de boleta de un evento.
+   * Por defecto solo devuelve tipos activos (catálogo público).
+   * En panel de operaciones usar `{ includeInactive: true }`.
    */
-  async getTiposBoleta(eventoId: number): Promise<TipoBoleta[]> {
+  async getTiposBoleta(
+    eventoId: number,
+    options?: { includeInactive?: boolean },
+  ): Promise<TipoBoleta[]> {
     try {
-      const response = await this.supabase
+      let query = this.supabase
         .from('tipos_boleta')
         .select('*')
-        .eq('evento_id', eventoId)
-        .eq('activo', true)
-        .order('precio', { ascending: true });
+        .eq('evento_id', eventoId);
+
+      if (!options?.includeInactive) {
+        query = query.eq('activo', true);
+      }
+
+      const response = await query.order('precio', { ascending: true });
       
       if (response.error) {
         throw response.error;

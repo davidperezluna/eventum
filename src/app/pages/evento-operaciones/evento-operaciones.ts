@@ -270,7 +270,9 @@ export class EventoOperaciones implements OnInit {
 
       const [tipos, tieneProductos, cupones, resumenMap, stats, reporte] = await Promise.all([
 
-        this.boletasService.getTiposBoleta(this.eventoId).catch(() => [] as TipoBoleta[]),
+        this.boletasService
+          .getTiposBoleta(this.eventoId, { includeInactive: true })
+          .catch(() => [] as TipoBoleta[]),
 
         this.productosService.eventoTieneProductos(this.eventoId).catch(() => false),
 
@@ -698,7 +700,7 @@ export class EventoOperaciones implements OnInit {
 
       case TipoEstadoEvento.PUBLICADO:
 
-        return this.evento?.activo ? 'Despublicar' : 'Activar en catálogo';
+        return this.evento?.activo ? 'Ocultar del catálogo' : 'Mostrar en catálogo';
 
       case TipoEstadoEvento.EN_CURSO:
 
@@ -1216,7 +1218,9 @@ export class EventoOperaciones implements OnInit {
 
     try {
 
-      this.tiposBoleta = await this.boletasService.getTiposBoleta(this.eventoId);
+      this.tiposBoleta = await this.boletasService.getTiposBoleta(this.eventoId, {
+        includeInactive: true,
+      });
 
       this.rebuildReadiness();
 

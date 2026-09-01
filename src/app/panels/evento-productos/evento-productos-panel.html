@@ -119,7 +119,12 @@
                 <span class="material-icons" aria-hidden="true">more_horiz</span>
               </button>
               <div *ngIf="menuOpenProductoId === producto.id" class="ev-panel-card__menu" (click)="$event.stopPropagation()">
-                <button type="button" (click)="desactivarProducto(producto)" [disabled]="producto.activo === false">
+                <button
+                  type="button"
+                  class="ev-panel-card__menu-action--destructive"
+                  (click)="desactivarProducto(producto)"
+                  [disabled]="producto.activo === false"
+                >
                   Desactivar
                 </button>
               </div>

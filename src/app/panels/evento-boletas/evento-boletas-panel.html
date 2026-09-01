@@ -93,8 +93,21 @@
                 <button *ngIf="puedeReservarPalcos(tipo)" type="button" (click)="irAReservarPalcos()">
                   Reservar palcos
                 </button>
-                <button type="button" (click)="desactivarTipo(tipo)" [disabled]="tipo.activo === false">
+                <button
+                  *ngIf="tipo.activo !== false"
+                  type="button"
+                  class="ev-panel-card__menu-action--destructive"
+                  (click)="desactivarTipo(tipo)"
+                >
                   Desactivar
+                </button>
+                <button
+                  *ngIf="tipo.activo === false"
+                  type="button"
+                  class="ev-panel-card__menu-action--positive"
+                  (click)="activarTipo(tipo)"
+                >
+                  Activar
                 </button>
               </div>
             </div>

@@ -20,5 +20,24 @@
 }
 
 .ev-panel-card--inactive {
-  opacity: 0.72;
+  background: #f8fafc;
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow: none;
+}
+
+.ev-panel-card--inactive:hover {
+  border-color: rgba(15, 23, 42, 0.12);
+  box-shadow: none;
+}
+
+.ev-panel-card--inactive .ev-panel-card__name {
+  color: #64748b;
+}
+
+.ev-panel-card--inactive .ev-panel-card__price {
+  color: #94a3b8;
+}
+
+.ev-panel-card--inactive .ev-panel-card__progress-fill {
+  background: #cbd5e1;
 }

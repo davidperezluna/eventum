@@ -1,5 +1,5 @@
--- Reserva manual de palcos por organizador del evento o administrador.
--- Las funciones validan auth, rol, propiedad (organizador) y disponibilidad en la misma transacción.
+-- Reaplica acceso de administrador a reserva/liberación manual de palcos
+-- (corrige despliegues donde 20260828052829 sobrescribió 039 sin soporte admin).
 
 CREATE OR REPLACE FUNCTION public.reservar_palcos_organizador(
   p_evento_id BIGINT,
@@ -139,8 +139,3 @@ BEGIN
   RETURN true;
 END;
 $$;
-
-REVOKE ALL ON FUNCTION public.reservar_palcos_organizador(BIGINT, BIGINT[]) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.liberar_palco_organizador(BIGINT, BIGINT) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.reservar_palcos_organizador(BIGINT, BIGINT[]) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.liberar_palco_organizador(BIGINT, BIGINT) TO authenticated;

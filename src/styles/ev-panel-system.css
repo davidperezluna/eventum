@@ -487,12 +487,30 @@
   text-align: left;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: #b91c1c;
+  color: #334155;
   cursor: pointer;
 }
 
+.ev-panel-card__menu button.ev-panel-card__menu-action--destructive {
+  color: #b91c1c;
+}
+
+.ev-panel-card__menu button.ev-panel-card__menu-action--positive {
+  color: var(--color-primary, #7c3aed);
+  font-weight: 600;
+}
+
 .ev-panel-card__menu button:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.ev-panel-card__menu button.ev-panel-card__menu-action--destructive:hover:not(:disabled) {
   background: #fef2f2;
+}
+
+.ev-panel-card__menu button.ev-panel-card__menu-action--positive:hover:not(:disabled) {
+  background: rgba(124, 58, 237, 0.08);
+  color: #6d28d9;
 }
 
 .ev-panel-card__menu button:disabled {

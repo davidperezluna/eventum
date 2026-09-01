@@ -85,7 +85,7 @@ export class ReservarPalcosOrganizador implements OnInit, EvDrawerContent {
 
       const [evento, tipos] = await Promise.all([
         this.eventosService.getEventoById(this.eventoId),
-        this.boletasService.getTiposBoleta(this.eventoId),
+        this.boletasService.getTiposBoleta(this.eventoId, { includeInactive: true }),
       ]);
       if (
         this.authService.isOrganizador()
