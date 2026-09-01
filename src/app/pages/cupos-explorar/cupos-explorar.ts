@@ -7,7 +7,6 @@ import { Evento } from '../../types';
 import { CuposEventoService } from '../../services/cupos-evento.service';
 import { AuthService } from '../../services/auth.service';
 import { AlertService } from '../../services/alert.service';
-import { CuposHubNav } from '../../components/cupos-hub-nav/cupos-hub-nav';
 import {
   AvisoCupoConEvento,
   MOTIVO_REPORTE_CUPO,
@@ -26,7 +25,7 @@ type FiltroCupo = 'todos' | TipoAvisoCupo;
 @Component({
   selector: 'app-cupos-explorar',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, CuposHubNav, DateFormatPipe],
+  imports: [CommonModule, FormsModule, RouterModule, DateFormatPipe],
   templateUrl: './cupos-explorar.html',
   styleUrls: ['../cupos-evento/cupos-evento.css', './cupos-explorar.css'],
 })
@@ -36,7 +35,6 @@ export class CuposExplorar implements OnInit {
   loading = true;
   avisos: AvisoCupoConEvento[] = [];
   filtro: FiltroCupo = 'todos';
-  respuestasCupos = 0;
 
   showInteres = false;
   interesAviso: AvisoCupoConEvento | null = null;
@@ -82,14 +80,6 @@ export class CuposExplorar implements OnInit {
   }
 
   private async inicializar(): Promise<void> {
-    if (this.isLoggedIn) {
-      try {
-        const r = await this.cuposService.resumenMisCupos();
-        this.respuestasCupos = r.total_respuestas;
-      } catch {
-        this.respuestasCupos = 0;
-      }
-    }
     await this.loadAvisos();
   }
 
@@ -117,6 +107,12 @@ export class CuposExplorar implements OnInit {
     if (this.isLoggedIn) return true;
     irALoginCliente(this.router, '/cupos', motivo);
     return false;
+  }
+
+  irMisPublicaciones(event: Event): void {
+    if (this.isLoggedIn) return;
+    event.preventDefault();
+    irALoginCliente(this.router, '/mis-cupos', 'mis-publicaciones');
   }
 
   abrirInteres(aviso: AvisoCupoConEvento): void {
@@ -164,12 +160,6 @@ export class CuposExplorar implements OnInit {
     } catch (e: unknown) {
       void this.alertService.error('Error', e instanceof Error ? e.message : 'Error');
     }
-  }
-
-  publicarEnEvento(aviso: AvisoCupoConEvento): void {
-    void this.router.navigate(['/cupos-evento', aviso.evento_id], {
-      queryParams: { publicar: '1' },
-    });
   }
 
   get eventoSeleccionado(): Evento | null {

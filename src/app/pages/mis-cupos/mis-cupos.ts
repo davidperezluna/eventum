@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { EventosService } from '../../services/eventos.service';
 import { Evento } from '../../types';
 import type { RealtimeChannel } from '@supabase/supabase-js';
@@ -19,14 +19,13 @@ import {
   TipoAvisoCupo,
 } from '../../types/cupos';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
-import { CuposHubNav } from '../../components/cupos-hub-nav/cupos-hub-nav';
 import { CUPOS_LABELS } from '../../core/cupos-labels';
 import { irALoginCliente } from '../../core/login-redirect';
 
 @Component({
   selector: 'app-mis-cupos',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, DateFormatPipe, CuposHubNav],
+  imports: [CommonModule, FormsModule, RouterModule, DateFormatPipe],
   templateUrl: './mis-cupos.html',
   styleUrls: ['../cupos-evento/cupos-evento.css', '../cupos-explorar/cupos-explorar.css', './mis-cupos.css'],
 })
@@ -66,6 +65,7 @@ export class MisCupos implements OnInit, OnDestroy {
     private authService: AuthService,
     private alertService: AlertService,
     private router: Router,
+    private route: ActivatedRoute,
     private supabaseService: SupabaseService,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone,
@@ -76,7 +76,7 @@ export class MisCupos implements OnInit, OnDestroy {
       void this.router.navigate(['/login'], { queryParams: { returnUrl: '/mis-cupos' } });
       return;
     }
-    void this.cargar();
+    void this.cargar().then(() => this.expandirAvisoDesdeQuery());
     this.iniciarRealtime();
   }
 
@@ -164,10 +164,23 @@ export class MisCupos implements OnInit, OnDestroy {
     }
   }
 
-  irEventoCupos(aviso: AvisoCupoMio): void {
-    void this.router.navigate(['/cupos-evento', aviso.evento_id], {
-      queryParams: { mis: '1', expand: aviso.id },
+  private async expandirAvisoDesdeQuery(): Promise<void> {
+    const expandId = Number(this.route.snapshot.queryParamMap.get('expand') || 0);
+    if (expandId <= 0) return;
+    const aviso = this.avisos.find((a) => a.id === expandId);
+    if (aviso) {
+      await this.toggleRespuestas(aviso);
+    }
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { expand: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
     });
+  }
+
+  irEventoCupos(aviso: AvisoCupoMio): void {
+    void this.router.navigate(['/cupos-evento', aviso.evento_id]);
   }
 
   async toggleRespuestas(aviso: AvisoCupoMio): Promise<void> {

@@ -50,8 +50,6 @@
       </section>
     </header>
 
-    <app-cupos-hub-nav seccion="explorar" [respuestasCupos]="respuestasCupos" />
-
     <div class="cupos-workspace">
       <aside class="cupos-controls" aria-label="Controles del tablón">
         <section class="cupos-filter-panel" aria-labelledby="cupos-filter-title">
@@ -114,11 +112,23 @@
         <header class="cupos-feed-header">
           <div>
             <p class="cupos-feed-kicker">Tablón abierto</p>
-            <h2 id="cupos-feed-title">Avisos recientes</h2>
+            <h2 id="cupos-feed-title">{{ cuposLabels.avisosRecientes }}</h2>
           </div>
-          <span *ngIf="!loading" class="cupos-feed-count">
-            {{ avisos.length }} {{ avisos.length === 1 ? 'aviso' : 'avisos' }}
-          </span>
+          <div class="cupos-feed-header-meta">
+            <a
+              routerLink="/mis-cupos"
+              class="cupos-events-link cupos-feed-nav-link"
+              [attr.aria-label]="cuposLabels.misPublicacionesAria"
+              (click)="irMisPublicaciones($event)"
+            >
+              <span class="cupos-feed-nav-label cupos-feed-nav-label--full">{{ cuposLabels.misPublicaciones }}</span>
+              <span class="cupos-feed-nav-label cupos-feed-nav-label--short">{{ cuposLabels.misPublicacionesShort }}</span>
+              <span class="material-icons" aria-hidden="true">arrow_forward</span>
+            </a>
+            <span *ngIf="!loading" class="cupos-feed-count">
+              {{ avisos.length }} {{ avisos.length === 1 ? 'aviso' : 'avisos' }}
+            </span>
+          </div>
         </header>
 
         <ul *ngIf="loading" class="cupos-skeleton-list" aria-label="Cargando avisos">
@@ -271,14 +281,6 @@
                     </ng-container>
                     <ng-template #soyAutor>
                       <a routerLink="/mis-cupos" class="cupos-btn-secondary">Ver mi publicación</a>
-                      <button
-                        type="button"
-                        class="cupos-report-action"
-                        (click)="publicarEnEvento(aviso)"
-                        [attr.aria-label]="cuposLabels.tablonDelEvento"
-                      >
-                        <span class="material-icons" aria-hidden="true">arrow_outward</span>
-                      </button>
                     </ng-template>
                   </div>
                 </div>

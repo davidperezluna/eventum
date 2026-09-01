@@ -9,7 +9,6 @@ import { CuposEventoService } from '../../services/cupos-evento.service';
 import { AuthService } from '../../services/auth.service';
 import { AlertService } from '../../services/alert.service';
 import { Evento } from '../../types';
-import { CuposHubNav } from '../../components/cupos-hub-nav/cupos-hub-nav';
 import {
   AvisoCupo,
   InteresCupo,
@@ -24,14 +23,13 @@ import { CUPOS_LABELS } from '../../core/cupos-labels';
 import { irALoginCliente } from '../../core/login-redirect';
 
 type FiltroCupo = 'todos' | TipoAvisoCupo;
-type VistaCupos = 'explorar' | 'mis';
 
 @Component({
   selector: 'app-cupos-evento',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, CuposHubNav],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './cupos-evento.html',
-  styleUrls: ['./cupos-evento.css', '../cupos-explorar/cupos-explorar.css'],
+  styleUrls: ['../cupos-evento/cupos-evento.css', '../cupos-explorar/cupos-explorar.css'],
 })
 export class CuposEvento implements OnInit, OnDestroy {
   readonly cuposLabels = CUPOS_LABELS;
@@ -42,7 +40,6 @@ export class CuposEvento implements OnInit, OnDestroy {
   loadingAvisos = false;
   avisos: AvisoCupo[] = [];
   filtro: FiltroCupo = 'todos';
-  vista: VistaCupos = 'explorar';
 
   showCrear = false;
   showInteres = false;
@@ -58,7 +55,6 @@ export class CuposEvento implements OnInit, OnDestroy {
 
   interesAviso: AvisoCupo | null = null;
   interesMensaje = '';
-  respuestasCupos = 0;
 
   private notificacionesChannel: RealtimeChannel | null = null;
 
@@ -88,7 +84,12 @@ export class CuposEvento implements OnInit, OnDestroy {
     }
     this.eventoId = id;
     if (this.route.snapshot.queryParamMap.get('mis') === '1') {
-      this.vista = 'mis';
+      const expand = this.route.snapshot.queryParamMap.get('expand');
+      void this.router.navigate(['/mis-cupos'], {
+        queryParams: expand ? { expand } : {},
+        replaceUrl: true,
+      });
+      return;
     }
     void this.loadEvento();
     void this.inicializarPagina();
@@ -98,31 +99,12 @@ export class CuposEvento implements OnInit, OnDestroy {
     }
   }
 
-  private async cargarResumenCupos(): Promise<void> {
-    if (!this.isLoggedIn) return;
-    try {
-      const r = await this.cuposService.resumenMisCupos();
-      this.respuestasCupos = r.total_respuestas;
-      this.refreshView();
-    } catch {
-      this.respuestasCupos = 0;
-    }
-  }
-
   ngOnDestroy(): void {
     this.detenerRealtimeRespuestas();
   }
 
   private async inicializarPagina(): Promise<void> {
-    await this.cargarResumenCupos();
     await this.loadAvisos();
-    const expandId = Number(this.route.snapshot.queryParamMap.get('expand') || 0);
-    if (expandId > 0 && this.vista === 'mis') {
-      const aviso = this.avisosMios.find((a) => a.id === expandId);
-      if (aviso) {
-        await this.toggleRespuestas(aviso);
-      }
-    }
   }
 
   private iniciarRealtimeRespuestas(): void {
@@ -160,25 +142,10 @@ export class CuposEvento implements OnInit, OnDestroy {
               String(row?.mensaje || 'Alguien mostró interés en tu aviso.'),
             );
             void (async () => {
-              if (this.vista !== 'mis') {
-                this.vista = 'mis';
-                void this.router.navigate([], {
-                  relativeTo: this.route,
-                  queryParams: {
-                    mis: '1',
-                    expand: avisoId > 0 ? avisoId : null,
-                  },
-                  queryParamsHandling: 'merge',
-                  replaceUrl: true,
-                });
-              }
               await this.loadAvisos();
-              if (avisoId > 0) {
-                const aviso = this.avisosMios.find((a) => a.id === avisoId);
-                if (aviso && !this.estaExpandido(avisoId)) {
-                  await this.toggleRespuestas(aviso);
-                }
-              }
+              void this.router.navigate(['/mis-cupos'], {
+                queryParams: avisoId > 0 ? { expand: avisoId } : {},
+              });
             })();
           });
         },
@@ -195,22 +162,6 @@ export class CuposEvento implements OnInit, OnDestroy {
 
   get isLoggedIn(): boolean {
     return !!this.authService.getCurrentUser();
-  }
-
-  get avisosMios(): AvisoCupo[] {
-    return this.avisos.filter((a) => a.es_mio);
-  }
-
-  get avisosExplorar(): AvisoCupo[] {
-    return this.avisos;
-  }
-
-  get listaVisible(): AvisoCupo[] {
-    return this.vista === 'mis' ? this.avisosMios : this.avisosExplorar;
-  }
-
-  get totalInteresesEnMisAvisos(): number {
-    return this.avisosMios.reduce((sum, a) => sum + (a.intereses_count || 0), 0);
   }
 
   private refreshView(): void {
@@ -234,11 +185,10 @@ export class CuposEvento implements OnInit, OnDestroy {
     this.loadingAvisos = true;
     this.refreshView();
     try {
-      const tipo =
-        this.vista === 'explorar' && this.filtro !== 'todos' ? this.filtro : null;
+      const tipo = this.filtro !== 'todos' ? this.filtro : null;
       this.avisos = await this.cuposService.listarPorEvento(this.eventoId, tipo);
-      if (this.vista === 'mis' && this.avisoExpandidoId) {
-        const sigue = this.avisosMios.some((a) => a.id === this.avisoExpandidoId);
+      if (this.avisoExpandidoId) {
+        const sigue = this.avisos.some((a) => a.id === this.avisoExpandidoId && a.es_mio);
         if (!sigue) {
           this.avisoExpandidoId = null;
           this.intereses = [];
@@ -253,24 +203,7 @@ export class CuposEvento implements OnInit, OnDestroy {
     }
   }
 
-  setVista(v: VistaCupos): void {
-    if (v === 'mis' && !this.requiereLogin('mis-publicaciones')) {
-      return;
-    }
-    this.vista = v;
-    this.avisoExpandidoId = null;
-    this.intereses = [];
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: v === 'mis' ? { mis: '1' } : { mis: null },
-      queryParamsHandling: 'merge',
-      replaceUrl: true,
-    });
-    void this.loadAvisos();
-  }
-
   setFiltro(f: FiltroCupo): void {
-    if (this.vista !== 'explorar') return;
     this.filtro = f;
     void this.loadAvisos();
   }
@@ -281,9 +214,15 @@ export class CuposEvento implements OnInit, OnDestroy {
     return false;
   }
 
-  abrirCrear(): void {
+  irMisPublicaciones(event: Event): void {
+    if (this.isLoggedIn) return;
+    event.preventDefault();
+    irALoginCliente(this.router, '/mis-cupos', 'mis-publicaciones');
+  }
+
+  abrirCrear(tipo: TipoAvisoCupo = 'busco_cupo'): void {
     if (!this.requiereLogin('publicar')) return;
-    this.crearTipo = 'busco_cupo';
+    this.crearTipo = tipo;
     this.crearDescripcion = '';
     this.crearCupos = 1;
     this.crearZona = '';
@@ -315,16 +254,9 @@ export class CuposEvento implements OnInit, OnDestroy {
         'Aviso publicado',
         'Te llevamos a Mis publicaciones para que veas las respuestas cuando lleguen.',
       );
-      this.vista = 'mis';
-      void this.router.navigate([], {
-        relativeTo: this.route,
-        queryParams: { mis: '1', expand: avisoId },
-        queryParamsHandling: 'merge',
-        replaceUrl: true,
+      void this.router.navigate(['/mis-cupos'], {
+        queryParams: { expand: avisoId },
       });
-      await this.loadAvisos();
-      this.avisoExpandidoId = avisoId;
-      await this.cargarIntereses(avisoId);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Error al publicar';
       void this.alertService.error('No se publicó', msg);
@@ -456,10 +388,6 @@ export class CuposEvento implements OnInit, OnDestroy {
 
   estaExpandido(avisoId: number): boolean {
     return this.avisoExpandidoId === avisoId;
-  }
-
-  labelRespuestas(n: number): string {
-    return n === 1 ? '1 respuesta' : `${n} respuestas`;
   }
 
   tiempoRelativo(iso: string): string {

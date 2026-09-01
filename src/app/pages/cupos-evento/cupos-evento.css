@@ -37,10 +37,6 @@
   padding-right: 0;
 }
 
-.cupos-content-shell > app-cupos-hub-nav {
-  margin: 0;
-}
-
 .cupos-page .cupos-page-header {
   max-width: var(--cupos-content-max);
   padding-left: var(--cupos-gutter);
@@ -107,10 +103,6 @@
 
   .cupos-page--evento .cupos-content-shell {
     gap: 1rem;
-  }
-
-  .cupos-page--evento .cupos-content-shell > app-cupos-hub-nav {
-    margin-bottom: 0.35rem;
   }
 }
 
@@ -1421,5 +1413,206 @@
     width: 100%;
     justify-content: center;
     text-align: center;
+  }
+}
+
+/* Tablón del evento — extensión del layout explorar */
+.cupos-page--evento.cupos-page--explorar {
+  min-height: calc(100dvh - 4.5rem);
+  padding-bottom: calc(8rem + env(safe-area-inset-bottom, 0px));
+}
+
+.cupos-page--evento .cupos-intro h1 {
+  max-width: 16ch;
+  font-size: clamp(2.2rem, 5.5vw, 4.5rem);
+  line-height: 0.92;
+}
+
+.cupos-page--evento .cupos-card--evento-local {
+  height: auto;
+}
+
+.cupos-page--evento .cupos-card--evento-local .cupos-global-body {
+  padding: 1.15rem 1rem 1rem;
+  border-radius: 0.85rem;
+}
+
+.cupos-page--evento .cupos-card--expandido {
+  border-color: #c9c3d7;
+  box-shadow: 0 1rem 2.4rem rgba(39, 29, 70, 0.1);
+}
+
+.cupos-global-actions--owner {
+  margin-left: auto;
+}
+
+.cupos-page--evento .cupos-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 2.45rem;
+  padding: 0.58rem 0.85rem;
+  border: 1px solid var(--cupos-line, #dddae5);
+  border-radius: 0.55rem;
+  background: #fff;
+  color: var(--cupos-body, #403e4e);
+  font-size: 0.73rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.cupos-page--evento .cupos-btn-secondary--pulse {
+  animation: cupos-owner-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes cupos-owner-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(114, 84, 214, 0.35);
+  }
+
+  50% {
+    box-shadow: 0 0 0 4px rgba(114, 84, 214, 0);
+  }
+}
+
+.cupos-owner-count {
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1rem;
+  text-align: center;
+}
+
+.cupos-report-action--danger:hover {
+  border-color: #e0aaa7;
+  color: #a63f38;
+}
+
+.cupos-page--evento .cupos-respuestas-panel {
+  margin: 0;
+  padding: 0.85rem 1rem 1rem;
+  border-top: 1px dashed #cbc6d6;
+  border-radius: 0 0 0.85rem 0.85rem;
+  background: #faf9fc;
+}
+
+.cupos-page--evento .cupos-respuestas-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--cupos-muted, #747182);
+}
+
+.cupos-page--evento .cupos-spinner {
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 2px solid #e5e2ea;
+  border-top-color: var(--cupos-brand, #7254d6);
+  border-radius: 50%;
+  animation: cupos-spin 0.8s linear infinite;
+}
+
+.cupos-page--evento .cupos-spinner--sm {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+}
+
+.cupos-page--evento .cupos-interes-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #ece9f0;
+}
+
+.cupos-page--evento .cupos-interes-item:last-child {
+  border-bottom: 0;
+}
+
+.cupos-page--evento .cupos-interes-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.68rem;
+  color: var(--cupos-muted, #747182);
+}
+
+.cupos-page--evento .cupos-interes-msg {
+  margin: 0 0 0.5rem;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--cupos-body, #403e4e);
+}
+
+.cupos-page--evento .cupos-interes-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.cupos-page--evento .cupos-mail-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--cupos-brand-strong, #5d3fc0);
+  text-decoration: none;
+}
+
+.cupos-page--evento .cupos-mail-link .material-icons {
+  font-size: 0.95rem;
+}
+
+.cupos-page--evento .cupos-btn-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--cupos-line, #dddae5);
+  border-radius: 0.45rem;
+  background: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--cupos-body, #403e4e);
+  cursor: pointer;
+}
+
+.cupos-page--evento .cupos-btn-copy .material-icons {
+  font-size: 0.9rem;
+}
+
+.cupos-skeleton-card--evento {
+  min-height: 16rem;
+}
+
+.cupos-skeleton-card--evento .cupos-skeleton-body {
+  padding: 1.2rem 1rem;
+}
+
+@media (max-width: 760px) {
+  .cupos-page--evento .cupos-intro h1 {
+    max-width: 12ch;
+    font-size: clamp(2rem, 10vw, 3.2rem);
+  }
+}
+
+@media (max-width: 430px) {
+  .cupos-page--evento .cupos-author-row {
+    align-items: flex-end;
+  }
+
+  .cupos-global-actions--owner {
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 }

@@ -31,13 +31,14 @@ import {
 import { LOGIN_QUERY_CARRITO_PAGAR } from '../../core/login-redirect';
 import { DemoScenarioService } from '../../demo/demo-scenario.service';
 import { AlertService } from '../../services/alert.service';
+import { CuposEventoService } from '../../services/cupos-evento.service';
 
 type ClientNavItem = {
   path: string;
   label: string;
   icon: string;
   exact?: boolean;
-  badge?: 'carrito' | 'traslados-pendientes';
+  badge?: 'carrito' | 'traslados-pendientes' | 'cupos-respuestas';
   /** Separador visual antes del ítem (p. ej. acciones de compra). */
   dividerBefore?: boolean;
   mobile?: boolean;
@@ -67,6 +68,7 @@ export class Layout implements OnInit, OnDestroy {
   subtotalCarrito = 0;
   enRutaCarrito = false;
   enRutaCupos = false;
+  respuestasCupos = 0;
   enRutaRecibidos = false;
   enRutaPagoWompi = false;
   enRutaCompletarPerfil = false;
@@ -124,6 +126,7 @@ export class Layout implements OnInit, OnDestroy {
     public router: Router,
     private demoScenarioService: DemoScenarioService,
     private alertService: AlertService,
+    private cuposEventoService: CuposEventoService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -146,6 +149,7 @@ export class Layout implements OnInit, OnDestroy {
           this.clientePerfilIncompleto = esClienteConPerfilIncompleto(usuario);
           this.misComprasStateService.hydrateTrasladosPendientesCountFromState(usuario.id);
           void this.refreshTrasladosPendientesNavBadge(usuario.id);
+          void this.refreshCuposNavBadge();
           if (this.coversEventumEnabled) {
             void this.accesosPuertaService.refresh({ background: true });
           }
@@ -163,18 +167,22 @@ export class Layout implements OnInit, OnDestroy {
         this.mostrarNavAccesosPuerta = false;
         this.clientePerfilIncompleto = false;
         this.accesosPuertaService.clear();
+        this.respuestasCupos = 0;
       }
+      this.syncModuloCuposNav(this.router.url);
       this.cdr.detectChanges();
     });
 
     // Cerrar sidebar / menú móvil al cambiar de ruta
     this.syncRutaCarrito(this.router.url);
+    this.syncModuloCuposNav(this.router.url);
     this.verificarRedireccionCompletarPerfil(this.router.url);
     this.routerSubscription = this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event) => {
         if (event instanceof NavigationEnd) {
           this.syncRutaCarrito(event.urlAfterRedirects);
+          this.syncModuloCuposNav(event.urlAfterRedirects);
           this.verificarRedireccionCompletarPerfil(event.urlAfterRedirects);
         }
         if (window.innerWidth <= 768) {
@@ -262,6 +270,28 @@ export class Layout implements OnInit, OnDestroy {
     this.enRutaRecibidos = path === '/recibidos';
     this.enRutaPagoWompi = path === '/pago-wompi';
     this.enRutaCompletarPerfil = path === '/completar-perfil';
+  }
+
+  private syncModuloCuposNav(url: string): void {
+    if (!this.cuposEventumEnabled || !this.currentUser || this.usuario?.tipo_usuario_id !== 1) {
+      this.respuestasCupos = 0;
+      return;
+    }
+    void this.refreshCuposNavBadge();
+  }
+
+  private async refreshCuposNavBadge(): Promise<void> {
+    if (!this.currentUser) {
+      this.respuestasCupos = 0;
+      return;
+    }
+    try {
+      const resumen = await this.cuposEventoService.resumenMisCupos();
+      this.respuestasCupos = resumen.total_respuestas;
+    } catch {
+      this.respuestasCupos = 0;
+    }
+    this.cdr.detectChanges();
   }
 
   private verificarRedireccionCompletarPerfil(url: string): void {
@@ -418,9 +448,18 @@ export class Layout implements OnInit, OnDestroy {
         dividerBefore: true,
       },
       ...(this.cuposEventumEnabled
-        ? [{ path: '/cupos', label: CUPOS_LABELS.explorar, icon: 'forum', exact: true }]
+        ? [
+            { path: '/cupos', label: CUPOS_LABELS.explorar, icon: 'forum', exact: true },
+            {
+              path: '/mis-cupos',
+              label: CUPOS_LABELS.misPublicaciones,
+              icon: 'campaign',
+              exact: true,
+              badge: 'cupos-respuestas',
+            },
+          ]
         : []),
-    ];
+    ] as ClientNavItem[];
     this.adminNavSections = [];
   }
 
@@ -434,12 +473,13 @@ export class Layout implements OnInit, OnDestroy {
   }
 
   navItemHasBadge(item: ClientNavItem): boolean {
-    return item.badge === 'carrito' || item.badge === 'traslados-pendientes';
+    return item.badge === 'carrito' || item.badge === 'traslados-pendientes' || item.badge === 'cupos-respuestas';
   }
 
   navItemBadgeCount(item: ClientNavItem): number {
     if (item.badge === 'carrito') return this.totalItemsCarrito;
     if (item.badge === 'traslados-pendientes') return this.totalTrasladosPendientes;
+    if (item.badge === 'cupos-respuestas') return this.respuestasCupos;
     return 0;
   }
 
