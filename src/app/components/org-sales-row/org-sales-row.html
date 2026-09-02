@@ -1,0 +1,22 @@
+<div class="org-sales-row__icon" aria-hidden="true">
+  <span class="material-icons">{{ icon }}</span>
+</div>
+
+<div class="org-sales-row__body">
+  <div class="org-sales-row__top">
+    <p class="org-sales-row__event">{{ evento }}</p>
+    <div class="org-sales-row__money">
+      <span class="org-sales-row__amount">{{ monto }}</span>
+      <span class="org-sales-row__badge" *ngIf="etiqueta">{{ etiqueta }}</span>
+    </div>
+  </div>
+  <p class="org-sales-row__buyer">
+    <span class="org-sales-row__buyer-name">{{ buyerName }}</span>
+    <span class="org-sales-row__buyer-email" *ngIf="buyerEmail">{{ buyerEmail }}</span>
+  </p>
+  <p class="org-sales-row__meta">
+    <span *ngIf="detalleEntradas">{{ detalleEntradas }}</span>
+    <span aria-hidden="true" *ngIf="detalleEntradas">·</span>
+    <time [attr.title]="fechaCompleta">{{ fechaRelativa }}</time>
+  </p>
+</div>

@@ -2,6 +2,12 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import {
+  mapVentaToOrgSalesRow,
+  OrgSalesRow,
+  OrgSalesRowModel,
+  orgSalesFormatCurrency,
+} from '../../components/org-sales-row';
 import { DemoDataProvider } from '../../demo/demo-data.provider';
 import { AuthService } from '../../services/auth.service';
 import { DateTimeUtil } from '../../utils/date-time.util';
@@ -9,22 +15,10 @@ import { DateTimeUtil } from '../../utils/date-time.util';
 type FiltroVenta = 'todas' | 'boletas' | 'palcos' | 'productos';
 type RangoVenta = 'todas' | 'hoy' | '7d' | '30d';
 
-interface VentaOrganizadorItem {
-  key: string;
-  fecha: string;
-  evento: string;
-  transaccion: string;
-  total: number;
-  boletas: number;
-  palcos: number;
-  palcosNumeros: Array<string | number>;
-  tipoVenta: string;
-}
-
 @Component({
   selector: 'app-ventas-organizador',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, OrgSalesRow],
   templateUrl: './ventas-organizador.html',
   styleUrls: [
     '../evento-inteligencia/evento-inteligencia.css',
@@ -36,18 +30,18 @@ export class VentasOrganizador implements OnInit {
   loading = true;
   refreshing = false;
   error: string | null = null;
-  ventas: VentaOrganizadorItem[] = [];
+  ventas: OrgSalesRowModel[] = [];
   filtro: FiltroVenta = 'todas';
   rango: RangoVenta = 'todas';
   busqueda = '';
   pagina = 1;
   readonly ventasPorPagina = 10;
   private ventasFiltradasCache: {
-    ventas: VentaOrganizadorItem[];
+    ventas: OrgSalesRowModel[];
     filtro: FiltroVenta;
     rango: RangoVenta;
     busqueda: string;
-    resultado: VentaOrganizadorItem[];
+    resultado: OrgSalesRowModel[];
   } | null = null;
 
   readonly filtros: Array<{ id: FiltroVenta; label: string; icon: string }> = [
@@ -92,17 +86,7 @@ export class VentasOrganizador implements OnInit {
     this.error = null;
     try {
       const ventas = await this.demoDataProvider.getOrganizerSales(organizadorId);
-      this.ventas = ventas.map((venta: any, index: number) => ({
-        key: String(venta?.numero_transaccion || venta?.id || index),
-        fecha: String(venta?.fecha_compra || ''),
-        evento: String(venta?.evento?.titulo || 'Evento sin nombre'),
-        transaccion: String(venta?.numero_transaccion || 'Sin referencia'),
-        total: Number(venta?.total || 0),
-        boletas: Number(venta?.boletas_vendidas || 0),
-        palcos: Number(venta?.palcos_vendidos || 0),
-        palcosNumeros: Array.isArray(venta?.palcos_numeros) ? venta.palcos_numeros : [],
-        tipoVenta: String(venta?.tipo_venta || venta?.source || 'ventas'),
-      }));
+      this.ventas = ventas.map((venta: any, index: number) => mapVentaToOrgSalesRow(venta, index));
     } catch (error) {
       console.error('Error cargando ventas del organizador:', error);
       this.error = 'No pudimos cargar tus ventas. Intenta actualizar la página.';
@@ -112,7 +96,7 @@ export class VentasOrganizador implements OnInit {
     }
   }
 
-  get ventasVisibles(): VentaOrganizadorItem[] {
+  get ventasVisibles(): OrgSalesRowModel[] {
     const query = this.busqueda.trim().toLocaleLowerCase('es');
     const cached = this.ventasFiltradasCache;
     if (
@@ -126,7 +110,7 @@ export class VentasOrganizador implements OnInit {
     const resultado = this.ventas.filter((venta) => {
       if (!this.coincideFiltro(venta, this.filtro) || !this.coincideRango(venta)) return false;
       if (!query) return true;
-      return `${venta.evento} ${venta.transaccion} ${venta.palcosNumeros.join(' ')}`
+      return `${venta.compradorEmail} ${venta.compradorNombre} ${venta.evento} ${venta.tiposEntrada} ${venta.palcosNumeros.join(' ')}`
         .toLocaleLowerCase('es')
         .includes(query);
     });
@@ -148,7 +132,7 @@ export class VentasOrganizador implements OnInit {
     return Math.max(1, Math.ceil(this.ventasVisibles.length / this.ventasPorPagina));
   }
 
-  get ventasPaginadas(): VentaOrganizadorItem[] {
+  get ventasPaginadas(): OrgSalesRowModel[] {
     const paginaValida = Math.min(this.pagina, this.totalPaginas);
     const inicio = (paginaValida - 1) * this.ventasPorPagina;
     return this.ventasVisibles.slice(inicio, inicio + this.ventasPorPagina);
@@ -183,14 +167,14 @@ export class VentasOrganizador implements OnInit {
     if (this.pagina < this.totalPaginas) this.pagina += 1;
   }
 
-  private coincideFiltro(venta: VentaOrganizadorItem, filtro: FiltroVenta): boolean {
+  private coincideFiltro(venta: OrgSalesRowModel, filtro: FiltroVenta): boolean {
     if (filtro === 'todas') return true;
     if (filtro === 'productos') return venta.tipoVenta === 'productos' || venta.tipoVenta === 'mixta';
     if (filtro === 'palcos') return venta.palcos > 0 || venta.palcosNumeros.length > 0;
     return venta.boletas > 0 && venta.palcos === 0 && venta.palcosNumeros.length === 0;
   }
 
-  private coincideRango(venta: VentaOrganizadorItem): boolean {
+  private coincideRango(venta: OrgSalesRowModel): boolean {
     if (this.rango === 'todas') return true;
     const fecha = DateTimeUtil.parseStoredDate(venta.fecha);
     if (Number.isNaN(fecha.getTime())) return false;
@@ -200,71 +184,11 @@ export class VentasOrganizador implements OnInit {
     return fecha.getTime() >= Date.now() - dias * 86_400_000;
   }
 
-  tituloVenta(venta: VentaOrganizadorItem): string {
-    if (venta.tipoVenta === 'mixta') return 'Compra mixta';
-    if (venta.palcos > 0 || venta.palcosNumeros.length > 0) {
-      if (venta.palcosNumeros.length > 0) return `Palco #${venta.palcosNumeros.join(', #')}`;
-      return venta.palcos === 1 ? 'Palco vendido' : `${venta.palcos} palcos vendidos`;
-    }
-    if (venta.tipoVenta === 'productos') return 'Venta de productos';
-    return venta.boletas === 1 ? '1 boleta vendida' : `${venta.boletas} boletas vendidas`;
-  }
-
-  detalleVenta(venta: VentaOrganizadorItem): string {
-    if (venta.tipoVenta === 'mixta') {
-      const partes: string[] = [];
-      if (venta.boletas > 0) partes.push(`${venta.boletas} boleta${venta.boletas === 1 ? '' : 's'}`);
-      partes.push('productos');
-      return partes.join(' + ');
-    }
-    if (venta.tipoVenta === 'productos') return 'Pedido de productos confirmado';
-    return '';
-  }
-
-  iconoVenta(venta: VentaOrganizadorItem): string {
-    if (venta.tipoVenta === 'mixta') return 'shopping_bag';
-    if (venta.palcos > 0 || venta.palcosNumeros.length > 0) return 'table_restaurant';
-    if (venta.tipoVenta === 'productos') return 'local_mall';
-    return 'confirmation_number';
-  }
-
-  claseVenta(venta: VentaOrganizadorItem): string {
-    if (venta.tipoVenta === 'mixta') return 'mixta';
-    if (venta.palcos > 0 || venta.palcosNumeros.length > 0) return 'palco';
-    if (venta.tipoVenta === 'productos') return 'producto';
-    return 'boleta';
-  }
-
-  fechaRelativa(fecha: string): string {
-    const date = DateTimeUtil.parseStoredDate(fecha);
-    if (Number.isNaN(date.getTime())) return 'Fecha no disponible';
-    const diff = Math.max(0, Date.now() - date.getTime());
-    const minutos = Math.floor(diff / 60_000);
-    if (minutos < 1) return 'Hace un momento';
-    if (minutos < 60) return `Hace ${minutos} min`;
-    const horas = Math.floor(minutos / 60);
-    if (horas < 24) return `Hace ${horas} h`;
-    return new Intl.DateTimeFormat('es-CO', {
-      day: 'numeric', month: 'short', year: date.getFullYear() === new Date().getFullYear() ? undefined : 'numeric',
-      timeZone: DateTimeUtil.APP_TIMEZONE,
-    }).format(date);
-  }
-
-  fechaCompleta(fecha: string): string {
-    const date = DateTimeUtil.parseStoredDate(fecha);
-    if (Number.isNaN(date.getTime())) return '';
-    return new Intl.DateTimeFormat('es-CO', {
-      dateStyle: 'medium', timeStyle: 'short', timeZone: DateTimeUtil.APP_TIMEZONE,
-    }).format(date);
-  }
-
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0,
-    }).format(value);
+    return orgSalesFormatCurrency(value);
   }
 
-  trackVenta(_: number, venta: VentaOrganizadorItem): string {
+  trackVenta(_: number, venta: OrgSalesRowModel): string {
     return venta.key;
   }
 }

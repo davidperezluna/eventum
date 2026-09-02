@@ -56,22 +56,104 @@
 }
 
 .dash-org-zoom-link {
-  flex-shrink: 0;
-  margin-left: auto;
+  align-self: flex-start;
+  margin-top: 0.45rem;
   white-space: nowrap;
 }
 
-.dash-org-spotlight-link {
-  margin-top: 0.75rem;
+.dash-org-leader-banner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.85rem 1.25rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--ev-intel-radius, 16px);
+  background: linear-gradient(135deg, #0d9488 0%, #115e59 100%);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(13, 148, 136, 0.22);
+}
+
+.dash-org-leader-banner__copy {
+  min-width: 0;
+}
+
+.dash-org-leader-banner__eyebrow {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.dash-org-leader-banner__name {
+  margin: 0.2rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.dash-org-leader-banner__meta {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.78);
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-org-leader-banner__pct {
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-org-leader-banner__cta {
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .dash-org-leader-banner {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'copy pct'
+      'cta cta';
+  }
+
+  .dash-org-leader-banner__copy {
+    grid-area: copy;
+  }
+
+  .dash-org-leader-banner__pct {
+    grid-area: pct;
+  }
+
+  .dash-org-leader-banner__cta {
+    grid-area: cta;
+    justify-self: start;
+  }
 }
 
 a.ev-intel-story__cta {
   text-decoration: none;
 }
 
-/* Línea de tiempo — últimas ventas */
+
+/* Ventas recientes — reutiliza org-sales-row */
 .ev-intel-card--activity {
-  padding-bottom: 0.25rem;
+  padding-bottom: 1.15rem;
+}
+
+.ev-intel-card--activity .org-sales-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.15rem 0 0.15rem;
+}
+
+.ev-intel-card--activity .ev-intel-card__foot {
+  margin-top: 0.65rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
 }
 
 .ev-intel-timeline {
@@ -201,9 +283,7 @@ a.ev-intel-story__cta {
   }
 
   .dash-org-zoom-link {
-    grid-column: 2;
-    margin: 0;
-    justify-self: start;
+    margin-top: 0.35rem;
   }
 
   .ev-intel-timeline__item {

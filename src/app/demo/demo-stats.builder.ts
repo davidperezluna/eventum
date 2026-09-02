@@ -106,16 +106,36 @@ export function buildVentasRecientesFeed(
   const now = Date.now();
   const gapsMin = [8, 22, 95, 102, 280, 410];
   const totals = [1.0, 1.15, 0.92, 1.08, 0.95, 1.05];
-  return Array.from({ length: Math.min(count, gapsMin.length) }, (_, i) => ({
-    id: 9000 + i,
-    numero_transaccion: `DEMO-${1000 + i}`,
-    fecha_compra: new Date(now - gapsMin[i] * 60_000).toISOString(),
-    total: Math.round(totalPromedio * totals[i]),
-    estado_pago: 'completado',
-    tipo_venta: i === 2 ? 'productos' : i === 4 ? 'mixta' : 'ventas',
-    evento_id: evento.id,
-    evento: { id: evento.id, titulo: evento.titulo },
-  }));
+  const compradores = [
+    { nombre: 'Laura Méndez', email: 'laura.mendez@email.com', tipos: 'General ×2' },
+    { nombre: 'Carlos Ríos', email: 'carlos.rios@email.com', tipos: 'VIP' },
+    { nombre: 'Ana Gómez', email: 'ana.gomez@email.com', tipos: '' },
+    { nombre: 'Diego Torres', email: 'diego.torres@email.com', tipos: 'General · Preferencial' },
+    { nombre: 'Sofía Vargas', email: 'sofia.vargas@email.com', tipos: 'General' },
+    { nombre: 'Mateo Ruiz', email: 'mateo.ruiz@email.com', tipos: 'Palco #12' },
+  ];
+  return Array.from({ length: Math.min(count, gapsMin.length) }, (_, i) => {
+    const tipo = i === 2 ? 'productos' : i === 4 ? 'mixta' : 'ventas';
+    const comprador = compradores[i] || compradores[0];
+    return {
+      id: 9000 + i,
+      numero_transaccion: `DEMO-${1000 + i}`,
+      fecha_compra: new Date(now - gapsMin[i] * 60_000).toISOString(),
+      total: Math.round(totalPromedio * totals[i]),
+      estado_pago: 'completado',
+      tipo_venta: tipo,
+      evento_id: evento.id,
+      evento: { id: evento.id, titulo: evento.titulo },
+      cliente_nombre: comprador.nombre,
+      cliente_email: comprador.email,
+      tipos_entrada: tipo === 'productos' ? '' : comprador.tipos,
+      boletas_vendidas: tipo === 'productos' ? 0 : i === 0 ? 2 : 1,
+      palcos_vendidos: i === 5 ? 1 : 0,
+      palcos_numeros: i === 5 ? [12] : [],
+      es_manual: false,
+      valor_lista: Math.round(totalPromedio * totals[i]),
+    };
+  });
 }
 
 export function buildVentas7dSeries(

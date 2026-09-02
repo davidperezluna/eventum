@@ -75,27 +75,12 @@
         </span>
       </header>
 
-      <ol class="ev-intel-timeline" *ngIf="ventasVisibles.length > 0; else emptySales">
+      <ol class="org-sales-list" *ngIf="ventasVisibles.length > 0; else emptySales">
         <li
-          *ngFor="let venta of ventasPaginadas; let last = last; trackBy: trackVenta"
-          class="ev-intel-timeline__item"
-          [class.ev-intel-timeline__item--last]="last"
-        >
-          <div
-            class="ev-intel-timeline__icon"
-            [class.ev-intel-timeline__icon--violet]="claseVenta(venta) === 'boleta'"
-            [class.ev-intel-timeline__icon--green]="claseVenta(venta) === 'producto'"
-            [class.ev-intel-timeline__icon--amber]="claseVenta(venta) === 'palco' || claseVenta(venta) === 'mixta'"
-          >
-            <span class="material-icons" aria-hidden="true">{{ iconoVenta(venta) }}</span>
-          </div>
-          <div class="ev-intel-timeline__content">
-            <p class="ev-intel-timeline__time" [attr.title]="fechaCompleta(venta.fecha)">{{ fechaRelativa(venta.fecha) }}</p>
-            <p class="ev-intel-timeline__action">{{ tituloVenta(venta) }}</p>
-            <p class="ev-intel-timeline__context">{{ venta.evento }} · {{ venta.transaccion }}</p>
-          </div>
-          <p class="ev-intel-timeline__amount">{{ formatCurrency(venta.total) }}</p>
-        </li>
+          *ngFor="let venta of ventasPaginadas; trackBy: trackVenta"
+          org-sales-row
+          [venta]="venta"
+        ></li>
       </ol>
 
       <nav class="org-sales-pagination" *ngIf="ventasVisibles.length > ventasPorPagina" aria-label="Paginación de ventas">

@@ -31,14 +31,14 @@ export class DashboardService {
     const [comprasRes, productosRes] = await Promise.all([
       this.supabase
         .from('compras')
-        .select('id, cliente_id, evento_id, numero_transaccion, total, estado_pago, fecha_compra, evento:eventos!inner(id, titulo, organizador_id), boletas_compradas(id, grupo_palco_id, palco_id, palcos(numero), tipos_boleta(nombre, personas_por_unidad, es_palco))')
+        .select('id, cliente_id, evento_id, numero_transaccion, total, subtotal, descuento_total, estado_pago, fecha_compra, evento:eventos!inner(id, titulo, organizador_id), cliente:usuarios(id, nombre, apellido, email), boletas_compradas(id, grupo_palco_id, palco_id, palcos(numero), tipos_boleta(nombre, personas_por_unidad, es_palco))')
         .eq('evento.organizador_id', organizadorId)
         .eq('estado_pago', 'completado')
         .order('fecha_compra', { ascending: false })
         .limit(safeLimit),
       this.supabase
         .from('compras_productos')
-        .select('id, cliente_id, evento_id, numero_pedido, total, estado_pago, fecha_compra, evento:eventos!inner(id, titulo, organizador_id)')
+        .select('id, cliente_id, evento_id, numero_pedido, total, subtotal, descuento_total, estado_pago, fecha_compra, evento:eventos!inner(id, titulo, organizador_id), cliente:usuarios(id, nombre, apellido, email)')
         .eq('evento.organizador_id', organizadorId)
         .eq('estado_pago', 'completado')
         .order('fecha_compra', { ascending: false })
@@ -49,6 +49,27 @@ export class DashboardService {
     if (productosRes.error) throw productosRes.error;
 
     const pickEvent = (raw: any): any => Array.isArray(raw) ? (raw[0] || null) : raw;
+    const pickCliente = (raw: any): any => Array.isArray(raw) ? (raw[0] || null) : raw;
+    const datosCliente = (raw: any): { nombre: string; email: string } => {
+      const cliente = pickCliente(raw);
+      if (!cliente) return { nombre: '', email: '' };
+      return {
+        nombre: [cliente.nombre, cliente.apellido].filter(Boolean).join(' ').trim(),
+        email: String(cliente.email || '').trim(),
+      };
+    };
+    const formatTiposEntrada = (boletas: any[]): string => {
+      const counts = new Map<string, number>();
+      for (const boleta of boletas || []) {
+        const tipoRaw = boleta?.tipos_boleta;
+        const tipo = Array.isArray(tipoRaw) ? tipoRaw[0] : tipoRaw;
+        const nombre = String(tipo?.nombre || 'Entrada').trim() || 'Entrada';
+        counts.set(nombre, (counts.get(nombre) || 0) + 1);
+      }
+      return [...counts.entries()]
+        .map(([nombre, cantidad]) => (cantidad > 1 ? `${nombre} ×${cantidad}` : nombre))
+        .join(' · ');
+    };
     const timestamp = (value: unknown): number => {
       const parsed = new Date(String(value || 0)).getTime();
       return Number.isFinite(parsed) ? parsed : 0;
@@ -57,41 +78,71 @@ export class DashboardService {
       const match = String(value || '').match(/(\d{10,})/);
       return match ? Number(match[1]) || 0 : 0;
     };
+    const esVentaManual = (total: number, subtotal: number, descuento: number): boolean =>
+      total <= 0 || (subtotal > 0 && descuento >= subtotal);
 
     const rows: any[] = [
-      ...(Array.isArray(comprasRes.data) ? comprasRes.data : []).map((compra: any) => ({
-        source: 'ventas',
-        id: compra.id,
-        cliente_id: compra.cliente_id,
-        evento_id: compra.evento_id,
-        fecha_compra: compra.fecha_compra,
-        total: Number(compra.total || 0),
-        boletas_vendidas: Array.isArray(compra.boletas_compradas) ? compra.boletas_compradas.length : 0,
-        palcos_vendidos: Array.isArray(compra.boletas_compradas)
-          ? new Set(compra.boletas_compradas
-              .filter((b: any) => b.grupo_palco_id || b.palco_id || b.tipos_boleta?.es_palco || b.tipos_boleta?.personas_por_unidad > 1)
-              .map((b: any) => b.grupo_palco_id || b.palco_id || b.id)).size
-          : 0,
-        palcos_numeros: Array.isArray(compra.boletas_compradas)
-          ? [...new Set(compra.boletas_compradas
-              .map((b: any) => (Array.isArray(b.palcos) ? b.palcos[0]?.numero : b.palcos?.numero) ?? b.palco_id)
-              .filter((numero: any) => numero != null))]
-          : [],
-        numero_transaccion: String(compra.numero_transaccion || `COMP-${compra.id}`),
-        evento: pickEvent(compra.evento),
-        seed: seed(compra.numero_transaccion),
-      })),
-      ...(Array.isArray(productosRes.data) ? productosRes.data : []).map((compra: any) => ({
-        source: 'productos',
-        id: compra.id,
-        cliente_id: compra.cliente_id,
-        evento_id: compra.evento_id,
-        fecha_compra: compra.fecha_compra,
-        total: Number(compra.total || 0),
-        numero_transaccion: String(compra.numero_pedido || `PROD-${compra.id}`),
-        evento: pickEvent(compra.evento),
-        seed: seed(compra.numero_pedido),
-      })),
+      ...(Array.isArray(comprasRes.data) ? comprasRes.data : []).map((compra: any) => {
+        const total = Number(compra.total || 0);
+        const subtotal = Number(compra.subtotal || 0);
+        const descuento = Number(compra.descuento_total || 0);
+        const manual = esVentaManual(total, subtotal, descuento);
+        const cliente = datosCliente(compra.cliente);
+        return {
+          source: 'ventas',
+          id: compra.id,
+          cliente_id: compra.cliente_id,
+          cliente_nombre: cliente.nombre,
+          cliente_email: cliente.email,
+          tipos_entrada: formatTiposEntrada(compra.boletas_compradas),
+          evento_id: compra.evento_id,
+          fecha_compra: compra.fecha_compra,
+          total,
+          subtotal,
+          descuento_total: descuento,
+          es_manual: manual,
+          valor_lista: manual ? Math.max(subtotal, 0) : total,
+          boletas_vendidas: Array.isArray(compra.boletas_compradas) ? compra.boletas_compradas.length : 0,
+          palcos_vendidos: Array.isArray(compra.boletas_compradas)
+            ? new Set(compra.boletas_compradas
+                .filter((b: any) => b.grupo_palco_id || b.palco_id || b.tipos_boleta?.es_palco || b.tipos_boleta?.personas_por_unidad > 1)
+                .map((b: any) => b.grupo_palco_id || b.palco_id || b.id)).size
+            : 0,
+          palcos_numeros: Array.isArray(compra.boletas_compradas)
+            ? [...new Set(compra.boletas_compradas
+                .map((b: any) => (Array.isArray(b.palcos) ? b.palcos[0]?.numero : b.palcos?.numero) ?? b.palco_id)
+                .filter((numero: any) => numero != null))]
+            : [],
+          numero_transaccion: String(compra.numero_transaccion || `COMP-${compra.id}`),
+          evento: pickEvent(compra.evento),
+          seed: seed(compra.numero_transaccion),
+        };
+      }),
+      ...(Array.isArray(productosRes.data) ? productosRes.data : []).map((compra: any) => {
+        const total = Number(compra.total || 0);
+        const subtotal = Number(compra.subtotal || 0);
+        const descuento = Number(compra.descuento_total || 0);
+        const manual = esVentaManual(total, subtotal, descuento);
+        const cliente = datosCliente(compra.cliente);
+        return {
+          source: 'productos',
+          id: compra.id,
+          cliente_id: compra.cliente_id,
+          cliente_nombre: cliente.nombre,
+          cliente_email: cliente.email,
+          tipos_entrada: '',
+          evento_id: compra.evento_id,
+          fecha_compra: compra.fecha_compra,
+          total,
+          subtotal,
+          descuento_total: descuento,
+          es_manual: manual,
+          valor_lista: manual ? Math.max(subtotal, 0) : total,
+          numero_transaccion: String(compra.numero_pedido || `PROD-${compra.id}`),
+          evento: pickEvent(compra.evento),
+          seed: seed(compra.numero_pedido),
+        };
+      }),
     ].sort((a, b) => timestamp(b.fecha_compra) - timestamp(a.fecha_compra));
 
     const merged: any[] = [];
@@ -102,22 +153,53 @@ export class DashboardService {
       used[i] = true;
       const group = [rows[i]];
       for (let j = i + 1; j < rows.length; j++) {
-        if (used[j] || Number(rows[j].evento_id) !== Number(rows[i].evento_id)) continue;
-        const sameClient = Number(rows[i].cliente_id) > 0 && Number(rows[j].cliente_id) === Number(rows[i].cliente_id);
-        const sameTime = Math.abs(timestamp(rows[i].fecha_compra) - timestamp(rows[j].fecha_compra)) <= mergeWindowMs;
-        const sameSeed = rows[i].seed > 0 && rows[j].seed > 0 && Math.abs(rows[i].seed - rows[j].seed) <= mergeWindowMs;
-        if (!((sameClient && sameTime) || sameSeed)) continue;
+        if (used[j]) continue;
+        const a = rows[i];
+        const b = rows[j];
+        if (Number(b.evento_id) !== Number(a.evento_id)) continue;
+        // Solo unir boletas + productos del mismo checkout; nunca dos ventas del mismo tipo.
+        if (a.source === b.source) continue;
+        const sameClient =
+          Number(a.cliente_id) > 0 && Number(b.cliente_id) === Number(a.cliente_id);
+        if (!sameClient) continue;
+        const sameTime =
+          Math.abs(timestamp(a.fecha_compra) - timestamp(b.fecha_compra)) <= mergeWindowMs;
+        const sameSeed =
+          a.seed > 0 && b.seed > 0 && Math.abs(a.seed - b.seed) <= mergeWindowMs;
+        if (!(sameTime || sameSeed)) continue;
         used[j] = true;
-        group.push(rows[j]);
+        group.push(b);
       }
       const hasProducts = group.some((row) => row.source === 'productos');
       const hasTickets = group.some((row) => row.source === 'ventas');
-      const latest = group.reduce((a, b) => timestamp(a.fecha_compra) >= timestamp(b.fecha_compra) ? a : b);
+      const latest = group.reduce((a, b) =>
+        timestamp(a.fecha_compra) >= timestamp(b.fecha_compra) ? a : b,
+      );
       const ticketBase = group.find((row) => row.source === 'ventas') || latest;
+      const total = group.reduce((sum, row) => sum + Number(row.total || 0), 0);
+      const valorLista = group.reduce((sum, row) => sum + Number(row.valor_lista || 0), 0);
+      const esManual = group.every((row) => !!row.es_manual);
       merged.push({
         ...latest,
+        cliente_id: ticketBase.cliente_id ?? latest.cliente_id,
+        cliente_nombre:
+          ticketBase.cliente_nombre ||
+          latest.cliente_nombre ||
+          group.find((row) => row.cliente_nombre)?.cliente_nombre ||
+          '',
+        cliente_email:
+          ticketBase.cliente_email ||
+          latest.cliente_email ||
+          group.find((row) => row.cliente_email)?.cliente_email ||
+          '',
+        tipos_entrada: group
+          .map((row) => String(row.tipos_entrada || '').trim())
+          .filter(Boolean)
+          .join(' · '),
         numero_transaccion: ticketBase.numero_transaccion,
-        total: group.reduce((sum, row) => sum + Number(row.total || 0), 0),
+        total,
+        valor_lista: valorLista,
+        es_manual: esManual,
         boletas_vendidas: group.reduce((sum, row) => sum + Number(row.boletas_vendidas || 0), 0),
         palcos_vendidos: group.reduce((sum, row) => sum + Number(row.palcos_vendidos || 0), 0),
         palcos_numeros: [...new Set(group.flatMap((row) => row.palcos_numeros || []))],
@@ -125,9 +207,7 @@ export class DashboardService {
       });
     }
 
-    return merged
-      .filter((venta) => !(Number(venta.cliente_id) === 5 && Number(venta.total || 0) === 0))
-      .sort((a, b) => timestamp(b.fecha_compra) - timestamp(a.fecha_compra));
+    return merged.sort((a, b) => timestamp(b.fecha_compra) - timestamp(a.fecha_compra));
   }
 
   /**

@@ -6,7 +6,7 @@
 import { SupabaseService } from './supabase.service';
 import { TimezoneService } from './timezone.service';
 import { DashboardStats } from '../types';
-import { agregarFinanzasDesdeComprasCompletadas } from '../utils/wompi-finanzas';
+import { agregarFinanzasDesdeComprasCompletadas, repartoWompiPorCompra } from '../utils/wompi-finanzas';
 import { DateTimeUtil } from '../utils/date-time.util';
 
 export async function loadDashboardStatsForOrganizador(
@@ -325,14 +325,14 @@ export async function loadDashboardStatsForOrganizador(
       const [comprasRes, comprasProductosRes] = await Promise.all([
         withEventFilter(supabase
           .from('compras')
-          .select('id, cliente_id, evento_id, numero_transaccion, total, estado_pago, fecha_compra, evento:eventos!inner(id, titulo, organizador_id), boletas_compradas(id, grupo_palco_id, palco_id, palcos(numero), tipos_boleta(nombre, personas_por_unidad, es_palco))')
+          .select('id, cliente_id, evento_id, numero_transaccion, total, subtotal, descuento_total, estado_pago, fecha_compra, evento:eventos!inner(id, titulo, organizador_id), cliente:usuarios(id, nombre, apellido, email), boletas_compradas(id, grupo_palco_id, palco_id, palcos(numero), tipos_boleta(nombre, personas_por_unidad, es_palco))')
           .eq('evento.organizador_id', organizadorId)
           .eq('estado_pago', 'completado')
           .order('fecha_compra', { ascending: false })
           .limit(1000)),
         withEventFilter(supabase
           .from('compras_productos')
-          .select('id, cliente_id, evento_id, numero_pedido, total, estado_pago, fecha_compra, evento:eventos!inner(id, titulo, organizador_id)')
+          .select('id, cliente_id, evento_id, numero_pedido, total, subtotal, descuento_total, estado_pago, fecha_compra, evento:eventos!inner(id, titulo, organizador_id), cliente:usuarios(id, nombre, apellido, email)')
           .eq('evento.organizador_id', organizadorId)
           .eq('estado_pago', 'completado')
           .order('fecha_compra', { ascending: false })
@@ -361,43 +361,96 @@ export async function loadDashboardStatsForOrganizador(
         return Number.isFinite(n) ? n : 0;
       };
       const pickEvent = (raw: any): any => Array.isArray(raw) ? (raw[0] || null) : raw;
+      const pickCliente = (raw: any): any => Array.isArray(raw) ? (raw[0] || null) : raw;
+      const datosCliente = (raw: any): { nombre: string; email: string } => {
+        const cliente = pickCliente(raw);
+        if (!cliente) return { nombre: '', email: '' };
+        return {
+          nombre: [cliente.nombre, cliente.apellido].filter(Boolean).join(' ').trim(),
+          email: String(cliente.email || '').trim(),
+        };
+      };
+      const formatTiposEntrada = (boletasCompra: any[]): string => {
+        const counts = new Map<string, number>();
+        for (const boleta of boletasCompra || []) {
+          const tipoRaw = boleta?.tipos_boleta;
+          const tipo = Array.isArray(tipoRaw) ? tipoRaw[0] : tipoRaw;
+          const nombre = String(tipo?.nombre || 'Entrada').trim() || 'Entrada';
+          counts.set(nombre, (counts.get(nombre) || 0) + 1);
+        }
+        return [...counts.entries()]
+          .map(([nombre, cantidad]) => (cantidad > 1 ? `${nombre} ×${cantidad}` : nombre))
+          .join(' · ');
+      };
+      const esVentaManual = (total: number, subtotal: number, descuento: number): boolean =>
+        total <= 0 || (subtotal > 0 && descuento >= subtotal);
 
       const rows = [
-        ...boletas.map((c: any) => ({
-          source: 'ventas' as const,
-          id: c.id,
-          cliente_id: c.cliente_id,
-          evento_id: c.evento_id,
-          fecha_compra: c.fecha_compra,
-          total: Number(c.total || 0),
-          boletas_vendidas: Array.isArray(c.boletas_compradas) ? c.boletas_compradas.length : 0,
-          palcos_vendidos: Array.isArray(c.boletas_compradas)
-            ? new Set(c.boletas_compradas.filter((b: any) => b.grupo_palco_id || b.palco_id || b.tipos_boleta?.es_palco || b.tipos_boleta?.personas_por_unidad > 1).map((b: any) => b.grupo_palco_id || b.palco_id || b.id)).size
-            : 0,
-          palcos_numeros: Array.isArray(c.boletas_compradas)
-            ? [...new Set(c.boletas_compradas.map((b: any) => (Array.isArray(b.palcos) ? b.palcos[0]?.numero : b.palcos?.numero) ?? b.palco_id).filter((n: any) => n != null))]
-            : [],
-          estado_pago: c.estado_pago || 'completado',
-          numero_transaccion: String(c.numero_transaccion || `COMP-${c.id}`),
-          seed: extractSeed(c.numero_transaccion),
-          evento: pickEvent(c.evento)
-        })),
-        ...productos.map((c: any) => ({
-          source: 'productos' as const,
-          id: c.id,
-          cliente_id: c.cliente_id,
-          evento_id: c.evento_id,
-          fecha_compra: c.fecha_compra,
-          total: Number(c.total || 0),
-          estado_pago: c.estado_pago || 'completado',
-          numero_transaccion: String(c.numero_pedido || `PROD-${c.id}`),
-          seed: extractSeed(c.numero_pedido),
-          evento: pickEvent(c.evento)
-        }))
+        ...boletas.map((c: any) => {
+          const total = Number(c.total || 0);
+          const subtotal = Number(c.subtotal || 0);
+          const descuento = Number(c.descuento_total || 0);
+          const manual = esVentaManual(total, subtotal, descuento);
+          const cliente = datosCliente(c.cliente);
+          return {
+            source: 'ventas' as const,
+            id: c.id,
+            cliente_id: c.cliente_id,
+            cliente_nombre: cliente.nombre,
+            cliente_email: cliente.email,
+            tipos_entrada: formatTiposEntrada(c.boletas_compradas),
+            evento_id: c.evento_id,
+            fecha_compra: c.fecha_compra,
+            total,
+            subtotal,
+            descuento_total: descuento,
+            es_manual: manual,
+            valor_lista: manual ? Math.max(subtotal, 0) : total,
+            boletas_vendidas: Array.isArray(c.boletas_compradas) ? c.boletas_compradas.length : 0,
+            palcos_vendidos: Array.isArray(c.boletas_compradas)
+              ? new Set(c.boletas_compradas.filter((b: any) => b.grupo_palco_id || b.palco_id || b.tipos_boleta?.es_palco || b.tipos_boleta?.personas_por_unidad > 1).map((b: any) => b.grupo_palco_id || b.palco_id || b.id)).size
+              : 0,
+            palcos_numeros: Array.isArray(c.boletas_compradas)
+              ? [...new Set(c.boletas_compradas.map((b: any) => (Array.isArray(b.palcos) ? b.palcos[0]?.numero : b.palcos?.numero) ?? b.palco_id).filter((n: any) => n != null))]
+              : [],
+            estado_pago: c.estado_pago || 'completado',
+            numero_transaccion: String(c.numero_transaccion || `COMP-${c.id}`),
+            seed: extractSeed(c.numero_transaccion),
+            evento: pickEvent(c.evento)
+          };
+        }),
+        ...productos.map((c: any) => {
+          const total = Number(c.total || 0);
+          const subtotal = Number(c.subtotal || 0);
+          const descuento = Number(c.descuento_total || 0);
+          const manual = esVentaManual(total, subtotal, descuento);
+          const cliente = datosCliente(c.cliente);
+          return {
+            source: 'productos' as const,
+            id: c.id,
+            cliente_id: c.cliente_id,
+            cliente_nombre: cliente.nombre,
+            cliente_email: cliente.email,
+            tipos_entrada: '',
+            evento_id: c.evento_id,
+            fecha_compra: c.fecha_compra,
+            total,
+            subtotal,
+            descuento_total: descuento,
+            es_manual: manual,
+            valor_lista: manual ? Math.max(subtotal, 0) : total,
+            estado_pago: c.estado_pago || 'completado',
+            numero_transaccion: String(c.numero_pedido || `PROD-${c.id}`),
+            seed: extractSeed(c.numero_pedido),
+            evento: pickEvent(c.evento)
+          };
+        })
       ];
 
       const merged: any[] = [];
-      const sorted = [...rows].sort((a, b) => normalizarFecha(b.fecha_compra) - normalizarFecha(a.fecha_compra));
+      const sorted = [...rows].sort(
+        (a, b) => normalizarFecha(b.fecha_compra) - normalizarFecha(a.fecha_compra),
+      );
       const used = new Array(sorted.length).fill(false);
       const mergeWindowMs = 2 * 60 * 1000; // 2 minutos
 
@@ -414,14 +467,17 @@ export async function loadDashboardStatsForOrganizador(
           if (used[j]) continue;
           const cand = sorted[j];
           if (Number(cand.evento_id || 0) !== baseEvento) continue;
+          // Solo unir boletas + productos del mismo checkout.
+          if (cand.source === base.source) continue;
           const candTs = normalizarFecha(cand.fecha_compra);
           const sameCliente = baseCliente > 0 && Number(cand.cliente_id || 0) === baseCliente;
+          if (!sameCliente) continue;
           const sameTimeWindow = Math.abs(baseTs - candTs) <= mergeWindowMs;
           const sameSeedWindow =
             Number(base.seed || 0) > 0 &&
             Number(cand.seed || 0) > 0 &&
             Math.abs(Number(base.seed || 0) - Number(cand.seed || 0)) <= mergeWindowMs;
-          if (!((sameCliente && sameTimeWindow) || sameSeedWindow)) continue;
+          if (!(sameTimeWindow || sameSeedWindow)) continue;
           used[j] = true;
           arr.push(cand);
         }
@@ -429,47 +485,63 @@ export async function loadDashboardStatsForOrganizador(
         const hasVentas = arr.some((r) => r.source === 'ventas');
         const hasProductos = arr.some((r) => r.source === 'productos');
         const latest = [...arr].sort((a, b) => normalizarFecha(b.fecha_compra) - normalizarFecha(a.fecha_compra))[0];
-        if (hasVentas && hasProductos) {
-          const ventaBase = arr.find((r) => r.source === 'ventas') || latest;
-          merged.push({
-            ...latest,
-            numero_transaccion: ventaBase.numero_transaccion || latest.numero_transaccion,
-            total: arr.reduce((sum, r) => sum + Number(r.total || 0), 0),
-            boletas_vendidas: arr.reduce((sum, r) => sum + Number(r.boletas_vendidas || 0), 0),
-            palcos_vendidos: arr.reduce((sum, r) => sum + Number(r.palcos_vendidos || 0), 0),
-            palcos_numeros: [...new Set(arr.flatMap((r) => Array.isArray(r.palcos_numeros) ? r.palcos_numeros : []))],
-            tipo_venta: 'mixta'
-          });
-        } else {
-          merged.push({
-            ...latest,
-            tipo_venta: hasProductos ? 'productos' : 'ventas'
-          });
-        }
+        const ventaBase = arr.find((r) => r.source === 'ventas') || latest;
+        const total = arr.reduce((sum, r) => sum + Number(r.total || 0), 0);
+        const valorLista = arr.reduce((sum, r) => sum + Number(r.valor_lista || 0), 0);
+        const esManual = arr.every((r) => !!r.es_manual);
+        merged.push({
+          ...latest,
+          cliente_id: ventaBase.cliente_id ?? latest.cliente_id,
+          cliente_nombre:
+            ventaBase.cliente_nombre ||
+            latest.cliente_nombre ||
+            arr.find((r) => r.cliente_nombre)?.cliente_nombre ||
+            '',
+          cliente_email:
+            ventaBase.cliente_email ||
+            latest.cliente_email ||
+            arr.find((r) => r.cliente_email)?.cliente_email ||
+            '',
+          tipos_entrada: arr
+            .map((r) => String(r.tipos_entrada || '').trim())
+            .filter(Boolean)
+            .join(' · '),
+          numero_transaccion: ventaBase.numero_transaccion || latest.numero_transaccion,
+          total,
+          valor_lista: valorLista,
+          es_manual: esManual,
+          boletas_vendidas: arr.reduce((sum, r) => sum + Number(r.boletas_vendidas || 0), 0),
+          palcos_vendidos: arr.reduce((sum, r) => sum + Number(r.palcos_vendidos || 0), 0),
+          palcos_numeros: [...new Set(arr.flatMap((r) => Array.isArray(r.palcos_numeros) ? r.palcos_numeros : []))],
+          tipo_venta: hasVentas && hasProductos ? 'mixta' : hasProductos ? 'productos' : 'ventas',
+        });
       }
 
-      return merged
-        .filter((v) => !(Number(v.cliente_id) === 5 && Number(v.total || 0) === 0))
-        .sort((a, b) => normalizarFecha(b.fecha_compra) - normalizarFecha(a.fecha_compra));
+      return merged.sort(
+        (a, b) => normalizarFecha(b.fecha_compra) - normalizarFecha(a.fecha_compra),
+      );
     }, []);
 
-    // Eventos próximos del organizador (próximos 5)
+    // Eventos en cartelera del organizador (todos los vigentes)
     const eventosProximos = safeExecute(async () => {
       const response = await withEventFilter(supabase
         .from('eventos')
-        .select('*')
+        .select('id, titulo, imagen_principal, estado, fecha_inicio, fecha_fin')
         .eq('organizador_id', organizadorId)
         .eq('activo', true)
         .neq('estado', 'finalizado')
-        .gte('fecha_inicio', now)
-        .order('fecha_inicio', { ascending: true })
-        .limit(5), 'id');
-      
+        .order('fecha_inicio', { ascending: true }), 'id');
+
       if (response.error) {
         console.error('Error en eventos próximos:', response.error);
         return [];
       }
-      return response.data || [];
+
+      const ahora = new Date();
+      const vigentes = (response.data || []).filter((evento: any) =>
+        !evento.fecha_fin || new Date(evento.fecha_fin) >= ahora
+      );
+      return vigentes;
     }, []);
 
     // Eventos totales del organizador
@@ -602,10 +674,9 @@ export async function loadDashboardStatsForOrganizador(
       }
     }, []);
 
-    // Top eventos del organizador (por boletas vendidas)
+    // Top eventos por lo que el organizador recibirá aprox. (neto ventas post Wompi)
     const topEventos = safeExecute(async () => {
       try {
-        // Obtener eventos del organizador
         const { data: eventosData, error: eventosError } = await withEventFilter(supabase
           .from('eventos')
           .select('id, titulo, imagen_principal, estado, fecha_fin')
@@ -622,38 +693,76 @@ export async function loadDashboardStatsForOrganizador(
           !evento.fecha_fin || new Date(evento.fecha_fin) >= ahora
         );
 
-        // Para cada evento, contar boletas vendidas
-        const eventosConVentas = await Promise.all(
-          eventosVigentes.map(async (evento: any) => {
-            // Obtener tipos de boleta del evento
-            const { data: tiposData } = await supabase
-              .from('tipos_boleta')
-              .select('id')
-              .eq('evento_id', evento.id);
+        if (eventosVigentes.length === 0) {
+          return [];
+        }
 
-            if (!tiposData || tiposData.length === 0) {
-              return { ...evento, boletas_vendidas: 0 };
-            }
+        const eventoIds = eventosVigentes.map((e: any) => e.id);
 
-            const tiposIds = tiposData.map((t: any) => t.id);
-            
-            // Contar boletas vendidas (solo con pago completado)
-            const { count } = await supabase
-              .from('boletas_compradas')
-              .select('*, compras!inner(estado_pago)', { count: 'exact' })
-              .in('tipo_boleta_id', tiposIds)
-              .eq('compras.estado_pago', 'completado');
+        const [comprasRes, boletasRes] = await Promise.all([
+          supabase
+            .from('compras')
+            .select('total, valor_servicio, evento_id')
+            .eq('estado_pago', 'completado')
+            .in('evento_id', eventoIds),
+          supabase
+            .from('boletas_compradas')
+            .select('id, compras!inner(estado_pago, evento_id)')
+            .eq('compras.estado_pago', 'completado')
+            .in('compras.evento_id', eventoIds),
+        ]);
 
-            return {
-              ...evento,
-              boletas_vendidas: count || 0
-            };
-          })
-        );
+        if (comprasRes.error) {
+          console.error('Error en ingresos top eventos:', comprasRes.error);
+        }
+        if (boletasRes.error) {
+          console.error('Error en boletas top eventos:', boletasRes.error);
+        }
 
-        // Ordenar por boletas vendidas y tomar top 5
-        eventosConVentas.sort((a: any, b: any) => b.boletas_vendidas - a.boletas_vendidas);
-        return eventosConVentas.slice(0, 5);
+        const recibirasPorEvento: Record<number, number> = {};
+        const servicioPorEvento: Record<number, number> = {};
+        const wompiPorEvento: Record<number, number> = {};
+        const clientesPagaronPorEvento: Record<number, number> = {};
+        for (const compra of comprasRes.data || []) {
+          const id = Number((compra as any).evento_id);
+          if (!Number.isFinite(id)) continue;
+          const total = Number((compra as any).total || 0);
+          const vs = Number((compra as any).valor_servicio || 0);
+          const r = repartoWompiPorCompra(total, vs);
+          recibirasPorEvento[id] =
+            (recibirasPorEvento[id] || 0) + r.neto_ventas_post_wompi;
+          servicioPorEvento[id] = (servicioPorEvento[id] || 0) + vs;
+          wompiPorEvento[id] = (wompiPorEvento[id] || 0) + r.wompi_ventas;
+          clientesPagaronPorEvento[id] = (clientesPagaronPorEvento[id] || 0) + total;
+        }
+
+        const boletasPorEvento: Record<number, number> = {};
+        for (const boleta of boletasRes.data || []) {
+          const compra = (boleta as any).compras;
+          const compraRow = Array.isArray(compra) ? compra[0] : compra;
+          const id = Number(compraRow?.evento_id);
+          if (!Number.isFinite(id)) continue;
+          boletasPorEvento[id] = (boletasPorEvento[id] || 0) + 1;
+        }
+
+        const eventosConVentas = eventosVigentes.map((evento: any) => ({
+          ...evento,
+          /** Neto estimado a recibir (boletas − Wompi sobre ventas), misma fórmula del hero. */
+          recibiras_aprox: recibirasPorEvento[evento.id] || 0,
+          valor_servicio: servicioPorEvento[evento.id] || 0,
+          wompi_ventas: wompiPorEvento[evento.id] || 0,
+          /** ∑ total de compras completadas (lo que pagaron los clientes). */
+          clientes_pagaron: clientesPagaronPorEvento[evento.id] || 0,
+          boletas_vendidas: boletasPorEvento[evento.id] || 0,
+        }));
+
+        eventosConVentas.sort((a: any, b: any) => {
+          if (b.recibiras_aprox !== a.recibiras_aprox) {
+            return b.recibiras_aprox - a.recibiras_aprox;
+          }
+          return b.boletas_vendidas - a.boletas_vendidas;
+        });
+        return eventosConVentas;
       } catch (error: any) {
         console.error('Error en top eventos:', error);
         return [];

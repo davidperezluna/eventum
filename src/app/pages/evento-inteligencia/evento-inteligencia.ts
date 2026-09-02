@@ -90,6 +90,12 @@ import {
 
   computeAforoTotals,
 
+  formatIntelRankingUnidades,
+
+  formatIntelRankingVendidasLabel,
+
+  formatIntelRankingSubMetrics,
+
   padCountdown,
 
 } from './evento-inteligencia.utils';
@@ -101,6 +107,8 @@ interface BoletaRankingRow {
   nombre: string;
 
   vendidas: number;
+
+  boletasAsientos?: number;
 
   total: number;
 
@@ -154,8 +162,11 @@ export class EventoInteligencia implements OnInit {
 
   cuponesCount = 0;
 
-  /** Ingresos netos (post-descuento) por tipo_boleta_id desde compras reales. */
-  private ingresosNetosPorTipo = new Map<number, number>();
+  /** Ventas pagadas (sin manuales) por tipo: unidades + asientos + ingresos netos. */
+  private ventasPagadasPorTipo = new Map<
+    number,
+    { vendidas: number; boletasAsientos: number; ingresosNetos: number }
+  >();
 
   private descuentosManualesStats: EventoDescuentosManualesStats | null = null;
 
@@ -181,7 +192,7 @@ export class EventoInteligencia implements OnInit {
 
   descuentosSection: IntelMetricInsightSection | null = null;
 
-  ventasManualesSection: IntelMetricInsightSection | null = null;
+  ventasManualesSection: IntelRankingSection | null = null;
 
 
 
@@ -202,6 +213,12 @@ export class EventoInteligencia implements OnInit {
 
 
   readonly padCountdown = padCountdown;
+
+  readonly formatRankingUnidades = formatIntelRankingUnidades;
+
+  readonly formatRankingVendidas = formatIntelRankingVendidasLabel;
+
+  readonly formatRankingSub = formatIntelRankingSubMetrics;
 
 
 
@@ -328,7 +345,8 @@ export class EventoInteligencia implements OnInit {
         this.cuponesService.getCuponesByEvento(this.eventoId).catch(() => []),
 
         this.reportesService.getIngresosNetosPorTipoBoleta(this.eventoId).catch(
-          () => new Map<number, { vendidas: number; ingresosNetos: number }>(),
+          () =>
+            new Map<number, { vendidas: number; boletasAsientos: number; ingresosNetos: number }>(),
         ),
 
         this.reportesService.getDescuentosYManualesPorEvento(this.eventoId).catch(() => null),
@@ -347,9 +365,7 @@ export class EventoInteligencia implements OnInit {
 
       this.ventas7d = ventas7d;
 
-      this.ingresosNetosPorTipo = new Map(
-        [...ingresosPorTipo.entries()].map(([id, row]) => [id, row.ingresosNetos]),
-      );
+      this.ventasPagadasPorTipo = ingresosPorTipo;
 
       this.descuentosManualesStats = descuentosManuales;
 
@@ -547,11 +563,12 @@ export class EventoInteligencia implements OnInit {
 
       .map((t) => {
 
-        const vendidas = t.cantidad_vendidas ?? 0;
+        const pagadas = this.ventasPagadasPorTipo.get(t.id);
+
+        // Solo ventas pagadas (excluye manuales / cortesía 100%). Unidades de inventario.
+        const vendidas = pagadas?.vendidas ?? 0;
 
         const total = t.cantidad_total ?? 0;
-
-        const ingresosReales = this.ingresosNetosPorTipo.get(t.id);
 
         return {
 
@@ -559,19 +576,19 @@ export class EventoInteligencia implements OnInit {
 
           vendidas,
 
+          boletasAsientos: pagadas?.boletasAsientos,
+
           total,
 
           pct: total > 0 ? Math.round((vendidas / total) * 100) : 0,
 
-          // Preferir neto post-descuento (cupón / venta manual $0); fallback solo si no hay compras.
-          ingresosEst:
-            ingresosReales !== undefined ? ingresosReales : vendidas * (t.precio ?? 0),
+          ingresosEst: pagadas !== undefined ? pagadas.ingresosNetos : 0,
 
         };
 
       })
 
-      .sort((a, b) => b.vendidas - a.vendidas);
+      .sort((a, b) => b.ingresosEst - a.ingresosEst || b.vendidas - a.vendidas);
 
   }
 

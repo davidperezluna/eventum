@@ -1,8 +1,13 @@
 import { DashboardStats } from '../../types';
 import { DateTimeUtil } from '../../utils/date-time.util';
+import {
+  mapVentaToOrgSalesRow,
+  type OrgSalesRowModel,
+} from '../../components/org-sales-row';
 
 export type DashOrgTone = 'warn' | 'ok' | 'info' | 'neutral';
 export type DashOrgAccent = 'violet' | 'green' | 'amber' | 'blue';
+export type DashOrgActivityItem = OrgSalesRowModel;
 
 /** Clasifica el insight del hero para evitar repetirlo en Atención. */
 export type DashOrgInsightKind =
@@ -48,19 +53,15 @@ export interface DashOrgAgendaCard {
   countdownLabel: string;
   boletasLabel: string;
   aforoPct: number | null;
+  /** Lo que pagaron los clientes (∑ total compras). */
+  clientesPagaronLabel: string | null;
+  /** Recibirás aprox. (neto ventas post Wompi). */
   ingresosLabel: string | null;
+  servicioLabel: string | null;
+  wompiLabel: string | null;
   estadoLabel: string | null;
   isSalesLeader: boolean;
-}
-
-export interface DashOrgActivityItem {
-  key: string;
-  timeLabel: string;
-  action: string;
-  context: string;
-  amount: string | null;
-  icon: string;
-  accent: DashOrgAccent;
+  hasFinanzas: boolean;
 }
 
 interface InsightCtx {
@@ -295,22 +296,33 @@ export function buildAgendaCards(
   const top = stats.top_eventos ?? [];
   const leaderId = top[0]?.id != null ? Number(top[0].id) : null;
   const topMap = new Map(top.map((e) => [Number(e.id), e]));
-  const ingresosTotal = stats.ingresos_totales ?? 0;
-  const boletasTotal = stats.boletas_vendidas ?? 0;
 
-  return (stats.eventos_proximos ?? []).slice(0, 5).map((evento) => {
+  return (stats.eventos_proximos ?? []).map((evento) => {
     const id = Number(evento.id);
-    const row = topMap.get(id);
+    const row = topMap.get(id) as
+      | {
+          boletas_vendidas?: number;
+          recibiras_aprox?: number;
+          valor_servicio?: number;
+          wompi_ventas?: number;
+          clientes_pagaron?: number;
+        }
+      | undefined;
     const boletas = Number(row?.boletas_vendidas ?? 0);
     const aforoPct = boletas > 0 ? Math.min(99, Math.round((boletas / AFORO_REF) * 100)) : null;
-    const ingresosEst =
-      boletasTotal > 0 && ingresosTotal > 0
-        ? formatCurrency(Math.round((boletas / boletasTotal) * ingresosTotal))
-        : null;
+    const recibirasRaw = Math.max(0, Number(row?.recibiras_aprox ?? 0));
+    const servicioRaw = Math.max(0, Number(row?.valor_servicio ?? 0));
+    const wompiRaw = Math.max(0, Number(row?.wompi_ventas ?? 0));
+    const clientesPagaronRaw = Math.max(0, Number(row?.clientes_pagaron ?? 0));
+    const hasFinanzas = clientesPagaronRaw > 0 || recibirasRaw > 0;
     const days = daysUntil(evento.fecha_inicio);
     let countdownLabel = 'Sin fecha';
     if (days != null) {
-      countdownLabel = days === 0 ? 'Hoy' : days === 1 ? 'Mañana' : `En ${days} días`;
+      if (days < 0) {
+        countdownLabel = days === -1 ? 'Ayer' : `Hace ${Math.abs(days)} días`;
+      } else {
+        countdownLabel = days === 0 ? 'Hoy' : days === 1 ? 'Mañana' : `En ${days} días`;
+      }
     }
 
     const estado = String(evento.estado || '').toLowerCase();
@@ -324,72 +336,19 @@ export function buildAgendaCards(
       countdownLabel,
       boletasLabel: boletas > 0 ? `${formatAmount(boletas)} boletas` : 'Sin ventas aún',
       aforoPct,
-      ingresosLabel: ingresosEst,
+      clientesPagaronLabel: hasFinanzas ? formatCurrency(clientesPagaronRaw) : null,
+      ingresosLabel: hasFinanzas ? formatCurrency(recibirasRaw) : null,
+      servicioLabel: hasFinanzas ? formatCurrency(servicioRaw) : null,
+      wompiLabel: hasFinanzas ? formatCurrency(wompiRaw) : null,
       estadoLabel,
       isSalesLeader: leaderId != null && id === leaderId && boletas > 0,
+      hasFinanzas,
     };
   });
 }
 
-export function buildActivityFeed(
-  stats: DashboardStats,
-  formatCurrency: (n: number) => string,
-  formatRelativeTime: (fecha: string | Date | null | undefined) => string,
-): DashOrgActivityItem[] {
-  const items: DashOrgActivityItem[] = (stats.ventas_recientes ?? []).map((venta, index) => {
-    const eventoTitulo = venta?.evento?.titulo ? String(venta.evento.titulo) : 'un evento';
-    const tipo = venta?.tipo_venta;
-    let action = 'Venta de entradas';
-    let icon = 'confirmation_number';
-    let accent: DashOrgAccent = 'violet';
-
-    if (Number(venta?.palcos_vendidos ?? 0) > 0) {
-      const numeros = Array.isArray(venta?.palcos_numeros) ? venta.palcos_numeros : [];
-      action = numeros.length > 0
-        ? `Palco vendido #${numeros.join(', #')}`
-        : Number(venta.palcos_vendidos) === 1 ? 'Palco vendido' : `${Number(venta.palcos_vendidos)} palcos vendidos`;
-      icon = 'table_restaurant';
-      accent = 'amber';
-    }
-
-    if (tipo === 'productos') {
-      action = 'Producto vendido';
-      icon = 'local_mall';
-      accent = 'green';
-    } else if (tipo === 'mixta') {
-      action = 'Compra mixta';
-      icon = 'shopping_bag';
-      accent = 'amber';
-    }
-
-    return {
-      key: `${venta?.numero_transaccion || venta?.id || index}`,
-      timeLabel: formatRelativeTime(venta?.fecha_compra),
-      action,
-      context: eventoTitulo,
-      amount:
-        venta?.total != null && Number(venta.total) > 0
-          ? formatCurrency(Number(venta.total))
-          : null,
-      icon,
-      accent,
-    };
-  });
-
-  const usadas = stats.boletas_por_estado?.find((b) => b.estado === 'usada')?.cantidad ?? 0;
-  if (usadas > 0 && !items.some((i) => i.key === 'ops-scans')) {
-    items.push({
-      key: 'ops-scans',
-      timeLabel: 'Operación en puerta',
-      action: 'Asistentes registrados',
-      context: `${usadas} ingresos en puerta`,
-      amount: null,
-      icon: 'groups',
-      accent: 'blue',
-    });
-  }
-
-  return items;
+export function buildActivityFeed(stats: DashboardStats): OrgSalesRowModel[] {
+  return (stats.ventas_recientes ?? []).map((venta, index) => mapVentaToOrgSalesRow(venta, index));
 }
 
 /** Evita repetir en Atención lo que el hero insight ya narró. */

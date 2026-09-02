@@ -263,35 +263,56 @@
           </header>
 
           <ng-container *ngIf="!b.empty && b.rows.length > 0; else eventosEmpty">
-            <div class="ev-intel-leaderboard">
+            <div
+              class="ev-intel-leaderboard"
+              [class.ev-intel-leaderboard--solo]="b.rows.length < 2"
+            >
               <div class="ev-intel-leaderboard__hero" *ngIf="b.rows[0] as top">
                 <span class="ev-intel-leaderboard__rank">#1</span>
                 <div class="ev-intel-leaderboard__hero-body">
-                  <a
-                    class="ev-intel-leaderboard__name ev-intel-leaderboard__name--link"
-                    [routerLink]="eventoIntelRoute(0)"
-                  >
-                    {{ top.nombre }}
-                  </a>
-                  <p class="ev-intel-leaderboard__metrics">
-                    <span><strong>{{ top.vendidas | number }}</strong> vendidas</span>
-                    <span>{{ top.clientesPagaron }}</span>
+                  <div class="ev-intel-leaderboard__hero-top">
+                    <a
+                      class="ev-intel-leaderboard__name ev-intel-leaderboard__name--link"
+                      [routerLink]="eventoIntelRoute(0)"
+                    >
+                      {{ top.nombre }}
+                    </a>
+                    <p class="ev-intel-leaderboard__price">{{ top.clientesPagaron }}</p>
+                  </div>
+                  <p class="ev-intel-leaderboard__units">
+                    <strong>{{ top.vendidas | number }}</strong> vendidas
+                    <ng-container *ngIf="top.pct != null"> · {{ top.pct }}%</ng-container>
                   </p>
+                  <a [routerLink]="eventoIntelRoute(0)" class="ev-intel-story__link dash-org-zoom-link">
+                    <span aria-hidden="true">→</span>
+                    Hacer zoom
+                  </a>
                 </div>
-                <a [routerLink]="eventoIntelRoute(0)" class="ev-intel-story__link dash-org-zoom-link">
-                  <span aria-hidden="true">→</span>
-                  Hacer zoom
-                </a>
               </div>
               <ol class="ev-intel-leaderboard__list" *ngIf="b.rows.length > 1" aria-label="Resto del ranking">
                 <li *ngFor="let row of b.rows.slice(1); let i = index" class="ev-intel-leaderboard__row">
                   <span class="ev-intel-leaderboard__pos">{{ i + 2 }}</span>
-                  <a class="ev-intel-leaderboard__row-name ev-intel-leaderboard__row-name--link" [routerLink]="eventoIntelRoute(i + 1)">
-                    {{ row.nombre }}
-                  </a>
-                  <span class="ev-intel-leaderboard__row-meta">{{ row.vendidas | number }} vendidas · {{ row.clientesPagaron }}</span>
+                  <div class="ev-intel-leaderboard__row-main">
+                    <div class="ev-intel-leaderboard__row-top">
+                      <a
+                        class="ev-intel-leaderboard__row-name ev-intel-leaderboard__row-name--link"
+                        [routerLink]="eventoIntelRoute(i + 1)"
+                      >
+                        {{ row.nombre }}
+                      </a>
+                      <span class="ev-intel-leaderboard__price">{{ row.clientesPagaron }}</span>
+                    </div>
+                    <span class="ev-intel-leaderboard__units">
+                      {{ row.vendidas | number }} vendidas
+                      <ng-container *ngIf="row.pct != null"> · {{ row.pct }}%</ng-container>
+                    </span>
+                  </div>
                 </li>
               </ol>
+              <div class="ev-intel-leaderboard__total" *ngIf="b.totalValue">
+                <span class="ev-intel-leaderboard__total-label">{{ b.totalLabel || 'Recibirás aprox.' }}</span>
+                <span class="ev-intel-leaderboard__total-value">{{ b.totalValue }}</span>
+              </div>
             </div>
           </ng-container>
           <ng-template #eventosEmpty>
@@ -308,57 +329,85 @@
       </div>
 
       <div
-        class="ev-intel-ed__row ev-intel-ed__row--asymmetric"
-        *ngIf="iv.proximosCards.length > 0 || iv.eventosSection.rows.length > 0"
+        class="ev-intel-ed__row ev-intel-ed__row--wide"
+        *ngIf="iv.eventosSection.rows[0] as leader"
+      >
+        <aside class="dash-org-leader-banner" aria-label="Evento líder">
+          <div class="dash-org-leader-banner__copy">
+            <span class="dash-org-leader-banner__eyebrow">Líder en ventas</span>
+            <p class="dash-org-leader-banner__name">{{ leader.nombre }}</p>
+            <p class="dash-org-leader-banner__meta">
+              {{ leader.vendidas | number }} vendidas
+              <ng-container *ngIf="leader.pct != null"> · {{ leader.pct }}%</ng-container>
+              · Recibirás aprox. {{ leader.clientesPagaron }}
+            </p>
+          </div>
+          <div class="dash-org-leader-banner__pct" *ngIf="leader.pct != null">{{ leader.pct }}%</div>
+          <a [routerLink]="eventoIntelRoute(0)" class="ev-intel-story__link ev-intel-story__link--invert dash-org-leader-banner__cta">
+            <span aria-hidden="true">→</span>
+            Hacer zoom
+          </a>
+        </aside>
+      </div>
+
+      <div
+        class="ev-intel-ed__row ev-intel-ed__row--wide"
+        *ngIf="iv.proximosCards.length > 0"
       >
         <article
-          *ngIf="iv.proximosCards.length > 0"
-          class="ev-intel-card ev-intel-card--productos ev-intel-card--md"
+          class="ev-intel-card ev-intel-card--productos"
           aria-label="Próximos eventos"
         >
-          <header class="ev-intel-card__head">
-            <span class="ev-intel-card__icon material-icons" aria-hidden="true">calendar_month</span>
-            <p class="ev-intel-card__question">¿Qué tienes en cartelera?</p>
+          <header class="ev-intel-card__head ev-intel-card__head--bar">
+            <div class="ev-intel-card__head-left">
+              <span class="ev-intel-card__icon material-icons" aria-hidden="true">calendar_month</span>
+              <p class="ev-intel-card__question">¿Qué tienes en cartelera?</p>
+            </div>
+            <span class="ev-intel-card__badge" *ngIf="iv.proximosCards.length > 0">
+              {{ iv.proximosCards.length }} evento{{ iv.proximosCards.length === 1 ? '' : 's' }}
+            </span>
           </header>
-          <ol class="ev-intel-rank ev-intel-rank--compact">
+          <ol class="ev-intel-rank ev-intel-rank--cartelera">
             <li
               *ngFor="let card of iv.proximosCards; let i = index"
-              class="ev-intel-rank__item"
-              [class.ev-intel-rank__item--lead]="i === 0"
+              [class.ev-intel-rank__item--lead]="card.isSalesLeader"
             >
-              <span class="ev-intel-rank__pos">{{ i + 1 }}</span>
-              <div class="ev-intel-rank__main">
-                <a class="ev-intel-rank__name ev-intel-rank__name--link" [routerLink]="['/eventos', card.id, 'inteligencia']">
-                  {{ card.titulo }}
-                </a>
-                <span class="ev-intel-rank__meta">
-                  {{ card.fechaLabel }} · {{ card.countdownLabel }} · {{ card.boletasLabel }}
-                </span>
-              </div>
+              <a
+                class="ev-intel-rank__item"
+                [routerLink]="['/eventos', card.id, 'inteligencia']"
+                [attr.aria-label]="'Abrir ' + card.titulo"
+              >
+                <div class="ev-intel-rank__main">
+                  <div class="ev-intel-rank__top">
+                    <div class="ev-intel-rank__identity">
+                      <span class="ev-intel-rank__pos">{{ i + 1 }}</span>
+                      <div class="ev-intel-rank__identity-text">
+                        <span class="ev-intel-rank__name">{{ card.titulo }}</span>
+                        <span class="ev-intel-rank__meta">
+                          {{ card.fechaLabel }} · {{ card.countdownLabel }} · {{ card.boletasLabel }}
+                        </span>
+                      </div>
+                    </div>
+                    <span class="ev-intel-rank__price" *ngIf="card.ingresosLabel">{{ card.ingresosLabel }}</span>
+                  </div>
+                  <p class="ev-intel-rank__summary" *ngIf="card.hasFinanzas">
+                    <span>Pagaron {{ card.clientesPagaronLabel }}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>Servicio {{ card.servicioLabel }}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>Wompi {{ card.wompiLabel }}</span>
+                  </p>
+                </div>
+              </a>
             </li>
           </ol>
           <footer class="ev-intel-card__foot">
             <a routerLink="/eventos" class="ev-intel-story__link">
               <span aria-hidden="true">→</span>
-              Ver todos
+              Ver eventos
             </a>
           </footer>
         </article>
-
-        <aside
-          class="ev-intel-card ev-intel-card--spotlight ev-intel-card--xs"
-          *ngIf="iv.eventosSection.rows[0] as leader"
-          aria-label="Evento líder"
-        >
-          <span class="ev-intel-spotlight__eyebrow">Líder en ventas</span>
-          <p class="ev-intel-spotlight__value">{{ leader.pct }}%</p>
-          <p class="ev-intel-spotlight__name">{{ leader.nombre }}</p>
-          <p class="ev-intel-spotlight__hint">{{ leader.vendidas | number }} vendidas · {{ leader.clientesPagaron }}</p>
-          <a [routerLink]="eventoIntelRoute(0)" class="ev-intel-story__link ev-intel-story__link--invert dash-org-spotlight-link">
-            <span aria-hidden="true">→</span>
-            Hacer zoom
-          </a>
-        </aside>
       </div>
 
       <div class="ev-intel-ed__row ev-intel-ed__row--wide">
@@ -373,32 +422,22 @@
             </span>
           </header>
 
-          <ol class="ev-intel-timeline" *ngIf="iv.activitySection.items.length > 0; else activityEmpty">
+          <ol class="org-sales-list" *ngIf="iv.activitySection.items.length > 0; else activityEmpty">
             <li
-              *ngFor="let item of iv.activitySection.items; let last = last"
-              class="ev-intel-timeline__item"
-              [class.ev-intel-timeline__item--last]="last"
-            >
-              <div
-                class="ev-intel-timeline__icon"
-                [class.ev-intel-timeline__icon--violet]="item.accent === 'violet'"
-                [class.ev-intel-timeline__icon--green]="item.accent === 'green'"
-                [class.ev-intel-timeline__icon--amber]="item.accent === 'amber'"
-                [class.ev-intel-timeline__icon--blue]="item.accent === 'blue'"
-              >
-                <span class="material-icons" aria-hidden="true">{{ item.icon }}</span>
-              </div>
-              <div class="ev-intel-timeline__content">
-                <p class="ev-intel-timeline__time">{{ item.timeLabel }}</p>
-                <p class="ev-intel-timeline__action">{{ item.action }}</p>
-                <p class="ev-intel-timeline__context">{{ item.context }}</p>
-              </div>
-              <p class="ev-intel-timeline__amount" *ngIf="item.amount">{{ item.amount }}</p>
-            </li>
+              *ngFor="let item of iv.activitySection.items; trackBy: trackActivity"
+              org-sales-row
+              [venta]="item"
+            ></li>
           </ol>
           <ng-template #activityEmpty>
             <p class="ev-intel-card__empty">{{ iv.activitySection.emptyMessage }}</p>
           </ng-template>
+          <footer class="ev-intel-card__foot">
+            <a routerLink="/ventas-organizador" class="ev-intel-story__link">
+              <span aria-hidden="true">→</span>
+              Ver ventas
+            </a>
+          </footer>
         </article>
       </div>
     </div>

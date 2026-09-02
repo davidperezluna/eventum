@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { OrgSalesRow, OrgSalesRowModel } from '../../components/org-sales-row';
 import { DemoDataProvider } from '../../demo/demo-data.provider';
 import { AuthService } from '../../services/auth.service';
 import { AppCacheService } from '../../services/app-cache.service';
@@ -19,7 +20,7 @@ import {
 
 @Component({
   selector: 'app-dashboard-organizador',
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, OrgSalesRow],
   templateUrl: './dashboard-organizador.html',
   styleUrls: [
     '../evento-inteligencia/evento-inteligencia.css',
@@ -314,6 +315,10 @@ export class DashboardOrganizador implements OnInit {
 
   formatAmount(value: number | null | undefined): string {
     return formatFinanzasMontoExacto(value);
+  }
+
+  trackActivity(_: number, item: OrgSalesRowModel): string {
+    return item.key;
   }
 
   daysUntil(fecha: string | Date | null | undefined): number | null {

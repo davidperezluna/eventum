@@ -89,10 +89,16 @@ export interface IntelVentasSection extends IntelCtaCapable {
 
 export interface IntelRankingRow {
   nombre: string;
+  /** Unidades de inventario vendidas (1 palco = 1, no N asientos). */
   vendidas: number;
+  /** Filas/boletas físicas cuando un palco genera varias. */
+  boletasAsientos?: number;
   pct?: number;
   clientesPagaron: string;
   clientesPagaronRaw: number;
+  /** Desglose opcional (ranking de eventos org). */
+  servicioLabel?: string;
+  wompiLabel?: string;
 }
 
 export interface IntelRankingSection extends IntelCtaCapable {
@@ -100,6 +106,9 @@ export interface IntelRankingSection extends IntelCtaCapable {
   empty: boolean;
   emptyMessage?: string;
   rows: IntelRankingRow[];
+  /** Total del ranking (p. ej. ingresos sumados). */
+  totalLabel?: string;
+  totalValue?: string;
   conclusion?: string;
 }
 

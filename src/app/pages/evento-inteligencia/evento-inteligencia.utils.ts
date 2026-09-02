@@ -33,6 +33,7 @@ import {
 interface BoletaRankingInput {
   nombre: string;
   vendidas: number;
+  boletasAsientos?: number;
   total: number;
   pct: number;
   ingresosEst: number;
@@ -42,6 +43,40 @@ interface ProductoRowInput {
   nombre: string;
   vendidas: number;
   ingresosEst: number;
+}
+
+/** Texto de unidades: "1 vendida · 10 boletas" cuando es palco agrupado. */
+export function formatIntelRankingUnidades(row: {
+  vendidas: number;
+  boletasAsientos?: number;
+}): string {
+  const vendidas = row.vendidas;
+  const asientos = row.boletasAsientos ?? vendidas;
+  const vendidasLabel = `${vendidas.toLocaleString('es-CO')} vendida${vendidas === 1 ? '' : 's'}`;
+  if (asientos > vendidas) {
+    return `${vendidasLabel} · ${asientos.toLocaleString('es-CO')} boletas`;
+  }
+  return vendidasLabel;
+}
+
+export function formatIntelRankingVendidasLabel(row: { vendidas: number }): string {
+  const n = row.vendidas;
+  return `${n.toLocaleString('es-CO')} vendida${n === 1 ? '' : 's'}`;
+}
+
+/** Segunda línea: "10 boletas · 45%" o solo "45%". */
+export function formatIntelRankingSubMetrics(row: {
+  vendidas: number;
+  boletasAsientos?: number;
+  pct?: number;
+}): string {
+  const asientos = row.boletasAsientos ?? row.vendidas;
+  const pct = row.pct != null ? `${row.pct}%` : '';
+  if (asientos > row.vendidas) {
+    const boletas = `${asientos.toLocaleString('es-CO')} boletas`;
+    return pct ? `${boletas} · ${pct}` : boletas;
+  }
+  return pct;
 }
 
 export function computeAforoTotals(tipos: TipoBoleta[]): IntelAforoTotals {
@@ -515,11 +550,12 @@ export function buildBoletasRankingSection(
     };
   }
 
-  const totalVendidas = conVentas.reduce((s, r) => s + r.vendidas, 0);
+  const totalIngresos = conVentas.reduce((s, r) => s + r.ingresosEst, 0);
   const rows: IntelRankingRow[] = conVentas.map((r) => ({
     nombre: r.nombre,
     vendidas: r.vendidas,
-    pct: totalVendidas > 0 ? Math.round((r.vendidas / totalVendidas) * 100) : r.pct,
+    boletasAsientos: r.boletasAsientos,
+    pct: totalIngresos > 0 ? Math.round((r.ingresosEst / totalIngresos) * 100) : r.pct,
     clientesPagaron: formatCurrency(r.ingresosEst),
     clientesPagaronRaw: r.ingresosEst,
   }));
@@ -527,11 +563,11 @@ export function buildBoletasRankingSection(
   const top = rows[0];
   let conclusion: string;
   if (rows.length === 1) {
-    conclusion = `"${top.nombre}" concentra el 100% de tus ventas por ahora. Es tu única referencia de demanda.`;
+    conclusion = `"${top.nombre}" concentra el 100% de lo recaudado por ahora. Es tu única referencia de demanda.`;
   } else if (top.pct != null && top.pct >= 50) {
-    conclusion = `"${top.nombre}" concentra el ${top.pct}% de las entradas vendidas. Es claramente la preferida de tu audiencia.`;
+    conclusion = `"${top.nombre}" concentra el ${top.pct}% de lo que pagaron tus clientes. Es claramente la preferida de tu audiencia.`;
   } else {
-    conclusion = `"${top.nombre}" lidera, pero hay reparto entre varios tipos. Considera potenciar el segundo más vendido.`;
+    conclusion = `"${top.nombre}" lidera en ingresos, pero hay reparto entre varios tipos. Considera potenciar el segundo.`;
   }
 
   if (conVentas[0].pct >= 80 && conVentas[0].vendidas < conVentas[0].total) {
@@ -542,6 +578,8 @@ export function buildBoletasRankingSection(
     question,
     empty: false,
     rows,
+    totalLabel: 'Total',
+    totalValue: formatCurrency(totalIngresos),
     conclusion,
     ctaLabel: conVentas[0].pct >= 80 ? 'Gestionar boletas' : undefined,
     ctaAction: conVentas[0].pct >= 80 ? 'boletas' : undefined,
@@ -996,18 +1034,17 @@ export function buildDescuentosSection(
 export function buildVentasManualesSection(
   stats: EventoDescuentosManualesStats | null,
   formatCurrency: (n: number) => string,
-): IntelMetricInsightSection {
+): IntelRankingSection {
   const question = '¿Cuántas ventas manuales llevas?';
   const m = stats?.manuales;
-  if (!stats || !m || m.compras === 0) {
+  const porTipo = m?.porTipo ?? [];
+
+  if (!stats || !m || m.compras === 0 || porTipo.length === 0) {
     return {
       question,
       empty: true,
       emptyMessage: 'No hay ventas manuales ni cortesías al 100% registradas todavía.',
-      heroLabel: 'Valor venta manual',
-      heroValue: formatCurrency(0),
-      stats: [],
-      breakdown: [],
+      rows: [],
       conclusion:
         'Las ventas en $0 o con descuento igual al precio aparecen aquí como cortesía / carga manual.',
       ctaLabel: 'Ir a operaciones',
@@ -1016,25 +1053,38 @@ export function buildVentasManualesSection(
     };
   }
 
-  const breakdown = (m.porTipo ?? []).map((t) => ({
-    nombre: t.nombre,
-    meta: `${t.boletas.toLocaleString('es-CO')} entr. · ${formatCurrency(t.valorLista)}`,
-  }));
+  const totalIngresos = Math.max(
+    1,
+    porTipo.reduce((s, t) => s + t.valorLista, 0),
+  );
+  const rows: IntelRankingRow[] = porTipo
+    .map((t) => ({
+      nombre: t.nombre,
+      vendidas: t.unidades,
+      boletasAsientos: t.boletas,
+      pct: Math.round((t.valorLista / totalIngresos) * 100),
+      clientesPagaron: formatCurrency(t.valorLista),
+      clientesPagaronRaw: t.valorLista,
+    }))
+    .sort((a, b) => b.clientesPagaronRaw - a.clientesPagaronRaw || b.vendidas - a.vendidas);
+
+  const top = rows[0];
+  let conclusion: string;
+  if (rows.length === 1) {
+    conclusion = `"${top.nombre}" concentra el 100% de tus ventas manuales (${formatCurrency(m.valorLista)} en total).`;
+  } else if (top.pct != null && top.pct >= 50) {
+    conclusion = `"${top.nombre}" lidera las cargas manuales con el ${top.pct}% de las entradas. Total: ${formatCurrency(m.valorLista)}.`;
+  } else {
+    conclusion = `${m.compras} venta${m.compras === 1 ? '' : 's'} manual${m.compras === 1 ? '' : 'es'} por ${formatCurrency(m.valorLista)}, repartidas entre ${rows.length} tipos.`;
+  }
 
   return {
     question,
     empty: false,
-    heroLabel: 'Valor venta manual',
-    heroValue: formatCurrency(m.valorLista),
-    stats: [
-      { label: 'Ventas manuales', value: String(m.compras) },
-      { label: 'Entradas entregadas', value: m.boletas.toLocaleString('es-CO') },
-    ],
-    breakdown,
-    conclusion:
-      m.pctCompras >= 20
-        ? `El ${m.pctCompras}% de las compras son cortesía o carga manual. Úsalo con criterio para no distorsionar el recaudo.`
-        : `${m.compras} venta${m.compras === 1 ? '' : 's'} manual${m.compras === 1 ? '' : 'es'} por ${formatCurrency(m.valorLista)}.`,
+    rows,
+    totalLabel: 'Total',
+    totalValue: formatCurrency(m.valorLista),
+    conclusion,
     ctaLabel: 'Ir a operaciones',
     ctaAction: 'operaciones',
     ctaVariant: 'secondary',

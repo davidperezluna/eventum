@@ -51,6 +51,8 @@ export interface EventoDescuentosManualesStats {
     porTipo: Array<{
       tipoId: number;
       nombre: string;
+      /** Unidades (consume_inventario), no asientos. */
+      unidades: number;
       boletas: number;
       valorLista: number;
     }>;
@@ -751,28 +753,33 @@ export class ReportesService {
   }
 
   /**
-   * Ingresos netos por tipo de boleta (después de descuentos/cupones/venta manual),
-   * prorrateados desde cada compra completada. No incluye cargo de servicio.
+   * Ingresos netos por tipo de boleta (después de descuentos parciales).
+   * Excluye ventas manuales / cortesía 100% (total = 0 o descuento >= subtotal).
+   * No incluye cargo de servicio.
    */
   async getIngresosNetosPorTipoBoleta(
     eventoId: number
-  ): Promise<Map<number, { vendidas: number; ingresosNetos: number }>> {
-    const result = new Map<number, { vendidas: number; ingresosNetos: number }>();
+  ): Promise<Map<number, { vendidas: number; boletasAsientos: number; ingresosNetos: number }>> {
+    const result = new Map<number, { vendidas: number; boletasAsientos: number; ingresosNetos: number }>();
     try {
       type Row = {
         tipo_boleta_id: number;
         precio_unitario: number | null;
         compra_id: number;
+        consume_inventario: boolean | null;
+        grupo_palco_id: string | null;
         compras:
           | {
               estado_pago: string;
               evento_id: number;
+              total: number | null;
               subtotal: number | null;
               descuento_total: number | null;
             }
           | {
               estado_pago: string;
               evento_id: number;
+              total: number | null;
               subtotal: number | null;
               descuento_total: number | null;
             }[];
@@ -782,7 +789,7 @@ export class ReportesService {
         this.supabase
           .from('boletas_compradas')
           .select(
-            'tipo_boleta_id, precio_unitario, compra_id, compras!inner(estado_pago, evento_id, subtotal, descuento_total)'
+            'tipo_boleta_id, precio_unitario, compra_id, consume_inventario, grupo_palco_id, compras!inner(estado_pago, evento_id, total, subtotal, descuento_total)'
           )
           .eq('compras.estado_pago', 'completado')
           .eq('compras.evento_id', eventoId)
@@ -805,14 +812,26 @@ export class ReportesService {
         );
         const subtotal = Math.max(0, Number(compra?.subtotal ?? brutoLineas));
         const descuento = Math.min(Math.max(0, Number(compra?.descuento_total ?? 0)), subtotal);
+        const total = Math.max(0, Number(compra?.total ?? 0));
+        const esManual =
+          total === 0 || (subtotal > 0 && descuento >= subtotal - 0.01);
+
+        // Las cortesías / ventas manuales van a su propia card, no al ranking de demanda pagada.
+        if (esManual) {
+          continue;
+        }
+
         const neto = Math.max(0, subtotal - descuento);
         const factor = subtotal > 0 ? neto / subtotal : 0;
 
         for (const b of boletas) {
           const tipoId = Number(b.tipo_boleta_id);
           if (!Number.isFinite(tipoId) || tipoId <= 0) continue;
-          const prev = result.get(tipoId) ?? { vendidas: 0, ingresosNetos: 0 };
-          prev.vendidas += 1;
+          const prev = result.get(tipoId) ?? { vendidas: 0, boletasAsientos: 0, ingresosNetos: 0 };
+          prev.boletasAsientos += 1;
+          if (this.esUnidadInventarioBoleta(b)) {
+            prev.vendidas += 1;
+          }
           prev.ingresosNetos += Math.max(0, Number(b.precio_unitario ?? 0)) * factor;
           result.set(tipoId, prev);
         }
@@ -821,6 +840,7 @@ export class ReportesService {
       for (const [tipoId, stats] of result) {
         result.set(tipoId, {
           vendidas: stats.vendidas,
+          boletasAsientos: stats.boletasAsientos,
           ingresosNetos: Math.round(stats.ingresosNetos),
         });
       }
@@ -828,6 +848,17 @@ export class ReportesService {
       console.error('Error en getIngresosNetosPorTipoBoleta:', err);
     }
     return result;
+  }
+
+  /** 1 palco / 1 entrada de inventario (no cada asiento del grupo). */
+  private esUnidadInventarioBoleta(b: {
+    consume_inventario?: boolean | null;
+    grupo_palco_id?: string | null;
+  }): boolean {
+    if (b.consume_inventario === true) return true;
+    if (b.consume_inventario === false) return false;
+    // Legacy: sin flag, contar solo si no hay grupo de palco (o no podemos distinguir).
+    return !b.grupo_palco_id;
   }
 
   /**
@@ -845,6 +876,8 @@ export class ReportesService {
         id: number;
         tipo_boleta_id: number | null;
         precio_unitario: number | null;
+        consume_inventario: boolean | null;
+        grupo_palco_id: string | null;
         tipos_boleta: { nombre: string } | { nombre: string }[] | null;
       };
       type Row = {
@@ -859,7 +892,7 @@ export class ReportesService {
         this.supabase
           .from('compras')
           .select(
-            'id, total, subtotal, descuento_total, boletas_compradas(id, tipo_boleta_id, precio_unitario, tipos_boleta(nombre))'
+            'id, total, subtotal, descuento_total, boletas_compradas(id, tipo_boleta_id, precio_unitario, consume_inventario, grupo_palco_id, tipos_boleta(nombre))'
           )
           .eq('evento_id', eventoId)
           .eq('estado_pago', 'completado')
@@ -873,7 +906,10 @@ export class ReportesService {
       let manCompras = 0;
       let manValor = 0;
       let manBoletas = 0;
-      const porTipo = new Map<number, { nombre: string; boletas: number; valorLista: number }>();
+      const porTipo = new Map<
+        number,
+        { nombre: string; unidades: number; boletas: number; valorLista: number }
+      >();
 
       for (const c of compras) {
         const subtotal = Math.max(0, Number(c.subtotal ?? 0));
@@ -914,8 +950,16 @@ export class ReportesService {
                 : boletas > 0
                   ? valorCompra / boletas
                   : 0;
-            const prev = porTipo.get(tipoId) ?? { nombre, boletas: 0, valorLista: 0 };
+            const prev = porTipo.get(tipoId) ?? {
+              nombre,
+              unidades: 0,
+              boletas: 0,
+              valorLista: 0,
+            };
             prev.boletas += 1;
+            if (this.esUnidadInventarioBoleta(b)) {
+              prev.unidades += 1;
+            }
             prev.valorLista += valorTipo;
             prev.nombre = nombre;
             porTipo.set(tipoId, prev);
@@ -943,10 +987,11 @@ export class ReportesService {
             .map(([tipoId, row]) => ({
               tipoId,
               nombre: row.nombre,
+              unidades: row.unidades,
               boletas: row.boletas,
               valorLista: Math.round(row.valorLista),
             }))
-            .sort((a, b) => b.boletas - a.boletas || b.valorLista - a.valorLista),
+            .sort((a, b) => b.valorLista - a.valorLista || b.unidades - a.unidades),
         },
       };
     } catch (err) {

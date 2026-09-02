@@ -300,23 +300,38 @@
           </header>
 
           <ng-container *ngIf="!b.empty && b.rows.length > 0; else boletasEmpty">
-            <div class="ev-intel-leaderboard">
+            <div
+              class="ev-intel-leaderboard"
+              [class.ev-intel-leaderboard--solo]="b.rows.length < 2"
+            >
               <div class="ev-intel-leaderboard__hero" *ngIf="b.rows[0] as top">
                 <span class="ev-intel-leaderboard__rank">#1</span>
                 <div class="ev-intel-leaderboard__hero-body">
-                  <p class="ev-intel-leaderboard__name">{{ top.nombre }}</p>
-                  <p class="ev-intel-leaderboard__metrics">
-                    <strong>{{ top.vendidas | number }}</strong> vendidas · <strong>{{ top.pct }}%</strong> · {{ top.clientesPagaron }}
-                  </p>
+                  <div class="ev-intel-leaderboard__hero-top">
+                    <p class="ev-intel-leaderboard__name">{{ top.nombre }}</p>
+                    <p class="ev-intel-leaderboard__price">{{ top.clientesPagaron }}</p>
+                  </div>
+                  <p class="ev-intel-leaderboard__units">{{ formatRankingVendidas(top) }}</p>
+                  <p class="ev-intel-leaderboard__sub" *ngIf="formatRankingSub(top) as sub">{{ sub }}</p>
                 </div>
               </div>
               <ol class="ev-intel-leaderboard__list" *ngIf="b.rows.length > 1" aria-label="Resto del ranking">
                 <li *ngFor="let row of b.rows.slice(1); let i = index" class="ev-intel-leaderboard__row">
                   <span class="ev-intel-leaderboard__pos">{{ i + 2 }}</span>
-                  <span class="ev-intel-leaderboard__row-name">{{ row.nombre }}</span>
-                  <span class="ev-intel-leaderboard__row-meta">{{ row.vendidas | number }} · {{ row.pct }}% · {{ row.clientesPagaron }}</span>
+                  <div class="ev-intel-leaderboard__row-main">
+                    <div class="ev-intel-leaderboard__row-top">
+                      <span class="ev-intel-leaderboard__row-name">{{ row.nombre }}</span>
+                      <span class="ev-intel-leaderboard__price">{{ row.clientesPagaron }}</span>
+                    </div>
+                    <span class="ev-intel-leaderboard__units">{{ formatRankingVendidas(row) }}</span>
+                    <span class="ev-intel-leaderboard__sub" *ngIf="formatRankingSub(row) as sub">{{ sub }}</span>
+                  </div>
                 </li>
               </ol>
+              <div class="ev-intel-leaderboard__total" *ngIf="b.totalValue">
+                <span class="ev-intel-leaderboard__total-label">{{ b.totalLabel || 'Total' }}</span>
+                <span class="ev-intel-leaderboard__total-value">{{ b.totalValue }}</span>
+              </div>
             </div>
           </ng-container>
           <ng-template #boletasEmpty>
@@ -372,40 +387,60 @@
 
         <article
           *ngIf="ventasManualesSection as m"
-          class="ev-intel-card ev-intel-card--manuales"
+          class="ev-intel-card ev-intel-card--manuales ev-intel-card--boletas"
           [attr.aria-label]="m.question"
         >
-          <header class="ev-intel-card__head">
-            <span class="ev-intel-card__icon material-icons" aria-hidden="true">handshake</span>
-            <p class="ev-intel-card__question">{{ m.question }}</p>
+          <header class="ev-intel-card__head ev-intel-card__head--bar">
+            <div class="ev-intel-card__head-left">
+              <span class="ev-intel-card__icon material-icons" aria-hidden="true">handshake</span>
+              <p class="ev-intel-card__question">{{ m.question }}</p>
+            </div>
+            <span class="ev-intel-card__badge" *ngIf="!m.empty && m.rows.length > 0">
+              {{ m.rows.length }} tipo{{ m.rows.length === 1 ? '' : 's' }}
+            </span>
           </header>
-          <ng-container *ngIf="!m.empty; else manualesEmpty">
-            <div class="ev-intel-metric-hero">
-              <span class="ev-intel-metric-hero__label">{{ m.heroLabel }}</span>
-              <p class="ev-intel-metric-hero__value">{{ m.heroValue }}</p>
-            </div>
-            <div class="ev-intel-ventas-grid">
-              <div class="ev-intel-stat" *ngFor="let s of m.stats">
-                <span class="ev-intel-stat__label">{{ s.label }}</span>
-                <span class="ev-intel-stat__value">{{ s.value }}</span>
+
+          <ng-container *ngIf="!m.empty && m.rows.length > 0; else manualesEmpty">
+            <div
+              class="ev-intel-leaderboard"
+              [class.ev-intel-leaderboard--solo]="m.rows.length < 2"
+            >
+              <div class="ev-intel-leaderboard__hero" *ngIf="m.rows[0] as top">
+                <span class="ev-intel-leaderboard__rank">#1</span>
+                <div class="ev-intel-leaderboard__hero-body">
+                  <div class="ev-intel-leaderboard__hero-top">
+                    <p class="ev-intel-leaderboard__name">{{ top.nombre }}</p>
+                    <p class="ev-intel-leaderboard__price">{{ top.clientesPagaron }}</p>
+                  </div>
+                  <p class="ev-intel-leaderboard__units">{{ formatRankingVendidas(top) }}</p>
+                  <p class="ev-intel-leaderboard__sub" *ngIf="formatRankingSub(top) as sub">{{ sub }}</p>
+                </div>
               </div>
-            </div>
-            <div class="ev-intel-manual-tipos" *ngIf="m.breakdown?.length">
-              <p class="ev-intel-manual-tipos__title">Por tipo de boleta</p>
-              <ul class="ev-intel-manual-tipos__list">
-                <li *ngFor="let row of m.breakdown" class="ev-intel-manual-tipos__item">
-                  <span class="ev-intel-manual-tipos__name">{{ row.nombre }}</span>
-                  <span class="ev-intel-manual-tipos__meta">{{ row.meta }}</span>
+              <ol class="ev-intel-leaderboard__list" *ngIf="m.rows.length > 1" aria-label="Resto de ventas manuales por tipo">
+                <li *ngFor="let row of m.rows.slice(1); let i = index" class="ev-intel-leaderboard__row">
+                  <span class="ev-intel-leaderboard__pos">{{ i + 2 }}</span>
+                  <div class="ev-intel-leaderboard__row-main">
+                    <div class="ev-intel-leaderboard__row-top">
+                      <span class="ev-intel-leaderboard__row-name">{{ row.nombre }}</span>
+                      <span class="ev-intel-leaderboard__price">{{ row.clientesPagaron }}</span>
+                    </div>
+                    <span class="ev-intel-leaderboard__units">{{ formatRankingVendidas(row) }}</span>
+                    <span class="ev-intel-leaderboard__sub" *ngIf="formatRankingSub(row) as sub">{{ sub }}</span>
+                  </div>
                 </li>
-              </ul>
+              </ol>
+              <div class="ev-intel-leaderboard__total" *ngIf="m.totalValue">
+                <span class="ev-intel-leaderboard__total-label">{{ m.totalLabel || 'Total' }}</span>
+                <span class="ev-intel-leaderboard__total-value">{{ m.totalValue }}</span>
+              </div>
             </div>
           </ng-container>
           <ng-template #manualesEmpty>
             <p class="ev-intel-card__empty">{{ m.emptyMessage }}</p>
           </ng-template>
-          <p class="ev-intel-card__conclusion" *ngIf="m.conclusion">{{ m.conclusion }}</p>
-          <footer class="ev-intel-card__foot" *ngIf="m.ctaLabel">
-            <button type="button" class="ev-intel-story__link" (click)="onStoryCta(m.ctaAction)">
+          <footer class="ev-intel-card__footer-bar">
+            <p class="ev-intel-card__conclusion" *ngIf="m.conclusion">{{ m.conclusion }}</p>
+            <button *ngIf="m.ctaLabel" type="button" class="ev-intel-story__link" (click)="onStoryCta(m.ctaAction)">
               <span aria-hidden="true">→</span>
               {{ m.ctaLabel }}
             </button>
@@ -447,7 +482,7 @@
           <span class="ev-intel-spotlight__eyebrow">Líder en entradas</span>
           <p class="ev-intel-spotlight__value">{{ leader.pct }}%</p>
           <p class="ev-intel-spotlight__name">{{ leader.nombre }}</p>
-          <p class="ev-intel-spotlight__hint">{{ leader.vendidas | number }} vendidas · {{ leader.clientesPagaron }}</p>
+          <p class="ev-intel-spotlight__hint">{{ formatRankingUnidades(leader) }} · {{ leader.clientesPagaron }}</p>
         </aside>
       </div>
 

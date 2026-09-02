@@ -28,7 +28,6 @@ import {
   DashOrgHeroView,
   filterAttentionForHero,
   formatAgendaDate,
-  formatRelativeTime,
   getVariacionPorcentual,
 } from './dashboard-organizador.view';
 
@@ -156,19 +155,26 @@ function buildEventosRankingSection(
   formatCurrency: (n: number) => string,
 ): { section: IntelRankingSection; eventIds: number[] } {
   const top = stats.top_eventos ?? [];
-  const ingresosTotal = stats.ingresos_totales ?? 0;
-  const boletasTotal = stats.boletas_vendidas ?? 0;
 
-  const ranking = top.map((e) => ({
-    nombre: String(e.titulo || 'Evento'),
-    vendidas: Number(e.boletas_vendidas ?? 0),
-    total: aforo.total,
-    pct: 0,
-    ingresosEst:
-      boletasTotal > 0 && ingresosTotal > 0
-        ? Math.round((Number(e.boletas_vendidas ?? 0) / boletasTotal) * ingresosTotal)
-        : 0,
-  }));
+  type TopEventoFin = {
+    id?: number;
+    titulo?: string;
+    boletas_vendidas?: number;
+    recibiras_aprox?: number;
+  };
+
+  const ranking = top.map((e) => {
+    const row = e as TopEventoFin;
+    return {
+      nombre: String(row.titulo || 'Evento'),
+      vendidas: Number(row.boletas_vendidas ?? 0),
+      total: aforo.total,
+      pct: 0,
+      ingresosEst: Math.max(0, Number(row.recibiras_aprox ?? 0)),
+    };
+  });
+
+  ranking.sort((a, b) => b.ingresosEst - a.ingresosEst || b.vendidas - a.vendidas);
 
   const section = buildBoletasRankingSection(ranking, aforo, formatCurrency);
   section.question = '¿Qué eventos van mejor?';
@@ -181,15 +187,22 @@ function buildEventosRankingSection(
   } else if (section.empty && ranking.length > 0) {
     section.emptyMessage = `Tienes ${top.length} evento${top.length === 1 ? '' : 's'} en cartelera, sin ventas registradas todavía.`;
     section.conclusion = 'Cuando lleguen las primeras compras, sabrás cuál evento convence primero.';
-  } else if (!section.empty && section.conclusion) {
-    section.conclusion = section.conclusion
-      .replace(/boletas/gi, 'eventos')
-      .replace(/tipo(s)?/gi, 'evento$1')
-      .replace(/entradas vendidas/gi, 'ventas del portafolio');
+  } else if (!section.empty) {
+    section.totalLabel = 'Recibirás aprox.';
+    if (section.conclusion) {
+      section.conclusion = section.conclusion
+        .replace(/boletas/gi, 'eventos')
+        .replace(/tipo(s)?/gi, 'evento$1')
+        .replace(/entradas vendidas/gi, 'ventas del portafolio')
+        .replace(/lo que pagaron tus clientes/gi, 'lo que recibirás aprox.')
+        .replace(/lo recaudado/gi, 'lo que recibirás aprox.');
+    }
     section.ctaLabel = 'Ver todos los eventos';
   }
 
-  const eventIds = top.map((e) => Number(e.id));
+  const eventIds = top
+    .filter((e) => Number((e as { boletas_vendidas?: number }).boletas_vendidas ?? 0) > 0)
+    .map((e) => Number(e.id));
   return { section, eventIds };
 }
 
@@ -206,7 +219,7 @@ function buildOrgActionNow(item: DashOrgAttentionItem | null): IntelActionNow | 
 }
 
 function buildOrgActivitySection(activity: DashOrgActivityItem[]): OrgIntelActivitySection {
-  const items = activity.filter((item) => item.key !== 'ops-scans').slice(0, 10);
+  const items = activity.slice(0, 10);
 
   return {
     question: '¿Qué acaba de pasar?',
@@ -269,7 +282,7 @@ export function buildDashboardOrgIntelView(input: BuildDashboardOrgIntelInput): 
   const actionNow = buildOrgActionNow(actionItem);
   const actionNowRoute = actionItem?.actionRoute ?? null;
 
-  const activity = buildActivityFeed(stats, formatCurrency, formatRelativeTime);
+  const activity = buildActivityFeed(stats);
   const activitySection = buildOrgActivitySection(activity);
 
   const proximosCards = buildAgendaCards(
