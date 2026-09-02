@@ -48,6 +48,12 @@ export interface EventoDescuentosManualesStats {
     valorLista: number;
     boletas: number;
     pctCompras: number;
+    porTipo: Array<{
+      tipoId: number;
+      nombre: string;
+      boletas: number;
+      valorLista: number;
+    }>;
   };
 }
 
@@ -832,21 +838,29 @@ export class ReportesService {
     const empty: EventoDescuentosManualesStats = {
       comprasCompletadas: 0,
       descuentos: { compras: 0, monto: 0, boletas: 0, pctCompras: 0 },
-      manuales: { compras: 0, valorLista: 0, boletas: 0, pctCompras: 0 },
+      manuales: { compras: 0, valorLista: 0, boletas: 0, pctCompras: 0, porTipo: [] },
     };
     try {
+      type BoletaRow = {
+        id: number;
+        tipo_boleta_id: number | null;
+        precio_unitario: number | null;
+        tipos_boleta: { nombre: string } | { nombre: string }[] | null;
+      };
       type Row = {
         id: number;
         total: number | null;
         subtotal: number | null;
         descuento_total: number | null;
-        boletas_compradas: { id: number }[] | null;
+        boletas_compradas: BoletaRow[] | null;
       };
 
       const compras = await this.fetchAllPages<Row>((from, to) =>
         this.supabase
           .from('compras')
-          .select('id, total, subtotal, descuento_total, boletas_compradas(id)')
+          .select(
+            'id, total, subtotal, descuento_total, boletas_compradas(id, tipo_boleta_id, precio_unitario, tipos_boleta(nombre))'
+          )
           .eq('evento_id', eventoId)
           .eq('estado_pago', 'completado')
           .range(from, to)
@@ -859,12 +873,14 @@ export class ReportesService {
       let manCompras = 0;
       let manValor = 0;
       let manBoletas = 0;
+      const porTipo = new Map<number, { nombre: string; boletas: number; valorLista: number }>();
 
       for (const c of compras) {
         const subtotal = Math.max(0, Number(c.subtotal ?? 0));
         const descuento = Math.max(0, Number(c.descuento_total ?? 0));
         const total = Math.max(0, Number(c.total ?? 0));
-        const boletas = Array.isArray(c.boletas_compradas) ? c.boletas_compradas.length : 0;
+        const boletasRows = Array.isArray(c.boletas_compradas) ? c.boletas_compradas : [];
+        const boletas = boletasRows.length;
         const esManual =
           total === 0 || (subtotal > 0 && descuento >= subtotal - 0.01);
 
@@ -876,8 +892,34 @@ export class ReportesService {
         }
         if (esManual) {
           manCompras += 1;
-          manValor += subtotal > 0 ? subtotal : descuento;
+          const valorCompra = subtotal > 0 ? subtotal : descuento;
+          manValor += valorCompra;
           manBoletas += boletas;
+
+          const brutoLineas = boletasRows.reduce(
+            (sum, b) => sum + Math.max(0, Number(b.precio_unitario ?? 0)),
+            0
+          );
+          const factor = brutoLineas > 0 ? valorCompra / brutoLineas : 0;
+
+          for (const b of boletasRows) {
+            const tipoId = Number(b.tipo_boleta_id);
+            if (!Number.isFinite(tipoId) || tipoId <= 0) continue;
+            const tipoRaw = Array.isArray(b.tipos_boleta) ? b.tipos_boleta[0] : b.tipos_boleta;
+            const nombre = String(tipoRaw?.nombre || `Tipo #${tipoId}`);
+            const precio = Math.max(0, Number(b.precio_unitario ?? 0));
+            const valorTipo =
+              brutoLineas > 0
+                ? precio * factor
+                : boletas > 0
+                  ? valorCompra / boletas
+                  : 0;
+            const prev = porTipo.get(tipoId) ?? { nombre, boletas: 0, valorLista: 0 };
+            prev.boletas += 1;
+            prev.valorLista += valorTipo;
+            prev.nombre = nombre;
+            porTipo.set(tipoId, prev);
+          }
         }
       }
 
@@ -897,6 +939,14 @@ export class ReportesService {
           valorLista: Math.round(manValor),
           boletas: manBoletas,
           pctCompras: pct(manCompras),
+          porTipo: [...porTipo.entries()]
+            .map(([tipoId, row]) => ({
+              tipoId,
+              nombre: row.nombre,
+              boletas: row.boletas,
+              valorLista: Math.round(row.valorLista),
+            }))
+            .sort((a, b) => b.boletas - a.boletas || b.valorLista - a.valorLista),
         },
       };
     } catch (err) {

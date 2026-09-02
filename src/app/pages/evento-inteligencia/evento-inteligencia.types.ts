@@ -145,5 +145,7 @@ export interface IntelMetricInsightSection extends IntelCtaCapable {
   heroLabel: string;
   heroValue: string;
   stats: Array<{ label: string; value: string }>;
+  /** Desglose opcional (p. ej. tipos de boleta en ventas manuales). */
+  breakdown?: Array<{ nombre: string; meta: string }>;
   conclusion?: string;
 }

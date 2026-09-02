@@ -1007,6 +1007,7 @@ export function buildVentasManualesSection(
       heroLabel: 'Valor venta manual',
       heroValue: formatCurrency(0),
       stats: [],
+      breakdown: [],
       conclusion:
         'Las ventas en $0 o con descuento igual al precio aparecen aquí como cortesía / carga manual.',
       ctaLabel: 'Ir a operaciones',
@@ -1014,6 +1015,11 @@ export function buildVentasManualesSection(
       ctaVariant: 'secondary',
     };
   }
+
+  const breakdown = (m.porTipo ?? []).map((t) => ({
+    nombre: t.nombre,
+    meta: `${t.boletas.toLocaleString('es-CO')} entr. · ${formatCurrency(t.valorLista)}`,
+  }));
 
   return {
     question,
@@ -1024,6 +1030,7 @@ export function buildVentasManualesSection(
       { label: 'Ventas manuales', value: String(m.compras) },
       { label: 'Entradas entregadas', value: m.boletas.toLocaleString('es-CO') },
     ],
+    breakdown,
     conclusion:
       m.pctCompras >= 20
         ? `El ${m.pctCompras}% de las compras son cortesía o carga manual. Úsalo con criterio para no distorsionar el recaudo.`

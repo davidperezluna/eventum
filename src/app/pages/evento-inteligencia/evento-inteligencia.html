@@ -390,6 +390,15 @@
                 <span class="ev-intel-stat__value">{{ s.value }}</span>
               </div>
             </div>
+            <div class="ev-intel-manual-tipos" *ngIf="m.breakdown?.length">
+              <p class="ev-intel-manual-tipos__title">Por tipo de boleta</p>
+              <ul class="ev-intel-manual-tipos__list">
+                <li *ngFor="let row of m.breakdown" class="ev-intel-manual-tipos__item">
+                  <span class="ev-intel-manual-tipos__name">{{ row.nombre }}</span>
+                  <span class="ev-intel-manual-tipos__meta">{{ row.meta }}</span>
+                </li>
+              </ul>
+            </div>
           </ng-container>
           <ng-template #manualesEmpty>
             <p class="ev-intel-card__empty">{{ m.emptyMessage }}</p>
