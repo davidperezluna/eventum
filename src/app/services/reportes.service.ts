@@ -725,5 +725,85 @@ export class ReportesService {
       return [];
     }
   }
+
+  /**
+   * Ingresos netos por tipo de boleta (después de descuentos/cupones/venta manual),
+   * prorrateados desde cada compra completada. No incluye cargo de servicio.
+   */
+  async getIngresosNetosPorTipoBoleta(
+    eventoId: number
+  ): Promise<Map<number, { vendidas: number; ingresosNetos: number }>> {
+    const result = new Map<number, { vendidas: number; ingresosNetos: number }>();
+    try {
+      type Row = {
+        tipo_boleta_id: number;
+        precio_unitario: number | null;
+        compra_id: number;
+        compras:
+          | {
+              estado_pago: string;
+              evento_id: number;
+              subtotal: number | null;
+              descuento_total: number | null;
+            }
+          | {
+              estado_pago: string;
+              evento_id: number;
+              subtotal: number | null;
+              descuento_total: number | null;
+            }[];
+      };
+
+      const rows = await this.fetchAllPages<Row>((from, to) =>
+        this.supabase
+          .from('boletas_compradas')
+          .select(
+            'tipo_boleta_id, precio_unitario, compra_id, compras!inner(estado_pago, evento_id, subtotal, descuento_total)'
+          )
+          .eq('compras.estado_pago', 'completado')
+          .eq('compras.evento_id', eventoId)
+          .range(from, to)
+      );
+
+      const porCompra = new Map<number, Row[]>();
+      for (const row of rows) {
+        const list = porCompra.get(row.compra_id) ?? [];
+        list.push(row);
+        porCompra.set(row.compra_id, list);
+      }
+
+      for (const boletas of porCompra.values()) {
+        const compraRaw = boletas[0]?.compras;
+        const compra = Array.isArray(compraRaw) ? compraRaw[0] : compraRaw;
+        const brutoLineas = boletas.reduce(
+          (sum, b) => sum + Math.max(0, Number(b.precio_unitario ?? 0)),
+          0
+        );
+        const subtotal = Math.max(0, Number(compra?.subtotal ?? brutoLineas));
+        const descuento = Math.min(Math.max(0, Number(compra?.descuento_total ?? 0)), subtotal);
+        const neto = Math.max(0, subtotal - descuento);
+        const factor = subtotal > 0 ? neto / subtotal : 0;
+
+        for (const b of boletas) {
+          const tipoId = Number(b.tipo_boleta_id);
+          if (!Number.isFinite(tipoId) || tipoId <= 0) continue;
+          const prev = result.get(tipoId) ?? { vendidas: 0, ingresosNetos: 0 };
+          prev.vendidas += 1;
+          prev.ingresosNetos += Math.max(0, Number(b.precio_unitario ?? 0)) * factor;
+          result.set(tipoId, prev);
+        }
+      }
+
+      for (const [tipoId, stats] of result) {
+        result.set(tipoId, {
+          vendidas: stats.vendidas,
+          ingresosNetos: Math.round(stats.ingresosNetos),
+        });
+      }
+    } catch (err) {
+      console.error('Error en getIngresosNetosPorTipoBoleta:', err);
+    }
+    return result;
+  }
 }
 

@@ -148,6 +148,9 @@ export class EventoInteligencia implements OnInit {
 
   cuponesCount = 0;
 
+  /** Ingresos netos (post-descuento) por tipo_boleta_id desde compras reales. */
+  private ingresosNetosPorTipo = new Map<number, number>();
+
 
 
   hero: IntelHeroMoment | null = null;
@@ -288,7 +291,7 @@ export class EventoInteligencia implements OnInit {
 
 
 
-      const [tipos, productos, stats, reporte, ventas7d, cupones] = await Promise.all([
+      const [tipos, productos, stats, reporte, ventas7d, cupones, ingresosPorTipo] = await Promise.all([
 
         this.boletasService
           .getTiposBoleta(this.eventoId, { includeInactive: true })
@@ -312,6 +315,10 @@ export class EventoInteligencia implements OnInit {
 
         this.cuponesService.getCuponesByEvento(this.eventoId).catch(() => []),
 
+        this.reportesService.getIngresosNetosPorTipoBoleta(this.eventoId).catch(
+          () => new Map<number, { vendidas: number; ingresosNetos: number }>(),
+        ),
+
       ]);
 
 
@@ -325,6 +332,10 @@ export class EventoInteligencia implements OnInit {
       this.reporte = reporte;
 
       this.ventas7d = ventas7d;
+
+      this.ingresosNetosPorTipo = new Map(
+        [...ingresosPorTipo.entries()].map(([id, row]) => [id, row.ingresosNetos]),
+      );
 
       const cuponesDemo = await this.demoDataProvider.applyCupones(cupones, this.eventoId);
 
@@ -508,6 +519,8 @@ export class EventoInteligencia implements OnInit {
 
         const total = t.cantidad_total ?? 0;
 
+        const ingresosReales = this.ingresosNetosPorTipo.get(t.id);
+
         return {
 
           nombre: t.nombre,
@@ -518,7 +531,9 @@ export class EventoInteligencia implements OnInit {
 
           pct: total > 0 ? Math.round((vendidas / total) * 100) : 0,
 
-          ingresosEst: vendidas * (t.precio ?? 0),
+          // Preferir neto post-descuento (cupón / venta manual $0); fallback solo si no hay compras.
+          ingresosEst:
+            ingresosReales !== undefined ? ingresosReales : vendidas * (t.precio ?? 0),
 
         };
 
