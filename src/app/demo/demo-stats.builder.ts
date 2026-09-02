@@ -152,14 +152,10 @@ export function distributeTiposVendidas(
   if (tipos.length === 0) {
     return tipos;
   }
-  const active = tipos.filter((t) => t.activo !== false);
-  const list = active.length > 0 ? active : tipos;
+  // Incluye inactivos: en métricas/demo las ventas históricas siguen contando.
+  const list = tipos;
   let rest = totalVendidas;
-  return tipos.map((t) => {
-    const idx = list.indexOf(t);
-    if (idx < 0) {
-      return { ...t, cantidad_vendidas: 0 };
-    }
+  return tipos.map((t, idx) => {
     let vendidas: number;
     if (idx === list.length - 1) {
       vendidas = rest;

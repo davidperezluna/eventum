@@ -290,7 +290,9 @@ export class EventoInteligencia implements OnInit {
 
       const [tipos, productos, stats, reporte, ventas7d, cupones] = await Promise.all([
 
-        this.boletasService.getTiposBoleta(this.eventoId).catch(() => [] as TipoBoleta[]),
+        this.boletasService
+          .getTiposBoleta(this.eventoId, { includeInactive: true })
+          .catch(() => [] as TipoBoleta[]),
 
         this.productosService.getProductosPorEvento(this.eventoId, false).catch(() => [] as Producto[]),
 
