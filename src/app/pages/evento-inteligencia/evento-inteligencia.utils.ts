@@ -962,11 +962,12 @@ export function buildDescuentosSection(
     return {
       question,
       empty: true,
-      emptyMessage: 'Todavía no hay compras con cupón u otro descuento en este evento.',
+      emptyMessage: 'Todavía no hay compras con cupón u descuento parcial en este evento.',
       heroLabel: 'Descontado',
       heroValue: formatCurrency(0),
       stats: [],
-      conclusion: 'Cuando uses cupones o rebajas, aquí verás el impacto real sobre el subtotal.',
+      conclusion:
+        'Aquí solo cuentan rebajas parciales. Las ventas en $0 o con descuento del 100% aparecen en ventas manuales.',
       ctaLabel: 'Gestionar cupones',
       ctaAction: 'cupones',
       ctaVariant: 'secondary',
@@ -981,7 +982,6 @@ export function buildDescuentosSection(
     stats: [
       { label: 'Compras con descuento', value: String(d.compras) },
       { label: 'Entradas afectadas', value: d.boletas.toLocaleString('es-CO') },
-      { label: '% de compras', value: `${d.pctCompras}%` },
     ],
     conclusion:
       d.pctCompras >= 30
@@ -1004,7 +1004,7 @@ export function buildVentasManualesSection(
       question,
       empty: true,
       emptyMessage: 'No hay ventas manuales ni cortesías al 100% registradas todavía.',
-      heroLabel: 'Valor de lista',
+      heroLabel: 'Valor venta manual',
       heroValue: formatCurrency(0),
       stats: [],
       conclusion:
@@ -1018,17 +1018,16 @@ export function buildVentasManualesSection(
   return {
     question,
     empty: false,
-    heroLabel: 'Valor de lista regalado',
+    heroLabel: 'Valor venta manual',
     heroValue: formatCurrency(m.valorLista),
     stats: [
       { label: 'Ventas manuales', value: String(m.compras) },
       { label: 'Entradas entregadas', value: m.boletas.toLocaleString('es-CO') },
-      { label: '% de compras', value: `${m.pctCompras}%` },
     ],
     conclusion:
       m.pctCompras >= 20
         ? `El ${m.pctCompras}% de las compras son cortesía o carga manual. Úsalo con criterio para no distorsionar el recaudo.`
-        : `${m.compras} venta${m.compras === 1 ? '' : 's'} manual${m.compras === 1 ? '' : 'es'} por un valor de lista de ${formatCurrency(m.valorLista)}.`,
+        : `${m.compras} venta${m.compras === 1 ? '' : 's'} manual${m.compras === 1 ? '' : 'es'} por ${formatCurrency(m.valorLista)}.`,
     ctaLabel: 'Ir a operaciones',
     ctaAction: 'operaciones',
     ctaVariant: 'secondary',

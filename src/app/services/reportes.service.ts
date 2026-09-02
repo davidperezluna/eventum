@@ -35,7 +35,7 @@ export interface ReporteEvento {
 
 export interface EventoDescuentosManualesStats {
   comprasCompletadas: number;
-  /** Compras con descuento_total > 0 (cupones, cortesías, etc.). */
+  /** Compras con descuento parcial (excluye cortesía 100% / venta manual). */
   descuentos: {
     compras: number;
     monto: number;
@@ -868,7 +868,8 @@ export class ReportesService {
         const esManual =
           total === 0 || (subtotal > 0 && descuento >= subtotal - 0.01);
 
-        if (descuento > 0) {
+        // Descuentos parciales (cupones/rebajas). La cortesía 100% va solo a manuales.
+        if (descuento > 0 && !esManual) {
           descCompras += 1;
           descMonto += Math.min(descuento, subtotal > 0 ? subtotal : descuento);
           descBoletas += boletas;
