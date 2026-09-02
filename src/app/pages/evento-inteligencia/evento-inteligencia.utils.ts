@@ -1,5 +1,9 @@
 import { Evento, TipoBoleta, TipoEstadoEvento, DashboardStats } from '../../types';
-import { ReporteEvento, ReporteVentas } from '../../services/reportes.service';
+import {
+  EventoDescuentosManualesStats,
+  ReporteEvento,
+  ReporteVentas,
+} from '../../services/reportes.service';
 import {
   buildFinanzasOrganizadorView,
   getRecaudoBrutoConsolidado,
@@ -15,6 +19,7 @@ import {
   IntelHeroMoment,
   IntelHoyInsight,
   IntelHoySection,
+  IntelMetricInsightSection,
   IntelOportunidad,
   IntelOportunidadesSection,
   IntelPulseCard,
@@ -944,6 +949,89 @@ export function buildOportunidadesSection(input: OportunidadesInput): IntelOport
     question: '¿Qué oportunidades tengo?',
     items: items.slice(0, 5),
     conclusion,
+  };
+}
+
+export function buildDescuentosSection(
+  stats: EventoDescuentosManualesStats | null,
+  formatCurrency: (n: number) => string,
+): IntelMetricInsightSection {
+  const question = '¿Cuánto estás descontando?';
+  const d = stats?.descuentos;
+  if (!stats || !d || d.compras === 0) {
+    return {
+      question,
+      empty: true,
+      emptyMessage: 'Todavía no hay compras con cupón u otro descuento en este evento.',
+      heroLabel: 'Descontado',
+      heroValue: formatCurrency(0),
+      stats: [],
+      conclusion: 'Cuando uses cupones o rebajas, aquí verás el impacto real sobre el subtotal.',
+      ctaLabel: 'Gestionar cupones',
+      ctaAction: 'cupones',
+      ctaVariant: 'secondary',
+    };
+  }
+
+  return {
+    question,
+    empty: false,
+    heroLabel: 'Descontado',
+    heroValue: formatCurrency(d.monto),
+    stats: [
+      { label: 'Compras con descuento', value: String(d.compras) },
+      { label: 'Entradas afectadas', value: d.boletas.toLocaleString('es-CO') },
+      { label: '% de compras', value: `${d.pctCompras}%` },
+    ],
+    conclusion:
+      d.pctCompras >= 30
+        ? `El ${d.pctCompras}% de tus compras completadas llegó con descuento. Revisa si el margen sigue sano.`
+        : `Hay ${d.compras} compra${d.compras === 1 ? '' : 's'} con descuento; el efecto sigue controlado.`,
+    ctaLabel: 'Gestionar cupones',
+    ctaAction: 'cupones',
+    ctaVariant: 'secondary',
+  };
+}
+
+export function buildVentasManualesSection(
+  stats: EventoDescuentosManualesStats | null,
+  formatCurrency: (n: number) => string,
+): IntelMetricInsightSection {
+  const question = '¿Cuántas ventas manuales llevas?';
+  const m = stats?.manuales;
+  if (!stats || !m || m.compras === 0) {
+    return {
+      question,
+      empty: true,
+      emptyMessage: 'No hay ventas manuales ni cortesías al 100% registradas todavía.',
+      heroLabel: 'Valor de lista',
+      heroValue: formatCurrency(0),
+      stats: [],
+      conclusion:
+        'Las ventas en $0 o con descuento igual al precio aparecen aquí como cortesía / carga manual.',
+      ctaLabel: 'Ir a operaciones',
+      ctaAction: 'operaciones',
+      ctaVariant: 'secondary',
+    };
+  }
+
+  return {
+    question,
+    empty: false,
+    heroLabel: 'Valor de lista regalado',
+    heroValue: formatCurrency(m.valorLista),
+    stats: [
+      { label: 'Ventas manuales', value: String(m.compras) },
+      { label: 'Entradas entregadas', value: m.boletas.toLocaleString('es-CO') },
+      { label: '% de compras', value: `${m.pctCompras}%` },
+    ],
+    conclusion:
+      m.pctCompras >= 20
+        ? `El ${m.pctCompras}% de las compras son cortesía o carga manual. Úsalo con criterio para no distorsionar el recaudo.`
+        : `${m.compras} venta${m.compras === 1 ? '' : 's'} manual${m.compras === 1 ? '' : 'es'} por un valor de lista de ${formatCurrency(m.valorLista)}.`,
+    ctaLabel: 'Ir a operaciones',
+    ctaAction: 'operaciones',
+    ctaVariant: 'secondary',
   };
 }
 

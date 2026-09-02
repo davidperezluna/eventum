@@ -332,6 +332,78 @@
         </article>
       </div>
 
+      <!-- Fila — Descuentos + ventas manuales -->
+      <div
+        class="ev-intel-ed__row ev-intel-ed__row--duo ev-intel-ed__row--equal"
+        *ngIf="descuentosSection || ventasManualesSection"
+      >
+        <article
+          *ngIf="descuentosSection as d"
+          class="ev-intel-card ev-intel-card--descuentos"
+          [attr.aria-label]="d.question"
+        >
+          <header class="ev-intel-card__head">
+            <span class="ev-intel-card__icon material-icons" aria-hidden="true">local_offer</span>
+            <p class="ev-intel-card__question">{{ d.question }}</p>
+          </header>
+          <ng-container *ngIf="!d.empty; else descuentosEmpty">
+            <div class="ev-intel-metric-hero">
+              <span class="ev-intel-metric-hero__label">{{ d.heroLabel }}</span>
+              <p class="ev-intel-metric-hero__value">{{ d.heroValue }}</p>
+            </div>
+            <div class="ev-intel-ventas-grid">
+              <div class="ev-intel-stat" *ngFor="let s of d.stats">
+                <span class="ev-intel-stat__label">{{ s.label }}</span>
+                <span class="ev-intel-stat__value">{{ s.value }}</span>
+              </div>
+            </div>
+          </ng-container>
+          <ng-template #descuentosEmpty>
+            <p class="ev-intel-card__empty">{{ d.emptyMessage }}</p>
+          </ng-template>
+          <p class="ev-intel-card__conclusion" *ngIf="d.conclusion">{{ d.conclusion }}</p>
+          <footer class="ev-intel-card__foot" *ngIf="d.ctaLabel">
+            <button type="button" class="ev-intel-story__link" (click)="onStoryCta(d.ctaAction)">
+              <span aria-hidden="true">→</span>
+              {{ d.ctaLabel }}
+            </button>
+          </footer>
+        </article>
+
+        <article
+          *ngIf="ventasManualesSection as m"
+          class="ev-intel-card ev-intel-card--manuales"
+          [attr.aria-label]="m.question"
+        >
+          <header class="ev-intel-card__head">
+            <span class="ev-intel-card__icon material-icons" aria-hidden="true">handshake</span>
+            <p class="ev-intel-card__question">{{ m.question }}</p>
+          </header>
+          <ng-container *ngIf="!m.empty; else manualesEmpty">
+            <div class="ev-intel-metric-hero">
+              <span class="ev-intel-metric-hero__label">{{ m.heroLabel }}</span>
+              <p class="ev-intel-metric-hero__value">{{ m.heroValue }}</p>
+            </div>
+            <div class="ev-intel-ventas-grid">
+              <div class="ev-intel-stat" *ngFor="let s of m.stats">
+                <span class="ev-intel-stat__label">{{ s.label }}</span>
+                <span class="ev-intel-stat__value">{{ s.value }}</span>
+              </div>
+            </div>
+          </ng-container>
+          <ng-template #manualesEmpty>
+            <p class="ev-intel-card__empty">{{ m.emptyMessage }}</p>
+          </ng-template>
+          <p class="ev-intel-card__conclusion" *ngIf="m.conclusion">{{ m.conclusion }}</p>
+          <footer class="ev-intel-card__foot" *ngIf="m.ctaLabel">
+            <button type="button" class="ev-intel-story__link" (click)="onStoryCta(m.ctaAction)">
+              <span aria-hidden="true">→</span>
+              {{ m.ctaLabel }}
+            </button>
+          </footer>
+        </article>
+      </div>
+
       <!-- Fila 4 — Productos + spotlight (duo asimétrico) -->
       <div class="ev-intel-ed__row ev-intel-ed__row--asymmetric" *ngIf="productosSection as p">
         <article class="ev-intel-card ev-intel-card--productos ev-intel-card--md" [attr.aria-label]="p.question">

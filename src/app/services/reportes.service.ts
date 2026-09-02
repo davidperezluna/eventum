@@ -33,6 +33,24 @@ export interface ReporteEvento {
   fecha_fin: string;
 }
 
+export interface EventoDescuentosManualesStats {
+  comprasCompletadas: number;
+  /** Compras con descuento_total > 0 (cupones, cortesías, etc.). */
+  descuentos: {
+    compras: number;
+    monto: number;
+    boletas: number;
+    pctCompras: number;
+  };
+  /** total = 0 o descuento cubre el subtotal (venta manual / cortesía 100%). */
+  manuales: {
+    compras: number;
+    valorLista: number;
+    boletas: number;
+    pctCompras: number;
+  };
+}
+
 export interface VentaCompletadaDetalle {
   compra_id: number;
   fecha_compra: string;
@@ -804,6 +822,86 @@ export class ReportesService {
       console.error('Error en getIngresosNetosPorTipoBoleta:', err);
     }
     return result;
+  }
+
+  /**
+   * Descuentos y ventas manuales/cortesía de un evento (compras completadas).
+   * Manual: total = 0 o descuento_total >= subtotal.
+   */
+  async getDescuentosYManualesPorEvento(eventoId: number): Promise<EventoDescuentosManualesStats> {
+    const empty: EventoDescuentosManualesStats = {
+      comprasCompletadas: 0,
+      descuentos: { compras: 0, monto: 0, boletas: 0, pctCompras: 0 },
+      manuales: { compras: 0, valorLista: 0, boletas: 0, pctCompras: 0 },
+    };
+    try {
+      type Row = {
+        id: number;
+        total: number | null;
+        subtotal: number | null;
+        descuento_total: number | null;
+        boletas_compradas: { id: number }[] | null;
+      };
+
+      const compras = await this.fetchAllPages<Row>((from, to) =>
+        this.supabase
+          .from('compras')
+          .select('id, total, subtotal, descuento_total, boletas_compradas(id)')
+          .eq('evento_id', eventoId)
+          .eq('estado_pago', 'completado')
+          .range(from, to)
+      );
+
+      const totalCompras = compras.length;
+      let descCompras = 0;
+      let descMonto = 0;
+      let descBoletas = 0;
+      let manCompras = 0;
+      let manValor = 0;
+      let manBoletas = 0;
+
+      for (const c of compras) {
+        const subtotal = Math.max(0, Number(c.subtotal ?? 0));
+        const descuento = Math.max(0, Number(c.descuento_total ?? 0));
+        const total = Math.max(0, Number(c.total ?? 0));
+        const boletas = Array.isArray(c.boletas_compradas) ? c.boletas_compradas.length : 0;
+        const esManual =
+          total === 0 || (subtotal > 0 && descuento >= subtotal - 0.01);
+
+        if (descuento > 0) {
+          descCompras += 1;
+          descMonto += Math.min(descuento, subtotal > 0 ? subtotal : descuento);
+          descBoletas += boletas;
+        }
+        if (esManual) {
+          manCompras += 1;
+          manValor += subtotal > 0 ? subtotal : descuento;
+          manBoletas += boletas;
+        }
+      }
+
+      const pct = (n: number) =>
+        totalCompras > 0 ? Math.round((n / totalCompras) * 100) : 0;
+
+      return {
+        comprasCompletadas: totalCompras,
+        descuentos: {
+          compras: descCompras,
+          monto: Math.round(descMonto),
+          boletas: descBoletas,
+          pctCompras: pct(descCompras),
+        },
+        manuales: {
+          compras: manCompras,
+          valorLista: Math.round(manValor),
+          boletas: manBoletas,
+          pctCompras: pct(manCompras),
+        },
+      };
+    } catch (err) {
+      console.error('Error en getDescuentosYManualesPorEvento:', err);
+      return empty;
+    }
   }
 }
 

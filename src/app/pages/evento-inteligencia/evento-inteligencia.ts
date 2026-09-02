@@ -16,7 +16,7 @@ import { DashboardService } from '../../services/dashboard.service';
 
 import { DashboardOrganizadorService } from '../../services/dashboard-organizador.service';
 
-import { ReportesService, ReporteEvento, ReporteVentas } from '../../services/reportes.service';
+import { ReportesService, ReporteEvento, ReporteVentas, EventoDescuentosManualesStats } from '../../services/reportes.service';
 
 import { DemoDataProvider } from '../../demo/demo-data.provider';
 
@@ -56,6 +56,8 @@ import {
 
   IntelVentasSection,
 
+  IntelMetricInsightSection,
+
   IntelCtaAction,
 
 } from './evento-inteligencia.types';
@@ -65,6 +67,8 @@ import {
   buildActionNow,
 
   buildBoletasRankingSection,
+
+  buildDescuentosSection,
 
   buildHeroMoment,
 
@@ -77,6 +81,8 @@ import {
   buildIntelFinanzasHero,
 
   buildPulseCards,
+
+  buildVentasManualesSection,
 
   buildVentasSection,
 
@@ -151,6 +157,8 @@ export class EventoInteligencia implements OnInit {
   /** Ingresos netos (post-descuento) por tipo_boleta_id desde compras reales. */
   private ingresosNetosPorTipo = new Map<number, number>();
 
+  private descuentosManualesStats: EventoDescuentosManualesStats | null = null;
+
 
 
   hero: IntelHeroMoment | null = null;
@@ -170,6 +178,10 @@ export class EventoInteligencia implements OnInit {
   hoySection: IntelHoySection | null = null;
 
   oportunidadesSection: IntelOportunidadesSection | null = null;
+
+  descuentosSection: IntelMetricInsightSection | null = null;
+
+  ventasManualesSection: IntelMetricInsightSection | null = null;
 
 
 
@@ -291,7 +303,7 @@ export class EventoInteligencia implements OnInit {
 
 
 
-      const [tipos, productos, stats, reporte, ventas7d, cupones, ingresosPorTipo] = await Promise.all([
+      const [tipos, productos, stats, reporte, ventas7d, cupones, ingresosPorTipo, descuentosManuales] = await Promise.all([
 
         this.boletasService
           .getTiposBoleta(this.eventoId, { includeInactive: true })
@@ -319,6 +331,8 @@ export class EventoInteligencia implements OnInit {
           () => new Map<number, { vendidas: number; ingresosNetos: number }>(),
         ),
 
+        this.reportesService.getDescuentosYManualesPorEvento(this.eventoId).catch(() => null),
+
       ]);
 
 
@@ -336,6 +350,9 @@ export class EventoInteligencia implements OnInit {
       this.ingresosNetosPorTipo = new Map(
         [...ingresosPorTipo.entries()].map(([id, row]) => [id, row.ingresosNetos]),
       );
+
+      this.descuentosManualesStats = descuentosManuales;
+
 
       const cuponesDemo = await this.demoDataProvider.applyCupones(cupones, this.eventoId);
 
@@ -387,6 +404,10 @@ export class EventoInteligencia implements OnInit {
 
       this.oportunidadesSection = null;
 
+      this.descuentosSection = null;
+
+      this.ventasManualesSection = null;
+
       return;
 
     }
@@ -427,6 +448,10 @@ export class EventoInteligencia implements OnInit {
 
     this.hoySection = buildHoySection(this.stats, this.ventas7d, this.productos.length > 0, fmtFinanzas);
 
+    this.descuentosSection = buildDescuentosSection(this.descuentosManualesStats, fmtFinanzas);
+
+    this.ventasManualesSection = buildVentasManualesSection(this.descuentosManualesStats, fmtFinanzas);
+
     this.oportunidadesSection = buildOportunidadesSection({
 
       rankingBoletas: boletasRanking,
@@ -451,7 +476,14 @@ export class EventoInteligencia implements OnInit {
 
     applyIntelCtaPolicy(
       this.actionNow,
-      [this.ventasSection, this.boletasSection, this.productosSection, this.hoySection],
+      [
+        this.ventasSection,
+        this.boletasSection,
+        this.productosSection,
+        this.hoySection,
+        this.descuentosSection,
+        this.ventasManualesSection,
+      ],
       this.oportunidadesSection,
     );
 

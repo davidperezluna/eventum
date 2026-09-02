@@ -754,6 +754,55 @@
   align-items: stretch;
 }
 
+.ev-intel-ed__row--equal {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ev-intel-metric-hero {
+  margin-bottom: 1rem;
+  padding: 0.95rem 1.05rem;
+  border-radius: calc(var(--ev-intel-radius) - 4px);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--ev-intel-accent) 8%, #fff), #fff);
+  border: 1px solid color-mix(in srgb, var(--ev-intel-accent) 16%, transparent);
+}
+
+.ev-intel-metric-hero__label {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.ev-intel-metric-hero__value {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--ev-intel-accent-strong);
+  letter-spacing: -0.02em;
+}
+
+.ev-intel-card--descuentos .ev-intel-metric-hero {
+  background: linear-gradient(135deg, color-mix(in srgb, #f59e0b 10%, #fff), #fff);
+  border-color: color-mix(in srgb, #f59e0b 20%, transparent);
+}
+
+.ev-intel-card--descuentos .ev-intel-metric-hero__value {
+  color: #b45309;
+}
+
+.ev-intel-card--manuales .ev-intel-metric-hero {
+  background: linear-gradient(135deg, color-mix(in srgb, #0ea5e9 10%, #fff), #fff);
+  border-color: color-mix(in srgb, #0ea5e9 20%, transparent);
+}
+
+.ev-intel-card--manuales .ev-intel-metric-hero__value {
+  color: #0369a1;
+}
+
 .ev-intel-ed__row--wide {
   grid-template-columns: 1fr;
 }

@@ -136,3 +136,14 @@ export interface IntelAforoTotals {
   total: number;
   pct: number;
 }
+
+/** Card de descuentos (cupones / rebajas) o ventas manuales / cortesía. */
+export interface IntelMetricInsightSection extends IntelCtaCapable {
+  question: string;
+  empty: boolean;
+  emptyMessage?: string;
+  heroLabel: string;
+  heroValue: string;
+  stats: Array<{ label: string; value: string }>;
+  conclusion?: string;
+}
