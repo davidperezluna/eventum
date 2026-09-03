@@ -3312,7 +3312,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.tabProductosDetalle = tab;
   }
 
-  /** Selector Entradas/Productos solo cuando hay ambos. */
+  /** Tabs Entradas/Productos solo cuando hay ambos. */
   mostrarSelectorTipoEventoDetalle(grupo: EventoBoletasGrupo | null | undefined): boolean {
     return this.eventoTieneEntradas(grupo) && this.eventoTieneProductos(grupo);
   }
@@ -3334,9 +3334,18 @@ export class MisCompras implements OnInit, OnDestroy {
   /** Título del feed según pestaña activa. */
   tituloFeedEventoDetalle(grupo: EventoBoletasGrupo): string {
     if (this.tabEventoDetalle === 'productos') {
-      return this.tabProductosDetalle === 'redimidas' ? 'Productos redimidos' : 'Productos por retirar';
+      return this.tabProductosDetalle === 'redimidas' ? 'Productos redimidos' : 'Tus productos';
     }
     return 'Tus entradas';
+  }
+
+  leadFeedEventoDetalle(grupo: EventoBoletasGrupo): string {
+    if (this.tabEventoDetalle === 'productos') {
+      return this.tabProductosDetalle === 'redimidas'
+        ? 'Productos que ya retiraste o consumiste en este evento.'
+        : 'Pedidos listos para retirar en el punto de entrega.';
+    }
+    return 'Tus boletas listas para el evento.';
   }
 
   contadorItemsFeedEventoDetalle(grupo: EventoBoletasGrupo): number {
@@ -3355,12 +3364,9 @@ export class MisCompras implements OnInit, OnDestroy {
     );
   }
 
-  mostrarResumenTicketEvento(grupo: EventoBoletasGrupo | null | undefined): boolean {
-    if (!grupo) return false;
-    return (
-      this.mostrarSelectorTipoEventoDetalle(grupo) ||
-      (this.eventoTieneEntradas(grupo) && grupo.totalBoletas > 0 && this.eventoTieneProductos(grupo))
-    );
+  /** Ya no se muestra el ticket Resumen del hero (tabs viven en el workspace). */
+  mostrarResumenTicketEvento(_grupo: EventoBoletasGrupo | null | undefined): boolean {
+    return false;
   }
 
   getEventoDetalleImageUrl(grupo: EventoBoletasGrupo): string {

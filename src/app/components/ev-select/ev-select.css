@@ -24,10 +24,3 @@
 :host(.ev-select-host--sheet-open) {
   position: relative;
 }
-
-.ev-select-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 12140;
-  background: transparent;
-}

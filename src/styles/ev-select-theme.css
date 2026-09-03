@@ -315,6 +315,14 @@ body > .ng-dropdown-panel.ev-select-panel:not(.ev-select-panel--sheet) .ng-dropd
 
 /* ---- Mobile bottom sheet ---- */
 
+body > .ev-select-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12140;
+  background: transparent;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body > .ng-dropdown-panel.ev-select-panel--sheet {
   position: fixed !important;
   top: auto !important;
@@ -397,6 +405,44 @@ body > .ng-dropdown-panel.ev-select-panel--sheet {
 
 .ev-select-sheet-head__close .material-icons {
   font-size: 1.1rem;
+}
+
+.ev-select-sheet-search {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--ev-form-border, rgba(15, 23, 42, 0.07));
+  border-radius: var(--ev-form-radius-control, 10px);
+  background: var(--ev-form-canvas, #fafbfc);
+}
+
+.ev-select-sheet-search:focus-within {
+  border-color: var(--ev-form-border-hover, rgba(15, 23, 42, 0.16));
+  background: #fff;
+}
+
+.ev-select-sheet-search .material-icons {
+  font-size: 1.05rem;
+  color: var(--ev-select-muted);
+}
+
+.ev-select-sheet-search__input {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.5rem;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ev-select-ink);
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.ev-select-sheet-search__input::placeholder {
+  color: var(--ev-select-muted);
 }
 
 .ev-select-panel--sheet .ng-dropdown-panel-items {

@@ -5016,21 +5016,45 @@
   gap: 1rem;
 }
 
-.mc-evento-detalle-explorer .mc-evento-feed-header h2 {
-  color: var(--dx-ink);
-  font-family: var(--dx-display);
-  font-size: clamp(1.65rem, 3vw, 2.35rem);
-  line-height: 1;
-  letter-spacing: -0.055em;
+.mc-evento-detalle-explorer .mc-evento-feed-header {
+  display: none;
 }
 
-.mc-evento-detalle-explorer .cupos-feed-kicker,
-.mc-evento-detalle-explorer .mc-evento-feed-header .cupos-feed-kicker {
-  color: var(--dx-accent-dark);
+.mc-evento-tab-intro {
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.mc-evento-tab-intro__kicker {
+  margin: 0 0 0.35rem;
+  color: var(--dx-accent-dark, #5033b3);
   font-size: 0.6rem;
   font-weight: 850;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+.mc-evento-tab-intro__title {
+  margin: 0;
+  color: var(--dx-ink, #191720);
+  font-family: var(--dx-display);
+  font-size: clamp(1.65rem, 3vw, 2.35rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+.mc-evento-tab-intro__lead {
+  max-width: 36rem;
+  margin: 0.55rem 0 0;
+  color: var(--dx-subtle, #706b78);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.mc-evento-detalle-feed .evento-productos-section,
+.mc-evento-detalle-feed .evento-entradas-panel {
+  margin: 0;
 }
 
 .mc-evento-detalle-feed .productos-panel {
@@ -5273,6 +5297,18 @@
   .mc-evento-detalle-explorer .mc-evento-tipo-panel .cupos-filter-option.active .cupos-filter-icon {
     color: var(--dx-accent, #7657db);
     opacity: 1;
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-tab-intro {
+    margin-bottom: 0.9rem;
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-tab-intro__title {
+    font-size: clamp(1.55rem, 7vw, 2rem);
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-tab-intro__lead {
+    font-size: 0.74rem;
   }
 
   /* Estado: fila tipográfica dentro del panel, no pastillas sueltas */
@@ -5561,10 +5597,7 @@
   }
 
   .mc-evento-dx-hero__checkout {
-    display: block;
-    margin-top: auto;
-    padding-top: 1.25rem;
-    border-top: 1px solid var(--dx-line);
+    display: none;
   }
 
   .mc-evento-detalle-explorer .cupos-explorer-shell {
@@ -5586,18 +5619,186 @@
 
   .mc-evento-detalle-explorer .cupos-workspace {
     display: grid;
-    grid-template-columns: minmax(0, 1.65fr) minmax(17rem, 0.7fr);
+    grid-template-columns: minmax(16.5rem, 18.5rem) minmax(0, 1fr);
     align-items: start;
-    gap: 1.25rem;
+    gap: 1.35rem;
     padding-top: 2rem;
   }
 
   .mc-evento-detalle-explorer .cupos-controls {
     position: sticky;
     top: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
     width: auto;
     max-width: none;
-    order: 2;
+    order: 0;
+  }
+
+  .mc-evento-detalle-explorer .cupos-filter-panel {
+    margin: 0;
+    padding: 1rem 0.95rem 0.95rem;
+    border: 1px solid var(--dx-line, #e6e1ea);
+    border-radius: 1rem;
+    background: var(--dx-panel, #fff);
+    box-shadow: 0 0.45rem 1.25rem rgba(39, 29, 70, 0.05);
+  }
+
+  .mc-evento-detalle-explorer .cupos-filter-heading {
+    margin-bottom: 0.85rem;
+  }
+
+  .mc-evento-detalle-explorer .cupos-filter-heading h2 {
+    font-size: 0.88rem;
+  }
+
+  .mc-evento-detalle-explorer .cupos-filter-heading p {
+    font-size: 0.7rem;
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-tipo-panel .cupos-filter-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-tipo-panel .cupos-filter-option,
+  .mc-evento-detalle-explorer .mc-evento-tipo-panel .cupos-filter-option:first-child,
+  .mc-evento-detalle-explorer .mc-evento-tipo-panel .cupos-filter-option:last-child {
+    width: 100%;
+    margin: 0;
+    padding: 0.6rem 0.7rem;
+    justify-content: initial;
+    clip-path: none;
+    border-radius: 0.7rem;
+    background: transparent;
+    color: var(--dx-subtle, #706b78);
+    filter: none;
+    box-shadow: none;
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-tipo-panel .cupos-filter-option .cupos-filter-icon {
+    color: #9a95a6;
+    opacity: 1;
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-tipo-panel .cupos-filter-option.active {
+    background: rgba(118, 87, 219, 0.08);
+    color: var(--dx-accent-dark, #5033b3);
+    box-shadow: none;
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-tipo-panel .cupos-filter-option.active .cupos-filter-icon,
+  .mc-evento-detalle-explorer .mc-evento-tipo-panel .cupos-filter-option.active .cupos-filter-check {
+    color: var(--dx-accent, #7657db);
+    opacity: 1;
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-safety {
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--dx-line, #e6e1ea);
+    border-radius: 1rem;
+    background: var(--dx-panel, #fff);
+    box-shadow: 0 0.45rem 1.25rem rgba(39, 29, 70, 0.05);
+    overflow: hidden;
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-safety .cupos-safety-summary {
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr) 1.1rem;
+    align-items: start;
+    gap: 0.65rem;
+    margin: 0;
+    padding: 0.95rem 1rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--dx-ink, #191720);
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-safety .cupos-safety-summary > .material-icons:first-child {
+    margin-top: 0.1rem;
+    color: var(--dx-accent, #7657db);
+    font-size: 1.15rem;
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-safety .cupos-safety-summary__copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-safety .cupos-safety-summary__copy strong {
+    font-size: 0.82rem;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-safety .cupos-safety-summary__copy small {
+    color: var(--dx-subtle, #706b78);
+    font-size: 0.68rem;
+    font-weight: 550;
+    line-height: 1.35;
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-safety .cupos-safety-chevron {
+    margin: 0.05rem 0 0;
+    color: #9a95a6;
+    font-size: 1.15rem;
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-safety[open] .cupos-safety-summary {
+    border-bottom: 1px solid var(--dx-line, #e6e1ea);
+    background: rgba(118, 87, 219, 0.04);
+    color: var(--dx-ink, #191720);
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-safety .cupos-safety-body,
+  .mc-evento-detalle-explorer .mc-evento-safety[open] .cupos-safety-body {
+    margin: 0;
+    padding: 0.85rem 1rem 1rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-safety__tips {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-safety__tips li {
+    display: grid;
+    grid-template-columns: 1.1rem minmax(0, 1fr);
+    gap: 0.55rem;
+    align-items: start;
+    color: var(--dx-subtle, #706b78);
+    font-size: 0.74rem;
+    line-height: 1.45;
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-safety__tips .material-icons {
+    margin-top: 0.05rem;
+    color: var(--dx-accent, #7657db);
+    font-size: 1rem;
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-safety__link {
+    margin: 0.85rem 0 0;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--dx-line, #e6e1ea);
+  }
+
+  .mc-evento-detalle-explorer .mc-evento-safety__link .cupos-inline-link {
+    font-size: 0.74rem;
+    font-weight: 700;
   }
 
   .mc-evento-detalle-explorer .cupos-feed,
@@ -5614,13 +5815,29 @@
   }
 
   .mc-evento-detalle-explorer .mc-evento-feed-header {
-    display: flex;
-    margin-bottom: 1.25rem;
+    display: none;
   }
 
+  .mc-evento-detalle-explorer .mc-evento-tab-intro {
+    margin-bottom: 1.15rem;
+  }
+
+  /* Con tabs, el título grande sobra en desktop (el selector ya indica la sección). */
+  .mc-evento-detalle-explorer .cupos-workspace:has(.mc-evento-tipo-panel) .mc-evento-tab-intro {
+    display: none;
+  }
+
+  /* Entradas y productos comparten rejilla: mismas tarjetas, 3 por fila. */
   .mc-evento-detalle-explorer .boletas-grid--entradas-detalle,
   .mc-evento-detalle-explorer .productos-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
     gap: 1rem;
+  }
+
+  .mc-evento-detalle-explorer .productos-list app-compra-ticket-card {
+    width: 100%;
   }
 
   .mc-evento-detalle-explorer .cupos-workspace--solo-feed {
@@ -5642,7 +5859,12 @@
   }
 
   .mc-evento-detalle-explorer .cupos-workspace {
-    grid-template-columns: minmax(0, 1fr) 16rem;
+    grid-template-columns: minmax(15rem, 16.5rem) minmax(0, 1fr);
+  }
+
+  .mc-evento-detalle-explorer .boletas-grid--entradas-detalle,
+  .mc-evento-detalle-explorer .productos-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

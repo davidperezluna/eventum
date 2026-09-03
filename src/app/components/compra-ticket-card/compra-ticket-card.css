@@ -9,7 +9,6 @@
   margin-inline: 0;
   box-shadow: 0 10px 26px -18px rgba(15, 23, 42, 0.22), 0 2px 8px -6px rgba(15, 23, 42, 0.12);
 }
-
 .ticket-card {
   --ticket-border: var(--ec-border, #e2e8f0);
   --ticket-radius: 10px;

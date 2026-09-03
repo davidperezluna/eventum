@@ -424,15 +424,30 @@
           <details class="cupos-safety mc-evento-safety">
             <summary class="cupos-safety-summary">
               <span class="material-icons" aria-hidden="true">verified_user</span>
-              <span>
+              <span class="cupos-safety-summary__copy">
                 <strong>Usa tus entradas con seguridad</strong>
                 <small>QR, traslados y acceso en puerta</small>
               </span>
               <span class="material-icons cupos-safety-chevron" aria-hidden="true">expand_more</span>
             </summary>
             <div class="cupos-safety-body">
-              <p>El código QR se activa cerca de la hora del evento. Si transfieres una entrada, hazlo solo con el flujo oficial de Eventum.</p>
-              <p><a routerLink="/mis-compras/guia" class="cupos-inline-link">Ver guía de entradas</a></p>
+              <ul class="mc-evento-safety__tips">
+                <li>
+                  <span class="material-icons" aria-hidden="true">qr_code_2</span>
+                  <span>El código QR se activa cerca de la hora del evento.</span>
+                </li>
+                <li>
+                  <span class="material-icons" aria-hidden="true">swap_horiz</span>
+                  <span>Si transfieres una entrada, usa solo el flujo oficial de Eventum.</span>
+                </li>
+                <li>
+                  <span class="material-icons" aria-hidden="true">door_front</span>
+                  <span>En puerta muestra el QR desde la app; no compartas capturas.</span>
+                </li>
+              </ul>
+              <p class="mc-evento-safety__link">
+                <a routerLink="/mis-compras/guia" class="cupos-inline-link">Ver guía de entradas</a>
+              </p>
             </div>
           </details>
         </aside>
@@ -447,6 +462,12 @@
               {{ contadorItemsFeedEventoDetalle(detalle) }}
               {{ contadorItemsFeedEventoDetalle(detalle) === 1 ? 'ítem' : 'ítems' }}
             </span>
+          </header>
+
+          <header class="mc-evento-tab-intro">
+            <p class="mc-evento-tab-intro__kicker">Mis compras</p>
+            <h2 class="mc-evento-tab-intro__title">{{ tituloFeedEventoDetalle(detalle) }}</h2>
+            <p class="mc-evento-tab-intro__lead">{{ leadFeedEventoDetalle(detalle) }}</p>
           </header>
 
           <ng-container *ngIf="tabEventoDetalle === 'entradas' && eventoTieneEntradas(detalle)">

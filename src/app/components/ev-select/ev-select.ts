@@ -93,6 +93,11 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
   private mobileCloseHandler: (() => void) | null = null;
   private mobileContainerEl: HTMLElement | null = null;
   private mobileTouchStartHandler: ((event: TouchEvent) => void) | null = null;
+  private backdropEl: HTMLElement | null = null;
+  private outsidePointerHandler: ((event: Event) => void) | null = null;
+  private sheetSearchEl: HTMLInputElement | null = null;
+  private sheetSearchHandler: ((event: Event) => void) | null = null;
+  private sheetSearchKeydownHandler: ((event: KeyboardEvent) => void) | null = null;
   readonly typeahead$ = new Subject<string>();
   private typeaheadSub?: Subscription;
   private panelScrollEl: HTMLElement | null = null;
@@ -116,10 +121,13 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
   }
 
   get isSearchable(): boolean {
-    if (this.isMobileViewport) {
-      return false;
-    }
-    if (this.searchable === true) {
+    // En móvil la búsqueda vive en el sheet, no en el input fantasma del control.
+    return !this.isMobileViewport && this.searchEnabled;
+  }
+
+  /** Búsqueda pedida por configuración, sin importar el viewport. */
+  get searchEnabled(): boolean {
+    if (this.serverSideSearch || this.searchable === true) {
       return true;
     }
     if (this.searchable === false) {
@@ -177,7 +185,10 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
 
   ngOnDestroy(): void {
     this.typeaheadSub?.unsubscribe();
+    this.unbindOutsidePointerClose();
+    this.removeBackdrop();
     this.cleanupMobilePanel();
+    this.teardownMobileContainerOpen();
     this.unlockBodyScroll();
   }
 
@@ -234,8 +245,10 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
   onOpen(): void {
     this.isOpen = true;
     if (this.isMobileSheet) {
+      this.mountBackdrop();
       this.lockBodyScroll();
     }
+    this.bindOutsidePointerClose();
     this.schedulePanelDecoration();
     this.applyMobileKeyboardGuard();
     this.cdr.markForCheck();
@@ -243,6 +256,8 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
 
   onClose(): void {
     this.isOpen = false;
+    this.unbindOutsidePointerClose();
+    this.removeBackdrop();
     this.cleanupMobilePanel();
     this.unlockBodyScroll();
     this.onTouched();
@@ -251,6 +266,65 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
 
   closePanel(): void {
     this.ngSelect?.close();
+  }
+
+  /**
+   * El backdrop vive en `body` (no en el host) para que ningún ancestro con
+   * transform/filter lo recorte y deje de cubrir la página en móvil.
+   */
+  private mountBackdrop(): void {
+    if (this.backdropEl) {
+      return;
+    }
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'ev-select-backdrop';
+    backdrop.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(backdrop);
+    this.backdropEl = backdrop;
+  }
+
+  private removeBackdrop(): void {
+    this.backdropEl?.remove();
+    this.backdropEl = null;
+  }
+
+  /** Cierra el panel al tocar cualquier punto fuera del control o del panel. */
+  private bindOutsidePointerClose(): void {
+    if (this.outsidePointerHandler) {
+      return;
+    }
+
+    this.outsidePointerHandler = (event: Event) => {
+      if (!this.isOpen) {
+        return;
+      }
+
+      const target = event.target as Node | null;
+      if (!target) {
+        return;
+      }
+
+      if (this.hostRef.nativeElement.contains(target)) {
+        return;
+      }
+
+      const panel = this.mobilePanelEl ?? this.getOpenPanel();
+      if (panel?.contains(target)) {
+        return;
+      }
+
+      this.closePanel();
+    };
+
+    document.addEventListener('pointerdown', this.outsidePointerHandler, { capture: true });
+  }
+
+  private unbindOutsidePointerClose(): void {
+    if (this.outsidePointerHandler) {
+      document.removeEventListener('pointerdown', this.outsidePointerHandler, { capture: true });
+    }
+    this.outsidePointerHandler = null;
   }
 
   private schedulePanelDecoration(retry = 0): void {
@@ -282,6 +356,9 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
 
       for (const root of roots) {
         root.querySelectorAll('input').forEach((node) => {
+          if (node.dataset['evSheetSearch'] === '1') {
+            return;
+          }
           this.guardMobileInput(node);
         });
       }
@@ -392,10 +469,85 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
 
         panel.insertBefore(head, panel.firstChild);
         this.mobileHeadEl = head;
+
+        if (this.searchEnabled) {
+          this.mountSheetSearch(head);
+        }
       }
     }
 
     this.bindPanelSmoothScroll(panel);
+  }
+
+  /**
+   * En móvil el input del control está bloqueado para no abrir el teclado, así
+   * que la búsqueda se hace con un input real dentro del sheet.
+   */
+  private mountSheetSearch(head: HTMLElement): void {
+    const field = document.createElement('label');
+    field.className = 'ev-select-sheet-search';
+    field.innerHTML = `
+      <span class="material-icons" aria-hidden="true">search</span>
+      <input
+        type="text"
+        class="ev-select-sheet-search__input"
+        data-ev-sheet-search="1"
+        inputmode="search"
+        enterkeyhint="search"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        placeholder="${this.escapeHtml(this.searchPlaceholder)}"
+        aria-label="${this.escapeHtml(this.searchPlaceholder)}"
+      />
+    `;
+
+    const input = field.querySelector('input') as HTMLInputElement | null;
+    if (!input) {
+      return;
+    }
+
+    this.sheetSearchHandler = () => {
+      this.ngSelect?.filter(input.value);
+      this.cdr.markForCheck();
+    };
+    this.sheetSearchKeydownHandler = (event: KeyboardEvent) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+      }
+    };
+
+    input.addEventListener('input', this.sheetSearchHandler);
+    input.addEventListener('keydown', this.sheetSearchKeydownHandler);
+
+    head.appendChild(field);
+    this.sheetSearchEl = input;
+
+    if (this.shouldAutofocusSheetSearch) {
+      setTimeout(() => input.focus({ preventScroll: true }), 120);
+    }
+  }
+
+  /** Con listas largas o búsqueda en servidor el teclado se abre de una. */
+  private get shouldAutofocusSheetSearch(): boolean {
+    return this.serverSideSearch || this.optionsSnapshot.length >= this.searchThreshold;
+  }
+
+  private cleanupSheetSearch(): void {
+    if (this.sheetSearchEl) {
+      if (this.sheetSearchHandler) {
+        this.sheetSearchEl.removeEventListener('input', this.sheetSearchHandler);
+      }
+      if (this.sheetSearchKeydownHandler) {
+        this.sheetSearchEl.removeEventListener('keydown', this.sheetSearchKeydownHandler);
+      }
+      this.sheetSearchEl.blur();
+    }
+
+    this.sheetSearchEl = null;
+    this.sheetSearchHandler = null;
+    this.sheetSearchKeydownHandler = null;
   }
 
   private bindPanelSmoothScroll(panel: HTMLElement): void {
@@ -477,6 +629,7 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
 
   private cleanupMobilePanel(): void {
     this.unbindPanelSmoothScroll();
+    this.cleanupSheetSearch();
     if (this.mobileCloseHandler && this.mobileHeadEl) {
       this.mobileHeadEl
         .querySelector('.ev-select-sheet-head__close')
