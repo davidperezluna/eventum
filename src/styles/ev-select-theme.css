@@ -445,6 +445,38 @@ body > .ng-dropdown-panel.ev-select-panel--sheet {
   color: var(--ev-select-muted);
 }
 
+/* Con el sheet abierto el spinner del control queda tapado: solo el del buscador. */
+.ev-select-host--sheet-open .ev-select.ng-select .ng-spinner-loader {
+  display: none;
+}
+
+.ev-select-sheet-search__spinner {
+  display: none;
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid color-mix(in srgb, var(--ev-select-accent, #7657db) 22%, transparent);
+  border-top-color: var(--ev-select-accent, #7657db);
+  border-radius: 50%;
+  animation: evSelectSheetSpin 0.7s linear infinite;
+}
+
+.ev-select-sheet-search--loading .ev-select-sheet-search__spinner {
+  display: block;
+}
+
+@keyframes evSelectSheetSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ev-select-sheet-search__spinner {
+    animation-duration: 2s;
+  }
+}
+
 .ev-select-panel--sheet .ng-dropdown-panel-items {
   max-height: min(52vh, 22rem);
   scroll-behavior: smooth;

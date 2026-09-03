@@ -27,6 +27,8 @@ import {
 
 let evSelectIdCounter = 0;
 const EV_SELECT_MOBILE_QUERY = '(max-width: 640px)';
+/** Margen (px) para distinguir un tap de un gesto de scroll. */
+const EV_SELECT_TAP_SLOP = 8;
 
 @Component({
   selector: 'ev-select',
@@ -64,8 +66,16 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
   @Input() searchPlaceholder = 'Buscar…';
   /** Desactiva filtro local; emite términos para búsqueda en servidor vía typeahead. */
   @Input({ transform: booleanAttribute }) serverSideSearch = false;
-  @Input({ transform: booleanAttribute }) loading = false;
   @Input({ transform: numberAttribute }) minSearchLength = 0;
+
+  @Input({ transform: booleanAttribute })
+  set loading(value: boolean) {
+    this.loadingFlag = value;
+    this.syncSheetSearchLoading();
+  }
+  get loading(): boolean {
+    return this.loadingFlag;
+  }
 
   @Output() selectionChange = new EventEmitter<unknown>();
   @Output() searchTermChange = new EventEmitter<string>();
@@ -93,9 +103,15 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
   private mobileCloseHandler: (() => void) | null = null;
   private mobileContainerEl: HTMLElement | null = null;
   private mobileTouchStartHandler: ((event: TouchEvent) => void) | null = null;
+  private mobileTouchMoveHandler: ((event: TouchEvent) => void) | null = null;
+  private mobileTouchEndHandler: ((event: TouchEvent) => void) | null = null;
+  private touchOrigin: { x: number; y: number } | null = null;
+  private touchMoved = false;
   private backdropEl: HTMLElement | null = null;
   private outsidePointerHandler: ((event: Event) => void) | null = null;
   private sheetSearchEl: HTMLInputElement | null = null;
+  private sheetSearchFieldEl: HTMLElement | null = null;
+  private loadingFlag = false;
   private sheetSearchHandler: ((event: Event) => void) | null = null;
   private sheetSearchKeydownHandler: ((event: KeyboardEvent) => void) | null = null;
   readonly typeahead$ = new Subject<string>();
@@ -309,8 +325,8 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
         return;
       }
 
-      const panel = this.mobilePanelEl ?? this.getOpenPanel();
-      if (panel?.contains(target)) {
+      const element = target instanceof Element ? target : target.parentElement;
+      if (element?.closest('.ng-dropdown-panel')) {
         return;
       }
 
@@ -412,8 +428,41 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
     this.teardownMobileContainerOpen();
     this.mobileContainerEl = container;
 
+    // Se abre en touchend y solo si el dedo no se movió: un swipe para
+    // desplazar la página no debe desplegar el panel.
     this.mobileTouchStartHandler = (event: TouchEvent) => {
-      if (this.disabled || this.isOpen) {
+      const touch = event.touches[0];
+      if (!touch || this.disabled || this.isOpen) {
+        this.touchOrigin = null;
+        return;
+      }
+
+      this.touchOrigin = { x: touch.clientX, y: touch.clientY };
+      this.touchMoved = false;
+    };
+
+    this.mobileTouchMoveHandler = (event: TouchEvent) => {
+      const origin = this.touchOrigin;
+      const touch = event.touches[0];
+      if (!origin || !touch) {
+        return;
+      }
+
+      const movedFar =
+        Math.abs(touch.clientX - origin.x) > EV_SELECT_TAP_SLOP ||
+        Math.abs(touch.clientY - origin.y) > EV_SELECT_TAP_SLOP;
+
+      if (movedFar) {
+        this.touchMoved = true;
+      }
+    };
+
+    this.mobileTouchEndHandler = (event: TouchEvent) => {
+      const wasTap = !!this.touchOrigin && !this.touchMoved;
+      this.touchOrigin = null;
+      this.touchMoved = false;
+
+      if (event.type === 'touchcancel' || !wasTap || this.disabled || this.isOpen) {
         return;
       }
 
@@ -422,20 +471,37 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
         return;
       }
 
+      // Evita el click sintético (y el foco del input fantasma) tras el tap.
       event.preventDefault();
       this.ngSelect?.open();
     };
 
-    container.addEventListener('touchstart', this.mobileTouchStartHandler, { passive: false });
+    container.addEventListener('touchstart', this.mobileTouchStartHandler, { passive: true });
+    container.addEventListener('touchmove', this.mobileTouchMoveHandler, { passive: true });
+    container.addEventListener('touchend', this.mobileTouchEndHandler, { passive: false });
+    container.addEventListener('touchcancel', this.mobileTouchEndHandler, { passive: false });
   }
 
   private teardownMobileContainerOpen(): void {
-    if (this.mobileContainerEl && this.mobileTouchStartHandler) {
-      this.mobileContainerEl.removeEventListener('touchstart', this.mobileTouchStartHandler);
+    if (this.mobileContainerEl) {
+      if (this.mobileTouchStartHandler) {
+        this.mobileContainerEl.removeEventListener('touchstart', this.mobileTouchStartHandler);
+      }
+      if (this.mobileTouchMoveHandler) {
+        this.mobileContainerEl.removeEventListener('touchmove', this.mobileTouchMoveHandler);
+      }
+      if (this.mobileTouchEndHandler) {
+        this.mobileContainerEl.removeEventListener('touchend', this.mobileTouchEndHandler);
+        this.mobileContainerEl.removeEventListener('touchcancel', this.mobileTouchEndHandler);
+      }
     }
 
     this.mobileContainerEl = null;
     this.mobileTouchStartHandler = null;
+    this.mobileTouchMoveHandler = null;
+    this.mobileTouchEndHandler = null;
+    this.touchOrigin = null;
+    this.touchMoved = false;
   }
 
   private decoratePanel(panel: HTMLElement): void {
@@ -487,7 +553,7 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
     const field = document.createElement('label');
     field.className = 'ev-select-sheet-search';
     field.innerHTML = `
-      <span class="material-icons" aria-hidden="true">search</span>
+      <span class="material-icons ev-select-sheet-search__icon" aria-hidden="true">search</span>
       <input
         type="text"
         class="ev-select-sheet-search__input"
@@ -501,6 +567,7 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
         placeholder="${this.escapeHtml(this.searchPlaceholder)}"
         aria-label="${this.escapeHtml(this.searchPlaceholder)}"
       />
+      <span class="ev-select-sheet-search__spinner" role="status" aria-label="Buscando"></span>
     `;
 
     const input = field.querySelector('input') as HTMLInputElement | null;
@@ -523,10 +590,17 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
 
     head.appendChild(field);
     this.sheetSearchEl = input;
+    this.sheetSearchFieldEl = field;
+    this.syncSheetSearchLoading();
 
     if (this.shouldAutofocusSheetSearch) {
       setTimeout(() => input.focus({ preventScroll: true }), 120);
     }
+  }
+
+  /** El spinner debe verse en el buscador del sheet, no en el control de fondo. */
+  private syncSheetSearchLoading(): void {
+    this.sheetSearchFieldEl?.classList.toggle('ev-select-sheet-search--loading', this.loadingFlag);
   }
 
   /** Con listas largas o búsqueda en servidor el teclado se abre de una. */
@@ -546,6 +620,7 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
     }
 
     this.sheetSearchEl = null;
+    this.sheetSearchFieldEl = null;
     this.sheetSearchHandler = null;
     this.sheetSearchKeydownHandler = null;
   }
