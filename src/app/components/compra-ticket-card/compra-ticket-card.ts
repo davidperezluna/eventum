@@ -76,16 +76,22 @@ export interface ProductoTicketItem {
 
 export interface ProductoTicketCard extends CompraTicketBase {
   kind: 'producto';
-  purchaseLabel: string;
-  purchaseMeta: string;
-  countLabel: string;
+  title: string;
+  price: string;
+  reference: string;
+  badge?: CompraTicketBadge;
+  dateTitle?: string;
+  time?: string;
+  venue?: string;
   items: ProductoTicketItem[];
   redeemed: boolean;
+  redeemedAt?: string;
   qr?: {
-    message?: string;
     ready: boolean;
+    icon: string;
+    title: string;
+    subtitle: string;
   };
-  total: string;
 }
 
 export interface CoverTicketCard extends CompraTicketBase {
@@ -126,6 +132,22 @@ export type CompraTicketAction =
 export class CompraTicketCardComponent {
   @Input({ required: true }) card!: CompraTicketCard;
   @Output() action = new EventEmitter<CompraTicketAction>();
+
+  get isPassCard(): boolean {
+    return this.card.kind === 'entrada' || this.card.kind === 'producto';
+  }
+
+  get isPassUsed(): boolean {
+    if (this.card.kind === 'entrada') return this.card.used;
+    if (this.card.kind === 'producto') return this.card.redeemed;
+    return false;
+  }
+
+  get hasPassTalon(): boolean {
+    if (this.card.kind === 'entrada') return this.card.hasTalon;
+    if (this.card.kind === 'producto') return true;
+    return false;
+  }
 
   onCardClick(event: Event): void {
     if (!this.card.clickable || this.isInteractiveTarget(event.target)) return;

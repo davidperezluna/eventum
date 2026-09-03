@@ -2269,12 +2269,26 @@ export class MisCompras implements OnInit, OnDestroy {
     const unidades = this.totalUnidadesCompraProductos(compraDetalle.items);
     const qrReady = this.compraTieneCodigoQR(compraDetalle.compra)
       && this.puedeMostrarQrCompraProducto(compraDetalle.compra, grupo);
+    const redeemed = this.tabProductosDetalle === 'redimidas'
+      || compraDetalle.items.every((item) => this.esProductoRedimido(item));
+    const titulo = compraDetalle.items.length === 1
+      ? (compraDetalle.items[0].productos?.nombre || 'Producto')
+      : `${compraDetalle.items.length} productos`;
 
     return {
       kind: 'producto',
-      purchaseLabel: 'Compra confirmada',
-      purchaseMeta: `${unidades} unidad${unidades === 1 ? '' : 'es'} en este pedido · ${this.referenciaPedidoCorta(compraDetalle.compra.numero_pedido)}`,
-      countLabel: `${compraDetalle.items.length} producto${compraDetalle.items.length === 1 ? '' : 's'}`,
+      title: titulo,
+      price: this.formatCurrency(this.totalItemsCompraProductos(compraDetalle.items)),
+      reference: this.referenciaPedidoCorta(compraDetalle.compra.numero_pedido),
+      badge: redeemed
+        ? undefined
+        : {
+            label: unidades === 1 ? 'Por retirar' : `${unidades} por retirar`,
+            className: 'badge-warning',
+          },
+      dateTitle: this.fechaEventoGrupo(grupo) || undefined,
+      time: this.horaEventoGrupo(grupo) || undefined,
+      venue: grupo.lugar?.nombre || undefined,
       items: compraDetalle.items.map((item) => {
         const fila = { compra: compraDetalle.compra, item };
         const diferenciado = this.tienePrecioDiferenciadoProductoDetalle(fila);
@@ -2298,16 +2312,18 @@ export class MisCompras implements OnInit, OnDestroy {
             : undefined,
         };
       }),
-      redeemed: this.tabProductosDetalle === 'redimidas',
-      qr: this.tabProductosDetalle === 'compradas'
+      redeemed,
+      redeemedAt: redeemed ? this.horaRedencionPedido(compraDetalle.items) || undefined : undefined,
+      qr: !redeemed
         ? {
             ready: qrReady,
-            message: qrReady
-              ? 'Muéstralo en el punto de entrega del evento.'
+            icon: qrReady ? 'qr_code_2' : 'schedule',
+            title: qrReady ? 'Ver QR del pedido' : 'Código QR',
+            subtitle: qrReady
+              ? 'Muéstralo en el punto de entrega'
               : this.mensajeEstadoQrCompraProducto(compraDetalle.compra, grupo),
           }
         : undefined,
-      total: this.formatCurrency(this.totalItemsCompraProductos(compraDetalle.items)),
       clickable: this.productoCompraTarjetaAbreModal(compraDetalle.compra, grupo),
       ariaLabel: this.productoCompraTarjetaAbreModal(compraDetalle.compra, grupo)
         ? 'Abrir código QR del pedido'
@@ -5300,6 +5316,47 @@ export class MisCompras implements OnInit, OnDestroy {
   /** Hora en que se escaneó/ingresó la boleta (fecha_uso). */
   horaIngresoBoleta(boleta: BoletaComprada | null | undefined): string {
     const raw = boleta?.fecha_uso;
+    if (!raw) return '';
+    const fecha = typeof raw === 'string' ? DateTimeUtil.parseStoredDate(raw) : raw;
+    if (!fecha || Number.isNaN(fecha.getTime())) return '';
+    return new Intl.DateTimeFormat('es-CO', {
+      timeZone: DateTimeUtil.APP_TIMEZONE,
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).format(fecha);
+  }
+
+  fechaEventoGrupo(grupo: EventoBoletasGrupo | null | undefined): string {
+    if (!grupo?.fechaInicio) return '';
+    const fecha = typeof grupo.fechaInicio === 'string'
+      ? DateTimeUtil.parseStoredDate(grupo.fechaInicio)
+      : grupo.fechaInicio;
+    if (!fecha || Number.isNaN(fecha.getTime())) return '';
+    return new Intl.DateTimeFormat('es-CO', {
+      timeZone: DateTimeUtil.APP_TIMEZONE,
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }).format(fecha);
+  }
+
+  horaEventoGrupo(grupo: EventoBoletasGrupo | null | undefined): string {
+    if (!grupo?.fechaInicio) return '';
+    const fecha = typeof grupo.fechaInicio === 'string'
+      ? DateTimeUtil.parseStoredDate(grupo.fechaInicio)
+      : grupo.fechaInicio;
+    if (!fecha || Number.isNaN(fecha.getTime())) return '';
+    return new Intl.DateTimeFormat('es-CO', {
+      timeZone: DateTimeUtil.APP_TIMEZONE,
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).format(fecha);
+  }
+
+  horaRedencionPedido(items: CompraProductoItem[]): string {
+    const raw = items.map((item) => item.fecha_redencion).find(Boolean);
     if (!raw) return '';
     const fecha = typeof raw === 'string' ? DateTimeUtil.parseStoredDate(raw) : raw;
     if (!fecha || Number.isNaN(fecha.getTime())) return '';

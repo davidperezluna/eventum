@@ -50,9 +50,9 @@ describe('CompraTicketCardComponent', () => {
     const fixture = TestBed.createComponent(CompraTicketCardComponent);
     const card: ProductoTicketCard = {
       kind: 'producto',
-      purchaseLabel: 'Compra confirmada',
-      purchaseMeta: '1 unidad',
-      countLabel: '1 producto',
+      title: 'Bebida',
+      price: '$ 10.000',
+      reference: 'PED-123',
       items: [{
         name: 'Bebida',
         alcohol: true,
@@ -60,14 +60,16 @@ describe('CompraTicketCardComponent', () => {
         quantityLine: '1 × $ 10.000',
       }],
       redeemed: true,
-      total: '$ 10.000',
+      redeemedAt: '9:23 p. m.',
       clickable: false,
     };
     fixture.componentInstance.card = card;
     fixture.detectChanges();
 
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.textContent).toContain('Productos retirados');
+    expect(element.textContent).toContain('EVENTUM');
+    expect(element.textContent).toContain('Gracias por asistir');
+    expect(element.textContent).toContain('Redimido');
     expect(element.textContent).toContain('Bebida');
   });
 

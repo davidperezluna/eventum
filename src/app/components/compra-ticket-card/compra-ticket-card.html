@@ -1,8 +1,9 @@
 <article
   class="ticket-card"
-  [class.ticket-card--entry]="card.kind === 'entrada'"
+  [class.ticket-card--entry]="isPassCard"
+  [class.ticket-card--used]="isPassUsed"
   [class.ticket-card--clickable]="card.clickable"
-  [class.ticket-card--with-stub]="card.kind === 'producto' || (card.kind === 'entrada' && card.hasTalon)"
+  [class.ticket-card--with-stub]="hasPassTalon || card.kind === 'producto'"
   [class.ticket-card--cover]="card.kind === 'cover'"
   [attr.aria-label]="card.ariaLabel || null"
   [attr.role]="card.clickable ? 'button' : null"
@@ -77,37 +78,70 @@
     </ng-container>
 
     <ng-container *ngIf="card.kind === 'producto'">
-      <header class="ticket-card__header ticket-card__header--product">
-        <div class="ticket-card__info">
-          <strong class="ticket-card__purchase-label">{{ card.purchaseLabel }}</strong>
-          <span class="ticket-card__reference">{{ card.purchaseMeta }}</span>
-        </div>
-        <span class="ticket-badge badge-info-soft">{{ card.countLabel }}</span>
+      <header class="ticket-pass__brand">
+        <p class="ticket-pass__logo">EVENTUM</p>
+        <p class="ticket-pass__tagline">Experiencias únicas</p>
+        <span class="ticket-pass__chip">
+          <span class="material-icons" aria-hidden="true">inventory_2</span>
+          {{ card.title }}
+        </span>
       </header>
 
-      <div class="product-list">
-        <div class="product-row" *ngFor="let item of card.items">
-          <div class="product-row__media" aria-hidden="true">
-            <img *ngIf="item.imageUrl; else productPlaceholder" [src]="item.imageUrl" alt="" loading="lazy" />
-            <ng-template #productPlaceholder><span class="material-icons">inventory_2</span></ng-template>
+      <div class="ticket-pass__rows">
+        <div
+          class="ticket-pass__when"
+          *ngIf="card.dateTitle || card.time"
+          [class.ticket-pass__when--split]="!!card.dateTitle && !!card.time"
+        >
+          <div class="ticket-pass__fact" *ngIf="card.dateTitle">
+            <span class="ticket-pass__icon" aria-hidden="true"><span class="material-icons">calendar_today</span></span>
+            <div class="ticket-pass__copy">
+              <small>Fecha</small>
+              <strong>{{ card.dateTitle }}</strong>
+            </div>
           </div>
-          <div class="product-row__body">
-            <div class="product-row__top">
-              <h5>
-                {{ item.name }}
-                <span class="product-row__alcohol" *ngIf="item.alcohol">+18</span>
-              </h5>
-              <span class="ticket-badge product-row__badge" [ngClass]="item.badge.className">{{ item.badge.label }}</span>
+          <div class="ticket-pass__fact" *ngIf="card.time">
+            <span class="ticket-pass__icon" aria-hidden="true"><span class="material-icons">schedule</span></span>
+            <div class="ticket-pass__copy">
+              <small>Hora</small>
+              <strong>{{ card.time }}</strong>
             </div>
-            <p class="product-row__meta">{{ item.quantityLine }}</p>
-            <div class="product-row__pricing" *ngIf="item.pricing as pricing">
-              <p>{{ pricing.status }}</p>
-              <div>
-                <strong>{{ pricing.current }}</strong>
-                <span>{{ pricing.reference }}</span>
-              </div>
-              <small *ngIf="pricing.saving">{{ pricing.saving }}</small>
-            </div>
+          </div>
+        </div>
+
+        <div class="ticket-pass__row" *ngIf="card.venue">
+          <span class="ticket-pass__icon" aria-hidden="true"><span class="material-icons">location_on</span></span>
+          <div class="ticket-pass__copy">
+            <small>Lugar</small>
+            <strong>{{ card.venue }}</strong>
+          </div>
+        </div>
+
+        <div class="ticket-pass__row ticket-pass__products" *ngFor="let item of card.items">
+          <span class="ticket-pass__icon" aria-hidden="true"><span class="material-icons">shopping_bag</span></span>
+          <div class="ticket-pass__copy">
+            <small>
+              {{ item.quantityLine }}
+              <span *ngIf="item.alcohol"> · +18</span>
+            </small>
+            <strong>{{ item.name }}</strong>
+          </div>
+          <span class="ticket-badge product-row__badge" [ngClass]="item.badge.className">{{ item.badge.label }}</span>
+        </div>
+
+        <div class="ticket-pass__row ticket-pass__row--price">
+          <span class="ticket-pass__icon" aria-hidden="true"><span class="material-icons">local_offer</span></span>
+          <div class="ticket-pass__copy">
+            <small>Total</small>
+          </div>
+          <strong class="ticket-pass__price">{{ card.price }}</strong>
+        </div>
+
+        <div class="ticket-pass__row ticket-pass__row--meta">
+          <span *ngIf="card.badge as badge" class="ticket-badge ticket-status" [ngClass]="badge.className">{{ badge.label }}</span>
+          <div class="ticket-pass__compra">
+            <small>Pedido</small>
+            <span class="ticket-card__reference">{{ card.reference }}</span>
           </div>
         </div>
       </div>
@@ -175,9 +209,9 @@
             <span class="material-icons">check_circle</span>
           </span>
           <span class="ticket-action__copy">
-            <strong>Usada</strong>
-            <small *ngIf="card.usedAt; else usedSinHora">Ingreso a las {{ card.usedAt }}</small>
-            <ng-template #usedSinHora><small>Acceso registrado</small></ng-template>
+            <strong>Gracias por asistir</strong>
+            <small>Usada</small>
+            <small *ngIf="card.usedAt">Ingreso a las {{ card.usedAt }}</small>
           </span>
         </div>
       </div>
@@ -234,22 +268,44 @@
     </div>
   </ng-container>
 
+  <div
+    *ngIf="card.kind === 'producto'"
+    class="ticket-card__join"
+    aria-hidden="true"
+  >
+    <span class="ticket-card__notch ticket-card__notch--left"></span>
+    <span class="ticket-card__notch ticket-card__notch--right"></span>
+  </div>
+
   <ng-container *ngIf="card.kind === 'producto'">
     <div class="ticket-card__stub" [class.ticket-card__stub--used]="card.redeemed">
       <div class="ticket-card__tear" aria-hidden="true"></div>
-      <div class="ticket-card__used" *ngIf="card.redeemed">
-        <span class="material-icons" aria-hidden="true">check_circle</span>
-        <span>Productos retirados</span>
+      <div class="ticket-card__actions ticket-card__actions--used" *ngIf="card.redeemed; else productoActions">
+        <div class="ticket-action ticket-action--static ticket-action--used" role="status">
+          <span class="ticket-action__icon ticket-action__icon--used" aria-hidden="true">
+            <span class="material-icons">check_circle</span>
+          </span>
+          <span class="ticket-action__copy">
+            <strong>Gracias por asistir</strong>
+            <small>Redimido</small>
+            <small *ngIf="card.redeemedAt">Retiro a las {{ card.redeemedAt }}</small>
+          </span>
+        </div>
       </div>
-      <div class="product-qr" *ngIf="!card.redeemed && card.qr as qr">
-        <p *ngIf="qr.message">{{ qr.message }}</p>
-        <button *ngIf="qr.ready" type="button" (click)="emitAction('view-qr', $event)">
-          <span class="material-icons">qr_code_2</span>
-          <span>Ver QR del pedido</span>
-          <span class="material-icons product-qr__chevron">chevron_right</span>
-        </button>
-      </div>
-      <footer class="product-total"><span>Total pedido</span><strong>{{ card.total }}</strong></footer>
+      <ng-template #productoActions>
+        <div class="ticket-card__actions" *ngIf="card.qr as qr">
+          <button
+            type="button"
+            class="ticket-action"
+            [class.ticket-action--ready]="qr.ready"
+            (click)="emitAction('view-qr', $event)"
+          >
+            <span class="ticket-action__icon ticket-action__icon--qr"><span class="material-icons">{{ qr.icon }}</span></span>
+            <span class="ticket-action__copy"><strong>{{ qr.title }}</strong><small>{{ qr.subtitle }}</small></span>
+            <span class="material-icons ticket-action__chevron">chevron_right</span>
+          </button>
+        </div>
+      </ng-template>
     </div>
   </ng-container>
 
