@@ -17,6 +17,7 @@ import {
 } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { NgOptionTemplateDirective, NgSelectComponent } from '@ng-select/ng-select';
+import { Subject, Subscription } from 'rxjs';
 import {
   EvSelectOption,
   EvSelectSearchMode,
@@ -61,8 +62,13 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
   @Input() appendTo: string | null = 'body';
   @Input() notFoundText = 'Sin resultados';
   @Input() searchPlaceholder = 'Buscar…';
+  /** Desactiva filtro local; emite términos para búsqueda en servidor vía typeahead. */
+  @Input({ transform: booleanAttribute }) serverSideSearch = false;
+  @Input({ transform: booleanAttribute }) loading = false;
+  @Input({ transform: numberAttribute }) minSearchLength = 0;
 
   @Output() selectionChange = new EventEmitter<unknown>();
+  @Output() searchTermChange = new EventEmitter<string>();
 
   @Input()
   set options(value: EvSelectOption[] | null | undefined) {
@@ -87,6 +93,13 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
   private mobileCloseHandler: (() => void) | null = null;
   private mobileContainerEl: HTMLElement | null = null;
   private mobileTouchStartHandler: ((event: TouchEvent) => void) | null = null;
+  readonly typeahead$ = new Subject<string>();
+  private typeaheadSub?: Subscription;
+  private panelScrollEl: HTMLElement | null = null;
+  private panelWheelHandler: ((event: WheelEvent) => void) | null = null;
+  private panelScrollSyncHandler: (() => void) | null = null;
+  private panelScrollRaf = 0;
+  private panelScrollTarget = 0;
 
   constructor(
     private readonly hostRef: ElementRef<HTMLElement>,
@@ -152,12 +165,18 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
   private onTouched: () => void = () => undefined;
 
   ngAfterViewInit(): void {
+    if (this.serverSideSearch) {
+      this.typeaheadSub = this.typeahead$.subscribe((term) => {
+        this.searchTermChange.emit(term ?? '');
+      });
+    }
     this.applyValue(this.currentValue);
     this.ngSelect?.setDisabledState(this.disabled);
     this.applyMobileKeyboardGuard();
   }
 
   ngOnDestroy(): void {
+    this.typeaheadSub?.unsubscribe();
     this.cleanupMobilePanel();
     this.unlockBodyScroll();
   }
@@ -348,18 +367,18 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
     panel.classList.add('ev-select-panel');
 
     if (!this.isMobileSheet) {
-      return;
-    }
+      const hostWidth = this.hostRef.nativeElement.getBoundingClientRect().width;
+      if (hostWidth > 0) {
+        panel.style.minWidth = `${hostWidth}px`;
+        panel.style.width = `${hostWidth}px`;
+      }
+    } else {
+      panel.classList.add('ev-select-panel--sheet');
 
-    panel.classList.add('ev-select-panel--sheet');
-
-    if (panel.querySelector('.ev-select-sheet-head')) {
-      return;
-    }
-
-    const head = document.createElement('div');
-    head.className = 'ev-select-sheet-head';
-    head.innerHTML = `
+      if (!panel.querySelector('.ev-select-sheet-head')) {
+        const head = document.createElement('div');
+        head.className = 'ev-select-sheet-head';
+        head.innerHTML = `
       <span class="ev-select-sheet-head__handle" aria-hidden="true"></span>
       <p class="ev-select-sheet-head__title">${this.escapeHtml(this.sheetTitle)}</p>
       <button type="button" class="ev-select-sheet-head__close" aria-label="Cerrar">
@@ -367,15 +386,97 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
       </button>
     `;
 
-    const closeBtn = head.querySelector('.ev-select-sheet-head__close');
-    this.mobileCloseHandler = () => this.closePanel();
-    closeBtn?.addEventListener('click', this.mobileCloseHandler);
+        const closeBtn = head.querySelector('.ev-select-sheet-head__close');
+        this.mobileCloseHandler = () => this.closePanel();
+        closeBtn?.addEventListener('click', this.mobileCloseHandler);
 
-    panel.insertBefore(head, panel.firstChild);
-    this.mobileHeadEl = head;
+        panel.insertBefore(head, panel.firstChild);
+        this.mobileHeadEl = head;
+      }
+    }
+
+    this.bindPanelSmoothScroll(panel);
+  }
+
+  private bindPanelSmoothScroll(panel: HTMLElement): void {
+    this.unbindPanelSmoothScroll();
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    const scroller = panel.querySelector('.ng-dropdown-panel-items') as HTMLElement | null;
+    if (!scroller) {
+      return;
+    }
+
+    this.panelScrollEl = scroller;
+    this.panelScrollTarget = scroller.scrollTop;
+
+    const step = () => {
+      const el = this.panelScrollEl;
+      if (!el) {
+        this.panelScrollRaf = 0;
+        return;
+      }
+
+      const delta = this.panelScrollTarget - el.scrollTop;
+      if (Math.abs(delta) < 0.75) {
+        el.scrollTop = this.panelScrollTarget;
+        this.panelScrollRaf = 0;
+        return;
+      }
+
+      el.scrollTop += delta * 0.2;
+      this.panelScrollRaf = requestAnimationFrame(step);
+    };
+
+    this.panelWheelHandler = (event: WheelEvent) => {
+      const el = this.panelScrollEl;
+      if (!el) {
+        return;
+      }
+
+      event.preventDefault();
+      const max = Math.max(0, el.scrollHeight - el.clientHeight);
+      this.panelScrollTarget = Math.max(0, Math.min(max, this.panelScrollTarget + event.deltaY));
+      if (!this.panelScrollRaf) {
+        this.panelScrollRaf = requestAnimationFrame(step);
+      }
+    };
+
+    this.panelScrollSyncHandler = () => {
+      if (!this.panelScrollRaf && this.panelScrollEl) {
+        this.panelScrollTarget = this.panelScrollEl.scrollTop;
+      }
+    };
+
+    scroller.addEventListener('wheel', this.panelWheelHandler, { passive: false });
+    scroller.addEventListener('scroll', this.panelScrollSyncHandler, { passive: true });
+  }
+
+  private unbindPanelSmoothScroll(): void {
+    if (this.panelScrollRaf) {
+      cancelAnimationFrame(this.panelScrollRaf);
+      this.panelScrollRaf = 0;
+    }
+
+    if (this.panelScrollEl) {
+      if (this.panelWheelHandler) {
+        this.panelScrollEl.removeEventListener('wheel', this.panelWheelHandler);
+      }
+      if (this.panelScrollSyncHandler) {
+        this.panelScrollEl.removeEventListener('scroll', this.panelScrollSyncHandler);
+      }
+    }
+
+    this.panelScrollEl = null;
+    this.panelWheelHandler = null;
+    this.panelScrollSyncHandler = null;
+    this.panelScrollTarget = 0;
   }
 
   private cleanupMobilePanel(): void {
+    this.unbindPanelSmoothScroll();
     if (this.mobileCloseHandler && this.mobileHeadEl) {
       this.mobileHeadEl
         .querySelector('.ev-select-sheet-head__close')

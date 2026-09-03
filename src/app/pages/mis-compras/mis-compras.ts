@@ -53,6 +53,7 @@ import type { AuthStateCallback } from '../../services/auth.service';
 import { CoversService } from '../../services/covers.service';
 import { AccesosPuertaService } from '../../services/accesos-puerta.service';
 import { coversEventumEnabled } from '../../core/covers-feature';
+import { cuposEventumEnabled } from '../../core/cupos-feature';
 import { formatHoraCover, labelSesionCover } from '../../core/covers-labels';
 import { hintQrCoverAcceso as hintQrCoverAccesoText } from '../../core/cover-acceso-puerta';
 import {
@@ -136,6 +137,7 @@ interface EventoBoletasGrupo {
   fechaInicio?: Date | string;
   fechaFin?: Date | string;
   lugar?: any;
+  imagenPrincipal?: string;
   tipos: TipoBoletasGrupo[];
   compras: Compra[];
   comprasProductos: CompraProducto[];
@@ -183,12 +185,17 @@ interface LugarCoverGrupo {
     EvDatePicker,
   ],
   templateUrl: './mis-compras.html',
-  styleUrl: './mis-compras.css',
+  styleUrls: [
+    './mis-compras.css',
+    '../cupos-explorar/cupos-explorar.css',
+    '../eventos-cliente/eventos-cliente.css',
+    '../eventos-cliente/eventos-cliente-fanpage-terminal.css',
+  ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
 export class MisCompras implements OnInit, OnDestroy {
   readonly coversEventumEnabled = coversEventumEnabled;
-  guiaEntradasAbierta = false;
+  readonly cuposEventumEnabled = cuposEventumEnabled;
   private destroy$ = new Subject<void>();
   private loadComprasSubject = new Subject<void>();
   private refreshIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
@@ -2545,6 +2552,7 @@ export class MisCompras implements OnInit, OnDestroy {
           fechaInicio: compra.eventos?.fecha_inicio,
           fechaFin: compra.eventos?.fecha_fin,
           lugar: compra.eventos?.lugar,
+          imagenPrincipal: this.imagenEventoVista(compra.eventos),
           tipos: [],
           compras: [],
           comprasProductos: [],
@@ -2561,6 +2569,8 @@ export class MisCompras implements OnInit, OnDestroy {
         };
         this.eventosConBoletas.push(grupo);
       }
+
+      this.asignarImagenEventoGrupo(grupo, compra.eventos);
 
       grupo.comprasProductos.push(compra);
     }
@@ -3063,6 +3073,8 @@ export class MisCompras implements OnInit, OnDestroy {
         eventosMap.set(eventoKey, grupoEvento);
       }
 
+      this.asignarImagenEventoGrupo(grupoEvento, evento, compra.evento);
+
       if (!esCedida && !grupoEvento.compras.some((c) => c.id === compra.id)) {
         grupoEvento.compras.push(compra);
       }
@@ -3276,6 +3288,214 @@ export class MisCompras implements OnInit, OnDestroy {
   eventoDetalleBoletas(): EventoBoletasGrupo | null {
     if (!this.eventoDetalleKey) return null;
     return this.eventosConBoletas.find((grupo) => grupo.key === this.eventoDetalleKey) || null;
+  }
+
+  setTabEventoDetalle(tab: 'entradas' | 'productos'): void {
+    this.tabEventoDetalle = tab;
+    const detalle = this.eventoDetalleBoletas();
+    if (!detalle) return;
+    this.normalizarTabBoletasDetalle(detalle);
+    this.normalizarTabProductosDetalle(detalle);
+  }
+
+  setTabBoletasDetalle(tab: 'sin-usar' | 'sin-asignar' | 'usadas'): void {
+    this.tabBoletasDetalle = tab;
+  }
+
+  setTabProductosDetalle(tab: 'compradas' | 'redimidas'): void {
+    this.tabProductosDetalle = tab;
+  }
+
+  /** Selector Entradas/Productos solo cuando hay ambos. */
+  mostrarSelectorTipoEventoDetalle(grupo: EventoBoletasGrupo | null | undefined): boolean {
+    return this.eventoTieneEntradas(grupo) && this.eventoTieneProductos(grupo);
+  }
+
+  /** Filtro de estado de entradas solo si hay más de una opción visible. */
+  mostrarFiltroEstadoBoletasDetalle(grupo: EventoBoletasGrupo | null | undefined): boolean {
+    if (!grupo || !this.eventoTieneEntradas(grupo)) return false;
+    let opciones = 0;
+    if (this.mostrarTabBoletas(grupo, 'sin-usar')) opciones++;
+    if (this.mostrarTabBoletas(grupo, 'sin-asignar')) opciones++;
+    if (this.mostrarTabBoletas(grupo, 'usadas')) opciones++;
+    return opciones > 1;
+  }
+
+  /** Filtro de estado de productos solo si hay más de una opción visible. */
+  mostrarFiltroEstadoProductosDetalle(grupo: EventoBoletasGrupo | null | undefined): boolean {
+    if (!grupo || !this.eventoTieneProductos(grupo)) return false;
+    let opciones = 0;
+    if (this.mostrarTabProductos(grupo, 'compradas')) opciones++;
+    if (this.mostrarTabProductos(grupo, 'redimidas')) opciones++;
+    return opciones > 1;
+  }
+
+  /** Título del feed según pestaña activa. */
+  tituloFeedEventoDetalle(grupo: EventoBoletasGrupo): string {
+    if (this.tabEventoDetalle === 'productos') {
+      return this.tabProductosDetalle === 'redimidas' ? 'Productos redimidos' : 'Productos por retirar';
+    }
+    if (this.tabBoletasDetalle === 'usadas') return 'Entradas usadas';
+    if (this.tabBoletasDetalle === 'sin-asignar') return 'Sin asignar';
+    return 'Tus entradas';
+  }
+
+  contadorItemsFeedEventoDetalle(grupo: EventoBoletasGrupo): number {
+    if (this.tabEventoDetalle === 'productos') {
+      return this.productosDetallePorTab(grupo).length;
+    }
+    return this.tiposDetallePorTab(grupo).reduce((sum, tipo) => sum + tipo.boletas.length, 0);
+  }
+
+  mostrarControlesDetalleEvento(grupo: EventoBoletasGrupo | null | undefined): boolean {
+    if (!grupo) return false;
+    return (
+      this.mostrarSelectorTipoEventoDetalle(grupo) ||
+      this.mostrarFiltroEstadoBoletasDetalle(grupo) ||
+      this.mostrarFiltroEstadoProductosDetalle(grupo)
+    );
+  }
+
+  mostrarResumenTicketEvento(grupo: EventoBoletasGrupo | null | undefined): boolean {
+    if (!grupo) return false;
+    return (
+      this.mostrarSelectorTipoEventoDetalle(grupo) ||
+      (this.eventoTieneEntradas(grupo) && grupo.totalBoletas > 0 && this.eventoTieneProductos(grupo))
+    );
+  }
+
+  getEventoDetalleImageUrl(grupo: EventoBoletasGrupo): string {
+    if (grupo.imagenPrincipal) return grupo.imagenPrincipal;
+
+    const fromCompra = grupo.compras?.[0]?.evento as Evento | undefined;
+    if (fromCompra?.imagen_principal) return fromCompra.imagen_principal;
+
+    const fromProducto = (grupo.comprasProductos?.[0] as { eventos?: Evento } | undefined)?.eventos;
+    if (fromProducto?.imagen_principal) return fromProducto.imagen_principal;
+
+    for (const tipo of grupo.tipos) {
+      for (const item of tipo.boletas) {
+        const evento = this.eventoVistaBoleta(item.boleta, item.compra) as Evento | null;
+        if (evento?.imagen_principal) return evento.imagen_principal;
+      }
+    }
+    return '';
+  }
+
+  getEventoListImageUrl(grupo: EventoBoletasGrupo): string {
+    return this.getEventoDetalleImageUrl(grupo) || '/images/eventos/eventos-hero-concierto-v1.png';
+  }
+
+  private imagenEventoVista(evento: { imagen_principal?: string | null } | null | undefined): string | undefined {
+    const imagen = evento?.imagen_principal?.trim();
+    return imagen || undefined;
+  }
+
+  private asignarImagenEventoGrupo(
+    grupo: EventoBoletasGrupo,
+    ...fuentes: Array<{ imagen_principal?: string | null } | null | undefined>
+  ): void {
+    if (grupo.imagenPrincipal) return;
+    for (const fuente of fuentes) {
+      const imagen = this.imagenEventoVista(fuente);
+      if (imagen) {
+        grupo.imagenPrincipal = imagen;
+        return;
+      }
+    }
+  }
+
+  getEventDay(value: string | Date): string {
+    const date = this.parseEventoDate(value);
+    return Number.isNaN(date.getTime())
+      ? ''
+      : new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota', day: '2-digit' }).format(date);
+  }
+
+  getEventMonth(value: string | Date): string {
+    const date = this.parseEventoDate(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', month: 'short' })
+      .format(date)
+      .replace('.', '')
+      .toUpperCase();
+  }
+
+  private parseEventoDate(value: string | Date): Date {
+    if (typeof value !== 'string') return value;
+    const dateStr = value.trim();
+    if (dateStr.includes('T') && !dateStr.endsWith('Z') && !dateStr.includes('+') && !dateStr.includes('-', 10)) {
+      return new Date(dateStr + 'Z');
+    }
+    return new Date(dateStr);
+  }
+
+  resumenFooterEventoCompra(grupo: EventoBoletasGrupo): string {
+    const partes: string[] = [];
+
+    if (this.eventoTieneEntradas(grupo)) {
+      const disponibles = grupo.totalDisponibles;
+      if (disponibles > 0) {
+        partes.push(`${disponibles} ${disponibles === 1 ? 'entrada' : 'entradas'}`);
+      } else if (grupo.totalBoletas > 0) {
+        partes.push(`${grupo.totalBoletas} ${grupo.totalBoletas === 1 ? 'entrada' : 'entradas'}`);
+      }
+    }
+
+    if (this.eventoTieneProductos(grupo) && grupo.totalProductosComprados > 0) {
+      partes.push(
+        `${grupo.totalProductosComprados} ${grupo.totalProductosComprados === 1 ? 'producto' : 'productos'}`
+      );
+    }
+
+    return partes.length > 0 ? partes.join(' · ') : 'Ver compras';
+  }
+
+  mostrarQuickActionsEventoCompra(grupo: EventoBoletasGrupo): boolean {
+    return (
+      grupo.totalSinAsignar > 0 ||
+      grupo.totalTrasladoSaliente > 0 ||
+      grupo.totalCedidas > 0 ||
+      grupo.totalUsadas > 0
+    );
+  }
+
+  onEventoCompraCardActivate(event: Event, eventoKey: string): void {
+    if (event instanceof KeyboardEvent && event.key !== 'Enter' && event.key !== ' ') return;
+    if (event instanceof KeyboardEvent) event.preventDefault();
+    this.abrirDetalleEventoBoletas(eventoKey);
+  }
+
+  /** Línea compacta bajo el título: cantidad y tipo sin chips sueltos. */
+  etiquetaCantidadEventoDetalle(grupo: EventoBoletasGrupo): string | null {
+    const partes: string[] = [];
+
+    if (this.tabEventoDetalle === 'productos' && this.eventoTieneProductos(grupo)) {
+      if (grupo.totalItemsProducto > 0) {
+        partes.push(`${grupo.totalItemsProducto} producto${grupo.totalItemsProducto === 1 ? '' : 's'}`);
+      }
+    } else if (this.eventoTieneEntradas(grupo)) {
+      if (grupo.totalBoletas > 0) {
+        partes.push(`${grupo.totalBoletas} entrada${grupo.totalBoletas === 1 ? '' : 's'}`);
+        const tipos = this.tiposResumenParaBadges(grupo);
+        if (tipos.length === 1) {
+          partes.push(tipos[0].nombre);
+        }
+      }
+    }
+
+    if (grupo.totalCedidas > 0) {
+      partes.push(`${grupo.totalCedidas} recibida${grupo.totalCedidas === 1 ? '' : 's'}`);
+    }
+
+    return partes.length > 0 ? partes.join(' · ') : null;
+  }
+
+  /** Título de grupo solo si hay más de un tipo visible en el filtro actual. */
+  mostrarTituloGrupoBoletas(grupo: EventoBoletasGrupo | null | undefined): boolean {
+    if (!grupo) return false;
+    return this.tiposDetallePorTab(grupo).length > 1;
   }
 
   resumenDetalleEvento(grupo: EventoBoletasGrupo): string {

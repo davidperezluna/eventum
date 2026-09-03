@@ -10,6 +10,7 @@ import { filter, merge, Subscription } from 'rxjs';
 import { AccesosPuertaService } from '../../services/accesos-puerta.service';
 import { cuposEventumEnabled } from '../../core/cupos-feature';
 import { coversEventumEnabled } from '../../core/covers-feature';
+import { ventasManualEnabled } from '../../core/ventas-manual-feature';
 import { CUPOS_LABELS } from '../../core/cupos-labels';
 import { COVERS_LABELS } from '../../core/covers-labels';
 import { forceUnlockBodyScroll, lockBodyScroll, unlockBodyScroll } from '../../core/body-scroll-lock';
@@ -70,6 +71,7 @@ export class Layout implements OnInit, OnDestroy {
   enRutaCupos = false;
   respuestasCupos = 0;
   enRutaRecibidos = false;
+  enRutaMisCompras = false;
   enRutaPagoWompi = false;
   enRutaCompletarPerfil = false;
   mostrarNavAccesosPuerta = false;
@@ -268,6 +270,7 @@ export class Layout implements OnInit, OnDestroy {
     this.enRutaCarrito = path === '/carrito';
     this.enRutaCupos = path === '/cupos';
     this.enRutaRecibidos = path === '/recibidos';
+    this.enRutaMisCompras = path === '/mis-compras' || path.startsWith('/mis-compras/');
     this.enRutaPagoWompi = path === '/pago-wompi';
     this.enRutaCompletarPerfil = path === '/completar-perfil';
   }
@@ -400,11 +403,11 @@ export class Layout implements OnInit, OnDestroy {
 
   loadAdminNav(): void {
     if (this.usuario?.tipo_usuario_id === 3) {
-      this.adminNavSections = buildAdminNavSections(this.coversEventumEnabled);
+      this.adminNavSections = buildAdminNavSections(this.coversEventumEnabled, ventasManualEnabled);
     } else if (this.authService.isShowcaseOrganizador()) {
       this.adminNavSections = buildShowcaseNavSections();
     } else {
-      this.adminNavSections = buildOrganizadorNavSections(this.coversEventumEnabled);
+      this.adminNavSections = buildOrganizadorNavSections(this.coversEventumEnabled, ventasManualEnabled);
     }
   }
 

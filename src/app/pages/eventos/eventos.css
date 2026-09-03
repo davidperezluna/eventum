@@ -14,12 +14,40 @@
   --ev-accent: var(--color-secondary, #8b5cf6);
   --ev-accent-strong: var(--color-primary, #7c3aed);
 
-  max-width: 1120px;
+  max-width: 1060px;
   margin: 0 auto;
+  padding: 0 1rem 5rem;
+  color: var(--ev-ink);
+}
+
+.eventos-page.org-sales-page {
   padding-bottom: 5rem;
 }
 
-/* ── Hero — centro de operaciones ── */
+.org-sales-topbar__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.org-sales-intro__notice {
+  margin-top: 1.25rem;
+  padding-top: 1.15rem;
+  border-top: 1px solid var(--sales-line, rgba(15, 23, 42, 0.06));
+}
+
+.org-sales-intro__notice .ev-notice {
+  margin-bottom: 0;
+}
+
+.org-sales-intro__notice .ev-notice--banner.ev-notice--neutral {
+  padding-left: 0;
+  padding-right: 0;
+  background: transparent;
+  border: 0;
+}
+
+/* ── Hero legacy tokens (kept for onboarding) ── */
 .ev-events-hero {
   margin-bottom: 2rem;
 }
@@ -234,6 +262,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
+  margin-top: 1.5rem;
   margin-bottom: 1rem;
 }
 
@@ -898,17 +927,13 @@
 
 /* Desktop */
 @media (min-width: 769px) {
-  .ev-events-hero {
-    margin-bottom: 2.25rem;
-  }
-
   .ev-events-hero__cta {
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
     gap: 0.3rem;
-    min-height: 2.25rem;
+    min-height: 2.35rem;
     padding: 0 0.95rem;
     border: 0;
     border-radius: 9px;

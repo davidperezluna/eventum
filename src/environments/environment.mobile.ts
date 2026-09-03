@@ -18,6 +18,8 @@ export const environment = {
   allowClienteLoginAdmin: true,
   cuposEventumEnabled: true,
   coversEventumEnabled: false,
+  /** `true`: pantalla /ventas-manual (menú admin/organizador). `false`: oculta ruta y enlaces. */
+  ventasManualEnabled: true,
   /** `true`: flyer de preventa licor al entrar en /eventos-cliente. */
   preventaLicorFlyerEnabled: false,
   /**

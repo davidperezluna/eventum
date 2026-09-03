@@ -91,42 +91,6 @@
     </p>
   </header>
 
-  <!-- Guía resumida (colapsada si ya hay compras) -->
-  <section class="guia-entradas-section" *ngIf="!eventoDetalleKey && !lugarCoverDetalleKey" aria-labelledby="guia-entradas-titulo">
-    <details
-      class="guia-entradas-details"
-      [open]="guiaEntradasAbierta"
-      (toggle)="guiaEntradasAbierta = $any($event.target).open"
-    >
-      <summary class="guia-entradas-summary">
-        <span class="material-icons guia-entradas-summary-icon" aria-hidden="true">help_outline</span>
-        <span class="guia-entradas-summary-text">
-          <strong id="guia-entradas-titulo">¿Cómo uso, asigno o envío mis entradas?</strong>
-          <small>Resumen rápido para empezar sin errores.</small>
-        </span>
-        <span class="material-icons guia-entradas-chevron" aria-hidden="true">expand_more</span>
-      </summary>
-      <div class="guia-entradas-body">
-        <ul class="guia-resumen-list">
-          <li>Solo puedes asignar o enviar entradas con pago confirmado.</li>
-          <li>Si envías por correo, el destinatario debe tener cuenta y documento registrado.</li>
-          <li>El QR de entradas solo se habilita el día del evento.</li>
-          <li>Productos: muestra el QR del pedido en el punto de entrega del evento.</li>
-        </ul>
-        <div class="guia-resumen-actions">
-          <a routerLink="/mis-compras/guia" class="guia-resumen-link" aria-label="Ir a guía completa">
-            <span class="material-icons" aria-hidden="true">menu_book</span>
-            <span>Guía</span>
-          </a>
-          <a routerLink="/mis-compras/actividad" class="guia-resumen-link guia-resumen-link--ghost" aria-label="Ir a actividad">
-            <span class="material-icons" aria-hidden="true">history</span>
-            <span>Actividad</span>
-          </a>
-        </div>
-      </div>
-    </details>
-  </section>
-
   <nav
     *ngIf="mostrarTabsMisComprasPrincipal()"
     class="mc-segmented mc-segmented--principal"
@@ -230,320 +194,457 @@
     </div>
   </div>
 
-  <!-- Lista agrupada por evento -->
-  <div *ngIf="!loading && eventoDetalleBoletas() as detalle" class="evento-detalle-page">
-    <header class="client-page-header client-page-header--compact client-page-header--subpage mc-evento-detalle-header">
-      <button type="button" class="mc-page-back" (click)="volverAMisCompras()">
-        <span class="material-icons" aria-hidden="true">arrow_back</span>
-        Mis compras
-      </button>
-      <h1 class="client-page-header__title">{{ detalle.titulo }}</h1>
-      <p class="client-page-header__subtitle mc-evento-detalle-meta" *ngIf="detalle.lugar?.nombre || detalle.fechaInicio">
-        <span *ngIf="detalle.lugar?.nombre">{{ detalle.lugar.nombre }}</span>
-        <span class="mc-evento-detalle-meta-sep" *ngIf="detalle.lugar?.nombre && detalle.fechaInicio">·</span>
-        <span *ngIf="detalle.fechaInicio">
-          {{ detalle.fechaInicio | dateFormat:'short' }}
-          <ng-container *ngIf="detalle.fechaFin"> — {{ detalle.fechaFin | dateFormat:'short' }}</ng-container>
-        </span>
-      </p>
-      <p class="mc-evento-detalle-resumen" *ngIf="resumenDetalleEvento(detalle) as resumen">{{ resumen }}</p>
-    </header>
-
-    <div class="mc-evento-detalle-chips" *ngIf="tiposResumenParaBadges(detalle).length > 0 || detalle.totalCedidas > 0">
-      <span *ngFor="let tipo of tiposResumenParaBadges(detalle)" class="mc-evento-detalle-chip mc-evento-detalle-chip--info">
-        {{ tipo.totalBoletas }} {{ tipo.nombre }}
-      </span>
-      <span class="mc-evento-detalle-chip mc-evento-detalle-chip--success" *ngIf="detalle.totalCedidas > 0">
-        {{ detalle.totalCedidas }} {{ detalle.totalCedidas === 1 ? 'recibida' : 'recibidas' }}
-      </span>
+  <!-- Detalle evento: layout explorar cupos -->
+  <div
+    *ngIf="!loading && eventoDetalleBoletas() as detalle"
+    class="mc-evento-detalle-explorer cupos-page cupos-page--explorar cupos-page--evento evento-detalle-page"
+    [style.--mc-evento-hero-image]="getEventoDetalleImageUrl(detalle) ? 'url(' + getEventoDetalleImageUrl(detalle) + ')' : 'none'"
+  >
+    <div class="mc-evento-refresh clubes-refresh" *ngIf="isRefreshing" aria-live="polite">
+      <span class="clubes-refresh__spinner" aria-hidden="true"></span>
+      <span>Actualizando…</span>
     </div>
 
-    <nav
-      class="mc-segmented"
-      role="tablist"
-      aria-label="Contenido del evento"
-      *ngIf="eventoTieneEntradas(detalle) || eventoTieneProductos(detalle)"
-    >
-      <button
-        type="button"
-        class="mc-segmented-tab"
-        role="tab"
-        *ngIf="eventoTieneEntradas(detalle)"
-        [class.active]="tabEventoDetalle === 'entradas'"
-        [attr.aria-selected]="tabEventoDetalle === 'entradas'"
-        (click)="tabEventoDetalle = 'entradas'"
-      >
-        <span class="material-icons" aria-hidden="true">confirmation_number</span>
-        Entradas
-        <span class="mc-segmented-badge">{{ detalle.totalBoletas }}</span>
-      </button>
-      <button
-        type="button"
-        class="mc-segmented-tab"
-        role="tab"
-        *ngIf="eventoTieneProductos(detalle)"
-        [class.active]="tabEventoDetalle === 'productos'"
-        [attr.aria-selected]="tabEventoDetalle === 'productos'"
-        (click)="tabEventoDetalle = 'productos'"
-      >
-        <span class="material-icons" aria-hidden="true">inventory_2</span>
-        Productos
-        <span class="mc-segmented-badge">{{ detalle.totalItemsProducto }}</span>
-      </button>
-    </nav>
-
-    <nav
-      class="mc-segmented mc-segmented--status"
-      role="tablist"
-      aria-label="Estado de boletas"
-      *ngIf="tabEventoDetalle === 'entradas' && eventoTieneEntradas(detalle)"
-    >
-      <button
-        type="button"
-        class="mc-segmented-tab"
-        role="tab"
-        *ngIf="mostrarTabBoletas(detalle, 'sin-usar')"
-        [class.active]="tabBoletasDetalle === 'sin-usar'"
-        [attr.aria-selected]="tabBoletasDetalle === 'sin-usar'"
-        (click)="tabBoletasDetalle = 'sin-usar'"
-      >
-        <span class="material-icons" aria-hidden="true">check_circle</span>
-        Sin usar
-        <span class="mc-segmented-badge">{{ detalle.totalSinUsar }}</span>
-      </button>
-      <button
-        type="button"
-        class="mc-segmented-tab"
-        role="tab"
-        *ngIf="mostrarTabBoletas(detalle, 'sin-asignar')"
-        [class.active]="tabBoletasDetalle === 'sin-asignar'"
-        [attr.aria-selected]="tabBoletasDetalle === 'sin-asignar'"
-        (click)="tabBoletasDetalle = 'sin-asignar'"
-      >
-        <span class="material-icons" aria-hidden="true">person_add</span>
-        Sin asignar
-        <span class="mc-segmented-badge">{{ detalle.totalSinAsignar }}</span>
-      </button>
-      <button
-        type="button"
-        class="mc-segmented-tab"
-        role="tab"
-        *ngIf="mostrarTabBoletas(detalle, 'usadas')"
-        [class.active]="tabBoletasDetalle === 'usadas'"
-        [attr.aria-selected]="tabBoletasDetalle === 'usadas'"
-        (click)="tabBoletasDetalle = 'usadas'"
-      >
-        <span class="material-icons" aria-hidden="true">task_alt</span>
-        Usadas
-        <span class="mc-segmented-badge">{{ detalle.totalUsadas }}</span>
-      </button>
-    </nav>
-
-    <nav
-      class="mc-segmented mc-segmented--status"
-      role="tablist"
-      aria-label="Estado de productos"
-      *ngIf="tabEventoDetalle === 'productos' && eventoTieneProductos(detalle)"
-    >
-      <button
-        type="button"
-        class="mc-segmented-tab"
-        role="tab"
-        *ngIf="mostrarTabProductos(detalle, 'compradas')"
-        [class.active]="tabProductosDetalle === 'compradas'"
-        [attr.aria-selected]="tabProductosDetalle === 'compradas'"
-        (click)="tabProductosDetalle = 'compradas'"
-      >
-        <span class="material-icons" aria-hidden="true">shopping_bag</span>
-        Por retirar
-        <span class="mc-segmented-badge">{{ detalle.totalProductosComprados }}</span>
-      </button>
-      <button
-        type="button"
-        class="mc-segmented-tab"
-        role="tab"
-        *ngIf="mostrarTabProductos(detalle, 'redimidas')"
-        [class.active]="tabProductosDetalle === 'redimidas'"
-        [attr.aria-selected]="tabProductosDetalle === 'redimidas'"
-        (click)="tabProductosDetalle = 'redimidas'"
-      >
-        <span class="material-icons" aria-hidden="true">inventory</span>
-        Redimidas
-        <span class="mc-segmented-badge">{{ detalle.totalProductosRedimidos }}</span>
-      </button>
-    </nav>
-
-    <ng-container *ngIf="tabEventoDetalle === 'entradas' && eventoTieneEntradas(detalle)">
-      <div class="boletas-section evento-boletas-section evento-entradas-panel">
-        <div class="loading-small" *ngIf="loadingBoletasDetalle">
-          <p>Cargando boletas...</p>
+    <div class="cupos-explorer-shell">
+      <header class="cupos-intro mc-evento-detalle-intro">
+        <div class="mc-evento-detalle-topbar">
+          <button type="button" class="mc-evento-detalle-back" (click)="volverAMisCompras()">
+            <span class="material-icons" aria-hidden="true">arrow_back</span>
+            Mis compras
+          </button>
         </div>
-        <ng-container *ngIf="!loadingBoletasDetalle && tiposDetallePorTab(detalle).length > 0; else detalleSinBoletas">
-          <div *ngFor="let tipo of tiposDetallePorTab(detalle)" class="tipo-boletas-section">
-            <h4>{{ tipo.nombre }} ({{ tipo.boletas.length }})</h4>
-            <div class="boletas-grid boletas-grid--entradas-detalle">
-              <ng-container *ngFor="let item of tipo.boletas">
-                <ng-container *ngIf="item.boleta as boleta">
-                  <ng-container *ngIf="item.compra as compra">
-                    <app-compra-ticket-card
-                      [card]="entradaTicketCard(item)"
-                      (action)="onEntradaTicketAction($event, item)"
-                    />
+
+        <div class="cupos-intro-copy">
+          <p class="cupos-eyebrow mc-evento-detalle-eyebrow">
+            <span class="cupos-eyebrow-mark" aria-hidden="true"></span>
+            Tu evento
+          </p>
+          <h1>{{ detalle.titulo }}</h1>
+          <p
+            class="mc-evento-detalle-meta-line cupos-intro-lead client-page-header__subtitle--full"
+            *ngIf="detalle.lugar?.nombre || detalle.fechaInicio"
+          >
+            <span *ngIf="detalle.lugar?.nombre">{{ detalle.lugar.nombre }}</span>
+            <ng-container *ngIf="detalle.lugar?.nombre && detalle.fechaInicio"> · </ng-container>
+            <span *ngIf="detalle.fechaInicio">
+              {{ detalle.fechaInicio | dateFormat:'short' }}
+              <ng-container *ngIf="detalle.fechaFin"> — {{ detalle.fechaFin | dateFormat:'short' }}</ng-container>
+            </span>
+            <ng-container *ngIf="etiquetaCantidadEventoDetalle(detalle) as stat">
+              <span class="mc-evento-detalle-meta-sep" aria-hidden="true"> · </span>
+              <span class="mc-evento-detalle-meta-stat">{{ stat }}</span>
+            </ng-container>
+          </p>
+          <p class="mc-evento-detalle-meta-line cupos-intro-lead client-page-header__subtitle--short" *ngIf="detalle.fechaInicio">
+            {{ detalle.fechaInicio | dateFormat:'shortDate' }}
+            <ng-container *ngIf="detalle.lugar?.nombre"> · {{ detalle.lugar.nombre }}</ng-container>
+            <ng-container *ngIf="etiquetaCantidadEventoDetalle(detalle) as stat">
+              <span class="mc-evento-detalle-meta-sep" aria-hidden="true"> · </span>
+              <span class="mc-evento-detalle-meta-stat">{{ stat }}</span>
+            </ng-container>
+          </p>
+          <div class="mc-evento-intro-links">
+            <a [routerLink]="['/detalle-evento', detalle.key]" class="mc-evento-intro-link">
+              Ver evento
+              <span class="material-icons" aria-hidden="true">arrow_forward</span>
+            </a>
+            <a
+              *ngIf="cuposEventumEnabled"
+              [routerLink]="['/cupos-evento', detalle.key]"
+              class="mc-evento-intro-link"
+            >
+              Tablón de cupos
+              <span class="material-icons" aria-hidden="true">forum</span>
+            </a>
+          </div>
+        </div>
+
+        <section
+          class="cupos-action-ticket mc-evento-resumen-ticket"
+          *ngIf="mostrarResumenTicketEvento(detalle)"
+          aria-labelledby="mc-evento-resumen-title"
+        >
+          <div class="cupos-ticket-serial" aria-hidden="true">EV · MIS COMPRAS</div>
+          <div class="cupos-action-ticket-copy">
+            <span>Resumen</span>
+            <h2 id="mc-evento-resumen-title">{{ resumenDetalleEvento(detalle) || 'Tus compras' }}</h2>
+          </div>
+          <div class="cupos-quick-actions mc-evento-resumen-stats">
+            <button
+              type="button"
+              class="cupos-quick-action"
+              [class.cupos-quick-action--primary]="tabEventoDetalle === 'entradas'"
+              *ngIf="eventoTieneEntradas(detalle)"
+              (click)="setTabEventoDetalle('entradas')"
+            >
+              <span class="material-icons" aria-hidden="true">confirmation_number</span>
+              <span>
+                <strong>{{ detalle.totalBoletas }} {{ detalle.totalBoletas === 1 ? 'entrada' : 'entradas' }}</strong>
+                <small>{{ detalle.totalSinUsar }} sin usar</small>
+              </span>
+              <span class="material-icons cupos-quick-arrow" aria-hidden="true">arrow_forward</span>
+            </button>
+            <button
+              type="button"
+              class="cupos-quick-action"
+              [class.cupos-quick-action--primary]="tabEventoDetalle === 'productos'"
+              *ngIf="eventoTieneProductos(detalle)"
+              (click)="setTabEventoDetalle('productos')"
+            >
+              <span class="material-icons" aria-hidden="true">inventory_2</span>
+              <span>
+                <strong>{{ detalle.totalItemsProducto }} {{ detalle.totalItemsProducto === 1 ? 'producto' : 'productos' }}</strong>
+                <small>{{ detalle.totalProductosComprados }} por retirar</small>
+              </span>
+              <span class="material-icons cupos-quick-arrow" aria-hidden="true">arrow_forward</span>
+            </button>
+          </div>
+        </section>
+      </header>
+
+      <div
+        class="cupos-workspace"
+        [class.cupos-workspace--solo-feed]="!mostrarControlesDetalleEvento(detalle)"
+      >
+        <aside class="cupos-controls" *ngIf="mostrarControlesDetalleEvento(detalle)" aria-label="Filtros de compras">
+          <section
+            class="cupos-filter-panel"
+            *ngIf="mostrarSelectorTipoEventoDetalle(detalle)"
+            aria-labelledby="mc-evento-tipo-title"
+          >
+            <div class="cupos-filter-heading">
+              <span class="material-icons" aria-hidden="true">category</span>
+              <div>
+                <h2 id="mc-evento-tipo-title">Contenido</h2>
+                <p>Entradas o productos.</p>
+              </div>
+            </div>
+            <div class="cupos-filter-list" role="group" aria-label="Tipo de compra">
+              <button
+                type="button"
+                class="cupos-filter-option"
+                [class.active]="tabEventoDetalle === 'entradas'"
+                [attr.aria-pressed]="tabEventoDetalle === 'entradas'"
+                (click)="setTabEventoDetalle('entradas')"
+              >
+                <span class="cupos-filter-icon material-icons" aria-hidden="true">confirmation_number</span>
+                <span>Entradas</span>
+                <span class="material-icons cupos-filter-check" aria-hidden="true">check</span>
+              </button>
+              <button
+                type="button"
+                class="cupos-filter-option"
+                [class.active]="tabEventoDetalle === 'productos'"
+                [attr.aria-pressed]="tabEventoDetalle === 'productos'"
+                (click)="setTabEventoDetalle('productos')"
+              >
+                <span class="cupos-filter-icon material-icons" aria-hidden="true">inventory_2</span>
+                <span>Productos</span>
+                <span class="material-icons cupos-filter-check" aria-hidden="true">check</span>
+              </button>
+            </div>
+          </section>
+
+          <section
+            class="cupos-filter-panel"
+            *ngIf="tabEventoDetalle === 'entradas' && mostrarFiltroEstadoBoletasDetalle(detalle)"
+            aria-labelledby="mc-evento-estado-entradas-title"
+          >
+            <div class="cupos-filter-heading">
+              <span class="material-icons" aria-hidden="true">tune</span>
+              <div>
+                <h2 id="mc-evento-estado-entradas-title">Estado</h2>
+                <p>Filtra tus entradas.</p>
+              </div>
+            </div>
+            <div class="cupos-filter-list" role="group" aria-label="Estado de entradas">
+              <button
+                type="button"
+                class="cupos-filter-option"
+                *ngIf="mostrarTabBoletas(detalle, 'sin-usar')"
+                [class.active]="tabBoletasDetalle === 'sin-usar'"
+                [attr.aria-pressed]="tabBoletasDetalle === 'sin-usar'"
+                (click)="setTabBoletasDetalle('sin-usar')"
+              >
+                <span class="cupos-filter-icon material-icons" aria-hidden="true">check_circle</span>
+                <span>Sin usar ({{ detalle.totalSinUsar }})</span>
+                <span class="material-icons cupos-filter-check" aria-hidden="true">check</span>
+              </button>
+              <button
+                type="button"
+                class="cupos-filter-option"
+                *ngIf="mostrarTabBoletas(detalle, 'sin-asignar')"
+                [class.active]="tabBoletasDetalle === 'sin-asignar'"
+                [attr.aria-pressed]="tabBoletasDetalle === 'sin-asignar'"
+                (click)="setTabBoletasDetalle('sin-asignar')"
+              >
+                <span class="cupos-filter-icon material-icons" aria-hidden="true">person_add</span>
+                <span>Sin asignar ({{ detalle.totalSinAsignar }})</span>
+                <span class="material-icons cupos-filter-check" aria-hidden="true">check</span>
+              </button>
+              <button
+                type="button"
+                class="cupos-filter-option"
+                *ngIf="mostrarTabBoletas(detalle, 'usadas')"
+                [class.active]="tabBoletasDetalle === 'usadas'"
+                [attr.aria-pressed]="tabBoletasDetalle === 'usadas'"
+                (click)="setTabBoletasDetalle('usadas')"
+              >
+                <span class="cupos-filter-icon material-icons" aria-hidden="true">task_alt</span>
+                <span>Usadas ({{ detalle.totalUsadas }})</span>
+                <span class="material-icons cupos-filter-check" aria-hidden="true">check</span>
+              </button>
+            </div>
+          </section>
+
+          <section
+            class="cupos-filter-panel"
+            *ngIf="tabEventoDetalle === 'productos' && mostrarFiltroEstadoProductosDetalle(detalle)"
+            aria-labelledby="mc-evento-estado-productos-title"
+          >
+            <div class="cupos-filter-heading">
+              <span class="material-icons" aria-hidden="true">tune</span>
+              <div>
+                <h2 id="mc-evento-estado-productos-title">Estado</h2>
+                <p>Filtra tus productos.</p>
+              </div>
+            </div>
+            <div class="cupos-filter-list" role="group" aria-label="Estado de productos">
+              <button
+                type="button"
+                class="cupos-filter-option"
+                *ngIf="mostrarTabProductos(detalle, 'compradas')"
+                [class.active]="tabProductosDetalle === 'compradas'"
+                [attr.aria-pressed]="tabProductosDetalle === 'compradas'"
+                (click)="setTabProductosDetalle('compradas')"
+              >
+                <span class="cupos-filter-icon material-icons" aria-hidden="true">shopping_bag</span>
+                <span>Por retirar ({{ detalle.totalProductosComprados }})</span>
+                <span class="material-icons cupos-filter-check" aria-hidden="true">check</span>
+              </button>
+              <button
+                type="button"
+                class="cupos-filter-option"
+                *ngIf="mostrarTabProductos(detalle, 'redimidas')"
+                [class.active]="tabProductosDetalle === 'redimidas'"
+                [attr.aria-pressed]="tabProductosDetalle === 'redimidas'"
+                (click)="setTabProductosDetalle('redimidas')"
+              >
+                <span class="cupos-filter-icon material-icons" aria-hidden="true">inventory</span>
+                <span>Redimidas ({{ detalle.totalProductosRedimidos }})</span>
+                <span class="material-icons cupos-filter-check" aria-hidden="true">check</span>
+              </button>
+            </div>
+          </section>
+
+          <details class="cupos-safety mc-evento-safety">
+            <summary class="cupos-safety-summary">
+              <span class="material-icons" aria-hidden="true">verified_user</span>
+              <span>
+                <strong>Usa tus entradas con seguridad</strong>
+                <small>QR, traslados y acceso en puerta</small>
+              </span>
+              <span class="material-icons cupos-safety-chevron" aria-hidden="true">expand_more</span>
+            </summary>
+            <div class="cupos-safety-body">
+              <p>El código QR se activa cerca de la hora del evento. Si transfieres una entrada, hazlo solo con el flujo oficial de Eventum.</p>
+              <p><a routerLink="/mis-compras/guia" class="cupos-inline-link">Ver guía de entradas</a></p>
+            </div>
+          </details>
+        </aside>
+
+        <section class="cupos-feed mc-evento-detalle-feed" aria-live="polite">
+          <header class="cupos-feed-header mc-evento-feed-header">
+            <div>
+              <p class="cupos-feed-kicker">Mis compras</p>
+              <h2>{{ tituloFeedEventoDetalle(detalle) }}</h2>
+            </div>
+            <span class="cupos-feed-count" *ngIf="!loadingBoletasDetalle && !loadingComprasProductos">
+              {{ contadorItemsFeedEventoDetalle(detalle) }}
+              {{ contadorItemsFeedEventoDetalle(detalle) === 1 ? 'ítem' : 'ítems' }}
+            </span>
+          </header>
+
+          <ng-container *ngIf="tabEventoDetalle === 'entradas' && eventoTieneEntradas(detalle)">
+        <div class="boletas-section evento-boletas-section evento-entradas-panel">
+          <div class="loading-small cupos-loading" *ngIf="loadingBoletasDetalle">
+            <p>Cargando boletas…</p>
+          </div>
+          <ng-container *ngIf="!loadingBoletasDetalle && tiposDetallePorTab(detalle).length > 0; else detalleSinBoletas">
+            <div *ngFor="let tipo of tiposDetallePorTab(detalle)" class="tipo-boletas-section">
+              <h4 *ngIf="mostrarTituloGrupoBoletas(detalle)">{{ tipo.nombre }} ({{ tipo.boletas.length }})</h4>
+              <div class="boletas-grid boletas-grid--entradas-detalle">
+                <ng-container *ngFor="let item of tipo.boletas">
+                  <ng-container *ngIf="item.boleta as boleta">
+                    <ng-container *ngIf="item.compra as compra">
+                      <app-compra-ticket-card [card]="entradaTicketCard(item)" (action)="onEntradaTicketAction($event, item)" />
+                    </ng-container>
                   </ng-container>
                 </ng-container>
-              </ng-container>
+              </div>
             </div>
-          </div>
-        </ng-container>
-        <ng-template #detalleSinBoletas>
-          <p class="actividad-page-vacio" *ngIf="!loadingBoletasDetalle">
-            No hay boletas {{ tabBoletasDetalle === 'usadas' ? 'usadas' : (tabBoletasDetalle === 'sin-asignar' ? 'sin asignar' :
-            'sin usar') }} en este evento.
-          </p>
-        </ng-template>
-      </div>
-    </ng-container>
-
-    <section
-      *ngIf="tabEventoDetalle === 'productos' && eventoTieneProductos(detalle)"
-      class="evento-productos-section"
-      aria-label="Productos del evento"
-    >
-      <div class="compra-card evento-detalle-content productos-panel">
-        <p class="productos-panel-hint" *ngIf="tabProductosDetalle === 'compradas'">
-          Retira en el punto de entrega del evento. Muestra tu pedido confirmado al personal.
-        </p>
-        <p class="productos-panel-hint productos-panel-hint--redimidas" *ngIf="tabProductosDetalle === 'redimidas'">
-          Productos que ya retiraste o consumiste en este evento.
-        </p>
-
-        <div class="loading-small" *ngIf="loadingComprasProductos">
-          <p>Cargando productos...</p>
-        </div>
-
-        <ng-container *ngIf="!loadingComprasProductos">
-          <div class="productos-list" *ngIf="comprasProductosDetallePorTab(detalle).length > 0; else detalleSinProductos">
-            <app-compra-ticket-card
-              *ngFor="let compraDetalle of comprasProductosDetallePorTab(detalle)"
-              [card]="productoTicketCard(compraDetalle, detalle)"
-              (action)="onProductoTicketAction($event, compraDetalle.compra, detalle)"
-            />
-          </div>
-
-          <ng-template #detalleSinProductos>
-            <div class="productos-empty">
-              <span class="material-icons" aria-hidden="true">shopping_bag</span>
+          </ng-container>
+          <ng-template #detalleSinBoletas>
+            <div class="cupos-empty mc-evento-detalle-empty" *ngIf="!loadingBoletasDetalle">
               <p>
-                No hay productos
-                {{ tabProductosDetalle === 'redimidas' ? 'redimidos' : 'por retirar' }}
+                No hay boletas
+                {{
+                  tabBoletasDetalle === 'usadas'
+                    ? 'usadas'
+                    : tabBoletasDetalle === 'sin-asignar'
+                      ? 'sin asignar'
+                      : 'sin usar'
+                }}
                 en este evento.
               </p>
             </div>
           </ng-template>
-        </ng-container>
-      </div>
-    </section>
-  </div>
+        </div>
+          </ng-container>
 
-  <section *ngIf="!loading && !eventoDetalleKey && !lugarCoverDetalleKey && (tabMisComprasPrincipal === 'eventos' || !coversEventumEnabled) && eventosConBoletas.length > 0" class="mis-compras-eventos-section">
-    <header class="mis-compras-eventos-heading">
-      <h2>Tus eventos</h2>
-      <p>{{ eventosConBoletas.length }} {{ eventosConBoletas.length === 1 ? 'evento' : 'eventos' }}</p>
-    </header>
-    <div class="compras-list eventos-list">
-    <div *ngFor="let grupo of eventosConBoletas" class="compra-card evento-card mc-event-card" [class.expanded]="isEventoBoletasExpandido(grupo.key)">
-      <button
-        type="button"
-        class="evento-card-toggle mc-event-card-toggle"
-        (click)="abrirDetalleEventoBoletas(grupo.key)"
-        [attr.aria-label]="'Ver compras de ' + grupo.titulo"
+          <section
+        *ngIf="tabEventoDetalle === 'productos' && eventoTieneProductos(detalle)"
+        class="evento-productos-section"
+        aria-label="Productos del evento"
       >
-        <div class="event-body">
-          <h3 class="event-title">{{ grupo.titulo }}</h3>
-          <div class="event-meta">
-            <span class="event-meta-line" *ngIf="grupo.lugar?.nombre">
-              <span class="material-icons">place</span>
-              {{ grupo.lugar.nombre }}
-            </span>
-            <span class="event-meta-line" *ngIf="grupo.fechaInicio">
-              <span class="material-icons">calendar_today</span>
-              {{ grupo.fechaInicio | dateFormat:'short' }}
-              <ng-container *ngIf="grupo.fechaFin"> — {{ grupo.fechaFin | dateFormat:'short' }}</ng-container>
-            </span>
-          </div>
-          <div class="compra-estados compra-estados--event-card">
-            <span *ngFor="let tipo of tiposResumenParaBadges(grupo)" class="badge badge-info-soft">
-              {{ tipo.totalBoletas }} {{ tipo.nombre }}
-            </span>
-            <span class="badge badge-success" *ngIf="grupo.totalCedidas > 0">{{ grupo.totalCedidas }} {{ grupo.totalCedidas === 1 ? 'recibida' : 'recibidas' }}</span>
-            <span class="badge badge-info" *ngIf="grupo.totalSinAsignar > 0">{{ grupo.totalSinAsignar }} sin asignar</span>
-            <span class="badge badge-warning" *ngIf="grupo.totalUsadas > 0">{{ grupo.totalUsadas }} usadas</span>
-            <span class="badge badge-info-soft" *ngIf="grupo.totalProductosComprados > 0">
-              {{ grupo.totalProductosComprados }} por retirar
-            </span>
-            <span class="badge badge-warning" *ngIf="grupo.totalProductosRedimidos > 0">
-              {{ grupo.totalProductosRedimidos }} redimidos
-            </span>
-          </div>
-          <div class="event-footer mc-event-footer--dual">
-            <div class="mc-event-boletas-stat" *ngIf="eventoTieneEntradas(grupo)">
-              <span class="total-label">Boletas</span>
-              <span class="total-value">{{ grupo.totalDisponibles }}</span>
-              <span class="evento-total-caption" *ngIf="grupo.totalTrasladoSaliente > 0">
-                {{ grupo.totalTrasladoSaliente }} con envío pendiente
-              </span>
-            </div>
-            <div class="mc-event-boletas-stat" *ngIf="eventoTieneProductos(grupo)">
-              <span class="total-label">Productos</span>
-              <span class="total-value">{{ grupo.totalProductosComprados }}</span>
-              <span class="evento-total-caption" *ngIf="grupo.totalProductosRedimidos > 0">
-                {{ grupo.totalProductosRedimidos }} redimidos
-              </span>
-            </div>
-            <span class="event-cta" aria-hidden="true">
-              <span class="event-cta-text">Ver</span>
-              <ion-icon name="arrow-forward-outline"></ion-icon>
-            </span>
-          </div>
-        </div>
-      </button>
-
-      <div class="boletas-section evento-boletas-section" *ngIf="isEventoBoletasExpandido(grupo.key)">
-        <div class="loading-small" *ngIf="loadingBoletasDetalle">
-          <p>Cargando boletas...</p>
-        </div>
-        <ng-container *ngIf="!loadingBoletasDetalle">
-        <div *ngFor="let tipo of grupo.tipos" class="tipo-boletas-section">
-          <h4 *ngIf="tipo.totalDisponibles > 0">
-            {{ tipo.nombre }} ({{ tipo.totalDisponibles }})
-          </h4>
-          <h4 *ngIf="tipo.totalDisponibles === 0">
-            {{ tipo.nombre }} (0 en tu poder — {{ tipo.totalBoletas }} con envío pendiente)
-          </h4>
-          <p
-            class="boletas-section-hint"
-            *ngIf="tipo.totalDisponibles > 0 && tipo.totalTrasladoSaliente > 0"
-          >
-            {{ tipo.totalTrasladoSaliente }}
-            {{ tipo.totalTrasladoSaliente === 1 ? 'entrada aparece' : 'entradas aparecen' }}
-            abajo con envío por correo pendiente.
+        <div class="evento-detalle-content productos-panel">
+          <p class="productos-panel-hint" *ngIf="tabProductosDetalle === 'compradas'">
+            Retira en el punto de entrega del evento. Muestra tu pedido confirmado al personal.
           </p>
-          <div class="boletas-grid">
-            <ng-container *ngFor="let item of tipo.boletas">
-              <ng-container *ngIf="item.boleta as boleta">
-                <ng-container *ngIf="item.compra as compra">
-                  <app-compra-ticket-card
-                    [card]="entradaTicketCard(item)"
-                    (action)="onEntradaTicketAction($event, item)"
-                  />
-                </ng-container>
-              </ng-container>
-            </ng-container>
+          <p class="productos-panel-hint productos-panel-hint--redimidas" *ngIf="tabProductosDetalle === 'redimidas'">
+            Productos que ya retiraste o consumiste en este evento.
+          </p>
+
+          <div class="loading-small cupos-loading" *ngIf="loadingComprasProductos">
+            <p>Cargando productos…</p>
           </div>
+
+          <ng-container *ngIf="!loadingComprasProductos">
+            <div class="productos-list" *ngIf="comprasProductosDetallePorTab(detalle).length > 0; else detalleSinProductos">
+              <app-compra-ticket-card
+                *ngFor="let compraDetalle of comprasProductosDetallePorTab(detalle)"
+                [card]="productoTicketCard(compraDetalle, detalle)"
+                (action)="onProductoTicketAction($event, compraDetalle.compra, detalle)"
+              />
+            </div>
+
+            <ng-template #detalleSinProductos>
+              <div class="cupos-empty mc-evento-detalle-empty productos-empty">
+                <span class="material-icons" aria-hidden="true">shopping_bag</span>
+                <p>
+                  No hay productos
+                  {{ tabProductosDetalle === 'redimidas' ? 'redimidos' : 'por retirar' }}
+                  en este evento.
+                </p>
+              </div>
+            </ng-template>
+          </ng-container>
         </div>
-        </ng-container>
+          </section>
+        </section>
       </div>
     </div>
+  </div>
+
+  <section
+    *ngIf="!loading && !eventoDetalleKey && !lugarCoverDetalleKey && (tabMisComprasPrincipal === 'eventos' || !coversEventumEnabled) && eventosConBoletas.length > 0"
+    class="mc-mis-compras-list-explorer cupos-page cupos-page--explorar mis-compras-eventos-section events-section events-section--upcoming eventos-cliente-page"
+  >
+    <div class="cupos-explorer-shell">
+      <header class="cupos-intro mc-mis-compras-list-intro">
+        <div class="cupos-intro-copy">
+          <p class="cupos-eyebrow mc-evento-detalle-eyebrow">
+            <span class="cupos-eyebrow-mark" aria-hidden="true"></span>
+            Mis compras
+          </p>
+          <h1>Tus eventos</h1>
+          <p class="cupos-intro-lead mc-mis-compras-list-lead">
+            {{ eventosConBoletas.length }}
+            {{ eventosConBoletas.length === 1 ? 'evento con compras' : 'eventos con compras' }}
+          </p>
+          <a
+            *ngIf="totalTrasladosPendientesRecibir() > 0"
+            routerLink="/recibidos"
+            class="mc-compras-recibir-alerta mc-mis-compras-list-alerta"
+            aria-label="Ir a solicitudes recibidas"
+          >
+            <span class="mc-compras-recibir-alerta__badge">{{ totalTrasladosPendientesRecibir() }}</span>
+            <span>
+              {{
+                totalTrasladosPendientesRecibir() === 1
+                  ? 'Tienes 1 solicitud por aceptar'
+                  : 'Tienes ' + totalTrasladosPendientesRecibir() + ' solicitudes por aceptar'
+              }}
+              — revisa <strong>Recibidos</strong>.
+            </span>
+          </a>
+        </div>
+      </header>
+
+      <div class="cupos-workspace cupos-workspace--solo-feed">
+        <section class="cupos-feed mc-mis-compras-list-feed" aria-label="Tus eventos">
+          <div class="events-grid">
+      <article
+        *ngFor="let grupo of eventosConBoletas"
+        class="event-card mc-evento-compra-card"
+        tabindex="0"
+        role="link"
+        [attr.aria-label]="'Ver compras de ' + grupo.titulo"
+        (click)="abrirDetalleEventoBoletas(grupo.key)"
+        (keydown)="onEventoCompraCardActivate($event, grupo.key)"
+      >
+        <div class="event-card__main">
+          <div class="event-thumb">
+            <img [src]="getEventoListImageUrl(grupo)" [alt]="grupo.titulo" loading="lazy" />
+          </div>
+          <div class="event-card__date" *ngIf="grupo.fechaInicio" aria-hidden="true">
+            <strong>{{ getEventDay(grupo.fechaInicio) }}</strong>
+            <span>{{ getEventMonth(grupo.fechaInicio) }}</span>
+          </div>
+          <div class="event-body">
+            <h3 class="event-title">{{ grupo.titulo }}</h3>
+            <div class="event-meta">
+              <span class="event-meta-line" *ngIf="grupo.lugar?.nombre">
+                <span class="material-icons">place</span>
+                {{ grupo.lugar.nombre }}
+              </span>
+              <span class="event-meta-line" *ngIf="grupo.fechaInicio">
+                <span class="material-icons">calendar_today</span>
+                {{ grupo.fechaInicio | dateFormat:'shortDate' }}
+              </span>
+            </div>
+            <div class="event-footer-main">
+              <span class="price">{{ resumenFooterEventoCompra(grupo) }}</span>
+              <span class="event-cta" aria-hidden="true">
+                <span class="event-cta-text">Ver evento</span>
+                <ion-icon name="arrow-forward-outline"></ion-icon>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="event-quick-actions" *ngIf="mostrarQuickActionsEventoCompra(grupo)">
+          <span class="event-quick-action" *ngIf="grupo.totalSinAsignar > 0">
+            <span class="material-icons">person_add</span>
+            <span class="event-quick-action__label">{{ grupo.totalSinAsignar }} sin asignar</span>
+          </span>
+          <span class="event-quick-action event-quick-action--productos" *ngIf="grupo.totalTrasladoSaliente > 0">
+            <span class="material-icons">mail</span>
+            <span class="event-quick-action__label">{{ grupo.totalTrasladoSaliente }} en envío</span>
+          </span>
+          <span class="event-quick-action event-quick-action--entradas" *ngIf="grupo.totalCedidas > 0">
+            <span class="material-icons">call_received</span>
+            <span class="event-quick-action__label">{{ grupo.totalCedidas }} recibidas</span>
+          </span>
+          <span class="event-quick-action event-quick-action--productos event-quick-action--activo" *ngIf="grupo.totalUsadas > 0">
+            <span class="material-icons">check_circle</span>
+            <span class="event-quick-action__label">{{ grupo.totalUsadas }} usadas</span>
+          </span>
+        </div>
+      </article>
+          </div>
+        </section>
+      </div>
     </div>
   </section>
 

@@ -14,6 +14,8 @@ export const environment = {
   cuposEventumEnabled: true,
   /** `true`: módulo Covers (clubes por lugar, sesiones, aforo, reingreso). `false`: oculta rutas y UI. */
   coversEventumEnabled: false,
+  /** `true`: pantalla /ventas-manual (menú admin/organizador). `false`: oculta ruta y enlaces. */
+  ventasManualEnabled: true,
   /**
    * Detalle evento → Entradas (no agotadas): mostrar disponibles / reservados / vendidas / totales.
    * `false` = ocultar esas cifras. Etapas agotadas siempre las muestran.

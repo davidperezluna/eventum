@@ -589,7 +589,6 @@ export class Ventas implements OnInit, OnDestroy {
         evento_id: this.eventoFiltro || undefined,
         estado_pago: this.estadoPagoFiltro || undefined,
         estado_compra: this.estadoCompraFiltro || undefined,
-        ocultar_total_cero_cliente_id: 5
       });
       console.log('Response recibida en ventas:', response);
       this.compras = response.data || [];

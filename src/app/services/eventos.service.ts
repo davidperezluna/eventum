@@ -56,9 +56,9 @@ export class EventosService {
         query = query.or(`titulo.ilike.%${filters.search}%,descripcion.ilike.%${filters.search}%`);
       }
 
-      // Ordenamiento
-      const sortBy = filters?.sortBy || 'fecha_creacion';
-      const sortOrder = filters?.sortOrder || 'desc';
+      // Ordenamiento por fecha de inicio del evento (el que empieza primero).
+      const sortBy = filters?.sortBy || 'fecha_inicio';
+      const sortOrder = filters?.sortOrder || 'asc';
       query = query.order(sortBy, { ascending: sortOrder === 'asc' });
 
       // Paginación

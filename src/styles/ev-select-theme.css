@@ -52,6 +52,11 @@
     0 0 0 3px var(--ev-select-focus-ring);
 }
 
+.ev-select-host--open .ev-select.ng-select > .ng-select-container,
+.ev-select.ng-select.ng-select-opened > .ng-select-container {
+  border-radius: 0;
+}
+
 .ev-select-host--error .ev-select.ng-select .ng-select-container {
   border-color: color-mix(in srgb, var(--ev-form-danger, #dc2626) 32%, var(--ev-select-border));
   background: var(--ev-form-surface, #fff);
@@ -85,6 +90,27 @@
 .ev-select.ng-select .ng-value-container .ng-input > input {
   font-size: 0.8125rem;
   color: var(--ev-select-ink);
+}
+
+.ev-select.ng-select .ng-value-container .ng-value {
+  max-width: calc(100% - 2.5rem);
+  overflow: hidden;
+}
+
+.ev-select.ng-select .ng-value-container .ng-value .ng-value-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ev-select.ng-select.ng-select-filtered .ng-select-container .ng-value {
+  display: none;
+}
+
+.ev-select.ng-select.ng-select-filtered .ng-select-container .ng-value-container .ng-input {
+  position: relative;
+  width: 100%;
 }
 
 .ev-select.ng-select .ng-value-container .ng-placeholder,
@@ -160,12 +186,17 @@ body > .ng-dropdown-panel.ev-select-panel:not(.ev-select-panel--sheet) {
   z-index: 12150 !important;
   pointer-events: auto;
   border: 1px solid var(--ev-form-border, rgba(15, 23, 42, 0.07));
-  border-radius: var(--ev-form-radius, 12px);
+  border-radius: 0;
   background: #fff;
   box-shadow: var(--ev-select-panel-shadow);
   overflow: hidden;
   animation: evSelectPanelIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
   margin-top: 6px;
+}
+
+body > .ng-dropdown-panel.ev-select-panel:not(.ev-select-panel--sheet) .ng-dropdown-panel-items .ng-option:first-child,
+body > .ng-dropdown-panel.ev-select-panel:not(.ev-select-panel--sheet) .ng-dropdown-panel-items .ng-option:last-child {
+  border-radius: 0;
 }
 
 @keyframes evSelectPanelIn {
@@ -186,6 +217,30 @@ body > .ng-dropdown-panel.ev-select-panel:not(.ev-select-panel--sheet) {
 
 .ev-select-panel .ng-dropdown-panel-items {
   max-height: 17rem;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-block: 0.35rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 23, 42, 0.16) transparent;
+}
+
+.ev-select-panel .ng-dropdown-panel-items::-webkit-scrollbar {
+  width: 4px;
+}
+
+.ev-select-panel .ng-dropdown-panel-items::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ev-select-panel .ng-dropdown-panel-items::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.14);
+}
+
+.ev-select-panel .ng-dropdown-panel-items:hover::-webkit-scrollbar-thumb,
+.ev-select-panel .ng-dropdown-panel-items:focus-within::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.24);
 }
 
 .ev-select-panel .ng-dropdown-panel-items .ng-option {
@@ -207,7 +262,11 @@ body > .ng-dropdown-panel.ev-select-panel:not(.ev-select-panel--sheet) {
 }
 
 .ev-select-panel .ng-dropdown-panel-items .ng-option.ng-option-disabled {
-  color: #cbd5e1;
+  padding: 0.65rem 0.85rem;
+  color: var(--ev-select-muted);
+  font-size: 0.8125rem;
+  text-align: center;
+  cursor: default;
 }
 
 /* ---- Custom option row ---- */
@@ -342,6 +401,12 @@ body > .ng-dropdown-panel.ev-select-panel--sheet {
 
 .ev-select-panel--sheet .ng-dropdown-panel-items {
   max-height: min(52vh, 22rem);
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-block: 0.35rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 23, 42, 0.16) transparent;
 }
 
 .ev-select-panel--sheet .ev-select__option {

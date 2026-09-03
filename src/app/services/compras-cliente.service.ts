@@ -319,7 +319,7 @@ export class ComprasClienteService {
               `Palco (tipo ${item.tipo_boleta_id}): indica ${item.cantidad} palco(s) seleccionado(s).`
             );
           }
-          const { error: rErr } = await this.supabase.getClient().rpc('reservar_palcos', {
+          const { error: rErr } = await this.supabase.getClient().rpc('reservar_palcos_compra_manual', {
             p_compra_id: compraId,
             p_palco_ids: item.palco_ids
           });

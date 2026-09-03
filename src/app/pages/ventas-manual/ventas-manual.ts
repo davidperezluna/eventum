@@ -1,13 +1,27 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { EvButton } from '../../components/ev-button';
+import { EvNumberInput } from '../../components/ev-number-input/ev-number-input';
+import { EvSelect, EvSelectOption } from '../../components/ev-select/ev-select';
 import { ComprasClienteService, ItemCompra } from '../../services/compras-cliente.service';
 import { AlertService } from '../../services/alert.service';
+import { AuthService } from '../../services/auth.service';
 import { UsuariosService } from '../../services/usuarios.service';
 import { EventosService } from '../../services/eventos.service';
 import { BoletasService } from '../../services/boletas.service';
 import { ComprasService } from '../../services/compras.service';
 import { Evento, Palco, TipoBoleta, Usuario } from '../../types';
+
+interface DetalleCajaVentaManual {
+  nombre: string;
+  precioUnitario: number;
+  subtotal: number;
+  cantidad: number;
+  disponibles: number;
+  esPalco: boolean;
+  unidad: string;
+}
 
 interface LineaVentaManual {
   id: number;
@@ -18,7 +32,13 @@ interface LineaVentaManual {
 
 @Component({
   selector: 'app-ventas-manual',
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    EvButton,
+    EvNumberInput,
+    EvSelect,
+  ],
   templateUrl: './ventas-manual.html',
   styleUrl: './ventas-manual.css',
 })
@@ -27,23 +47,25 @@ export class VentasManual implements OnInit {
   loadingVentaManualClientes = false;
   loadingVentaManualEventos = false;
   loadingVentaManualTipos = false;
+  mostrarNotas = false;
   ventaManualClienteId: number | null = null;
   ventaManualEventoId: number | null = null;
-  valorServicioManualInput: number | null = null;
   ventaManualNotas = '';
-  ventaManualClienteSearch = '';
-  ventaManualEventoSearch = '';
   ventaManualClientes: Usuario[] = [];
   ventaManualEventos: Evento[] = [];
   ventaManualTipos: TipoBoleta[] = [];
   ventaManualLineas: LineaVentaManual[] = [];
   private ventaManualLineaSeq = 1;
   private palcosDisponiblesPorTipoId = new Map<number, Palco[]>();
+  private clienteSeleccionadoSnapshot: Usuario | null = null;
+  private clienteSearchTimer: ReturnType<typeof setTimeout> | null = null;
+  private clienteSearchRequestId = 0;
 
   constructor(
     private comprasService: ComprasService,
     private comprasClienteService: ComprasClienteService,
     private alertService: AlertService,
+    private authService: AuthService,
     private usuariosService: UsuariosService,
     private eventosService: EventosService,
     private boletasService: BoletasService,
@@ -55,12 +77,50 @@ export class VentasManual implements OnInit {
     void Promise.all([this.cargarClientesVentaManual(), this.cargarEventosVentaManual()]);
   }
 
+  get isOrganizador(): boolean {
+    return this.authService.isOrganizador();
+  }
+
+  get clienteOptions(): EvSelectOption<number>[] {
+    return this.ventaManualClientes.map((usuario) => ({
+      value: usuario.id,
+      label: this.usuarioLabel(usuario),
+    }));
+  }
+
+  get eventoOptions(): EvSelectOption<number>[] {
+    return this.ventaManualEventos.map((evento) => ({
+      value: evento.id,
+      label: evento.titulo,
+    }));
+  }
+
+  get tipoOptions(): EvSelectOption<number>[] {
+    return this.ventaManualTipos.map((tipo) => ({
+      value: tipo.id,
+      label: tipo.nombre,
+    }));
+  }
+
   get clienteVentaManualSeleccionado(): Usuario | null {
-    return this.ventaManualClientes.find((u) => u.id === this.ventaManualClienteId) || null;
+    if (this.ventaManualClienteId == null) return null;
+    return (
+      this.ventaManualClientes.find((u) => u.id === this.ventaManualClienteId) ||
+      (this.clienteSeleccionadoSnapshot?.id === this.ventaManualClienteId
+        ? this.clienteSeleccionadoSnapshot
+        : null)
+    );
   }
 
   get eventoVentaManualSeleccionado(): Evento | null {
     return this.ventaManualEventos.find((e) => e.id === this.ventaManualEventoId) || null;
+  }
+
+  get clienteChipLabel(): string {
+    const cliente = this.clienteVentaManualSeleccionado;
+    if (!cliente) return '';
+    const nombre = `${cliente.nombre || ''} ${cliente.apellido || ''}`.trim();
+    return nombre || cliente.email || 'Titular';
   }
 
   get subtotalVentaManual(): number {
@@ -73,82 +133,194 @@ export class VentasManual implements OnInit {
     }, 0);
   }
 
-  get descuentoVentaManual(): number {
-    return this.subtotalVentaManual;
-  }
-
-  get totalVentaManual(): number {
-    return 0;
-  }
-
-  get valorServicioManualNormalizado(): number {
-    const raw = Number(this.valorServicioManualInput ?? NaN);
-    if (!Number.isFinite(raw)) return 0;
-    return Math.max(0, raw);
-  }
-
-  get valorServicioManualDisplay(): string {
-    if (this.valorServicioManualInput == null || !Number.isFinite(Number(this.valorServicioManualInput))) {
-      return '';
-    }
-    return this.formatearMiles(this.valorServicioManualInput);
-  }
-
   get puedeGuardarVentaManual(): boolean {
     if (!this.ventaManualClienteId || !this.ventaManualEventoId) return false;
-    if (this.valorServicioManualInput == null || !Number.isFinite(Number(this.valorServicioManualInput))) return false;
-    if (Number(this.valorServicioManualInput) < 0) return false;
     if (!this.ventaManualLineas.length) return false;
     return this.ventaManualLineas.every((linea) => this.validarLineaVentaManual(linea));
   }
 
-  usuarioLabel(usuario: Usuario): string {
-    const nombre = `${usuario.nombre || ''} ${usuario.apellido || ''}`.trim();
-    return `#${usuario.id} · ${nombre || 'Sin nombre'} · ${usuario.email}`;
+  get siguientePasoHint(): string {
+    if (!this.ventaManualEventoId) return 'Comienza eligiendo el evento';
+    if (!this.ventaManualClienteId) return 'Falta indicar el titular de las boletas';
+    if (this.loadingVentaManualTipos) return 'Cargando boletas disponibles…';
+    if (!this.ventaManualTipos.length) return 'Este evento no tiene boletas disponibles por ahora';
+    if (!this.ventaManualLineas.some((l) => l.tipo_boleta_id)) return 'Agrega al menos un tipo de boleta';
+    if (this.ventaManualLineas.some((l) => this.esTipoPalcoLinea(l) && !this.validarLineaVentaManual(l))) {
+      return 'Completa la asignación de palcos';
+    }
+    return 'Revisa el resumen y confirma cuando esté bien';
   }
 
-  onValorServicioManualInput(raw: string): void {
-    const numeric = this.parsearNumeroManual(raw);
-    this.valorServicioManualInput = numeric;
+  get resumenEntradas(): string {
+    const tipos = this.ventaManualLineas.filter(
+      (linea) => linea.tipo_boleta_id && this.validarLineaVentaManual(linea),
+    ).length;
+    const unidades = this.ventaManualLineas.reduce((acc, linea) => {
+      if (!this.validarLineaVentaManual(linea)) return acc;
+      return acc + Math.max(0, Number(linea.cantidad || 0));
+    }, 0);
+
+    if (tipos <= 0 || unidades <= 0) return 'Aún sin boletas';
+
+    const tiposTxt = tipos === 1 ? '1 tipo' : `${tipos} tipos`;
+    const unidadesTxt = unidades === 1 ? '1 boleta' : `${unidades} boletas`;
+    return `${tiposTxt} · ${unidadesTxt}`;
+  }
+
+  get lineasResumen(): DetalleCajaVentaManual[] {
+    return this.ventaManualLineas
+      .map((linea) => this.detalleCaja(linea))
+      .filter((detalle): detalle is DetalleCajaVentaManual => detalle != null);
+  }
+
+  trackLinea(_: number, linea: LineaVentaManual): number {
+    return linea.id;
+  }
+
+  trackResumen(_: number, detalle: DetalleCajaVentaManual): string {
+    return `${detalle.nombre}-${detalle.cantidad}-${detalle.precioUnitario}`;
+  }
+
+  usuarioLabel(usuario: Usuario): string {
+    const nombre = `${usuario.nombre || ''} ${usuario.apellido || ''}`.trim();
+    if (nombre && usuario.email) return `${nombre} · ${usuario.email}`;
+    return nombre || usuario.email || `Usuario #${usuario.id}`;
+  }
+
+  detalleCaja(linea: LineaVentaManual): DetalleCajaVentaManual | null {
+    const tipo = this.getTipoVentaManual(linea.tipo_boleta_id);
+    if (!tipo) return null;
+
+    const cantidad = Math.max(1, Number(linea.cantidad || 1));
+    const precioUnitario = Number(tipo.precio || 0);
+
+    return {
+      nombre: tipo.nombre,
+      precioUnitario,
+      subtotal: precioUnitario * cantidad,
+      cantidad,
+      disponibles: tipo.cantidad_disponibles ?? 0,
+      esPalco: !!tipo.es_palco,
+      unidad: tipo.es_palco ? 'palco' : 'entrada',
+    };
+  }
+
+  unidadCajaLabel(detalle: DetalleCajaVentaManual): string {
+    if (detalle.cantidad === 1) return detalle.unidad;
+    return detalle.unidad === 'palco' ? 'palcos' : 'entradas';
+  }
+
+  formatCurrency(value: number): string {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(Number(value) || 0);
+  }
+
+  palcoOptionsParaSlot(linea: LineaVentaManual, slot: number): EvSelectOption<number>[] {
+    return this.palcosDisponiblesParaSlot(linea, slot).map((palco) => ({
+      value: palco.id,
+      label: `Palco ${palco.numero}`,
+    }));
+  }
+
+  setPalcoSlot(linea: LineaVentaManual, slot: number, value: unknown): void {
+    const next = [...linea.palco_ids];
+    next[slot] = typeof value === 'number' ? value : null;
+    linea.palco_ids = next;
     this.cdr.detectChanges();
   }
 
-  async cargarClientesVentaManual(): Promise<void> {
+  async onLineaTipoIdChange(linea: LineaVentaManual, value: unknown): Promise<void> {
+    linea.tipo_boleta_id = typeof value === 'number' ? value : null;
+    await this.onLineaTipoChange(linea);
+  }
+
+  onLineaCantidadValueChange(linea: LineaVentaManual, value: number | null): void {
+    linea.cantidad = value == null || !Number.isFinite(value) ? 1 : value;
+    this.onLineaCantidadChange(linea);
+  }
+
+  async cargarClientesVentaManual(search?: string): Promise<void> {
+    const term = search?.trim() ?? '';
+    const requestId = ++this.clienteSearchRequestId;
     this.loadingVentaManualClientes = true;
     this.cdr.detectChanges();
     try {
       const response = await this.usuariosService.getUsuarios({
         page: 1,
-        limit: 200,
+        limit: term ? 50 : 200,
         activo: true,
-        search: this.ventaManualClienteSearch.trim() || undefined,
-        sortBy: 'nombre',
+        tipo_usuario_id: this.isOrganizador ? 1 : undefined,
+        sortBy: term ? 'email' : 'nombre',
         sortOrder: 'asc',
+        search: term || undefined,
       });
-      this.ventaManualClientes = response.data || [];
+      if (requestId !== this.clienteSearchRequestId) return;
+      this.ventaManualClientes = this.mergeClienteSeleccionado(response.data || []);
     } catch (error) {
+      if (requestId !== this.clienteSearchRequestId) return;
       console.error('Error cargando usuarios para venta manual:', error);
       await this.alertService.error('Usuarios', 'No se pudieron cargar los usuarios.');
     } finally {
-      this.loadingVentaManualClientes = false;
-      this.cdr.detectChanges();
+      if (requestId === this.clienteSearchRequestId) {
+        this.loadingVentaManualClientes = false;
+        this.cdr.detectChanges();
+      }
     }
+  }
+
+  onTitularSearch(term: string): void {
+    if (this.clienteSearchTimer) {
+      clearTimeout(this.clienteSearchTimer);
+    }
+    this.clienteSearchTimer = setTimeout(() => {
+      const q = term.trim();
+      if (q.length > 0 && q.length < 2) {
+        return;
+      }
+      void this.cargarClientesVentaManual(q);
+    }, 300);
+  }
+
+  onVentaManualClienteChange(): void {
+    this.clienteSeleccionadoSnapshot = this.clienteVentaManualSeleccionado;
+  }
+
+  private mergeClienteSeleccionado(clientes: Usuario[]): Usuario[] {
+    const seleccionado = this.clienteSeleccionadoSnapshot;
+    if (!seleccionado) {
+      return clientes;
+    }
+    if (clientes.some((usuario) => usuario.id === seleccionado.id)) {
+      return clientes;
+    }
+    return [seleccionado, ...clientes];
   }
 
   async cargarEventosVentaManual(): Promise<void> {
     this.loadingVentaManualEventos = true;
     this.cdr.detectChanges();
     try {
+      const organizadorId = this.isOrganizador ? this.authService.getUsuarioId() : null;
       const response = await this.eventosService.getEventos({
         page: 1,
         limit: 200,
         activo: true,
+        organizador_id: organizadorId || undefined,
         sortBy: 'fecha_inicio',
-        sortOrder: 'desc',
+        sortOrder: 'asc',
       });
       this.ventaManualEventos = (response.data || [])
         .filter((evento) => evento.activo !== false)
-        .sort((a, b) => String(a.titulo || '').localeCompare(String(b.titulo || '')));
+        .sort((a, b) => String(a.fecha_inicio || '').localeCompare(String(b.fecha_inicio || '')));
+
+      if (this.ventaManualEventos.length === 1 && !this.ventaManualEventoId) {
+        this.ventaManualEventoId = this.ventaManualEventos[0].id;
+        await this.onVentaManualEventoChange();
+      }
     } catch (error) {
       console.error('Error cargando eventos para venta manual:', error);
       await this.alertService.error('Eventos', 'No se pudieron cargar los eventos.');
@@ -168,13 +340,24 @@ export class VentasManual implements OnInit {
       return;
     }
 
+    if (this.isOrganizador) {
+      const evento = this.eventoVentaManualSeleccionado;
+      const organizadorId = this.authService.getUsuarioId();
+      if (!evento || !organizadorId || Number(evento.organizador_id) !== organizadorId) {
+        this.ventaManualEventoId = null;
+        await this.alertService.error('Evento', 'Solo puedes registrar ventas de tus propios eventos.');
+        this.cdr.detectChanges();
+        return;
+      }
+    }
+
     this.loadingVentaManualTipos = true;
     this.cdr.detectChanges();
     try {
       const tipos = await this.boletasService.getTiposBoleta(this.ventaManualEventoId);
       this.ventaManualTipos = await this.prepararTiposVentaManual(tipos || []);
       if (!this.ventaManualTipos.length) {
-        await this.alertService.warning('Sin boletas', 'El evento seleccionado no tiene tipos de boleta disponibles.');
+        await this.alertService.warning('Sin boletas disponibles', 'Este evento no tiene tipos de boleta activos en este momento.');
       }
     } catch (error) {
       console.error('Error cargando tipos de boleta para venta manual:', error);
@@ -281,23 +464,32 @@ export class VentasManual implements OnInit {
   async guardarVentaManual(): Promise<void> {
     if (!this.puedeGuardarVentaManual) {
       await this.alertService.warning(
-        'Completa la venta',
-        'Selecciona usuario, evento y completa correctamente todas las líneas de boletas/palcos.'
+        'Casi listo',
+        'Selecciona el evento, el titular y completa cada tipo de boleta.',
       );
       return;
     }
 
+    if (this.isOrganizador) {
+      const evento = this.eventoVentaManualSeleccionado;
+      const organizadorId = this.authService.getUsuarioId();
+      if (!evento || !organizadorId || Number(evento.organizador_id) !== organizadorId) {
+        await this.alertService.error('Evento', 'Solo puedes registrar ventas de tus propios eventos.');
+        return;
+      }
+    }
+
     const confirmado = await this.alertService.confirm(
-      '¿Crear compra manual?',
-      'Se registrará la compra como confirmada y se generarán las boletas sin pasar por Wompi (equivalente a cupón 100%).',
-      'Sí, crear compra',
-      'Cancelar'
+      '¿Registrar esta venta?',
+      `${this.resumenEntradas} para ${this.clienteChipLabel}. El cobro fue directo al organizador, sin pago en línea por Eventum.`,
+      'Sí, registrar',
+      'Volver'
     );
     if (!confirmado || !this.ventaManualClienteId || !this.ventaManualEventoId) return;
 
     const items = this.construirItemsVentaManual();
     if (!items.length) {
-      await this.alertService.warning('Sin boletas', 'Agrega al menos un tipo de boleta con cantidad válida.');
+      await this.alertService.warning('Falta agregar boletas', 'Elige al menos un tipo con cantidad válida.');
       return;
     }
 
@@ -306,6 +498,7 @@ export class VentasManual implements OnInit {
 
     try {
       const subtotal = this.subtotalVentaManual;
+      const origen = this.isOrganizador ? 'organizador_manual' : 'admin_manual';
       const resultado = await this.comprasClienteService.procesarCompra({
         evento_id: this.ventaManualEventoId,
         cliente_id: this.ventaManualClienteId,
@@ -314,25 +507,25 @@ export class VentasManual implements OnInit {
         descuento_total: subtotal,
         total: 0,
         datos_facturacion: {
-          origen: 'admin_manual',
+          origen,
           creado_desde: 'ventas_manual',
         },
       });
 
       await this.comprasClienteService.confirmarPago(resultado.compra.id);
 
-      const notasBase = 'Venta creada manualmente desde administrador (sin Wompi).';
+      const actor = this.isOrganizador ? 'organizador' : 'administrador';
+      const notasBase = `Venta creada manualmente desde ${actor} (sin Wompi).`;
       const notasFinal = this.ventaManualNotas.trim()
         ? `${notasBase} ${this.ventaManualNotas.trim()}`
         : notasBase;
       await this.comprasService.updateCompra(resultado.compra.id, {
         notas: notasFinal,
-        valor_servicio_manual: this.valorServicioManualNormalizado,
       });
 
       await this.alertService.success(
-        'Compra creada',
-        `Se creó la compra #${resultado.compra.id} y las boletas quedaron confirmadas.`
+        'Venta registrada',
+        `Compra #${resultado.compra.id} lista. ${this.resumenEntradas} activas.`
       );
 
       this.resetVentaManualForm();
@@ -411,7 +604,6 @@ export class VentasManual implements OnInit {
       let disponibles: number;
 
       if (this.esTipoPalcoMultipersona(raw)) {
-        // Siempre usar palcos libres (no el stock del tipo, que puede quedar desfasado).
         await this.cargarPalcosDisponiblesTipo(raw.id);
         disponibles = this.palcosDisponiblesPorTipoId.get(raw.id)?.length ?? 0;
       } else {
@@ -436,21 +628,6 @@ export class VentasManual implements OnInit {
     return Math.max(0, Number(tipo.cantidad_disponibles));
   }
 
-  private parsearNumeroManual(raw: string): number | null {
-    const digits = String(raw || '').replace(/\D/g, '');
-    if (!digits) return null;
-    const value = Number(digits);
-    if (!Number.isFinite(value)) return null;
-    return value;
-  }
-
-  private formatearMiles(value: number): string {
-    return new Intl.NumberFormat('es-CO', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(Math.max(0, Number(value) || 0));
-  }
-
   private nuevaLineaVentaManual(): LineaVentaManual {
     return {
       id: this.ventaManualLineaSeq++,
@@ -462,11 +639,10 @@ export class VentasManual implements OnInit {
 
   private resetVentaManualForm(): void {
     this.ventaManualClienteId = null;
+    this.clienteSeleccionadoSnapshot = null;
     this.ventaManualEventoId = null;
-    this.valorServicioManualInput = null;
     this.ventaManualNotas = '';
-    this.ventaManualClienteSearch = '';
-    this.ventaManualEventoSearch = '';
+    this.mostrarNotas = false;
     this.ventaManualClientes = [];
     this.ventaManualEventos = [];
     this.ventaManualTipos = [];
@@ -476,4 +652,3 @@ export class VentasManual implements OnInit {
     void Promise.all([this.cargarClientesVentaManual(), this.cargarEventosVentaManual()]);
   }
 }
-

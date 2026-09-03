@@ -1,7 +1,10 @@
 import { AdminNavSection } from './admin-nav.types';
 
 /** Menú administrador — agrupado por secciones, rutas sin cambios. */
-export function buildAdminNavSections(coversEnabled: boolean): AdminNavSection[] {
+export function buildAdminNavSections(
+  coversEnabled: boolean,
+  ventasManual = true,
+): AdminNavSection[] {
   return [
     {
       entries: [{ kind: 'link', path: '/dashboard', label: 'Dashboard', icon: 'dashboard' }],
@@ -25,7 +28,9 @@ export function buildAdminNavSections(coversEnabled: boolean): AdminNavSection[]
             { path: '/boletas', label: 'Boletas sin usar', icon: 'confirmation_number' },
             { path: '/transacciones-checkout', label: 'Transacciones', icon: 'receipt_long' },
             { path: '/wompi-reconcile', label: 'Reconciliación Wompi', icon: 'compare_arrows' },
-            { path: '/ventas-manual', label: 'Venta manual', icon: 'point_of_sale' },
+            ...(ventasManual
+              ? [{ path: '/ventas-manual', label: 'Venta manual', icon: 'point_of_sale' as const }]
+              : []),
             { path: '/probar-compras', label: 'Probar compras', icon: 'storefront' },
           ],
         },
@@ -59,8 +64,11 @@ export function buildAdminNavSections(coversEnabled: boolean): AdminNavSection[]
 
 
 /** Menú organizador estándar — portafolio de eventos. */
-export function buildOrganizadorNavSections(_coversEnabled = false): AdminNavSection[] {
-  return buildOrganizadorNavCore(false);
+export function buildOrganizadorNavSections(
+  _coversEnabled = false,
+  ventasManual = true,
+): AdminNavSection[] {
+  return buildOrganizadorNavCore(false, ventasManual);
 }
 
 /** Menú showcase organizador — mismo núcleo + Laboratorio demo. */
@@ -68,7 +76,7 @@ export function buildShowcaseNavSections(): AdminNavSection[] {
   return buildOrganizadorNavCore(true);
 }
 
-function buildOrganizadorNavCore(showcase: boolean): AdminNavSection[] {
+function buildOrganizadorNavCore(showcase: boolean, ventasManual = true): AdminNavSection[] {
   return [
     {
       entries: [
@@ -77,7 +85,9 @@ function buildOrganizadorNavCore(showcase: boolean): AdminNavSection[] {
         { kind: 'link', path: '/ventas-organizador', label: 'Mis ventas', icon: 'payments' },
         ...(showcase
           ? [{ kind: 'link' as const, path: '/demo-laboratorio', label: 'Laboratorio', icon: 'science' }]
-          : []),
+          : ventasManual
+            ? [{ kind: 'link' as const, path: '/ventas-manual', label: 'Venta manual', icon: 'point_of_sale' }]
+            : []),
       ],
     },
   ];

@@ -271,6 +271,7 @@
     [class.main-content]="!isCliente() && !isLector() && currentUser && usuario"
     [class.client-content]="isCliente() && currentUser && usuario"
     [class.client-content--recibidos]="enRutaRecibidos"
+    [class.client-content--mis-compras]="enRutaMisCompras"
     [class.public-content]="!currentUser || !usuario || isLector()"
     [class.layout-content--cart-fab]="mostrarCarritoFab"
     [class.main-content--showcase]="authService.isShowcaseOrganizador()"

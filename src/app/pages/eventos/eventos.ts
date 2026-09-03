@@ -43,7 +43,10 @@ import { EvNotice } from '../../components/ev-notice';
   selector: 'app-eventos',
   imports: [CommonModule, FormsModule, RouterLink, EvFormModal, EvFormSection, EvFormWizard, EvEventoPreview, EvEventoCard, EvSelect, EvNumberInput, EvDatetimePeriod, EvNotice],
   templateUrl: './eventos.html',
-  styleUrl: './eventos.css',
+  styleUrls: [
+    '../ventas-organizador/ventas-organizador.css',
+    './eventos.css',
+  ],
 })
 export class Eventos implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
@@ -53,13 +56,14 @@ export class Eventos implements OnInit, OnDestroy {
   organizadores: Usuario[] = [];
   wompiCuentas: WompiCuenta[] = [];
   loading = false;
+  refreshing = false;
   total = 0;
   page = 1;
   limit = 10;
   searchTerm = '';
   categoriaFiltro: number | null = null;
   estadoFiltro: string | null = null;
-  sortOrden: 'fecha_desc' | 'fecha_asc' | 'nombre_asc' | 'nombre_desc' = 'fecha_desc';
+  sortOrden: 'fecha_desc' | 'fecha_asc' | 'nombre_asc' | 'nombre_desc' = 'fecha_asc';
   showFiltersMobile = false;
   openMenuEventoId: number | null = null;
   boletasPorEvento = new Map<number, number>();
@@ -132,8 +136,8 @@ export class Eventos implements OnInit, OnDestroy {
   }
 
   readonly sortOptions: EvSelectOption<string>[] = [
-    { value: 'fecha_desc', label: 'Más recientes' },
-    { value: 'fecha_asc', label: 'Más antiguos' },
+    { value: 'fecha_asc', label: 'Empiezan primero' },
+    { value: 'fecha_desc', label: 'Empiezan después' },
     { value: 'nombre_asc', label: 'Nombre A–Z' },
     { value: 'nombre_desc', label: 'Nombre Z–A' },
   ];
@@ -255,41 +259,39 @@ export class Eventos implements OnInit, OnDestroy {
   }
 
   get pageTitle(): string {
-    return this.authService.isOrganizador() ? 'Mis Eventos' : 'Eventos';
+    return 'Mis eventos';
   }
 
   get pageSubtitle(): string {
-    return this.authService.isOrganizador()
-      ? 'Administra todos tus eventos desde un solo lugar.'
-      : 'Gestiona todos los eventos del sistema desde un solo lugar.';
+    return 'Publica, opera y da seguimiento a tus eventos desde un solo lugar.';
   }
 
   get heroEyebrow(): string {
-    return this.authService.isOrganizador() ? 'Centro de operaciones' : 'Panel administrativo';
+    return 'Centro de operaciones';
   }
 
   get showHeroStats(): boolean {
     return !this.loading && !this.isFirstTimeEmpty;
   }
 
-  get heroStats(): Array<{ value: number; label: string }> {
+  get ledgerLabel(): string {
+    return this.authService.isOrganizador() ? 'Eventos activos' : 'Eventos en el sistema';
+  }
+
+  get ledgerValue(): number {
     if (this.authService.isOrganizador()) {
-      return [
-        {
-          value: this.resumenEventosActivos ?? this.resumenTotalEventos ?? this.total,
-          label: 'eventos activos',
-        },
-        {
-          value: this.resumenProductosVendidos ?? 0,
-          label: 'productos',
-        },
-        {
-          value: this.resumenBoletasVendidas ?? 0,
-          label: 'boletas',
-        },
-      ];
+      return this.resumenEventosActivos ?? this.resumenTotalEventos ?? this.total;
     }
-    return [{ value: this.total, label: this.total === 1 ? 'evento' : 'eventos' }];
+    return this.total;
+  }
+
+  get ledgerHint(): string {
+    if (this.authService.isOrganizador()) {
+      const boletas = this.resumenBoletasVendidas ?? 0;
+      const productos = this.resumenProductosVendidos ?? 0;
+      return `${boletas} boleta${boletas === 1 ? '' : 's'} · ${productos} producto${productos === 1 ? '' : 's'}`;
+    }
+    return this.total === 1 ? '1 evento listado' : `${this.total} eventos listados`;
   }
 
   get dashboardRoute(): string {
@@ -301,7 +303,7 @@ export class Eventos implements OnInit, OnDestroy {
       this.searchTerm.trim()
       || this.categoriaFiltro != null
       || this.estadoFiltro
-      || this.sortOrden !== 'fecha_desc'
+      || this.sortOrden !== 'fecha_asc'
     );
   }
 
@@ -310,22 +312,22 @@ export class Eventos implements OnInit, OnDestroy {
     if (this.searchTerm.trim()) count++;
     if (this.categoriaFiltro != null) count++;
     if (this.estadoFiltro) count++;
-    if (this.sortOrden !== 'fecha_desc') count++;
+    if (this.sortOrden !== 'fecha_asc') count++;
     return count;
   }
 
   get eventosOrdenados(): Evento[] {
     const list = [...this.eventos];
     switch (this.sortOrden) {
-      case 'fecha_asc':
-        return list.sort((a, b) => String(a.fecha_inicio).localeCompare(String(b.fecha_inicio)));
+      case 'fecha_desc':
+        return list.sort((a, b) => String(b.fecha_inicio).localeCompare(String(a.fecha_inicio)));
       case 'nombre_asc':
         return list.sort((a, b) => a.titulo.localeCompare(b.titulo, 'es'));
       case 'nombre_desc':
         return list.sort((a, b) => b.titulo.localeCompare(a.titulo, 'es'));
-      case 'fecha_desc':
+      case 'fecha_asc':
       default:
-        return list.sort((a, b) => String(b.fecha_inicio).localeCompare(String(a.fecha_inicio)));
+        return list.sort((a, b) => String(a.fecha_inicio).localeCompare(String(b.fecha_inicio)));
     }
   }
 
@@ -368,14 +370,15 @@ export class Eventos implements OnInit, OnDestroy {
   }
 
   onSortChange(): void {
-    this.cdr.markForCheck();
+    this.page = 1;
+    this.loadEventos();
   }
 
   clearFilters(): void {
     this.searchTerm = '';
     this.categoriaFiltro = null;
     this.estadoFiltro = null;
-    this.sortOrden = 'fecha_desc';
+    this.sortOrden = 'fecha_asc';
     this.page = 1;
     this.showFiltersMobile = false;
     this.loadEventos();
@@ -554,7 +557,8 @@ export class Eventos implements OnInit, OnDestroy {
       limit: this.limit,
       search: this.searchTerm || undefined,
       categoria_id: this.categoriaFiltro || undefined,
-      estado: this.estadoFiltro || undefined
+      estado: this.estadoFiltro || undefined,
+      ...this.sortFilters(),
     };
     
     // Si es organizador, agregar filtro de organizador_id
@@ -570,8 +574,48 @@ export class Eventos implements OnInit, OnDestroy {
     this.loadEventosInternal(filters);
   }
 
-  private async loadEventosInternal(filters: any) {
+  async actualizar(): Promise<void> {
+    if (this.refreshing || this.loading) return;
+    this.refreshing = true;
+    this.cdr.detectChanges();
     try {
+      await this.loadEventosInternal({
+        page: this.page,
+        limit: this.limit,
+        search: this.searchTerm || undefined,
+        categoria_id: this.categoriaFiltro || undefined,
+        estado: this.estadoFiltro || undefined,
+        ...this.sortFilters(),
+        ...(this.authService.isOrganizador()
+          ? {
+              excluir_finalizados: !this.estadoFiltro,
+              organizador_id: this.authService.getUsuarioId() || undefined,
+            }
+          : {}),
+      }, true);
+    } finally {
+      this.refreshing = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  private sortFilters(): { sortBy: string; sortOrder: 'asc' | 'desc' } {
+    switch (this.sortOrden) {
+      case 'fecha_desc':
+        return { sortBy: 'fecha_inicio', sortOrder: 'desc' };
+      case 'nombre_asc':
+        return { sortBy: 'titulo', sortOrder: 'asc' };
+      case 'nombre_desc':
+        return { sortBy: 'titulo', sortOrder: 'desc' };
+      case 'fecha_asc':
+      default:
+        return { sortBy: 'fecha_inicio', sortOrder: 'asc' };
+    }
+  }
+
+  private async loadEventosInternal(filters: any, background = false) {
+    try {
+      if (!background) this.loading = true;
       const response: PaginatedResponse<Evento> = await this.eventosService.getEventos(filters);
       this.eventos = response.data || [];
       this.total = response.total || 0;

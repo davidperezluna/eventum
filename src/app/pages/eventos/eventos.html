@@ -1,25 +1,41 @@
-<div class="eventos-page">
-  <header class="ev-events-hero" *ngIf="!isFirstTimeEmpty || loading">
-    <p class="ev-events-hero__eyebrow">{{ heroEyebrow }}</p>
-
-    <div class="ev-events-hero__title-row">
-      <h1 class="ev-events-hero__title">{{ pageTitle }}</h1>
-      <button type="button" class="ev-events-hero__cta" (click)="openModal()">
-        <span class="material-icons" aria-hidden="true">add</span>
-        Nuevo evento
-      </button>
-    </div>
-
-    <p class="ev-events-hero__desc">{{ pageSubtitle }}</p>
-
-    <div class="ev-events-hero__stats" *ngIf="showHeroStats" aria-label="Resumen">
-      <div class="ev-events-hero__stat" *ngFor="let stat of heroStats">
-        <span class="ev-events-hero__stat-value">{{ stat.value }}</span>
-        <span class="ev-events-hero__stat-label">{{ stat.label }}</span>
+<div class="eventos-page org-sales-page">
+  <ng-container *ngIf="!isFirstTimeEmpty || loading">
+    <header class="org-sales-topbar">
+      <a [routerLink]="dashboardRoute" class="org-sales-back">
+        <span class="material-icons" aria-hidden="true">arrow_back</span>
+        Dashboard
+      </a>
+      <div class="org-sales-topbar__actions">
+        <button
+          type="button"
+          class="org-sales-refresh"
+          (click)="actualizar()"
+          [disabled]="refreshing || loading"
+          aria-label="Actualizar eventos"
+        >
+          <span class="material-icons" [class.org-sales-spin]="refreshing" aria-hidden="true">refresh</span>
+        </button>
+        <button type="button" class="ev-events-hero__cta" (click)="openModal()">
+          <span class="material-icons" aria-hidden="true">add</span>
+          Nuevo evento
+        </button>
       </div>
-    </div>
+    </header>
 
-    <div class="ev-events-hero__notice" *ngIf="isShowcaseMode">
+    <section class="org-sales-intro" aria-labelledby="eventos-page-title">
+      <div>
+        <p class="org-sales-eyebrow">{{ heroEyebrow }}</p>
+        <h1 id="eventos-page-title">{{ pageTitle }}</h1>
+        <p>{{ pageSubtitle }}</p>
+      </div>
+      <div class="org-sales-ledger" *ngIf="showHeroStats">
+        <span>{{ ledgerLabel }}</span>
+        <strong>{{ ledgerValue }}</strong>
+        <small>{{ ledgerHint }}</small>
+      </div>
+    </section>
+
+    <div class="org-sales-intro__notice" *ngIf="isShowcaseMode">
       <ev-notice
         variant="neutral"
         density="banner"
@@ -27,7 +43,7 @@
         message="Modo demostración — los cambios no se publican ni procesan pagos reales."
       />
     </div>
-  </header>
+  </ng-container>
 
   <div class="ev-toolbar" *ngIf="!isFirstTimeEmpty || loading" role="search">
     <div class="ev-toolbar__search">

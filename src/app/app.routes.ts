@@ -61,6 +61,7 @@ import { Mantenimiento } from './pages/mantenimiento/mantenimiento';
 import { environment } from '../environments/environment';
 import { cuposEventumEnabled } from './core/cupos-feature';
 import { coversEventumEnabled } from './core/covers-feature';
+import { ventasManualEnabled } from './core/ventas-manual-feature';
 import { coversFeatureGuard } from './guards/covers-feature.guard';
 import { CoversConfig } from './pages/covers-config/covers-config';
 import { CoversConfigDetalle } from './pages/covers-config-detalle/covers-config-detalle';
@@ -90,6 +91,10 @@ const coversPublicRoutes: Routes = coversEventumEnabled
       { path: 'clubes', component: ClubesExplorar, canActivate: [coversFeatureGuard] },
       { path: 'club/:lugarId', component: ClubDetalle, canActivate: [coversFeatureGuard] },
     ]
+  : [];
+
+const ventasManualRoutes: Routes = ventasManualEnabled
+  ? [{ path: 'ventas-manual', component: VentasManual }]
   : [];
 
 const appRoutes: Routes = [
@@ -190,7 +195,7 @@ const appRoutes: Routes = [
       { path: 'ventas-productos', component: VentasProductos, data: { adminOnly: true } },
       { path: 'transacciones-checkout', component: TransaccionesCheckout, data: { adminOnly: true } },
       { path: 'wompi-reconcile', component: WompiReconcile, data: { adminOnly: true } },
-      { path: 'ventas-manual', component: VentasManual, data: { adminOnly: true } },
+      ...ventasManualRoutes,
       { path: 'probar-compras', component: ProbarCompras, data: { adminOnly: true } },
       {
         path: 'probar-compras/evento/:id',

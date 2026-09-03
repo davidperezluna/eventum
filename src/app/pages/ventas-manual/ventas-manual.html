@@ -1,168 +1,242 @@
 <div class="ventas-manual-page">
-  <header class="page-header">
-    <div>
-      <h1>
-        <span class="material-icons">point_of_sale</span>
-        Registrar venta manual
-      </h1>
-      <p>Crea compras confirmadas sin Wompi (equivalente a cupón 100%).</p>
+  <header class="ventas-manual-top">
+    <div class="ventas-manual-top__copy">
+      <p class="ventas-manual-eyebrow">En pocos pasos</p>
+      <h1>Venta manual</h1>
+      <p>Cuando el cobro fue directo, aquí registras las boletas. El pago no entra por Eventum y queda a cargo del organizador.</p>
     </div>
   </header>
 
-  <section class="content-card">
-    <div class="manual-grid">
-      <div class="form-group">
-        <label>Buscar usuario (dueño de boletas/palcos)</label>
-        <div class="inline-controls">
-          <input type="text" [(ngModel)]="ventaManualClienteSearch" placeholder="Nombre, apellido o correo" />
-          <button type="button" class="btn-secondary" [disabled]="loadingVentaManualClientes" (click)="cargarClientesVentaManual()">
-            {{ loadingVentaManualClientes ? 'Buscando…' : 'Buscar' }}
-          </button>
-        </div>
+  <div class="ventas-manual-sheet">
+    <section class="ventas-manual-block" aria-labelledby="vm-quien">
+      <div class="ventas-manual-block__head">
+        <h2 id="vm-quien">1. ¿Para quién y dónde?</h2>
+        <p>Indica el evento y a quién van las boletas.</p>
       </div>
 
-      <div class="form-group">
-        <label>Usuario titular</label>
-        <select [(ngModel)]="ventaManualClienteId">
-          <option [ngValue]="null">Selecciona un usuario</option>
-          <option *ngFor="let usuario of ventaManualClientes" [ngValue]="usuario.id">
-            {{ usuarioLabel(usuario) }}
-          </option>
-        </select>
+      <div class="ventas-manual-who">
+        <label class="ev-field">
+          <span class="ev-field__label">Evento</span>
+          <ev-select
+            [(ngModel)]="ventaManualEventoId"
+            (ngModelChange)="onVentaManualEventoChange()"
+            [options]="eventoOptions"
+            placeholder="Buscar evento…"
+            [searchable]="true"
+            [clearable]="true"
+            [fullWidth]="true"
+            [disabled]="loadingVentaManualEventos"
+            ariaLabel="Evento"
+            mobileSheetTitle="Evento"
+          />
+        </label>
+
+        <label class="ev-field">
+          <span class="ev-field__label">Titular</span>
+          <ev-select
+            [(ngModel)]="ventaManualClienteId"
+            (ngModelChange)="onVentaManualClienteChange()"
+            [options]="clienteOptions"
+            placeholder="Buscar por nombre o correo…"
+            [searchable]="true"
+            [serverSideSearch]="true"
+            [minSearchLength]="2"
+            [loading]="loadingVentaManualClientes"
+            (searchTermChange)="onTitularSearch($event)"
+            [clearable]="true"
+            [fullWidth]="true"
+            [disabled]="loadingVentaManualClientes && !clienteOptions.length"
+            ariaLabel="Titular"
+            mobileSheetTitle="Titular"
+          />
+          <span class="ev-field__hint" *ngIf="loadingVentaManualClientes">Buscando usuarios…</span>
+        </label>
       </div>
 
-      <div class="form-group">
-        <label>Buscar evento</label>
-        <div class="inline-controls">
-          <input type="text" [(ngModel)]="ventaManualEventoSearch" placeholder="Filtra por título" />
-          <button type="button" class="btn-secondary" [disabled]="loadingVentaManualEventos" (click)="cargarEventosVentaManual()">
-            {{ loadingVentaManualEventos ? 'Cargando…' : 'Recargar' }}
-          </button>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Evento</label>
-        <select [(ngModel)]="ventaManualEventoId" (ngModelChange)="onVentaManualEventoChange()">
-          <option [ngValue]="null">Selecciona un evento</option>
-          <option
-            *ngFor="let evento of ventaManualEventos"
-            [hidden]="ventaManualEventoSearch && !(evento.titulo || '').toLowerCase().includes(ventaManualEventoSearch.toLowerCase())"
-            [ngValue]="evento.id"
-          >
-            #{{ evento.id }} · {{ evento.titulo }}
-          </option>
-        </select>
-      </div>
-    </div>
-
-    <div class="manual-resumen-titulares" *ngIf="clienteVentaManualSeleccionado || eventoVentaManualSeleccionado">
-      <p *ngIf="clienteVentaManualSeleccionado">
-        <strong>Titular:</strong>
-        {{ clienteVentaManualSeleccionado.nombre || '' }} {{ clienteVentaManualSeleccionado.apellido || '' }}
-        ({{ clienteVentaManualSeleccionado.email }})
-      </p>
-      <p *ngIf="eventoVentaManualSeleccionado">
-        <strong>Evento:</strong> {{ eventoVentaManualSeleccionado.titulo }}
-      </p>
-    </div>
-
-    <section class="manual-lineas">
-      <div class="manual-lineas-header">
-        <h3>Boletas / palcos a generar</h3>
-        <button type="button" class="btn-secondary" (click)="agregarLineaVentaManual()">+ Agregar línea</button>
-      </div>
-
-      <p *ngIf="loadingVentaManualTipos" class="section-empty-note">Cargando tipos de boleta...</p>
-
-      <div *ngFor="let linea of ventaManualLineas" class="manual-linea-card">
-        <div class="manual-linea-grid">
-          <div class="form-group">
-            <label>Tipo de boleta</label>
-            <select [(ngModel)]="linea.tipo_boleta_id" (ngModelChange)="onLineaTipoChange(linea)">
-              <option [ngValue]="null">Selecciona un tipo</option>
-              <option *ngFor="let tipo of ventaManualTipos" [ngValue]="tipo.id">
-                {{ tipo.nombre }} · ${{ tipo.precio | number:'1.0-0' }} · Disp: {{ tipo.cantidad_disponibles }}{{ tipo.es_palco ? ' palco(s)' : '' }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Cantidad</label>
-            <input
-              type="number"
-              min="1"
-              [max]="maxCantidadDisponibleLinea(linea)"
-              [(ngModel)]="linea.cantidad"
-              (ngModelChange)="onLineaCantidadChange(linea)"
-            />
-          </div>
-
-          <div class="form-group form-group-inline-btn">
-            <label>&nbsp;</label>
-            <button type="button" class="btn-icon btn-icon-danger" title="Quitar línea" (click)="eliminarLineaVentaManual(linea.id)">
-              <span class="material-icons">delete_forever</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="manual-palcos" *ngIf="esTipoPalcoLinea(linea)">
-          <p class="manual-palcos-title">Selecciona {{ linea.cantidad }} palco(s) disponible(s) para esta línea</p>
-          <div class="manual-palcos-grid">
-            <div class="form-group" *ngFor="let slot of indicesSlotsPalco(linea)">
-              <label>Palco #{{ slot + 1 }}</label>
-              <select [(ngModel)]="linea.palco_ids[slot]">
-                <option [ngValue]="null">Selecciona un palco</option>
-                <option *ngFor="let palco of palcosDisponiblesParaSlot(linea, slot)" [ngValue]="palco.id">
-                  Palco {{ palco.numero }} (ID {{ palco.id }})
-                </option>
-              </select>
-            </div>
-          </div>
-        </div>
+      <div class="ventas-manual-chips" *ngIf="clienteVentaManualSeleccionado || eventoVentaManualSeleccionado">
+        <span class="ventas-manual-chip" *ngIf="eventoVentaManualSeleccionado">
+          <span class="material-icons" aria-hidden="true">event</span>
+          {{ eventoVentaManualSeleccionado.titulo }}
+        </span>
+        <span class="ventas-manual-chip" *ngIf="clienteVentaManualSeleccionado">
+          <span class="material-icons" aria-hidden="true">person</span>
+          {{ clienteChipLabel }}
+        </span>
       </div>
     </section>
 
-    <div class="form-group">
-      <label>Notas (opcional)</label>
-      <textarea [(ngModel)]="ventaManualNotas" rows="2" placeholder="Ejemplo: cortesía, reposición o invitación"></textarea>
-    </div>
+    <div
+      class="ventas-manual-entregas-layout"
+      [class.has-sidebar]="!!ventaManualEventoId"
+    >
+      <aside
+        class="ventas-manual-entregas-layout__aside"
+        [class.is-empty]="!lineasResumen.length"
+        *ngIf="ventaManualEventoId"
+        aria-labelledby="vm-resumen"
+      >
+        <section class="ventas-manual-block ventas-manual-block--resumen">
+          <div class="ventas-manual-block__head">
+            <h2 id="vm-resumen">Lo que entregas</h2>
+            <p class="ventas-manual-resumen-note">Cobro directo · A cargo del organizador</p>
+          </div>
 
-    <div class="form-group">
-      <label>Valor comisión manual (COP)</label>
-      <input
-        type="text"
-        inputmode="numeric"
-        [ngModel]="valorServicioManualDisplay"
-        (ngModelChange)="onValorServicioManualInput($event)"
-        placeholder="Ej: 1.500.000"
-      />
-    </div>
+          <ul class="ventas-manual-resumen-list" *ngIf="lineasResumen.length" aria-live="polite">
+            <li *ngFor="let detalle of lineasResumen; trackBy: trackResumen" class="ventas-manual-resumen-item">
+              <p class="ventas-manual-resumen-item__name">{{ detalle.nombre }}</p>
+              <p class="ventas-manual-resumen-item__meta">
+                {{ detalle.cantidad }} {{ unidadCajaLabel(detalle) }}
+                · {{ detalle.cantidad }} × {{ formatCurrency(detalle.precioUnitario) }}
+                · Valor de lista {{ formatCurrency(detalle.subtotal) }}
+              </p>
+              <p class="ventas-manual-resumen-item__stock" *ngIf="!detalle.esPalco">
+                {{ detalle.disponibles }} disponibles
+              </p>
+            </li>
+          </ul>
 
-    <div class="financial-summary">
-      <div class="summary-item">
-        <label>Subtotal boletas/palcos:</label>
-        <span>${{ subtotalVentaManual | number:'1.2-2' }}</span>
-      </div>
-      <div class="summary-item">
-        <label>Descuento aplicado (equivalente cupón 100%):</label>
-        <span class="discount-text">-${{ descuentoVentaManual | number:'1.2-2' }}</span>
-      </div>
-      <div class="summary-item">
-        <label>Comisión manual registrada:</label>
-        <span>${{ valorServicioManualNormalizado | number:'1.2-2' }}</span>
-      </div>
-      <div class="summary-item total">
-        <label>Total final:</label>
-        <span>${{ totalVentaManual | number:'1.2-2' }}</span>
-      </div>
-    </div>
+          <p class="ventas-manual-resumen-empty" *ngIf="!lineasResumen.length">
+            Aquí verás el detalle en cuanto elijas tipo y cantidad.
+          </p>
 
-    <div class="actions-footer">
-      <button class="btn-primary" [disabled]="savingVentaManual || !puedeGuardarVentaManual" (click)="guardarVentaManual()">
-        {{ savingVentaManual ? 'Creando compra…' : 'Crear compra y boletas' }}
+          <p class="ventas-manual-resumen-total" *ngIf="subtotalVentaManual > 0">
+            Valor de lista {{ formatCurrency(subtotalVentaManual) }}
+          </p>
+        </section>
+      </aside>
+
+      <div class="ventas-manual-entregas-layout__main">
+        <section class="ventas-manual-block ventas-manual-block--agregar" aria-labelledby="vm-que" [class.is-dimmed]="!ventaManualEventoId">
+      <div class="ventas-manual-block__head ventas-manual-block__head--row">
+        <div>
+          <h2 id="vm-que">2. Agregar boletas</h2>
+          <p *ngIf="!ventaManualEventoId">Selecciona un evento arriba para continuar.</p>
+          <p *ngIf="ventaManualEventoId && loadingVentaManualTipos">Un momento, cargando boletas disponibles…</p>
+          <p *ngIf="ventaManualEventoId && !loadingVentaManualTipos">Selecciona el tipo y cuántas entregas.</p>
+        </div>
+        <button
+          type="button"
+          class="ventas-manual-add"
+          [disabled]="!ventaManualEventoId || loadingVentaManualTipos"
+          (click)="agregarLineaVentaManual()"
+        >
+          <span class="material-icons" aria-hidden="true">add</span>
+          Agregar
+        </button>
+      </div>
+
+      <div class="ventas-manual-cajas" *ngIf="ventaManualEventoId">
+        <article
+          *ngFor="let linea of ventaManualLineas; trackBy: trackLinea; let i = index"
+          class="ventas-manual-caja"
+        >
+          <header class="ventas-manual-caja__head" *ngIf="ventaManualLineas.length > 1">
+            <span class="ventas-manual-caja__index">#{{ i + 1 }}</span>
+            <button
+              type="button"
+              class="ventas-manual-caja__remove"
+              (click)="eliminarLineaVentaManual(linea.id)"
+              aria-label="Quitar boleta"
+            >
+              <span class="material-icons" aria-hidden="true">close</span>
+            </button>
+          </header>
+
+          <div class="ventas-manual-caja__controls">
+            <label class="ev-field ventas-manual-caja__contenido">
+              <span class="ev-field__label">Tipo</span>
+              <ev-select
+                [ngModel]="linea.tipo_boleta_id"
+                (ngModelChange)="onLineaTipoIdChange(linea, $event)"
+                [options]="tipoOptions"
+                placeholder="Elegir tipo…"
+                [searchable]="true"
+                [clearable]="true"
+                [fullWidth]="true"
+                [disabled]="loadingVentaManualTipos || !ventaManualTipos.length"
+                ariaLabel="Tipo de boleta"
+                mobileSheetTitle="Tipo de boleta"
+              />
+            </label>
+
+            <label class="ev-field ventas-manual-caja__units">
+              <span class="ev-field__label">Cantidad</span>
+              <ev-number-input
+                [ngModel]="linea.cantidad"
+                (ngModelChange)="onLineaCantidadValueChange(linea, $event)"
+                [min]="1"
+                [max]="maxCantidadDisponibleLinea(linea) || 1"
+                [stepper]="true"
+                [fullWidth]="true"
+                [disabled]="!linea.tipo_boleta_id"
+              />
+            </label>
+          </div>
+
+          <div class="ventas-manual-caja__palcos" *ngIf="esTipoPalcoLinea(linea)">
+            <p class="ventas-manual-caja__palcos-hint">
+              Indica {{ linea.cantidad === 1 ? 'el palco' : 'los ' + linea.cantidad + ' palcos' }} que corresponden
+            </p>
+            <div class="ventas-manual-palcos__grid">
+              <div class="ventas-manual-palco-slot" *ngFor="let slot of indicesSlotsPalco(linea)">
+                <ev-select
+                  [ngModel]="linea.palco_ids[slot]"
+                  (ngModelChange)="setPalcoSlot(linea, slot, $event)"
+                  [options]="palcoOptionsParaSlot(linea, slot)"
+                  [placeholder]="'Palco ' + (slot + 1)"
+                  [searchable]="true"
+                  [clearable]="true"
+                  [fullWidth]="true"
+                  [ariaLabel]="'Palco ' + (slot + 1)"
+                  mobileSheetTitle="Palco"
+                />
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="ventas-manual-block ventas-manual-block--soft">
+      <button type="button" class="ventas-manual-notes-toggle" (click)="mostrarNotas = !mostrarNotas" [attr.aria-expanded]="mostrarNotas">
+        <span class="material-icons" aria-hidden="true">{{ mostrarNotas ? 'expand_less' : 'expand_more' }}</span>
+        {{ mostrarNotas ? 'Ocultar nota' : 'Agregar nota (opcional)' }}
       </button>
+      <label class="ev-field" *ngIf="mostrarNotas">
+        <span class="ev-field__label">Nota interna</span>
+        <textarea
+          class="ev-textarea"
+          [(ngModel)]="ventaManualNotas"
+          rows="2"
+          placeholder="Ej. cortesía, invitación, venta en taquilla…"
+        ></textarea>
+      </label>
+    </section>
+      </div>
     </div>
-  </section>
-</div>
+  </div>
 
+  <div class="ventas-manual-dock" role="region" aria-label="Confirmar venta">
+    <div class="ventas-manual-dock__meta">
+      <p class="ventas-manual-dock__status" *ngIf="!puedeGuardarVentaManual">{{ siguientePasoHint }}</p>
+      <ng-container *ngIf="puedeGuardarVentaManual">
+        <p class="ventas-manual-dock__ready">Todo listo</p>
+        <p class="ventas-manual-dock__detail" *ngIf="subtotalVentaManual > 0">
+          {{ resumenEntradas }} · Valor de lista {{ formatCurrency(subtotalVentaManual) }}
+        </p>
+        <p class="ventas-manual-dock__detail" *ngIf="subtotalVentaManual <= 0 && resumenEntradas !== 'Aún sin boletas'">
+          {{ resumenEntradas }}
+        </p>
+      </ng-container>
+    </div>
+    <ev-button
+      variant="primary"
+      size="md"
+      [disabled]="savingVentaManual || !puedeGuardarVentaManual"
+      [loading]="savingVentaManual"
+      (click)="guardarVentaManual()"
+    >
+      {{ savingVentaManual ? 'Registrando…' : 'Registrar venta' }}
+    </ev-button>
+  </div>
+</div>
