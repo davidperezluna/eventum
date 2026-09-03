@@ -1,7 +1,10 @@
 <div class="ventas-manual-page">
   <header class="ventas-manual-top">
     <div class="ventas-manual-top__copy">
-      <p class="ventas-manual-eyebrow">En pocos pasos</p>
+      <p class="ventas-manual-eyebrow">
+        <span class="ventas-manual-eyebrow__dot" aria-hidden="true"></span>
+        En pocos pasos
+      </p>
       <h1>Venta manual</h1>
       <p>Cuando el cobro fue directo, aquí registras las boletas. El pago no entra por Eventum y queda a cargo del organizador.</p>
     </div>
@@ -9,9 +12,12 @@
 
   <div class="ventas-manual-sheet">
     <section class="ventas-manual-block" aria-labelledby="vm-quien">
-      <div class="ventas-manual-block__head">
-        <h2 id="vm-quien">1. ¿Para quién y dónde?</h2>
-        <p>Indica el evento y a quién van las boletas.</p>
+      <div class="ventas-manual-block__head ventas-manual-block__head--step">
+        <span class="ventas-manual-step" aria-hidden="true">1</span>
+        <div>
+          <h2 id="vm-quien">¿Para quién y dónde?</h2>
+          <p>Indica el evento y a quién van las boletas.</p>
+        </div>
       </div>
 
       <div class="ventas-manual-who">
@@ -72,9 +78,14 @@
         aria-labelledby="vm-resumen"
       >
         <section class="ventas-manual-block ventas-manual-block--resumen">
-          <div class="ventas-manual-block__head">
-            <h2 id="vm-resumen">Resumen</h2>
-            <p class="ventas-manual-resumen-note">Cobro directo · A cargo del organizador</p>
+          <div class="ventas-manual-block__head ventas-manual-block__head--step">
+            <span class="ventas-manual-step ventas-manual-step--icon" aria-hidden="true">
+              <span class="material-icons">receipt_long</span>
+            </span>
+            <div>
+              <h2 id="vm-resumen">Resumen</h2>
+              <p class="ventas-manual-resumen-note">Cobro directo · A cargo del organizador</p>
+            </div>
           </div>
 
           <ul class="ventas-manual-resumen-list" *ngIf="lineasResumen.length" aria-live="polite">
@@ -103,9 +114,10 @@
 
       <div class="ventas-manual-entregas-layout__main">
         <section class="ventas-manual-block ventas-manual-block--agregar" aria-labelledby="vm-que" [class.is-dimmed]="!ventaManualEventoId">
-      <div class="ventas-manual-block__head ventas-manual-block__head--row">
+      <div class="ventas-manual-block__head ventas-manual-block__head--row ventas-manual-block__head--step">
+        <span class="ventas-manual-step" aria-hidden="true">2</span>
         <div>
-          <h2 id="vm-que">2. Agregar boletas</h2>
+          <h2 id="vm-que">Agregar boletas</h2>
           <p *ngIf="!ventaManualEventoId">Selecciona un evento arriba para continuar.</p>
           <p *ngIf="ventaManualEventoId && loadingVentaManualTipos">Un momento, cargando boletas disponibles…</p>
           <p *ngIf="ventaManualEventoId && !loadingVentaManualTipos">Selecciona el tipo y cuántas entregas.</p>
@@ -200,7 +212,10 @@
     <div class="ventas-manual-dock__meta">
       <p class="ventas-manual-dock__status" *ngIf="!puedeGuardarVentaManual">{{ siguientePasoHint }}</p>
       <ng-container *ngIf="puedeGuardarVentaManual">
-        <p class="ventas-manual-dock__ready">Todo listo</p>
+        <p class="ventas-manual-dock__ready">
+          <span class="material-icons" aria-hidden="true">check_circle</span>
+          Todo listo
+        </p>
         <p class="ventas-manual-dock__detail" *ngIf="subtotalVentaManual > 0">
           {{ resumenEntradas }} · Valor de lista {{ formatCurrency(subtotalVentaManual) }}
         </p>

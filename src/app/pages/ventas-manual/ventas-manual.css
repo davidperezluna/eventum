@@ -18,6 +18,11 @@
   --ev-select-border-hover: #a9b4c4;
   --ev-select-ink: #0f172a;
   --ev-select-muted: #667085;
+  /* Acentos de marca de la página. */
+  --vm-brand: var(--color-secondary, #8b5cf6);
+  --vm-brand-ink: #6d28d9;
+  --vm-brand-soft: color-mix(in srgb, var(--color-secondary, #8b5cf6) 8%, #fff);
+  --vm-brand-line: color-mix(in srgb, var(--color-secondary, #8b5cf6) 24%, #fff);
   max-width: 760px;
   margin: 0 auto;
   padding: 0 1rem 2rem;
@@ -29,12 +34,26 @@
 }
 
 .ventas-manual-eyebrow {
-  margin: 0 0 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.55rem;
+  padding: 0.3rem 0.6rem 0.3rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--vm-brand-line);
+  background: var(--vm-brand-soft);
+  color: var(--vm-brand-ink);
   font-size: 0.6875rem;
   font-weight: 750;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--vm-muted);
+}
+
+.ventas-manual-eyebrow__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--gradient-button, linear-gradient(135deg, #8b5cf6, #a855f7));
 }
 
 .ventas-manual-top h1 {
@@ -64,7 +83,16 @@
   border-radius: var(--vm-radius);
   background: #fff;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-  transition: opacity 0.18s ease;
+  transition:
+    opacity 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+/* El paso en el que estás trabajando se ilumina con el violeta de marca. */
+.ventas-manual-block:focus-within {
+  border-color: var(--vm-brand-line);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.12);
 }
 
 .ventas-manual-block.is-dimmed {
@@ -75,11 +103,38 @@
   margin-bottom: 0.95rem;
 }
 
-.ventas-manual-block__head--row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
+.ventas-manual-block__head--step {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.65rem;
+}
+
+/* El título alinea su caja de línea con el alto de la insignia. */
+.ventas-manual-block__head--step h2 {
+  line-height: 1.6rem;
+}
+
+.ventas-manual-block__head--row.ventas-manual-block__head--step {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.ventas-manual-step {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--gradient-button, linear-gradient(135deg, #8b5cf6, #a855f7));
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.32);
+}
+
+.ventas-manual-step--icon .material-icons {
+  font-size: 1rem;
 }
 
 .ventas-manual-block__head h2 {
@@ -114,10 +169,10 @@
   align-items: center;
   gap: 0.3rem;
   max-width: 100%;
-  padding: 0.35rem 0.65rem;
-  border-radius: var(--vm-radius-sm);
-  background: var(--ev-form-canvas, #f2f4f8);
-  border: 1px solid var(--vm-line);
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: var(--vm-brand-soft);
+  border: 1px solid var(--vm-brand-line);
   color: var(--vm-ink);
   font-size: 0.75rem;
   font-weight: 650;
@@ -128,6 +183,7 @@
 
 .ventas-manual-chip .material-icons {
   font-size: 0.95rem;
+  color: var(--vm-brand-ink);
 }
 
 .ventas-manual-add {
@@ -136,15 +192,23 @@
   gap: 0.2rem;
   flex-shrink: 0;
   min-height: 2.15rem;
-  padding: 0 0.7rem;
-  border: 1px solid var(--vm-line);
-  border-radius: var(--vm-radius-sm);
-  background: #fff;
-  color: var(--vm-ink);
+  padding: 0 0.75rem;
+  border: 1px solid var(--vm-brand-line);
+  border-radius: 999px;
+  background: var(--vm-brand-soft);
+  color: var(--vm-brand-ink);
   font: inherit;
   font-size: 0.78rem;
-  font-weight: 650;
+  font-weight: 700;
   cursor: pointer;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.ventas-manual-add:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--vm-brand) 14%, #fff);
+  border-color: color-mix(in srgb, var(--vm-brand) 38%, #fff);
 }
 
 .ventas-manual-add:disabled {
@@ -157,7 +221,19 @@
 }
 
 .ventas-manual-block--resumen {
+  position: relative;
+  overflow: hidden;
   padding-bottom: 1rem;
+  background: linear-gradient(180deg, var(--vm-brand-soft) 0%, #fff 5.5rem);
+}
+
+/* Filete de marca: el resumen se lee como el recibo de la venta. */
+.ventas-manual-block--resumen::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--gradient-button, linear-gradient(135deg, #8b5cf6, #a855f7));
 }
 
 .ventas-manual-block--resumen .ventas-manual-block__head {
@@ -215,12 +291,15 @@
 }
 
 .ventas-manual-resumen-total {
-  margin: 0.75rem 0 0;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--vm-line);
-  font-size: 0.8125rem;
-  font-weight: 750;
-  color: var(--vm-ink);
+  margin: 0.85rem 0 0;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid var(--vm-brand-line);
+  border-radius: var(--vm-radius-sm);
+  background: var(--vm-brand-soft);
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--vm-brand-ink);
 }
 
 .ventas-manual-resumen-empty {
@@ -267,9 +346,15 @@
 
 .ventas-manual-caja {
   border: 1px solid var(--vm-line);
+  border-left: 3px solid var(--vm-brand-line);
   border-radius: var(--vm-radius);
   background: #fff;
   padding: 0.75rem 0.8rem 0.85rem;
+  transition: border-left-color 0.16s ease;
+}
+
+.ventas-manual-caja:focus-within {
+  border-left-color: var(--vm-brand);
 }
 
 .ventas-manual-caja__head {
@@ -280,12 +365,16 @@
 }
 
 .ventas-manual-caja__index {
-  flex: 1;
-  font-size: 0.75rem;
-  font-weight: 650;
+  margin-right: auto;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--vm-brand-soft);
+  border: 1px solid var(--vm-brand-line);
+  font-size: 0.7rem;
+  font-weight: 750;
   letter-spacing: 0.04em;
-  color: var(--vm-muted);
-  line-height: 1.3;
+  color: var(--vm-brand-ink);
+  line-height: 1.35;
 }
 
 .ventas-manual-caja__remove {
@@ -402,9 +491,18 @@
 }
 
 .ventas-manual-dock__ready {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   font-size: 0.875rem;
   font-weight: 750;
   letter-spacing: -0.01em;
+  color: var(--vm-brand-ink);
+}
+
+.ventas-manual-dock__ready .material-icons {
+  font-size: 1.05rem;
+  color: var(--vm-brand);
 }
 
 .ventas-manual-dock__detail {
@@ -504,13 +602,14 @@
     margin-bottom: 0.75rem;
   }
 
-  .ventas-manual-block__head--row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.55rem;
+  /* El botón "Agregar" baja a una fila propia bajo el título del paso. */
+  .ventas-manual-block__head--row.ventas-manual-block__head--step {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.55rem 0.65rem;
   }
 
-  .ventas-manual-add {
+  .ventas-manual-block__head--row .ventas-manual-add {
+    grid-column: 1 / -1;
     width: 100%;
     justify-content: center;
     min-height: 2.5rem;
