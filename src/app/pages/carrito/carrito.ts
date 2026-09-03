@@ -36,6 +36,7 @@ import { getPagoResultadoUrl } from '../../config/app-url';
 import { irALoginCliente } from '../../core/login-redirect';
 import { CoversService } from '../../services/covers.service';
 import { TransaccionesCheckoutService } from '../../services/transacciones-checkout.service';
+import { GoogleAnalyticsService } from '../../services/google-analytics.service';
 import { labelSesionCover } from '../../core/covers-labels';
 import { TERMINOS_LICOR_TEXTO } from '../../constants/productos.constants';
 import {
@@ -128,6 +129,7 @@ export class Carrito implements OnInit, OnDestroy {
     private coversService: CoversService,
     private transaccionesCheckoutService: TransaccionesCheckoutService,
     private detalleEventoStateService: DetalleEventoStateService,
+    private googleAnalytics: GoogleAnalyticsService,
     private ngZone: NgZone,
     private cdr: ChangeDetectorRef
   ) {}
@@ -2109,6 +2111,13 @@ export class Carrito implements OnInit, OnDestroy {
       }
 
       const totalPago = this.getTotal();
+
+      this.googleAnalytics.trackBeginCheckout({
+        value: totalPago,
+        itemId: this.evento?.id ?? this.lugarCover?.id ?? 'carrito',
+        itemName: this.evento?.titulo ?? this.lugarCover?.nombre ?? 'Carrito',
+        itemCategory: esSoloCover ? 'cover' : 'evento',
+      });
 
       // Compra gratuita: sí se crean registros porque no hay pasarela (éxito inmediato).
       if (totalPago === 0 && tieneProductosEnCarrito && pedidoProductos) {

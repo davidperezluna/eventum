@@ -1,6 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { CuponDescuento, Evento, Producto, TipoBoleta } from '../types';
+import { GoogleAnalyticsService } from './google-analytics.service';
 
 export interface CuponCarritoState {
   eventoId: number | null;
@@ -73,6 +74,7 @@ const CUPON_CARRITO_VACIO: CuponCarritoState = {
 export class CarritoCompraService {
   private readonly storageKey = 'eventum_carrito_compra';
   private readonly legacyProductosKey = 'eventum_carrito_productos';
+  private readonly googleAnalytics = inject(GoogleAnalyticsService);
   private readonly eventoSubject = new BehaviorSubject<Evento | null>(null);
   private readonly itemsSubject = new BehaviorSubject<ItemCarritoEvento[]>([]);
   private readonly itemsProductosSubject = new BehaviorSubject<ItemCarritoProducto[]>([]);
@@ -369,10 +371,14 @@ export class CarritoCompraService {
     this.itemsCoverSubject.next(items);
     this.persistir();
     this.actualizarTotalItems();
+    this.googleAnalytics.trackAddToCart({
+      itemId: `cover-${params.tipoCoverId}`,
+      itemName: params.tipoCoverNombre,
+      price: Number(params.precioSesion) || 0,
+      itemCategory: 'cover',
+    });
     return true;
   }
-
-  /** @deprecated Usar agregarCoverIndependiente */
   agregarCoverAlCarrito(params: {
     evento: Evento;
     tipo: TipoBoleta;
@@ -414,6 +420,12 @@ export class CarritoCompraService {
     this.itemsSubject.next(items);
     this.persistir();
     this.actualizarTotalItems();
+    this.googleAnalytics.trackAddToCart({
+      itemId: tipoConPrecio.id,
+      itemName: tipoConPrecio.nombre || `Cover ${tipoConPrecio.id}`,
+      price: Number(params.precioSesion) || 0,
+      itemCategory: 'cover',
+    });
     return true;
   }
 
@@ -481,6 +493,12 @@ export class CarritoCompraService {
     this.itemsSubject.next(items);
     this.persistir();
     this.actualizarTotalItems();
+    this.googleAnalytics.trackAddToCart({
+      itemId: tipo.id,
+      itemName: tipo.nombre || `Tipo ${tipo.id}`,
+      price: Number(tipo.precio) || 0,
+      itemCategory: 'boleta',
+    });
     return true;
   }
 
@@ -512,6 +530,12 @@ export class CarritoCompraService {
     this.itemsProductosSubject.next(items);
     this.persistir();
     this.actualizarTotalItems();
+    this.googleAnalytics.trackAddToCart({
+      itemId: `producto-${producto.id}`,
+      itemName: producto.nombre || `Producto ${producto.id}`,
+      price: Number(producto.precio) || 0,
+      itemCategory: 'producto',
+    });
     return true;
   }
 

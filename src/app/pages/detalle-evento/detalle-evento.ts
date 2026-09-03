@@ -13,6 +13,7 @@ import { CategoriasService } from '../../services/categorias.service';
 import { AlertService } from '../../services/alert.service';
 import { DetalleEventoStateService } from '../../services/detalle-evento-state.service';
 import { CarritoCompraService, ItemCarritoEvento } from '../../services/carrito-compra.service';
+import { GoogleAnalyticsService } from '../../services/google-analytics.service';
 import { ProductosService } from '../../services/productos.service';
 import { EventoProductosTab } from '../../components/evento-productos-tab/evento-productos-tab';
 import { EvNotice } from '../../components/ev-notice';
@@ -87,6 +88,8 @@ export class DetalleEvento implements OnInit, OnDestroy {
   private imagenModalHistorialActivo = false;
   private mapaModalHistorialActivo = false;
   private currentEventoId: number | null = null;
+  /** Evita duplicar view_item en refrescos silenciosos del mismo evento. */
+  private viewItemTrackedEventoId: number | null = null;
   private refreshIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly refreshIndicatorDelayMs = 800;
   private carritoSubscription?: Subscription;
@@ -142,6 +145,7 @@ export class DetalleEvento implements OnInit, OnDestroy {
     private productosService: ProductosService,
     private lugaresService: LugaresService,
     private categoriasService: CategoriasService,
+    private googleAnalytics: GoogleAnalyticsService,
     private cdr: ChangeDetectorRef
   ) { }
 
@@ -592,6 +596,11 @@ export class DetalleEvento implements OnInit, OnDestroy {
         this.evento = eventoActualizado;
       } else {
         this.evento = evento;
+      }
+
+      if (this.evento && this.viewItemTrackedEventoId !== this.evento.id) {
+        this.viewItemTrackedEventoId = this.evento.id;
+        this.googleAnalytics.trackEventoView(this.evento.id, this.evento.titulo || `Evento ${this.evento.id}`);
       }
 
       // Preparar promesas para carga en paralelo

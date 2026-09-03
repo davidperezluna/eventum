@@ -9,6 +9,8 @@ import { environment } from '../../environments/environment';
 
 declare let gtag: Function;
 
+const PURCHASE_TRACKED_KEY = 'eventum_ga_purchase_tracked';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -17,7 +19,7 @@ export class GoogleAnalyticsService {
 
   constructor(private router: Router) {
     this.googleTagId = environment.googleTagId;
-    
+
     // Solo inicializar si estamos en producción y tenemos un ID
     if (this.googleTagId && environment.production) {
       this.init();
@@ -28,26 +30,32 @@ export class GoogleAnalyticsService {
    * Inicializa el tracking de navegación
    */
   private init() {
-    // Trackear navegación de páginas
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
-      .subscribe((event: any) => {
+      .subscribe((event: NavigationEnd) => {
         this.trackPageView(event.urlAfterRedirects);
       });
   }
 
+  private canTrack(): boolean {
+    return !!(
+      this.googleTagId &&
+      environment.production &&
+      typeof window !== 'undefined' &&
+      typeof gtag !== 'undefined'
+    );
+  }
+
   /**
-   * Trackea una vista de página
+   * Trackea una vista de página (SPA)
    */
   trackPageView(url: string) {
-    if (!this.googleTagId || !environment.production) return;
-    
+    if (!this.canTrack()) return;
+
     try {
-      if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
-        gtag('config', this.googleTagId, {
-          page_path: url
-        });
-      }
+      gtag('config', this.googleTagId, {
+        page_path: url
+      });
     } catch (error) {
       console.error('Error tracking page view:', error);
     }
@@ -55,176 +63,192 @@ export class GoogleAnalyticsService {
 
   /**
    * Trackea un evento personalizado
-   * @param eventName Nombre del evento
-   * @param eventParams Parámetros adicionales del evento
    */
-  trackEvent(eventName: string, eventParams?: Record<string, any>) {
-    if (!this.googleTagId || !environment.production) return;
-    
+  trackEvent(eventName: string, eventParams?: Record<string, unknown>) {
+    if (!this.canTrack()) return;
+
     try {
-      if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
-        gtag('event', eventName, eventParams || {});
-      }
+      gtag('event', eventName, eventParams || {});
     } catch (error) {
       console.error('Error tracking event:', error);
     }
   }
 
   /**
-   * Trackea una compra completada
-   * @param value Valor total de la compra
-   * @param transactionId ID de la transacción
-   * @param currency Moneda (por defecto: COP)
-   * @param items Items comprados (opcional)
+   * Trackea una compra completada.
+   * Usar `trackPurchaseOnce` cuando la pantalla pueda reintentar/recargar.
    */
   trackPurchase(
-    value: number, 
-    transactionId: string, 
+    value: number,
+    transactionId: string,
     currency: string = 'COP',
     items?: Array<{
       item_id?: string;
       item_name?: string;
       price?: number;
       quantity?: number;
+      item_category?: string;
     }>
   ) {
-    if (!this.googleTagId || !environment.production) return;
-    
+    if (!this.canTrack()) return;
+
     try {
-      if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
-        gtag('event', 'purchase', {
-          transaction_id: transactionId,
-          value: value,
-          currency: currency,
-          items: items || []
-        });
-      }
+      gtag('event', 'purchase', {
+        transaction_id: transactionId,
+        value: value,
+        currency: currency,
+        items: items || []
+      });
     } catch (error) {
       console.error('Error tracking purchase:', error);
     }
   }
 
   /**
-   * Trackea el inicio de sesión
-   * @param method Método de inicio de sesión (email, google, etc.)
+   * Dispara `purchase` una sola vez por transactionId (sessionStorage).
+   * Evita duplicados en `/pago-resultado` con reintentos.
    */
-  trackLogin(method?: string) {
-    if (!this.googleTagId || !environment.production) return;
-    
+  trackPurchaseOnce(
+    value: number,
+    transactionId: string,
+    currency: string = 'COP',
+    items?: Array<{
+      item_id?: string;
+      item_name?: string;
+      price?: number;
+      quantity?: number;
+      item_category?: string;
+    }>
+  ): boolean {
+    const id = String(transactionId || '').trim();
+    if (!id || !this.canTrack()) return false;
+
     try {
-      if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
-        gtag('event', 'login', {
-          method: method || 'email'
-        });
+      const raw = sessionStorage.getItem(PURCHASE_TRACKED_KEY);
+      const tracked: string[] = raw ? (JSON.parse(raw) as string[]) : [];
+      if (tracked.includes(id)) {
+        return false;
       }
+      tracked.push(id);
+      sessionStorage.setItem(PURCHASE_TRACKED_KEY, JSON.stringify(tracked.slice(-50)));
+    } catch {
+      // Si sessionStorage falla, igual intentamos trackear una vez en esta carga.
+    }
+
+    this.trackPurchase(value, id, currency, items);
+    return true;
+  }
+
+  trackLogin(method?: string) {
+    if (!this.canTrack()) return;
+
+    try {
+      gtag('event', 'login', {
+        method: method || 'email'
+      });
     } catch (error) {
       console.error('Error tracking login:', error);
     }
   }
 
-  /**
-   * Trackea el registro de un nuevo usuario
-   * @param method Método de registro (email, google, etc.)
-   */
   trackRegistration(method?: string) {
-    if (!this.googleTagId || !environment.production) return;
-    
+    if (!this.canTrack()) return;
+
     try {
-      if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
-        gtag('event', 'sign_up', {
-          method: method || 'email'
-        });
-      }
+      gtag('event', 'sign_up', {
+        method: method || 'email'
+      });
     } catch (error) {
       console.error('Error tracking registration:', error);
     }
   }
 
-  /**
-   * Trackea una búsqueda
-   * @param searchTerm Término de búsqueda
-   */
   trackSearch(searchTerm: string) {
-    if (!this.googleTagId || !environment.production) return;
-    
+    if (!this.canTrack()) return;
+
     try {
-      if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
-        gtag('event', 'search', {
-          search_term: searchTerm
-        });
-      }
+      gtag('event', 'search', {
+        search_term: searchTerm
+      });
     } catch (error) {
       console.error('Error tracking search:', error);
     }
   }
 
   /**
-   * Trackea la visualización de un evento
-   * @param eventoId ID del evento
-   * @param eventoTitulo Título del evento
+   * Visualización de detalle de evento → view_item
    */
   trackEventoView(eventoId: number, eventoTitulo: string) {
-    if (!this.googleTagId || !environment.production) return;
-    
+    if (!this.canTrack()) return;
+
     try {
-      if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
-        gtag('event', 'view_item', {
+      gtag('event', 'view_item', {
+        currency: 'COP',
+        items: [{
           item_id: eventoId.toString(),
           item_name: eventoTitulo,
           item_category: 'evento'
-        });
-      }
+        }]
+      });
     } catch (error) {
       console.error('Error tracking evento view:', error);
     }
   }
 
   /**
-   * Trackea el inicio de un proceso de compra
-   * @param eventoId ID del evento
-   * @param value Valor total
+   * Inicio de checkout → begin_checkout
    */
-  trackBeginCheckout(eventoId: number, value: number) {
-    if (!this.googleTagId || !environment.production) return;
-    
+  trackBeginCheckout(params: {
+    value: number;
+    itemId?: string | number;
+    itemName?: string;
+    itemCategory?: string;
+  }) {
+    if (!this.canTrack()) return;
+
     try {
-      if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
-        gtag('event', 'begin_checkout', {
-          value: value,
-          currency: 'COP',
-          items: [{
-            item_id: eventoId.toString(),
-            item_category: 'evento'
-          }]
-        });
-      }
+      const itemId = params.itemId != null ? String(params.itemId) : 'checkout';
+      gtag('event', 'begin_checkout', {
+        value: params.value,
+        currency: 'COP',
+        items: [{
+          item_id: itemId,
+          item_name: params.itemName || undefined,
+          item_category: params.itemCategory || 'evento'
+        }]
+      });
     } catch (error) {
       console.error('Error tracking begin checkout:', error);
     }
   }
 
   /**
-   * Trackea la adición de un item al carrito
-   * @param eventoId ID del evento
-   * @param eventoTitulo Título del evento
-   * @param precio Precio del item
+   * Agregar al carrito → add_to_cart
    */
-  trackAddToCart(eventoId: number, eventoTitulo: string, precio: number) {
-    if (!this.googleTagId || !environment.production) return;
-    
+  trackAddToCart(params: {
+    itemId: string | number;
+    itemName: string;
+    price: number;
+    itemCategory?: string;
+    quantity?: number;
+  }) {
+    if (!this.canTrack()) return;
+
+    const price = Number(params.price) || 0;
+    const quantity = Math.max(1, Number(params.quantity) || 1);
+
     try {
-      if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
-        gtag('event', 'add_to_cart', {
-          currency: 'COP',
-          value: precio,
-          items: [{
-            item_id: eventoId.toString(),
-            item_name: eventoTitulo,
-            price: precio,
-            quantity: 1
-          }]
-        });
-      }
+      gtag('event', 'add_to_cart', {
+        currency: 'COP',
+        value: price * quantity,
+        items: [{
+          item_id: String(params.itemId),
+          item_name: params.itemName,
+          item_category: params.itemCategory || 'evento',
+          price,
+          quantity
+        }]
+      });
     } catch (error) {
       console.error('Error tracking add to cart:', error);
     }

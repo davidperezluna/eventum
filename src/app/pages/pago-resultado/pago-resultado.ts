@@ -8,6 +8,7 @@ import { AuthService } from '../../services/auth.service';
 import { Compra, CompraProducto, TransaccionProducto } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { COMPRA_COPY } from '../../core/compra-copy';
+import { GoogleAnalyticsService } from '../../services/google-analytics.service';
 
 const PAGO_PENDIENTE_STORAGE_KEY = 'eventum_pago_pendiente';
 
@@ -55,6 +56,7 @@ export class PagoResultado implements OnInit {
     private comprasProductoService: ComprasProductoService,
     private carritoCompraService: CarritoCompraService,
     private authService: AuthService,
+    private googleAnalytics: GoogleAnalyticsService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -160,6 +162,65 @@ export class PagoResultado implements OnInit {
     if (this.getEstadoPagoReferencia() === 'completado') {
       this.carritoCompraService.vaciarCarrito();
     }
+  }
+
+  /** Envía purchase a GA4 una sola vez por transacción/compra confirmada. */
+  private trackPurchaseSiCompletado(): void {
+    if (this.getEstadoPagoReferencia() !== 'completado') {
+      return;
+    }
+
+    const transactionId =
+      (this.transaccionCheckoutId && `chk-${this.transaccionCheckoutId}`) ||
+      (this.compraId && `compra-${this.compraId}`) ||
+      (this.compraProductoId && `prod-${this.compraProductoId}`) ||
+      (this.compraCoverId && `cover-${this.compraCoverId}`) ||
+      (this.transaccionProductoId && `txn-prod-${this.transaccionProductoId}`) ||
+      (this.wompiTxnId && `wompi-${this.wompiTxnId}`) ||
+      null;
+
+    if (!transactionId) {
+      return;
+    }
+
+    const value = this.getTotalMostrado();
+    const items: Array<{
+      item_id?: string;
+      item_name?: string;
+      price?: number;
+      quantity?: number;
+      item_category?: string;
+    }> = [];
+
+    if (this.compra) {
+      items.push({
+        item_id: String(this.compra.evento_id || this.compra.id),
+        item_name: `Compra boletas #${this.compra.id}`,
+        price: Number(this.compra.total) || 0,
+        quantity: 1,
+        item_category: 'boleta',
+      });
+    }
+    if (this.compraProducto) {
+      items.push({
+        item_id: String(this.compraProducto.evento_id || this.compraProducto.id),
+        item_name: `Compra productos #${this.compraProducto.id}`,
+        price: Number(this.compraProducto.total) || 0,
+        quantity: 1,
+        item_category: 'producto',
+      });
+    }
+    if (this.compraCoverId && !this.compra) {
+      items.push({
+        item_id: String(this.compraCoverId),
+        item_name: `Compra cover #${this.compraCoverId}`,
+        price: value,
+        quantity: 1,
+        item_category: 'cover',
+      });
+    }
+
+    this.googleAnalytics.trackPurchaseOnce(value, transactionId, 'COP', items);
   }
 
   private mostrarErrorSinReferencia(): void {
@@ -320,6 +381,18 @@ export class PagoResultado implements OnInit {
           this.error = null;
           this.limpiarReferenciasPendientes();
           this.vaciarCarritoTrasCompraExitosa();
+          this.googleAnalytics.trackPurchaseOnce(
+            this.getTotalMostrado(),
+            `cover-${this.compraCoverId}`,
+            'COP',
+            [{
+              item_id: String(this.compraCoverId),
+              item_name: `Compra cover #${this.compraCoverId}`,
+              price: this.getTotalMostrado(),
+              quantity: 1,
+              item_category: 'cover',
+            }],
+          );
           this.cdr.detectChanges();
           return;
         }
@@ -330,6 +403,7 @@ export class PagoResultado implements OnInit {
           this.limpiarReferenciasPendientes();
         }
         this.vaciarCarritoTrasCompraExitosa();
+        this.trackPurchaseSiCompletado();
         this.cdr.detectChanges();
         return;
       } catch (err: unknown) {
