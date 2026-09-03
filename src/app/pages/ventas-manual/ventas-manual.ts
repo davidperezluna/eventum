@@ -47,10 +47,8 @@ export class VentasManual implements OnInit {
   loadingVentaManualClientes = false;
   loadingVentaManualEventos = false;
   loadingVentaManualTipos = false;
-  mostrarNotas = false;
   ventaManualClienteId: number | null = null;
   ventaManualEventoId: number | null = null;
-  ventaManualNotas = '';
   ventaManualClientes: Usuario[] = [];
   ventaManualEventos: Evento[] = [];
   ventaManualTipos: TipoBoleta[] = [];
@@ -515,12 +513,8 @@ export class VentasManual implements OnInit {
       await this.comprasClienteService.confirmarPago(resultado.compra.id);
 
       const actor = this.isOrganizador ? 'organizador' : 'administrador';
-      const notasBase = `Venta creada manualmente desde ${actor} (sin Wompi).`;
-      const notasFinal = this.ventaManualNotas.trim()
-        ? `${notasBase} ${this.ventaManualNotas.trim()}`
-        : notasBase;
       await this.comprasService.updateCompra(resultado.compra.id, {
-        notas: notasFinal,
+        notas: `Venta creada manualmente desde ${actor} (sin Wompi).`,
       });
 
       await this.alertService.success(
@@ -641,8 +635,6 @@ export class VentasManual implements OnInit {
     this.ventaManualClienteId = null;
     this.clienteSeleccionadoSnapshot = null;
     this.ventaManualEventoId = null;
-    this.ventaManualNotas = '';
-    this.mostrarNotas = false;
     this.ventaManualClientes = [];
     this.ventaManualEventos = [];
     this.ventaManualTipos = [];

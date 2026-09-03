@@ -65,19 +65,15 @@
       </div>
     </section>
 
-    <div
-      class="ventas-manual-entregas-layout"
-      [class.has-sidebar]="!!ventaManualEventoId"
-    >
+    <div class="ventas-manual-entregas-layout">
       <aside
         class="ventas-manual-entregas-layout__aside"
         [class.is-empty]="!lineasResumen.length"
-        *ngIf="ventaManualEventoId"
         aria-labelledby="vm-resumen"
       >
         <section class="ventas-manual-block ventas-manual-block--resumen">
           <div class="ventas-manual-block__head">
-            <h2 id="vm-resumen">Lo que entregas</h2>
+            <h2 id="vm-resumen">Resumen</h2>
             <p class="ventas-manual-resumen-note">Cobro directo · A cargo del organizador</p>
           </div>
 
@@ -195,23 +191,7 @@
           </div>
         </article>
       </div>
-    </section>
-
-    <section class="ventas-manual-block ventas-manual-block--soft">
-      <button type="button" class="ventas-manual-notes-toggle" (click)="mostrarNotas = !mostrarNotas" [attr.aria-expanded]="mostrarNotas">
-        <span class="material-icons" aria-hidden="true">{{ mostrarNotas ? 'expand_less' : 'expand_more' }}</span>
-        {{ mostrarNotas ? 'Ocultar nota' : 'Agregar nota (opcional)' }}
-      </button>
-      <label class="ev-field" *ngIf="mostrarNotas">
-        <span class="ev-field__label">Nota interna</span>
-        <textarea
-          class="ev-textarea"
-          [(ngModel)]="ventaManualNotas"
-          rows="2"
-          placeholder="Ej. cortesía, invitación, venta en taquilla…"
-        ></textarea>
-      </label>
-    </section>
+        </section>
       </div>
     </div>
   </div>

@@ -580,9 +580,13 @@ export class EvSelect implements ControlValueAccessor, AfterViewInit, OnDestroy 
       this.cdr.markForCheck();
     };
     this.sheetSearchKeydownHandler = (event: KeyboardEvent) => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
+      if (event.key !== 'Enter') {
+        return;
       }
+
+      // "Buscar" del teclado móvil: baja el teclado y deja el sheet con los resultados.
+      event.preventDefault();
+      input.blur();
     };
 
     input.addEventListener('input', this.sheetSearchHandler);
