@@ -46,6 +46,15 @@ export class GoogleAnalyticsService {
     );
   }
 
+  private sendEvent(eventName: string, eventParams?: Record<string, unknown>): void {
+    if (!this.canTrack()) return;
+    try {
+      gtag('event', eventName, eventParams || {});
+    } catch (error) {
+      console.error(`Error tracking ${eventName}:`, error);
+    }
+  }
+
   /**
    * Trackea una vista de página (SPA)
    */
@@ -65,13 +74,7 @@ export class GoogleAnalyticsService {
    * Trackea un evento personalizado
    */
   trackEvent(eventName: string, eventParams?: Record<string, unknown>) {
-    if (!this.canTrack()) return;
-
-    try {
-      gtag('event', eventName, eventParams || {});
-    } catch (error) {
-      console.error('Error tracking event:', error);
-    }
+    this.sendEvent(eventName, eventParams);
   }
 
   /**
@@ -90,18 +93,12 @@ export class GoogleAnalyticsService {
       item_category?: string;
     }>
   ) {
-    if (!this.canTrack()) return;
-
-    try {
-      gtag('event', 'purchase', {
-        transaction_id: transactionId,
-        value: value,
-        currency: currency,
-        items: items || []
-      });
-    } catch (error) {
-      console.error('Error tracking purchase:', error);
-    }
+    this.sendEvent('purchase', {
+      transaction_id: transactionId,
+      value: value,
+      currency: currency,
+      items: items || []
+    });
   }
 
   /**
@@ -140,59 +137,29 @@ export class GoogleAnalyticsService {
   }
 
   trackLogin(method?: string) {
-    if (!this.canTrack()) return;
-
-    try {
-      gtag('event', 'login', {
-        method: method || 'email'
-      });
-    } catch (error) {
-      console.error('Error tracking login:', error);
-    }
+    this.sendEvent('login', { method: method || 'email' });
   }
 
   trackRegistration(method?: string) {
-    if (!this.canTrack()) return;
-
-    try {
-      gtag('event', 'sign_up', {
-        method: method || 'email'
-      });
-    } catch (error) {
-      console.error('Error tracking registration:', error);
-    }
+    this.sendEvent('sign_up', { method: method || 'email' });
   }
 
   trackSearch(searchTerm: string) {
-    if (!this.canTrack()) return;
-
-    try {
-      gtag('event', 'search', {
-        search_term: searchTerm
-      });
-    } catch (error) {
-      console.error('Error tracking search:', error);
-    }
+    this.sendEvent('search', { search_term: searchTerm });
   }
 
   /**
    * Visualización de detalle de evento → view_item
    */
   trackEventoView(eventoId: number, eventoTitulo: string) {
-    if (!this.canTrack()) return;
-
-    try {
-      gtag('event', 'view_item', {
-        currency: 'COP',
-        items: [{
-          item_id: eventoId.toString(),
-          item_name: eventoTitulo,
-          item_category: 'evento'
-        }]
-      });
-    } catch (error) {
-      console.error('Error tracking evento view:', error);
-    }
+    this.sendEvent('view_item', {
+      currency: 'COP',
+      items: [{
+        item_id: eventoId.toString(),
+        item_name: eventoTitulo,
+        item_category: 'evento'
+      }]
+    });
   }
 
   /**
@@ -204,22 +171,16 @@ export class GoogleAnalyticsService {
     itemName?: string;
     itemCategory?: string;
   }) {
-    if (!this.canTrack()) return;
-
-    try {
-      const itemId = params.itemId != null ? String(params.itemId) : 'checkout';
-      gtag('event', 'begin_checkout', {
-        value: params.value,
-        currency: 'COP',
-        items: [{
-          item_id: itemId,
-          item_name: params.itemName || undefined,
-          item_category: params.itemCategory || 'evento'
-        }]
-      });
-    } catch (error) {
-      console.error('Error tracking begin checkout:', error);
-    }
+    const itemId = params.itemId != null ? String(params.itemId) : 'checkout';
+    this.sendEvent('begin_checkout', {
+      value: params.value,
+      currency: 'COP',
+      items: [{
+        item_id: itemId,
+        item_name: params.itemName || undefined,
+        item_category: params.itemCategory || 'evento'
+      }]
+    });
   }
 
   /**
@@ -232,25 +193,19 @@ export class GoogleAnalyticsService {
     itemCategory?: string;
     quantity?: number;
   }) {
-    if (!this.canTrack()) return;
-
     const price = Number(params.price) || 0;
     const quantity = Math.max(1, Number(params.quantity) || 1);
 
-    try {
-      gtag('event', 'add_to_cart', {
-        currency: 'COP',
-        value: price * quantity,
-        items: [{
-          item_id: String(params.itemId),
-          item_name: params.itemName,
-          item_category: params.itemCategory || 'evento',
-          price,
-          quantity
-        }]
-      });
-    } catch (error) {
-      console.error('Error tracking add to cart:', error);
-    }
+    this.sendEvent('add_to_cart', {
+      currency: 'COP',
+      value: price * quantity,
+      items: [{
+        item_id: String(params.itemId),
+        item_name: params.itemName,
+        item_category: params.itemCategory || 'evento',
+        price,
+        quantity
+      }]
+    });
   }
 }

@@ -178,15 +178,14 @@ export async function loadDashboardStatsForOrganizador(
       return (response.count || 0) > 0;
     }, false);
 
-    // Ingresos, servicio y estimación Wompi (misma lógica que dashboard admin)
+    // Ingresos, servicio y estimación Wompi (misma lógica que dashboard admin):
+    // compras completadas de cualquier evento del organizador, incl. finalizados/pasados.
     const ingresosYServicioTotales = safeExecute(async () => {
       const response = await withEventFilter(supabase
         .from('compras')
         .select('total, valor_servicio, porcentaje_servicio, evento_id, eventos!inner(organizador_id)')
         .eq('estado_pago', 'completado')
-        .eq('eventos.organizador_id', organizadorId)
-        .eq('eventos.activo', true)
-        .gte('eventos.fecha_fin', now));
+        .eq('eventos.organizador_id', organizadorId));
 
       if (response.error) {
         console.error('Error en ingresos/agregados financieros:', response.error);
@@ -240,15 +239,13 @@ export async function loadDashboardStatsForOrganizador(
       ingresosVentasBrutoTotal: 0,
     });
 
-    // Ingresos, servicio y Wompi para compras de productos del organizador
+    // Ingresos, servicio y Wompi para productos: histórico completo (sin filtrar por vigencia).
     const ingresosYServicioProductos = safeExecute(async () => {
       const response = await withEventFilter(supabase
         .from('compras_productos')
         .select('total, valor_servicio, porcentaje_servicio, evento_id, eventos!inner(organizador_id)')
         .eq('estado_pago', 'completado')
-        .eq('eventos.organizador_id', organizadorId)
-        .eq('eventos.activo', true)
-        .gte('eventos.fecha_fin', now));
+        .eq('eventos.organizador_id', organizadorId));
 
       if (response.error) {
         console.error('Error en ingresos/agregados de productos:', response.error);
@@ -635,16 +632,14 @@ export async function loadDashboardStatsForOrganizador(
       return 0;
     }, 0);
 
-    // Boletas por estado del organizador (solo con pago completado)
+    // Boletas por estado del organizador (solo con pago completado; incluye eventos finalizados)
     const boletasPorEstado = safeExecute(async () => {
       try {
         // Obtener tipos de boleta de eventos del organizador
         const { data: tiposData, error: tiposError } = await withEventFilter(supabase
           .from('tipos_boleta')
           .select('id, evento_id, eventos!inner(organizador_id)')
-        .eq('eventos.organizador_id', organizadorId)
-        .eq('eventos.activo', true)
-        .gte('eventos.fecha_fin', now));
+        .eq('eventos.organizador_id', organizadorId));
 
         if (tiposError || !tiposData || tiposData.length === 0) {
           return [];

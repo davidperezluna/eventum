@@ -2,6 +2,21 @@
 
 Este documento muestra ejemplos prácticos de cómo usar el servicio de Google Analytics en diferentes componentes de la aplicación.
 
+## Funnel principal (implementado)
+
+Los nombres van **en inglés** (estándar de GA4 y de Meta Pixel). En informes se leen así:
+
+| Evento (código) | Qué significa | Cuándo se dispara |
+|---|---|---|
+| `view_item` | Cuántos abrieron un evento | Detalle de evento (`detalle-evento`) |
+| `add_to_cart` | Cuántos agregaron algo | Al sumar boleta, producto o cover al carrito |
+| `begin_checkout` | Cuántos tocaron Pagar | Al confirmar pago en `/carrito` |
+| `purchase` | Cuántos pagaron de verdad | Pago confirmado en `/pago-resultado` (una vez por transacción) |
+
+Solo se envían en **producción**. En **Informes → Tiempo real** se ven al momento; en **Informes → Eventos** pueden tardar varias horas.
+
+Servicio: `src/app/services/google-analytics.service.ts`.
+
 ## 🎯 Ejemplo 1: Trackear Visualización de Evento
 
 En `detalle-evento.ts`, agrega tracking cuando se carga un evento:
@@ -223,15 +238,8 @@ shareEvento(eventoId: number, method: string) {
 
 5. **Manejar errores silenciosamente**: El servicio maneja errores internamente, pero asegúrate de no romper la funcionalidad si hay un problema con GA
 
-## 📊 Eventos Recomendados para Eventum
+## Eventos recomendados para Eventum
 
-- `view_item` - Ver detalle de evento
-- `add_to_cart` - Agregar boleta al carrito
-- `begin_checkout` - Iniciar proceso de compra
-- `purchase` - Compra completada
-- `search` - Búsqueda de eventos
-- `sign_up` - Registro de usuario
-- `login` - Inicio de sesión
-- `share` - Compartir evento
-- `download_boleta` - Descargar boleta PDF
-- `view_promotion` - Ver promoción/cupón
+Funnel (ya en código): `view_item`, `add_to_cart`, `begin_checkout`, `purchase`.
+
+Opcionales (aún no cableados): `search`, `sign_up`, `login`, `share`, `download_boleta`.
