@@ -2208,6 +2208,7 @@ export class MisCompras implements OnInit, OnDestroy {
       title: boleta.numero_palco != null
         ? `Palco ${boleta.numero_palco}`
         : boleta.tipo_boleta_meta?.nombre || 'Boleta',
+      price: this.formatCurrency(Number(boleta.precio_unitario ?? 0)),
       reference: item.esCedida ? 'Boleta recibida' : `Compra ${compra.numero_transaccion}`,
       received: !!item.esCedida,
       badge: usada
@@ -2238,16 +2239,6 @@ export class MisCompras implements OnInit, OnDestroy {
         : undefined,
       pendingMessage: this.requiereRegistroAsistentePalcoPosterior(boleta) && compra.estado_pago !== 'completado'
         ? 'Cuando el pago se confirme, podrás asignar cada entrada. El código QR solo se verá el día del evento.'
-        : undefined,
-      attendee: this.tieneAsistenteRegistrado(boleta)
-        ? (() => {
-            const perfil = this.perfilAsistenteBoleta(boleta);
-            return {
-              name: nombreAsistenteDesdeUsuario(perfil) || nombreAsistenteBoletaEscaneo(boleta),
-              document: documentoAsistenteDesdeUsuario(perfil) || documentoAsistenteBoletaEscaneo(boleta) || undefined,
-              email: emailAsistenteDesdeUsuario(perfil) || undefined,
-            };
-          })()
         : undefined,
       used: usada,
       hasTalon: this.boletaTarjetaTieneAcciones(boleta, compra) || usada,

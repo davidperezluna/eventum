@@ -20,6 +20,7 @@ describe('CompraTicketCardComponent', () => {
     const card: EntradaTicketCard = {
       kind: 'entrada',
       title: 'General',
+      price: '$ 50.000',
       reference: 'Compra TX-1',
       received: false,
       used: false,
@@ -68,6 +69,7 @@ describe('CompraTicketCardComponent', () => {
     fixture.componentInstance.card = {
       kind: 'entrada',
       title: 'General',
+      price: '$ 50.000',
       reference: 'Compra TX-1',
       received: false,
       used: false,

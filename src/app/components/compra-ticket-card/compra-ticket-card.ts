@@ -27,6 +27,7 @@ export interface CompraTicketBase {
 export interface EntradaTicketCard extends CompraTicketBase {
   kind: 'entrada';
   title: string;
+  price: string;
   reference: string;
   received: boolean;
   badge?: CompraTicketBadge;
