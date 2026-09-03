@@ -5033,4 +5033,312 @@
     -webkit-backdrop-filter: none;
     box-shadow: 0 0.45rem 0.85rem -0.85rem rgba(35, 28, 45, 0.4);
   }
+
+  /* Con tabs de compra: a todo el ancho y tope de la card */
+  .detalle-evento-page .dx-purchase--con-tabs .detalle-compra-tabs {
+    width: 100% !important;
+    margin: 0 !important;
+    margin-inline: 0 !important;
+    padding: 0 !important;
+    top: auto !important;
+    box-shadow: none !important;
+    background: #ebe6f3 !important;
+  }
+}
+
+/* Intro de compra dentro del tab seleccionado. */
+.detalle-evento-page .dx-purchase-intro {
+  padding: 0;
+  margin-bottom: 1rem;
+}
+
+.detalle-evento-page .dx-purchase-intro .dx-section-heading {
+  margin-bottom: 0;
+}
+
+.detalle-evento-page .dx-purchase--con-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0 !important;
+  overflow: hidden;
+  /* La franja de tabs pinta el tope de la card a borde completo */
+  background: #fff;
+}
+
+.detalle-evento-page .dx-purchase--con-tabs .detalle-compra-tabs {
+  --de-tab-slant: 0.85rem;
+  --de-tab-overlap: 0.7rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: end;
+  gap: 0;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0;
+  border-radius: 0;
+  background: #ebe6f3;
+  box-shadow: none !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  position: static !important;
+  top: auto !important;
+  z-index: auto;
+  isolation: isolate;
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+.detalle-evento-page .dx-purchase--con-tabs .detalle-compra-tab {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: 0 0 -1px;
+  padding: 0.62rem 0.85rem;
+  border: 0;
+  border-radius: 0;
+  background: #d8d0e8;
+  box-shadow: none;
+  color: #5f586c;
+  font-family: var(--dx-display);
+  font-size: 0.76rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  filter: drop-shadow(0 0 0.75px #8f84a6);
+  transition: color 0.15s ease, background-color 0.15s ease, filter 0.15s ease;
+}
+
+.detalle-evento-page .dx-purchase--con-tabs .detalle-compra-tab:first-child {
+  z-index: 1;
+  padding-right: calc(0.85rem + var(--de-tab-slant) * 0.5);
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--de-tab-slant)) 0,
+    100% 100%,
+    0 100%
+  );
+}
+
+.detalle-evento-page .dx-purchase--con-tabs .detalle-compra-tab:last-child {
+  z-index: 0;
+  width: calc(100% + var(--de-tab-overlap));
+  margin-left: calc(var(--de-tab-overlap) * -1);
+  padding-left: calc(0.85rem + var(--de-tab-slant) * 0.5);
+  justify-self: end;
+  clip-path: polygon(
+    0 100%,
+    var(--de-tab-slant) 0,
+    100% 0,
+    100% 100%
+  );
+}
+
+.detalle-evento-page .dx-purchase--con-tabs .detalle-compra-tab::after,
+.detalle-evento-page .dx-purchase--con-tabs .detalle-compra-tab + .detalle-compra-tab::before {
+  display: none !important;
+  content: none !important;
+}
+
+.detalle-evento-page .dx-purchase--con-tabs .detalle-compra-tab .material-icons {
+  font-size: 1.05rem;
+  color: inherit;
+  opacity: 0.88;
+}
+
+.detalle-evento-page .dx-purchase--con-tabs .detalle-compra-tab.active {
+  z-index: 3;
+  background: #fff;
+  color: var(--dx-ink);
+  filter: none;
+  font-weight: 400;
+}
+
+.detalle-evento-page .dx-purchase--con-tabs .detalle-compra-tab.active .material-icons {
+  color: var(--dx-accent);
+  opacity: 1;
+}
+
+.detalle-evento-page .dx-purchase--con-tabs .detalle-compra-tab:hover:not(.active) {
+  background: #cfc6e0;
+  color: var(--dx-subtle);
+}
+
+.detalle-evento-page .dx-purchase--con-tabs .detalle-compra-tab:focus-visible {
+  outline: 2px solid var(--dx-accent);
+  outline-offset: 3px;
+  background: #cfc6e0;
+  box-shadow: none;
+}
+
+.detalle-evento-page .dx-purchase--con-tabs .detalle-compra-tab.active:focus-visible {
+  background: #fff;
+  box-shadow: none;
+}
+
+.detalle-evento-page .detalle-compra-body--con-tabs {
+  margin: 0;
+  padding: 1rem 1.15rem 1.25rem;
+  border: 0 !important;
+  outline: 0 !important;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: none !important;
+  box-sizing: border-box;
+}
+
+.detalle-evento-page .detalle-compra-body--con-tabs.detalle-compra-body--tab-productos {
+  border-radius: 0;
+}
+
+.detalle-evento-page .detalle-compra-body--con-tabs .entradas-panel {
+  padding: 0;
+}
+
+.detalle-evento-page .detalle-compra-body .tipos-boleta-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* Sin tabs: el body lleva el padding de la card */
+.detalle-evento-page .dx-purchase:not(.dx-purchase--con-tabs) .detalle-compra-body {
+  padding: 0;
+}
+
+@media (max-width: 768px) {
+  .detalle-evento-page .dx-purchase-intro {
+    margin-bottom: 0.9rem;
+  }
+
+  .detalle-evento-page .dx-purchase--con-tabs .detalle-compra-tabs {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .detalle-evento-page .detalle-compra-body--con-tabs {
+    margin: 0;
+    padding: 0.95rem 1.1rem 1.2rem;
+  }
+}
+
+/* Cards móviles al nivel de mis-compras: canvas gris + tarjetas blancas con aire. */
+@media (max-width: 768px) {
+  .detalle-evento-page {
+    background:
+      radial-gradient(circle at 72% -10%, rgba(118, 87, 219, 0.1), transparent 28rem),
+      #f1eef6 !important;
+  }
+
+  .detalle-evento-page .evento-detalle {
+    padding-top: 0.35rem;
+    padding-left: max(0.9rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.9rem, env(safe-area-inset-right, 0px));
+    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .detalle-evento-page .dx-topbar {
+    min-height: 2.85rem;
+    margin-bottom: 0.65rem;
+  }
+
+  /* La franja EVENTUM del hero tapa y ensucia el inicio de la card en móvil */
+  .detalle-evento-page .dx-pass {
+    display: none;
+  }
+
+  .detalle-evento-page .dx-workspace {
+    gap: 1.25rem;
+    padding-top: 1.15rem;
+  }
+
+  .detalle-evento-page .dx-purchase-stack,
+  .detalle-evento-page .dx-sidebar {
+    gap: 1.25rem;
+  }
+
+  .detalle-evento-page .dx-hero,
+  .detalle-evento-page .dx-purchase,
+  .detalle-evento-page .etapas-agotadas-zone,
+  .detalle-evento-page .dx-side-card,
+  .detalle-evento-page .dx-story,
+  .detalle-evento-page .dx-legal .evento-accordion {
+    background: #fff !important;
+    border: 0 !important;
+    outline: 0 !important;
+    border-radius: 1.1rem !important;
+    box-shadow:
+      0 1px 2px rgba(55, 38, 91, 0.04),
+      0 10px 28px rgba(55, 38, 91, 0.12) !important;
+  }
+
+  .detalle-evento-page .dx-hero {
+    overflow: hidden;
+  }
+
+  .detalle-evento-page .dx-hero__media,
+  .detalle-evento-page .dx-hero__media img {
+    height: 18.5rem;
+  }
+
+  .detalle-evento-page .dx-hero__body {
+    padding: 1.15rem 1.15rem 1.3rem;
+  }
+
+  .detalle-evento-page .dx-hero h1 {
+    max-width: none;
+    margin: 0.55rem 0 0.45rem;
+    font-size: clamp(2rem, 9.5vw, 2.7rem);
+    line-height: 0.95;
+  }
+
+  .detalle-evento-page .dx-hero__facts {
+    gap: 0.7rem;
+    margin-top: 1rem;
+    margin-bottom: 0;
+    padding-top: 0.95rem;
+  }
+
+  .detalle-evento-page .dx-side-card {
+    padding: 1.2rem 1.15rem;
+  }
+
+  .detalle-evento-page .dx-side-card--community {
+    background: var(--dx-ink) !important;
+    box-shadow: 0 10px 28px rgba(25, 23, 32, 0.24) !important;
+  }
+
+  .detalle-evento-page .dx-purchase {
+    padding: 1.2rem 1.15rem 1.35rem;
+  }
+
+  .detalle-evento-page .dx-purchase.dx-purchase--con-tabs {
+    padding: 0 !important;
+  }
+
+  .detalle-evento-page .dx-section-heading {
+    margin-bottom: 0.95rem;
+  }
+
+  /* Entrada/producto: card interior limpia, sin borde gris duro */
+  .detalle-evento-page .tipo-boleta-card {
+    padding: 1rem 1rem 0.95rem;
+    background: #fff !important;
+    border: 1px solid rgba(183, 173, 200, 0.45) !important;
+    border-radius: 0.95rem !important;
+    box-shadow: 0 6px 16px rgba(55, 38, 91, 0.06);
+  }
+
+  .detalle-evento-page .tipo-boleta-card:hover {
+    transform: none;
+    border-color: rgba(118, 87, 219, 0.35) !important;
+    box-shadow: 0 8px 18px rgba(80, 51, 179, 0.1);
+  }
 }

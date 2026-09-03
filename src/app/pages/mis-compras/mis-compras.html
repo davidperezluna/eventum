@@ -344,7 +344,7 @@
       >
         <aside class="cupos-controls" *ngIf="mostrarControlesDetalleEvento(detalle)" aria-label="Filtros de compras">
           <section
-            class="cupos-filter-panel"
+            class="cupos-filter-panel mc-evento-tipo-panel"
             *ngIf="mostrarSelectorTipoEventoDetalle(detalle)"
             aria-labelledby="mc-evento-tipo-title"
           >
@@ -382,7 +382,7 @@
           </section>
 
           <section
-            class="cupos-filter-panel"
+            class="cupos-filter-panel mc-evento-estado-panel"
             *ngIf="tabEventoDetalle === 'productos' && mostrarFiltroEstadoProductosDetalle(detalle)"
             aria-labelledby="mc-evento-estado-productos-title"
           >
@@ -482,13 +482,6 @@
         aria-label="Productos del evento"
       >
         <div class="evento-detalle-content productos-panel">
-          <p class="productos-panel-hint" *ngIf="tabProductosDetalle === 'compradas'">
-            Retira en el punto de entrega del evento. Muestra tu pedido confirmado al personal.
-          </p>
-          <p class="productos-panel-hint productos-panel-hint--redimidas" *ngIf="tabProductosDetalle === 'redimidas'">
-            Productos que ya retiraste o consumiste en este evento.
-          </p>
-
           <div class="loading-small cupos-loading" *ngIf="loadingComprasProductos">
             <p>Cargando productos…</p>
           </div>

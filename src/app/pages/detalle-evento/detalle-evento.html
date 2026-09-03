@@ -65,21 +65,40 @@
 
     <div class="dx-workspace" id="comprar">
       <div class="dx-purchase-stack">
-      <section class="dx-purchase" aria-labelledby="purchase-title">
-        <div class="dx-section-heading">
-          <div><span class="dx-section-kicker">Compra en línea</span><h2 id="purchase-title">Arma tu experiencia</h2><p>Selecciona entradas o productos. Verás el total antes de pagar.</p></div>
-        </div>
-
+      <section
+        class="dx-purchase"
+        [class.dx-purchase--con-tabs]="mostrarTabsCompra"
+        aria-labelledby="purchase-title"
+      >
         <nav class="detalle-compra-tabs" *ngIf="mostrarTabsCompra" aria-label="Secciones de compra">
           <button type="button" class="detalle-compra-tab" [class.active]="tabCompra === 'entradas'" (click)="setTabCompra('entradas')">
             <span class="material-icons" aria-hidden="true">confirmation_number</span>Entradas
           </button>
           <button type="button" class="detalle-compra-tab" [class.detalle-compra-tab--loading]="loadingProductosFlag" [class.active]="tabCompra === 'productos'" (click)="setTabCompra('productos')">
-            <span class="material-icons" aria-hidden="true">storefront</span><span>Productos</span>
+            <span class="material-icons" aria-hidden="true">inventory_2</span><span>Productos</span>
             <span *ngIf="loadingProductosFlag" class="tab-loading-pill" aria-live="polite">Cargando…</span>
           </button>
         </nav>
 
+        <div
+          class="detalle-compra-body"
+          [class.detalle-compra-body--con-tabs]="mostrarTabsCompra"
+          [class.detalle-compra-body--tab-productos]="mostrarTabsCompra && tabCompra === 'productos'"
+        >
+        <header class="dx-purchase-intro">
+          <div class="dx-section-heading">
+            <div>
+              <span class="dx-section-kicker">Compra en línea</span>
+              <h2 id="purchase-title">Arma tu experiencia</h2>
+              <p *ngIf="tabCompra !== 'productos' && !mostrarSoloProductos">
+                Selecciona entradas. Verás el total antes de pagar.
+              </p>
+              <p *ngIf="tabCompra === 'productos' || mostrarSoloProductos">
+                Selecciona productos. Verás el total antes de pagar.
+              </p>
+            </div>
+          </div>
+        </header>
         <div class="entradas-panel detalle-tab-panel" [hidden]="tabCompra !== 'entradas' || isEventoFinalizado() || mostrarSoloProductos">
           <div *ngIf="loadingBoletas" class="dx-inline-loading"><span></span><span></span></div>
           <div *ngIf="!loadingBoletas && tiposBoletaDisponibles.length > 0" class="tipos-boleta-grid">
@@ -142,6 +161,7 @@
             <h3><span class="material-icons">event_busy</span>Evento finalizado</h3><span class="material-icons accordion-icon" [class.open]="acordeones.eventoFinalizado">expand_more</span>
           </button>
           <div class="accordion-content" [class.open]="acordeones.eventoFinalizado"><div class="evento-finalizado-message"><p>Este evento ya terminó. Las entradas no están disponibles para compra.</p></div></div>
+        </div>
         </div>
       </section>
 
