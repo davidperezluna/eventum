@@ -19,13 +19,17 @@ describe('CompraTicketCardComponent', () => {
     const fixture = TestBed.createComponent(CompraTicketCardComponent);
     const card: EntradaTicketCard = {
       kind: 'entrada',
-      title: 'General',
-      price: '$ 50.000',
-      reference: 'Compra TX-1',
+      title: 'Boleta Preventa',
+      price: '$ 10.000',
+      reference: 'TXN-1788283389803-8136',
       received: false,
+      badge: { label: 'Sin usar', className: 'badge-warning' },
+      dateTitle: '06 de ago de 2026',
+      time: '5:00 p. m.',
+      venue: 'La Reserva',
       used: false,
       hasTalon: true,
-      qr: { ready: true, icon: 'qr_code_2', title: 'Ver código QR', subtitle: 'Disponible' },
+      qr: { ready: true, icon: 'qr_code_2', title: 'Ver código QR', subtitle: 'Toca aquí para ingresar al evento' },
       clickable: true,
     };
     fixture.componentInstance.card = card;
@@ -34,7 +38,10 @@ describe('CompraTicketCardComponent', () => {
     fixture.detectChanges();
 
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.textContent).toContain('General');
+    expect(element.textContent).toContain('EVENTUM');
+    expect(element.textContent).toContain('Boleta Preventa');
+    expect(element.textContent).toContain('La Reserva');
+    expect(element.textContent).toContain('$ 10.000');
     (element.querySelector('.ticket-action') as HTMLButtonElement).click();
     expect(actions).toEqual(['view-qr']);
   });

@@ -33,6 +33,8 @@ export interface EntradaTicketCard extends CompraTicketBase {
   badge?: CompraTicketBadge;
   dateTitle?: string;
   dateSubtitle?: string;
+  time?: string;
+  venue?: string;
   traslado?: CompraTicketTraslado;
   pendingMessage?: string;
   attendee?: {
@@ -41,6 +43,7 @@ export interface EntradaTicketCard extends CompraTicketBase {
     email?: string;
   };
   used: boolean;
+  usedAt?: string;
   hasTalon: boolean;
   qr?: {
     ready: boolean;

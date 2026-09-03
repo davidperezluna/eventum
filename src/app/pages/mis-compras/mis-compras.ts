@@ -2209,7 +2209,7 @@ export class MisCompras implements OnInit, OnDestroy {
         ? `Palco ${boleta.numero_palco}`
         : boleta.tipo_boleta_meta?.nombre || 'Boleta',
       price: this.formatCurrency(Number(boleta.precio_unitario ?? 0)),
-      reference: item.esCedida ? 'Boleta recibida' : `Compra ${compra.numero_transaccion}`,
+      reference: item.esCedida ? 'Boleta recibida' : (compra.numero_transaccion || '—'),
       received: !!item.esCedida,
       badge: usada
         ? undefined
@@ -2220,12 +2220,10 @@ export class MisCompras implements OnInit, OnDestroy {
       dateTitle: this.eventoVistaBoleta(boleta, compra)?.fecha_inicio
         ? this.fechaModalBoleta(boleta, compra)
         : undefined,
-      dateSubtitle: this.eventoVistaBoleta(boleta, compra)?.fecha_inicio
-        ? [
-            this.horaModalBoleta(boleta, compra),
-            this.lugarVistaBoleta(boleta, compra)?.nombre,
-          ].filter(Boolean).join(' · ')
+      time: this.eventoVistaBoleta(boleta, compra)?.fecha_inicio
+        ? this.horaModalBoleta(boleta, compra)
         : undefined,
+      venue: this.lugarVistaBoleta(boleta, compra)?.nombre || undefined,
       traslado: traslado
         ? {
             badgeLabel: LABEL_TRASLADO_ENVIO_PENDIENTE,
@@ -2241,6 +2239,7 @@ export class MisCompras implements OnInit, OnDestroy {
         ? 'Cuando el pago se confirme, podrás asignar cada entrada. El código QR solo se verá el día del evento.'
         : undefined,
       used: usada,
+      usedAt: usada ? this.horaIngresoBoleta(boleta) || undefined : undefined,
       hasTalon: this.boletaTarjetaTieneAcciones(boleta, compra) || usada,
       qr: muestraQr
         ? {
@@ -3302,14 +3301,9 @@ export class MisCompras implements OnInit, OnDestroy {
     return this.eventoTieneEntradas(grupo) && this.eventoTieneProductos(grupo);
   }
 
-  /** Filtro de estado de entradas solo si hay más de una opción visible. */
-  mostrarFiltroEstadoBoletasDetalle(grupo: EventoBoletasGrupo | null | undefined): boolean {
-    if (!grupo || !this.eventoTieneEntradas(grupo)) return false;
-    let opciones = 0;
-    if (this.mostrarTabBoletas(grupo, 'sin-usar')) opciones++;
-    if (this.mostrarTabBoletas(grupo, 'sin-asignar')) opciones++;
-    if (this.mostrarTabBoletas(grupo, 'usadas')) opciones++;
-    return opciones > 1;
+  /** Ya no se filtran entradas por usadas / sin usar / sin asignar. */
+  mostrarFiltroEstadoBoletasDetalle(_grupo: EventoBoletasGrupo | null | undefined): boolean {
+    return false;
   }
 
   /** Filtro de estado de productos solo si hay más de una opción visible. */
@@ -3326,8 +3320,6 @@ export class MisCompras implements OnInit, OnDestroy {
     if (this.tabEventoDetalle === 'productos') {
       return this.tabProductosDetalle === 'redimidas' ? 'Productos redimidos' : 'Productos por retirar';
     }
-    if (this.tabBoletasDetalle === 'usadas') return 'Entradas usadas';
-    if (this.tabBoletasDetalle === 'sin-asignar') return 'Sin asignar';
     return 'Tus entradas';
   }
 
@@ -3520,13 +3512,11 @@ export class MisCompras implements OnInit, OnDestroy {
     return grupo.tipos
       .map((tipo) => ({
         ...tipo,
-        boletas: tipo.boletas.filter((item) => {
-          const usada = this.esBoletaUsada(item.boleta);
-          const asignada = this.tieneAsistenteRegistrado(item.boleta);
-          if (this.tabBoletasDetalle === 'usadas') return usada;
-          if (this.tabBoletasDetalle === 'sin-asignar') return !usada && !asignada;
-          return !usada && asignada;
-        })
+        boletas: [...tipo.boletas].sort((a, b) => {
+          const aUsada = this.esBoletaUsada(a.boleta) ? 1 : 0;
+          const bUsada = this.esBoletaUsada(b.boleta) ? 1 : 0;
+          return aUsada - bUsada;
+        }),
       }))
       .filter((tipo) => tipo.boletas.length > 0);
   }
@@ -5305,6 +5295,20 @@ export class MisCompras implements OnInit, OnDestroy {
 
   esBoletaUsada(boleta: BoletaComprada | null | undefined): boolean {
     return (boleta?.estado || '').toLowerCase() === 'usada';
+  }
+
+  /** Hora en que se escaneó/ingresó la boleta (fecha_uso). */
+  horaIngresoBoleta(boleta: BoletaComprada | null | undefined): string {
+    const raw = boleta?.fecha_uso;
+    if (!raw) return '';
+    const fecha = typeof raw === 'string' ? DateTimeUtil.parseStoredDate(raw) : raw;
+    if (!fecha || Number.isNaN(fecha.getTime())) return '';
+    return new Intl.DateTimeFormat('es-CO', {
+      timeZone: DateTimeUtil.APP_TIMEZONE,
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).format(fecha);
   }
 
   esBoletaCancelada(boleta: BoletaComprada | null | undefined): boolean {

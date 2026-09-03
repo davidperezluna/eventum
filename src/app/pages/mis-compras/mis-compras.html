@@ -383,58 +383,6 @@
 
           <section
             class="cupos-filter-panel"
-            *ngIf="tabEventoDetalle === 'entradas' && mostrarFiltroEstadoBoletasDetalle(detalle)"
-            aria-labelledby="mc-evento-estado-entradas-title"
-          >
-            <div class="cupos-filter-heading">
-              <span class="material-icons" aria-hidden="true">tune</span>
-              <div>
-                <h2 id="mc-evento-estado-entradas-title">Estado</h2>
-                <p>Filtra tus entradas.</p>
-              </div>
-            </div>
-            <div class="cupos-filter-list" role="group" aria-label="Estado de entradas">
-              <button
-                type="button"
-                class="cupos-filter-option"
-                *ngIf="mostrarTabBoletas(detalle, 'sin-usar')"
-                [class.active]="tabBoletasDetalle === 'sin-usar'"
-                [attr.aria-pressed]="tabBoletasDetalle === 'sin-usar'"
-                (click)="setTabBoletasDetalle('sin-usar')"
-              >
-                <span class="cupos-filter-icon material-icons" aria-hidden="true">check_circle</span>
-                <span>Sin usar ({{ detalle.totalSinUsar }})</span>
-                <span class="material-icons cupos-filter-check" aria-hidden="true">check</span>
-              </button>
-              <button
-                type="button"
-                class="cupos-filter-option"
-                *ngIf="mostrarTabBoletas(detalle, 'sin-asignar')"
-                [class.active]="tabBoletasDetalle === 'sin-asignar'"
-                [attr.aria-pressed]="tabBoletasDetalle === 'sin-asignar'"
-                (click)="setTabBoletasDetalle('sin-asignar')"
-              >
-                <span class="cupos-filter-icon material-icons" aria-hidden="true">person_add</span>
-                <span>Sin asignar ({{ detalle.totalSinAsignar }})</span>
-                <span class="material-icons cupos-filter-check" aria-hidden="true">check</span>
-              </button>
-              <button
-                type="button"
-                class="cupos-filter-option"
-                *ngIf="mostrarTabBoletas(detalle, 'usadas')"
-                [class.active]="tabBoletasDetalle === 'usadas'"
-                [attr.aria-pressed]="tabBoletasDetalle === 'usadas'"
-                (click)="setTabBoletasDetalle('usadas')"
-              >
-                <span class="cupos-filter-icon material-icons" aria-hidden="true">task_alt</span>
-                <span>Usadas ({{ detalle.totalUsadas }})</span>
-                <span class="material-icons cupos-filter-check" aria-hidden="true">check</span>
-              </button>
-            </div>
-          </section>
-
-          <section
-            class="cupos-filter-panel"
             *ngIf="tabEventoDetalle === 'productos' && mostrarFiltroEstadoProductosDetalle(detalle)"
             aria-labelledby="mc-evento-estado-productos-title"
           >
@@ -522,17 +470,7 @@
           </ng-container>
           <ng-template #detalleSinBoletas>
             <div class="cupos-empty mc-evento-detalle-empty" *ngIf="!loadingBoletasDetalle">
-              <p>
-                No hay boletas
-                {{
-                  tabBoletasDetalle === 'usadas'
-                    ? 'usadas'
-                    : tabBoletasDetalle === 'sin-asignar'
-                      ? 'sin asignar'
-                      : 'sin usar'
-                }}
-                en este evento.
-              </p>
+              <p>No hay boletas en este evento.</p>
             </div>
           </ng-template>
         </div>

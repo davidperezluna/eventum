@@ -13,21 +13,63 @@
 >
   <div class="ticket-card__body">
     <ng-container *ngIf="card.kind === 'entrada'">
-      <header class="ticket-card__header ticket-card__header--entry">
-        <div class="ticket-card__entry-head">
-          <strong class="ticket-card__title">{{ card.title }}</strong>
-          <span class="ticket-card__price">{{ card.price }}</span>
-        </div>
-        <p class="ticket-card__entry-when" *ngIf="card.dateTitle">
-          {{ card.dateTitle }}<ng-container *ngIf="card.dateSubtitle"> · {{ card.dateSubtitle }}</ng-container>
-        </p>
-        <div class="ticket-card__entry-foot">
-          <span *ngIf="card.badge as badge" class="ticket-badge ticket-status" [ngClass]="badge.className">{{ badge.label }}</span>
-          <span class="ticket-card__reference" [class.ticket-card__reference--received]="card.received">
-            {{ card.reference }}
-          </span>
-        </div>
+      <header class="ticket-pass__brand">
+        <p class="ticket-pass__logo">EVENTUM</p>
+        <p class="ticket-pass__tagline">Experiencias únicas</p>
+        <span class="ticket-pass__chip">
+          <span class="material-icons" aria-hidden="true">confirmation_number</span>
+          {{ card.title }}
+        </span>
       </header>
+
+      <div class="ticket-pass__rows">
+        <div
+          class="ticket-pass__when"
+          *ngIf="card.dateTitle || card.time"
+          [class.ticket-pass__when--split]="!!card.dateTitle && !!card.time"
+        >
+          <div class="ticket-pass__fact" *ngIf="card.dateTitle">
+            <span class="ticket-pass__icon" aria-hidden="true"><span class="material-icons">calendar_today</span></span>
+            <div class="ticket-pass__copy">
+              <small>Fecha</small>
+              <strong>{{ card.dateTitle }}</strong>
+            </div>
+          </div>
+          <div class="ticket-pass__fact" *ngIf="card.time">
+            <span class="ticket-pass__icon" aria-hidden="true"><span class="material-icons">schedule</span></span>
+            <div class="ticket-pass__copy">
+              <small>Hora</small>
+              <strong>{{ card.time }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="ticket-pass__row" *ngIf="card.venue">
+          <span class="ticket-pass__icon" aria-hidden="true"><span class="material-icons">location_on</span></span>
+          <div class="ticket-pass__copy">
+            <small>Lugar</small>
+            <strong>{{ card.venue }}</strong>
+          </div>
+        </div>
+
+        <div class="ticket-pass__row ticket-pass__row--price">
+          <span class="ticket-pass__icon" aria-hidden="true"><span class="material-icons">local_offer</span></span>
+          <div class="ticket-pass__copy">
+            <small>Precio</small>
+          </div>
+          <strong class="ticket-pass__price">{{ card.price }}</strong>
+        </div>
+
+        <div class="ticket-pass__row ticket-pass__row--meta">
+          <span *ngIf="card.badge as badge" class="ticket-badge ticket-status" [ngClass]="badge.className">{{ badge.label }}</span>
+          <div class="ticket-pass__compra">
+            <small>Compra</small>
+            <span class="ticket-card__reference" [class.ticket-card__reference--received]="card.received">
+              {{ card.reference }}
+            </span>
+          </div>
+        </div>
+      </div>
 
       <ng-container *ngTemplateOutlet="traslado; context: { $implicit: card.traslado }"></ng-container>
 
@@ -115,12 +157,29 @@
     </ng-container>
   </div>
 
+  <div
+    *ngIf="card.kind === 'entrada' && card.hasTalon"
+    class="ticket-card__join"
+    aria-hidden="true"
+  >
+    <span class="ticket-card__notch ticket-card__notch--left"></span>
+    <span class="ticket-card__notch ticket-card__notch--right"></span>
+  </div>
+
   <ng-container *ngIf="card.kind === 'entrada' && card.hasTalon">
     <div class="ticket-card__stub" [class.ticket-card__stub--used]="card.used">
       <div class="ticket-card__tear" aria-hidden="true"></div>
-      <div class="ticket-card__used" *ngIf="card.used; else entradaActions">
-        <span class="material-icons" aria-hidden="true">check_circle</span>
-        <span>Entrada utilizada</span>
+      <div class="ticket-card__actions ticket-card__actions--used" *ngIf="card.used; else entradaActions">
+        <div class="ticket-action ticket-action--static ticket-action--used" role="status">
+          <span class="ticket-action__icon ticket-action__icon--used" aria-hidden="true">
+            <span class="material-icons">check_circle</span>
+          </span>
+          <span class="ticket-action__copy">
+            <strong>Usada</strong>
+            <small *ngIf="card.usedAt; else usedSinHora">Ingreso a las {{ card.usedAt }}</small>
+            <ng-template #usedSinHora><small>Acceso registrado</small></ng-template>
+          </span>
+        </div>
       </div>
       <ng-template #entradaActions>
         <div class="ticket-card__actions">
