@@ -375,7 +375,8 @@ export class CarritoCompraService {
       itemId: `cover-${params.tipoCoverId}`,
       itemName: params.tipoCoverNombre,
       price: Number(params.precioSesion) || 0,
-      itemCategory: 'cover',
+      itemCategory: this.lugarCoverSubject.getValue()?.nombre || this.eventoSubject.getValue()?.titulo,
+      itemCategory2: 'cover',
     });
     return true;
   }
@@ -424,7 +425,8 @@ export class CarritoCompraService {
       itemId: tipoConPrecio.id,
       itemName: tipoConPrecio.nombre || `Cover ${tipoConPrecio.id}`,
       price: Number(params.precioSesion) || 0,
-      itemCategory: 'cover',
+      itemCategory: params.evento.titulo || `Evento ${params.evento.id}`,
+      itemCategory2: 'cover',
     });
     return true;
   }
@@ -497,7 +499,8 @@ export class CarritoCompraService {
       itemId: tipo.id,
       itemName: tipo.nombre || `Tipo ${tipo.id}`,
       price: Number(tipo.precio) || 0,
-      itemCategory: 'boleta',
+      itemCategory: this.eventoSubject.getValue()?.titulo,
+      itemCategory2: 'boleta',
     });
     return true;
   }
@@ -534,7 +537,8 @@ export class CarritoCompraService {
       itemId: `producto-${producto.id}`,
       itemName: producto.nombre || `Producto ${producto.id}`,
       price: Number(producto.precio) || 0,
-      itemCategory: 'producto',
+      itemCategory: this.eventoSubject.getValue()?.titulo,
+      itemCategory2: 'producto',
     });
     return true;
   }

@@ -190,33 +190,37 @@ export class PagoResultado implements OnInit {
       price?: number;
       quantity?: number;
       item_category?: string;
+      item_category2?: string;
     }> = [];
 
     if (this.compra) {
       items.push({
         item_id: String(this.compra.evento_id || this.compra.id),
-        item_name: `Compra boletas #${this.compra.id}`,
+        item_name: 'Boletas',
         price: Number(this.compra.total) || 0,
         quantity: 1,
-        item_category: 'boleta',
+        item_category: this.compra.evento?.titulo,
+        item_category2: 'boleta',
       });
     }
     if (this.compraProducto) {
       items.push({
         item_id: String(this.compraProducto.evento_id || this.compraProducto.id),
-        item_name: `Compra productos #${this.compraProducto.id}`,
+        item_name: 'Productos',
         price: Number(this.compraProducto.total) || 0,
         quantity: 1,
-        item_category: 'producto',
+        item_category: this.compra?.evento?.titulo,
+        item_category2: 'producto',
       });
     }
     if (this.compraCoverId && !this.compra) {
       items.push({
         item_id: String(this.compraCoverId),
-        item_name: `Compra cover #${this.compraCoverId}`,
+        item_name: 'Cover',
         price: value,
         quantity: 1,
-        item_category: 'cover',
+        item_category: undefined,
+        item_category2: 'cover',
       });
     }
 
@@ -387,7 +391,7 @@ export class PagoResultado implements OnInit {
             'COP',
             [{
               item_id: String(this.compraCoverId),
-              item_name: `Compra cover #${this.compraCoverId}`,
+              item_name: 'Cover',
               price: this.getTotalMostrado(),
               quantity: 1,
               item_category: 'cover',

@@ -8,10 +8,16 @@ Los nombres van **en inglés** (estándar de GA4 y de Meta Pixel). En informes s
 
 | Evento (código) | Qué significa | Cuándo se dispara |
 |---|---|---|
-| `view_item` | Cuántos abrieron un evento | Detalle de evento (`detalle-evento`) |
-| `add_to_cart` | Cuántos agregaron algo | Al sumar boleta, producto o cover al carrito |
-| `begin_checkout` | Cuántos tocaron Pagar | Al confirmar pago en `/carrito` |
-| `purchase` | Cuántos pagaron de verdad | Pago confirmado en `/pago-resultado` (una vez por transacción) |
+| `view_item` | Vio boletas/productos del evento | Detalle de evento (tras cargar tipos). `item_name` = boleta/producto; `item_category` = título del evento |
+| `view_evento` | Abrió un evento sin ítems | Solo si el evento no tiene boletas/productos |
+| `add_to_cart` | Agregó algo al carrito | Al sumar boleta, producto o cover (`item_name` = SKU) |
+| `begin_checkout` | Tocó Pagar | Al confirmar pago en `/carrito` (líneas del carrito) |
+| `purchase` | Pagó de verdad | Pago confirmado en `/pago-resultado` (una vez por transacción) |
+
+**Nombre del artículo en GA (modelo ticketing / Humanitix):**
+- `item_name` = tipo de boleta / producto / cover  
+- `item_category` = título del evento  
+- `item_category2` = `boleta` \| `producto` \| `cover`
 
 Solo se envían en **producción**. En **Informes → Tiempo real** se ven al momento; en **Informes → Eventos** pueden tardar varias horas.
 
@@ -24,7 +30,7 @@ Pixel ID en `environment.prod.ts` → `metaPixelId` (hoy: organizador cliente, g
 | GA4 | Meta Pixel | Cuándo |
 |---|---|---|
 | `page_view` (SPA) | `PageView` | Cada navegación |
-| `view_item` | `ViewContent` | Detalle de evento |
+| `view_item` (boletas) / `view_evento` | `ViewContent` (nombre del evento) | Detalle de evento |
 | `add_to_cart` | `AddToCart` | Al sumar al carrito |
 | `begin_checkout` | `InitiateCheckout` | Al confirmar pagar |
 | `purchase` | `Purchase` | Pago confirmado (misma deduplicación) |
@@ -33,33 +39,22 @@ Implementación: `MetaPixelService` + los mismos métodos de `GoogleAnalyticsSer
 
 ## 🎯 Ejemplo 1: Trackear Visualización de Evento
 
-En `detalle-evento.ts`, agrega tracking cuando se carga un evento:
+Tras cargar tipos de boleta/productos en el detalle:
 
 ```typescript
-import { GoogleAnalyticsService } from '../../services/google-analytics.service';
-
-constructor(
-  // ... otros servicios
-  private gaService: GoogleAnalyticsService
-) {}
-
-async loadEvento(id: number) {
-  this.loading = true;
-  try {
-    const evento = await this.eventosService.getEventoById(id);
-    this.evento = evento;
-    
-    // Trackear visualización del evento
-    if (evento) {
-      this.gaService.trackEventoView(evento.id, evento.titulo);
-    }
-    
-    // ... resto del código
-  } catch (err) {
-    // ... manejo de errores
-  }
-}
+this.gaService.trackEventoView({
+  eventoId: evento.id,
+  eventoTitulo: evento.titulo,
+  items: tiposBoleta.map((t) => ({
+    id: t.id,
+    name: t.nombre,
+    price: t.precio,
+    category: 'boleta',
+  })),
+});
 ```
+
+GA dispara `view_item` con esos ítems. Meta dispara `ViewContent` con el nombre del evento.
 
 ## 🛒 Ejemplo 2: Trackear Compra Completada
 

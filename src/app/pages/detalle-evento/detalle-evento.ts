@@ -598,11 +598,6 @@ export class DetalleEvento implements OnInit, OnDestroy {
         this.evento = evento;
       }
 
-      if (this.evento && this.viewItemTrackedEventoId !== this.evento.id) {
-        this.viewItemTrackedEventoId = this.evento.id;
-        this.googleAnalytics.trackEventoView(this.evento.id, this.evento.titulo || `Evento ${this.evento.id}`);
-      }
-
       // Preparar promesas para carga en paralelo
       const promesas: Promise<any>[] = [];
 
@@ -668,6 +663,30 @@ export class DetalleEvento implements OnInit, OnDestroy {
       await Promise.all(promesas);
 
       this.sincronizarVistaCompra();
+
+      // view_item con boletas/productos (item_name = SKU, item_category = evento)
+      if (this.evento && this.viewItemTrackedEventoId !== this.evento.id) {
+        this.viewItemTrackedEventoId = this.evento.id;
+        const titulo = this.evento.titulo || `Evento ${this.evento.id}`;
+        this.googleAnalytics.trackEventoView({
+          eventoId: this.evento.id,
+          eventoTitulo: titulo,
+          items: [
+            ...this.tiposBoleta.map((t) => ({
+              id: t.id,
+              name: t.nombre || `Boleta ${t.id}`,
+              price: Number(t.precio) || 0,
+              category: 'boleta',
+            })),
+            ...this.productosCache.map((p) => ({
+              id: `producto-${p.id}`,
+              name: p.nombre || `Producto ${p.id}`,
+              price: Number(p.precio) || 0,
+              category: 'producto',
+            })),
+          ],
+        });
+      }
 
       // Actualizar estado y vista después de que todo esté cargado
       this.loading = false;

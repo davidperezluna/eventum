@@ -1,34 +1,58 @@
 /* ============================================
    GOOGLE ANALYTICS SERVICE
-   ============================================ */
+   ============================================
+   Funnel GA4 + Meta Pixel (mismos puntos).
+   Modelo ticketing (Humanitix):
+   - item_name = boleta / producto / cover
+   - item_category = título del evento
+   - item_category2 = boleta | producto | cover
+*/
 
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { MetaPixelService } from './meta-pixel.service';
 
 declare let gtag: Function;
 
 const PURCHASE_TRACKED_KEY = 'eventum_ga_purchase_tracked';
+
+export type GaItem = {
+  item_id?: string;
+  item_name?: string;
+  price?: number;
+  quantity?: number;
+  /** Título del evento (contexto del SKU). */
+  item_category?: string;
+  /** boleta | producto | cover */
+  item_category2?: string;
+};
 
 @Injectable({
   providedIn: 'root'
 })
 export class GoogleAnalyticsService {
   private googleTagId: string | undefined;
+  private readonly metaPixel = inject(MetaPixelService);
 
   constructor(private router: Router) {
     this.googleTagId = environment.googleTagId;
 
-    // Solo inicializar si estamos en producción y tenemos un ID
-    if (this.googleTagId && environment.production) {
+    const hasGa = !!(this.googleTagId && environment.production);
+    const hasPixel = !!(
+      (environment as { metaPixelId?: string }).metaPixelId?.trim() &&
+      environment.production
+    );
+
+    if (hasGa || hasPixel) {
       this.init();
+    }
+    if (hasPixel) {
+      this.metaPixel.init();
     }
   }
 
-  /**
-   * Inicializa el tracking de navegación
-   */
   private init() {
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
@@ -55,43 +79,28 @@ export class GoogleAnalyticsService {
     }
   }
 
-  /**
-   * Trackea una vista de página (SPA)
-   */
   trackPageView(url: string) {
-    if (!this.canTrack()) return;
-
-    try {
-      gtag('config', this.googleTagId, {
-        page_path: url
-      });
-    } catch (error) {
-      console.error('Error tracking page view:', error);
+    if (this.canTrack()) {
+      try {
+        gtag('config', this.googleTagId, {
+          page_path: url
+        });
+      } catch (error) {
+        console.error('Error tracking page view:', error);
+      }
     }
+    this.metaPixel.trackPageView();
   }
 
-  /**
-   * Trackea un evento personalizado
-   */
   trackEvent(eventName: string, eventParams?: Record<string, unknown>) {
     this.sendEvent(eventName, eventParams);
   }
 
-  /**
-   * Trackea una compra completada.
-   * Usar `trackPurchaseOnce` cuando la pantalla pueda reintentar/recargar.
-   */
   trackPurchase(
     value: number,
     transactionId: string,
     currency: string = 'COP',
-    items?: Array<{
-      item_id?: string;
-      item_name?: string;
-      price?: number;
-      quantity?: number;
-      item_category?: string;
-    }>
+    items?: GaItem[]
   ) {
     this.sendEvent('purchase', {
       transaction_id: transactionId,
@@ -99,26 +108,27 @@ export class GoogleAnalyticsService {
       currency: currency,
       items: items || []
     });
+    this.metaPixel.trackPurchase({
+      value,
+      transactionId,
+      contents: (items || []).map((item) => ({
+        id: String(item.item_id || 'item'),
+        quantity: Math.max(1, Number(item.quantity) || 1),
+        item_price: Number(item.price) || undefined,
+      })),
+    });
   }
 
-  /**
-   * Dispara `purchase` una sola vez por transactionId (sessionStorage).
-   * Evita duplicados en `/pago-resultado` con reintentos.
-   */
   trackPurchaseOnce(
     value: number,
     transactionId: string,
     currency: string = 'COP',
-    items?: Array<{
-      item_id?: string;
-      item_name?: string;
-      price?: number;
-      quantity?: number;
-      item_category?: string;
-    }>
+    items?: GaItem[]
   ): boolean {
     const id = String(transactionId || '').trim();
-    if (!id || !this.canTrack()) return false;
+    const pixelId = (environment as { metaPixelId?: string }).metaPixelId?.trim();
+    const canPixel = !!(pixelId && environment.production);
+    if (!id || (!this.canTrack() && !canPixel)) return false;
 
     try {
       const raw = sessionStorage.getItem(PURCHASE_TRACKED_KEY);
@@ -149,52 +159,106 @@ export class GoogleAnalyticsService {
   }
 
   /**
-   * Visualización de detalle de evento → view_item
+   * Vista de detalle de evento (modelo ticketing).
+   * GA `view_item`: item_name = boleta/producto, item_category = título del evento.
+   * Sin ítems (evento sin boletas): `view_evento` custom (no ensucia el reporte de artículos).
+   * Meta: ViewContent con el nombre del evento (anuncios).
    */
-  trackEventoView(eventoId: number, eventoTitulo: string) {
-    this.sendEvent('view_item', {
-      currency: 'COP',
-      items: [{
-        item_id: eventoId.toString(),
-        item_name: eventoTitulo,
-        item_category: 'evento'
-      }]
+  trackEventoView(params: {
+    eventoId: number;
+    eventoTitulo: string;
+    items?: Array<{
+      id: string | number;
+      name: string;
+      price?: number;
+      /** boleta | producto | cover */
+      category?: string;
+    }>;
+  }) {
+    const eventoTitulo = params.eventoTitulo || `Evento ${params.eventoId}`;
+    const gaItems: GaItem[] = (params.items || [])
+      .filter((i) => i.name || i.id != null)
+      .map((i) => ({
+        item_id: String(i.id),
+        item_name: i.name || String(i.id),
+        price: Number(i.price) || 0,
+        quantity: 1,
+        item_category: eventoTitulo,
+        item_category2: i.category || 'boleta',
+      }));
+
+    if (gaItems.length > 0) {
+      const value = gaItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+      this.sendEvent('view_item', {
+        currency: 'COP',
+        value,
+        items: gaItems,
+      });
+    } else {
+      this.sendEvent('view_evento', {
+        evento_id: String(params.eventoId),
+        evento_titulo: eventoTitulo,
+      });
+    }
+
+    this.metaPixel.trackViewContent({
+      contentId: params.eventoId,
+      contentName: eventoTitulo,
+      contentCategory: 'evento',
+      value: gaItems[0]?.price,
     });
   }
 
   /**
-   * Inicio de checkout → begin_checkout
+   * Inicio de checkout → begin_checkout / InitiateCheckout
+   * `items` deben ser boletas/productos/covers del carrito.
    */
   trackBeginCheckout(params: {
     value: number;
-    itemId?: string | number;
-    itemName?: string;
-    itemCategory?: string;
+    items?: GaItem[];
+    /** Solo para Meta / contexto; no se usa como item_name. */
+    eventoTitulo?: string;
   }) {
-    const itemId = params.itemId != null ? String(params.itemId) : 'checkout';
+    const items = (params.items || []).filter((i) => i.item_name || i.item_id);
     this.sendEvent('begin_checkout', {
       value: params.value,
       currency: 'COP',
-      items: [{
-        item_id: itemId,
-        item_name: params.itemName || undefined,
-        item_category: params.itemCategory || 'evento'
-      }]
+      items: items.length
+        ? items
+        : [{
+            item_id: 'checkout',
+            item_name: 'Checkout',
+            item_category: 'checkout',
+            item_category2: params.eventoTitulo,
+          }],
+    });
+    this.metaPixel.trackInitiateCheckout({
+      contentId: items[0]?.item_id,
+      contentName: items[0]?.item_name || params.eventoTitulo,
+      contentCategory: items[0]?.item_category || 'checkout',
+      value: params.value,
     });
   }
 
   /**
-   * Agregar al carrito → add_to_cart
+   * Agregar al carrito → add_to_cart / AddToCart
+   * item_name = boleta/producto/cover
+   * item_category = título del evento (si hay)
+   * item_category2 = boleta | producto | cover
    */
   trackAddToCart(params: {
     itemId: string | number;
     itemName: string;
     price: number;
+    /** Título del evento (Humanitix: Item category). */
     itemCategory?: string;
+    /** boleta | producto | cover */
+    itemCategory2?: string;
     quantity?: number;
   }) {
     const price = Number(params.price) || 0;
     const quantity = Math.max(1, Number(params.quantity) || 1);
+    const tipoSku = params.itemCategory2 || 'boleta';
 
     this.sendEvent('add_to_cart', {
       currency: 'COP',
@@ -202,10 +266,18 @@ export class GoogleAnalyticsService {
       items: [{
         item_id: String(params.itemId),
         item_name: params.itemName,
-        item_category: params.itemCategory || 'evento',
+        item_category: params.itemCategory || tipoSku,
+        item_category2: params.itemCategory ? tipoSku : undefined,
         price,
         quantity
       }]
+    });
+    this.metaPixel.trackAddToCart({
+      contentId: params.itemId,
+      contentName: params.itemName,
+      contentCategory: tipoSku,
+      value: price * quantity,
+      quantity,
     });
   }
 }

@@ -2111,12 +2111,37 @@ export class Carrito implements OnInit, OnDestroy {
       }
 
       const totalPago = this.getTotal();
+      const eventoTitulo = this.evento?.titulo ?? this.lugarCover?.nombre;
 
       this.googleAnalytics.trackBeginCheckout({
         value: totalPago,
-        itemId: this.evento?.id ?? this.lugarCover?.id ?? 'carrito',
-        itemName: this.evento?.titulo ?? this.lugarCover?.nombre ?? 'Carrito',
-        itemCategory: esSoloCover ? 'cover' : 'evento',
+        eventoTitulo,
+        items: [
+          ...this.itemsCompra.map((item) => ({
+            item_id: String(item.tipo.id),
+            item_name: item.tipo.nombre || `Boleta ${item.tipo.id}`,
+            price: Number(item.tipo.precio) || 0,
+            quantity: item.cantidad,
+            item_category: eventoTitulo,
+            item_category2: item.sesion_cover_id ? 'cover' : 'boleta',
+          })),
+          ...this.itemsCover.map((item) => ({
+            item_id: `cover-${item.tipo_cover_id}`,
+            item_name: item.tipo_cover_nombre || `Cover ${item.tipo_cover_id}`,
+            price: Number(item.precio) || 0,
+            quantity: item.cantidad || 1,
+            item_category: eventoTitulo,
+            item_category2: 'cover',
+          })),
+          ...this.itemsProductos.map((item) => ({
+            item_id: `producto-${item.producto.id}`,
+            item_name: item.producto.nombre || `Producto ${item.producto.id}`,
+            price: Number(item.producto.precio) || 0,
+            quantity: item.cantidad,
+            item_category: eventoTitulo,
+            item_category2: 'producto',
+          })),
+        ],
       });
 
       // Compra gratuita: sí se crean registros porque no hay pasarela (éxito inmediato).
