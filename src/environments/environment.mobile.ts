@@ -35,6 +35,8 @@ export const environment = {
   maintenanceMode: false,
   maintenanceMessage: 'Estamos en mantenimiento. Volvemos pronto.',
   googleTagId: 'GT-5TJZWP3P',
+  /** Pixel solo en producción (`environment.prod`). */
+  metaPixelId: '',
   /** Supabase local vía IP LAN (no usar 127.0.0.1 en el celular). */
   supabaseEnv: 'local' as 'prod' | 'local',
   supabase: {

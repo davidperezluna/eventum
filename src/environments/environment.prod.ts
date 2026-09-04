@@ -30,6 +30,11 @@ export const environment = {
   maintenanceMode: false,
   maintenanceMessage: 'Estamos en mantenimiento. Volvemos pronto.',
   googleTagId: 'GT-5TJZWP3P', // Google Tag ID
+  /**
+   * Meta Pixel del organizador cliente (global mientras sea el único).
+   * Vacío = no cargar Pixel.
+   */
+  metaPixelId: '642795785487460',
   supabaseEnv: 'prod' as 'prod' | 'local',
 
   supabase: {

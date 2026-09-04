@@ -17,6 +17,20 @@ Solo se envían en **producción**. En **Informes → Tiempo real** se ven al mo
 
 Servicio: `src/app/services/google-analytics.service.ts`.
 
+## Meta Pixel (mismo funnel)
+
+Pixel ID en `environment.prod.ts` → `metaPixelId` (hoy: organizador cliente, global). Vacío en dev/mobile = no carga.
+
+| GA4 | Meta Pixel | Cuándo |
+|---|---|---|
+| `page_view` (SPA) | `PageView` | Cada navegación |
+| `view_item` | `ViewContent` | Detalle de evento |
+| `add_to_cart` | `AddToCart` | Al sumar al carrito |
+| `begin_checkout` | `InitiateCheckout` | Al confirmar pagar |
+| `purchase` | `Purchase` | Pago confirmado (misma deduplicación) |
+
+Implementación: `MetaPixelService` + los mismos métodos de `GoogleAnalyticsService` (no hace falta tocar cada página otra vez). Verificar en Meta → Events Manager → Test events / Overview tras desplegar producción.
+
 ## 🎯 Ejemplo 1: Trackear Visualización de Evento
 
 En `detalle-evento.ts`, agrega tracking cuando se carga un evento:

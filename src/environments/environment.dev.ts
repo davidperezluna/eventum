@@ -31,6 +31,8 @@ export const environment = {
   maintenanceMode: false,
   maintenanceMessage: 'Estamos en mantenimiento. Volvemos pronto.',
   googleTagId: 'GT-5TJZWP3P', // Google Tag ID
+  /** Pixel solo en producción (`environment.prod`). */
+  metaPixelId: '',
   /** `prod` = front usa Supabase alojado. `local` = API en 127.0.0.1:54321 */
   supabaseEnv: 'prod' as 'prod' | 'local',
   supabase: {
