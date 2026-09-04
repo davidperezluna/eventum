@@ -177,6 +177,7 @@
         [estadoLabel]="getEstadoCardLabel(evento.estado)"
         [statusDotClass]="getCoverStatusClass(evento.estado)"
         [showInactivo]="showInactivoPill(evento)"
+        [liquidado]="evento.liquidado === true ? true : false"
         [destacado]="!!evento.destacado"
         [menuOpen]="openMenuEventoId === evento.id"
         [hasMenu]="true"
@@ -212,6 +213,7 @@
               Inteligencia
             </a>
             <a
+              *ngIf="canOpenOperaciones(evento)"
               [routerLink]="getEventoOperacionesRoute(evento.id)"
               class="ev-evento-card__menu-link"
               role="menuitem"
@@ -220,13 +222,37 @@
               <span class="material-icons" aria-hidden="true">tune</span>
               Operaciones
             </a>
-            <button type="button" role="menuitem" (click)="openModal(evento); openMenuEventoId = null">
+            <button
+              *ngIf="!canOpenOperaciones(evento)"
+              type="button"
+              role="menuitem"
+              disabled
+              [title]="operacionesBlockedLabel(evento)"
+            >
+              <span class="material-icons" aria-hidden="true">lock</span>
+              Operaciones ({{ operacionesBlockedShortLabel(evento) }})
+            </button>
+            <button
+              *ngIf="authService.isAdministrador()"
+              type="button"
+              role="menuitem"
+              (click)="openModal(evento); openMenuEventoId = null"
+            >
               <span class="material-icons" aria-hidden="true">edit</span>
               Editar información
             </button>
             <button type="button" role="menuitem" (click)="openCuponesDrawer(evento); openMenuEventoId = null">
               <span class="material-icons" aria-hidden="true">local_offer</span>
               Cupones
+            </button>
+            <button
+              *ngIf="canToggleLiquidado"
+              type="button"
+              role="menuitem"
+              (click)="toggleLiquidado(evento); openMenuEventoId = null"
+            >
+              <span class="material-icons" aria-hidden="true">{{ evento.liquidado ? 'undo' : 'account_balance' }}</span>
+              {{ evento.liquidado ? 'Reabrir liquidación' : 'Marcar liquidado' }}
             </button>
           </div>
         </ng-container>

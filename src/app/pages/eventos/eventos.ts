@@ -26,6 +26,11 @@ import {
   getEventoEstadoCardLabel,
   getEventoEstadoCardStatusClass,
 } from '../../core/evento-estado-labels';
+import {
+  canOrganizadorOpenOperaciones,
+  organizadorOperacionesBlockedMessage,
+  organizadorOperacionesBlockedShortLabel,
+} from '../../core/evento-operaciones-access';
 import { formatFinanzasMonedaExacta } from '../../utils/dashboard-finanzas.view';
 import { Evento, CategoriaEvento, Lugar, Usuario, PaginatedResponse, TipoEstadoEvento, WompiCuenta } from '../../types';
 import { EvFormModal } from '../../components/ev-form-modal/ev-form-modal';
@@ -113,7 +118,6 @@ export class Eventos implements OnInit, OnDestroy {
   estados: { value: TipoEstadoEvento; label: string }[] = [
     { value: TipoEstadoEvento.BORRADOR, label: 'Borrador' },
     { value: TipoEstadoEvento.PUBLICADO, label: 'Publicado' },
-    { value: TipoEstadoEvento.EN_CURSO, label: 'En Curso' },
     { value: TipoEstadoEvento.FINALIZADO, label: 'Finalizado' },
     { value: TipoEstadoEvento.CANCELADO, label: 'Cancelado' }
   ];
@@ -318,17 +322,50 @@ export class Eventos implements OnInit, OnDestroy {
 
   get eventosOrdenados(): Evento[] {
     const list = [...this.eventos];
-    switch (this.sortOrden) {
-      case 'fecha_desc':
-        return list.sort((a, b) => String(b.fecha_inicio).localeCompare(String(a.fecha_inicio)));
-      case 'nombre_asc':
-        return list.sort((a, b) => a.titulo.localeCompare(b.titulo, 'es'));
-      case 'nombre_desc':
-        return list.sort((a, b) => b.titulo.localeCompare(a.titulo, 'es'));
-      case 'fecha_asc':
-      default:
-        return list.sort((a, b) => String(a.fecha_inicio).localeCompare(String(b.fecha_inicio)));
+    const secondary = (a: Evento, b: Evento): number => {
+      switch (this.sortOrden) {
+        case 'fecha_desc':
+          return String(b.fecha_inicio).localeCompare(String(a.fecha_inicio));
+        case 'nombre_asc':
+          return a.titulo.localeCompare(b.titulo, 'es');
+        case 'nombre_desc':
+          return b.titulo.localeCompare(a.titulo, 'es');
+        case 'fecha_asc':
+        default:
+          return String(a.fecha_inicio).localeCompare(String(b.fecha_inicio));
+      }
+    };
+
+    // Admin: publicados (y en curso) primero; luego el criterio de orden seleccionado.
+    if (this.authService.isAdministrador() && !this.estadoFiltro) {
+      const rank = (e: Evento): number => {
+        switch (e.estado) {
+          case TipoEstadoEvento.PUBLICADO:
+          case 'publicado':
+            return 0;
+          case TipoEstadoEvento.EN_CURSO:
+          case 'en_curso':
+            return 1;
+          case TipoEstadoEvento.BORRADOR:
+          case 'borrador':
+            return 2;
+          case TipoEstadoEvento.FINALIZADO:
+          case 'finalizado':
+            return 3;
+          case TipoEstadoEvento.CANCELADO:
+          case 'cancelado':
+            return 4;
+          default:
+            return 5;
+        }
+      };
+      return list.sort((a, b) => {
+        const byEstado = rank(a) - rank(b);
+        return byEstado !== 0 ? byEstado : secondary(a, b);
+      });
     }
+
+    return list.sort(secondary);
   }
 
   get isFilteredEmpty(): boolean {
@@ -405,6 +442,18 @@ export class Eventos implements OnInit, OnDestroy {
 
   getEventoOperacionesRoute(eventoId: number): string {
     return `/eventos/${eventoId}/operaciones`;
+  }
+
+  canOpenOperaciones(evento: Evento): boolean {
+    return canOrganizadorOpenOperaciones(evento, this.authService.isOrganizador());
+  }
+
+  operacionesBlockedLabel(evento: Evento): string {
+    return organizadorOperacionesBlockedMessage(evento).title;
+  }
+
+  operacionesBlockedShortLabel(evento: Evento): string {
+    return organizadorOperacionesBlockedShortLabel(evento);
   }
 
   getBoletasVendidas(eventoId: number): number | null {
@@ -568,6 +617,8 @@ export class Eventos implements OnInit, OnDestroy {
       if (organizadorId) {
         filters.organizador_id = organizadorId;
       }
+    } else if (this.authService.isAdministrador() && !this.estadoFiltro) {
+      filters.priorizarPublicados = true;
     }
     this.cdr.detectChanges();
     
@@ -591,7 +642,9 @@ export class Eventos implements OnInit, OnDestroy {
               excluir_finalizados: !this.estadoFiltro,
               organizador_id: this.authService.getUsuarioId() || undefined,
             }
-          : {}),
+          : this.authService.isAdministrador() && !this.estadoFiltro
+            ? { priorizarPublicados: true }
+            : {}),
       }, true);
     } finally {
       this.refreshing = false;
@@ -675,6 +728,13 @@ export class Eventos implements OnInit, OnDestroy {
   }
 
   openModal(evento?: Evento) {
+    if (evento && !this.authService.isAdministrador()) {
+      this.alertService.warning(
+        'Solo administrador',
+        'La edición de información del evento está disponible solo para administradores.',
+      );
+      return;
+    }
     this.rebuildSelectOptions();
     this.wizardStep = 0;
     this.wizardPhase = 'form';
@@ -1256,6 +1316,33 @@ export class Eventos implements OnInit, OnDestroy {
     } catch (err) {
       console.error('Error actualizando evento:', err);
       this.alertService.error('Error', 'Error al actualizar evento');
+    }
+  }
+
+  get canToggleLiquidado(): boolean {
+    return this.authService.isAdministrador() && !this.isShowcaseMode;
+  }
+
+  async toggleLiquidado(evento: Evento): Promise<void> {
+    if (!this.canToggleLiquidado) return;
+    const next = !evento.liquidado;
+    const ok = await this.alertService.confirm(
+      next ? 'Marcar como liquidado' : 'Reabrir liquidación',
+      next
+        ? 'El evento dejará de sumar en los dashboards globales.'
+        : 'El evento volverá a contar en los dashboards globales.',
+    );
+    if (!ok) return;
+    try {
+      await this.eventosService.updateEvento(evento.id, { liquidado: next });
+      this.loadEventos();
+      void this.alertService.snackbarSuccess(
+        next ? 'Evento liquidado' : 'Liquidación reabierta',
+        next ? 'Ya no cuenta en dashboards globales.' : 'Vuelve a contar en dashboards globales.',
+      );
+    } catch (err) {
+      console.error('Error actualizando liquidado:', err);
+      this.alertService.error('Error', 'No se pudo actualizar el estado de liquidación.');
     }
   }
 

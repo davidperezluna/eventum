@@ -142,7 +142,9 @@ export function buildEventoReadiness(
 
   if (percent >= 100) {
     headline = 'Evento listo para operar';
-    subline = 'Todo está configurado correctamente.';
+    subline = hasPublicacion(evento)
+      ? 'Tu evento ya está disponible y puede recibir ventas.'
+      : 'Todo está configurado correctamente.';
   }
 
   return {

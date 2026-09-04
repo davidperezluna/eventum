@@ -496,7 +496,20 @@
 }
 
 .ev-hub-pair--hero {
-  margin-top: 0.85rem;
+  margin-top: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  width: auto;
+  max-width: 100%;
+  gap: 0.5rem;
+}
+
+.ev-hub-pair--hero .ev-hub-btn {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 9.5rem;
+  padding-inline: 1rem;
 }
 
 .ev-hub-btn {

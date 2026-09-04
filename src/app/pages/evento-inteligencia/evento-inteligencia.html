@@ -10,36 +10,30 @@
         <span class="material-icons" aria-hidden="true">arrow_back</span>
         Mis Eventos
       </a>
-      <div class="ev-intel-topbar__actions">
-        <button
-          type="button"
-          class="ev-intel-topbar__icon-btn"
-          (click)="compartirEvento()"
-          aria-label="Compartir evento"
-          title="Compartir evento"
+      <nav class="ev-hub-pair ev-hub-pair--topbar" aria-label="Centros del evento">
+        <span class="ev-hub-btn ev-hub-btn--inteligencia ev-hub-btn--topbar ev-hub-btn--current" aria-current="page">
+          <span class="material-icons" aria-hidden="true">insights</span>
+          Inteligencia
+        </span>
+        <a
+          *ngIf="canOpenOperaciones"
+          [routerLink]="['/eventos', eventoId, 'operaciones']"
+          class="ev-hub-btn ev-hub-btn--operaciones ev-hub-btn--topbar"
         >
-          <span class="material-icons" aria-hidden="true">share</span>
-        </button>
+          <span class="material-icons" aria-hidden="true">settings</span>
+          Operaciones
+        </a>
         <button
+          *ngIf="!canOpenOperaciones"
           type="button"
-          class="ev-intel-topbar__icon-btn"
-          (click)="abrirCompartirQrEvento()"
-          aria-label="QR del evento"
-          title="QR del evento"
+          class="ev-hub-btn ev-hub-btn--operaciones ev-hub-btn--topbar ev-hub-btn--locked"
+          [title]="operacionesBlockedTitle + ': operaciones no disponible'"
+          (click)="goToOperaciones()"
         >
-          <span class="material-icons" aria-hidden="true">qr_code_2</span>
+          <span class="material-icons" aria-hidden="true">lock</span>
+          Operaciones
         </button>
-        <button
-          type="button"
-          class="ev-intel-topbar__icon-btn"
-          [disabled]="refreshing"
-          (click)="refresh()"
-          aria-label="Actualizar datos"
-          title="Actualizar datos"
-        >
-          <span class="material-icons" [class.ev-intel-spin]="refreshing" aria-hidden="true">refresh</span>
-        </button>
-      </div>
+      </nav>
     </header>
 
     <!-- Hero -->
@@ -56,52 +50,71 @@
             >
               {{ estadoLabel }}
             </span>
+            <span *ngIf="ev.liquidado" class="ev-intel-hero__status ev-intel-hero__status--liquidado">
+              Liquidado
+            </span>
           </div>
         </div>
 
-        <div class="ev-intel-hero__countdown" *ngIf="hero as h" aria-live="polite">
-          <ng-container *ngIf="h.showCountdown && h.countdown as cd">
-            <p class="ev-intel-hero__countdown-title">Cuenta regresiva</p>
-            <div class="ev-intel-hero__countdown-grid" role="timer">
-              <div class="ev-intel-hero__countdown-unit" *ngIf="cd.days > 0">
-                <span class="ev-intel-hero__countdown-value">{{ cd.days }}</span>
-                <span class="ev-intel-hero__countdown-label">días</span>
-              </div>
-              <div class="ev-intel-hero__countdown-unit">
-                <span class="ev-intel-hero__countdown-value">{{ padCountdown(cd.hours) }}</span>
-                <span class="ev-intel-hero__countdown-label">horas</span>
-              </div>
-              <div class="ev-intel-hero__countdown-unit">
-                <span class="ev-intel-hero__countdown-value">{{ padCountdown(cd.minutes) }}</span>
-                <span class="ev-intel-hero__countdown-label">min</span>
-              </div>
-            </div>
-            <p class="ev-intel-hero__countdown-caption">{{ h.headline }}</p>
-          </ng-container>
+        <div class="ev-intel-hero__aside">
+          <div class="ev-intel-hero__tools" role="group" aria-label="Acciones del evento">
+            <button
+              type="button"
+              class="ev-intel-hero__tool-btn"
+              (click)="compartirEvento()"
+              aria-label="Compartir evento"
+              title="Compartir evento"
+            >
+              <span class="material-icons" aria-hidden="true">share</span>
+            </button>
+            <button
+              type="button"
+              class="ev-intel-hero__tool-btn"
+              (click)="abrirCompartirQrEvento()"
+              aria-label="QR del evento"
+              title="QR del evento"
+            >
+              <span class="material-icons" aria-hidden="true">qr_code_2</span>
+            </button>
+            <button
+              type="button"
+              class="ev-intel-hero__tool-btn"
+              [disabled]="refreshing"
+              (click)="refresh()"
+              aria-label="Actualizar datos"
+              title="Actualizar datos"
+            >
+              <span class="material-icons" [class.ev-intel-spin]="refreshing" aria-hidden="true">refresh</span>
+            </button>
+          </div>
 
-          <ng-container *ngIf="!h.showCountdown">
-            <p class="ev-intel-hero__countdown-title">Estado del evento</p>
-            <p class="ev-intel-hero__countdown-static">{{ h.countdownCaption }}</p>
-            <p class="ev-intel-hero__countdown-caption">{{ h.headline }}</p>
-          </ng-container>
+          <div class="ev-intel-hero__countdown" *ngIf="hero as h" aria-live="polite">
+            <ng-container *ngIf="h.showCountdown && h.countdown as cd">
+              <p class="ev-intel-hero__countdown-title">Cuenta regresiva</p>
+              <div class="ev-intel-hero__countdown-grid" role="timer">
+                <div class="ev-intel-hero__countdown-unit" *ngIf="cd.days > 0">
+                  <span class="ev-intel-hero__countdown-value">{{ cd.days }}</span>
+                  <span class="ev-intel-hero__countdown-label">días</span>
+                </div>
+                <div class="ev-intel-hero__countdown-unit">
+                  <span class="ev-intel-hero__countdown-value">{{ padCountdown(cd.hours) }}</span>
+                  <span class="ev-intel-hero__countdown-label">horas</span>
+                </div>
+                <div class="ev-intel-hero__countdown-unit">
+                  <span class="ev-intel-hero__countdown-value">{{ padCountdown(cd.minutes) }}</span>
+                  <span class="ev-intel-hero__countdown-label">min</span>
+                </div>
+              </div>
+              <p class="ev-intel-hero__countdown-caption">{{ h.headline }}</p>
+            </ng-container>
+
+            <ng-container *ngIf="!h.showCountdown">
+              <p class="ev-intel-hero__countdown-title">Estado del evento</p>
+              <p class="ev-intel-hero__countdown-static">{{ h.countdownCaption }}</p>
+              <p class="ev-intel-hero__countdown-caption">{{ h.headline }}</p>
+            </ng-container>
+          </div>
         </div>
-      </div>
-
-      <!-- Acciones -->
-      <div class="ev-intel-hero__toolbar">
-        <nav class="ev-intel-hero__hubs" aria-label="Centros del evento">
-          <span class="ev-intel-action-pill ev-intel-action-pill--active" aria-current="page">
-            <span class="material-icons" aria-hidden="true">insights</span>
-            Inteligencia
-          </span>
-          <a
-            [routerLink]="['/eventos', eventoId, 'operaciones']"
-            class="ev-intel-action-pill ev-intel-action-pill--hub"
-          >
-            <span class="material-icons" aria-hidden="true">settings</span>
-            Operaciones
-          </a>
-        </nav>
       </div>
 
       <!-- Métricas — una fila -->

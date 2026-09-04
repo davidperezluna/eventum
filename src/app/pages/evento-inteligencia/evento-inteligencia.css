@@ -52,7 +52,30 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
   padding: 0.75rem 0 1rem;
+}
+
+.ev-intel-topbar .ev-hub-pair--topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  width: auto;
+  max-width: 100%;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.ev-intel-topbar .ev-hub-pair--topbar .ev-hub-btn {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.ev-intel-topbar .ev-hub-btn--locked {
+  opacity: 0.72;
+  cursor: pointer;
 }
 
 .ev-intel-back {
@@ -72,41 +95,6 @@
 
 .ev-intel-back .material-icons {
   font-size: 1.1rem;
-}
-
-.ev-intel-topbar__actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.15rem;
-}
-
-.ev-intel-topbar__icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border: 0;
-  border-radius: var(--ev-button-radius, 6px);
-  background: transparent;
-  color: var(--ev-intel-muted);
-  cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease;
-}
-
-.ev-intel-topbar__icon-btn:hover:not(:disabled) {
-  background: rgba(15, 23, 42, 0.05);
-  color: var(--ev-intel-ink);
-}
-
-.ev-intel-topbar__icon-btn:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--ev-intel-accent) 45%, transparent);
-  outline-offset: 2px;
-}
-
-.ev-intel-topbar__icon-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
 }
 
 .ev-intel-qr-modal {
@@ -278,12 +266,64 @@
   background: var(--ev-intel-surface);
 }
 
+.ev-intel-hero__tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem;
+  border-radius: 10px;
+  border: 1px solid var(--ev-intel-border);
+  background: #fff;
+  box-shadow: var(--ev-intel-shadow);
+}
+
+.ev-intel-hero__tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ev-intel-muted);
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.ev-intel-hero__tool-btn .material-icons {
+  font-size: 1.2rem;
+}
+
+.ev-intel-hero__tool-btn:hover:not(:disabled) {
+  background: rgba(15, 23, 42, 0.05);
+  color: var(--ev-intel-ink);
+}
+
+.ev-intel-hero__tool-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ev-intel-accent) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.ev-intel-hero__tool-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .ev-intel-hero__main {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
+  align-items: start;
   gap: 1.5rem 2rem;
   padding: 1.65rem 1.5rem 1.5rem;
+}
+
+.ev-intel-hero__aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.85rem;
+  min-width: 0;
 }
 
 .ev-intel-hero__identity {
@@ -301,11 +341,12 @@
 
 .ev-intel-hero__title {
   margin: 0;
-  font-size: clamp(1.625rem, 4.5vw, 2.25rem);
-  font-weight: 700;
-  letter-spacing: -0.035em;
+  font-size: clamp(1.85rem, 4.8vw, 2.65rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
   color: var(--ev-intel-ink);
-  line-height: 1.1;
+  line-height: 1.08;
+  max-width: 16ch;
 }
 
 .ev-intel-hero__meta {
@@ -362,6 +403,12 @@
 .ev-intel-hero__status--borrador {
   color: #64748b;
   background: #f8fafc;
+}
+
+.ev-intel-hero__status--liquidado {
+  color: #047857;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.28);
 }
 
 .ev-intel-hero__countdown {
@@ -524,6 +571,16 @@
 
 .ev-intel-action-pill--hub .material-icons {
   opacity: 1;
+}
+
+.ev-intel-action-pill--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: #f1f5f9;
+  color: #64748b;
+  border-color: #e2e8f0;
+  box-shadow: none;
 }
 
 /* Escáner — CTA principal */
@@ -2071,10 +2128,47 @@
 /* ---- Responsive — Mobile First ---- */
 
 @media (max-width: 720px) {
+  .ev-intel-topbar {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.65rem 0 1rem;
+  }
+
+  .ev-intel-topbar .ev-hub-pair--topbar {
+    gap: 0.35rem;
+  }
+
+  .ev-intel-topbar .ev-hub-pair--topbar .ev-hub-btn--topbar {
+    min-height: 2rem;
+    padding-inline: 0.65rem;
+    font-size: 0.75rem;
+  }
+
+  .ev-intel-topbar .ev-hub-pair--topbar .ev-hub-btn .material-icons {
+    font-size: 1rem;
+  }
+
   .ev-intel-hero__main {
     grid-template-columns: 1fr;
     gap: 1.25rem;
     padding: 1.25rem 1rem 1.15rem;
+  }
+
+  .ev-intel-hero__aside {
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .ev-intel-hero__tools {
+    position: absolute;
+    top: 0.85rem;
+    right: 0.85rem;
+    z-index: 3;
+    align-self: auto;
+  }
+
+  .ev-intel-hero__identity {
+    padding-right: 7.25rem;
   }
 
   .ev-intel-hero__countdown {

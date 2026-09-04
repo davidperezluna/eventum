@@ -1,10 +1,14 @@
 import { Evento, TipoEstadoEvento } from '../types';
 
-/** Borrador nunca debe estar visible en catálogo. Activar catálogo implica publicado. */
+/** Borrador/finalizado/cancelado nunca deben estar visibles en catálogo. Activar catálogo implica publicado. */
 export function enforceBorradorCatalogoRules(patch: Partial<Evento>): Partial<Evento> {
   const result = { ...patch };
 
-  if (result.estado === TipoEstadoEvento.BORRADOR) {
+  if (
+    result.estado === TipoEstadoEvento.BORRADOR ||
+    result.estado === TipoEstadoEvento.FINALIZADO ||
+    result.estado === TipoEstadoEvento.CANCELADO
+  ) {
     result.activo = false;
   }
 
@@ -35,6 +39,21 @@ export function patchFueraDeCatalogo(): Pick<Evento, 'activo'> {
 export function patchBorrador(): Pick<Evento, 'estado' | 'activo'> {
   return {
     estado: TipoEstadoEvento.BORRADOR,
+    activo: false,
+  };
+}
+
+/** Cierre operativo: fuera de catálogo (misma regla que el job automático por fecha_fin). */
+export function patchFinalizado(): Pick<Evento, 'estado' | 'activo'> {
+  return {
+    estado: TipoEstadoEvento.FINALIZADO,
+    activo: false,
+  };
+}
+
+export function patchCancelado(): Pick<Evento, 'estado' | 'activo'> {
+  return {
+    estado: TipoEstadoEvento.CANCELADO,
     activo: false,
   };
 }

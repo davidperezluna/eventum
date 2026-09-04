@@ -51,9 +51,17 @@ import {
 import {
   isEventoCatalogoInconsistent,
   patchBorrador,
+  patchFinalizado,
   patchFueraDeCatalogo,
   patchPublicadoEnCatalogo,
 } from '../../core/evento-publicacion';
+
+import { resolveEventoEstadoVisual } from '../../core/evento-en-curso';
+
+import {
+  canOrganizadorOpenOperaciones,
+  organizadorOperacionesBlockedMessage,
+} from '../../core/evento-operaciones-access';
 
 import { formatFinanzasMonedaExacta, getRecaudoBrutoConsolidado, resolveMostrarProductos } from '../../utils/dashboard-finanzas.view';
 
@@ -73,6 +81,9 @@ interface LifecycleStep {
   value: TipoEstadoEvento;
 
   label: string;
+
+  /** false = solo informativo (p. ej. En curso por fechas). */
+  clickable?: boolean;
 
 }
 
@@ -134,6 +145,8 @@ export class EventoOperaciones implements OnInit {
 
   savingEstado = false;
 
+  savingLiquidado = false;
+
   publishing = false;
 
   showMoreSheet = false;
@@ -151,11 +164,9 @@ export class EventoOperaciones implements OnInit {
 
     { value: TipoEstadoEvento.PUBLICADO, label: 'Publicado' },
 
-    { value: TipoEstadoEvento.EN_CURSO, label: 'En curso' },
+    { value: TipoEstadoEvento.EN_CURSO, label: 'En curso', clickable: false },
 
     { value: TipoEstadoEvento.FINALIZADO, label: 'Finalizado' },
-
-    { value: TipoEstadoEvento.CANCELADO, label: 'Cancelado' },
 
   ];
 
@@ -253,6 +264,13 @@ export class EventoOperaciones implements OnInit {
 
         return;
 
+      }
+
+      if (!canOrganizadorOpenOperaciones(evento, this.authService.isOrganizador())) {
+        const blocked = organizadorOperacionesBlockedMessage(evento);
+        this.alertService.warning(blocked.title, blocked.message);
+        void this.router.navigate(['/eventos', this.eventoId, 'inteligencia']);
+        return;
       }
 
       this.evento = await this.demoDataProvider.applyEventoPresentation(evento);
@@ -599,35 +617,43 @@ export class EventoOperaciones implements OnInit {
 
   }
 
-
-
-  get lifecycleIndex(): number {
-
-    return this.lifecycleSteps.findIndex((s) => s.value === this.estadoActual);
-
+  /** Estado mostrado en UI (En curso se deriva por fechas). */
+  get estadoVisual(): TipoEstadoEvento {
+    return resolveEventoEstadoVisual(this.evento);
   }
 
-
+  get lifecycleIndex(): number {
+    return this.lifecycleSteps.findIndex((s) => s.value === this.estadoVisual);
+  }
 
   get estadoLabel(): string {
+    if (this.estadoVisual === TipoEstadoEvento.CANCELADO) {
+      return 'Cancelado';
+    }
+    return this.lifecycleSteps.find((s) => s.value === this.estadoVisual)?.label ?? 'Sin estado';
+  }
 
-    return this.lifecycleSteps.find((s) => s.value === this.estadoActual)?.label ?? 'Sin estado';
+  get isLiquidado(): boolean {
+    return this.evento?.liquidado === true;
+  }
 
+  get canToggleLiquidado(): boolean {
+    return this.authService.isAdministrador() && !this.isShowcaseMode;
   }
 
 
 
   get contextMessage(): string {
 
-    switch (this.estadoActual) {
+    switch (this.estadoVisual) {
 
       case TipoEstadoEvento.PUBLICADO:
-
-        return 'Tu evento ya está disponible y puede recibir ventas.';
+        // El mensaje de “disponible / ventas” vive en la sección de readiness.
+        return '';
 
       case TipoEstadoEvento.EN_CURSO:
 
-        return 'El evento está en operación.';
+        return 'El evento está en curso según las fechas (inicio ya pasó y aún no termina).';
 
       case TipoEstadoEvento.FINALIZADO:
 
@@ -645,11 +671,15 @@ export class EventoOperaciones implements OnInit {
 
   }
 
+  get showContextBanner(): boolean {
+    return !!this.contextMessage;
+  }
+
 
 
   get contextBannerClass(): string {
 
-    switch (this.estadoActual) {
+    switch (this.estadoVisual) {
 
       case TipoEstadoEvento.PUBLICADO:
 
@@ -696,7 +726,7 @@ export class EventoOperaciones implements OnInit {
 
   get primaryActionLabel(): string {
 
-    switch (this.estadoActual) {
+    switch (this.estadoVisual) {
 
       case TipoEstadoEvento.PUBLICADO:
 
@@ -704,7 +734,7 @@ export class EventoOperaciones implements OnInit {
 
       case TipoEstadoEvento.EN_CURSO:
 
-        return this.authService.isOrganizador() ? 'Ver inteligencia' : 'Ir al escáner';
+        return this.evento?.activo ? 'Ocultar del catálogo' : 'Mostrar en catálogo';
 
       case TipoEstadoEvento.FINALIZADO:
 
@@ -766,7 +796,7 @@ export class EventoOperaciones implements OnInit {
 
   isLifecycleStepActive(step: LifecycleStep): boolean {
 
-    return step.value === this.estadoActual;
+    return step.value === this.estadoVisual;
 
   }
 
@@ -785,6 +815,12 @@ export class EventoOperaciones implements OnInit {
   isLifecycleStepDisabled(step: LifecycleStep): boolean {
 
     if (this.savingEstado) return true;
+
+    if (step.clickable === false) return true;
+
+    if (this.estadoActual === TipoEstadoEvento.CANCELADO) {
+      return true;
+    }
 
     if (this.isShowcaseMode && step.value === TipoEstadoEvento.PUBLICADO) {
 
@@ -1334,6 +1370,10 @@ export class EventoOperaciones implements OnInit {
 
     }
 
+    if (step.clickable === false) {
+      return;
+    }
+
     if (this.isShowcaseMode && step.value === TipoEstadoEvento.PUBLICADO) {
 
       this.alertService.info('Modo demo', 'En modo demo no se publica al catálogo.');
@@ -1358,6 +1398,16 @@ export class EventoOperaciones implements OnInit {
 
     }
 
+    if (step.value === TipoEstadoEvento.FINALIZADO) {
+      const ok = await this.alertService.confirm(
+        'Finalizar evento',
+        'El evento pasará a Finalizado y saldrá del catálogo (ya no estará visible para comprar). ¿Continuar?',
+        'Sí, finalizar',
+        'Volver',
+      );
+      if (!ok) return;
+    }
+
     this.savingEstado = true;
 
     this.cdr.detectChanges();
@@ -1367,7 +1417,9 @@ export class EventoOperaciones implements OnInit {
       const payload =
         step.value === TipoEstadoEvento.BORRADOR
           ? patchBorrador()
-          : { estado: step.value };
+          : step.value === TipoEstadoEvento.FINALIZADO
+            ? patchFinalizado()
+            : { estado: step.value };
 
       const updated = await this.eventosService.updateEvento(this.evento.id, payload);
 
@@ -1401,17 +1453,7 @@ export class EventoOperaciones implements OnInit {
 
 
 
-    switch (this.estadoActual) {
-
-      case TipoEstadoEvento.EN_CURSO:
-
-        if (this.authService.isOrganizador()) {
-          void this.router.navigate(['/eventos', this.eventoId, 'inteligencia']);
-        } else {
-          void this.router.navigate(['/escanear-qr']);
-        }
-
-        return;
+    switch (this.estadoVisual) {
 
       case TipoEstadoEvento.FINALIZADO:
 
@@ -1422,6 +1464,7 @@ export class EventoOperaciones implements OnInit {
         return;
 
       case TipoEstadoEvento.PUBLICADO:
+      case TipoEstadoEvento.EN_CURSO:
 
         await this.toggleCatalogo();
 
@@ -1525,6 +1568,36 @@ export class EventoOperaciones implements OnInit {
 
 
 
+  async toggleLiquidado(): Promise<void> {
+    if (!this.evento || !this.canToggleLiquidado || this.savingLiquidado) return;
+
+    const next = !this.isLiquidado;
+    const ok = await this.alertService.confirm(
+      next ? 'Marcar como liquidado' : 'Reabrir liquidación',
+      next
+        ? 'El evento dejará de sumar en los dashboards globales (admin, organizador y dashboard-eventos). Inteligencia del evento seguirá mostrando los números.'
+        : 'El evento volverá a contar en los dashboards globales.',
+    );
+    if (!ok) return;
+
+    this.savingLiquidado = true;
+    this.cdr.detectChanges();
+    try {
+      const updated = await this.eventosService.updateEvento(this.evento.id, { liquidado: next });
+      this.evento = { ...this.evento, ...updated, lugar: this.evento.lugar };
+      this.alertService.snackbarSuccess(
+        next ? 'Evento liquidado' : 'Liquidación reabierta',
+        next ? 'Ya no cuenta en dashboards globales.' : 'Vuelve a contar en dashboards globales.',
+      );
+    } catch (err) {
+      console.error('Error actualizando liquidado:', err);
+      this.alertService.error('Error', 'No se pudo actualizar el estado de liquidación.');
+    } finally {
+      this.savingLiquidado = false;
+      this.cdr.detectChanges();
+    }
+  }
+
   async toggleCatalogo(): Promise<void> {
 
     if (!this.evento) return;
@@ -1546,6 +1619,16 @@ export class EventoOperaciones implements OnInit {
       return;
 
     }
+
+    const ok = await this.alertService.confirm(
+      nextActivo ? 'Mostrar en catálogo' : 'Ocultar del catálogo',
+      nextActivo
+        ? 'El evento volverá a estar visible para comprar en el catálogo. ¿Continuar?'
+        : 'El evento dejará de aparecer en el catálogo y no se podrá comprar hasta que lo vuelvas a mostrar. ¿Continuar?',
+      nextActivo ? 'Sí, mostrar' : 'Sí, ocultar',
+      'Cancelar',
+    );
+    if (!ok) return;
 
     this.publishing = true;
 

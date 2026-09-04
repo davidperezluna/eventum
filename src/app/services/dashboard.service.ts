@@ -9,6 +9,7 @@ import { DashboardStats } from '../types';
 import { agregarFinanzasDesdeComprasCompletadas } from '../utils/wompi-finanzas';
 import { DateTimeUtil } from '../utils/date-time.util';
 import { normalizeDashboardStatsScope, DashboardStatsScope } from '../utils/dashboard-stats.scope';
+import { applyLiquidadoDashboardScope } from '../utils/dashboard-liquidado.scope';
 import { loadDashboardStatsForOrganizador } from './dashboard-stats-organizador.loader';
 
 @Injectable({
@@ -240,11 +241,35 @@ export class DashboardService {
     const withEventFilter = (query: any, column = 'evento_id') =>
       eventoId ? query.eq(column, eventoId) : query;
 
+    // Dashboards globales: solo eventos no liquidados. Scope por eventoId (Inteligencia): sin filtro.
+    let nonLiquidatedIds: number[] | null = null;
+    if (eventoId == null) {
+      const { data: idsData, error: idsError } = await this.supabase
+        .from('eventos')
+        .select('id')
+        .eq('liquidado', false);
+      if (idsError) {
+        console.error('Error cargando eventos no liquidados:', idsError);
+        nonLiquidatedIds = [];
+      } else {
+        nonLiquidatedIds = (idsData || [])
+          .map((e: any) => Number(e.id))
+          .filter((id: number) => Number.isFinite(id) && id > 0);
+      }
+    }
+
+    const withScope = (query: any, column = 'evento_id') =>
+      applyLiquidadoDashboardScope(withEventFilter(query, column), {
+        eventoId,
+        nonLiquidatedIds,
+        column,
+      });
+
     // Eventos activos: publicados, flag activo, y aún vigentes (sin fecha_fin o fecha_fin >= ahora).
     // Se divide en dos conteos para evitar NULL en comparaciones y alinearse con la zona horaria de la app.
     const eventosActivos = safeExecute(async () => {
       const base = () =>
-        withEventFilter(
+        withScope(
           this.supabase
           .from('eventos')
           .select('id', { count: 'exact', head: true })
@@ -271,7 +296,7 @@ export class DashboardService {
 
     // Boletas vendidas (solo con pago completado)
     const boletasVendidas = safeExecute(async () => {
-      const response = await withEventFilter(this.supabase
+      const response = await withScope(this.supabase
         .from('boletas_compradas')
         .select('*, compras!inner(estado_pago, evento_id)', { count: 'exact' })
         .eq('compras.estado_pago', 'completado'), 'compras.evento_id');
@@ -285,7 +310,7 @@ export class DashboardService {
 
     // Unidades de productos vendidas (solo pago completado)
     const productosVendidos = safeExecute(async () => {
-      const response = await withEventFilter(this.supabase
+      const response = await withScope(this.supabase
         .from('compras_productos_items')
         .select('cantidad, compra:compras_productos!inner(estado_pago, evento_id)')
         .eq('compra.estado_pago', 'completado'), 'compra.evento_id');
@@ -300,7 +325,7 @@ export class DashboardService {
 
     // Pedidos de productos completados
     const pedidosProductos = safeExecute(async () => {
-      const response = await withEventFilter(this.supabase
+      const response = await withScope(this.supabase
         .from('compras_productos')
         .select('id', { count: 'exact', head: true })
         .eq('estado_pago', 'completado'));
@@ -314,7 +339,7 @@ export class DashboardService {
 
     // Disponibilidad de productos configurados en el alcance actual
     const tieneProductos = safeExecute(async () => {
-      const response = await withEventFilter(this.supabase
+      const response = await withScope(this.supabase
         .from('productos')
         .select('id', { count: 'exact', head: true })
         .eq('activo', true));
@@ -328,7 +353,7 @@ export class DashboardService {
 
     // Ingresos y servicio totales
     const ingresosYServicioTotalesPromise = safeExecute(async () => {
-      const response = await withEventFilter(this.supabase
+      const response = await withScope(this.supabase
         .from('compras')
         .select('total, porcentaje_servicio, valor_servicio')
         .eq('estado_pago', 'completado'));
@@ -387,7 +412,7 @@ export class DashboardService {
 
     // Ingresos y servicio de compras de productos
     const ingresosYServicioProductosPromise = safeExecute(async () => {
-      const response = await withEventFilter(this.supabase
+      const response = await withScope(this.supabase
         .from('compras_productos')
         .select('total, porcentaje_servicio, valor_servicio')
         .eq('estado_pago', 'completado'));
@@ -445,7 +470,7 @@ export class DashboardService {
 
     // Clientes únicos (solo con pago completado)
     const clientes = safeExecute(async () => {
-      const response = await withEventFilter(this.supabase
+      const response = await withScope(this.supabase
         .from('compras')
         .select('cliente_id')
         .eq('estado_pago', 'completado'));
@@ -464,13 +489,13 @@ export class DashboardService {
     // Ventas recientes (boletas + productos, solo pago completado)
     const ventasRecientes = safeExecute(async () => {
       const [comprasRes, comprasProductosRes] = await Promise.all([
-        withEventFilter(this.supabase
+        withScope(this.supabase
           .from('compras')
           .select('id, cliente_id, evento_id, numero_transaccion, total, estado_pago, fecha_compra, evento:eventos(id, titulo)')
           .eq('estado_pago', 'completado')
           .order('fecha_compra', { ascending: false })
           .limit(20)),
-        withEventFilter(this.supabase
+        withScope(this.supabase
           .from('compras_productos')
           .select('id, cliente_id, evento_id, numero_pedido, total, estado_pago, fecha_compra, evento:eventos(id, titulo)')
           .eq('estado_pago', 'completado')
@@ -584,7 +609,7 @@ export class DashboardService {
 
     // Eventos próximos (próximos 5)
     const eventosProximos = safeExecute(async () => {
-      const response = await withEventFilter(this.supabase
+      const response = await withScope(this.supabase
         .from('eventos')
         .select('*')
         .eq('activo', true)
@@ -601,7 +626,7 @@ export class DashboardService {
 
     // Eventos totales
     const eventosTotales = safeExecute(async () => {
-      const response = await withEventFilter(this.supabase
+      const response = await withScope(this.supabase
         .from('eventos')
         .select('*', { count: 'exact' }), 'id');
       
@@ -634,7 +659,7 @@ export class DashboardService {
       inicioMes.setDate(1);
       inicioMes.setHours(0, 0, 0, 0);
       
-      const response = await withEventFilter(this.supabase
+      const response = await withScope(this.supabase
         .from('compras')
         .select('total')
         .eq('estado_pago', 'completado')
@@ -658,7 +683,7 @@ export class DashboardService {
       finMesAnterior.setDate(0);
       finMesAnterior.setHours(23, 59, 59, 999);
       
-      const response = await withEventFilter(this.supabase
+      const response = await withScope(this.supabase
         .from('compras')
         .select('total')
         .eq('estado_pago', 'completado')
@@ -673,7 +698,7 @@ export class DashboardService {
     }, 0);
 
     const ingresosDiaActual = safeExecute(async () => {
-      const response = await withEventFilter(this.supabase
+      const response = await withScope(this.supabase
         .from('compras')
         .select('total')
         .eq('estado_pago', 'completado')
@@ -688,7 +713,7 @@ export class DashboardService {
     }, 0);
 
     const ingresosDiaAnterior = safeExecute(async () => {
-      const response = await withEventFilter(this.supabase
+      const response = await withScope(this.supabase
         .from('compras')
         .select('total')
         .eq('estado_pago', 'completado')
@@ -704,7 +729,7 @@ export class DashboardService {
 
     // Boletas por estado (solo con pago completado)
     const boletasPorEstado = safeExecute(async () => {
-      const response = await withEventFilter(this.supabase
+      const response = await withScope(this.supabase
         .from('boletas_compradas')
         .select('estado, compras!inner(estado_pago, evento_id)')
         .eq('compras.estado_pago', 'completado'), 'compras.evento_id');
@@ -780,6 +805,7 @@ export class DashboardService {
         const { data: eventosData, error: eventosError } = await this.supabase
           .from('eventos')
           .select('id, titulo, imagen_principal')
+          .eq('liquidado', false)
           .in('id', eventosIds);
 
         if (eventosError || !eventosData) {

@@ -48,3 +48,7 @@ export function getEventoEstadoCardStatusClass(estado?: TipoEstadoEvento | strin
       return 'ev-evento-card__status-dot--draft';
   }
 }
+
+export function getEventoLiquidadoLabel(liquidado?: boolean | null): string {
+  return liquidado ? 'Liquidado' : 'Sin liquidar';
+}

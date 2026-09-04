@@ -28,12 +28,26 @@
     </div>
 
     <div *ngIf="showStatus && estadoLabel" class="ev-evento-card__hero-bar">
-      <div class="ev-evento-card__status" [attr.aria-label]="'Estado: ' + estadoLabel">
+      <div
+        class="ev-evento-card__status"
+        [attr.aria-label]="
+          'Estado: ' + estadoLabel +
+          (liquidado === true ? ', liquidado' : liquidado === false ? ', sin liquidar' : '')
+        "
+      >
         <span class="ev-evento-card__status-dot" [ngClass]="statusDotClass"></span>
         <span class="ev-evento-card__status-label">{{ estadoLabel }}</span>
         <ng-container *ngIf="showInactivo">
           <span class="ev-evento-card__status-sep" aria-hidden="true">·</span>
           <span class="ev-evento-card__status-label ev-evento-card__status-label--muted">Inactivo</span>
+        </ng-container>
+        <ng-container *ngIf="liquidado === true">
+          <span class="ev-evento-card__status-sep" aria-hidden="true">·</span>
+          <span class="ev-evento-card__status-label ev-evento-card__status-label--liquidado">Liquidado</span>
+        </ng-container>
+        <ng-container *ngIf="liquidado === false">
+          <span class="ev-evento-card__status-sep" aria-hidden="true">·</span>
+          <span class="ev-evento-card__status-label ev-evento-card__status-label--sin-liquidar">Sin liquidar</span>
         </ng-container>
       </div>
     </div>

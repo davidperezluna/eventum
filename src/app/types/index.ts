@@ -60,6 +60,8 @@ export interface EventoFilters extends BaseFilters {
   fecha_fin?: Date | string;
   activo?: boolean;
   excluir_finalizados?: boolean;
+  /** Admin: listar publicados primero (luego el sortBy habitual). */
+  priorizarPublicados?: boolean;
 }
 
 /**

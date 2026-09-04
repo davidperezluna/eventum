@@ -39,6 +39,11 @@ import {
 import { formatFinanzasMonedaExacta, formatFinanzasMontoExacto } from '../../utils/dashboard-finanzas.view';
 
 import {
+  canOrganizadorOpenOperaciones,
+  organizadorOperacionesBlockedMessage,
+} from '../../core/evento-operaciones-access';
+
+import {
 
   IntelActionNow,
 
@@ -654,6 +659,15 @@ export class EventoInteligencia implements OnInit {
 
   }
 
+  /** Organizador no puede abrir Operaciones si el evento está finalizado o liquidado; admin sí. */
+  get canOpenOperaciones(): boolean {
+    return canOrganizadorOpenOperaciones(this.evento, this.authService.isOrganizador());
+  }
+
+  get operacionesBlockedTitle(): string {
+    return organizadorOperacionesBlockedMessage(this.evento).title;
+  }
+
 
 
   get lugarLabel(): string {
@@ -675,9 +689,12 @@ export class EventoInteligencia implements OnInit {
 
 
   goToOperaciones(): void {
-
+    if (!this.canOpenOperaciones) {
+      const blocked = organizadorOperacionesBlockedMessage(this.evento);
+      this.alertService.warning(blocked.title, blocked.message);
+      return;
+    }
     void this.router.navigate(['/eventos', this.eventoId, 'operaciones']);
-
   }
 
 
@@ -710,31 +727,30 @@ export class EventoInteligencia implements OnInit {
 
 
   goToBoletas(): void {
-
+    if (!this.canOpenOperaciones) {
+      this.goToOperaciones();
+      return;
+    }
     void this.router.navigate(['/eventos', this.eventoId, 'operaciones'], {
-
       queryParams: { open: 'boletas' },
-
     });
-
   }
-
-
 
   goToProductos(): void {
-
+    if (!this.canOpenOperaciones) {
+      this.goToOperaciones();
+      return;
+    }
     void this.router.navigate(['/eventos', this.eventoId, 'operaciones'], {
-
       queryParams: { open: 'productos' },
-
     });
-
   }
 
-
-
   goToCupones(): void {
-
+    if (!this.canOpenOperaciones) {
+      this.goToOperaciones();
+      return;
+    }
     void this.router.navigate(['/eventos', this.eventoId, 'operaciones'], {
 
       queryParams: { open: 'cupones' },

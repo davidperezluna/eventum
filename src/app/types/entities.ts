@@ -120,6 +120,8 @@ export interface Evento {
   /** Porcentaje adicional de servicio cobrado sobre el valor de boletas/palcos. */
   porcentaje_servicio?: number;
   estado?: TipoEstadoEvento;
+  /** Cierre financiero: false = cuenta en dashboards globales; true = fuera de KPIs globales. */
+  liquidado?: boolean;
   destacado?: boolean;
   tags?: string;
   terminos_condiciones?: string;

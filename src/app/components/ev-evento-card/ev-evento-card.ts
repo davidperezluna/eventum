@@ -17,6 +17,8 @@ export class EvEventoCard {
   @Input() estadoLabel = '';
   @Input() statusDotClass = 'ev-evento-card__status-dot--draft';
   @Input() showInactivo = false;
+  /** null = no mostrar etiqueta de liquidación; true/false = Liquidado / Sin liquidar */
+  @Input() liquidado: boolean | null = null;
   @Input() destacado = false;
   @Input() showStatus = true;
   @Input() menuOpen = false;

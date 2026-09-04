@@ -10,7 +10,7 @@
         <span class="material-icons" aria-hidden="true">arrow_back</span>
         Mis Eventos
       </a>
-      <div class="ev-ops-topbar__actions">
+      <nav class="ev-hub-pair ev-hub-pair--topbar" aria-label="Centros del evento">
         <a
           [routerLink]="['/eventos', eventoId, 'inteligencia']"
           class="ev-hub-btn ev-hub-btn--inteligencia ev-hub-btn--topbar"
@@ -18,11 +18,15 @@
           <span class="material-icons" aria-hidden="true">insights</span>
           Inteligencia
         </a>
-      </div>
+        <span class="ev-hub-btn ev-hub-btn--operaciones ev-hub-btn--topbar ev-hub-btn--current" aria-current="page">
+          <span class="material-icons" aria-hidden="true">settings</span>
+          Operaciones
+        </span>
+      </nav>
     </header>
 
     <!-- 1. Hero + estado -->
-    <section class="ev-ops-hero" aria-labelledby="ev-ops-title">
+    <section class="ev-ops-hero" [class.ev-ops-hero--has-action]="showHeroPrimaryAction" aria-labelledby="ev-ops-title">
       <div class="ev-ops-hero__layout">
         <div class="ev-ops-hero__media ev-ops-hero__media--editable" (click)="openImagenDrawer()" role="button" tabindex="0" (keydown.enter)="openImagenDrawer()" aria-label="Editar imagen del evento">
           <img
@@ -41,6 +45,17 @@
         </div>
 
         <div class="ev-ops-hero__body">
+          <div class="ev-ops-hero__actions" *ngIf="showHeroPrimaryAction">
+            <button
+              type="button"
+              class="ev-btn-primary ev-btn-sm"
+              [disabled]="isPrimaryActionDisabled"
+              (click)="onPrimaryAction()"
+            >
+              {{ primaryActionLabel }}
+            </button>
+          </div>
+
           <div class="ev-ops-hero__head">
             <div>
               <p class="ev-ops-hero__eyebrow">Centro de operaciones</p>
@@ -56,25 +71,15 @@
                 </li>
               </ul>
             </div>
-            <div class="ev-ops-hero__actions" *ngIf="showHeroPrimaryAction">
-              <button
-                type="button"
-                class="ev-btn-primary ev-btn-sm"
-                [disabled]="isPrimaryActionDisabled"
-                (click)="onPrimaryAction()"
-              >
-                {{ primaryActionLabel }}
-              </button>
-            </div>
           </div>
 
           <div class="ev-ops-hero__pills">
             <span class="ev-pill" [ngClass]="{
-              'ev-pill--draft': estadoActual === 'borrador',
-              'ev-pill--published': estadoActual === 'publicado',
-              'ev-pill--live': estadoActual === 'en_curso',
-              'ev-pill--done': estadoActual === 'finalizado',
-              'ev-pill--cancelled': estadoActual === 'cancelado'
+              'ev-pill--draft': estadoVisual === 'borrador',
+              'ev-pill--published': estadoVisual === 'publicado',
+              'ev-pill--live': estadoVisual === 'en_curso',
+              'ev-pill--done': estadoVisual === 'finalizado',
+              'ev-pill--cancelled': estadoVisual === 'cancelado'
             }">
               {{ estadoLabel }}
             </span>
@@ -82,23 +87,21 @@
               {{ ev.activo ? 'En catálogo' : 'Fuera de catálogo' }}
             </span>
             <span *ngIf="ev.destacado" class="ev-pill ev-pill--featured">Destacado</span>
+            <span class="ev-pill" [class.ev-pill--liquidado]="isLiquidado" [class.ev-pill--sin-liquidar]="!isLiquidado">
+              {{ isLiquidado ? 'Liquidado' : 'Sin liquidar' }}
+            </span>
+            <button
+              *ngIf="canToggleLiquidado"
+              type="button"
+              class="ev-btn-ghost ev-btn-sm"
+              [disabled]="savingLiquidado"
+              (click)="toggleLiquidado()"
+            >
+              {{ savingLiquidado ? 'Guardando…' : (isLiquidado ? 'Reabrir liquidación' : 'Marcar liquidado') }}
+            </button>
           </div>
 
-          <nav class="ev-hub-pair ev-hub-pair--hero" aria-label="Centros del evento">
-            <a
-              [routerLink]="['/eventos', eventoId, 'inteligencia']"
-              class="ev-hub-btn ev-hub-btn--inteligencia"
-            >
-              <span class="material-icons" aria-hidden="true">insights</span>
-              Inteligencia
-            </a>
-            <span class="ev-hub-btn ev-hub-btn--operaciones ev-hub-btn--current" aria-current="page">
-              <span class="material-icons" aria-hidden="true">settings</span>
-              Operaciones
-            </span>
-          </nav>
-
-          <div class="ev-ops-hero__context" [ngClass]="contextBannerClass">
+          <div class="ev-ops-hero__context" *ngIf="showContextBanner" [ngClass]="contextBannerClass">
             <span class="material-icons" aria-hidden="true">info</span>
             {{ contextMessage }}
           </div>
@@ -116,8 +119,10 @@
             <button
               type="button"
               class="ev-ops-lifecycle__btn"
+              [class.ev-ops-lifecycle__btn--readonly]="step.clickable === false"
               [disabled]="isLifecycleStepDisabled(step)"
               [attr.aria-current]="isLifecycleStepActive(step) ? 'step' : null"
+              [attr.title]="step.clickable === false ? 'Se activa solo por fechas del evento' : null"
               (click)="onLifecycleStepClick(step)"
             >
               <span class="ev-ops-lifecycle__dot"></span>

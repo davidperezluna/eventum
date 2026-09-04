@@ -8,6 +8,7 @@ import { TimezoneService } from './timezone.service';
 import { DashboardStats } from '../types';
 import { agregarFinanzasDesdeComprasCompletadas, repartoWompiPorCompra } from '../utils/wompi-finanzas';
 import { DateTimeUtil } from '../utils/date-time.util';
+import { applyLiquidadoDashboardScope } from '../utils/dashboard-liquidado.scope';
 
 export async function loadDashboardStatsForOrganizador(
   supabase: SupabaseService,
@@ -30,10 +31,35 @@ export async function loadDashboardStatsForOrganizador(
     const withEventFilter = (query: any, column = 'evento_id') =>
       eventoId ? query.eq(column, eventoId) : query;
 
+    // Dashboards globales: solo eventos no liquidados. Scope por eventoId (Inteligencia): sin filtro.
+    let nonLiquidatedIds: number[] | null = null;
+    if (eventoId == null) {
+      const { data: idsData, error: idsError } = await supabase
+        .from('eventos')
+        .select('id')
+        .eq('organizador_id', organizadorId)
+        .eq('liquidado', false);
+      if (idsError) {
+        console.error('Error cargando eventos no liquidados del organizador:', idsError);
+        nonLiquidatedIds = [];
+      } else {
+        nonLiquidatedIds = (idsData || [])
+          .map((e: any) => Number(e.id))
+          .filter((id: number) => Number.isFinite(id) && id > 0);
+      }
+    }
+
+    const withScope = (query: any, column = 'evento_id') =>
+      applyLiquidadoDashboardScope(withEventFilter(query, column), {
+        eventoId,
+        nonLiquidatedIds,
+        column,
+      });
+
     // Eventos activos del organizador (misma regla que dashboard admin)
     const eventosActivos = safeExecute(async () => {
       const base = () =>
-        withEventFilter(
+        withScope(
           supabase
           .from('eventos')
           .select('id', { count: 'exact', head: true })
@@ -63,7 +89,7 @@ export async function loadDashboardStatsForOrganizador(
     const boletasVendidas = safeExecute(async () => {
       try {
         // Obtener todos los tipos de boleta de eventos del organizador
-        const { data: tiposData, error: tiposError } = await withEventFilter(supabase
+        const { data: tiposData, error: tiposError } = await withScope(supabase
           .from('tipos_boleta')
           .select('id, evento_id, eventos!inner(organizador_id)')
           .eq('eventos.organizador_id', organizadorId));
@@ -94,7 +120,7 @@ export async function loadDashboardStatsForOrganizador(
 
     // Aforo histórico: incluye tipos inactivos (siguen aportando capacidad/ventas a métricas).
     const aforoTotal = safeExecute(async () => {
-      const { data, error } = await withEventFilter(supabase
+      const { data, error } = await withScope(supabase
         .from('tipos_boleta')
         .select('cantidad_total, eventos!inner(organizador_id, activo, estado, fecha_fin)')
         .eq('eventos.organizador_id', organizadorId));
@@ -110,7 +136,7 @@ export async function loadDashboardStatsForOrganizador(
     }, 0);
 
     const eventosDelOrganizadorIds = safeExecute(async () => {
-      const response = await withEventFilter(supabase
+      const response = await withScope(supabase
         .from('eventos')
         .select('id')
         .eq('organizador_id', organizadorId), 'id');
@@ -128,7 +154,7 @@ export async function loadDashboardStatsForOrganizador(
       const eventosIds = await eventosDelOrganizadorIds;
       if (eventosIds.length === 0) return 0;
 
-      const response = await withEventFilter(supabase
+      const response = await withScope(supabase
         .from('compras_productos_items')
         .select('cantidad, compra:compras_productos!inner(estado_pago, evento_id)')
         .eq('compra.estado_pago', 'completado')
@@ -147,7 +173,7 @@ export async function loadDashboardStatsForOrganizador(
       const eventosIds = await eventosDelOrganizadorIds;
       if (eventosIds.length === 0) return 0;
 
-      const response = await withEventFilter(supabase
+      const response = await withScope(supabase
         .from('compras_productos')
         .select('id', { count: 'exact', head: true })
         .eq('estado_pago', 'completado')
@@ -165,7 +191,7 @@ export async function loadDashboardStatsForOrganizador(
       const eventosIds = await eventosDelOrganizadorIds;
       if (eventosIds.length === 0) return false;
 
-      const response = await withEventFilter(supabase
+      const response = await withScope(supabase
         .from('productos')
         .select('id', { count: 'exact', head: true })
         .eq('activo', true)
@@ -181,7 +207,7 @@ export async function loadDashboardStatsForOrganizador(
     // Ingresos, servicio y estimación Wompi (misma lógica que dashboard admin):
     // compras completadas de cualquier evento del organizador, incl. finalizados/pasados.
     const ingresosYServicioTotales = safeExecute(async () => {
-      const response = await withEventFilter(supabase
+      const response = await withScope(supabase
         .from('compras')
         .select('total, valor_servicio, porcentaje_servicio, evento_id, eventos!inner(organizador_id)')
         .eq('estado_pago', 'completado')
@@ -241,7 +267,7 @@ export async function loadDashboardStatsForOrganizador(
 
     // Ingresos, servicio y Wompi para productos: histórico completo (sin filtrar por vigencia).
     const ingresosYServicioProductos = safeExecute(async () => {
-      const response = await withEventFilter(supabase
+      const response = await withScope(supabase
         .from('compras_productos')
         .select('total, valor_servicio, porcentaje_servicio, evento_id, eventos!inner(organizador_id)')
         .eq('estado_pago', 'completado')
@@ -300,7 +326,7 @@ export async function loadDashboardStatsForOrganizador(
 
     // Clientes únicos que compraron eventos del organizador (solo con pago completado)
     const clientes = safeExecute(async () => {
-      const response = await withEventFilter(supabase
+      const response = await withScope(supabase
         .from('compras')
         .select('cliente_id, evento_id, eventos!inner(organizador_id)')
         .eq('eventos.organizador_id', organizadorId)
@@ -320,14 +346,14 @@ export async function loadDashboardStatsForOrganizador(
     // Ventas recientes del organizador (boletas + productos)
     const ventasRecientes = safeExecute(async () => {
       const [comprasRes, comprasProductosRes] = await Promise.all([
-        withEventFilter(supabase
+        withScope(supabase
           .from('compras')
           .select('id, cliente_id, evento_id, numero_transaccion, total, subtotal, descuento_total, estado_pago, fecha_compra, evento:eventos!inner(id, titulo, organizador_id), cliente:usuarios(id, nombre, apellido, email), boletas_compradas(id, grupo_palco_id, palco_id, palcos(numero), tipos_boleta(nombre, personas_por_unidad, es_palco))')
           .eq('evento.organizador_id', organizadorId)
           .eq('estado_pago', 'completado')
           .order('fecha_compra', { ascending: false })
           .limit(1000)),
-        withEventFilter(supabase
+        withScope(supabase
           .from('compras_productos')
           .select('id, cliente_id, evento_id, numero_pedido, total, subtotal, descuento_total, estado_pago, fecha_compra, evento:eventos!inner(id, titulo, organizador_id), cliente:usuarios(id, nombre, apellido, email)')
           .eq('evento.organizador_id', organizadorId)
@@ -521,7 +547,7 @@ export async function loadDashboardStatsForOrganizador(
 
     // Eventos en cartelera del organizador (todos los vigentes)
     const eventosProximos = safeExecute(async () => {
-      const response = await withEventFilter(supabase
+      const response = await withScope(supabase
         .from('eventos')
         .select('id, titulo, imagen_principal, estado, fecha_inicio, fecha_fin')
         .eq('organizador_id', organizadorId)
@@ -543,7 +569,7 @@ export async function loadDashboardStatsForOrganizador(
 
     // Eventos totales del organizador
     const eventosTotales = safeExecute(async () => {
-      const response = await withEventFilter(supabase
+      const response = await withScope(supabase
         .from('eventos')
         .select('*', { count: 'exact' })
         .eq('organizador_id', organizadorId)
@@ -560,7 +586,7 @@ export async function loadDashboardStatsForOrganizador(
       inicioMes.setDate(1);
       inicioMes.setHours(0, 0, 0, 0);
       
-      const response = await withEventFilter(supabase
+      const response = await withScope(supabase
         .from('compras')
         .select('total, evento_id, eventos!inner(organizador_id)')
         .eq('estado_pago', 'completado')
@@ -585,7 +611,7 @@ export async function loadDashboardStatsForOrganizador(
       finMesAnterior.setDate(0);
       finMesAnterior.setHours(23, 59, 59, 999);
       
-      const response = await withEventFilter(supabase
+      const response = await withScope(supabase
         .from('compras')
         .select('total, evento_id, eventos!inner(organizador_id)')
         .eq('estado_pago', 'completado')
@@ -601,7 +627,7 @@ export async function loadDashboardStatsForOrganizador(
     }, 0);
 
     const ingresosDiaActual = safeExecute(async () => {
-      const response = await withEventFilter(supabase
+      const response = await withScope(supabase
         .from('compras')
         .select('total, evento_id, eventos!inner(organizador_id)')
         .eq('estado_pago', 'completado')
@@ -617,7 +643,7 @@ export async function loadDashboardStatsForOrganizador(
     }, 0);
 
     const ingresosDiaAnterior = safeExecute(async () => {
-      const response = await withEventFilter(supabase
+      const response = await withScope(supabase
         .from('compras')
         .select('total, evento_id, eventos!inner(organizador_id)')
         .eq('estado_pago', 'completado')
@@ -636,7 +662,7 @@ export async function loadDashboardStatsForOrganizador(
     const boletasPorEstado = safeExecute(async () => {
       try {
         // Obtener tipos de boleta de eventos del organizador
-        const { data: tiposData, error: tiposError } = await withEventFilter(supabase
+        const { data: tiposData, error: tiposError } = await withScope(supabase
           .from('tipos_boleta')
           .select('id, evento_id, eventos!inner(organizador_id)')
         .eq('eventos.organizador_id', organizadorId));
@@ -672,7 +698,7 @@ export async function loadDashboardStatsForOrganizador(
     // Top eventos por lo que el organizador recibirá aprox. (neto ventas post Wompi)
     const topEventos = safeExecute(async () => {
       try {
-        const { data: eventosData, error: eventosError } = await withEventFilter(supabase
+        const { data: eventosData, error: eventosError } = await withScope(supabase
           .from('eventos')
           .select('id, titulo, imagen_principal, estado, fecha_fin')
           .eq('organizador_id', organizadorId)

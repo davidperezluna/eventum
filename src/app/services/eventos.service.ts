@@ -56,9 +56,12 @@ export class EventosService {
         query = query.or(`titulo.ilike.%${filters.search}%,descripcion.ilike.%${filters.search}%`);
       }
 
-      // Ordenamiento por fecha de inicio del evento (el que empieza primero).
+      // Ordenamiento. Admin puede priorizar publicados (estado desc ≈ publicado primero).
       const sortBy = filters?.sortBy || 'fecha_inicio';
       const sortOrder = filters?.sortOrder || 'asc';
+      if (filters?.priorizarPublicados && !filters?.estado) {
+        query = query.order('estado', { ascending: false });
+      }
       query = query.order(sortBy, { ascending: sortOrder === 'asc' });
 
       // Paginación

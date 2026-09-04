@@ -175,6 +175,16 @@
   color: var(--ev-muted);
 }
 
+.ev-evento-card__status-label--liquidado {
+  color: #047857;
+  font-weight: 750;
+}
+
+.ev-evento-card__status-label--sin-liquidar {
+  color: #64748b;
+  font-weight: 650;
+}
+
 .ev-evento-card__status-sep {
   color: #cbd5e1;
   font-size: 0.625rem;
