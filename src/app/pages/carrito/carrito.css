@@ -2680,9 +2680,7 @@ a.carrito-checkout-bar__btn {
   overflow: hidden;
   border: 1px solid rgba(118, 87, 219, .15);
   border-radius: 1.15rem;
-  background:
-    radial-gradient(circle at 100% 0, rgba(118, 87, 219, .1), transparent 17rem),
-    var(--cx-panel);
+  background: var(--cx-panel);
   box-shadow: 0 1rem 2.6rem rgba(55, 38, 91, .06);
 }
 
@@ -2896,11 +2894,15 @@ a.carrito-checkout-bar__btn {
 .btn-remove-item-static:hover { border-color: transparent; background: #f6e9ec; color: #9d344a; }
 
 .carrito-vaciar-row {
-  width: fit-content;
-  margin: .25rem 0 0 auto;
-  border: 0;
-  background: transparent;
+  width: 100%;
+  min-height: 2.75rem;
+  justify-self: stretch;
+  margin: .25rem 0 0;
+  border: 1px dashed var(--cx-line);
+  border-radius: .65rem;
+  background: rgba(255, 255, 255, .55);
   color: var(--cx-faint);
+  line-height: 1;
 }
 
 .cupon-details {
@@ -3153,6 +3155,8 @@ a.carrito-checkout-bar__btn:hover {
   border-color: rgba(118, 87, 219, .16);
 }
 
+.carrito-sidebar { display: contents; }
+
 @media (min-width: 960px) {
   .carrito-evento-block {
     grid-template-columns: minmax(0, 1.48fr) minmax(19rem, .72fr);
@@ -3160,10 +3164,28 @@ a.carrito-checkout-bar__btn:hover {
     column-gap: 1.2rem;
   }
 
-  .carrito-evento-header { grid-column: 1 / -1; }
-  .carrito-items { grid-column: 1; grid-row: 2 / span 4; }
-  .carrito-evento-block > .cupon-details { grid-column: 2; grid-row: 2; }
-  .carrito-evento-block > .carrito-total { grid-column: 2; grid-row: 3; position: sticky; top: 6rem; }
+  /* En escritorio, la identidad del evento pertenece a la columna de compra.
+     El resumen comienza arriba en el rail derecho y permanece visible. */
+  .carrito-evento-header { grid-column: 1; grid-row: 1; }
+  .carrito-items { grid-column: 1; grid-row: 2; }
+  .carrito-sidebar {
+    display: flex;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+    align-self: stretch;
+  }
+  .carrito-sidebar > .carrito-total {
+    order: -1;
+    align-self: stretch;
+    position: sticky;
+    top: 6rem;
+  }
+  .carrito-sidebar > .cupon-details {
+    align-self: stretch;
+  }
   .carrito-checkout-bar { display: none !important; }
 }
 

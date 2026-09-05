@@ -5061,14 +5061,15 @@
   flex-direction: column;
   gap: 0;
   padding: 0 !important;
+  border: 0;
   overflow: hidden;
   /* La franja de tabs pinta el tope de la card a borde completo */
   background: #fff;
 }
 
 .detalle-evento-page .dx-purchase--con-tabs .detalle-compra-tabs {
-  --de-tab-slant: 0.85rem;
-  --de-tab-overlap: 0.7rem;
+  --de-tab-slant: 1.15rem;
+  --de-tab-overlap: 0.95rem;
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-items: end;
@@ -5079,7 +5080,7 @@
   padding: 0 !important;
   border: 0;
   border-radius: 0;
-  background: #ebe6f3;
+  background: var(--dx-canvas, #f6f4f8);
   box-shadow: none !important;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -5095,13 +5096,13 @@
   position: relative;
   width: 100%;
   min-width: 0;
-  min-height: 2.7rem;
+  min-height: 2.9rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
-  margin: 0 0 -1px;
-  padding: 0.62rem 0.85rem;
+  margin: 0 0 -1.5px;
+  padding: 0.7rem 1.1rem 0.65rem;
   border: 0;
   border-radius: 0;
   background: #d8d0e8;
@@ -5118,12 +5119,13 @@
 
 .detalle-evento-page .dx-purchase--con-tabs .detalle-compra-tab:first-child {
   z-index: 1;
-  padding-right: calc(0.85rem + var(--de-tab-slant) * 0.5);
+  padding-right: 1.35rem;
   clip-path: polygon(
-    0 0,
+    0.5rem 0,
     calc(100% - var(--de-tab-slant)) 0,
     100% 100%,
-    0 100%
+    0 100%,
+    0 0.5rem
   );
 }
 
@@ -5131,12 +5133,13 @@
   z-index: 0;
   width: calc(100% + var(--de-tab-overlap));
   margin-left: calc(var(--de-tab-overlap) * -1);
-  padding-left: calc(0.85rem + var(--de-tab-slant) * 0.5);
+  padding-left: 1.45rem;
   justify-self: end;
   clip-path: polygon(
     0 100%,
     var(--de-tab-slant) 0,
-    100% 0,
+    calc(100% - 0.5rem) 0,
+    100% 0.5rem,
     100% 100%
   );
 }

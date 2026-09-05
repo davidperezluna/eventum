@@ -450,6 +450,7 @@
           </button>
         </div>
 
+        <aside class="carrito-sidebar">
         <details
           class="cupon-details"
           *ngIf="mostrarCupon"
@@ -542,7 +543,6 @@
             <span>Servicio ({{ getPorcentajeServicio() }}%):</span>
             <span>{{ formatCurrency(getValorServicio()) }}</span>
           </div>
-          <p class="carrito-servicio-hint">Incluye procesamiento del pago y operación de la plataforma.</p>
           <div *ngIf="emailCuentaCompra" class="carrito-account-summary" role="note">
             <div class="carrito-account-summary__main">
               <div class="carrito-account-summary__copy">
@@ -600,6 +600,7 @@
           </p>
           <p *ngIf="hintAccionCompra as hint" class="carrito-accion-hint">{{ hint }}</p>
         </div>
+        </aside>
       </section>
   </ng-container>
 
