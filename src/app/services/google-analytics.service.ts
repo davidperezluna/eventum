@@ -20,6 +20,10 @@ import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { MetaPixelService } from './meta-pixel.service';
+import { GaItem, sumGaItemsValue, claimGaPurchaseTrackingId } from './ga-purchase.utils';
+
+export type { GaItem } from './ga-purchase.utils';
+export { sumGaItemsValue } from './ga-purchase.utils';
 
 declare global {
   interface Window {
@@ -31,18 +35,6 @@ declare global {
 const PURCHASE_TRACKED_KEY = 'eventum_ga_purchase_tracked';
 const BEGIN_CHECKOUT_TRACKED_KEY = 'eventum_ga_begin_checkout';
 const CHECKOUT_ITEMS_KEY = 'eventum_ga_checkout_items';
-
-export type GaItem = {
-  item_id?: string;
-  item_name?: string;
-  price?: number;
-  quantity?: number;
-  discount?: number;
-  /** Título del evento (contexto del SKU). */
-  item_category?: string;
-  /** boleta | producto | cover */
-  item_category2?: string;
-};
 
 /** Motivos de bloqueo en checkout (sin PII). */
 export type CheckoutObstacleReason =
@@ -68,17 +60,6 @@ export type GaCheckoutItemsSnapshot = {
   fingerprint?: string;
   saved_at?: number;
 };
-
-/** value GA4 = Σ (price × quantity − discount). */
-export function sumGaItemsValue(items: GaItem[] | undefined | null): number {
-  if (!items?.length) return 0;
-  return items.reduce((sum, item) => {
-    const qty = Math.max(1, Number(item.quantity) || 1);
-    const line = (Number(item.price) || 0) * qty;
-    const discount = Math.max(0, Number(item.discount) || 0);
-    return sum + Math.max(0, line - discount);
-  }, 0);
-}
 
 @Injectable({
   providedIn: 'root'
@@ -219,6 +200,8 @@ export class GoogleAnalyticsService {
       value: itemsValue,
       currency: currency,
       items: gaItems,
+      payment_gateway: 'wompi',
+      total_paid: itemsValue + fee,
       ...(fee > 0 ? { service_fee: fee } : {}),
     });
     this.metaPixel.trackPurchase({
@@ -244,19 +227,24 @@ export class GoogleAnalyticsService {
     const canPixel = !!(pixelId && environment.production);
     if (!id || (!this.canTrackConfig() && !canPixel)) return false;
 
-    try {
-      const raw = sessionStorage.getItem(PURCHASE_TRACKED_KEY);
-      const tracked: string[] = raw ? (JSON.parse(raw) as string[]) : [];
-      if (tracked.includes(id)) {
-        return false;
-      }
-      tracked.push(id);
-      sessionStorage.setItem(PURCHASE_TRACKED_KEY, JSON.stringify(tracked.slice(-50)));
-    } catch {
-      // Si sessionStorage falla, igual intentamos trackear una vez en esta carga.
+    const gaItems = items || [];
+    const itemsValue = gaItems.length ? sumGaItemsValue(gaItems) : Number(value) || 0;
+    if (!gaItems.length || !(itemsValue > 0)) {
+      console.warn('[GA4] purchase omitido (trackPurchaseOnce): items vacíos o value <= 0', {
+        transaction_id: id,
+        items_count: gaItems.length,
+        value: itemsValue,
+      });
+      return false;
     }
 
-    this.trackPurchase(value, id, currency, items, serviceFee);
+    const storage =
+      typeof sessionStorage !== 'undefined' ? sessionStorage : null;
+    if (!claimGaPurchaseTrackingId(id, storage, PURCHASE_TRACKED_KEY)) {
+      return false;
+    }
+
+    this.trackPurchase(itemsValue, id, currency, gaItems, serviceFee);
     return true;
   }
 
@@ -487,16 +475,27 @@ export class GoogleAnalyticsService {
   }): void {
     if (typeof sessionStorage === 'undefined') return;
     try {
+      const prev = this.readCheckoutItemsSnapshot();
       const items = snapshot.items || [];
+      const feeProvided = snapshot.service_fee != null && Number.isFinite(Number(snapshot.service_fee));
       const payload: GaCheckoutItemsSnapshot = {
         value: items.length ? sumGaItemsValue(items) : Number(snapshot.value) || 0,
-        service_fee: Math.max(0, Number(snapshot.service_fee) || 0),
+        // No pisar fee previo si el caller no lo envía.
+        service_fee: feeProvided
+          ? Math.max(0, Number(snapshot.service_fee) || 0)
+          : Math.max(0, Number(prev?.service_fee) || 0),
         currency: 'COP',
         items,
-        coupon: snapshot.coupon ?? null,
-        descuento_total: snapshot.descuento_total,
-        evento_titulo: snapshot.evento_titulo ?? null,
-        fingerprint: snapshot.fingerprint,
+        coupon: snapshot.coupon ?? prev?.coupon ?? null,
+        descuento_total:
+          snapshot.descuento_total != null
+            ? snapshot.descuento_total
+            : prev?.descuento_total,
+        evento_titulo:
+          snapshot.evento_titulo !== undefined
+            ? snapshot.evento_titulo
+            : prev?.evento_titulo ?? null,
+        fingerprint: snapshot.fingerprint ?? prev?.fingerprint,
         saved_at: Date.now(),
       };
       sessionStorage.setItem(CHECKOUT_ITEMS_KEY, JSON.stringify(payload));

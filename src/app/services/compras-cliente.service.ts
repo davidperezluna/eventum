@@ -482,7 +482,7 @@ export class ComprasClienteService {
     try {
       const { data, error } = await this.supabase
         .from('compras')
-        .select('*')
+        .select('*, evento:eventos(id, titulo)')
         .eq('id', compraId)
         .single();
 
@@ -494,6 +494,40 @@ export class ComprasClienteService {
     } catch (error) {
       console.error('Error obteniendo compra por ID:', error);
       throw error;
+    }
+  }
+
+  /** Líneas de boletas para reconstruir ítems GA4 sin snapshot de carrito. */
+  async getBoletasRowsForGa(compraId: number): Promise<
+    Array<{
+      tipo_boleta_id: number;
+      precio_unitario: number;
+      grupo_palco_id?: string | null;
+      consume_inventario?: boolean | null;
+      tipos_boleta?: { nombre?: string } | { nombre?: string }[] | null;
+    }>
+  > {
+    try {
+      const { data, error } = await this.supabase
+        .from('boletas_compradas')
+        .select(
+          'tipo_boleta_id, precio_unitario, grupo_palco_id, consume_inventario, tipos_boleta(nombre)',
+        )
+        .eq('compra_id', compraId);
+
+      if (error) {
+        throw error;
+      }
+      return (data || []) as Array<{
+        tipo_boleta_id: number;
+        precio_unitario: number;
+        grupo_palco_id?: string | null;
+        consume_inventario?: boolean | null;
+        tipos_boleta?: { nombre?: string } | { nombre?: string }[] | null;
+      }>;
+    } catch (error) {
+      console.error('Error obteniendo boletas para GA:', error);
+      return [];
     }
   }
 

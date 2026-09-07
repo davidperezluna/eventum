@@ -1,6 +1,8 @@
 # 🔍 Guía para Verificar Google Analytics
 
-## 📊 Estado Actual
+> **Nota:** El tracking actual usa `gtag` directo (no depende de GTM). Guía canónica: [`docs/tracking-ga4-meta.md`](docs/tracking-ga4-meta.md).
+
+## 📊 Estado Actual (histórico / GTM)
 
 Según la imagen que compartiste, veo que:
 - ✅ **Flujo de datos creado** en Google Analytics

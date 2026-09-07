@@ -502,6 +502,65 @@ export class CoversService {
     };
   }
 
+  /**
+   * Compra cover + líneas para GA4 (estado real + ítems sin fee).
+   */
+  async getCompraCoverForGa(compraCoverId: number): Promise<{
+    id: number;
+    estado_pago: string;
+    total: number;
+    valor_servicio: number;
+    lugar_nombre?: string | null;
+    rows: Array<{
+      tipo_cover_id: number;
+      precio_unitario: number;
+      tipos_cover?: { nombre?: string } | { nombre?: string }[] | null;
+    }>;
+  } | null> {
+    const client = this.supabase.getClient();
+    const { data: compra, error: compraError } = await client
+      .from('compras_cover')
+      .select('id, estado_pago, total, valor_servicio, lugar_id, lugares(nombre)')
+      .eq('id', compraCoverId)
+      .maybeSingle();
+
+    if (compraError) {
+      console.error('Error obteniendo compra cover para GA:', compraError);
+      return null;
+    }
+    if (!compra) {
+      return null;
+    }
+
+    const { data: boletas, error: boletasError } = await client
+      .from('boletas_cover')
+      .select('tipo_cover_id, precio_unitario, tipos_cover(nombre)')
+      .eq('compra_cover_id', compraCoverId);
+
+    if (boletasError) {
+      console.error('Error obteniendo boletas cover para GA:', boletasError);
+    }
+
+    const lugarRel = (compra as { lugares?: { nombre?: string } | { nombre?: string }[] | null })
+      .lugares;
+    const lugarNombre = Array.isArray(lugarRel)
+      ? lugarRel[0]?.nombre
+      : lugarRel?.nombre;
+
+    return {
+      id: Number((compra as { id: number }).id),
+      estado_pago: String((compra as { estado_pago?: string }).estado_pago || ''),
+      total: Number((compra as { total?: number }).total) || 0,
+      valor_servicio: Number((compra as { valor_servicio?: number }).valor_servicio) || 0,
+      lugar_nombre: lugarNombre ?? null,
+      rows: (boletas || []) as Array<{
+        tipo_cover_id: number;
+        precio_unitario: number;
+        tipos_cover?: { nombre?: string } | { nombre?: string }[] | null;
+      }>,
+    };
+  }
+
   private normalizeArray<T>(raw: unknown): T[] {
     if (Array.isArray(raw)) return raw as T[];
     if (typeof raw === 'string') {

@@ -1,5 +1,7 @@
 # 📊 Configurar Google Analytics 4 en Google Tag Manager
 
+> **Nota:** En producción Eventum usa `gtag` directo. Doc canónica del funnel: [`docs/tracking-ga4-meta.md`](docs/tracking-ga4-meta.md). Esta guía solo aplica si se vuelve a GTM.
+
 ## Tu Measurement ID de GA4
 **`G-46BBJ0FKE1`**
 

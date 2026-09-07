@@ -1,8 +1,14 @@
 # 📊 Guía de Integración de Google Tag Manager
 
-Esta guía te ayudará a integrar Google Tag Manager (GTM) en tu aplicación Angular Eventum. GTM permite gestionar múltiples herramientas de tracking (Google Analytics, Facebook Pixel, etc.) desde un solo lugar.
+> **Estado actual (2026):** Eventum **no** usa el snippet GTM en producción. Usa **`gtag` directo** (`GT-5TJZWP3P` → GA4 `G-46BBJ0FKE1`) + Meta Pixel.
+>
+> **Funnel y reglas de tracking:** ver la documentación canónica  
+> [`docs/tracking-ga4-meta.md`](docs/tracking-ga4-meta.md)  
+> y el resumen en [`GOOGLE_ANALYTICS_EJEMPLOS.md`](GOOGLE_ANALYTICS_EJEMPLOS.md).
+>
+> Lo que sigue es una guía **histórica / opcional** si en el futuro se vuelve a GTM.
 
-**Estado actual:** el sitio usa `gtag` (`GT-5TJZWP3P` → GA4 `G-46BBJ0FKE1`), no el snippet GTM. El funnel de compra está en `GOOGLE_ANALYTICS_EJEMPLOS.md` (`view_item`, `add_to_cart`, `begin_checkout`, `purchase`). Meta Pixel del organizador (`metaPixelId` en `environment.prod.ts`) dispara los equivalentes estándar en los mismos puntos. Modelo ticketing: `item_name` = boleta/producto/cover; `item_category` = título del evento.
+Esta guía describe cómo integrar Google Tag Manager (GTM). GTM permite gestionar múltiples herramientas de tracking desde un solo lugar.
 
 ## 📋 Prerequisitos
 

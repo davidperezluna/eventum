@@ -119,28 +119,39 @@ export class MetaPixelService {
     transactionId: string;
     contents?: Array<{ id: string; quantity: number; item_price?: number }>;
   }): void {
-    this.track('Purchase', {
-      value: params.value,
-      currency: 'COP',
-      content_type: 'product',
-      contents: params.contents,
-      content_ids: params.contents?.map((c) => c.id),
-      // Meta usa order_id en algunos flujos; transaction_id ayuda a deduplicar con CAPI luego.
-      order_id: params.transactionId,
-    });
+    const eventID = String(params.transactionId || '').trim();
+    this.track(
+      'Purchase',
+      {
+        value: params.value,
+        currency: 'COP',
+        content_type: 'product',
+        contents: params.contents,
+        content_ids: params.contents?.map((c) => c.id),
+        // order_id + eventID = mismo id canónico (chk-…); listo para dedupe Pixel + CAPI.
+        order_id: eventID || undefined,
+      },
+      eventID ? { eventID } : undefined,
+    );
   }
 
   private canTrack(): boolean {
     return !!(this.pixelId && environment.production && typeof window !== 'undefined');
   }
 
-  private track(eventName: string, params?: Record<string, unknown>): void {
+  private track(
+    eventName: string,
+    params?: Record<string, unknown>,
+    eventData?: { eventID: string },
+  ): void {
     if (!this.canTrack()) return;
     this.init();
     try {
       const fbq = window.fbq;
       if (typeof fbq !== 'function') return;
-      if (params) {
+      if (params && eventData?.eventID) {
+        fbq('track', eventName, params, eventData);
+      } else if (params) {
         fbq('track', eventName, params);
       } else {
         fbq('track', eventName);

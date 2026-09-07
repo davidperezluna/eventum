@@ -5,6 +5,7 @@ import { ComprasClienteService } from '../../services/compras-cliente.service';
 import { ComprasProductoService } from '../../services/compras-producto.service';
 import { CarritoCompraService } from '../../services/carrito-compra.service';
 import { AuthService } from '../../services/auth.service';
+import { CoversService } from '../../services/covers.service';
 import { Compra, CompraProducto, TransaccionProducto } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { COMPRA_COPY } from '../../core/compra-copy';
@@ -12,6 +13,14 @@ import {
   GaItem,
   GoogleAnalyticsService,
 } from '../../services/google-analytics.service';
+import {
+  buildGaItemsFromBoletaRows,
+  buildGaItemsFromCoverRows,
+  buildGaItemsFromProductoLines,
+  buildGaPurchasePayload,
+  isSendableGaPurchase,
+  shouldTrackGaPurchase,
+} from '../../services/ga-purchase.utils';
 
 const PAGO_PENDIENTE_STORAGE_KEY = 'eventum_pago_pendiente';
 /** Tiempo máximo consultando un pago aún pendiente tras volver de Wompi. */
@@ -48,6 +57,27 @@ export class PagoResultado implements OnInit, OnDestroy {
   compra: Compra | null = null;
   compraProducto: CompraProducto | null = null;
   transaccionProducto: TransaccionProducto | null = null;
+  /** Cover cargado para estado GA / ítems (solo si aplica). */
+  compraCoverGa: {
+    id: number;
+    estado_pago: string;
+    total: number;
+    valor_servicio: number;
+    lugar_nombre?: string | null;
+    rows: Array<{
+      tipo_cover_id: number;
+      precio_unitario: number;
+      tipos_cover?: { nombre?: string } | { nombre?: string }[] | null;
+    }>;
+  } | null = null;
+  /** Boletas de la compra para reconstruir ítems GA sin snapshot. */
+  private boletasGaRows: Array<{
+    tipo_boleta_id: number;
+    precio_unitario: number;
+    grupo_palco_id?: string | null;
+    consume_inventario?: boolean | null;
+    tipos_boleta?: { nombre?: string } | { nombre?: string }[] | null;
+  }> = [];
   loading = true;
   error: string | null = null;
   errorTitulo = 'No pudimos mostrar tu compra';
@@ -63,6 +93,7 @@ export class PagoResultado implements OnInit, OnDestroy {
     private comprasClienteService: ComprasClienteService,
     private comprasProductoService: ComprasProductoService,
     private carritoCompraService: CarritoCompraService,
+    private coversService: CoversService,
     private authService: AuthService,
     private googleAnalytics: GoogleAnalyticsService,
     private cdr: ChangeDetectorRef
@@ -202,62 +233,63 @@ export class PagoResultado implements OnInit, OnDestroy {
     return null;
   }
 
-  private resolvePurchaseItems(value: number): GaItem[] {
+  private resolveServiceFeeFromDb(): number {
+    const snapshot = this.googleAnalytics.readCheckoutItemsSnapshot();
+    if (snapshot?.service_fee != null && snapshot.service_fee > 0) {
+      return Number(snapshot.service_fee) || 0;
+    }
+    const fromCompra = Number(this.compra?.valor_servicio) || 0;
+    const fromProducto = Number(this.compraProducto?.valor_servicio) || 0;
+    const fromCover = Number(this.compraCoverGa?.valor_servicio) || 0;
+    return Math.max(0, fromCompra + fromProducto + fromCover);
+  }
+
+  /** Ítems reales: snapshot del carrito o reconstrucción desde DB (sin fee en price). */
+  private resolvePurchaseItems(): GaItem[] {
     const snapshot = this.googleAnalytics.readCheckoutItemsSnapshot();
     if (snapshot?.items?.length) {
       return snapshot.items;
     }
 
-    const items: GaItem[] = [];
     const eventoTitulo =
       this.compra?.evento?.titulo ||
-      (this.compraProducto?.eventos as { titulo?: string } | undefined)?.titulo;
+      (this.compraProducto?.eventos as { titulo?: string } | undefined)?.titulo ||
+      this.compraCoverGa?.lugar_nombre ||
+      null;
 
-    if (this.compra) {
-      items.push({
-        item_id: String(this.compra.evento_id || this.compra.id),
-        item_name: 'Boletas',
-        price: Number(this.compra.total) || 0,
-        quantity: 1,
-        discount: Number(this.compra.descuento_total) || undefined,
-        item_category: eventoTitulo,
-        item_category2: 'boleta',
-      });
+    const items: GaItem[] = [];
+
+    if (this.boletasGaRows.length) {
+      items.push(
+        ...buildGaItemsFromBoletaRows(
+          this.boletasGaRows,
+          eventoTitulo,
+          Number(this.compra?.descuento_total) || 0,
+        ),
+      );
     }
-    if (this.compraProducto) {
-      const lineas = this.compraProducto.compras_productos_items;
-      if (lineas?.length) {
-        for (const linea of lineas) {
-          const prod = Array.isArray(linea.productos) ? linea.productos[0] : linea.productos;
-          items.push({
-            item_id: `producto-${linea.producto_id}`,
-            item_name: prod?.nombre || `Producto ${linea.producto_id}`,
-            price: Number(linea.precio_unitario) || 0,
-            quantity: Number(linea.cantidad) || 1,
-            item_category: eventoTitulo,
-            item_category2: 'producto',
-          });
-        }
-      } else {
-        items.push({
-          item_id: String(this.compraProducto.evento_id || this.compraProducto.id),
-          item_name: 'Productos',
-          price: Number(this.compraProducto.total) || 0,
-          quantity: 1,
-          item_category: eventoTitulo,
-          item_category2: 'producto',
-        });
-      }
+
+    if (this.compraProducto?.compras_productos_items?.length) {
+      items.push(
+        ...buildGaItemsFromProductoLines(
+          this.compraProducto.compras_productos_items.map((linea) => ({
+            producto_id: linea.producto_id,
+            cantidad: linea.cantidad,
+            precio_unitario: linea.precio_unitario,
+            productos: linea.productos,
+          })),
+          eventoTitulo,
+        ),
+      );
     }
-    if (this.compraCoverId && !this.compra) {
-      items.push({
-        item_id: `cover-${this.compraCoverId}`,
-        item_name: 'Cover',
-        price: value,
-        quantity: 1,
-        item_category: eventoTitulo,
-        item_category2: 'cover',
-      });
+
+    if (this.compraCoverGa?.rows?.length) {
+      items.push(
+        ...buildGaItemsFromCoverRows(
+          this.compraCoverGa.rows,
+          this.compraCoverGa.lugar_nombre,
+        ),
+      );
     }
 
     return items;
@@ -265,7 +297,7 @@ export class PagoResultado implements OnInit, OnDestroy {
 
   /** Envía purchase a GA4 una sola vez por transacción/compra confirmada. */
   private trackPurchaseSiCompletado(): void {
-    if (this.getEstadoPagoReferencia() !== 'completado') {
+    if (!shouldTrackGaPurchase(this.getEstadoPagoReferencia())) {
       return;
     }
 
@@ -274,14 +306,33 @@ export class PagoResultado implements OnInit, OnDestroy {
       return;
     }
 
-    const snapshot = this.googleAnalytics.readCheckoutItemsSnapshot();
-    const items = this.resolvePurchaseItems(this.getTotalMostrado());
-    const value = snapshot?.items?.length
-      ? snapshot.value
-      : this.getTotalMostrado();
-    const serviceFee = snapshot?.service_fee;
-    this.googleAnalytics.trackPurchaseOnce(value, transactionId, 'COP', items, serviceFee);
-    this.googleAnalytics.clearCheckoutItemsSnapshot();
+    const items = this.resolvePurchaseItems();
+    const serviceFee = this.resolveServiceFeeFromDb();
+    const payload = buildGaPurchasePayload({
+      transactionId,
+      items,
+      serviceFee,
+    });
+
+    if (!payload || !isSendableGaPurchase(payload)) {
+      console.warn('[GA4] purchase omitido: items vacíos o value <= 0', {
+        transaction_id: transactionId,
+        items_count: payload?.items?.length ?? 0,
+        value: payload?.value ?? 0,
+      });
+      return;
+    }
+
+    const sent = this.googleAnalytics.trackPurchaseOnce(
+      payload.value,
+      payload.transaction_id,
+      payload.currency,
+      payload.items,
+      payload.service_fee,
+    );
+    if (sent) {
+      this.googleAnalytics.clearCheckoutItemsSnapshot();
+    }
   }
 
   private trackPaymentRejectedOnce(): void {
@@ -407,6 +458,11 @@ export class PagoResultado implements OnInit, OnDestroy {
 
         if (this.compraId) {
           this.compra = await this.comprasClienteService.getCompraById(this.compraId);
+          this.boletasGaRows = await this.comprasClienteService.getBoletasRowsForGa(this.compraId);
+        }
+
+        if (this.compraCoverId) {
+          this.compraCoverGa = await this.coversService.getCompraCoverForGa(this.compraCoverId);
         }
 
         if (this.transaccionProductoId) {
@@ -463,22 +519,25 @@ export class PagoResultado implements OnInit, OnDestroy {
           this.compraProducto = await this.comprasProductoService.getCompraById(this.compraProductoId);
         }
 
-        if (this.compraCoverId && !this.compraId) {
+        // Cover-only: misma puerta de estado que el resto (no purchase solo por id).
+        if (this.compraCoverId && !this.compraId && !this.compraProductoId && !this.transaccionProductoId) {
+          const estadoCover = this.getEstadoPagoReferencia();
+          if (estadoCover === 'pendiente' && Date.now() - startedAt < PENDING_POLL_BUDGET_MS && intento < intentosMax - 1) {
+            this.loading = true;
+            this.error = null;
+            this.cdr.detectChanges();
+            continue;
+          }
           this.loading = false;
           this.error = null;
-          this.limpiarReferenciasPendientes();
-          this.vaciarCarritoTrasCompraExitosa();
-          const coverValue = this.getTotalMostrado();
-          const snapshot = this.googleAnalytics.readCheckoutItemsSnapshot();
-          const coverItems = this.resolvePurchaseItems(coverValue);
-          this.googleAnalytics.trackPurchaseOnce(
-            snapshot?.items?.length ? snapshot.value : coverValue,
-            this.getCanonicalTransactionId() || `cover-${this.compraCoverId}`,
-            'COP',
-            coverItems,
-            snapshot?.service_fee,
-          );
-          this.googleAnalytics.clearCheckoutItemsSnapshot();
+          if (estadoCover === 'completado') {
+            this.limpiarReferenciasPendientes();
+            this.vaciarCarritoTrasCompraExitosa();
+          }
+          if (estadoCover === 'fallido') {
+            this.trackPaymentRejectedOnce();
+          }
+          this.trackPurchaseSiCompletado();
           this.cdr.detectChanges();
           return;
         }
@@ -572,11 +631,28 @@ export class PagoResultado implements OnInit, OnDestroy {
             ? 'pendiente'
             : null;
 
+    const estadoCoverRaw = (this.compraCoverGa?.estado_pago || '').toLowerCase();
+    const estadoCover =
+      estadoCoverRaw === 'completado'
+        ? 'completado'
+        : estadoCoverRaw === 'rechazado' ||
+            estadoCoverRaw === 'rechazada' ||
+            estadoCoverRaw === 'cancelado' ||
+            estadoCoverRaw === 'cancelada' ||
+            estadoCoverRaw === 'fallido'
+          ? 'fallido'
+          : estadoCoverRaw === 'pendiente'
+            ? 'pendiente'
+            : this.compraCoverId && !this.compraCoverGa
+              ? 'pendiente'
+              : null;
+
     const estados = [
       this.compra?.estado_pago,
       this.compraProducto?.estado_pago,
       estadoTransaccionProducto,
-      estadoCheckout
+      estadoCheckout,
+      estadoCover,
     ].filter(Boolean) as string[];
 
     if (estados.some((e) => e === 'fallido')) return 'fallido';
@@ -661,12 +737,15 @@ export class PagoResultado implements OnInit, OnDestroy {
   }
 
   getTotalMostrado(): number {
+    if (this.compraCoverGa && !this.compra && !this.compraProducto && !this.transaccionProducto) {
+      return this.compraCoverGa.total ?? 0;
+    }
     if (!this.compra && !this.compraProducto && !this.transaccionProducto && this.transaccionCheckout) {
       return this.transaccionCheckout.total ?? 0;
     }
     const snapshot = this.googleAnalytics.readCheckoutItemsSnapshot();
     if (!this.compra && !this.compraProducto && !this.transaccionProducto && snapshot?.value) {
-      return snapshot.value;
+      return snapshot.value + (Number(snapshot.service_fee) || 0);
     }
     const totalProductos = this.compraProducto?.total ?? this.transaccionProducto?.monto ?? 0;
     return (this.compra?.total ?? 0) + totalProductos;

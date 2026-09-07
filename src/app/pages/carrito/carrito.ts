@@ -2411,7 +2411,8 @@ export class Carrito implements OnInit, OnDestroy {
       // Snapshot actualizado tras validaciones (mismo catálogo que se enviará a Wompi).
       const gaItems = this.buildGaItemsFromCart();
       this.googleAnalytics.saveCheckoutItemsSnapshot({
-        value: totalPago,
+        value: 0,
+        service_fee: this.getValorServicio(),
         items: gaItems,
         coupon: this.cuponAplicado?.codigo ?? null,
         descuento_total: this.getDescuento(),
