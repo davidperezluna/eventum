@@ -6,6 +6,8 @@
    - item_name = boleta / producto / cover
    - item_category = título del evento
    - item_category2 = boleta | producto | cover
+
+   Visitas: gtag se carga solo en producción; Angular es dueño de page_view.
 */
 
 import { Injectable, inject } from '@angular/core';
@@ -14,19 +16,49 @@ import { filter } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { MetaPixelService } from './meta-pixel.service';
 
-declare let gtag: Function;
+declare global {
+  interface Window {
+    dataLayer?: unknown[];
+    gtag?: (...args: unknown[]) => void;
+  }
+}
 
 const PURCHASE_TRACKED_KEY = 'eventum_ga_purchase_tracked';
+const BEGIN_CHECKOUT_TRACKED_KEY = 'eventum_ga_begin_checkout';
+const CHECKOUT_ITEMS_KEY = 'eventum_ga_checkout_items';
 
 export type GaItem = {
   item_id?: string;
   item_name?: string;
   price?: number;
   quantity?: number;
+  discount?: number;
   /** Título del evento (contexto del SKU). */
   item_category?: string;
   /** boleta | producto | cover */
   item_category2?: string;
+};
+
+/** Motivos de bloqueo en checkout (sin PII). */
+export type CheckoutObstacleReason =
+  | 'session_required'
+  | 'availability'
+  | 'incomplete_data'
+  | 'pending_checkout'
+  | 'payment_error'
+  | 'payment_rejected'
+  | 'event_unavailable'
+  | 'cart_conflict';
+
+export type GaCheckoutItemsSnapshot = {
+  value: number;
+  currency: 'COP';
+  items: GaItem[];
+  coupon?: string | null;
+  descuento_total?: number;
+  evento_titulo?: string | null;
+  fingerprint?: string;
+  saved_at?: number;
 };
 
 @Injectable({
@@ -35,6 +67,8 @@ export type GaItem = {
 export class GoogleAnalyticsService {
   private googleTagId: string | undefined;
   private readonly metaPixel = inject(MetaPixelService);
+  private scriptLoading: Promise<void> | null = null;
+  private gtagReady = false;
 
   constructor(private router: Router) {
     this.googleTagId = environment.googleTagId;
@@ -54,6 +88,10 @@ export class GoogleAnalyticsService {
   }
 
   private init() {
+    if (this.canTrackConfig()) {
+      void this.ensureGtag();
+    }
+
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
@@ -61,33 +99,93 @@ export class GoogleAnalyticsService {
       });
   }
 
+  /** Config de entorno permite medir (sin exigir gtag ya cargado). */
+  private canTrackConfig(): boolean {
+    return !!(this.googleTagId && environment.production && typeof window !== 'undefined');
+  }
+
   private canTrack(): boolean {
-    return !!(
-      this.googleTagId &&
-      environment.production &&
-      typeof window !== 'undefined' &&
-      typeof gtag !== 'undefined'
-    );
+    return this.canTrackConfig() && this.gtagReady && typeof window.gtag === 'function';
+  }
+
+  private ensureGtag(): Promise<void> {
+    if (!this.canTrackConfig() || !this.googleTagId) {
+      return Promise.resolve();
+    }
+    if (this.gtagReady && typeof window.gtag === 'function') {
+      return Promise.resolve();
+    }
+    if (this.scriptLoading) {
+      return this.scriptLoading;
+    }
+
+    this.scriptLoading = new Promise<void>((resolve) => {
+      try {
+        window.dataLayer = window.dataLayer || [];
+        if (typeof window.gtag !== 'function') {
+          window.gtag = function gtag(...args: unknown[]) {
+            window.dataLayer!.push(args);
+          };
+        }
+        window.gtag('js', new Date());
+        window.gtag('config', this.googleTagId, { send_page_view: false });
+
+        const existing = document.querySelector('script[data-eventum-gtag]');
+        if (existing) {
+          this.gtagReady = true;
+          resolve();
+          return;
+        }
+
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(this.googleTagId!)}`;
+        script.setAttribute('data-eventum-gtag', '1');
+        script.onload = () => {
+          this.gtagReady = true;
+          resolve();
+        };
+        script.onerror = () => {
+          this.gtagReady = typeof window.gtag === 'function';
+          resolve();
+        };
+        document.head.appendChild(script);
+
+        // Config ya encolado en dataLayer; marcar listo para no perder eventos tempranos.
+        this.gtagReady = true;
+      } catch {
+        resolve();
+      }
+    });
+
+    return this.scriptLoading;
   }
 
   private sendEvent(eventName: string, eventParams?: Record<string, unknown>): void {
-    if (!this.canTrack()) return;
-    try {
-      gtag('event', eventName, eventParams || {});
-    } catch (error) {
-      console.error(`Error tracking ${eventName}:`, error);
-    }
+    if (!this.canTrackConfig()) return;
+    void this.ensureGtag().then(() => {
+      if (!this.canTrack()) return;
+      try {
+        window.gtag!('event', eventName, eventParams || {});
+      } catch (error) {
+        console.error(`Error tracking ${eventName}:`, error);
+      }
+    });
   }
 
   trackPageView(url: string) {
-    if (this.canTrack()) {
-      try {
-        gtag('config', this.googleTagId, {
-          page_path: url
-        });
-      } catch (error) {
-        console.error('Error tracking page view:', error);
-      }
+    if (this.canTrackConfig()) {
+      void this.ensureGtag().then(() => {
+        if (!this.canTrack() || !this.googleTagId) return;
+        try {
+          window.gtag!('config', this.googleTagId, {
+            page_path: url,
+            send_page_view: true,
+          });
+        } catch (error) {
+          console.error('Error tracking page view:', error);
+        }
+      });
     }
     this.metaPixel.trackPageView();
   }
@@ -128,7 +226,7 @@ export class GoogleAnalyticsService {
     const id = String(transactionId || '').trim();
     const pixelId = (environment as { metaPixelId?: string }).metaPixelId?.trim();
     const canPixel = !!(pixelId && environment.production);
-    if (!id || (!this.canTrack() && !canPixel)) return false;
+    if (!id || (!this.canTrackConfig() && !canPixel)) return false;
 
     try {
       const raw = sessionStorage.getItem(PURCHASE_TRACKED_KEY);
@@ -211,18 +309,20 @@ export class GoogleAnalyticsService {
 
   /**
    * Inicio de checkout → begin_checkout / InitiateCheckout
-   * `items` deben ser boletas/productos/covers del carrito.
+   * Disparar en la intención de pagar (antes de exigir sesión).
    */
   trackBeginCheckout(params: {
     value: number;
     items?: GaItem[];
     /** Solo para Meta / contexto; no se usa como item_name. */
     eventoTitulo?: string;
+    coupon?: string | null;
   }) {
     const items = (params.items || []).filter((i) => i.item_name || i.item_id);
-    this.sendEvent('begin_checkout', {
+    const payload = {
       value: params.value,
       currency: 'COP',
+      coupon: params.coupon || undefined,
       items: items.length
         ? items
         : [{
@@ -231,13 +331,143 @@ export class GoogleAnalyticsService {
             item_category: 'checkout',
             item_category2: params.eventoTitulo,
           }],
-    });
+    };
+    this.sendEvent('begin_checkout', payload);
     this.metaPixel.trackInitiateCheckout({
       contentId: items[0]?.item_id,
       contentName: items[0]?.item_name || params.eventoTitulo,
       contentCategory: items[0]?.item_category || 'checkout',
       value: params.value,
+      numItems: items.reduce((n, i) => n + Math.max(1, Number(i.quantity) || 1), 0) || 1,
     });
+  }
+
+  /**
+   * Una vez por fingerprint de carrito en la pestaña (evita spam si falla login y reintenta).
+   */
+  trackBeginCheckoutOnce(params: {
+    value: number;
+    items?: GaItem[];
+    eventoTitulo?: string;
+    coupon?: string | null;
+    fingerprint: string;
+  }): boolean {
+    const fp = String(params.fingerprint || '').trim();
+    if (!fp) {
+      this.trackBeginCheckout(params);
+      this.saveCheckoutItemsSnapshot({
+        value: params.value,
+        items: params.items || [],
+        coupon: params.coupon,
+        evento_titulo: params.eventoTitulo,
+        fingerprint: fp,
+      });
+      return true;
+    }
+
+    try {
+      const prev = sessionStorage.getItem(BEGIN_CHECKOUT_TRACKED_KEY);
+      if (prev === fp) {
+        return false;
+      }
+      sessionStorage.setItem(BEGIN_CHECKOUT_TRACKED_KEY, fp);
+    } catch {
+      // Continuar sin dedupe si storage falla.
+    }
+
+    this.trackBeginCheckout(params);
+    this.saveCheckoutItemsSnapshot({
+      value: params.value,
+      items: params.items || [],
+      coupon: params.coupon,
+      evento_titulo: params.eventoTitulo,
+      fingerprint: fp,
+    });
+    return true;
+  }
+
+  /**
+   * Apertura de pasarela Wompi → add_payment_info / AddPaymentInfo
+   */
+  trackAddPaymentInfo(params: {
+    value: number;
+    items?: GaItem[];
+    paymentType?: string;
+    coupon?: string | null;
+  }) {
+    const items = (params.items || []).filter((i) => i.item_name || i.item_id);
+    this.sendEvent('add_payment_info', {
+      currency: 'COP',
+      value: params.value,
+      payment_type: params.paymentType || 'wompi',
+      coupon: params.coupon || undefined,
+      items,
+    });
+    this.metaPixel.trackAddPaymentInfo({
+      value: params.value,
+      contents: items.map((item) => ({
+        id: String(item.item_id || 'item'),
+        quantity: Math.max(1, Number(item.quantity) || 1),
+        item_price: Number(item.price) || undefined,
+      })),
+    });
+  }
+
+  /** Bloqueos del embudo (GA custom + Meta trackCustom). Sin PII. */
+  trackCheckoutObstacle(params: {
+    reason: CheckoutObstacleReason;
+    step?: string;
+  }) {
+    const reason = params.reason;
+    const step = params.step || 'checkout';
+    this.sendEvent('checkout_obstacle', { reason, step });
+    this.metaPixel.trackCheckoutObstacle({ reason, step });
+  }
+
+  saveCheckoutItemsSnapshot(snapshot: {
+    value: number;
+    items: GaItem[];
+    coupon?: string | null;
+    descuento_total?: number;
+    evento_titulo?: string | null;
+    fingerprint?: string;
+  }): void {
+    if (typeof sessionStorage === 'undefined') return;
+    try {
+      const payload: GaCheckoutItemsSnapshot = {
+        value: Number(snapshot.value) || 0,
+        currency: 'COP',
+        items: snapshot.items || [],
+        coupon: snapshot.coupon ?? null,
+        descuento_total: snapshot.descuento_total,
+        evento_titulo: snapshot.evento_titulo ?? null,
+        fingerprint: snapshot.fingerprint,
+        saved_at: Date.now(),
+      };
+      sessionStorage.setItem(CHECKOUT_ITEMS_KEY, JSON.stringify(payload));
+    } catch {
+      // ignore
+    }
+  }
+
+  readCheckoutItemsSnapshot(): GaCheckoutItemsSnapshot | null {
+    if (typeof sessionStorage === 'undefined') return null;
+    try {
+      const raw = sessionStorage.getItem(CHECKOUT_ITEMS_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as GaCheckoutItemsSnapshot;
+    } catch {
+      return null;
+    }
+  }
+
+  clearCheckoutItemsSnapshot(): void {
+    if (typeof sessionStorage === 'undefined') return;
+    try {
+      sessionStorage.removeItem(CHECKOUT_ITEMS_KEY);
+    } catch {
+      // ignore
+    }
   }
 
   /**

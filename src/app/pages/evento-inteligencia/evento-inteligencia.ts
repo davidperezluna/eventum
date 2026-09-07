@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
 
@@ -151,7 +151,8 @@ interface ProductoRow {
 
 })
 
-export class EventoInteligencia implements OnInit {
+export class EventoInteligencia implements OnInit, OnDestroy {
+  private countdownTimer: ReturnType<typeof setInterval> | null = null;
 
   evento: Evento | null = null;
 
@@ -262,6 +263,11 @@ export class EventoInteligencia implements OnInit {
 
 
   ngOnInit(): void {
+    this.countdownTimer = setInterval(() => {
+      if (!this.evento) return;
+      this.hero = buildHeroMoment(this.evento, computeAforoTotals(this.tiposBoleta));
+      this.cdr.markForCheck();
+    }, 1_000);
 
     this.route.paramMap.subscribe((params) => {
 
@@ -402,6 +408,10 @@ export class EventoInteligencia implements OnInit {
   }
 
 
+
+  ngOnDestroy(): void {
+    if (this.countdownTimer !== null) clearInterval(this.countdownTimer);
+  }
 
   private rebuildIntel(): void {
 

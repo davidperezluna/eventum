@@ -11,6 +11,7 @@ import {
   formatFinanzasMonedaExacta,
 } from '../../utils/dashboard-finanzas.view';
 import { DateTimeUtil } from '../../utils/date-time.util';
+import { resolveEventoEstadoVisual } from '../../core/evento-en-curso';
 import {
   IntelActionNow,
   IntelAforoTotals,
@@ -94,7 +95,7 @@ function buildCountdown(fechaInicio: Date | string | undefined, now: Date): Inte
   if (!fechaInicio) {
     return null;
   }
-  const start = new Date(typeof fechaInicio === 'string' ? fechaInicio : fechaInicio.toISOString());
+  const start = typeof fechaInicio === 'string' ? DateTimeUtil.parseStoredDate(fechaInicio) : fechaInicio;
   if (Number.isNaN(start.getTime())) {
     return null;
   }
@@ -110,7 +111,13 @@ function buildCountdown(fechaInicio: Date | string | undefined, now: Date): Inte
 }
 
 export function buildHeroMoment(evento: Evento, aforo: IntelAforoTotals, now = new Date()): IntelHeroMoment {
-  const estado = evento.estado as TipoEstadoEvento;
+  let estado = resolveEventoEstadoVisual(evento, now);
+  const fin = typeof evento.fecha_fin === 'string'
+    ? DateTimeUtil.parseStoredDate(evento.fecha_fin)
+    : evento.fecha_fin;
+  if (estado === TipoEstadoEvento.PUBLICADO && fin && fin.getTime() <= now.getTime()) {
+    estado = TipoEstadoEvento.FINALIZADO;
+  }
   const countdown = buildCountdown(evento.fecha_inicio, now);
   const aforoPct = aforo.pct;
 
@@ -149,7 +156,9 @@ export function buildHeroMoment(evento: Evento, aforo: IntelAforoTotals, now = n
         countdownCaption = 'Cuenta regresiva';
         showCountdown = true;
       } else if (evento.fecha_inicio) {
-        const start = new Date(evento.fecha_inicio as string);
+        const start = typeof evento.fecha_inicio === 'string'
+          ? DateTimeUtil.parseStoredDate(evento.fecha_inicio)
+          : evento.fecha_inicio;
         headline =
           start.getTime() <= now.getTime()
             ? 'El evento ya debería haber comenzado'

@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ComprasClienteService } from '../../services/compras-cliente.service';
@@ -8,9 +8,15 @@ import { AuthService } from '../../services/auth.service';
 import { Compra, CompraProducto, TransaccionProducto } from '../../types';
 import { DateFormatPipe } from '../../pipes/date-format.pipe';
 import { COMPRA_COPY } from '../../core/compra-copy';
-import { GoogleAnalyticsService } from '../../services/google-analytics.service';
+import {
+  GaItem,
+  GoogleAnalyticsService,
+} from '../../services/google-analytics.service';
 
 const PAGO_PENDIENTE_STORAGE_KEY = 'eventum_pago_pendiente';
+/** Tiempo máximo consultando un pago aún pendiente tras volver de Wompi. */
+const PENDING_POLL_BUDGET_MS = 75_000;
+const PENDING_POLL_DELAY_MS = 2500;
 
 @Component({
   selector: 'app-pago-resultado',
@@ -18,7 +24,7 @@ const PAGO_PENDIENTE_STORAGE_KEY = 'eventum_pago_pendiente';
   templateUrl: './pago-resultado.html',
   styleUrl: './pago-resultado.css',
 })
-export class PagoResultado implements OnInit {
+export class PagoResultado implements OnInit, OnDestroy {
   compraId: number | null = null;
   compraCoverId: number | null = null;
   compraProductoId: number | null = null;
@@ -48,6 +54,8 @@ export class PagoResultado implements OnInit {
   consultaIntento = 0;
   consultaIntentosMax = 1;
   readonly compraCopy = COMPRA_COPY;
+  private destroyed = false;
+  private paymentRejectedTracked = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -93,6 +101,10 @@ export class PagoResultado implements OnInit {
         this.mostrarErrorSinReferencia();
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.destroyed = true;
   }
 
   private restaurarReferenciasPendientes(): void {
@@ -164,34 +176,42 @@ export class PagoResultado implements OnInit {
     }
   }
 
-  /** Envía purchase a GA4 una sola vez por transacción/compra confirmada. */
-  private trackPurchaseSiCompletado(): void {
-    if (this.getEstadoPagoReferencia() !== 'completado') {
-      return;
+  /** ID canónico preferido: chk-{transaccion_checkout_id}. */
+  private getCanonicalTransactionId(): string | null {
+    if (this.transaccionCheckoutId) {
+      return `chk-${this.transaccionCheckoutId}`;
+    }
+    if (this.transaccionCheckout?.id) {
+      return `chk-${this.transaccionCheckout.id}`;
+    }
+    if (this.compraId) {
+      return `compra-${this.compraId}`;
+    }
+    if (this.compraProductoId) {
+      return `prod-${this.compraProductoId}`;
+    }
+    if (this.compraCoverId) {
+      return `cover-${this.compraCoverId}`;
+    }
+    if (this.transaccionProductoId) {
+      return `txn-prod-${this.transaccionProductoId}`;
+    }
+    if (this.wompiTxnId) {
+      return `wompi-${this.wompiTxnId}`;
+    }
+    return null;
+  }
+
+  private resolvePurchaseItems(value: number): GaItem[] {
+    const snapshot = this.googleAnalytics.readCheckoutItemsSnapshot();
+    if (snapshot?.items?.length) {
+      return snapshot.items;
     }
 
-    const transactionId =
-      (this.transaccionCheckoutId && `chk-${this.transaccionCheckoutId}`) ||
-      (this.compraId && `compra-${this.compraId}`) ||
-      (this.compraProductoId && `prod-${this.compraProductoId}`) ||
-      (this.compraCoverId && `cover-${this.compraCoverId}`) ||
-      (this.transaccionProductoId && `txn-prod-${this.transaccionProductoId}`) ||
-      (this.wompiTxnId && `wompi-${this.wompiTxnId}`) ||
-      null;
-
-    if (!transactionId) {
-      return;
-    }
-
-    const value = this.getTotalMostrado();
-    const items: Array<{
-      item_id?: string;
-      item_name?: string;
-      price?: number;
-      quantity?: number;
-      item_category?: string;
-      item_category2?: string;
-    }> = [];
+    const items: GaItem[] = [];
+    const eventoTitulo =
+      this.compra?.evento?.titulo ||
+      (this.compraProducto?.eventos as { titulo?: string } | undefined)?.titulo;
 
     if (this.compra) {
       items.push({
@@ -199,32 +219,79 @@ export class PagoResultado implements OnInit {
         item_name: 'Boletas',
         price: Number(this.compra.total) || 0,
         quantity: 1,
-        item_category: this.compra.evento?.titulo,
+        discount: Number(this.compra.descuento_total) || undefined,
+        item_category: eventoTitulo,
         item_category2: 'boleta',
       });
     }
     if (this.compraProducto) {
-      items.push({
-        item_id: String(this.compraProducto.evento_id || this.compraProducto.id),
-        item_name: 'Productos',
-        price: Number(this.compraProducto.total) || 0,
-        quantity: 1,
-        item_category: this.compra?.evento?.titulo,
-        item_category2: 'producto',
-      });
+      const lineas = this.compraProducto.compras_productos_items;
+      if (lineas?.length) {
+        for (const linea of lineas) {
+          const prod = Array.isArray(linea.productos) ? linea.productos[0] : linea.productos;
+          items.push({
+            item_id: `producto-${linea.producto_id}`,
+            item_name: prod?.nombre || `Producto ${linea.producto_id}`,
+            price: Number(linea.precio_unitario) || 0,
+            quantity: Number(linea.cantidad) || 1,
+            item_category: eventoTitulo,
+            item_category2: 'producto',
+          });
+        }
+      } else {
+        items.push({
+          item_id: String(this.compraProducto.evento_id || this.compraProducto.id),
+          item_name: 'Productos',
+          price: Number(this.compraProducto.total) || 0,
+          quantity: 1,
+          item_category: eventoTitulo,
+          item_category2: 'producto',
+        });
+      }
     }
     if (this.compraCoverId && !this.compra) {
       items.push({
-        item_id: String(this.compraCoverId),
+        item_id: `cover-${this.compraCoverId}`,
         item_name: 'Cover',
         price: value,
         quantity: 1,
-        item_category: undefined,
+        item_category: eventoTitulo,
         item_category2: 'cover',
       });
     }
 
+    return items;
+  }
+
+  /** Envía purchase a GA4 una sola vez por transacción/compra confirmada. */
+  private trackPurchaseSiCompletado(): void {
+    if (this.getEstadoPagoReferencia() !== 'completado') {
+      return;
+    }
+
+    const transactionId = this.getCanonicalTransactionId();
+    if (!transactionId) {
+      return;
+    }
+
+    const value = this.getTotalMostrado();
+    const items = this.resolvePurchaseItems(value);
     this.googleAnalytics.trackPurchaseOnce(value, transactionId, 'COP', items);
+    this.googleAnalytics.clearCheckoutItemsSnapshot();
+  }
+
+  private trackPaymentRejectedOnce(): void {
+    if (this.paymentRejectedTracked) {
+      return;
+    }
+    if (this.getEstadoPagoReferencia() !== 'fallido') {
+      return;
+    }
+    this.paymentRejectedTracked = true;
+    this.googleAnalytics.trackCheckoutObstacle({
+      reason: 'payment_rejected',
+      step: 'pago_resultado',
+    });
   }
 
   private mostrarErrorSinReferencia(): void {
@@ -260,21 +327,32 @@ export class PagoResultado implements OnInit {
     if (resuelto.compraProductoId) this.compraProductoId = resuelto.compraProductoId;
     if (resuelto.transaccionProductoId) this.transaccionProductoId = resuelto.transaccionProductoId;
 
-    return !!(this.compraId || this.compraProductoId || this.transaccionProductoId);
+    return !!(this.compraId || this.compraProductoId || this.transaccionProductoId || this.transaccionCheckoutId);
   }
 
   async verificarEstadoCompra(): Promise<void> {
-    const intentosMax = this.wompiTxnId && !this.transaccionProductoId ? 12 : this.wompiTxnId ? 10 : 1;
-    const delayMs = 2500;
+    const startedAt = Date.now();
+    const resolveIntentosMax =
+      this.wompiTxnId && !this.transaccionProductoId ? 12 : this.wompiTxnId ? 10 : 1;
+    const pendingIntentosMax = Math.ceil(PENDING_POLL_BUDGET_MS / PENDING_POLL_DELAY_MS);
+    const intentosMax = Math.max(resolveIntentosMax, pendingIntentosMax);
+    const delayMs = PENDING_POLL_DELAY_MS;
     this.consultaIntentosMax = intentosMax;
     this.consultaIntento = 0;
 
     for (let intento = 0; intento < intentosMax; intento++) {
+      if (this.destroyed) {
+        return;
+      }
+
       this.consultaIntento = intento + 1;
       this.cdr.detectChanges();
 
       if (intento > 0) {
         await new Promise((resolve) => setTimeout(resolve, delayMs));
+        if (this.destroyed) {
+          return;
+        }
       }
 
       try {
@@ -286,7 +364,7 @@ export class PagoResultado implements OnInit {
               transaccion_checkout_id: this.transaccionCheckoutId,
             });
           }
-          if (intento < intentosMax - 1) {
+          if (intento < intentosMax - 1 && Date.now() - startedAt < PENDING_POLL_BUDGET_MS) {
             continue;
           }
           this.mostrarErrorSinReferencia();
@@ -371,6 +449,7 @@ export class PagoResultado implements OnInit {
             this.error =
               'Tu transacción de productos no quedó confirmada y el intento de pago expiró. Puedes volver al evento para intentarlo de nuevo.';
             this.loading = false;
+            this.trackPaymentRejectedOnce();
             this.cdr.detectChanges();
             return;
           }
@@ -385,26 +464,35 @@ export class PagoResultado implements OnInit {
           this.error = null;
           this.limpiarReferenciasPendientes();
           this.vaciarCarritoTrasCompraExitosa();
+          const coverValue = this.getTotalMostrado();
           this.googleAnalytics.trackPurchaseOnce(
-            this.getTotalMostrado(),
-            `cover-${this.compraCoverId}`,
+            coverValue,
+            this.getCanonicalTransactionId() || `cover-${this.compraCoverId}`,
             'COP',
-            [{
-              item_id: String(this.compraCoverId),
-              item_name: 'Cover',
-              price: this.getTotalMostrado(),
-              quantity: 1,
-              item_category: 'cover',
-            }],
+            this.resolvePurchaseItems(coverValue),
           );
+          this.googleAnalytics.clearCheckoutItemsSnapshot();
           this.cdr.detectChanges();
           return;
         }
 
+        const estado = this.getEstadoPagoReferencia();
+
+        if (estado === 'pendiente' && Date.now() - startedAt < PENDING_POLL_BUDGET_MS && intento < intentosMax - 1) {
+          // Mantener UI en carga mientras sigue pendiente y hay presupuesto.
+          this.loading = true;
+          this.error = null;
+          this.cdr.detectChanges();
+          continue;
+        }
+
         this.loading = false;
         this.error = null;
-        if (this.getEstadoPagoReferencia() === 'completado') {
+        if (estado === 'completado') {
           this.limpiarReferenciasPendientes();
+        }
+        if (estado === 'fallido') {
+          this.trackPaymentRejectedOnce();
         }
         this.vaciarCarritoTrasCompraExitosa();
         this.trackPurchaseSiCompletado();
@@ -423,7 +511,8 @@ export class PagoResultado implements OnInit {
             this.errorTitulo = 'El pago no se completó';
             this.error =
               'Tu transacción de productos no quedó confirmada. No se registró ningún pedido de productos.';
-          } else if (intento < intentosMax - 1) {
+            this.trackPaymentRejectedOnce();
+          } else if (intento < intentosMax - 1 && Date.now() - startedAt < PENDING_POLL_BUDGET_MS) {
             continue;
           } else {
             this.loading = false;
@@ -431,13 +520,14 @@ export class PagoResultado implements OnInit {
             this.cdr.detectChanges();
             return;
           }
-        } else if (code === 'PGRST116' && intento < intentosMax - 1) {
+        } else if (code === 'PGRST116' && intento < intentosMax - 1 && Date.now() - startedAt < PENDING_POLL_BUDGET_MS) {
           continue;
         } else if (code === 'PGRST116') {
           this.errorTitulo = 'El pago no se completó';
           this.error =
             'Tu transacción no quedó confirmada en el sistema (o fue rechazada). Si ves un cobro en tu cuenta, revisa Mis compras o contacta a tu banco.';
-        } else if (intento < intentosMax - 1) {
+          this.trackPaymentRejectedOnce();
+        } else if (intento < intentosMax - 1 && Date.now() - startedAt < PENDING_POLL_BUDGET_MS) {
           continue;
         } else {
           this.errorTitulo = 'No pudimos verificar tu compra';
@@ -566,6 +656,10 @@ export class PagoResultado implements OnInit {
   getTotalMostrado(): number {
     if (!this.compra && !this.compraProducto && !this.transaccionProducto && this.transaccionCheckout) {
       return this.transaccionCheckout.total ?? 0;
+    }
+    const snapshot = this.googleAnalytics.readCheckoutItemsSnapshot();
+    if (!this.compra && !this.compraProducto && !this.transaccionProducto && snapshot?.value) {
+      return snapshot.value;
     }
     const totalProductos = this.compraProducto?.total ?? this.transaccionProducto?.monto ?? 0;
     return (this.compra?.total ?? 0) + totalProductos;

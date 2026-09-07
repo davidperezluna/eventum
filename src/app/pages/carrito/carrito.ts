@@ -36,7 +36,10 @@ import { getPagoResultadoUrl } from '../../config/app-url';
 import { irALoginCliente } from '../../core/login-redirect';
 import { CoversService } from '../../services/covers.service';
 import { TransaccionesCheckoutService } from '../../services/transacciones-checkout.service';
-import { GoogleAnalyticsService } from '../../services/google-analytics.service';
+import {
+  GaItem,
+  GoogleAnalyticsService,
+} from '../../services/google-analytics.service';
 import { labelSesionCover } from '../../core/covers-labels';
 import { TERMINOS_LICOR_TEXTO } from '../../constants/productos.constants';
 import {
@@ -910,6 +913,7 @@ export class Carrito implements OnInit, OnDestroy {
         });
         if (typeof window !== 'undefined') {
           this.redirigiendoAWompi = true;
+          this.trackWompiPaymentInfo(pendiente.totalPago);
           window.location.href = pendiente.checkoutUrl;
         }
       } finally {
@@ -1214,6 +1218,7 @@ export class Carrito implements OnInit, OnDestroy {
       throw new Error('No se pudo abrir la pasarela de pago');
     }
     this.redirigiendoAWompi = true;
+    this.trackWompiPaymentInfo(totalPago);
     window.location.href = checkoutUrl;
   }
 
@@ -1914,6 +1919,126 @@ export class Carrito implements OnInit, OnDestroy {
     this.carritoCompraService.reemplazarItems(this.itemsCompra);
   }
 
+  /** Ítems GA del carrito actual (mismos IDs que view/add; descuento en boletas). */
+  private buildGaItemsFromCart(): GaItem[] {
+    const eventoTitulo = this.evento?.titulo ?? this.lugarCover?.nombre ?? undefined;
+    const items: GaItem[] = [
+      ...this.itemsCompra.map((item) => ({
+        item_id: String(item.tipo.id),
+        item_name: item.tipo.nombre || `Boleta ${item.tipo.id}`,
+        price: Number(item.tipo.precio) || 0,
+        quantity: item.cantidad,
+        item_category: eventoTitulo,
+        item_category2: item.sesion_cover_id ? 'cover' : 'boleta',
+      })),
+      ...this.itemsCover.map((item) => ({
+        item_id: `cover-${item.tipo_cover_id}`,
+        item_name: item.tipo_cover_nombre || `Cover ${item.tipo_cover_id}`,
+        price: Number(item.precio) || 0,
+        quantity: item.cantidad || 1,
+        item_category: eventoTitulo,
+        item_category2: 'cover',
+      })),
+      ...this.itemsProductos.map((item) => ({
+        item_id: `producto-${item.producto.id}`,
+        item_name: item.producto.nombre || `Producto ${item.producto.id}`,
+        price: Number(item.producto.precio) || 0,
+        quantity: item.cantidad,
+        item_category: eventoTitulo,
+        item_category2: 'producto',
+      })),
+    ];
+
+    const descuentoTotal = this.getDescuento();
+    if (descuentoTotal > 0) {
+      const boletaIdx = items
+        .map((item, index) => ({ item, index }))
+        .filter(({ item }) => item.item_category2 === 'boleta');
+      const baseBoletas = boletaIdx.reduce(
+        (sum, { item }) => sum + (Number(item.price) || 0) * Math.max(1, Number(item.quantity) || 1),
+        0,
+      );
+      if (baseBoletas > 0) {
+        let asignado = 0;
+        boletaIdx.forEach(({ item, index }, i) => {
+          const linea =
+            (Number(item.price) || 0) * Math.max(1, Number(item.quantity) || 1);
+          const parte =
+            i === boletaIdx.length - 1
+              ? Math.max(0, descuentoTotal - asignado)
+              : Math.round((descuentoTotal * linea) / baseBoletas);
+          asignado += parte;
+          items[index] = { ...item, discount: parte };
+        });
+      }
+    }
+
+    return items;
+  }
+
+  private buildGaCheckoutFingerprint(items: GaItem[]): string {
+    const scope =
+      this.evento?.id != null
+        ? `e${this.evento.id}`
+        : this.lugarCover?.id != null
+          ? `l${this.lugarCover.id}`
+          : 'cart';
+    const lines = items
+      .map(
+        (i) =>
+          `${i.item_id}:${i.quantity || 1}:${i.price || 0}:${i.discount || 0}`,
+      )
+      .sort()
+      .join('|');
+    return `${scope}|${lines}|${this.getTotal()}`;
+  }
+
+  private trackBeginCheckoutIntent(): GaItem[] {
+    const items = this.buildGaItemsFromCart();
+    const value = this.getTotal();
+    const eventoTitulo = this.evento?.titulo ?? this.lugarCover?.nombre;
+    const coupon = this.cuponAplicado?.codigo ?? null;
+    this.googleAnalytics.trackBeginCheckoutOnce({
+      value,
+      items,
+      eventoTitulo,
+      coupon,
+      fingerprint: this.buildGaCheckoutFingerprint(items),
+    });
+    this.googleAnalytics.saveCheckoutItemsSnapshot({
+      value,
+      items,
+      coupon,
+      descuento_total: this.getDescuento(),
+      evento_titulo: eventoTitulo,
+      fingerprint: this.buildGaCheckoutFingerprint(items),
+    });
+    return items;
+  }
+
+  private trackWompiPaymentInfo(value: number, items?: GaItem[]): void {
+    const snapshot = this.googleAnalytics.readCheckoutItemsSnapshot();
+    const gaItems = items?.length
+      ? items
+      : snapshot?.items?.length
+        ? snapshot.items
+        : this.buildGaItemsFromCart();
+    this.googleAnalytics.trackAddPaymentInfo({
+      value,
+      items: gaItems,
+      paymentType: 'wompi',
+      coupon: this.cuponAplicado?.codigo ?? snapshot?.coupon ?? null,
+    });
+    this.googleAnalytics.saveCheckoutItemsSnapshot({
+      value,
+      items: gaItems,
+      coupon: this.cuponAplicado?.codigo ?? snapshot?.coupon ?? null,
+      descuento_total: this.getDescuento() || snapshot?.descuento_total || 0,
+      evento_titulo:
+        this.evento?.titulo ?? this.lugarCover?.nombre ?? snapshot?.evento_titulo ?? null,
+    });
+  }
+
   async procesarCompra(): Promise<void> {
     if (this.carritoCompraService.estaVacio()) {
       this.alertService.warning('Carrito vacío', 'Debes agregar al menos un item');
@@ -1934,6 +2059,10 @@ export class Carrito implements OnInit, OnDestroy {
           'Cancelar',
         );
         if (!vaciarEvento) {
+          this.googleAnalytics.trackCheckoutObstacle({
+            reason: 'cart_conflict',
+            step: 'cart',
+          });
           return;
         }
         this.carritoCompraService.limpiarContenidoEvento();
@@ -1945,6 +2074,10 @@ export class Carrito implements OnInit, OnDestroy {
           'Cancelar',
         );
         if (!vaciarCovers) {
+          this.googleAnalytics.trackCheckoutObstacle({
+            reason: 'cart_conflict',
+            step: 'cart',
+          });
           return;
         }
         this.carritoCompraService.limpiarContenidoCover();
@@ -1957,7 +2090,14 @@ export class Carrito implements OnInit, OnDestroy {
       return;
     }
 
+    // Intención de pagar: antes de sesión / disponibilidad.
+    this.trackBeginCheckoutIntent();
+
     if (this.tieneLicor() && !this.terminosAceptados) {
+      this.googleAnalytics.trackCheckoutObstacle({
+        reason: 'incomplete_data',
+        step: 'terms_age',
+      });
       this.alertService.warning(
         'Confirma el requisito de edad',
         'Marca la casilla de productos +18 antes de continuar al pago.'
@@ -1965,12 +2105,14 @@ export class Carrito implements OnInit, OnDestroy {
       return;
     }
 
-    const totalPago = this.getTotal();
-
     if (!esSoloCover && this.evento) {
       const ahora = new Date();
       const fechaFin = new Date(this.evento.fecha_fin);
       if (fechaFin < ahora || this.evento.estado === TipoEstadoEvento.FINALIZADO || this.evento.estado === TipoEstadoEvento.CANCELADO) {
+        this.googleAnalytics.trackCheckoutObstacle({
+          reason: 'event_unavailable',
+          step: 'event',
+        });
         this.alertService.error('Evento finalizado', 'Este evento ya no está disponible para compra');
         return;
       }
@@ -1981,6 +2123,10 @@ export class Carrito implements OnInit, OnDestroy {
 
     const clienteId = await this.requerirSesionActiva();
     if (!clienteId) {
+      this.googleAnalytics.trackCheckoutObstacle({
+        reason: 'session_required',
+        step: 'auth',
+      });
       this.comprando = false;
       return;
     }
@@ -1990,6 +2136,10 @@ export class Carrito implements OnInit, OnDestroy {
       : await this.resolverCheckoutPendiente(clienteId, this.evento!.id);
     if (checkoutPendiente) {
       this.guardarCheckoutPendienteEnCarrito(checkoutPendiente);
+      this.googleAnalytics.trackCheckoutObstacle({
+        reason: 'pending_checkout',
+        step: 'checkout',
+      });
       this.alertService.snackbar(
         'Tienes un pago en curso. Recupéralo o cancélalo para poder finalizar una compra nueva.'
       );
@@ -2002,6 +2152,10 @@ export class Carrito implements OnInit, OnDestroy {
       if (this.esLineaPalcoMultipersona(item.tipo)) {
         const pids = item.palco_ids || [];
         if (pids.length !== item.cantidad || pids.some((x) => x == null)) {
+          this.googleAnalytics.trackCheckoutObstacle({
+            reason: 'incomplete_data',
+            step: 'palcos',
+          });
           this.alertService.warning('Palcos incompletos', `Debes seleccionar todos los palcos en "${item.tipo.nombre}"`);
           this.comprando = false;
           return;
@@ -2088,6 +2242,10 @@ export class Carrito implements OnInit, OnDestroy {
       if (pedidoCovers) {
         const validacionCover = await this.coversService.validarDisponibilidadCover(itemsCoverPedido);
         if (!validacionCover.valido) {
+          this.googleAnalytics.trackCheckoutObstacle({
+            reason: 'availability',
+            step: 'covers',
+          });
           this.alertService.error('Error de disponibilidad', validacionCover.errores.join('\n'));
           return;
         }
@@ -2097,6 +2255,10 @@ export class Carrito implements OnInit, OnDestroy {
         await this.refrescarPalcosDisponibles();
         const validacionBoletas = await this.comprasClienteService.validarDisponibilidad(itemsBoletas);
         if (!validacionBoletas.valido) {
+          this.googleAnalytics.trackCheckoutObstacle({
+            reason: 'availability',
+            step: 'boletas',
+          });
           this.alertService.error('Error de disponibilidad', validacionBoletas.errores.join('\n'));
           return;
         }
@@ -2105,43 +2267,24 @@ export class Carrito implements OnInit, OnDestroy {
       if (this.itemsProductos.length > 0) {
         const validacionProductos = await this.comprasProductoService.validarDisponibilidad(itemsProductosCompra);
         if (!validacionProductos.valido) {
+          this.googleAnalytics.trackCheckoutObstacle({
+            reason: 'availability',
+            step: 'productos',
+          });
           this.alertService.error('Disponibilidad de productos', validacionProductos.errores.join('\n'));
           return;
         }
       }
 
       const totalPago = this.getTotal();
-      const eventoTitulo = this.evento?.titulo ?? this.lugarCover?.nombre;
-
-      this.googleAnalytics.trackBeginCheckout({
+      // Snapshot actualizado tras validaciones (mismo catálogo que se enviará a Wompi).
+      const gaItems = this.buildGaItemsFromCart();
+      this.googleAnalytics.saveCheckoutItemsSnapshot({
         value: totalPago,
-        eventoTitulo,
-        items: [
-          ...this.itemsCompra.map((item) => ({
-            item_id: String(item.tipo.id),
-            item_name: item.tipo.nombre || `Boleta ${item.tipo.id}`,
-            price: Number(item.tipo.precio) || 0,
-            quantity: item.cantidad,
-            item_category: eventoTitulo,
-            item_category2: item.sesion_cover_id ? 'cover' : 'boleta',
-          })),
-          ...this.itemsCover.map((item) => ({
-            item_id: `cover-${item.tipo_cover_id}`,
-            item_name: item.tipo_cover_nombre || `Cover ${item.tipo_cover_id}`,
-            price: Number(item.precio) || 0,
-            quantity: item.cantidad || 1,
-            item_category: eventoTitulo,
-            item_category2: 'cover',
-          })),
-          ...this.itemsProductos.map((item) => ({
-            item_id: `producto-${item.producto.id}`,
-            item_name: item.producto.nombre || `Producto ${item.producto.id}`,
-            price: Number(item.producto.precio) || 0,
-            quantity: item.cantidad,
-            item_category: eventoTitulo,
-            item_category2: 'producto',
-          })),
-        ],
+        items: gaItems,
+        coupon: this.cuponAplicado?.codigo ?? null,
+        descuento_total: this.getDescuento(),
+        evento_titulo: this.evento?.titulo ?? this.lugarCover?.nombre ?? null,
       });
 
       // Compra gratuita: sí se crean registros porque no hay pasarela (éxito inmediato).
@@ -2225,10 +2368,18 @@ export class Carrito implements OnInit, OnDestroy {
     } catch (error: any) {
       console.error('Error procesando compra:', error);
       if (this.authService.isAuthOrRlsError(error?.message)) {
+        this.googleAnalytics.trackCheckoutObstacle({
+          reason: 'session_required',
+          step: 'auth',
+        });
         await this.authService.ensureActiveSession();
         this.manejarErrorSesionExpirada();
         return;
       }
+      this.googleAnalytics.trackCheckoutObstacle({
+        reason: 'payment_error',
+        step: 'create_checkout',
+      });
       this.alertService.error('Error al procesar compra', error?.message || 'Error desconocido');
     } finally {
       if (!this.redirigiendoAWompi) {

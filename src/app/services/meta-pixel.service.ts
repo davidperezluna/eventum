@@ -80,6 +80,7 @@ export class MetaPixelService {
     contentName?: string;
     contentCategory?: string;
     value: number;
+    numItems?: number;
   }): void {
     this.track('InitiateCheckout', {
       content_ids: params.contentId != null ? [String(params.contentId)] : undefined,
@@ -88,7 +89,28 @@ export class MetaPixelService {
       content_type: 'product',
       value: params.value,
       currency: 'COP',
-      num_items: 1,
+      num_items: Math.max(1, Number(params.numItems) || 1),
+    });
+  }
+
+  trackAddPaymentInfo(params: {
+    value: number;
+    contents?: Array<{ id: string; quantity: number; item_price?: number }>;
+  }): void {
+    this.track('AddPaymentInfo', {
+      value: params.value,
+      currency: 'COP',
+      content_type: 'product',
+      contents: params.contents,
+      content_ids: params.contents?.map((c) => c.id),
+    });
+  }
+
+  /** Custom: bloqueos del embudo (sin PII). */
+  trackCheckoutObstacle(params: { reason: string; step?: string }): void {
+    this.trackCustom('CheckoutObstacle', {
+      reason: params.reason,
+      step: params.step || 'checkout',
     });
   }
 
@@ -125,6 +147,22 @@ export class MetaPixelService {
       }
     } catch (error) {
       console.error(`Error tracking Meta Pixel ${eventName}:`, error);
+    }
+  }
+
+  private trackCustom(eventName: string, params?: Record<string, unknown>): void {
+    if (!this.canTrack()) return;
+    this.init();
+    try {
+      const fbq = window.fbq;
+      if (typeof fbq !== 'function') return;
+      if (params) {
+        fbq('trackCustom', eventName, params);
+      } else {
+        fbq('trackCustom', eventName);
+      }
+    } catch (error) {
+      console.error(`Error tracking Meta Pixel custom ${eventName}:`, error);
     }
   }
 
