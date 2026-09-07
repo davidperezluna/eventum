@@ -1776,8 +1776,9 @@
     border: 0;
   }
 
-  .events-grid--past,
-  .events-grid--past.events-grid--past-expanded {
+  /* Evita que la cuadrícula móvil general (1fr) colapse la primera tarjeta. */
+  .events-section--past .events-grid--past,
+  .events-section--past .events-grid--past.events-grid--past-expanded {
     display: grid;
     grid-auto-columns: minmax(9.5rem, 48%);
     grid-template-columns: none;
