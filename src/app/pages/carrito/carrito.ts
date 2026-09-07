@@ -197,14 +197,12 @@ export class Carrito implements OnInit, OnDestroy {
         const eventoId = this.evento?.id ?? this.carritoCompraService.getEventoSnapshot()?.id;
         const tieneCache = !!(eventoId && this.detalleEventoStateService.getState(eventoId));
         void this.refrescarPalcosDisponibles({ background: tieneCache });
-        this.maybeTrackBeginCheckoutOnCartView();
       })
     );
 
     this.subscriptions.add(
       this.carritoCompraService.itemsCover$.subscribe((items) => {
         this.itemsCover = items.map((item) => ({ ...item }));
-        this.maybeTrackBeginCheckoutOnCartView();
         this.cdr.detectChanges();
       })
     );
@@ -212,7 +210,6 @@ export class Carrito implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.carritoCompraService.lugarCover$.subscribe((lugar) => {
         this.lugarCover = lugar;
-        this.maybeTrackBeginCheckoutOnCartView();
         this.cdr.detectChanges();
       })
     );
@@ -223,7 +220,6 @@ export class Carrito implements OnInit, OnDestroy {
           ...item,
           producto: { ...item.producto }
         }));
-        this.maybeTrackBeginCheckoutOnCartView();
       })
     );
 
@@ -243,7 +239,6 @@ export class Carrito implements OnInit, OnDestroy {
         }
         void this.cargarCheckoutPendienteEnCarrito();
         void this.restaurarCuponDesdeCache();
-        this.maybeTrackBeginCheckoutOnCartView();
       })
     );
 
@@ -980,9 +975,12 @@ export class Carrito implements OnInit, OnDestroy {
         });
         if (typeof window !== 'undefined') {
           try {
+            // Recuperar pendiente = intención de pagar (no pasó por el botón Pagar).
+            this.googleAnalytics.clearBeginCheckoutDedupe();
+            this.trackBeginCheckoutIntent();
             this.trackWompiPaymentInfo(pendiente.totalPago);
           } catch (trackError) {
-            console.error('Error tracking add_payment_info:', trackError);
+            console.error('Error tracking checkout/payment_info:', trackError);
           }
           this.limpiarWatchdogCompra();
           this.redirigiendoAWompi = true;
@@ -2093,17 +2091,14 @@ export class Carrito implements OnInit, OnDestroy {
     return `${scope}|${lines}|${this.getTotal()}`;
   }
 
-  private beginCheckoutViewTracked = false;
-
   private trackBeginCheckoutIntent(itemsOverride?: GaItem[]): GaItem[] {
-    const items = (itemsOverride?.length ? itemsOverride : this.buildGaItemsFromCart());
+    const items = itemsOverride?.length ? itemsOverride : this.buildGaItemsFromCart();
     if (!items.length) {
       return items;
     }
-    const serviceFee = this.getValorServicio() ||
-      Number(this.googleAnalytics.readCheckoutItemsSnapshot()?.service_fee) ||
-      0;
     const snapshot = this.googleAnalytics.readCheckoutItemsSnapshot();
+    const serviceFee =
+      this.getValorServicio() || Number(snapshot?.service_fee) || 0;
     const eventoTitulo =
       this.evento?.titulo ?? this.lugarCover?.nombre ?? snapshot?.evento_titulo ?? undefined;
     const coupon = this.cuponAplicado?.codigo ?? snapshot?.coupon ?? null;
@@ -2126,28 +2121,6 @@ export class Carrito implements OnInit, OnDestroy {
     return items;
   }
 
-  /** Embudo GA: begin_checkout al ver el carrito con ítems (antes de Wompi). */
-  private maybeTrackBeginCheckoutOnCartView(): void {
-    if (this.beginCheckoutViewTracked) {
-      return;
-    }
-    if (this.carritoCompraService.estaVacio()) {
-      this.googleAnalytics.clearBeginCheckoutDedupe();
-      return;
-    }
-    // Esperar contexto de evento/cover para fingerprint estable.
-    if (!this.evento && !this.lugarCover && this.itemsCover.length === 0) {
-      return;
-    }
-    this.beginCheckoutViewTracked = true;
-    try {
-      this.trackBeginCheckoutIntent();
-    } catch (trackError) {
-      console.error('Error tracking begin_checkout (cart view):', trackError);
-      this.beginCheckoutViewTracked = false;
-    }
-  }
-
   private trackWompiPaymentInfo(_totalConServicio?: number, items?: GaItem[]): void {
     const snapshot = this.googleAnalytics.readCheckoutItemsSnapshot();
     const gaItems = items?.length
@@ -2155,12 +2128,6 @@ export class Carrito implements OnInit, OnDestroy {
       : snapshot?.items?.length
         ? snapshot.items
         : this.buildGaItemsFromCart();
-    // Si llegamos a Wompi sin begin_checkout (pago pendiente / dedupe viejo), emitirlo ahora.
-    try {
-      this.trackBeginCheckoutIntent(gaItems);
-    } catch {
-      // no bloquear pago
-    }
     const serviceFee =
       snapshot?.service_fee != null && snapshot.service_fee >= 0
         ? Number(snapshot.service_fee)
@@ -2234,8 +2201,9 @@ export class Carrito implements OnInit, OnDestroy {
       return;
     }
 
-    // Intención de pagar: antes de sesión / disponibilidad.
+    // begin_checkout solo al pulsar Pagar (no al entrar al carrito).
     try {
+      this.googleAnalytics.clearBeginCheckoutDedupe();
       this.trackBeginCheckoutIntent();
     } catch (trackError) {
       console.error('Error tracking begin_checkout:', trackError);
