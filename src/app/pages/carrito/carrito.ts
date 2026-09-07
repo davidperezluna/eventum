@@ -102,6 +102,9 @@ export class Carrito implements OnInit, OnDestroy {
   cancelandoCheckoutPendiente = false;
   recuperandoCheckoutPendiente = false;
   private redirigiendoAWompi = false;
+  /** Evita dejar el botón en "Preparando el pago…" si algo se cuelga sin red. */
+  private compraWatchdog: ReturnType<typeof setTimeout> | null = null;
+  private readonly compraWatchdogMs = 45_000;
   /** Solo bloquea la vista si no hay datos locales del carrito ni cache del evento. */
   inicializandoCarrito = false;
   private cancelacionCheckoutSeq = 0;
@@ -138,6 +141,12 @@ export class Carrito implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    // Recuperar UI si un intento anterior dejó el botón colgado (HMR / redirect fallido).
+    this.comprando = false;
+    this.redirigiendoAWompi = false;
+    this.recuperandoCheckoutPendiente = false;
+    this.limpiarWatchdogCompra();
+
     this.hidratarCheckoutPendienteLocal();
     this.usuario = this.authService.getUsuario();
     this.hidratarDesdeCacheDetalleEvento();
@@ -354,6 +363,7 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.limpiarWatchdogCompra();
     this.stopCountdownTicker();
     this.stopSilentRefreshIndicator();
     this.persistDetalleCacheParcial(Date.now());
@@ -692,8 +702,16 @@ export class Carrito implements OnInit, OnDestroy {
       this.startSilentRefreshIndicator();
     }
     try {
-      const evento = await this.eventosService.getEventoById(eventoId);
+      const evento = await this.withTimeout<Evento | null>(
+        this.eventosService.getEventoById(eventoId).catch(() => null),
+        12_000,
+        null,
+      );
+      if (!evento) {
+        return;
+      }
       this.evento = evento;
+      // syncEvento solo emite si cambió id/título; no reentrar al loop de evento$.
       this.carritoCompraService.syncEvento(evento);
       this.persistDetalleCacheParcial(Date.now());
     } catch (error) {
@@ -878,6 +896,32 @@ export class Carrito implements OnInit, OnDestroy {
         clearTimeout(timer);
       }
     }
+  }
+
+  private limpiarWatchdogCompra(): void {
+    if (this.compraWatchdog) {
+      clearTimeout(this.compraWatchdog);
+      this.compraWatchdog = null;
+    }
+  }
+
+  /** Si el flujo se cuelga sin redirect, libera el botón para no dejar la UI bloqueada. */
+  private armarWatchdogCompra(): void {
+    this.limpiarWatchdogCompra();
+    this.compraWatchdog = setTimeout(() => {
+      if (!this.comprando) {
+        return;
+      }
+      console.error('Watchdog: compra/pago colgado; se libera el botón.');
+      this.redirigiendoAWompi = false;
+      this.comprando = false;
+      this.recuperandoCheckoutPendiente = false;
+      this.alertService.error(
+        'El pago no respondió',
+        'Tardó demasiado en prepararse. Revisa tu conexión e inténtalo de nuevo.',
+      );
+      this.cdr.detectChanges();
+    }, this.compraWatchdogMs);
   }
 
   private guardarCheckoutPendienteEnCarrito(
@@ -1160,7 +1204,14 @@ export class Carrito implements OnInit, OnDestroy {
     wompiBody: Record<string, unknown>,
     totalPago: number,
   ): Promise<void> {
-    const resultado = await this.comprasProductoService.iniciarCheckoutDesdeBody(wompiBody);
+    const resultado = await this.withTimeout(
+      this.comprasProductoService.iniciarCheckoutDesdeBody(wompiBody),
+      40_000,
+      {
+        success: false,
+        error: 'El pago tardó demasiado en iniciarse. Intenta de nuevo en unos segundos.',
+      },
+    );
     const checkoutUrl = resultado.checkout_url?.trim();
     if (!resultado.success || !checkoutUrl) {
       throw new Error(resultado.error || 'No se pudo iniciar el pago en Wompi');
@@ -1239,7 +1290,10 @@ export class Carrito implements OnInit, OnDestroy {
     }
 
     this.redirigiendoAWompi = true;
-    window.location.href = checkoutUrl;
+    this.cdr.detectChanges();
+    // Dejar que el browser pinte el estado y luego salir (más fiable en algunos móviles).
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    window.location.assign(checkoutUrl);
   }
 
   ocultarAvisoCheckoutPendiente(): void {
@@ -2111,7 +2165,11 @@ export class Carrito implements OnInit, OnDestroy {
     }
 
     // Intención de pagar: antes de sesión / disponibilidad.
-    this.trackBeginCheckoutIntent();
+    try {
+      this.trackBeginCheckoutIntent();
+    } catch (trackError) {
+      console.error('Error tracking begin_checkout:', trackError);
+    }
 
     if (this.tieneLicor() && !this.terminosAceptados) {
       this.googleAnalytics.trackCheckoutObstacle({
@@ -2139,21 +2197,36 @@ export class Carrito implements OnInit, OnDestroy {
     }
 
     this.comprando = true;
-    this.cdr.detectChanges();
+    this.redirigiendoAWompi = false;
+    this.armarWatchdogCompra();
+    this.cdr.markForCheck();
 
-    const clienteId = await this.requerirSesionActiva();
+    const clienteId = await this.withTimeout(
+      this.requerirSesionActiva(),
+      12_000,
+      null,
+    );
     if (!clienteId) {
-      this.googleAnalytics.trackCheckoutObstacle({
-        reason: 'session_required',
-        step: 'auth',
-      });
+      try {
+        this.googleAnalytics.trackCheckoutObstacle({
+          reason: 'session_required',
+          step: 'auth',
+        });
+      } catch {
+        // ignore
+      }
       this.comprando = false;
+      this.limpiarWatchdogCompra();
       return;
     }
 
     const checkoutPendiente = esSoloCover
       ? null
-      : await this.resolverCheckoutPendiente(clienteId, this.evento!.id);
+      : await this.withTimeout(
+          this.resolverCheckoutPendiente(clienteId, this.evento!.id),
+          8000,
+          null,
+        );
     if (checkoutPendiente) {
       this.guardarCheckoutPendienteEnCarrito(checkoutPendiente);
       this.googleAnalytics.trackCheckoutObstacle({
@@ -2164,6 +2237,7 @@ export class Carrito implements OnInit, OnDestroy {
         'Tienes un pago en curso. Recupéralo o cancélalo para poder finalizar una compra nueva.'
       );
       this.comprando = false;
+      this.limpiarWatchdogCompra();
       return;
     }
     this.checkoutPendienteEnCurso = null;
@@ -2178,6 +2252,7 @@ export class Carrito implements OnInit, OnDestroy {
           });
           this.alertService.warning('Palcos incompletos', `Debes seleccionar todos los palcos en "${item.tipo.nombre}"`);
           this.comprando = false;
+          this.limpiarWatchdogCompra();
           return;
         }
       }
@@ -2413,6 +2488,7 @@ export class Carrito implements OnInit, OnDestroy {
     } finally {
       if (!this.redirigiendoAWompi) {
         this.comprando = false;
+        this.limpiarWatchdogCompra();
       }
     }
   }

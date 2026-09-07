@@ -46,6 +46,13 @@ export class PwaUpdateService {
       return;
     }
 
+    // En localhost / builds sin ngsw no tiene sentido (y satura Network con ngsw.json 404/pending).
+    const pwaEnabled = !!(environment as { pwa?: { serviceWorkerEnabled?: boolean } }).pwa
+      ?.serviceWorkerEnabled;
+    if (!environment.production || !pwaEnabled) {
+      return;
+    }
+
     if (this.swUpdate.isEnabled) {
       this.swUpdate.versionUpdates
         .pipe(

@@ -81,17 +81,19 @@ function writeStored(key: string, value: string): void {
   }
 }
 
-function fetchViaXhr(url: string): Promise<string | null> {
+function fetchViaXhr(url: string, timeoutMs = 8_000): Promise<string | null> {
   return new Promise((resolve) => {
     try {
       const xhr = new XMLHttpRequest();
       xhr.open('GET', url, true);
+      xhr.timeout = timeoutMs;
       xhr.setRequestHeader('Cache-Control', 'no-cache');
       xhr.setRequestHeader('Pragma', 'no-cache');
       xhr.onload = () => {
         resolve(xhr.status >= 200 && xhr.status < 300 ? xhr.responseText : null);
       };
       xhr.onerror = () => resolve(null);
+      xhr.ontimeout = () => resolve(null);
       xhr.send();
     } catch {
       resolve(null);
@@ -101,6 +103,10 @@ function fetchViaXhr(url: string): Promise<string | null> {
 
 export async function fetchFreshNgswManifest(): Promise<string | null> {
   const url = `${resolveAppAssetUrl('ngsw.json')}?_=${Date.now()}`;
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeoutId = controller
+    ? setTimeout(() => controller.abort(), 8_000)
+    : null;
 
   try {
     const response = await fetch(url, {
@@ -110,12 +116,17 @@ export async function fetchFreshNgswManifest(): Promise<string | null> {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         Pragma: 'no-cache',
       },
+      signal: controller?.signal,
     });
     if (response.ok) {
       return await response.text();
     }
   } catch {
-    // Safari a veces falla fetch con cache modes estrictos.
+    // Safari a veces falla fetch con cache modes estrictos / abort por timeout.
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
   }
 
   return fetchViaXhr(url);

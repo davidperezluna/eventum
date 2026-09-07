@@ -133,6 +133,10 @@ export class ComprasProductoService {
   }
 
   async iniciarCheckoutDesdeBody(body: Record<string, unknown>): Promise<IniciarCheckoutResult> {
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutMs = 35_000;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     try {
       const {
         data: { session }
@@ -143,6 +147,10 @@ export class ComprasProductoService {
         return { success: false, error: 'No se pudo obtener token de autenticación' };
       }
 
+      if (controller) {
+        timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      }
+
       const response = await fetch(`${supabaseConfig.url}/functions/v1/wompi-payment`, {
         method: 'POST',
         headers: {
@@ -150,7 +158,8 @@ export class ComprasProductoService {
           Authorization: `Bearer ${accessToken}`,
           apikey: supabaseConfig.anonKey
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal: controller?.signal,
       });
 
       const payload = (await response.json()) as Record<string, unknown>;
@@ -169,13 +178,25 @@ export class ComprasProductoService {
         ? Number(payload['transaccion_producto_id'])
         : null;
 
+      // No bloquear el redirect a Wompi resolviendo compras; eso puede hacerse después.
       let compraId: number | null = null;
       let compraProductoId: number | null = null;
-
       if (transaccionCheckoutId) {
-        const resolved = await this.resolverPorCheckoutId(transaccionCheckoutId);
-        compraId = resolved.compraId;
-        compraProductoId = resolved.compraProductoId;
+        try {
+          const resolved = await Promise.race([
+            this.resolverPorCheckoutId(transaccionCheckoutId),
+            new Promise<{ compraId: null; compraProductoId: null; transaccionProductoId: null }>((resolve) =>
+              setTimeout(
+                () => resolve({ compraId: null, compraProductoId: null, transaccionProductoId: null }),
+                2500,
+              ),
+            ),
+          ]);
+          compraId = resolved.compraId;
+          compraProductoId = resolved.compraProductoId;
+        } catch {
+          // ignore
+        }
       }
 
       return {
@@ -187,10 +208,17 @@ export class ComprasProductoService {
         compra_producto_id: compraProductoId
       };
     } catch (error: any) {
+      const aborted = error?.name === 'AbortError';
       return {
         success: false,
-        error: error?.message || 'Error iniciando checkout'
+        error: aborted
+          ? 'El pago tardó demasiado en iniciarse. Intenta de nuevo en unos segundos.'
+          : error?.message || 'Error iniciando checkout'
       };
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     }
   }
 

@@ -322,9 +322,18 @@ export class CarritoCompraService {
       return true;
     }
 
-    // Siempre refrescar metadata (título, etc.) para analytics / UI.
-    this.eventoSubject.next({ ...evento });
-    if (!actual || actual.titulo !== evento.titulo) {
+    if (!actual) {
+      this.eventoSubject.next({ ...evento });
+      this.persistir();
+      return false;
+    }
+
+    // Mismo evento: solo emitir si cambió metadata visible.
+    // Evita loop carrito: evento$ → refrescarEvento → syncEvento → evento$ → …
+    const tituloActual = String(actual.titulo || '').trim();
+    const tituloNuevo = String(evento.titulo || '').trim();
+    if (tituloActual !== tituloNuevo) {
+      this.eventoSubject.next({ ...evento });
       this.persistir();
     }
 
