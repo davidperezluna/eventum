@@ -142,14 +142,15 @@ export class Carrito implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Recuperar UI si un intento anterior dejó el botón colgado (HMR / redirect fallido).
-    this.comprando = false;
-    this.redirigiendoAWompi = false;
-    this.recuperandoCheckoutPendiente = false;
-    this.limpiarWatchdogCompra();
+    this.resetEstadoCompraUi();
 
     this.hidratarCheckoutPendienteLocal();
     this.usuario = this.authService.getUsuario();
     this.hidratarDesdeCacheDetalleEvento();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('pageshow', this.onPageShowCompra);
+    }
 
     if (this.route.snapshot.queryParamMap.get('aviso') === 'pago-wompi-sin-datos') {
       void this.router.navigate([], {
@@ -363,13 +364,22 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.limpiarWatchdogCompra();
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('pageshow', this.onPageShowCompra);
+    }
+    this.resetEstadoCompraUi();
     this.stopCountdownTicker();
     this.stopSilentRefreshIndicator();
     this.persistDetalleCacheParcial(Date.now());
     this.subscriptions.unsubscribe();
     this.unsubscribeAuth?.();
   }
+
+  /** Al volver con atrás/bfcache tras Wompi, no dejar "Preparando…" ni el modal del watchdog. */
+  private readonly onPageShowCompra = (): void => {
+    this.resetEstadoCompraUi();
+    this.cdr.detectChanges();
+  };
 
   get carritoVacio(): boolean {
     return this.carritoCompraService.estaVacio();
@@ -905,17 +915,26 @@ export class Carrito implements OnInit, OnDestroy {
     }
   }
 
+  /** Libera UI de compra (también tras volver de Wompi / bfcache). */
+  private resetEstadoCompraUi(): void {
+    this.limpiarWatchdogCompra();
+    this.comprando = false;
+    this.redirigiendoAWompi = false;
+    this.recuperandoCheckoutPendiente = false;
+  }
+
   /** Si el flujo se cuelga sin redirect, libera el botón para no dejar la UI bloqueada. */
   private armarWatchdogCompra(): void {
     this.limpiarWatchdogCompra();
     this.compraWatchdog = setTimeout(() => {
-      if (!this.comprando) {
+      // Si ya salimos a Wompi, no mostrar error al volver (bfcache / back).
+      if (!this.comprando || this.redirigiendoAWompi) {
+        this.resetEstadoCompraUi();
+        this.cdr.detectChanges();
         return;
       }
       console.error('Watchdog: compra/pago colgado; se libera el botón.');
-      this.redirigiendoAWompi = false;
-      this.comprando = false;
-      this.recuperandoCheckoutPendiente = false;
+      this.resetEstadoCompraUi();
       this.alertService.error(
         'El pago no respondió',
         'Tardó demasiado en prepararse. Revisa tu conexión e inténtalo de nuevo.',
@@ -961,6 +980,7 @@ export class Carrito implements OnInit, OnDestroy {
           } catch (trackError) {
             console.error('Error tracking add_payment_info:', trackError);
           }
+          this.limpiarWatchdogCompra();
           this.redirigiendoAWompi = true;
           window.location.href = pendiente.checkoutUrl;
         }
@@ -1290,6 +1310,7 @@ export class Carrito implements OnInit, OnDestroy {
     }
 
     this.redirigiendoAWompi = true;
+    this.limpiarWatchdogCompra();
     this.cdr.detectChanges();
     // Dejar que el browser pinte el estado y luego salir (más fiable en algunos móviles).
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
@@ -1368,6 +1389,7 @@ export class Carrito implements OnInit, OnDestroy {
     if (!pendiente || this.cancelandoCheckoutPendiente) {
       return;
     }
+    this.resetEstadoCompraUi();
     const opId = ++this.cancelacionCheckoutSeq;
     this.cancelandoCheckoutPendiente = true;
     this.cdr.detectChanges();
