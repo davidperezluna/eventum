@@ -1,6 +1,12 @@
 (function () {
   'use strict';
 
+  // En ng serve no existe ngsw.json; no spamear 404 ni saturar Network.
+  var host = (location.hostname || '').toLowerCase();
+  if (host === 'localhost' || host === '127.0.0.1') {
+    return;
+  }
+
   var BUILD_KEY = 'eventum-ngsw-build';
   var RELOAD_KEY = 'eventum-ngsw-reload';
   var CHECKING = false;
