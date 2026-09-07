@@ -25,7 +25,31 @@
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule="" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
   
-  <!-- Google Tag: se carga solo en producción desde GoogleAnalyticsService (SPA page_view). -->
+  <!-- Google Tag: config temprano solo en prod (sin page_view auto; Angular manda las vistas SPA). -->
+  <script>
+    (function () {
+      var host = location.hostname || '';
+      var isLocal = host === 'localhost' || host === '127.0.0.1';
+      var isProdHost = /^(www\.)?eventumcol\.com$/i.test(host);
+      if (isLocal || !isProdHost) return;
+
+      var tagId = 'GT-5TJZWP3P';
+      var s = document.createElement('script');
+      s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(tagId);
+      s.setAttribute('data-eventum-gtag', '1');
+      document.head.appendChild(s);
+
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function gtag() {
+        window.dataLayer.push(arguments);
+      };
+      window.gtag('js', new Date());
+      // send_page_view: false → evita doble conteo; GoogleAnalyticsService emite page_view en NavigationEnd.
+      window.gtag('config', tagId, { send_page_view: false });
+    })();
+  </script>
+  <!-- End Google Tag -->
   <link rel="manifest" href="manifest.webmanifest">
   <script src="update/pwa-cache-bust.js?v=3"></script>
   <!-- Tras configurar Safari Web Push en Apple + OneSignal, pega aquí el Safari Web ID (panel Web → Apple / Safari). Vacío hasta entonces. -->

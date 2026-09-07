@@ -7,7 +7,8 @@
    - item_category = título del evento
    - item_category2 = boleta | producto | cover
 
-   Visitas: gtag se carga solo en producción; Angular es dueño de page_view.
+   Visitas: config temprano en index.html (solo eventumcol.com, sin page_view auto);
+   Angular emite page_view en cada NavigationEnd.
 */
 
 import { Injectable, inject } from '@angular/core';
@@ -122,13 +123,16 @@ export class GoogleAnalyticsService {
     this.scriptLoading = new Promise<void>((resolve) => {
       try {
         window.dataLayer = window.dataLayer || [];
+
+        // Preferir el stub oficial (index.html en prod). No reemplazar si ya existe.
         if (typeof window.gtag !== 'function') {
-          window.gtag = function gtag(...args: unknown[]) {
-            window.dataLayer!.push(args);
+          window.gtag = function gtag(this: void) {
+            // eslint-disable-next-line prefer-rest-params
+            window.dataLayer!.push(arguments);
           };
+          window.gtag('js', new Date());
+          window.gtag('config', this.googleTagId, { send_page_view: false });
         }
-        window.gtag('js', new Date());
-        window.gtag('config', this.googleTagId, { send_page_view: false });
 
         const existing = document.querySelector('script[data-eventum-gtag]');
         if (existing) {
@@ -150,8 +154,6 @@ export class GoogleAnalyticsService {
           resolve();
         };
         document.head.appendChild(script);
-
-        // Config ya encolado en dataLayer; marcar listo para no perder eventos tempranos.
         this.gtagReady = true;
       } catch {
         resolve();
@@ -178,9 +180,10 @@ export class GoogleAnalyticsService {
       void this.ensureGtag().then(() => {
         if (!this.canTrack() || !this.googleTagId) return;
         try {
-          window.gtag!('config', this.googleTagId, {
+          // Evento page_view explícito (config inicial ya vino con send_page_view: false).
+          window.gtag!('event', 'page_view', {
             page_path: url,
-            send_page_view: true,
+            page_location: typeof window !== 'undefined' ? window.location.href : undefined,
           });
         } catch (error) {
           console.error('Error tracking page view:', error);
