@@ -546,6 +546,9 @@ export class GoogleAnalyticsService {
     const tipoSku = params.itemCategory2 || 'boleta';
     const eventTitle = String(params.itemCategory || '').trim();
 
+    // Nueva intención de compra → permitir begin_checkout otra vez al entrar al carrito.
+    this.clearBeginCheckoutDedupe();
+
     this.sendEvent('add_to_cart', {
       currency: 'COP',
       value: price * quantity,
@@ -566,5 +569,15 @@ export class GoogleAnalyticsService {
       value: price * quantity,
       quantity,
     });
+  }
+
+  /** Permite volver a emitir begin_checkout (mismo carrito tras reintento / add_to_cart). */
+  clearBeginCheckoutDedupe(): void {
+    if (typeof sessionStorage === 'undefined') return;
+    try {
+      sessionStorage.removeItem(BEGIN_CHECKOUT_TRACKED_KEY);
+    } catch {
+      // ignore
+    }
   }
 }
