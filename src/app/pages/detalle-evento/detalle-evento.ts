@@ -598,6 +598,9 @@ export class DetalleEvento implements OnInit, OnDestroy {
         this.evento = evento;
       }
 
+      // Contexto de carrito/analytics listo antes de agregar ítems.
+      this.carritoCompraService.syncEvento(this.evento);
+
       // Preparar promesas para carga en paralelo
       const promesas: Promise<any>[] = [];
 
@@ -1051,6 +1054,7 @@ export class DetalleEvento implements OnInit, OnDestroy {
     this.palcosCatalogoPorTipo = new Map(
       Array.from(state.palcosCatalogoPorTipo.entries()).map(([k, v]) => [k, [...v]])
     );
+    this.carritoCompraService.syncEvento(this.evento);
   }
 
   private persistState(lastUpdated: number): void {

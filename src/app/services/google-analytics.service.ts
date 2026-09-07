@@ -277,8 +277,17 @@ export class GoogleAnalyticsService {
     }>;
   }) {
     const eventoTitulo = params.eventoTitulo || `Evento ${params.eventoId}`;
+    const eventoIdStr = String(params.eventoId);
     const gaItems: GaItem[] = (params.items || [])
       .filter((i) => i.name || i.id != null)
+      // Nunca enviar el evento como si fuera un SKU (formato legacy id=evento / ca=evento).
+      .filter((i) => {
+        const category = String(i.category || '').toLowerCase();
+        if (category === 'evento') return false;
+        const id = String(i.id);
+        if (id === eventoIdStr && (i.name || '') === eventoTitulo) return false;
+        return true;
+      })
       .map((i) => ({
         item_id: String(i.id),
         item_name: i.name || String(i.id),
@@ -289,7 +298,11 @@ export class GoogleAnalyticsService {
       }));
 
     if (gaItems.length > 0) {
-      const value = gaItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+      const value = gaItems.reduce(
+        (sum, item) =>
+          sum + (Number(item.price) || 0) * Math.max(1, Number(item.quantity) || 1),
+        0,
+      );
       this.sendEvent('view_item', {
         currency: 'COP',
         value,
@@ -297,7 +310,7 @@ export class GoogleAnalyticsService {
       });
     } else {
       this.sendEvent('view_evento', {
-        evento_id: String(params.eventoId),
+        evento_id: eventoIdStr,
         evento_titulo: eventoTitulo,
       });
     }
@@ -305,7 +318,7 @@ export class GoogleAnalyticsService {
     this.metaPixel.trackViewContent({
       contentId: params.eventoId,
       contentName: eventoTitulo,
-      contentCategory: 'evento',
+      contentCategory: gaItems[0]?.item_category2 || 'evento',
       value: gaItems[0]?.price,
     });
   }
@@ -492,6 +505,7 @@ export class GoogleAnalyticsService {
     const price = Number(params.price) || 0;
     const quantity = Math.max(1, Number(params.quantity) || 1);
     const tipoSku = params.itemCategory2 || 'boleta';
+    const eventTitle = String(params.itemCategory || '').trim();
 
     this.sendEvent('add_to_cart', {
       currency: 'COP',
@@ -499,8 +513,9 @@ export class GoogleAnalyticsService {
       items: [{
         item_id: String(params.itemId),
         item_name: params.itemName,
-        item_category: params.itemCategory || tipoSku,
-        item_category2: params.itemCategory ? tipoSku : undefined,
+        // Categoría = contexto del evento; tipo de SKU siempre en category2.
+        item_category: eventTitle || undefined,
+        item_category2: tipoSku,
         price,
         quantity
       }]

@@ -322,12 +322,23 @@ export class CarritoCompraService {
       return true;
     }
 
-    if (!actual) {
-      this.eventoSubject.next({ ...evento });
+    // Siempre refrescar metadata (título, etc.) para analytics / UI.
+    this.eventoSubject.next({ ...evento });
+    if (!actual || actual.titulo !== evento.titulo) {
       this.persistir();
     }
 
     return false;
+  }
+
+  /** Título de evento para GA (nunca devolver el tipo de SKU aquí). */
+  private tituloEventoParaAnalytics(): string | undefined {
+    const evento = this.eventoSubject.getValue();
+    const titulo = String(evento?.titulo || '').trim();
+    if (titulo) return titulo;
+    if (evento?.id) return `Evento ${evento.id}`;
+    const lugar = this.lugarCoverSubject.getValue()?.nombre;
+    return lugar ? String(lugar).trim() : undefined;
   }
 
   agregarCoverIndependiente(params: {
@@ -375,7 +386,7 @@ export class CarritoCompraService {
       itemId: `cover-${params.tipoCoverId}`,
       itemName: params.tipoCoverNombre,
       price: Number(params.precioSesion) || 0,
-      itemCategory: this.lugarCoverSubject.getValue()?.nombre || this.eventoSubject.getValue()?.titulo,
+      itemCategory: this.tituloEventoParaAnalytics(),
       itemCategory2: 'cover',
     });
     return true;
@@ -499,7 +510,7 @@ export class CarritoCompraService {
       itemId: tipo.id,
       itemName: tipo.nombre || `Tipo ${tipo.id}`,
       price: Number(tipo.precio) || 0,
-      itemCategory: this.eventoSubject.getValue()?.titulo,
+      itemCategory: this.tituloEventoParaAnalytics(),
       itemCategory2: 'boleta',
     });
     return true;
@@ -537,7 +548,7 @@ export class CarritoCompraService {
       itemId: `producto-${producto.id}`,
       itemName: producto.nombre || `Producto ${producto.id}`,
       price: Number(producto.precio) || 0,
-      itemCategory: this.eventoSubject.getValue()?.titulo,
+      itemCategory: this.tituloEventoParaAnalytics(),
       itemCategory2: 'producto',
     });
     return true;
