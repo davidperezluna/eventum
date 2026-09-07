@@ -912,8 +912,12 @@ export class Carrito implements OnInit, OnDestroy {
           ...ui,
         });
         if (typeof window !== 'undefined') {
+          try {
+            this.trackWompiPaymentInfo(pendiente.totalPago);
+          } catch (trackError) {
+            console.error('Error tracking add_payment_info:', trackError);
+          }
           this.redirigiendoAWompi = true;
-          this.trackWompiPaymentInfo(pendiente.totalPago);
           window.location.href = pendiente.checkoutUrl;
         }
       } finally {
@@ -1162,12 +1166,21 @@ export class Carrito implements OnInit, OnDestroy {
       throw new Error(resultado.error || 'No se pudo iniciar el pago en Wompi');
     }
 
+    // expires_at es opcional: no bloquear el redirect si esta consulta se demora/falla.
     let expiresAtMs: number | null = null;
     if (resultado.transaccion_checkout_id) {
-      const tx = await this.comprasProductoService.getTransaccionCheckoutById(
-        resultado.transaccion_checkout_id,
-      );
-      expiresAtMs = tx?.expires_at ? new Date(tx.expires_at).getTime() : null;
+      try {
+        const tx = await this.withTimeout(
+          this.comprasProductoService.getTransaccionCheckoutById(
+            resultado.transaccion_checkout_id,
+          ),
+          4000,
+          null,
+        );
+        expiresAtMs = tx?.expires_at ? new Date(tx.expires_at).getTime() : null;
+      } catch {
+        expiresAtMs = null;
+      }
     }
 
     const itemsResumen = this.buildResumenPayload();
@@ -1217,8 +1230,15 @@ export class Carrito implements OnInit, OnDestroy {
     if (typeof window === 'undefined') {
       throw new Error('No se pudo abrir la pasarela de pago');
     }
+
+    // Analytics nunca debe impedir el redirect ni dejar el botón colgado.
+    try {
+      this.trackWompiPaymentInfo(totalPago);
+    } catch (trackError) {
+      console.error('Error tracking add_payment_info:', trackError);
+    }
+
     this.redirigiendoAWompi = true;
-    this.trackWompiPaymentInfo(totalPago);
     window.location.href = checkoutUrl;
   }
 
@@ -2367,19 +2387,28 @@ export class Carrito implements OnInit, OnDestroy {
       await this.abrirCheckoutWompiDirecto(wompiBody, totalPago);
     } catch (error: any) {
       console.error('Error procesando compra:', error);
+      this.redirigiendoAWompi = false;
       if (this.authService.isAuthOrRlsError(error?.message)) {
-        this.googleAnalytics.trackCheckoutObstacle({
-          reason: 'session_required',
-          step: 'auth',
-        });
+        try {
+          this.googleAnalytics.trackCheckoutObstacle({
+            reason: 'session_required',
+            step: 'auth',
+          });
+        } catch {
+          // ignore analytics
+        }
         await this.authService.ensureActiveSession();
         this.manejarErrorSesionExpirada();
         return;
       }
-      this.googleAnalytics.trackCheckoutObstacle({
-        reason: 'payment_error',
-        step: 'create_checkout',
-      });
+      try {
+        this.googleAnalytics.trackCheckoutObstacle({
+          reason: 'payment_error',
+          step: 'create_checkout',
+        });
+      } catch {
+        // ignore analytics
+      }
       this.alertService.error('Error al procesar compra', error?.message || 'Error desconocido');
     } finally {
       if (!this.redirigiendoAWompi) {
