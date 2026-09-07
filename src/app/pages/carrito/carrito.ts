@@ -975,12 +975,10 @@ export class Carrito implements OnInit, OnDestroy {
         });
         if (typeof window !== 'undefined') {
           try {
-            // Recuperar pendiente = intención de pagar (no pasó por el botón Pagar).
-            this.googleAnalytics.clearBeginCheckoutDedupe();
-            this.trackBeginCheckoutIntent();
+            // Solo add_payment_info: begin_checkout ya debió salir al pulsar Pagar.
             this.trackWompiPaymentInfo(pendiente.totalPago);
           } catch (trackError) {
-            console.error('Error tracking checkout/payment_info:', trackError);
+            console.error('Error tracking add_payment_info:', trackError);
           }
           this.limpiarWatchdogCompra();
           this.redirigiendoAWompi = true;
