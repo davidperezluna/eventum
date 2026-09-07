@@ -1,5 +1,7 @@
 import { Evento, TipoEstadoEvento } from '../types';
 import { ReporteEvento } from '../services/reportes.service';
+import { resolveEventoEstadoVisual } from './evento-en-curso';
+import { DateTimeUtil } from '../utils/date-time.util';
 
 export type EventoTimelineKind =
   | 'created'
@@ -20,15 +22,16 @@ export interface EventoTimelineItem {
 
 function parseDate(value: Date | string | undefined | null): Date | null {
   if (!value) return null;
-  const d = value instanceof Date ? value : new Date(value);
+  const d = value instanceof Date ? value : DateTimeUtil.parseStoredDate(value);
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
 export function buildEventoTimeline(
   evento: Evento,
   reporte: ReporteEvento | null,
+  now: Date = new Date(),
 ): EventoTimelineItem[] {
-  const estado = (evento.estado as TipoEstadoEvento) ?? TipoEstadoEvento.BORRADOR;
+  const estado = resolveEventoEstadoVisual(evento, now);
   const boletasVendidas = reporte?.boletas_vendidas ?? 0;
   const isPublishedOrLater = [
     TipoEstadoEvento.PUBLICADO,
@@ -57,11 +60,11 @@ export function buildEventoTimeline(
       label: 'Primera venta',
       description: boletasVendidas > 0 ? `${boletasVendidas} boleta${boletasVendidas === 1 ? '' : 's'} vendida${boletasVendidas === 1 ? '' : 's'}` : undefined,
       reached: boletasVendidas > 0,
-      current: isPublishedOrLater && boletasVendidas === 0 && estado !== TipoEstadoEvento.CANCELADO,
+      current: estado === TipoEstadoEvento.PUBLICADO && boletasVendidas === 0,
     },
     {
       id: 'started',
-      label: 'Evento iniciado',
+      label: estado === TipoEstadoEvento.EN_CURSO ? 'En curso' : 'Evento iniciado',
       date: isLiveOrLater ? evento.fecha_inicio : null,
       reached: isLiveOrLater,
       current: estado === TipoEstadoEvento.EN_CURSO,
@@ -97,6 +100,7 @@ export function formatTimelineDate(value: Date | string | null | undefined): str
   const d = parseDate(value ?? null);
   if (!d) return null;
   return d.toLocaleDateString('es-CO', {
+    timeZone: DateTimeUtil.APP_TIMEZONE,
     day: 'numeric',
     month: 'short',
     year: 'numeric',

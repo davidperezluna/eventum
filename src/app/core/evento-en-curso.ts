@@ -1,4 +1,5 @@
 import { Evento, TipoEstadoEvento } from '../types';
+import { DateTimeUtil } from '../utils/date-time.util';
 
 /**
  * “En curso” operativo por fechas (como en catálogo cliente).
@@ -22,14 +23,18 @@ export function isEventoEnCursoPorFechas(
     return false;
   }
 
-  const inicio = new Date(evento.fecha_inicio as string | Date);
+  const inicio = evento.fecha_inicio instanceof Date
+    ? evento.fecha_inicio
+    : DateTimeUtil.parseStoredDate(evento.fecha_inicio);
   if (Number.isNaN(inicio.getTime()) || inicio.getTime() > now.getTime()) {
     return false;
   }
 
   if (evento.fecha_fin) {
-    const fin = new Date(evento.fecha_fin as string | Date);
-    if (!Number.isNaN(fin.getTime()) && fin.getTime() < now.getTime()) {
+    const fin = evento.fecha_fin instanceof Date
+      ? evento.fecha_fin
+      : DateTimeUtil.parseStoredDate(evento.fecha_fin);
+    if (!Number.isNaN(fin.getTime()) && fin.getTime() <= now.getTime()) {
       return false;
     }
   }

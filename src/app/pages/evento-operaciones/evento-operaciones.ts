@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
 
@@ -121,7 +121,8 @@ export interface OpsAction {
 
 })
 
-export class EventoOperaciones implements OnInit {
+export class EventoOperaciones implements OnInit, OnDestroy {
+  private timelineRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
   evento: Evento | null = null;
 
@@ -223,6 +224,10 @@ export class EventoOperaciones implements OnInit {
 
 
   ngOnInit(): void {
+    this.timelineRefreshTimer = setInterval(() => {
+      this.rebuildTimeline();
+      this.cdr.markForCheck();
+    }, 30_000);
 
     this.route.paramMap.subscribe((params) => {
 
@@ -245,6 +250,10 @@ export class EventoOperaciones implements OnInit {
   }
 
 
+
+  ngOnDestroy(): void {
+    if (this.timelineRefreshTimer !== null) clearInterval(this.timelineRefreshTimer);
+  }
 
   async loadPage(): Promise<void> {
 
