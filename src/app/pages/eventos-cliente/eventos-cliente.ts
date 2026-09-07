@@ -17,6 +17,7 @@ import { environment } from '../../../environments/environment';
 import { cuposEventumEnabled } from '../../core/cupos-feature';
 import { preventaLicorFlyerVistoEnSesion } from '../../core/preventa-licor-flyer-session';
 import { CUPOS_LABELS } from '../../core/cupos-labels';
+import { DateTimeUtil } from '../../utils/date-time.util';
 
 @Component({
   selector: 'app-eventos-cliente',
@@ -359,7 +360,7 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
 
       // Excluir eventos cuya fecha de finalización ya pasó
       if (e.fecha_fin) {
-        const fechaFin = new Date(e.fecha_fin);
+        const fechaFin = this.parseEventoDate(e.fecha_fin);
         if (fechaFin < ahora) return false;
       }
 
@@ -502,7 +503,7 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
 
   precioEventoActivo(evento: Evento): boolean {
     if (!evento.fecha_inicio) return false;
-    return new Date(evento.fecha_inicio).getTime() <= Date.now();
+    return this.parseEventoDate(evento.fecha_inicio).getTime() <= Date.now();
   }
 
   aplicarFiltrosLocales() {
@@ -593,11 +594,7 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
 
   private parseEventoDate(value: string | Date): Date {
     if (typeof value !== 'string') return value;
-    const dateStr = value.trim();
-    if (dateStr.includes('T') && !dateStr.endsWith('Z') && !dateStr.includes('+') && !dateStr.includes('-', 10)) {
-      return new Date(dateStr + 'Z');
-    }
-    return new Date(dateStr);
+    return DateTimeUtil.parseStoredDate(value);
   }
 
   scrollCategories(direction: -1 | 1) {
@@ -643,7 +640,7 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
       const ahoraDate = new Date();
       const eventosConFechaPasada = (responseNoFinalizados.data || []).filter(e => {
         if (e.fecha_fin) {
-          const fechaFin = new Date(e.fecha_fin);
+          const fechaFin = this.parseEventoDate(e.fecha_fin);
           return fechaFin < ahoraDate;
         }
         return false;
@@ -657,8 +654,8 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
 
       // Ordenar por fecha_fin descendente (más recientes primero)
       this.eventosFinalizados = eventosUnicos.sort((a, b) => {
-        const fechaA = new Date(a.fecha_fin || 0).getTime();
-        const fechaB = new Date(b.fecha_fin || 0).getTime();
+        const fechaA = (a.fecha_fin ? this.parseEventoDate(a.fecha_fin).getTime() : 0);
+        const fechaB = (b.fecha_fin ? this.parseEventoDate(b.fecha_fin).getTime() : 0);
         return fechaB - fechaA;
       }).slice(0, 20); // Limitar a 20 eventos
 
