@@ -85,7 +85,7 @@ Razones típicas: `session_required`, `availability`, `incomplete_data`, `pendin
 | Canal | Estrategia |
 |---|---|
 | **GA4** | Carga inicial: `send_page_view: true` en `index.html`. Navegación SPA: **Enhanced Measurement → History API** en la propiedad GA4. Angular **no** emite `page_view` manual (evita duplicados). |
-| **Meta** | `PageView` en cada `NavigationEnd` (router). |
+| **Meta** | Un solo `PageView` por `NavigationEnd`. Se desactiva el listener automático de History del Pixel (`fbq.disablePushState = true`) para no duplicar con el tracking manual. |
 
 En GA4 Admin debe permanecer activa la medición de cambios de historial.
 

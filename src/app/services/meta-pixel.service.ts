@@ -22,7 +22,7 @@ export class MetaPixelService {
   private readonly pixelId = (environment as { metaPixelId?: string }).metaPixelId?.trim() || '';
   private scriptLoaded = false;
 
-  /** Carga el base del Pixel (una vez). PageView lo dispara el router (SPA). */
+  /** Carga el base del Pixel (una vez). PageView solo vía router (SPA); History auto OFF. */
   init(): void {
     if (!this.canTrack() || this.scriptLoaded || typeof window === 'undefined') {
       return;
@@ -181,7 +181,13 @@ export class MetaPixelService {
     if (typeof document === 'undefined') return;
 
     // Stub oficial de Meta (cola hasta que cargue fbevents.js)
-    const w = window as Window & { fbq?: (...args: unknown[]) => void; _fbq?: unknown };
+    const w = window as Window & {
+      fbq?: ((...args: unknown[]) => void) & {
+        disablePushState?: boolean;
+        allowDuplicatePageViews?: boolean;
+      };
+      _fbq?: unknown;
+    };
     if (!w.fbq) {
       const n: any = function (...args: unknown[]) {
         // eslint-disable-next-line prefer-spread, prefer-rest-params
@@ -193,6 +199,12 @@ export class MetaPixelService {
       n.version = '2.0';
       n.queue = [] as unknown[];
       w.fbq = n;
+    }
+
+    // SPA: el Pixel escucha pushState/replaceState y manda PageView solo.
+    // Angular ya emite PageView en NavigationEnd → sin esto hay duplicados.
+    if (w.fbq) {
+      w.fbq.disablePushState = true;
     }
 
     const existing = document.querySelector('script[data-eventum-meta-pixel]');
