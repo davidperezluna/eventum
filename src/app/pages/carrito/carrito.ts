@@ -2091,18 +2091,19 @@ export class Carrito implements OnInit, OnDestroy {
 
   private trackBeginCheckoutIntent(): GaItem[] {
     const items = this.buildGaItemsFromCart();
-    const value = this.getTotal();
+    const serviceFee = this.getValorServicio();
     const eventoTitulo = this.evento?.titulo ?? this.lugarCover?.nombre;
     const coupon = this.cuponAplicado?.codigo ?? null;
     this.googleAnalytics.trackBeginCheckoutOnce({
-      value,
       items,
+      serviceFee,
       eventoTitulo,
       coupon,
       fingerprint: this.buildGaCheckoutFingerprint(items),
     });
     this.googleAnalytics.saveCheckoutItemsSnapshot({
-      value,
+      value: 0, // recalculado desde items en el servicio
+      service_fee: serviceFee,
       items,
       coupon,
       descuento_total: this.getDescuento(),
@@ -2112,21 +2113,27 @@ export class Carrito implements OnInit, OnDestroy {
     return items;
   }
 
-  private trackWompiPaymentInfo(value: number, items?: GaItem[]): void {
+  private trackWompiPaymentInfo(_totalConServicio?: number, items?: GaItem[]): void {
     const snapshot = this.googleAnalytics.readCheckoutItemsSnapshot();
     const gaItems = items?.length
       ? items
       : snapshot?.items?.length
         ? snapshot.items
         : this.buildGaItemsFromCart();
+    const serviceFee =
+      snapshot?.service_fee != null && snapshot.service_fee >= 0
+        ? Number(snapshot.service_fee)
+        : this.getValorServicio();
     this.googleAnalytics.trackAddPaymentInfo({
-      value,
       items: gaItems,
+      serviceFee,
       paymentType: 'wompi',
+      paymentGateway: 'wompi',
       coupon: this.cuponAplicado?.codigo ?? snapshot?.coupon ?? null,
     });
     this.googleAnalytics.saveCheckoutItemsSnapshot({
-      value,
+      value: 0,
+      service_fee: serviceFee,
       items: gaItems,
       coupon: this.cuponAplicado?.codigo ?? snapshot?.coupon ?? null,
       descuento_total: this.getDescuento() || snapshot?.descuento_total || 0,

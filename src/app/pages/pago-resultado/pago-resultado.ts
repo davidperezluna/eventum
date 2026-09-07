@@ -274,9 +274,13 @@ export class PagoResultado implements OnInit, OnDestroy {
       return;
     }
 
-    const value = this.getTotalMostrado();
-    const items = this.resolvePurchaseItems(value);
-    this.googleAnalytics.trackPurchaseOnce(value, transactionId, 'COP', items);
+    const snapshot = this.googleAnalytics.readCheckoutItemsSnapshot();
+    const items = this.resolvePurchaseItems(this.getTotalMostrado());
+    const value = snapshot?.items?.length
+      ? snapshot.value
+      : this.getTotalMostrado();
+    const serviceFee = snapshot?.service_fee;
+    this.googleAnalytics.trackPurchaseOnce(value, transactionId, 'COP', items, serviceFee);
     this.googleAnalytics.clearCheckoutItemsSnapshot();
   }
 
@@ -465,11 +469,14 @@ export class PagoResultado implements OnInit, OnDestroy {
           this.limpiarReferenciasPendientes();
           this.vaciarCarritoTrasCompraExitosa();
           const coverValue = this.getTotalMostrado();
+          const snapshot = this.googleAnalytics.readCheckoutItemsSnapshot();
+          const coverItems = this.resolvePurchaseItems(coverValue);
           this.googleAnalytics.trackPurchaseOnce(
-            coverValue,
+            snapshot?.items?.length ? snapshot.value : coverValue,
             this.getCanonicalTransactionId() || `cover-${this.compraCoverId}`,
             'COP',
-            this.resolvePurchaseItems(coverValue),
+            coverItems,
+            snapshot?.service_fee,
           );
           this.googleAnalytics.clearCheckoutItemsSnapshot();
           this.cdr.detectChanges();

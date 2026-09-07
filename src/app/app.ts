@@ -14,7 +14,7 @@ import { cleanupStaleAngularServiceWorker } from './utils/pwa-cleanup';
 export class App implements OnInit {
   protected readonly title = signal('admin-panel');
   private readonly pwaUpdate = inject(PwaUpdateService);
-  /** Inyectar para inicializar page_view en cambios de ruta (solo producción). */
+  /** Inyectar para inicializar Meta PageView en cambios de ruta (GA4 usa History). */
   private readonly _googleAnalytics = inject(GoogleAnalyticsService);
 
   async ngOnInit(): Promise<void> {

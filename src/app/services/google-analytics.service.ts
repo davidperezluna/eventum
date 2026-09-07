@@ -7,8 +7,12 @@
    - item_category = título del evento
    - item_category2 = boleta | producto | cover
 
-   Visitas: config temprano en index.html (solo eventumcol.com, sin page_view auto);
-   Angular emite page_view en cada NavigationEnd.
+   Visitas GA4: una sola estrategia — gtag config (carga) + medición mejorada
+   por History API en la propiedad GA4. Angular NO emite page_view a GA
+   (evita duplicar con pushState/replaceState). Meta Pixel sí en NavigationEnd.
+
+   Ecommerce: `value` = suma (price × qty − discount) de items.
+   Cargo Eventum va aparte como `service_fee` (no infla value vs items).
 */
 
 import { Injectable, inject } from '@angular/core';
@@ -52,7 +56,10 @@ export type CheckoutObstacleReason =
   | 'cart_conflict';
 
 export type GaCheckoutItemsSnapshot = {
+  /** Suma ecommerce de ítems (sin cargo de servicio). */
   value: number;
+  /** Cargo Eventum; no forma parte de `value`. */
+  service_fee?: number;
   currency: 'COP';
   items: GaItem[];
   coupon?: string | null;
@@ -61,6 +68,17 @@ export type GaCheckoutItemsSnapshot = {
   fingerprint?: string;
   saved_at?: number;
 };
+
+/** value GA4 = Σ (price × quantity − discount). */
+export function sumGaItemsValue(items: GaItem[] | undefined | null): number {
+  if (!items?.length) return 0;
+  return items.reduce((sum, item) => {
+    const qty = Math.max(1, Number(item.quantity) || 1);
+    const line = (Number(item.price) || 0) * qty;
+    const discount = Math.max(0, Number(item.discount) || 0);
+    return sum + Math.max(0, line - discount);
+  }, 0);
+}
 
 @Injectable({
   providedIn: 'root'
@@ -93,10 +111,11 @@ export class GoogleAnalyticsService {
       void this.ensureGtag();
     }
 
+    // Solo Meta en SPA; GA4 page_view viene de config + Enhanced Measurement (History).
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
-      .subscribe((event: NavigationEnd) => {
-        this.trackPageView(event.urlAfterRedirects);
+      .subscribe(() => {
+        this.metaPixel.trackPageView();
       });
   }
 
@@ -131,7 +150,8 @@ export class GoogleAnalyticsService {
             window.dataLayer!.push(arguments);
           };
           window.gtag('js', new Date());
-          window.gtag('config', this.googleTagId, { send_page_view: false });
+          // page_view inicial; SPA vía Enhanced Measurement (History) en GA4 Admin.
+          window.gtag('config', this.googleTagId, { send_page_view: true });
         }
 
         const existing = document.querySelector('script[data-eventum-gtag]');
@@ -175,21 +195,8 @@ export class GoogleAnalyticsService {
     });
   }
 
-  trackPageView(url: string) {
-    if (this.canTrackConfig()) {
-      void this.ensureGtag().then(() => {
-        if (!this.canTrack() || !this.googleTagId) return;
-        try {
-          // Evento page_view explícito (config inicial ya vino con send_page_view: false).
-          window.gtag!('event', 'page_view', {
-            page_path: url,
-            page_location: typeof window !== 'undefined' ? window.location.href : undefined,
-          });
-        } catch (error) {
-          console.error('Error tracking page view:', error);
-        }
-      });
-    }
+  /** @deprecated GA ya no emite page_view manual; solo Meta si hace falta forzar. */
+  trackPageView(_url?: string) {
     this.metaPixel.trackPageView();
   }
 
@@ -201,18 +208,23 @@ export class GoogleAnalyticsService {
     value: number,
     transactionId: string,
     currency: string = 'COP',
-    items?: GaItem[]
+    items?: GaItem[],
+    serviceFee?: number
   ) {
+    const gaItems = items || [];
+    const itemsValue = gaItems.length ? sumGaItemsValue(gaItems) : Number(value) || 0;
+    const fee = Math.max(0, Number(serviceFee) || 0);
     this.sendEvent('purchase', {
       transaction_id: transactionId,
-      value: value,
+      value: itemsValue,
       currency: currency,
-      items: items || []
+      items: gaItems,
+      ...(fee > 0 ? { service_fee: fee } : {}),
     });
     this.metaPixel.trackPurchase({
-      value,
+      value: itemsValue,
       transactionId,
-      contents: (items || []).map((item) => ({
+      contents: gaItems.map((item) => ({
         id: String(item.item_id || 'item'),
         quantity: Math.max(1, Number(item.quantity) || 1),
         item_price: Number(item.price) || undefined,
@@ -224,7 +236,8 @@ export class GoogleAnalyticsService {
     value: number,
     transactionId: string,
     currency: string = 'COP',
-    items?: GaItem[]
+    items?: GaItem[],
+    serviceFee?: number
   ): boolean {
     const id = String(transactionId || '').trim();
     const pixelId = (environment as { metaPixelId?: string }).metaPixelId?.trim();
@@ -243,7 +256,7 @@ export class GoogleAnalyticsService {
       // Si sessionStorage falla, igual intentamos trackear una vez en esta carga.
     }
 
-    this.trackPurchase(value, id, currency, items);
+    this.trackPurchase(value, id, currency, items, serviceFee);
     return true;
   }
 
@@ -328,17 +341,23 @@ export class GoogleAnalyticsService {
    * Disparar en la intención de pagar (antes de exigir sesión).
    */
   trackBeginCheckout(params: {
-    value: number;
+    value?: number;
     items?: GaItem[];
+    serviceFee?: number;
     /** Solo para Meta / contexto; no se usa como item_name. */
     eventoTitulo?: string;
     coupon?: string | null;
   }) {
     const items = (params.items || []).filter((i) => i.item_name || i.item_id);
+    const itemsValue = items.length
+      ? sumGaItemsValue(items)
+      : Number(params.value) || 0;
+    const fee = Math.max(0, Number(params.serviceFee) || 0);
     const payload = {
-      value: params.value,
+      value: itemsValue,
       currency: 'COP',
       coupon: params.coupon || undefined,
+      ...(fee > 0 ? { service_fee: fee } : {}),
       items: items.length
         ? items
         : [{
@@ -353,7 +372,7 @@ export class GoogleAnalyticsService {
       contentId: items[0]?.item_id,
       contentName: items[0]?.item_name || params.eventoTitulo,
       contentCategory: items[0]?.item_category || 'checkout',
-      value: params.value,
+      value: itemsValue,
       numItems: items.reduce((n, i) => n + Math.max(1, Number(i.quantity) || 1), 0) || 1,
     });
   }
@@ -362,18 +381,26 @@ export class GoogleAnalyticsService {
    * Una vez por fingerprint de carrito en la pestaña (evita spam si falla login y reintenta).
    */
   trackBeginCheckoutOnce(params: {
-    value: number;
+    value?: number;
     items?: GaItem[];
+    serviceFee?: number;
     eventoTitulo?: string;
     coupon?: string | null;
     fingerprint: string;
   }): boolean {
     const fp = String(params.fingerprint || '').trim();
+    const items = params.items || [];
+    const itemsValue = items.length
+      ? sumGaItemsValue(items)
+      : Number(params.value) || 0;
+    const fee = Math.max(0, Number(params.serviceFee) || 0);
+
     if (!fp) {
       this.trackBeginCheckout(params);
       this.saveCheckoutItemsSnapshot({
-        value: params.value,
-        items: params.items || [],
+        value: itemsValue,
+        service_fee: fee,
+        items,
         coupon: params.coupon,
         evento_titulo: params.eventoTitulo,
         fingerprint: fp,
@@ -393,8 +420,9 @@ export class GoogleAnalyticsService {
 
     this.trackBeginCheckout(params);
     this.saveCheckoutItemsSnapshot({
-      value: params.value,
-      items: params.items || [],
+      value: itemsValue,
+      service_fee: fee,
+      items,
       coupon: params.coupon,
       evento_titulo: params.eventoTitulo,
       fingerprint: fp,
@@ -406,21 +434,29 @@ export class GoogleAnalyticsService {
    * Apertura de pasarela Wompi → add_payment_info / AddPaymentInfo
    */
   trackAddPaymentInfo(params: {
-    value: number;
+    value?: number;
     items?: GaItem[];
+    serviceFee?: number;
     paymentType?: string;
+    paymentGateway?: string;
     coupon?: string | null;
   }) {
     const items = (params.items || []).filter((i) => i.item_name || i.item_id);
+    const itemsValue = items.length
+      ? sumGaItemsValue(items)
+      : Number(params.value) || 0;
+    const fee = Math.max(0, Number(params.serviceFee) || 0);
     this.sendEvent('add_payment_info', {
       currency: 'COP',
-      value: params.value,
+      value: itemsValue,
       payment_type: params.paymentType || 'wompi',
+      payment_gateway: params.paymentGateway || 'wompi',
       coupon: params.coupon || undefined,
+      ...(fee > 0 ? { service_fee: fee } : {}),
       items,
     });
     this.metaPixel.trackAddPaymentInfo({
-      value: params.value,
+      value: itemsValue,
       contents: items.map((item) => ({
         id: String(item.item_id || 'item'),
         quantity: Math.max(1, Number(item.quantity) || 1),
@@ -442,6 +478,7 @@ export class GoogleAnalyticsService {
 
   saveCheckoutItemsSnapshot(snapshot: {
     value: number;
+    service_fee?: number;
     items: GaItem[];
     coupon?: string | null;
     descuento_total?: number;
@@ -450,10 +487,12 @@ export class GoogleAnalyticsService {
   }): void {
     if (typeof sessionStorage === 'undefined') return;
     try {
+      const items = snapshot.items || [];
       const payload: GaCheckoutItemsSnapshot = {
-        value: Number(snapshot.value) || 0,
+        value: items.length ? sumGaItemsValue(items) : Number(snapshot.value) || 0,
+        service_fee: Math.max(0, Number(snapshot.service_fee) || 0),
         currency: 'COP',
-        items: snapshot.items || [],
+        items,
         coupon: snapshot.coupon ?? null,
         descuento_total: snapshot.descuento_total,
         evento_titulo: snapshot.evento_titulo ?? null,
