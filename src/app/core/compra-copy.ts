@@ -11,7 +11,7 @@ export const COMPRA_COPY = {
   wompiReciboNotaPostPago:
     'Si el recibo de la pasarela llegó a otro correo, es solo el comprobante del banco.',
   wompiReciboNotaPostPagoBoletas:
-    'Si el recibo de la pasarela llegó a otro correo, es solo el comprobante del banco. Tus entradas no se envían por correo: consúltalas en Mis compras dentro de la app.',
+    'Te enviaremos la confirmación de compra a esta cuenta. Si el recibo de la pasarela llegó a otro correo, allí solo llegará el comprobante del banco. Tus entradas y códigos QR se consultan en Mis compras dentro de Eventum.',
   pagoWompiContinuar: 'Ir a Wompi y pagar',
   pagoWompiContinuarRecuperacion: 'Retomar pago en Wompi',
   pagoWompiGenerarNuevoLink: 'Generar nuevo link de pago',
