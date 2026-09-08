@@ -3,6 +3,7 @@
    ============================================ */
 
 export const environment = {
+  supportWhatsappE164: '573336126974',
   /** Versión visible en footer /eventos-cliente (semver). */
   appVersion: '1.0.0',
   production: false,

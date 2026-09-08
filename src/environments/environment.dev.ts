@@ -4,6 +4,7 @@
    ============================================ */
 
 export const environment = {
+  supportWhatsappE164: '573336126974',
   appVersion: '1.0.0',
   production: false,
   /** Perfil: build dev en Vercel u otro hosting de pruebas */

@@ -3,6 +3,7 @@
    ============================================ */
 
 export const environment = {
+  supportWhatsappE164: '573336126974',
   appVersion: '1.0.0',
   production: true,
   profile: 'production' as const,

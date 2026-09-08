@@ -1,10 +1,12 @@
+import { environment } from '../../environments/environment';
+
 /**
  * Canales de contacto públicos de Eventum.
  * Fuente única para landings y páginas de contacto.
  */
 export const EVENTUM_CONTACTO = {
   email: 'eventumeventum1@gmail.com',
-  whatsappE164: '573336126974',
+  whatsappE164: environment.supportWhatsappE164,
   instagramUrl: 'https://www.instagram.com/eventumcol?igsh=MTFwMDNhbjI4aHZ2OQ==',
   defaultWhatsappMessage: 'Hola, quiero recibir información sobre Eventum.',
   demoWhatsappMessage:

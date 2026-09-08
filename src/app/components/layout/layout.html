@@ -65,6 +65,7 @@
             <span *ngIf="navItemBadgeCount(item) > 0" class="menu-badge">{{ navItemBadgeCount(item) }}</span>
           </a>
         </ng-container>
+        <ng-container *ngTemplateOutlet="supportMenu" />
       </nav>
       <div class="sidebar-footer client-menu-footer">
         <div *ngIf="currentUser && usuario" class="client-menu-account">
@@ -125,6 +126,7 @@
           </ng-container>
         </nav>
         <div class="client-user-menu client-account-dropdown">
+          <ng-container *ngTemplateOutlet="supportDesktop" />
           <button type="button" class="client-account-trigger" (click)="clientMenuOpen = !clientMenuOpen" [attr.aria-expanded]="clientMenuOpen" aria-label="Abrir menú de cuenta">
             <span class="client-account-avatar">{{ inicialesCliente() }}</span>
             <span class="material-icons client-account-chevron" aria-hidden="true">expand_more</span>
@@ -198,6 +200,7 @@
           <span class="material-icons nav-icon">info</span>
           <span class="nav-label">Conócenos</span>
         </a>
+        <ng-container *ngTemplateOutlet="supportMenu" />
       </nav>
       <div class="client-menu-footer">
         <a
@@ -257,6 +260,7 @@
           </a>
         </nav>
         <div class="client-user-menu">
+          <ng-container *ngTemplateOutlet="supportDesktop" />
           <a
             routerLink="/login"
             [queryParams]="headerLoginQueryParams"
@@ -266,6 +270,39 @@
       </div>
     </header>
   </ng-container>
+
+  <ng-template #supportMenu>
+    <div class="support-menu">
+      <span class="support-menu__prompt">¿Necesitas ayuda?</span>
+      <a class="support-link support-link--menu" [href]="supportWhatsappUrl"
+        target="_blank" rel="noopener noreferrer" (click)="closeClientMenu()"
+        aria-label="Soporte por WhatsApp (abre en una nueva pestaña)">
+        <ng-container *ngTemplateOutlet="supportIcon" />
+        <span class="support-link__copy"><strong>Soporte por WhatsApp</strong><small>Te ayudamos con tu compra</small></span>
+        <span class="material-icons support-link__arrow" aria-hidden="true">north_east</span>
+      </a>
+    </div>
+  </ng-template>
+
+  <ng-template #supportDesktop>
+    <a class="support-link support-link--desktop" [href]="supportWhatsappUrl"
+      target="_blank" rel="noopener noreferrer"
+      aria-label="Soporte por WhatsApp (abre en una nueva pestaña)" title="Soporte por WhatsApp">
+      <ng-container *ngTemplateOutlet="supportIcon" />
+      <span>Soporte</span>
+      <span class="material-icons support-link__arrow" aria-hidden="true">north_east</span>
+    </a>
+  </ng-template>
+
+  <ng-template #supportIcon>
+    <svg class="support-link__icon" width="22" height="22" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+      stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <path d="M4 14v-3a8 8 0 0 1 16 0v3M20 17v1a3 3 0 0 1-3 3h-3" />
+      <rect x="3" y="11" width="4" height="7" rx="2" />
+      <rect x="17" y="11" width="4" height="7" rx="2" />
+    </svg>
+  </ng-template>
 
   <main
     [class.main-content]="!isCliente() && !isLector() && currentUser && usuario"
