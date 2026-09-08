@@ -228,7 +228,7 @@ export class ProductosService {
 
     const { data, error } = await this.supabase
       .from('productos')
-      .select('evento_id, precio, precio_preventa, precio_evento, es_licor, cantidad_total, cantidad_vendidas')
+      .select('evento_id, precio, precio_evento, es_licor, cantidad_total, cantidad_vendidas')
       .in('evento_id', ids)
       .eq('activo', true)
       .eq('es_licor', true);
@@ -247,7 +247,6 @@ export class ProductosService {
     for (const row of (data || []) as Array<{
       evento_id: number;
       precio: number;
-      precio_preventa?: number | null;
       precio_evento?: number | null;
       cantidad_total?: number | null;
       cantidad_vendidas?: number | null;
@@ -256,7 +255,8 @@ export class ProductosService {
       const vendidos = Number(row.cantidad_vendidas ?? 0);
       const total = Number(row.cantidad_total ?? 0);
 
-      const precioPreventa = Number(row.precio_preventa ?? row.precio ?? 0);
+      // productos.precio = preventa; productos.precio_evento = precio en el evento
+      const precioPreventa = Number(row.precio ?? 0);
       const precioEvento = Number(row.precio_evento ?? row.precio ?? 0);
       if (!Number.isFinite(precioPreventa) || !Number.isFinite(precioEvento)) {
         continue;
