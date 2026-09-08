@@ -420,7 +420,10 @@ export class MisCompras implements OnInit, OnDestroy {
     });
 
     this.loadEventosDisponibles(); // Cargar eventos disponibles
-    this.loadCompras({ background: !!cachedState }); // Carga inicial
+    // La propia carga decide si puede refrescar en segundo plano según haya datos
+    // visibles. Una caché existente pero vacía no debe mostrar el estado vacío
+    // antes de consultar compras nuevas (caso común al entrar desde un correo).
+    this.loadCompras(); // Carga inicial
     this.suscribirReinicioRealtimePorAuth();
   }
 
