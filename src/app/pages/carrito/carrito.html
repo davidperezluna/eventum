@@ -576,7 +576,7 @@
           <ng-container *ngIf="!checkoutPendienteEnCurso">
             <a
               *ngIf="!usuario; else finalizarCompraInline"
-              routerLink="/login"
+              routerLink="/login" (click)="continuarAlLogin()"
               [queryParams]="{ returnUrl: '/carrito', motivo: 'pagar' }"
               class="btn-comprar btn-comprar--inline"
             >
@@ -640,7 +640,7 @@
     <ng-template #pagarStickyBtn>
       <a
         *ngIf="!usuario; else pagarStickyLoggedBtn"
-        routerLink="/login"
+        routerLink="/login" (click)="continuarAlLogin()"
         [queryParams]="{ returnUrl: '/carrito', motivo: 'pagar' }"
         class="carrito-checkout-bar__btn"
       >

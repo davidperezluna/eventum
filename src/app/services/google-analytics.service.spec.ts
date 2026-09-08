@@ -28,7 +28,7 @@ beforeEach(() => {
   pixelPurchase = vi.fn().mockReturnValue(true);
   TestBed.configureTestingModule({ providers: [GoogleAnalyticsService,
     { provide: Router, useValue: { events: new Subject() } },
-    { provide: MetaPixelService, useValue: { init: vi.fn(), trackPageView: vi.fn(), trackPurchase: pixelPurchase } },
+    { provide: MetaPixelService, useValue: { init: vi.fn(), trackPageView: vi.fn(), trackPurchase: pixelPurchase, trackInitiateCheckout: vi.fn() } },
   ] });
   service = TestBed.runInInjectionContext(() => new GoogleAnalyticsService(TestBed.inject(Router)));
 });
@@ -89,5 +89,91 @@ describe('purchase tracking confirmation', () => {
     expect(await pending).toBe(true);
     expect(await send()).toBe(false);
     expect(gtag).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('checkout funnel', () => {
+  const fingerprint = 'event:test|boleta:test-item:1';
+  const begin = () => service.trackBeginCheckoutOnce({ fingerprint, items });
+  const names = () => gtag.mock.calls.filter(call => call[0] === 'event').map(call => call[1]);
+  const reload = () => {
+    service = TestBed.runInInjectionContext(() => new GoogleAnalyticsService(TestBed.inject(Router)));
+  };
+  beforeEach(() => {
+    gtag.mockImplementation((_command, _name, params) => params?.event_callback?.());
+  });
+
+  it('tracks the authenticated path through purchase without login steps', async () => {
+    service.trackCartViewed(fingerprint, items);
+    begin();
+    service.trackCheckoutLoginCompleted(fingerprint);
+    await service.trackPaymentStarted({ paymentId: 'payment-1', items });
+    expect(await send()).toBe(true);
+    expect(names()).toEqual(['view_cart', 'begin_checkout', 'payment_started', 'purchase']);
+  });
+
+  it('tracks anonymous intent and resumes the same purchase after login across a reload', async () => {
+    service.trackCartViewed(fingerprint, items);
+    begin();
+    service.trackCheckoutLoginRequired(fingerprint);
+    await vi.advanceTimersByTimeAsync(0);
+    reload();
+    service.trackCartViewed(fingerprint, items);
+    service.trackCheckoutLoginCompleted(fingerprint);
+    begin();
+    await service.trackPaymentStarted({ paymentId: 'payment-1', items });
+    expect(await send()).toBe(true);
+    expect(names()).toEqual(['view_cart', 'begin_checkout', 'checkout_login_required',
+      'checkout_login_completed', 'payment_started', 'purchase']);
+  });
+
+  it('does not attribute login completion to a different cart or to an expired attempt', async () => {
+    begin();
+    service.trackCheckoutLoginRequired(fingerprint);
+    await vi.advanceTimersByTimeAsync(0);
+    service.trackCheckoutLoginCompleted('another-cart');
+    service.trackCheckoutLoginRequired('another-cart');
+    await vi.advanceTimersByTimeAsync(86400001);
+    service.trackCheckoutLoginCompleted('another-cart');
+    expect(names()).not.toContain('checkout_login_completed');
+  });
+
+  it('deduplicates renders, repeated clicks and reloads, but accepts a different payment', async () => {
+    service.trackCartViewed(fingerprint, []);
+    expect(names()).toEqual([]);
+    for (let i = 0; i < 3; i++) {
+      service.trackCartViewed(fingerprint, items);
+      begin();
+    }
+    await Promise.all([1, 2, 3].map(() => service.trackPaymentStarted({ paymentId: 'payment-1', items })));
+    reload();
+    service.trackCartViewed(fingerprint, items);
+    begin();
+    await service.trackPaymentStarted({ paymentId: 'payment-1', items });
+    await service.trackPaymentStarted({ paymentId: 'payment-2', items });
+    expect(names()).toEqual(['view_cart', 'begin_checkout', 'payment_started', 'payment_started']);
+    expect(names()).not.toContain('add_payment_info');
+  });
+
+  it('does not mark failed steps as processed and bounds the wait before payment', async () => {
+    gtag.mockImplementation(() => {});
+    const pending = service.trackPaymentStarted({ paymentId: 'payment-1', items });
+    await vi.advanceTimersByTimeAsync(800);
+    await pending;
+    expect(sessionStorage.getItem('eventum_payment_started')).toBeNull();
+    gtag.mockImplementation((_command, _name, params) => params?.event_callback?.());
+    await service.trackPaymentStarted({ paymentId: 'payment-1', items });
+    expect(names()).toEqual(['payment_started', 'payment_started']);
+  });
+
+  it('allows a fresh cart journey after a confirmed purchase', async () => {
+    service.trackCartViewed(fingerprint, items);
+    begin();
+    await vi.advanceTimersByTimeAsync(0);
+    await send();
+    service.trackCartViewed(fingerprint, items);
+    begin();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(names()).toEqual(['view_cart', 'begin_checkout', 'purchase', 'view_cart', 'begin_checkout']);
   });
 });

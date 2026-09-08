@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, NgZone, OnDestroy, OnInit } from '@angular/core';
+import { afterEveryRender, ChangeDetectorRef, Component, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
@@ -67,6 +67,7 @@ export class Carrito implements OnInit, OnDestroy {
   evento: Evento | null = null;
   lugarCover: LugarCoverCarrito | null = null;
   usuario: Usuario | null = null;
+  private sesionAnaliticaValidada = false;
   itemsCompra: ItemCarritoEvento[] = [];
   itemsCover: ItemCarritoCover[] = [];
   itemsProductos: ItemCarritoProducto[] = [];
@@ -138,7 +139,25 @@ export class Carrito implements OnInit, OnDestroy {
     private googleAnalytics: GoogleAnalyticsService,
     private ngZone: NgZone,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) {
+    afterEveryRender(() => this.ngZone.runOutsideAngular(() => this.trackCarritoVisible()));
+  }
+
+  private trackCarritoVisible(): void {
+    if (this.mostrarLoadingCarrito || document.visibilityState !== 'visible') return;
+    const items = this.buildGaItemsFromCart();
+    if (!items.length) return;
+    const fingerprint = this.buildGaCheckoutFingerprint(items);
+    this.googleAnalytics.trackCartViewed(fingerprint, items);
+    if (this.usuario && this.sesionAnaliticaValidada) this.googleAnalytics.trackCheckoutLoginCompleted(fingerprint);
+  }
+
+  continuarAlLogin(): void {
+    try {
+      const items = this.trackBeginCheckoutIntent();
+      if (items.length) this.googleAnalytics.trackCheckoutLoginRequired(this.buildGaCheckoutFingerprint(items));
+    } catch { /* La medición no debe impedir iniciar sesión. */ }
+  }
 
   ngOnInit(): void {
     // Recuperar UI si un intento anterior dejó el botón colgado (HMR / redirect fallido).
@@ -166,6 +185,7 @@ export class Carrito implements OnInit, OnDestroy {
 
     this.unsubscribeAuth = this.authService.onAuthStateChange((_user, usuario) => {
       this.usuario = usuario;
+      this.sesionAnaliticaValidada = !!(_user && usuario);
       if (usuario) {
         void this.restaurarCuponDesdeCache();
         // Si el carrito local está vacío, mantener la pantalla de carga hasta
@@ -735,6 +755,7 @@ export class Carrito implements OnInit, OnDestroy {
 
   private async validarSesionEnSegundoPlano(): Promise<void> {
     const sesionValida = await this.authService.ensureActiveSession();
+    this.sesionAnaliticaValidada = sesionValida;
     if (!sesionValida) {
       this.usuario = null;
       this.cuponRestaurado = false;
@@ -753,6 +774,7 @@ export class Carrito implements OnInit, OnDestroy {
     if (!sesionValida) {
       this.usuario = null;
       this.cuponRestaurado = false;
+      this.continuarAlLogin();
       irALoginCliente(this.router, '/carrito', expirada ? 'sesion-expirada' : 'pagar');
       return null;
     }
@@ -761,6 +783,7 @@ export class Carrito implements OnInit, OnDestroy {
     if (!clienteId) {
       this.usuario = null;
       this.cuponRestaurado = false;
+      this.continuarAlLogin();
       irALoginCliente(this.router, '/carrito', 'pagar');
       return null;
     }
@@ -772,6 +795,7 @@ export class Carrito implements OnInit, OnDestroy {
   private manejarErrorSesionExpirada(): void {
     this.usuario = null;
     this.cuponRestaurado = false;
+    this.continuarAlLogin();
     irALoginCliente(this.router, '/carrito', 'sesion-expirada');
   }
 
@@ -975,10 +999,9 @@ export class Carrito implements OnInit, OnDestroy {
         });
         if (typeof window !== 'undefined') {
           try {
-            // Solo add_payment_info: begin_checkout ya debió salir al pulsar Pagar.
-            this.trackWompiPaymentInfo(pendiente.totalPago);
+            await this.trackWompiPaymentStarted(pendiente.checkoutUrl);
           } catch (trackError) {
-            console.error('Error tracking add_payment_info:', trackError);
+            console.error('Error tracking payment_started:', trackError);
           }
           this.limpiarWatchdogCompra();
           this.redirigiendoAWompi = true;
@@ -1304,9 +1327,9 @@ export class Carrito implements OnInit, OnDestroy {
 
     // Analytics nunca debe impedir el redirect ni dejar el botón colgado.
     try {
-      this.trackWompiPaymentInfo(totalPago);
+      await this.trackWompiPaymentStarted(checkoutUrl);
     } catch (trackError) {
-      console.error('Error tracking add_payment_info:', trackError);
+      console.error('Error tracking payment_started:', trackError);
     }
 
     this.redirigiendoAWompi = true;
@@ -2082,11 +2105,11 @@ export class Carrito implements OnInit, OnDestroy {
     const lines = items
       .map(
         (i) =>
-          `${i.item_id}:${i.quantity || 1}:${i.price || 0}:${i.discount || 0}`,
+          `${i.item_category2}:${i.item_id}:${i.quantity || 1}`,
       )
       .sort()
       .join('|');
-    return `${scope}|${lines}|${this.getTotal()}`;
+    return `${scope}|${lines}`;
   }
 
   private trackBeginCheckoutIntent(itemsOverride?: GaItem[]): GaItem[] {
@@ -2119,7 +2142,7 @@ export class Carrito implements OnInit, OnDestroy {
     return items;
   }
 
-  private trackWompiPaymentInfo(_totalConServicio?: number, items?: GaItem[]): void {
+  private async trackWompiPaymentStarted(paymentId: string, items?: GaItem[]): Promise<void> {
     const snapshot = this.googleAnalytics.readCheckoutItemsSnapshot();
     const gaItems = items?.length
       ? items
@@ -2130,7 +2153,8 @@ export class Carrito implements OnInit, OnDestroy {
       snapshot?.service_fee != null && snapshot.service_fee >= 0
         ? Number(snapshot.service_fee)
         : this.getValorServicio();
-    this.googleAnalytics.trackAddPaymentInfo({
+    await this.googleAnalytics.trackPaymentStarted({
+      paymentId,
       items: gaItems,
       serviceFee,
       paymentType: 'wompi',
@@ -2149,6 +2173,8 @@ export class Carrito implements OnInit, OnDestroy {
   }
 
   async procesarCompra(): Promise<void> {
+    if (this.comprando) return;
+    try { this.trackBeginCheckoutIntent(); } catch { /* La medición no debe impedir pagar. */ }
     if (this.carritoCompraService.estaVacio()) {
       this.alertService.warning('Carrito vacío', 'Debes agregar al menos un item');
       return;
@@ -2197,14 +2223,6 @@ export class Carrito implements OnInit, OnDestroy {
     if (!esSoloCover && !this.evento) {
       this.alertService.warning('Carrito vacío', 'Debes agregar al menos una boleta, palco o producto');
       return;
-    }
-
-    // begin_checkout solo al pulsar Pagar (no al entrar al carrito).
-    try {
-      this.googleAnalytics.clearBeginCheckoutDedupe();
-      this.trackBeginCheckoutIntent();
-    } catch (trackError) {
-      console.error('Error tracking begin_checkout:', trackError);
     }
 
     if (this.tieneLicor() && !this.terminosAceptados) {
