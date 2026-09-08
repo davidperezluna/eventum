@@ -451,16 +451,7 @@ export class Layout implements OnInit, OnDestroy {
         dividerBefore: true,
       },
       ...(this.cuposEventumEnabled
-        ? [
-            { path: '/cupos', label: CUPOS_LABELS.explorar, icon: 'forum', exact: true },
-            {
-              path: '/mis-cupos',
-              label: CUPOS_LABELS.misPublicaciones,
-              icon: 'campaign',
-              exact: true,
-              badge: 'cupos-respuestas',
-            },
-          ]
+        ? [{ path: '/cupos', label: CUPOS_LABELS.explorar, icon: 'forum', exact: true }]
         : []),
     ] as ClientNavItem[];
     this.adminNavSections = [];
