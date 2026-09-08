@@ -1,2 +1,14 @@
 <app-pwa-install-banner />
 <router-outlet />
+@if (pwaUpdate.available() && !pwaUpdate.paymentActive() && !pwaUpdate.postponed()) {
+  <aside class="app-update" role="status" aria-live="polite">
+    <div>
+      <strong>Hay una nueva versión de Eventum</strong>
+      <p>Actualiza cuando termines. La página se recargará.</p>
+    </div>
+    <button type="button" (click)="pwaUpdate.applyUpdate()" [disabled]="pwaUpdate.reloading()">
+      {{ pwaUpdate.reloading() ? 'Actualizando…' : 'Actualizar' }}
+    </button>
+    <button type="button" class="app-update__later" (click)="pwaUpdate.postpone()" [disabled]="pwaUpdate.reloading()">Más tarde</button>
+  </aside>
+}

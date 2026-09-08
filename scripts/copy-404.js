@@ -1,69 +1,41 @@
 #!/usr/bin/env node
+const fs = require('node:fs');
+const path = require('node:path');
+const { createHash } = require('node:crypto');
 
-/**
- * Script para copiar index.html a 404.html
- * Solución para GitHub Pages: cuando no encuentra una ruta, sirve 404.html
- * Angular puede recuperar la ruta desde ahí y funcionar normalmente
- */
-
-const fs = require('fs');
-const path = require('path');
-
-// Intentar diferentes rutas posibles según la versión de Angular
-const possiblePaths = [
-  path.join(__dirname, '..', 'dist', 'admin-panel', 'browser'), // Angular 17+ con browser subdirectory
-  path.join(__dirname, '..', 'dist', 'admin-panel'), // Angular sin subdirectory
-];
-
-let distPath = null;
-let indexPath = null;
-
-// Buscar la ruta correcta
-for (const possiblePath of possiblePaths) {
-  const possibleIndexPath = path.join(possiblePath, 'index.html');
-  if (fs.existsSync(possibleIndexPath)) {
-    distPath = possiblePath;
-    indexPath = possibleIndexPath;
-    break;
+function finalizeBuild(distPath) {
+  const indexPath = path.join(distPath, 'index.html');
+  // Idempotent: rerunning the finalizer must not manufacture a new version.
+  const original = fs.readFileSync(indexPath, 'utf8')
+    .replace(/<meta name="eventum-build" content="[a-f0-9]+">\s*/g, '');
+  const manifestPath = path.join(distPath, 'ngsw.json');
+  const manifest = fs.existsSync(manifestPath)
+    ? JSON.parse(fs.readFileSync(manifestPath, 'utf8')) : null;
+  if (manifest && (!manifest.hashTable || !manifest.index || !(manifest.index in manifest.hashTable))) {
+    throw new Error('Invalid Angular manifest: missing index hash');
   }
+  // Include asset-only releases too (images/fonts can change without a new main bundle).
+  const assets = manifest ? Object.entries(manifest.hashTable)
+    .filter(([name]) => name !== manifest.index).sort(([a], [b]) => a.localeCompare(b)) : [];
+  const buildId = createHash('sha256').update(JSON.stringify({ html: original, assets })).digest('hex');
+  const html = original.replace('</head>', `<meta name="eventum-build" content="${buildId}"></head>`);
+  fs.writeFileSync(indexPath, html);
+  fs.writeFileSync(path.join(distPath, '404.html'), html);
+
+  if (manifest) {
+    // Angular already generated ngsw.json. Recompute the hash of the FINAL HTML.
+    manifest.hashTable[manifest.index] = createHash('sha1').update(html).digest('hex');
+    manifest.appData = { ...manifest.appData, buildId };
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+  }
+  return buildId;
 }
 
-const notFoundPath = distPath ? path.join(distPath, '404.html') : null;
-
-try {
-  // Verificar que se encontró la ruta correcta
-  if (!distPath || !indexPath) {
-    console.error('❌ Error: No se encontró index.html en ninguna de las rutas esperadas:');
-    possiblePaths.forEach(p => console.error(`   - ${p}`));
-    console.log('💡 Ejecuta primero: npm run build:prod');
-    process.exit(1);
-  }
-
-  console.log(`📁 Usando ruta: ${distPath}`);
-
-  // Leer index.html
-  const indexContent = fs.readFileSync(indexPath, 'utf8');
-
-  // Escribir 404.html con el mismo contenido
-  fs.writeFileSync(notFoundPath, indexContent, 'utf8');
-
-  // Cada build lleva id único al script de update (GitHub Pages no permite Cache-Control).
-  const buildId = process.env.GITHUB_RUN_ID || process.env.GITHUB_SHA?.slice(0, 12) || String(Date.now());
-  const pattern = /update\/pwa-cache-bust\.js(\?v=[^"']*)?/g;
-  const replacement = `update/pwa-cache-bust.js?v=${buildId}`;
-  for (const fileName of ['index.html', '404.html']) {
-    const filePath = path.join(distPath, fileName);
-    if (!fs.existsSync(filePath)) continue;
-    const html = fs.readFileSync(filePath, 'utf8');
-    fs.writeFileSync(filePath, html.replace(pattern, replacement), 'utf8');
-  }
-  console.log(`🔖 pwa-cache-bust version: ${buildId}`);
-
-  console.log('✅ 404.html creado exitosamente');
-  console.log(`📁 Ubicación: ${notFoundPath}`);
-  console.log('🚀 Listo para desplegar en GitHub Pages');
-} catch (error) {
-  console.error('❌ Error al crear 404.html:', error.message);
-  process.exit(1);
+if (require.main === module) {
+  const candidates = ['dist/admin-panel/browser', 'dist/admin-panel'];
+  const dist = candidates.map(p => path.resolve(__dirname, '..', p))
+    .find(p => fs.existsSync(path.join(p, 'index.html')));
+  if (!dist) throw new Error('Build output missing. Run the Angular build first.');
+  console.log(`[build] Final HTML, 404 and service-worker hashes synchronized: ${finalizeBuild(dist)}`);
 }
-
+module.exports = { finalizeBuild };

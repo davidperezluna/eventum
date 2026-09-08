@@ -1,203 +1,57 @@
-const BUILD_KEY = 'eventum-ngsw-build';
-const RELOAD_KEY = 'eventum-ngsw-reload';
-
-export function simpleNgswHash(text: string): string {
-  let hash = 0;
-  for (let i = 0; i < text.length; i++) {
-    hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
-  }
-  return String(hash);
+/** Read the build that actually booted, not the last version fetched. */
+export function loadedBuildId(): string | null {
+  return document.querySelector<HTMLMetaElement>('meta[name="eventum-build"]')?.content || null;
 }
 
-export function isAppleWebKitBrowser(): boolean {
-  if (typeof navigator === 'undefined') {
-    return false;
-  }
-  const ua = navigator.userAgent || '';
-  const isIOS =
-    /iPad|iPhone|iPod/.test(ua) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  const isSafari =
-    /Safari\//.test(ua) &&
-    !/Chrome\//.test(ua) &&
-    !/CriOS\//.test(ua) &&
-    !/FxiOS\//.test(ua);
-  return isIOS || isSafari;
+export function parsePublishedBuild(body: unknown): string | null {
+  const id = (body as { appData?: { buildId?: unknown } } | null)?.appData?.buildId;
+  return typeof id === 'string' && /^[a-f0-9]{64}$/.test(id) ? id : null;
 }
 
-export function isStandalonePwa(): boolean {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-  return (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    (window.navigator as Navigator & { standalone?: boolean }).standalone === true
-  );
-}
-
-/** Respeta `<base href>` (GitHub Pages project site o dominio propio en raíz). */
-export function getAppBaseHref(): string {
-  if (typeof document === 'undefined') {
-    return '/';
-  }
-  const href = document.querySelector('base')?.getAttribute('href')?.trim() || '/';
-  if (href === '/') {
-    return '/';
-  }
-  const normalized = href.startsWith('/') ? href : `/${href}`;
-  return normalized.endsWith('/') ? normalized : `${normalized}/`;
-}
-
-export function resolveAppAssetUrl(relativePath: string): string {
-  const base = getAppBaseHref();
-  const path = relativePath.replace(/^\//, '');
-  if (base === '/') {
-    return `/${path}`;
-  }
-  return `${base}${path}`;
-}
-
-function readStored(key: string): string | null {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    try {
-      return sessionStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  }
-}
-
-function writeStored(key: string, value: string): void {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    try {
-      sessionStorage.setItem(key, value);
-    } catch {
-      // Modo privado / storage bloqueado.
-    }
-  }
-}
-
-function fetchViaXhr(url: string, timeoutMs = 8_000): Promise<string | null> {
-  return new Promise((resolve) => {
-    try {
-      const xhr = new XMLHttpRequest();
-      xhr.open('GET', url, true);
-      xhr.timeout = timeoutMs;
-      xhr.setRequestHeader('Cache-Control', 'no-cache');
-      xhr.setRequestHeader('Pragma', 'no-cache');
-      xhr.onload = () => {
-        resolve(xhr.status >= 200 && xhr.status < 300 ? xhr.responseText : null);
-      };
-      xhr.onerror = () => resolve(null);
-      xhr.ontimeout = () => resolve(null);
-      xhr.send();
-    } catch {
-      resolve(null);
-    }
-  });
-}
-
-export async function fetchFreshNgswManifest(): Promise<string | null> {
-  const url = `${resolveAppAssetUrl('ngsw.json')}?_=${Date.now()}`;
-  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timeoutId = controller
-    ? setTimeout(() => controller.abort(), 8_000)
-    : null;
-
+export async function fetchPublishedBuild(): Promise<string | null> {
+  const url = new URL('ngsw.json', document.baseURI);
+  url.searchParams.set('ngsw-bypass', 'true');
+  url.searchParams.set('_', String(Date.now()));
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
   try {
     const response = await fetch(url, {
-      cache: 'reload',
-      credentials: 'same-origin',
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        Pragma: 'no-cache',
-      },
-      signal: controller?.signal,
+      cache: 'no-store', credentials: 'same-origin', signal: controller.signal,
     });
-    if (response.ok) {
-      return await response.text();
-    }
+    return response.ok ? parsePublishedBuild(await response.json()) : null;
   } catch {
-    // Safari a veces falla fetch con cache modes estrictos / abort por timeout.
+    return null;
   } finally {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
+    clearTimeout(timer);
   }
-
-  return fetchViaXhr(url);
 }
 
-export async function checkNgswBuildChanged(): Promise<boolean> {
-  const body = await fetchFreshNgswManifest();
-  if (!body) {
+/** Only browsing pages can reload automatically; forms, payments and QR screens cannot. */
+export function isAutomaticUpdateRoute(url: string): boolean {
+  const path = url.split(/[?#]/)[0].replace(/\/$/, '') || '/';
+  return ['/', '/eventos-cliente', '/ayuda', '/conocenos', '/organizadores', '/clubes'].includes(path);
+}
+
+export function isPaymentRoute(url: string): boolean {
+  return /^\/(carrito(?:\/|$)|carrito-productos(?:\/|$)|pago-wompi(?:\/|$)|pago-resultado(?:-producto)?(?:\/|$))/.test(url.split(/[?#]/)[0]);
+}
+
+/** Bound retries if a CDN still returns old HTML. No automatic reload without storage. */
+export function claimReload(build: string, now = Date.now()): boolean {
+  try {
+    const key = `eventum-update-attempt:${build}`;
+    const previous = Number(sessionStorage.getItem(key));
+    if (previous && now - previous < 5 * 60_000) return false;
+    sessionStorage.setItem(key, String(now));
+    return true;
+  } catch {
     return false;
   }
-
-  const hash = simpleNgswHash(body);
-  const previous = readStored(BUILD_KEY);
-
-  if (previous && previous !== hash) {
-    writeStored(BUILD_KEY, hash);
-    if (readStored(RELOAD_KEY) === hash) {
-      return false;
-    }
-    writeStored(RELOAD_KEY, hash);
-    return true;
-  }
-
-  if (!previous) {
-    writeStored(BUILD_KEY, hash);
-  }
-
-  return false;
 }
 
-export async function clearNgswCachesAndUnregister(): Promise<void> {
-  const tasks: Promise<unknown>[] = [];
-
-  if (typeof caches !== 'undefined') {
-    tasks.push(
-      caches.keys().then((names) =>
-        Promise.all(names.filter((name) => name.startsWith('ngsw:')).map((name) => caches.delete(name))),
-      ),
-    );
-  }
-
-  if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-    tasks.push(
-      navigator.serviceWorker.getRegistrations().then((registrations) =>
-        Promise.all(
-          registrations
-            .filter((registration) => {
-              const scriptUrl =
-                registration.active?.scriptURL ??
-                registration.waiting?.scriptURL ??
-                registration.installing?.scriptURL ??
-                '';
-              return /ngsw-worker\.js/.test(scriptUrl);
-            })
-            .map((registration) => registration.unregister()),
-        ),
-      ),
-    );
-  }
-
-  await Promise.all(tasks);
-}
-
-/** Recarga forzada evitando caché de disco en Safari/iOS. */
-export function hardReloadForSafari(): void {
+export function reloadForBuild(build: string, bypassWorker = false): void {
   const url = new URL(window.location.href);
-  url.searchParams.set('_nc', String(Date.now()));
+  url.searchParams.set('_nc', build);
+  if (bypassWorker) url.searchParams.set('ngsw-bypass', 'true');
   window.location.replace(url.toString());
-}
-
-export async function clearNgswAndHardReload(): Promise<void> {
-  await clearNgswCachesAndUnregister();
-  hardReloadForSafari();
 }

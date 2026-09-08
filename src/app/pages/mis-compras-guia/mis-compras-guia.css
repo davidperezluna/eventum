@@ -246,3 +246,5 @@
 @media (prefers-reduced-motion: reduce) {
   .guia-btn, .guia-link { transition: none; }
 }
+
+.guia-version { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 0.72rem; }

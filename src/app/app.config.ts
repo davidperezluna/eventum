@@ -29,6 +29,7 @@ export const appConfig: ApplicationConfig = {
     provideServiceWorker('ngsw-worker.js', {
       enabled: environment.production && (environment.pwa?.serviceWorkerEnabled ?? true),
       registrationStrategy: 'registerImmediately',
+      updateViaCache: 'none',
     }),
     // GoogleAnalyticsService se inicializa automáticamente cuando se inyecta por primera vez
   ]
