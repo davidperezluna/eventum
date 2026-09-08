@@ -118,9 +118,9 @@ export class MetaPixelService {
     value: number;
     transactionId: string;
     contents?: Array<{ id: string; quantity: number; item_price?: number }>;
-  }): void {
+  }): boolean {
     const eventID = String(params.transactionId || '').trim();
-    this.track(
+    return this.track(
       'Purchase',
       {
         value: params.value,
@@ -143,12 +143,12 @@ export class MetaPixelService {
     eventName: string,
     params?: Record<string, unknown>,
     eventData?: { eventID: string },
-  ): void {
-    if (!this.canTrack()) return;
+  ): boolean {
+    if (!this.canTrack()) return false;
     this.init();
     try {
       const fbq = window.fbq;
-      if (typeof fbq !== 'function') return;
+      if (typeof fbq !== 'function') return false;
       if (params && eventData?.eventID) {
         fbq('track', eventName, params, eventData);
       } else if (params) {
@@ -156,8 +156,10 @@ export class MetaPixelService {
       } else {
         fbq('track', eventName);
       }
+      return true;
     } catch (error) {
       console.error(`Error tracking Meta Pixel ${eventName}:`, error);
+      return false;
     }
   }
 

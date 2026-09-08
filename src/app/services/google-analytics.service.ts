@@ -20,7 +20,7 @@ import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { MetaPixelService } from './meta-pixel.service';
-import { GaItem, sumGaItemsValue, claimGaPurchaseTrackingId } from './ga-purchase.utils';
+import { GaItem, sumGaItemsValue, claimGaPurchaseTrackingId, hasGaPurchaseTrackingId } from './ga-purchase.utils';
 
 export type { GaItem } from './ga-purchase.utils';
 export { sumGaItemsValue } from './ga-purchase.utils';
@@ -33,6 +33,7 @@ declare global {
 }
 
 const PURCHASE_TRACKED_KEY = 'eventum_ga_purchase_tracked';
+const META_PURCHASE_TRACKED_KEY = 'eventum_meta_purchase_queued';
 const BEGIN_CHECKOUT_TRACKED_KEY = 'eventum_ga_begin_checkout';
 const CHECKOUT_ITEMS_KEY = 'eventum_ga_checkout_items';
 
@@ -69,6 +70,14 @@ export class GoogleAnalyticsService {
   private readonly metaPixel = inject(MetaPixelService);
   private scriptLoading: Promise<void> | null = null;
   private gtagReady = false;
+  private readonly purchasesInFlight = new Set<string>();
+  private readonly purchasesProcessed = new Set<string>();
+  private readonly metaPurchasesQueued = new Set<string>();
+
+  private purchaseStorage(): Storage | null {
+    try { return typeof sessionStorage !== 'undefined' ? sessionStorage : null; }
+    catch { return null; }
+  }
 
   constructor(private router: Router) {
     this.googleTagId = environment.googleTagId;
@@ -151,11 +160,12 @@ export class GoogleAnalyticsService {
           resolve();
         };
         script.onerror = () => {
-          this.gtagReady = typeof window.gtag === 'function';
+          this.gtagReady = false;
+          this.scriptLoading = null;
+          script.remove();
           resolve();
         };
         document.head.appendChild(script);
-        this.gtagReady = true;
       } catch {
         resolve();
       }
@@ -185,17 +195,17 @@ export class GoogleAnalyticsService {
     this.sendEvent(eventName, eventParams);
   }
 
-  trackPurchase(
+  async trackPurchase(
     value: number,
     transactionId: string,
     currency: string = 'COP',
     items?: GaItem[],
     serviceFee?: number
-  ) {
+  ): Promise<boolean> {
     const gaItems = items || [];
     const itemsValue = gaItems.length ? sumGaItemsValue(gaItems) : Number(value) || 0;
     const fee = Math.max(0, Number(serviceFee) || 0);
-    this.sendEvent('purchase', {
+    const params = {
       transaction_id: transactionId,
       value: itemsValue,
       currency: currency,
@@ -203,8 +213,11 @@ export class GoogleAnalyticsService {
       payment_gateway: 'wompi',
       total_paid: itemsValue + fee,
       ...(fee > 0 ? { service_fee: fee } : {}),
-    });
-    this.metaPixel.trackPurchase({
+    };
+    const storage = this.purchaseStorage();
+    let pixelQueued = this.metaPurchasesQueued.has(transactionId) ||
+      hasGaPurchaseTrackingId(transactionId, storage, META_PURCHASE_TRACKED_KEY);
+    if (!pixelQueued) pixelQueued = this.metaPixel.trackPurchase({
       value: itemsValue,
       transactionId,
       contents: gaItems.map((item) => ({
@@ -213,15 +226,47 @@ export class GoogleAnalyticsService {
         item_price: Number(item.price) || undefined,
       })),
     });
+    if (pixelQueued) {
+      this.metaPurchasesQueued.add(transactionId);
+      claimGaPurchaseTrackingId(transactionId, storage, META_PURCHASE_TRACKED_KEY);
+    }
+    if (!this.canTrackConfig()) return pixelQueued;
+    return this.sendPurchaseAndWait(params);
   }
 
-  trackPurchaseOnce(
+  /** Callback confirms gtag processing, not receipt in GA reports. Timeout never counts as success. */
+  private sendPurchaseAndWait(params: Record<string, unknown>): Promise<boolean> {
+    return new Promise(resolve => {
+      let settled = false;
+      const finish = (processed: boolean) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(processed);
+      };
+      const timer = setTimeout(() => finish(false), 8000);
+      void this.ensureGtag().then(() => {
+        if (settled) return;
+        if (!this.canTrack()) { finish(false); return; }
+        try {
+          window.gtag!('event', 'purchase', {
+            ...params,
+            event_callback: () => finish(true),
+            // Our failure deadline must precede gtag's timeout callback.
+            event_timeout: 10000,
+          });
+        } catch { finish(false); }
+      }).catch(() => finish(false));
+    });
+  }
+
+  async trackPurchaseOnce(
     value: number,
     transactionId: string,
     currency: string = 'COP',
     items?: GaItem[],
     serviceFee?: number
-  ): boolean {
+  ): Promise<boolean> {
     const id = String(transactionId || '').trim();
     const pixelId = (environment as { metaPixelId?: string }).metaPixelId?.trim();
     const canPixel = !!(pixelId && environment.production);
@@ -238,14 +283,23 @@ export class GoogleAnalyticsService {
       return false;
     }
 
-    const storage =
-      typeof sessionStorage !== 'undefined' ? sessionStorage : null;
-    if (!claimGaPurchaseTrackingId(id, storage, PURCHASE_TRACKED_KEY)) {
+    const storage = this.purchaseStorage();
+    if (this.purchasesInFlight.has(id) || this.purchasesProcessed.has(id) ||
+        hasGaPurchaseTrackingId(id, storage, PURCHASE_TRACKED_KEY)) {
       return false;
     }
-
-    this.trackPurchase(itemsValue, id, currency, gaItems, serviceFee);
-    return true;
+    this.purchasesInFlight.add(id);
+    try {
+      const processed = await this.trackPurchase(itemsValue, id, currency, gaItems, serviceFee);
+      if (!processed) return false;
+      this.purchasesProcessed.add(id);
+      claimGaPurchaseTrackingId(id, storage, PURCHASE_TRACKED_KEY);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      this.purchasesInFlight.delete(id);
+    }
   }
 
   trackLogin(method?: string) {

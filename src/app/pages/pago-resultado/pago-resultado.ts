@@ -296,7 +296,7 @@ export class PagoResultado implements OnInit, OnDestroy {
   }
 
   /** Envía purchase a GA4 una sola vez por transacción/compra confirmada. */
-  private trackPurchaseSiCompletado(): void {
+  private async trackPurchaseSiCompletado(): Promise<void> {
     if (!shouldTrackGaPurchase(this.getEstadoPagoReferencia())) {
       return;
     }
@@ -323,14 +323,16 @@ export class PagoResultado implements OnInit, OnDestroy {
       return;
     }
 
-    const sent = this.googleAnalytics.trackPurchaseOnce(
+    const snapshotBeforeSend = JSON.stringify(this.googleAnalytics.readCheckoutItemsSnapshot());
+    const sent = await this.googleAnalytics.trackPurchaseOnce(
       payload.value,
       payload.transaction_id,
       payload.currency,
       payload.items,
       payload.service_fee,
     );
-    if (sent) {
+    // Do not clear a newer checkout started while gtag was processing this purchase.
+    if (sent && JSON.stringify(this.googleAnalytics.readCheckoutItemsSnapshot()) === snapshotBeforeSend) {
       this.googleAnalytics.clearCheckoutItemsSnapshot();
     }
   }
@@ -537,7 +539,7 @@ export class PagoResultado implements OnInit, OnDestroy {
           if (estadoCover === 'fallido') {
             this.trackPaymentRejectedOnce();
           }
-          this.trackPurchaseSiCompletado();
+          void this.trackPurchaseSiCompletado();
           this.cdr.detectChanges();
           return;
         }
@@ -561,7 +563,7 @@ export class PagoResultado implements OnInit, OnDestroy {
           this.trackPaymentRejectedOnce();
         }
         this.vaciarCarritoTrasCompraExitosa();
-        this.trackPurchaseSiCompletado();
+        void this.trackPurchaseSiCompletado();
         this.cdr.detectChanges();
         return;
       } catch (err: unknown) {

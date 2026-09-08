@@ -246,9 +246,20 @@ export function shouldTrackGaPurchase(
 
 const DEFAULT_PURCHASE_TRACKED_KEY = 'eventum_ga_purchase_tracked';
 
+export function hasGaPurchaseTrackingId(
+  id: string,
+  storage?: Pick<Storage, 'getItem'> | null,
+  key = DEFAULT_PURCHASE_TRACKED_KEY,
+): boolean {
+  try {
+    const ids: unknown = JSON.parse(storage?.getItem(key) || '[]');
+    return Array.isArray(ids) && ids.includes(id);
+  } catch { return false; }
+}
+
 /**
- * Reserva un transaction_id en storage. true = primera vez (debe enviarse).
- * false = ya se envió purchase para ese id.
+ * Registra un transaction_id DESPUÉS de procesar el evento.
+ * No debe usarse como reserva antes del envío.
  */
 export function claimGaPurchaseTrackingId(
   transactionId: string,
