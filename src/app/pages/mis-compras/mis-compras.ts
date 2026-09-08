@@ -353,7 +353,9 @@ export class MisCompras implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.syncVistaActividadDesdeUrl(this.router.url);
+    // La carga inicial ya refresca compras, boletas y traslados en el orden correcto.
+    // Aquí solo interpretamos la ruta para no iniciar una segunda reconstrucción en paralelo.
+    this.syncVistaActividadDesdeUrl(this.router.url, false);
     this.router.events
       .pipe(
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),
@@ -427,7 +429,7 @@ export class MisCompras implements OnInit, OnDestroy {
     this.suscribirReinicioRealtimePorAuth();
   }
 
-  private syncVistaActividadDesdeUrl(url: string): void {
+  private syncVistaActividadDesdeUrl(url: string, refreshOnEntry = true): void {
     const path = (url || '').split('?')[0];
     const prevEventoKey = this.eventoDetalleKey;
     const prevClubKey = this.lugarCoverDetalleKey;
@@ -443,7 +445,7 @@ export class MisCompras implements OnInit, OnDestroy {
     const entroEnDetalle =
       (this.eventoDetalleKey != null && this.eventoDetalleKey !== prevEventoKey) ||
       (this.lugarCoverDetalleKey != null && this.lugarCoverDetalleKey !== prevClubKey);
-    if (entroEnDetalle && this.authService.getUsuarioId()) {
+    if (refreshOnEntry && entroEnDetalle && this.authService.getUsuarioId()) {
       void this.refrescarTrasladosMaps().then(() => {
         this.reconstruirEventosConBoletas();
         this.fusionarProductosEnEventos();
