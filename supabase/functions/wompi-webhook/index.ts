@@ -1220,10 +1220,12 @@ async function actualizarTransaccionCheckout(
   if (compraProductoId) updateData.compra_producto_id = compraProductoId
   if (compraCoverId) updateData.compra_cover_id = compraCoverId
 
-  await supabaseClient
+  const { error: checkoutUpdateError } = await supabaseClient
     .from('transacciones_checkout')
     .update(updateData)
     .eq('id', checkout.id)
+  // Incluye el registro transaccional del correo. Si falla, Wompi debe reintentar.
+  if (checkoutUpdateError) throw checkoutUpdateError
 }
 
 serve(async (req) => {

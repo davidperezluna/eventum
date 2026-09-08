@@ -5,7 +5,7 @@ export const COMPRA_COPY = {
   emailHeroLabelPendiente: 'Cuando se confirme, verás tu compra en esta cuenta',
   identificacionCuentaLabel: 'Identificación',
   compraAppNota:
-    'Tu compra no llega a tu correo. Después del pago, consúmala en Mis compras dentro de la app.',
+    'El correo de confirmación no reemplaza tus entradas. Consulta tu compra y sus códigos QR en Mis compras dentro de Eventum.',
   wompiReciboNota:
     'En la pasarela puedes usar otro correo solo para el recibo del banco.',
   wompiReciboNotaPostPago:

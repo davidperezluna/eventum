@@ -61,6 +61,7 @@
     "@angular/build": "^21.0.2",
     "@angular/cli": "^21.0.2",
     "@angular/compiler-cli": "^21.0.0",
+    "@electric-sql/pglite": "^0.5.8",
     "@types/luxon": "^3.7.3",
     "jsdom": "^27.1.0",
     "sharp": "^0.34.5",

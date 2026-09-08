@@ -1,0 +1,54 @@
+{
+  "version": "5",
+  "redirects": {
+    "https://esm.sh/iceberg-js@^0.8.0?target=denonext": "https://esm.sh/iceberg-js@0.8.1?target=denonext"
+  },
+  "remote": {
+    "https://esm.sh/@supabase/auth-js@2.86.2/denonext/auth-js.mjs": "da459de8cb8b2358b2521430cdf135ebef33bca03e446c183ea3371c1fcf55f4",
+    "https://esm.sh/@supabase/functions-js@2.86.2/denonext/functions-js.mjs": "4f585b3a75abbbe5fc54a92a9fc62c145fed6f5f1632bccc1c94631e439ea2b8",
+    "https://esm.sh/@supabase/postgrest-js@2.86.2/denonext/postgrest-js.mjs": "500ebcc2e3ef684f8a222097982db762770521098fa13cdd1f4f0eedc9982711",
+    "https://esm.sh/@supabase/realtime-js@2.86.2/denonext/realtime-js.mjs": "24d430acf3245fc5668d0a5d6842c1bb22aa7cbc41eacc6cb4040b9c85ac55a0",
+    "https://esm.sh/@supabase/storage-js@2.86.2/denonext/storage-js.mjs": "26076aca50471138739906b3b45a74934db2455a27fcb3f7c3766c1d74900db1",
+    "https://esm.sh/@supabase/supabase-js@2.86.2": "cd26e547b9dcdaa3eef8aabe25e338c050be69166e02226b8239399e67227d13",
+    "https://esm.sh/@supabase/supabase-js@2.86.2/denonext/supabase-js.mjs": "14d31c0cba3948df40009dd877bbd67a738a80b0013f391eb1d6c580260fa3f5",
+    "https://esm.sh/iceberg-js@0.8.1/denonext/iceberg-js.mjs": "d839d81a2e3966500ca2cdd0c1cb458e9608bacfc91f7bb67a69b2e878dcdb4f",
+    "https://esm.sh/iceberg-js@0.8.1?target=denonext": "58c849d7fe2bf4eca4a84eb501e83c161a7d8c34ca1bec15a962b3bec3062633",
+    "https://esm.sh/tslib@2.8.1/denonext/tslib.mjs": "c38da5dd6da6281964435002ce204cd586634fe3bdfb24a0ee116f48cf3292e9"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@angular/animations@^21.0.3",
+        "npm:@angular/build@^21.0.2",
+        "npm:@angular/cdk@^21.0.3",
+        "npm:@angular/cli@^21.0.2",
+        "npm:@angular/common@21",
+        "npm:@angular/compiler-cli@21",
+        "npm:@angular/compiler@21",
+        "npm:@angular/core@21",
+        "npm:@angular/forms@21",
+        "npm:@angular/material-luxon-adapter@^21.0.3",
+        "npm:@angular/material@^21.0.3",
+        "npm:@angular/platform-browser@21",
+        "npm:@angular/router@21",
+        "npm:@angular/service-worker@21.0.3",
+        "npm:@ng-select/ng-select@^21.8.2",
+        "npm:@supabase/supabase-js@^2.86.2",
+        "npm:@types/luxon@^3.7.3",
+        "npm:@types/qrcode@^1.5.6",
+        "npm:html5-qrcode@^2.3.8",
+        "npm:jsdom@^27.1.0",
+        "npm:jspdf@^3.0.4",
+        "npm:luxon@^3.7.2",
+        "npm:qrcode@^1.5.4",
+        "npm:rxjs@7.8",
+        "npm:sharp@~0.34.5",
+        "npm:sweetalert2@^11.26.10",
+        "npm:tslib@^2.3.0",
+        "npm:typescript@~5.9.2",
+        "npm:vitest@^4.0.8",
+        "npm:xlsx@~0.18.5"
+      ]
+    }
+  }
+}
