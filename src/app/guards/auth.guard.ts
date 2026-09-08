@@ -121,7 +121,7 @@ export const authGuard: CanActivateFn = async (route, state) => {
     // Si no hay sesión ni usuario, redirigir al login
     if (!session || !currentUser) {
       console.log('Auth Guard - No hay sesión, redirigiendo al login');
-      router.navigate(['/login-admin'], { queryParams: { returnUrl: state.url } });
+      redirigirSinSesion(router, state.url);
       return false;
     }
 
