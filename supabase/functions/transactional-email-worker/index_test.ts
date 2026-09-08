@@ -1,5 +1,5 @@
 import { deepEqual, equal, match } from 'node:assert/strict'
-import { handleRequest } from './index.ts'
+import { handleRequest, itemsFromBoletaRows } from './index.ts'
 
 Deno.test('worker rechaza GET y peticiones sin secreto antes de consultar la base', async () => {
   equal((await handleRequest(new Request('https://worker.test'))).status, 405)
@@ -25,6 +25,18 @@ Deno.test('worker apagado no consulta la base ni envía mensajes', async () => {
     Deno.env.delete('TRANSACTIONAL_EMAIL_WORKER_SECRET')
     Deno.env.delete('TRANSACTIONAL_EMAIL_ENABLED')
   }
+})
+
+Deno.test('palco multipersona cuenta una unidad comercial por grupo', () => {
+  deepEqual(itemsFromBoletaRows([
+    { tipo_boleta_id: 1, grupo_palco_id: 'g1', consume_inventario: true, tipos_boleta: { nombre: 'Palco' } },
+    { tipo_boleta_id: 1, grupo_palco_id: 'g1', consume_inventario: false, tipos_boleta: { nombre: 'Palco' } },
+    { tipo_boleta_id: 2, consume_inventario: true, tipos_boleta: { nombre: 'General' } },
+    { tipo_boleta_id: 2, consume_inventario: true, tipos_boleta: { nombre: 'General' } },
+  ]), [
+    { nombre: 'General', cantidad: 2, tipo: 'entrada' },
+    { nombre: 'Palco', cantidad: 1, tipo: 'entrada' },
+  ])
 })
 
 Deno.test('pedido mixto: si falla guardar la aceptación, reintenta el mismo mensaje y UUID', async () => {
@@ -113,6 +125,85 @@ Deno.test('pedido mixto: si falla guardar la aceptación, reintenta el mismo men
     match(notifications[0].email_body, /Total pagado:/)
     equal((await (await invoke()).json()).accepted, 0)
     equal(notifications.length, 2, 'el aceptado no se vuelve a enviar')
+  } finally {
+    globalThis.fetch = originalFetch
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) Deno.env.delete(key)
+      else Deno.env.set(key, value)
+    }
+  }
+})
+
+Deno.test('venta manual: arma el correo desde compra y boletas sin checkout', async () => {
+  const values: Record<string, string> = {
+    TRANSACTIONAL_EMAIL_WORKER_SECRET: 'test-secret', TRANSACTIONAL_EMAIL_ENABLED: 'true',
+    ONESIGNAL_APP_ID: 'test-app', ONESIGNAL_REST_API_KEY: 'test-key',
+    SUPABASE_URL: 'https://database.test', SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
+    EVENTUM_SITE_URL: 'https://eventum.test',
+  }
+  const previous = Object.fromEntries(Object.keys(values).map((key) => [key, Deno.env.get(key)]))
+  for (const [key, value] of Object.entries(values)) Deno.env.set(key, value)
+  const originalFetch = globalThis.fetch
+  const job: Record<string, any> = {
+    id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', tipo: 'compra_confirmada',
+    referencia: 'compra:10', estado: 'pendiente', intentos: 0, mensaje: null,
+  }
+  const notifications: Record<string, any>[] = []
+  const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+    status, headers: { 'Content-Type': 'application/json' },
+  })
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = new URL(input instanceof Request ? input.url : String(input))
+    const body = init?.body ? JSON.parse(String(init.body)) : null
+    if (url.hostname === 'api.onesignal.com') {
+      notifications.push(body)
+      return response({ id: 'manual-notification-id' })
+    }
+    if (url.hostname !== 'database.test') throw new Error('Solicitud externa inesperada en prueba')
+    const resource = url.pathname.split('/').pop()
+    if (resource === 'tomar_correos_transaccionales') {
+      if (job.estado !== 'pendiente') return response([])
+      job.estado = 'procesando'; job.intentos++
+      return response([structuredClone(job)])
+    }
+    if (resource === 'limpiar_correos_transaccionales') return response(null)
+    if (resource === 'correos_transaccionales') {
+      Object.assign(job, body)
+      return response({ id: job.id })
+    }
+    if (resource === 'compras') {
+      return response({
+        id: 10, cliente_id: 79, evento_id: 25, estado_pago: 'completado', total: 0,
+        numero_transaccion: 'TXN-MANUAL-10',
+        datos_facturacion: { origen: 'admin_manual', creado_desde: 'ventas_manual' },
+      })
+    }
+    if (resource === 'boletas_compradas') {
+      return response([
+        { tipo_boleta_id: 1, grupo_palco_id: null, consume_inventario: true, tipos_boleta: { nombre: 'General' } },
+        { tipo_boleta_id: 1, grupo_palco_id: null, consume_inventario: true, tipos_boleta: { nombre: 'General' } },
+      ])
+    }
+    if (resource === 'usuarios') return response({ nombre: 'Luis', email: 'luis@example.com' })
+    if (resource === 'eventos') return response({ titulo: 'Fiesta', fecha_inicio: '2026-09-06T02:00:00', lugar_id: 1 })
+    if (resource === 'lugares') return response({ nombre: 'Club' })
+    throw new Error(`Recurso inesperado: ${resource}`)
+  }) as typeof fetch
+  try {
+    const result = await (await handleRequest(new Request('https://worker.test', {
+      method: 'POST', headers: { 'x-worker-secret': 'test-secret' },
+    }))).json()
+    equal(result.accepted, 1)
+    equal(job.estado, 'aceptado')
+    equal(notifications.length, 1)
+    deepEqual(notifications[0].email_to, ['luis@example.com'])
+    match(notifications[0].email_body, /2 × General/)
+    match(notifications[0].email_body, /quedó registrada en Eventum/)
+    match(notifications[0].email_body, /TXN-MANUAL-10/)
+    equal(notifications[0].email_body.includes('Total pagado:'), false)
+    equal(notifications[0].email_body.includes('Total:'), false)
+    equal(notifications[0].email_body.includes('$'), false)
+    match(notifications[0].email_body, /mis-compras\/evento\/25/)
   } finally {
     globalThis.fetch = originalFetch
     for (const [key, value] of Object.entries(previous)) {

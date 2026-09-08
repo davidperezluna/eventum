@@ -61,7 +61,31 @@ try {
   await db.exec("set role service_role");
   assert.equal((await db.query('select * from public.correos_transaccionales')).rows.length, 1);
   await db.exec('reset role');
-  console.log('PASS: cola, deduplicación, bloqueo, recuperación, backoff, límites, limpieza y permisos');
+  await db.exec(`
+    create table public.compras (
+      id bigint primary key,
+      estado_pago text not null default 'pendiente',
+      datos_facturacion jsonb
+    );
+  `);
+  await db.exec(await readFile(new URL('../supabase/migrations/20260908001500_correo_compra_manual.sql', import.meta.url), 'utf8'));
+  await db.exec(`
+    insert into public.compras values
+      (1, 'pendiente', '{"origen":"admin_manual","creado_desde":"ventas_manual"}'::jsonb),
+      (2, 'pendiente', '{}'::jsonb),
+      (3, 'pendiente', '{"creado_desde":"carrito"}'::jsonb);
+  `);
+  await db.exec("update public.compras set estado_pago='completado' where id=2");
+  assert.equal(await count(), 1, 'cupón/carrito sin marcador manual no encola');
+  await db.exec("update public.compras set estado_pago='completado' where id=3");
+  assert.equal(await count(), 1, 'creado_desde carrito no encola');
+  await db.exec("update public.compras set estado_pago='completado' where id=1");
+  assert.equal(await count(), 2, 'venta manual encola un correo');
+  const manual = (await db.query("select referencia from public.correos_transaccionales where referencia like 'compra:%'")).rows[0];
+  assert.equal(manual.referencia, 'compra:1');
+  await db.exec("update public.compras set datos_facturacion = datos_facturacion || '{\"nota\":\"x\"}'::jsonb where id=1");
+  assert.equal(await count(), 2, 'update posterior no duplica');
+  console.log('PASS: cola, deduplicación, bloqueo, recuperación, backoff, límites, limpieza, permisos y venta manual');
 } finally {
   await db.close();
 }

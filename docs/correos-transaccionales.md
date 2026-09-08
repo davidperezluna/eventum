@@ -9,9 +9,8 @@ No se enviaron correos reales durante las pruebas.
 - Envía al correo del titular de la compra (`usuarios.email`), nunca al correo escrito en Wompi ni al de otro carrito.
 - Incluye evento, fecha y hora de Colombia, lugar, selección y enlace a `/mis-compras/evento/:id`. El usuario debe ingresar con la cuenta de compra.
 - No adjunta ni genera QR. Para boletas explica que se habilitan el día del evento. Productos y covers tienen un texto distinto sin esa promesa.
-- No envía correos de pagos pendientes, rechazados, compras gratuitas, ventas manuales ni compras históricas ya confirmadas. Los flujos antiguos sin `transacciones_checkout` quedan fuera de esta primera versión.
-- La tabla es reutilizable por otros tipos de correo. Solo está implementado `compra_confirmada`.
-
+- No envía correos de pagos pendientes, rechazados, compras gratuitas del carrito (cupón 100%) ni compras históricas ya confirmadas. Los flujos antiguos sin `transacciones_checkout` quedan fuera, salvo **venta manual** de boletas (`ventas-manual` / modal admin), que encola con referencia `compra:{id}`.
+- La tabla es reutilizable por otros tipos de correo. Solo está implementado `compra_confirmada` (checkout online y venta manual de entradas).
 ## 1. Base de datos
 
 Ejecuta **solo** `supabase/migrations/20260907235750_correos_transaccionales.sql` en el SQL Editor del proyecto de destino. No ejecutes todas las migraciones históricas.
@@ -21,6 +20,8 @@ Requiere la tabla `transacciones_checkout` actual, incluido `compra_cover_id`. L
 - `correos_transaccionales`, con RLS y acceso solo para `service_role`.
 - Un trigger que registra el correo en la misma operación que confirma el checkout.
 - Funciones para tomar trabajo sin colisiones y limpiar contenido antiguo.
+
+Después, ejecuta también `supabase/migrations/20260908001500_correo_compra_manual.sql` (trigger en `compras` para ventas manuales).
 
 No hace backfill. Los pagos nuevos que se confirmen después de instalar el trigger quedan pendientes hasta activar el worker. Desplegar pronto los siguientes pasos evita acumular una cola antes de empezar.
 

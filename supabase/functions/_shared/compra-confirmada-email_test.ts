@@ -40,6 +40,15 @@ Deno.test('productos y covers no prometen QR de evento', () => {
   equal(message.email_body.includes('se habilitan el día'), false)
 })
 
+Deno.test('venta manual no habla de pago en línea ni muestra total', () => {
+  const message = buildConfirmationEmail({ ...compra, total: 0, registroManual: true })
+  match(message.email_body, /quedó registrada en Eventum/)
+  equal(message.email_body.includes('Recibimos tu pago'), false)
+  equal(message.email_body.includes('Total pagado:'), false)
+  equal(message.email_body.includes('Total:'), false)
+  equal(message.email_body.includes('$'), false)
+})
+
 Deno.test('contenido de evento y comprador escapado; no permite enlaces inseguros', () => {
   const message = buildConfirmationEmail({ ...compra, nombre: '<script>alert(1)</script>', titulo: 'A & B\r\nEvento' })
   equal(message.email_body.includes('<script>'), false)

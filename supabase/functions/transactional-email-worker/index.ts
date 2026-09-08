@@ -10,6 +10,8 @@ export interface ConfirmationEmailData {
   enlace: string
   tieneBoletas: boolean
   total: number
+  /** Venta registrada en panel (sin pago en línea por Eventum). */
+  registroManual?: boolean
   items: Array<{ nombre: string; cantidad: number; tipo: 'entrada' | 'producto' | 'cover' }>
 }
 
@@ -58,21 +60,31 @@ export function buildConfirmationEmail(data: ConfirmationEmailData): {
   const qr = data.tieneBoletas
     ? '<p style="padding:16px;background:#f3efff;border-radius:8px"><strong>Los códigos QR se habilitan el día del evento.</strong> Consúltalos en Mis compras; este correo confirma tu compra y no reemplaza la entrada.</p>'
     : '<p>Consulta los detalles y las condiciones de uso de tu compra en Eventum.</p>'
+  const intro = data.registroManual
+    ? 'Tu compra quedó registrada en Eventum.'
+    : 'Recibimos tu pago y tu compra quedó registrada.'
+  const preheader = data.registroManual
+    ? 'Tu compra quedó registrada. Consúltala en Eventum.'
+    : 'Recibimos tu pago. Consulta tu compra en Eventum.'
+  // Venta manual: el cobro no pasa por Eventum; no mostrar $0.
+  const totalBlock = data.registroManual
+    ? ''
+    : `<p style="margin:22px 0;font-size:18px"><strong>Total pagado:</strong> ${e(total)}</p>`
   return {
     email_subject: `Tu compra para ${data.titulo.replace(/[\r\n]+/g, ' ')} está confirmada`,
-    email_preheader: 'Recibimos tu pago. Consulta tu compra en Eventum.',
+    email_preheader: preheader,
     email_body: `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
 <body style="margin:0;background:#f6f5f8;font-family:Arial,sans-serif;color:#25212d">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:white;border-radius:12px"><tr><td style="padding:28px">
 <p style="color:#7045c5;font-weight:bold;letter-spacing:2px">EVENTUM</p>
 <h1 style="font-size:26px;line-height:1.2">Tu compra está confirmada</h1>
-<p>Hola${data.nombre ? `, ${e(data.nombre)}` : ''}:</p><p>Recibimos tu pago y tu compra quedó registrada.</p>
+<p>Hola${data.nombre ? `, ${e(data.nombre)}` : ''}:</p><p>${intro}</p>
 <h2 style="font-size:21px">${e(data.titulo)}</h2>
 ${fecha ? `<p><strong>Fecha y hora:</strong> ${e(fecha)} (hora de Colombia)</p>` : ''}
 ${data.lugar ? `<p><strong>Lugar:</strong> ${e(data.lugar)}</p>` : ''}
 ${itemGroups}
-<p style="margin:22px 0;font-size:18px"><strong>Total pagado:</strong> ${e(total)}</p>
+${totalBlock}
 ${qr}
 <p style="margin:28px 0"><a href="${e(link.href)}" style="display:inline-block;padding:15px 24px;background:#7045c5;color:white;text-decoration:none;border-radius:8px;font-weight:bold">Ver mi compra</a></p>
 <p style="margin-bottom:6px">Ingresa con la misma cuenta que utilizaste para comprar:</p>
@@ -109,10 +121,41 @@ async function single(db: Client, table: string, id: number, fields = '*'): Prom
   return data as Row
 }
 
-async function prepareMessage(db: Client, job: Row, appId: string, siteUrl: string): Promise<Row> {
-  const match = /^checkout:(\d+)$/.exec(job.referencia)
-  if (job.tipo !== 'compra_confirmada' || !match) throw new Error('Tipo o referencia no soportados')
-  const checkout = await single(db, 'transacciones_checkout', Number(match[1]))
+/** Unidades comerciales: boleta simple = 1 fila; palco = 1 grupo_palco_id. */
+export function itemsFromBoletaRows(rows: Row[]): ConfirmationEmailData['items'] {
+  const units: Array<{ tipoId: number; nombre: string }> = []
+  const palcoByGrupo = new Map<string, { tipoId: number; nombre: string }>()
+  for (const row of rows) {
+    const tipoId = Number(row.tipo_boleta_id)
+    if (!Number.isFinite(tipoId)) continue
+    const joined = row.tipos_boleta
+    const nombreRel = Array.isArray(joined) ? joined[0]?.nombre : joined?.nombre
+    const nombre = String(nombreRel ?? `Entrada ${tipoId}`)
+    const grupo = row.grupo_palco_id != null && String(row.grupo_palco_id).trim()
+      ? String(row.grupo_palco_id).trim() : null
+    if (grupo) {
+      if (!palcoByGrupo.has(grupo)) palcoByGrupo.set(grupo, { tipoId, nombre })
+      continue
+    }
+    if (row.consume_inventario === false) continue
+    units.push({ tipoId, nombre })
+  }
+  units.push(...palcoByGrupo.values())
+  const byTipo = new Map<number, { nombre: string; cantidad: number }>()
+  for (const unit of units) {
+    const prev = byTipo.get(unit.tipoId)
+    if (prev) prev.cantidad += 1
+    else byTipo.set(unit.tipoId, { nombre: unit.nombre, cantidad: 1 })
+  }
+  return [...byTipo.values()].map((item) => ({
+    nombre: item.nombre, cantidad: item.cantidad, tipo: 'entrada' as const,
+  }))
+}
+
+async function prepareCheckoutMessage(
+  db: Client, checkoutId: number, jobId: string, appId: string, siteUrl: string,
+): Promise<Row> {
+  const checkout = await single(db, 'transacciones_checkout', checkoutId)
   if (checkout.estado !== 'aprobada' || checkout.wompi_status !== 'APPROVED' || !checkout.materializado) {
     throw new Error('El pedido no tiene un pago aprobado y registrado')
   }
@@ -173,8 +216,55 @@ async function prepareMessage(db: Client, job: Row, appId: string, siteUrl: stri
   })
   return {
     app_id: appId, target_channel: 'email', email_to: [email],
-    include_unsubscribed: true, idempotency_key: job.id, ...content,
+    include_unsubscribed: true, idempotency_key: jobId, ...content,
   }
+}
+
+async function prepareManualCompraMessage(
+  db: Client, compraId: number, jobId: string, appId: string, siteUrl: string,
+): Promise<Row> {
+  const compra = await single(
+    db, 'compras', compraId,
+    'id, cliente_id, evento_id, estado_pago, total, numero_transaccion, datos_facturacion',
+  )
+  if (compra.estado_pago !== 'completado') throw new Error('La compra manual no está confirmada')
+  const facturacion = compra.datos_facturacion ?? {}
+  const esManual = ['ventas_manual', 'ventas_admin'].includes(String(facturacion.creado_desde ?? ''))
+    || ['admin_manual', 'organizador_manual'].includes(String(facturacion.origen ?? ''))
+  if (!esManual) throw new Error('La compra no es una venta manual')
+  const user = await single(db, 'usuarios', compra.cliente_id, 'email, nombre')
+  const email = String(user.email ?? '').trim().toLowerCase()
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('La cuenta no tiene correo válido')
+  if (!compra.evento_id) throw new Error('La venta manual no tiene evento')
+  const event = await single(db, 'eventos', compra.evento_id, 'titulo, fecha_inicio, lugar_id')
+  const venue = event.lugar_id ? await single(db, 'lugares', event.lugar_id, 'nombre') : null
+  const { data: boletas, error } = await db.from('boletas_compradas')
+    .select('tipo_boleta_id, grupo_palco_id, consume_inventario, tipos_boleta(nombre)')
+    .eq('compra_id', compraId)
+  if (error) throw new Error('No se pudo cargar el detalle de la compra')
+  const items = itemsFromBoletaRows((boletas ?? []) as Row[])
+  if (!items.length) throw new Error('La venta manual no tiene entradas')
+  const content = buildConfirmationEmail({
+    nombre: String(user.nombre ?? ''), email,
+    titulo: String(event.titulo ?? 'Tu experiencia en Eventum'),
+    fechaInicio: event.fecha_inicio, lugar: venue?.nombre,
+    referencia: String(compra.numero_transaccion ?? `compra:${compraId}`),
+    enlace: new URL(`/mis-compras/evento/${compra.evento_id}`, siteUrl).href,
+    tieneBoletas: true, total: Number(compra.total) || 0, registroManual: true, items,
+  })
+  return {
+    app_id: appId, target_channel: 'email', email_to: [email],
+    include_unsubscribed: true, idempotency_key: jobId, ...content,
+  }
+}
+
+async function prepareMessage(db: Client, job: Row, appId: string, siteUrl: string): Promise<Row> {
+  if (job.tipo !== 'compra_confirmada') throw new Error('Tipo o referencia no soportados')
+  const checkoutMatch = /^checkout:(\d+)$/.exec(job.referencia)
+  if (checkoutMatch) return prepareCheckoutMessage(db, Number(checkoutMatch[1]), job.id, appId, siteUrl)
+  const compraMatch = /^compra:(\d+)$/.exec(job.referencia)
+  if (compraMatch) return prepareManualCompraMessage(db, Number(compraMatch[1]), job.id, appId, siteUrl)
+  throw new Error('Tipo o referencia no soportados')
 }
 
 // El cron usa un secreto exclusivo. Nunca se invoca desde el navegador del cliente.
