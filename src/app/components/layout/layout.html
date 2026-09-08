@@ -274,23 +274,18 @@
   <ng-template #supportMenu>
     <div class="support-menu">
       <span class="support-menu__prompt">¿Necesitas ayuda?</span>
-      <a class="support-link support-link--menu" [href]="supportWhatsappUrl"
-        target="_blank" rel="noopener noreferrer" (click)="closeClientMenu()"
-        aria-label="Soporte por WhatsApp (abre en una nueva pestaña)">
+      <a class="support-link support-link--menu" routerLink="/ayuda"
+        (click)="closeClientMenu()">
         <ng-container *ngTemplateOutlet="supportIcon" />
-        <span class="support-link__copy"><strong>Soporte por WhatsApp</strong><small>Te ayudamos con tu compra</small></span>
-        <span class="material-icons support-link__arrow" aria-hidden="true">north_east</span>
+        <span class="support-link__copy"><strong>Ayuda</strong><small>Compras, códigos QR y envíos</small></span>
       </a>
     </div>
   </ng-template>
 
   <ng-template #supportDesktop>
-    <a class="support-link support-link--desktop" [href]="supportWhatsappUrl"
-      target="_blank" rel="noopener noreferrer"
-      aria-label="Soporte por WhatsApp (abre en una nueva pestaña)" title="Soporte por WhatsApp">
+    <a class="support-link support-link--desktop" routerLink="/ayuda">
       <ng-container *ngTemplateOutlet="supportIcon" />
-      <span>Soporte</span>
-      <span class="material-icons support-link__arrow" aria-hidden="true">north_east</span>
+      <span>Ayuda</span>
     </a>
   </ng-template>
 

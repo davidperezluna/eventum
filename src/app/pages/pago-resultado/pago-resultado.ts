@@ -189,7 +189,7 @@ export class PagoResultado implements OnInit, OnDestroy {
       return 'Ver compra y códigos QR';
     }
     if (this.compra) {
-      return 'Ver mis boletas';
+      return 'Mis eventos';
     }
     if (this.compraProducto || this.transaccionProducto) {
       return 'Ver pedido y código QR';

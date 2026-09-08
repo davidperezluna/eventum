@@ -40,6 +40,7 @@
       </div>
 
       <span
+        *ngIf="getEstadoPagoReferencia() !== 'completado'"
         class="pago-estado-chip"
         [class.pago-estado-chip--success]="getEstadoPagoReferencia() === 'completado'"
         [class.pago-estado-chip--warning]="getEstadoPagoReferencia() === 'pendiente'"
@@ -50,17 +51,30 @@
       </span>
 
       <h1 class="pago-panel__title">{{ getEstadoPagoLabel() }}</h1>
-      <p class="pago-panel__lead">{{ getEstadoPagoLead() }}</p>
+      <p class="pago-panel__lead">{{ getEstadoPagoReferencia() === 'completado' ? 'Consulta tu compra y sus códigos QR en Mis compras.' : getEstadoPagoLead() }}</p>
 
+      <ng-container *ngIf="getEstadoPagoReferencia() === 'completado'">
+        <p class="pago-total"><span>Total pagado</span><strong>{{ formatCurrency(getTotalMostrado()) }}</strong></p>
+        <a routerLink="/mis-compras" class="btn btn-primary pago-success-action">{{ labelAccionCompraConfirmada }}</a>
+        <details class="pago-details">
+          <summary>Ver detalles de la compra <span class="material-icons" aria-hidden="true">expand_more</span></summary>
+          <ng-container *ngTemplateOutlet="purchaseDetails" />
+          <a *ngIf="mostrarEnlaceGuiaCompras" routerLink="/mis-compras/guia" class="pago-panel__guia-link">Cómo usar mi compra</a>
+        </details>
+        <a routerLink="/eventos-cliente" class="pago-explore-link">Seguir explorando eventos</a>
+      </ng-container>
+
+      <ng-container *ngIf="getEstadoPagoReferencia() !== 'completado'">
+        <ng-container *ngTemplateOutlet="purchaseDetails" />
+      </ng-container>
+
+      <ng-template #purchaseDetails>
       <div *ngIf="mostrarAvisoCuentaEventum" class="pago-cuenta-eventum" role="note">
         <span class="material-icons" aria-hidden="true">account_circle</span>
         <div class="pago-cuenta-eventum__body">
-          <p class="pago-cuenta-eventum__label">{{ tituloAvisoCuentaEventum }}</p>
+          <p class="pago-cuenta-eventum__label">Cuenta de tu compra</p>
           <p class="pago-cuenta-eventum__email">{{ emailCuentaEventum }}</p>
-          <p *ngIf="documentoIdentidadEventum" class="pago-cuenta-eventum__documento">
-            {{ compraCopy.identificacionCuentaLabel }}: <strong>{{ documentoIdentidadEventum }}</strong>
-          </p>
-          <p class="pago-cuenta-eventum__note">{{ notaAvisoCuentaEventum }}</p>
+          <p class="pago-cuenta-eventum__note">{{ getEstadoPagoReferencia() === 'completado' ? 'Encuentra tu compra y códigos QR en Mis compras.' : 'Consulta el estado en Mis compras.' }}</p>
         </div>
       </div>
 
@@ -109,19 +123,9 @@
           </div>
         </dl>
       </section>
+      </ng-template>
 
-      <div class="pago-panel__actions">
-        <ng-container *ngIf="getEstadoPagoReferencia() === 'completado'">
-          <button type="button" class="btn btn-primary" (click)="router.navigate(['/mis-compras'])">
-            {{ labelAccionCompraConfirmada }}
-          </button>
-          <button type="button" class="btn btn-secondary" (click)="router.navigate(['/eventos-cliente'])">
-            Explorar eventos
-          </button>
-          <a *ngIf="mostrarEnlaceGuiaCompras" routerLink="/mis-compras/guia" class="pago-panel__guia-link">
-            ¿Primera compra? Lee la guía de uso
-          </a>
-        </ng-container>
+      <div *ngIf="getEstadoPagoReferencia() !== 'completado'" class="pago-panel__actions">
         <ng-container *ngIf="getEstadoPagoReferencia() === 'pendiente'">
           <button type="button" class="btn btn-primary" (click)="router.navigate(['/mis-compras'])">
             Revisar estado en Mis compras

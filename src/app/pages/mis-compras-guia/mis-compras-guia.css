@@ -1,28 +1,42 @@
 .mis-compras-guia-page {
   max-width: 980px;
   margin: 0 auto;
-  padding: 1rem 1rem 2rem;
+  /* Espacio justo para el FAB fijo; 6rem dejaba un hueco grande al final en móvil. */
+  padding: 1rem 1rem calc(4rem + env(safe-area-inset-bottom, 0px));
 }
 
 .guia-hero {
-  background: linear-gradient(135deg, #1f2340 0%, #30266c 100%);
-  color: #fff;
-  border-radius: 14px;
-  padding: 1.1rem 1rem;
-  margin-bottom: 1rem;
+  color: var(--ec-text-primary, #171321);
+  padding: 0.35rem 0 0.55rem;
+  margin-bottom: 1.25rem;
 }
-
+.guia-hero__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.4rem;
+  color: #7c3aed;
+  font-size: 0.7rem;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
 .guia-hero h1 {
   margin: 0;
-  font-size: 1.35rem;
+  font-family: 'Arial Narrow', 'Aptos Narrow', 'Franklin Gothic Medium', sans-serif;
+  font-size: clamp(2.1rem, 3.4vw, 2.85rem);
+  font-weight: 900;
+  line-height: 0.96;
+  letter-spacing: -0.055em;
 }
-
+.guia-hero__mark { width: 1.75rem; height: 0.45rem; background: #7c3aed; transform: skewX(-24deg); }
 .guia-hero p {
-  margin: 0.35rem 0 0;
-  opacity: 0.9;
-  font-size: 0.9rem;
+  margin: 0.55rem 0 0;
+  color: var(--ec-text-muted, #64748b);
+  font-size: 0.84rem;
+  line-height: 1.5;
 }
-
 .guia-block {
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -37,7 +51,7 @@
   color: #1e293b;
 }
 
-.guia-block ul {
+.guia-block > ol {
   margin: 0;
   padding-left: 1.1rem;
   color: #334155;
@@ -47,7 +61,7 @@
 
 .guia-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
 }
 
@@ -61,7 +75,7 @@
 .guia-card h3 {
   margin: 0 0 0.55rem;
   color: #1e293b;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .guia-card ol {
@@ -79,19 +93,43 @@
   align-items: center;
 }
 
+.guia-block li + li { margin-top: 0.4rem; }
+.guia-qr-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--ec-border, #e2e8f0);
+  background: var(--ec-surface-muted, #f1f5f9);
+  color: var(--ec-text-body, #1e293b);
+}
+.guia-qr-note > .material-icons { color: var(--ec-text-muted, #64748b); flex-shrink: 0; }
+.guia-qr-note h3 { margin: 0 0 0.35rem; font-size: 1rem; color: var(--ec-text-primary, #0f172a); }
+.guia-qr-note p,
+.guia-intro,
+.guia-envio-note { font-size: 0.86rem; line-height: 1.55; }
+.guia-qr-note p { margin: 0; }
+.guia-intro { margin: 0 0 1rem; color: #475569; }
+.guia-envio-note { margin: 0.85rem 0 0; color: #475569; }
+.guia-block a { color: #6d28d9; text-underline-offset: 3px; }
+.mis-compras-guia-page a:focus-visible { outline: 3px solid #7c3aed; outline-offset: 3px; }
+.guia-btn, .guia-link { box-sizing: border-box; min-height: 44px; }
+
 .guia-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
+  gap: 0.5rem;
   text-decoration: none;
-  background: #eef2ff;
-  color: #4338ca;
-  border: 1px solid #dbe4ff;
-  border-radius: 999px;
-  padding: 0.38rem 0.64rem;
+  background: var(--ec-accent-strong, #7c3aed);
+  color: #fff;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 0.7rem 1.1rem;
   font-weight: 600;
-  font-size: 0.76rem;
+  font-size: 0.85rem;
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
@@ -99,29 +137,29 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
+  gap: 0.5rem;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 999px;
-  padding: 0.38rem 0.64rem;
-  color: #4f46e5;
+  border-radius: 12px;
+  padding: 0.7rem 1.1rem;
+  color: var(--ec-text-primary, #0f172a);
   text-decoration: none;
   font-weight: 600;
-  font-size: 0.76rem;
+  font-size: 0.85rem;
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .guia-btn .material-icons,
 .guia-link .material-icons {
-  font-size: 0.95rem;
-  width: 0.95rem;
-  height: 0.95rem;
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
   line-height: 1;
 }
 
 .guia-btn:hover {
-  background: #e0e7ff;
-  border-color: #c7d2fe;
+  background: #6d28d9;
+  border-color: transparent;
 }
 
 .guia-link:hover {
@@ -130,7 +168,65 @@
   color: #334155;
 }
 
+.guia-activity-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.guia-support {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+
+.guia-support p { margin: 0; font-size: 0.86rem; line-height: 1.5; color: #475569; }
+.guia-support .guia-btn { color: #fff; flex-shrink: 0; }
+
+.guia-whatsapp-fab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  position: fixed;
+  right: 1rem;
+  bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
+  z-index: 940;
+  min-height: 48px;
+  padding: 0 1rem;
+  border-radius: 999px;
+  background: #128c4a;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 650;
+  text-decoration: none;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.18);
+}
+.guia-whatsapp-fab svg { display: block; flex-shrink: 0; width: 22px; height: 22px; }
+.guia-whatsapp-fab:hover { background: #0f753e; }
+.guia-whatsapp-fab:focus-visible { outline: 3px solid #0f5132; outline-offset: 4px; }
+/* Layout ya reserva ~5.25rem para el carrito; el FAB solo necesita ir justo encima. */
+:host-context(.layout-content--cart-fab) .guia-whatsapp-fab {
+  bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+}
+:host-context(.layout-content--cart-fab) .mis-compras-guia-page {
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
+
 @media (max-width: 768px) {
+  .guia-hero h1 { font-size: clamp(2rem, 10.5vw, 2.65rem); }
+  .mis-compras-guia-page {
+    padding-bottom: calc(3.75rem + env(safe-area-inset-bottom, 0px));
+  }
+  :host-context(.layout-content--cart-fab) .mis-compras-guia-page {
+    padding-bottom: calc(3.75rem + env(safe-area-inset-bottom, 0px));
+  }
+  .guia-block.guia-support { display: none; }
+  .guia-support { flex-direction: column; align-items: stretch; }
   .guia-grid {
     grid-template-columns: 1fr;
   }
@@ -145,4 +241,8 @@
     text-align: center;
     width: 100%;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guia-btn, .guia-link { transition: none; }
 }

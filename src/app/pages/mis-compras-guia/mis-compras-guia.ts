@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
+import { buildWhatsappUrl } from '../../constants/contacto.constants';
 
 @Component({
   selector: 'app-mis-compras-guia',
@@ -8,4 +9,6 @@ import { RouterModule } from '@angular/router';
   templateUrl: './mis-compras-guia.html',
   styleUrl: './mis-compras-guia.css',
 })
-export class MisComprasGuia {}
+export class MisComprasGuia {
+  readonly supportWhatsappUrl = buildWhatsappUrl('Hola, necesito ayuda con Eventum.');
+}

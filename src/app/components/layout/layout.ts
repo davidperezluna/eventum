@@ -33,7 +33,6 @@ import { LOGIN_QUERY_CARRITO_PAGAR } from '../../core/login-redirect';
 import { DemoScenarioService } from '../../demo/demo-scenario.service';
 import { AlertService } from '../../services/alert.service';
 import { CuposEventoService } from '../../services/cupos-evento.service';
-import { buildWhatsappUrl } from '../../constants/contacto.constants';
 
 type ClientNavItem = {
   path: string;
@@ -54,7 +53,6 @@ type ClientNavItem = {
   styleUrl: './layout.css',
 })
 export class Layout implements OnInit, OnDestroy {
-  readonly supportWhatsappUrl = buildWhatsappUrl('Hola, necesito ayuda con Eventum.');
   adminNavSections: AdminNavSection[] = [];
 
   /** Navegación cliente (drawer móvil + barra desktop) — orden único. */

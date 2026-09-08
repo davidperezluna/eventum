@@ -145,6 +145,8 @@ const appRoutes: Routes = [
       { path: 'eventos-cliente', component: EventosCliente }, // Página principal pública
       { path: 'organizadores', component: Organizadores }, // Landing comercial organizadores
       { path: 'conocenos', component: ConocenosContacto }, // Conócenos y contacto (público)
+      { path: 'ayuda', component: MisComprasGuia, title: 'Ayuda | Eventum' },
+      { path: 'mis-compras/guia', redirectTo: '/ayuda', pathMatch: 'full' },
       { path: 'detalle-evento/:id', component: DetalleEvento }, // Público: detalle de evento
       { path: 'cupos', component: CuposExplorar },
       { path: 'cupos-evento/:eventoId', component: CuposEvento },
@@ -175,7 +177,6 @@ const appRoutes: Routes = [
       { path: 'eventos/:id/inteligencia', component: EventoInteligencia },
       ...cuposProtectedRoutes,
       { path: 'mis-compras/actividad', component: MisCompras }, // Cliente: traslados / actividad
-      { path: 'mis-compras/guia', component: MisComprasGuia }, // Cliente: guía de uso de entradas
       { path: 'recibidos', component: Recibidos },
       { path: 'mis-compras/evento/:id', component: MisCompras }, // Cliente: detalle de boletas por evento
       { path: 'mis-compras/club/:id', component: MisCompras }, // Cliente: detalle de covers por club

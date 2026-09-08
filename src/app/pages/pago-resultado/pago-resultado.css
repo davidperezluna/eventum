@@ -48,8 +48,46 @@
 }
 
 .pago-panel--success .pago-panel__icon .material-icons {
-  color: var(--ec-badge-success-icon, #16a34a);
+  color: var(--ec-accent-strong, #7c3aed);
 }
+
+.pago-panel--success .pago-panel__icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 1.25rem;
+  border-radius: 50%;
+  background: var(--ec-accent-soft, #f5f3ff);
+}
+
+.pago-panel--success .pago-panel__title { font-size: clamp(1.5rem, 5vw, 1.85rem); }
+.pago-total { display: grid; gap: 0.35rem; margin: 0 0 1.5rem; }
+.pago-total span { font-size: 0.8rem; color: var(--ec-text-muted, #64748b); }
+.pago-total strong { font-size: 1.65rem; color: var(--ec-text-primary, #0f172a); letter-spacing: -0.03em; }
+.pago-success-action { box-sizing: border-box; text-decoration: none; }
+.pago-details { width: 100%; margin-top: 1.25rem; border-top: 1px solid var(--ec-border, #e2e8f0); }
+.pago-details summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0.5rem 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  list-style: none;
+}
+.pago-details summary::-webkit-details-marker { display: none; }
+.pago-details summary .material-icons { font-size: 20px; }
+.pago-details[open] summary .material-icons { transform: rotate(180deg); }
+.pago-details .pago-cuenta-eventum { box-sizing: border-box; margin: 0 0 1rem; }
+.pago-details .pago-summary { box-sizing: border-box; }
+.pago-explore-link { padding: 0.75rem 0; font-size: 0.8rem; color: var(--ec-text-muted, #64748b); text-underline-offset: 3px; }
+.pago-details summary:focus-visible,
+.pago-explore-link:focus-visible { outline: 3px solid var(--ec-accent, #8b5cf6); outline-offset: 3px; }
 
 .pago-panel--warning .pago-panel__icon .material-icons {
   color: var(--ec-badge-warning-icon, #b45309);
