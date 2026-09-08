@@ -32,6 +32,7 @@
         "npm:@angular/platform-browser@21",
         "npm:@angular/router@21",
         "npm:@angular/service-worker@21.0.3",
+        "npm:@electric-sql/pglite@~0.5.8",
         "npm:@ng-select/ng-select@^21.8.2",
         "npm:@supabase/supabase-js@^2.86.2",
         "npm:@types/luxon@^3.7.3",

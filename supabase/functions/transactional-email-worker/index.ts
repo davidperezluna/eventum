@@ -9,7 +9,8 @@ export interface ConfirmationEmailData {
   referencia: string
   enlace: string
   tieneBoletas: boolean
-  items: Array<{ nombre: string; cantidad: number }>
+  total: number
+  items: Array<{ nombre: string; cantidad: number; tipo: 'entrada' | 'producto' | 'cover' }>
 }
 
 export function escapeHtml(value: unknown): string {
@@ -35,8 +36,24 @@ export function buildConfirmationEmail(data: ConfirmationEmailData): {
   const e = escapeHtml
   const link = new URL(data.enlace)
   if (link.protocol !== 'https:') throw new Error('El enlace de compra debe usar HTTPS')
-  const rows = data.items.map((item) =>
-    `<li style="margin:8px 0">${item.cantidad} × ${e(item.nombre)}</li>`).join('')
+  if (!Number.isFinite(data.total) || data.total < 0) throw new Error('Total de compra inválido')
+  const groups = [
+    { tipo: 'entrada', titulo: 'Entradas' },
+    { tipo: 'producto', titulo: 'Productos' },
+    { tipo: 'cover', titulo: 'Covers' },
+  ] as const
+  const itemGroups = groups.map((group) => {
+    const rows = data.items.filter((item) => item.tipo === group.tipo).map((item) =>
+      `<li style="margin:8px 0">${item.cantidad} × ${e(item.nombre)}</li>`).join('')
+    return rows
+      ? `<h3 style="font-size:15px;margin:20px 0 6px">${group.titulo}</h3><ul style="margin:0;padding-left:20px">${rows}</ul>`
+      : ''
+  }).join('')
+  const total = new Intl.NumberFormat('es-CO', {
+    style: 'currency', currency: 'COP', maximumFractionDigits: 0,
+  }).format(data.total)
+  // Evita que clientes de correo conviertan automáticamente la cuenta en un enlace azul.
+  const displayEmail = e(data.email).replaceAll('@', '&#64;').replaceAll('.', '&#46;')
   const fecha = data.fechaInicio ? fechaColombia(data.fechaInicio) : null
   const qr = data.tieneBoletas
     ? '<p style="padding:16px;background:#f3efff;border-radius:8px"><strong>Los códigos QR se habilitan el día del evento.</strong> Consúltalos en Mis compras; este correo confirma tu compra y no reemplaza la entrada.</p>'
@@ -54,9 +71,12 @@ export function buildConfirmationEmail(data: ConfirmationEmailData): {
 <h2 style="font-size:21px">${e(data.titulo)}</h2>
 ${fecha ? `<p><strong>Fecha y hora:</strong> ${e(fecha)} (hora de Colombia)</p>` : ''}
 ${data.lugar ? `<p><strong>Lugar:</strong> ${e(data.lugar)}</p>` : ''}
-<ul style="padding-left:20px">${rows}</ul>${qr}
+${itemGroups}
+<p style="margin:22px 0;font-size:18px"><strong>Total pagado:</strong> ${e(total)}</p>
+${qr}
 <p style="margin:28px 0"><a href="${e(link.href)}" style="display:inline-block;padding:15px 24px;background:#7045c5;color:white;text-decoration:none;border-radius:8px;font-weight:bold">Ver mi compra</a></p>
-<p>Ingresa con la misma cuenta que utilizaste para comprar: <strong>${e(data.email)}</strong>.</p>
+<p style="margin-bottom:6px">Ingresa con la misma cuenta que utilizaste para comprar:</p>
+<p style="margin-top:0"><strong style="color:#25212d;text-decoration:none">${displayEmail}</strong></p>
 <p style="font-size:13px;color:#655f70">Referencia de compra: ${e(data.referencia)}</p>
 <p style="font-size:13px;color:#655f70">Si el botón no abre, visita <a href="${e(link.href)}">Mis compras en Eventum</a>.</p>
 </td></tr></table></td></tr></table></body></html>`,
@@ -117,7 +137,7 @@ async function prepareMessage(db: Client, job: Row, appId: string, siteUrl: stri
   const event = checkout.evento_id ? await single(db, 'eventos', checkout.evento_id, 'titulo, fecha_inicio, lugar_id') : null
   const lugarId = event?.lugar_id ?? checkout.lugar_id
   const venue = lugarId ? await single(db, 'lugares', lugarId, 'nombre') : null
-  const items: Array<{ nombre: string; cantidad: number }> = []
+  const items: ConfirmationEmailData['items'] = []
   const payload = checkout.request_payload ?? {}
   const source = payload.request_body ?? payload
   for (const [key, table, idKey] of [
@@ -134,7 +154,12 @@ async function prepareMessage(db: Client, job: Row, appId: string, siteUrl: stri
       const name = names?.find((item: Row) => Number(item.id) === Number(line[idKey]))?.nombre
       const quantity = Number(line.cantidad)
       if (!Number.isInteger(quantity) || quantity <= 0) throw new Error('Cantidad del pedido inválida')
-      items.push({ nombre: String(name ?? (key === 'pedido_productos' ? 'Producto' : 'Entrada')), cantidad: quantity })
+      const tipo = key === 'pedido_productos' ? 'producto' : key === 'pedido_covers' ? 'cover' : 'entrada'
+      items.push({
+        nombre: String(name ?? (tipo === 'producto' ? 'Producto' : tipo === 'cover' ? 'Cover' : 'Entrada')),
+        cantidad: quantity,
+        tipo,
+      })
     }
   }
   const path = event ? `/mis-compras/evento/${checkout.evento_id}`
@@ -144,7 +169,7 @@ async function prepareMessage(db: Client, job: Row, appId: string, siteUrl: stri
     titulo: String(event?.titulo ?? venue?.nombre ?? 'Tu experiencia en Eventum'),
     fechaInicio: event?.fecha_inicio, lugar: venue?.nombre,
     referencia: String(checkout.numero_intento), enlace: new URL(path, siteUrl).href,
-    tieneBoletas: !!checkout.compra_id, items,
+    tieneBoletas: !!checkout.compra_id, total: Number(checkout.total), items,
   })
   return {
     app_id: appId, target_channel: 'email', email_to: [email],

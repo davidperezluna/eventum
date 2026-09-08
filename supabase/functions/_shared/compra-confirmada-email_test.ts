@@ -5,7 +5,11 @@ const compra = {
   nombre: 'Ana', email: 'ana@example.com', titulo: 'Oveja Negra',
   fechaInicio: '2026-09-06T02:00:00', lugar: 'Plaza Norte', referencia: 'CHK-123',
   enlace: 'https://www.eventumcol.com/mis-compras/evento/25', tieneBoletas: true,
-  items: [{ nombre: 'General', cantidad: 2 }],
+  total: 80000,
+  items: [
+    { nombre: 'General', cantidad: 2, tipo: 'entrada' as const },
+    { nombre: 'Camiseta', cantidad: 1, tipo: 'producto' as const },
+  ],
 }
 
 Deno.test('fecha UTC sin offset se muestra el 5 de septiembre en Colombia', () => {
@@ -17,8 +21,14 @@ Deno.test('fecha UTC sin offset se muestra el 5 de septiembre en Colombia', () =
 
 Deno.test('confirmación sin QR, con cuenta, cantidades y enlace directo al evento', () => {
   const message = buildConfirmationEmail(compra)
+  match(message.email_body, /Entradas/)
   match(message.email_body, /2 × General/)
-  match(message.email_body, /ana@example.com/)
+  match(message.email_body, /Productos/)
+  match(message.email_body, /1 × Camiseta/)
+  match(message.email_body, /Total pagado:/)
+  match(message.email_body, /80[\s.\u00a0]000/)
+  equal(message.email_body.includes('ana@example.com'), false)
+  match(message.email_body, /ana&#64;example&#46;com/)
   match(message.email_body, /mis-compras\/evento\/25/)
   match(message.email_body, /se habilitan el día del evento/)
   equal(message.email_body.includes('<img'), false)

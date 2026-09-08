@@ -44,7 +44,7 @@ Deno.test('pedido mixto: si falla guardar la aceptación, reintenta el mismo men
   const checkout = {
     id: 1, cliente_id: 79, evento_id: 25, tipo: 'mixto', estado: 'aprobada',
     wompi_status: 'APPROVED', materializado: true, compra_id: 10, compra_producto_id: 20,
-    numero_intento: 'CHK-1', request_payload: { request_body: {
+    numero_intento: 'CHK-1', total: 75000, request_payload: { request_body: {
       pedido_boletas: { items: [{ tipo_boleta_id: 1, cantidad: 2 }] },
       pedido_productos: { items: [{ producto_id: 2, cantidad: 1 }] },
     } },
@@ -108,6 +108,9 @@ Deno.test('pedido mixto: si falla guardar la aceptación, reintenta el mismo men
     equal(notifications[0].idempotency_key, job.id)
     match(notifications[0].email_body, /2 × General/)
     match(notifications[0].email_body, /1 × Agua/)
+    match(notifications[0].email_body, /Entradas/)
+    match(notifications[0].email_body, /Productos/)
+    match(notifications[0].email_body, /Total pagado:/)
     equal((await (await invoke()).json()).accepted, 0)
     equal(notifications.length, 2, 'el aceptado no se vuelve a enviar')
   } finally {
