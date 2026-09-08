@@ -13,7 +13,7 @@ export const environment = {
   /** Cambiar a `true` cuando publiques el módulo Covers Eventum en producción. */
   coversEventumEnabled: false,
   /** `true`: pantalla /ventas-manual (menú admin/organizador). `false`: oculta ruta y enlaces. */
-  ventasManualEnabled: false,
+  ventasManualEnabled: true,
   /**
    * Detalle evento → Entradas (no agotadas): mostrar disponibles / reservados / vendidas / totales.
    * `false` = ocultar esas cifras. Etapas agotadas siempre las muestran.
