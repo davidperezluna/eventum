@@ -1,0 +1,212 @@
+/* Desktop-only refinements: compact discovery, readable event cards and calm motion. */
+@media (min-width: 901px) {
+  .eventos-cliente-page.eventos-desktop-polish .eventos-discovery {
+    min-height: 0;
+    margin-bottom: 3rem;
+    padding-bottom: 2.5rem;
+    box-shadow: none;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .eventos-hero {
+    min-height: 0;
+    padding-top: clamp(2rem, 4vh, 3rem);
+    padding-bottom: 1.5rem;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .eventos-hero__copy::before {
+    margin-bottom: 1.4rem;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .eventos-hero h1 {
+    font-size: clamp(3rem, 4.5vw, 4.5rem);
+    line-height: 0.98;
+    letter-spacing: -0.05em;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .eventos-hero__lead {
+    max-width: 38ch;
+    margin-top: 1.25rem;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .eventos-toolbar {
+    position: relative;
+    inset: auto;
+    margin: 0 0 0 max(clamp(2rem, 4vw, 4.75rem), calc((100vw - 92rem) / 2 + 4.75rem));
+    width: min(33rem, 48%);
+    padding: 0;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .eventos-search {
+    min-height: 3.5rem;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .eventos-search__go {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .eventos-cliente-page.eventos-desktop-polish .events-grid:not(.events-grid--past) .event-card {
+    height: auto;
+    min-height: 0;
+    border: 1px solid #e4ddea;
+    border-radius: 0.75rem;
+    background: #fff;
+    box-shadow: 0 0.35rem 1rem rgba(47, 26, 65, 0.05);
+    transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-grid:not(.events-grid--past) .event-card__main {
+    position: relative;
+    inset: auto;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-grid:not(.events-grid--past) .event-thumb {
+    position: relative;
+    inset: auto;
+    flex: none;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    border-radius: 0;
+    overflow: hidden;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-grid:not(.events-grid--past) .event-thumb::after {
+    content: none;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-grid:not(.events-grid--past) .event-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: none;
+    opacity: 1;
+    transform: none;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-grid:not(.events-grid--past) .event-body {
+    position: relative;
+    inset: auto;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    padding: 1.35rem;
+    box-sizing: border-box;
+    color: #241a2a;
+    background: #fff;
+    text-shadow: none;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-grid:not(.events-grid--past) .event-title {
+    max-width: none;
+    margin: 0 0 0.8rem;
+    color: #241a2a;
+    font-size: clamp(1.2rem, 1.55vw, 1.6rem);
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+    text-shadow: none;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-grid:not(.events-grid--past) .event-meta-line {
+    color: #6b6073;
+    text-shadow: none;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-grid:not(.events-grid--past) .event-meta {
+    margin: 0 0 1.25rem;
+    color: #6b6073;
+    font-size: 0.8rem;
+    text-shadow: none;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-grid:not(.events-grid--past) .event-meta-line .material-icons {
+    color: #7955a2;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-grid:not(.events-grid--past) .event-footer-main {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid #eee8f3;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-grid:not(.events-grid--past) .price {
+    color: #241a2a;
+    font-size: 1rem;
+    text-shadow: none;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-grid:not(.events-grid--past) .event-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: auto;
+    height: auto;
+    min-height: 2.5rem;
+    padding: 0.5rem 0.8rem;
+    border: 0;
+    border-radius: 0.5rem;
+    color: #6234c7;
+    background: #f3eefb;
+    box-shadow: none;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-grid:not(.events-grid--past) .event-cta-text {
+    display: inline;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-grid:not(.events-grid--past) .event-card:hover {
+    transform: translateY(-3px);
+    border-color: #c6b3e4;
+    box-shadow: 0 0.6rem 1.4rem rgba(47, 26, 65, 0.09);
+  }
+
+  /* Keep cards and controls steady; preserve expressive title and banner motion. */
+  .eventos-cliente-page.eventos-desktop-polish :is(
+    .eventos-toolbar,
+    .events-grid .event-card,
+    .fanpage-essentials,
+    .events-past-toggle
+  ) {
+    animation: none;
+    opacity: 1;
+    filter: none;
+    transform: none;
+    will-change: auto;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .eventos-discovery::after {
+    animation: none;
+    transform: none;
+    filter: none;
+    will-change: auto;
+  }
+
+}
+
+@media (min-width: 901px) and (prefers-reduced-motion: reduce) {
+  .eventos-cliente-page.eventos-desktop-polish .events-grid:not(.events-grid--past) .event-card,
+  .eventos-cliente-page.eventos-desktop-polish .events-grid:not(.events-grid--past) .event-thumb img {
+    transition: none;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-grid:not(.events-grid--past) .event-card:hover {
+    transform: none;
+  }
+}
+
+/* Explicit desktop title motion, independent of scroll-timeline overrides. */
+@media (min-width: 901px) and (prefers-reduced-motion: no-preference) {
+  .eventos-cliente-page.eventos-desktop-polish .eventos-hero__copy {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .eventos-hero__title--motion-ready .eventos-hero__letter {
+    opacity: 0;
+    transform: translate3d(0, 0.24em, 0);
+    animation: none;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .eventos-hero__title--motion-ready.is-visible .eventos-hero__letter {
+    animation: desktopEventumTitleIn 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(100ms + var(--hero-letter-index, 0) * 25ms);
+  }
+  .eventos-cliente-page.eventos-desktop-polish .eventos-banner-title--motion-ready {
+    opacity: 0;
+    transform: translate3d(0, 1.25rem, 0);
+    transition: opacity 650ms ease, transform 750ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .eventos-cliente-page.eventos-desktop-polish .eventos-banner-title--motion-ready.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes desktopEventumTitleIn {
+  from { opacity: 0; transform: translate3d(0, 0.24em, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}

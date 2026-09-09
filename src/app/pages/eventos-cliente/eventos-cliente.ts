@@ -29,7 +29,8 @@ import { DateTimeUtil } from '../../utils/date-time.util';
     './eventos-cliente-fanpage-terminal.css',
     '../../../styles/eventos-cliente-fanpage.css',
     '../../../styles/eventos-cliente-fanpage-final.css',
-    '../../../styles/eventos-cliente-fanpage-integrated.css'
+    '../../../styles/eventos-cliente-fanpage-integrated.css',
+    '../../../styles/eventos-cliente-desktop-polish.css'
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
@@ -159,13 +160,23 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
     title.classList.add('eventos-hero__title--motion-ready');
     this.heroTitleObserver = new IntersectionObserver(entries => {
       entries.forEach(entry => {
-        entry.target.classList.toggle('is-visible', entry.isIntersecting);
+        const visible = window.matchMedia('(min-width: 901px)').matches
+          ? entry.isIntersecting && entry.intersectionRatio >= 0.35
+          : entry.isIntersecting;
+        entry.target.classList.toggle('is-visible', visible);
       });
     }, {
       threshold: 0.35,
       rootMargin: '-5% 0px -8% 0px'
     });
     this.heroTitleObserver.observe(title);
+
+    // The desktop editorial banner uses the same enter/leave trigger as the hero.
+    const bannerTitle = this.hostElement.nativeElement.querySelector<HTMLElement>('.fanpage-essentials__intro h2');
+    if (bannerTitle) {
+      bannerTitle.classList.add('eventos-banner-title--motion-ready');
+      this.heroTitleObserver.observe(bannerTitle);
+    }
   }
 
   private restoreInitialScroll(cachedScrollY: number): void {
