@@ -1,80 +1,139 @@
-﻿/* Complemento a ../login/login.css */
+﻿/* Formularios y CTA propios del acceso staff; layout base en login-public.css */
 
-.login-card--admin {
-  overflow: visible;
-}
-
-.badge-staff {
-  display: inline-block;
-  margin: 0 0 0.85rem;
-  max-width: 100%;
-  padding: 0.35rem 0.65rem;
-  border-radius: 8px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #3730a3;
-  background: #e0e7ff;
-  border: 1px solid #a5b4fc;
-}
-
-.login-footer--staff {
+.login-admin-form {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 1rem;
+  gap: 0.95rem;
 }
 
-.btn-client-access {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+.login-admin-field label {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: #56505f;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.login-admin-field input {
   width: 100%;
-  max-width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-decoration: none;
-  color: #1e293b;
-  background: rgb(255 255 255 / 85%);
-  border: 1px solid rgb(15 23 42 / 12%);
-  transition: background 0.15s ease;
+  box-sizing: border-box;
+  min-height: 3.15rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--login-line);
+  border-radius: 0.8rem;
+  background: var(--login-white);
+  color: var(--login-ink);
+  font: 400 0.925rem 'Segoe UI', sans-serif;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
 }
 
-.btn-client-access:hover {
-  background: #fff;
+.login-admin-field input::placeholder {
+  color: #a39eab;
 }
 
-.btn-client-access .material-icons {
-  font-size: 1.25rem;
-  color: #8b5cf6;
+.login-admin-field input:hover {
+  border-color: #d2c9df;
 }
 
-.header-text .subtitle {
-  font-size: 0.85rem;
-  line-height: 1.4;
+.login-admin-field input:focus {
+  outline: none;
+  border-color: rgb(112 68 197 / 45%);
+  box-shadow: 0 0 0 3px rgb(112 68 197 / 12%);
 }
 
-.dev-hint {
-  margin: 0.5rem 0 0;
-  padding: 0.5rem 0.65rem;
+.login-admin-field input[aria-invalid='true'] {
+  border-color: #e3a4aa;
+  box-shadow: 0 0 0 3px rgb(163 47 60 / 8%);
+}
+
+.login-admin-field__error {
+  margin: 0.45rem 0 0;
+  color: #a32f3c;
   font-size: 0.75rem;
-  line-height: 1.4;
-  color: #166534;
-  background: #dcfce7;
-  border: 1px solid #86efac;
-  border-radius: 8px;
+  line-height: 1.45;
 }
 
-.error-message {
-  margin-top: 0.35rem;
-  font-size: 0.8rem;
-  color: #dc2626;
+.login-admin-submit {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3.5rem;
+  margin-top: 0.15rem;
+  padding: 0.625rem 1.1rem 0.625rem 1.25rem;
+  border: 1px solid transparent;
+  border-radius: 0.8rem;
+  background: var(--login-violet);
+  color: var(--login-white);
+  font: 500 0.925rem 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
-.form-group input.error {
-  border-color: #f87171;
+.login-admin-submit__label {
+  flex: 1;
+  text-align: left;
+}
+
+.login-admin-submit__arrow {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+  transition: transform 180ms ease;
+}
+
+.login-admin-submit:hover:not(:disabled) {
+  background: #5c34ad;
+  box-shadow: 0 0.35rem 0.85rem rgb(112 68 197 / 18%);
+}
+
+.login-admin-submit:hover:not(:disabled) .login-admin-submit__arrow {
+  transform: translateX(3px);
+}
+
+.login-admin-submit:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.login-admin-submit:disabled {
+  background: #7e68a7;
+  cursor: not-allowed;
+}
+
+.login-admin-submit:disabled:has(.login-admin-submit__spinner) {
+  cursor: wait;
+  justify-content: center;
+  padding-inline: 1.25rem;
+}
+
+.login-admin-submit:has(.login-admin-submit__spinner) .login-admin-submit__label {
+  flex: 0 1 auto;
+  text-align: center;
+}
+
+.login-admin-submit__spinner {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+  border: 2px solid rgb(255 255 255 / 35%);
+  border-top-color: var(--login-white);
+  border-radius: 50%;
+  animation: login-admin-spin 0.7s linear infinite;
+}
+
+@keyframes login-admin-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 760px) {
+  .login-admin-form { gap: 0.85rem; }
+  .login-admin-field input { min-height: 3rem; font-size: 0.9rem; }
+  .login-admin-submit { min-height: 3.25rem; font-size: 0.875rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-admin-submit__spinner { animation: none; opacity: 0.85; }
 }
