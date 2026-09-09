@@ -1,4 +1,4 @@
-.app-update {
+<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vista previa · Actualización Eventum</title><style>body{margin:0;min-height:100vh;background:#f7f4fb;font-family:Arial,sans-serif}header{padding:24px;color:#954ee3;background:white;font-weight:900;letter-spacing:1px}main{padding:24px;color:#756a7d}.app-update {
   position: fixed;
   top: calc(5.5rem + env(safe-area-inset-top, 0px));
   left: 50%;
@@ -133,3 +133,20 @@
   .app-update { animation: none; }
   .app-update button { transition: none; }
 }
+</style><header>EVENTUM</header><main>Vista previa del aviso de actualización</main><aside class="app-update" role="status" aria-live="polite">
+    <div class="app-update__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 7v5h-5M4 17v-5h5" />
+        <path d="M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 17.9 17" />
+      </svg>
+    </div>
+    <div class="app-update__copy">
+      <span class="app-update__eyebrow" aria-hidden="true">EVENTUM AL DÍA</span>
+      <strong>Hay una nueva versión de Eventum</strong>
+      <p>Actualiza cuando termines. La página se recargará.</p>
+    </div>
+    <button type="button">
+      Actualizar
+    </button>
+    <button type="button" class="app-update__later">Más tarde</button>
+  </aside></html>

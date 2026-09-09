@@ -1,8 +1,15 @@
 <app-pwa-install-banner />
 <router-outlet />
 @if (pwaUpdate.available() && !pwaUpdate.paymentActive() && !pwaUpdate.postponed()) {
-  <aside class="app-update" role="status" aria-live="polite">
-    <div>
+  <aside class="app-update" role="status" aria-live="polite" [attr.aria-busy]="pwaUpdate.reloading()">
+    <div class="app-update__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 7v5h-5M4 17v-5h5" />
+        <path d="M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 17.9 17" />
+      </svg>
+    </div>
+    <div class="app-update__copy">
+      <span class="app-update__eyebrow" aria-hidden="true">EVENTUM AL DÍA</span>
       <strong>Hay una nueva versión de Eventum</strong>
       <p>Actualiza cuando termines. La página se recargará.</p>
     </div>
