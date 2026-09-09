@@ -339,21 +339,18 @@ export class Eventos implements OnInit, OnDestroy {
     // Admin: publicados (y en curso) primero; luego el criterio de orden seleccionado.
     if (this.authService.isAdministrador() && !this.estadoFiltro) {
       const rank = (e: Evento): number => {
-        switch (e.estado) {
+        // La API normalmente devuelve valores en minúscula, pero normalizar
+        // aquí evita que un valor legado rompa la prioridad visual del admin.
+        switch (String(e.estado ?? '').toLowerCase()) {
           case TipoEstadoEvento.PUBLICADO:
-          case 'publicado':
             return 0;
           case TipoEstadoEvento.EN_CURSO:
-          case 'en_curso':
             return 1;
           case TipoEstadoEvento.BORRADOR:
-          case 'borrador':
             return 2;
           case TipoEstadoEvento.FINALIZADO:
-          case 'finalizado':
             return 3;
           case TipoEstadoEvento.CANCELADO:
-          case 'cancelado':
             return 4;
           default:
             return 5;

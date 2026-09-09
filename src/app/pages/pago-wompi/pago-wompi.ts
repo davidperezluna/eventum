@@ -1,5 +1,6 @@
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { GoogleAnalyticsService } from '../../services/google-analytics.service';
 import { Router, RouterModule } from '@angular/router';
 import { ComprasProductoService } from '../../services/compras-producto.service';
 import { AlertService } from '../../services/alert.service';
@@ -86,6 +87,7 @@ export class PagoWompi implements OnInit, OnDestroy {
     private alertService: AlertService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
+    private googleAnalytics: GoogleAnalyticsService,
   ) {}
 
   ngOnInit(): void {
@@ -239,6 +241,15 @@ export class PagoWompi implements OnInit, OnDestroy {
         throw new Error('No se obtuvo URL de checkout');
       }
 
+      try {
+        const snapshot = this.googleAnalytics.readCheckoutItemsSnapshot();
+        await this.googleAnalytics.trackPaymentStarted({
+          paymentId: checkoutUrl,
+          items: snapshot?.items,
+          serviceFee: snapshot?.service_fee,
+          coupon: snapshot?.coupon,
+        });
+      } catch { /* La medición no debe impedir pagar. */ }
       window.location.href = checkoutUrl;
     } catch (error: unknown) {
       this.redirigiendo = false;

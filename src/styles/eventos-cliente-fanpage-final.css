@@ -11,38 +11,29 @@
 .eventos-cliente-page .eventos-hero__title--motion-ready .eventos-hero__letter {
   opacity: 0;
   transform: translate3d(0, 0.24em, 0);
-  will-change: opacity, transform;
+  transition:
+    opacity 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(70ms + var(--hero-letter-index, 0) * 22ms);
 }
 
 .eventos-cliente-page .eventos-hero__title--motion-ready::after {
   opacity: 0;
   transform: translate3d(0, 0.24em, 0);
-  will-change: opacity, transform;
+  transition:
+    opacity 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: 520ms;
 }
 
-.eventos-cliente-page .eventos-hero__title--motion-ready.is-visible .eventos-hero__letter {
-  animation: eventosHeroLetterIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: calc(70ms + var(--hero-letter-index, 0) * 22ms);
-}
-
+.eventos-cliente-page .eventos-hero__title--motion-ready.is-visible .eventos-hero__letter,
 .eventos-cliente-page .eventos-hero__title--motion-ready.is-visible::after {
-  animation: eventosHeroLetterIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: 520ms;
+  opacity: 1;
+  transform: none;
 }
 
 .eventos-cliente-page .eventos-hero__letter--space {
   width: 0.28em;
-}
-
-@keyframes eventosHeroLetterIn {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 0.24em, 0);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
 }
 
 @media (max-width: 900px) {
@@ -354,6 +345,7 @@
     opacity: 1;
     transform: none;
     animation: none;
+    transition: none;
     will-change: auto;
   }
 
@@ -361,6 +353,7 @@
     opacity: 1;
     transform: none;
     animation: none;
+    transition: none;
     will-change: auto;
   }
 
@@ -519,7 +512,6 @@
       animation-fill-mode: both;
       animation-timeline: view();
       animation-range: exit 0% exit 72%;
-      will-change: transform, opacity;
     }
 
     .eventos-cliente-page .eventos-toolbar {
@@ -529,7 +521,6 @@
       animation-fill-mode: both;
       animation-timeline: view();
       animation-range: exit 0% exit 68%;
-      will-change: transform, opacity;
     }
 
     .eventos-cliente-page .events-past-toggle {
@@ -863,4 +854,43 @@
     transform: none;
     will-change: auto;
   }
+}
+
+/* Compact archive preview; keep the existing mobile archive behavior. */
+.events-archive-compact .events-archive-label--desktop { display: none; }
+
+@media (min-width: 901px) {
+  .eventos-cliente-page .events-archive-compact .events-grid--past {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .eventos-cliente-page .events-archive-compact .events-grid--past:not(.events-grid--past-expanded) > .event-card:nth-child(n + 5) {
+    display: none;
+  }
+
+  .eventos-cliente-page .events-archive-compact .events-grid--past::after {
+    content: none;
+  }
+
+  .eventos-cliente-page .events-archive-compact .events-past-toggle {
+    display: flex;
+    justify-content: center;
+    min-height: 2.75rem;
+    margin: 1.5rem auto 0;
+    padding: 0.75rem 1.25rem;
+    opacity: 1;
+    animation: none;
+    transform: none;
+    color: #5930b8;
+    border: 1px solid #d8c9f5;
+    background: #f7f3fc;
+  }
+
+  .eventos-cliente-page .events-archive-compact .events-past-toggle:focus-visible {
+    outline: 2px solid #7040df;
+    outline-offset: 4px;
+  }
+
+  .events-archive-compact .events-archive-label--mobile { display: none; }
+  .events-archive-compact .events-archive-label--desktop { display: inline; }
 }

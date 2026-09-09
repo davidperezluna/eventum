@@ -56,19 +56,24 @@ export class EventosService {
         query = query.or(`titulo.ilike.%${filters.search}%,descripcion.ilike.%${filters.search}%`);
       }
 
-      // Ordenamiento. Admin puede priorizar publicados (estado desc ≈ publicado primero).
+      // Cuando el admin prioriza publicados, la prioridad debe resolverse antes
+      // de paginar. Un order('estado') de Postgres es lexicográfico y puede
+      // dejar publicados en una página posterior.
       const sortBy = filters?.sortBy || 'fecha_inicio';
       const sortOrder = filters?.sortOrder || 'asc';
-      if (filters?.priorizarPublicados && !filters?.estado) {
-        query = query.order('estado', { ascending: false });
-      }
       query = query.order(sortBy, { ascending: sortOrder === 'asc' });
 
       // Paginación
       const page = filters?.page || 1;
       const fromIndex = (page - 1) * limit;
       const toIndex = fromIndex + limit - 1;
-      query = query.range(fromIndex, toIndex);
+      const ordenarPublicadosPrimero = filters?.priorizarPublicados && !filters?.estado;
+      // El listado admin normalmente es pequeño; cargamos el conjunto filtrado
+      // para ordenar por prioridad real y solo después devolvemos la página.
+      query = query.range(
+        ordenarPublicadosPrimero ? 0 : fromIndex,
+        ordenarPublicadosPrimero ? 9999 : toIndex,
+      );
 
       const { data, error, count } = await query;
 
@@ -81,7 +86,7 @@ export class EventosService {
       const rawEventos = data || [];
       
       // Mapear lugares a lugar para cada evento
-      const eventos = rawEventos.map((ev: any) => {
+      let eventos = rawEventos.map((ev: any) => {
         const evento = { ...ev };
         if (evento.lugares) {
           evento.lugar = evento.lugares;
@@ -89,6 +94,25 @@ export class EventosService {
         }
         return evento;
       }) as Evento[];
+
+      if (ordenarPublicadosPrimero) {
+        const prioridadEstado: Record<string, number> = {
+          [TipoEstadoEvento.PUBLICADO]: 0,
+          [TipoEstadoEvento.EN_CURSO]: 1,
+          [TipoEstadoEvento.BORRADOR]: 2,
+          [TipoEstadoEvento.FINALIZADO]: 3,
+          [TipoEstadoEvento.CANCELADO]: 4,
+        };
+        eventos = eventos
+          .map((evento, index) => ({ evento, index }))
+          .sort((a, b) => {
+            const estadoA = prioridadEstado[String(a.evento.estado ?? '').toLowerCase()] ?? 5;
+            const estadoB = prioridadEstado[String(b.evento.estado ?? '').toLowerCase()] ?? 5;
+            return estadoA - estadoB || a.index - b.index;
+          })
+          .slice(fromIndex, toIndex + 1)
+          .map(({ evento }) => evento);
+      }
 
       console.log('Eventos cargados:', eventos.length, 'de', total);
 

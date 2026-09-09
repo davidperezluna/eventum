@@ -13,7 +13,7 @@ import { environment } from '../../../environments/environment';
   selector: 'app-login-admin',
   imports: [CommonModule, ReactiveFormsModule, RouterModule],
   templateUrl: './login-admin.html',
-  styleUrls: ['../login/login.css', './login-admin.css'],
+  styleUrls: ['../login/login-public.css', './login-admin.css'],
 })
 export class LoginAdmin implements OnInit {
   loginForm: FormGroup;

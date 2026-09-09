@@ -68,16 +68,6 @@
     max-width: 42rem;
   }
 
-  .eventos-cliente-page .eventos-hero__copy::before {
-    content: 'EVENTUM  /  CULTURA EN VIVO';
-    display: block;
-    margin-bottom: clamp(2.25rem, 5vh, 4rem);
-    color: rgba(255, 255, 255, 0.62);
-    font-size: 0.66rem;
-    font-weight: 800;
-    letter-spacing: 0.24em;
-  }
-
   .eventos-cliente-page .eventos-hero__eyebrow {
     margin-bottom: 1rem;
     color: var(--fan-accent);

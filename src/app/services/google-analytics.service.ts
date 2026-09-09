@@ -36,6 +36,8 @@ const PURCHASE_TRACKED_KEY = 'eventum_ga_purchase_tracked';
 const META_PURCHASE_TRACKED_KEY = 'eventum_meta_purchase_queued';
 const BEGIN_CHECKOUT_TRACKED_KEY = 'eventum_ga_begin_checkout';
 const CHECKOUT_ITEMS_KEY = 'eventum_ga_checkout_items';
+const FUNNEL_KEY = 'eventum_checkout_funnel_v1';
+type FunnelState = { fingerprint: string; startedAt: number; steps: string[]; loginPending: boolean };
 
 /** Motivos de bloqueo en checkout (sin PII). */
 export type CheckoutObstacleReason =
@@ -73,6 +75,67 @@ export class GoogleAnalyticsService {
   private readonly purchasesInFlight = new Set<string>();
   private readonly purchasesProcessed = new Set<string>();
   private readonly metaPurchasesQueued = new Set<string>();
+  private funnel: FunnelState | null = null;
+  private readonly funnelInFlight = new Set<string>();
+  private readonly paymentsStarted = new Set<string>();
+
+  private funnelState(fingerprint: string): FunnelState {
+    if (!this.funnel) {
+      try {
+        const stored = JSON.parse(this.purchaseStorage()?.getItem(FUNNEL_KEY) || 'null');
+        if (stored && typeof stored.fingerprint === 'string' && Array.isArray(stored.steps) &&
+            typeof stored.startedAt === 'number') this.funnel = stored;
+      } catch { /* Storage no disponible. */ }
+    }
+    if (!this.funnel || this.funnel.fingerprint !== fingerprint || Date.now() - this.funnel.startedAt > 86400000) {
+      this.funnel = { fingerprint, startedAt: Date.now(), steps: [], loginPending: false };
+      this.persistFunnel();
+    }
+    return this.funnel;
+  }
+
+  private persistFunnel(): void {
+    try { this.purchaseStorage()?.setItem(FUNNEL_KEY, JSON.stringify(this.funnel)); } catch { /* Memoria como respaldo. */ }
+  }
+
+  private async trackFunnelStep(name: string, fingerprint: string, params: Record<string, unknown> = {}): Promise<boolean> {
+    if (!fingerprint || !this.canTrackConfig()) return false;
+    const state = this.funnelState(fingerprint);
+    const key = `${state.startedAt}:${fingerprint}:${name}`;
+    if (state.steps.includes(name) || this.funnelInFlight.has(key)) return false;
+    this.funnelInFlight.add(key);
+    try {
+      const processed = await this.sendEventAndWait(params, name);
+      if (processed) {
+        state.steps.push(name);
+        if (this.funnel === state) this.persistFunnel();
+      }
+      return processed;
+    } finally { this.funnelInFlight.delete(key); }
+  }
+
+  trackCartViewed(fingerprint: string, items: GaItem[]): void {
+    if (!items.length) return;
+    void this.trackFunnelStep('view_cart', fingerprint, { currency: 'COP', value: sumGaItemsValue(items), items });
+  }
+
+  trackCheckoutLoginRequired(fingerprint: string): void {
+    const state = this.funnelState(fingerprint);
+    state.loginPending = true;
+    this.persistFunnel();
+    void this.trackFunnelStep('checkout_login_required', fingerprint);
+  }
+
+  trackCheckoutLoginCompleted(fingerprint: string): void {
+    const state = this.funnelState(fingerprint);
+    if (!state.loginPending) return;
+    void this.trackFunnelStep('checkout_login_completed', fingerprint).then(processed => {
+      if (processed && this.funnel === state) {
+        state.loginPending = false;
+        this.persistFunnel();
+      }
+    });
+  }
 
   private purchaseStorage(): Storage | null {
     try { return typeof sessionStorage !== 'undefined' ? sessionStorage : null; }
@@ -231,11 +294,11 @@ export class GoogleAnalyticsService {
       claimGaPurchaseTrackingId(transactionId, storage, META_PURCHASE_TRACKED_KEY);
     }
     if (!this.canTrackConfig()) return pixelQueued;
-    return this.sendPurchaseAndWait(params);
+    return this.sendEventAndWait(params);
   }
 
   /** Callback confirms gtag processing, not receipt in GA reports. Timeout never counts as success. */
-  private sendPurchaseAndWait(params: Record<string, unknown>): Promise<boolean> {
+  private sendEventAndWait(params: Record<string, unknown>, eventName = 'purchase', timeoutMs = 8000): Promise<boolean> {
     return new Promise(resolve => {
       let settled = false;
       const finish = (processed: boolean) => {
@@ -244,16 +307,16 @@ export class GoogleAnalyticsService {
         clearTimeout(timer);
         resolve(processed);
       };
-      const timer = setTimeout(() => finish(false), 8000);
+      const timer = setTimeout(() => finish(false), timeoutMs);
       void this.ensureGtag().then(() => {
         if (settled) return;
         if (!this.canTrack()) { finish(false); return; }
         try {
-          window.gtag!('event', 'purchase', {
+          window.gtag!('event', eventName, {
             ...params,
             event_callback: () => finish(true),
             // Our failure deadline must precede gtag's timeout callback.
-            event_timeout: 10000,
+            event_timeout: timeoutMs + 2000,
           });
         } catch { finish(false); }
       }).catch(() => finish(false));
@@ -289,11 +352,21 @@ export class GoogleAnalyticsService {
       return false;
     }
     this.purchasesInFlight.add(id);
+    const funnelBeforePurchase = this.funnel;
+    let storedFunnelBeforePurchase: string | null = null;
+    try { storedFunnelBeforePurchase = storage?.getItem(FUNNEL_KEY) ?? null; } catch { /* ignore */ }
     try {
       const processed = await this.trackPurchase(itemsValue, id, currency, gaItems, serviceFee);
       if (!processed) return false;
       this.purchasesProcessed.add(id);
       claimGaPurchaseTrackingId(id, storage, PURCHASE_TRACKED_KEY);
+      // No borrar el intento nuevo que pudo empezar durante la espera.
+      if (this.funnel === funnelBeforePurchase) {
+        this.funnel = null;
+        try {
+          if (storage?.getItem(FUNNEL_KEY) === storedFunnelBeforePurchase) storage.removeItem(FUNNEL_KEY);
+        } catch { /* ignore */ }
+      }
       return true;
     } catch {
       return false;
@@ -389,6 +462,7 @@ export class GoogleAnalyticsService {
     /** Solo para Meta / contexto; no se usa como item_name. */
     eventoTitulo?: string;
     coupon?: string | null;
+    fingerprint?: string;
   }) {
     const items = (params.items || []).filter((i) => i.item_name || i.item_id);
     const itemsValue = items.length
@@ -409,7 +483,7 @@ export class GoogleAnalyticsService {
             item_category2: params.eventoTitulo,
           }],
     };
-    this.sendEvent('begin_checkout', payload);
+    void this.trackFunnelStep('begin_checkout', params.fingerprint || 'checkout', payload);
     this.metaPixel.trackInitiateCheckout({
       contentId: items[0]?.item_id,
       contentName: items[0]?.item_name || params.eventoTitulo,
@@ -451,11 +525,10 @@ export class GoogleAnalyticsService {
     }
 
     try {
-      const prev = sessionStorage.getItem(BEGIN_CHECKOUT_TRACKED_KEY);
-      if (prev === fp) {
+      const state = this.funnelState(fp);
+      if (state.steps.includes('begin_checkout') || this.funnelInFlight.has(`${state.startedAt}:${fp}:begin_checkout`)) {
         return false;
       }
-      sessionStorage.setItem(BEGIN_CHECKOUT_TRACKED_KEY, fp);
     } catch {
       // Continuar sin dedupe si storage falla.
     }
@@ -473,38 +546,41 @@ export class GoogleAnalyticsService {
   }
 
   /**
-   * Apertura de pasarela Wompi → add_payment_info / AddPaymentInfo
+   * Salida hacia Wompi. No implica que el usuario añadió información de pago.
    */
-  trackAddPaymentInfo(params: {
+  async trackPaymentStarted(params: {
     value?: number;
     items?: GaItem[];
     serviceFee?: number;
     paymentType?: string;
     paymentGateway?: string;
     coupon?: string | null;
-  }) {
+    paymentId: string;
+  }): Promise<void> {
     const items = (params.items || []).filter((i) => i.item_name || i.item_id);
     const itemsValue = items.length
       ? sumGaItemsValue(items)
       : Number(params.value) || 0;
     const fee = Math.max(0, Number(params.serviceFee) || 0);
-    this.sendEvent('add_payment_info', {
-      currency: 'COP',
-      value: itemsValue,
-      payment_type: params.paymentType || 'wompi',
-      payment_gateway: params.paymentGateway || 'wompi',
-      coupon: params.coupon || undefined,
-      ...(fee > 0 ? { service_fee: fee } : {}),
-      items,
-    });
-    this.metaPixel.trackAddPaymentInfo({
-      value: itemsValue,
-      contents: items.map((item) => ({
-        id: String(item.item_id || 'item'),
-        quantity: Math.max(1, Number(item.quantity) || 1),
-        item_price: Number(item.price) || undefined,
-      })),
-    });
+    const storageKey = 'eventum_payment_started';
+    const id = params.paymentId;
+    if (!id || this.paymentsStarted.has(id) || this.funnelInFlight.has(`payment:${id}`) || hasGaPurchaseTrackingId(id, this.purchaseStorage(), storageKey)) return;
+    this.funnelInFlight.add(`payment:${id}`);
+    try {
+      const processed = await this.sendEventAndWait({
+        currency: 'COP',
+        value: itemsValue,
+        payment_type: params.paymentType || 'wompi',
+        payment_gateway: params.paymentGateway || 'wompi',
+        coupon: params.coupon || undefined,
+        ...(fee > 0 ? { service_fee: fee } : {}),
+        items,
+      }, 'payment_started', 800);
+      if (processed) {
+        this.paymentsStarted.add(id);
+        claimGaPurchaseTrackingId(id, this.purchaseStorage(), storageKey);
+      }
+    } finally { this.funnelInFlight.delete(`payment:${id}`); }
   }
 
   /** Bloqueos del embudo (GA custom + Meta trackCustom). Sin PII. */

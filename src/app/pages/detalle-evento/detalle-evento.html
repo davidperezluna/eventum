@@ -90,10 +90,13 @@
             <div>
               <span class="dx-section-kicker">Compra en línea</span>
               <h2 id="purchase-title">Arma tu experiencia</h2>
-              <p *ngIf="tabCompra !== 'productos' && !mostrarSoloProductos">
+              <p *ngIf="isEventoFinalizado()">
+                Este evento ya terminó. Las entradas y productos no están disponibles para compra.
+              </p>
+              <p *ngIf="!isEventoFinalizado() && tabCompra !== 'productos' && !mostrarSoloProductos">
                 Selecciona entradas. Verás el total antes de pagar.
               </p>
-              <p *ngIf="tabCompra === 'productos' || mostrarSoloProductos">
+              <p *ngIf="!isEventoFinalizado() && (tabCompra === 'productos' || mostrarSoloProductos)">
                 Selecciona productos. Verás el total antes de pagar.
               </p>
             </div>
@@ -139,7 +142,7 @@
 
         <app-evento-productos-tab
           *ngIf="evento && tieneProductos"
-          [hidden]="!mostrarPanelProductos"
+          [hidden]="!mostrarPanelProductos || isEventoFinalizado()"
           class="detalle-tab-panel"
           [evento]="evento"
           [eventoFinalizado]="isEventoFinalizado()"
@@ -150,18 +153,12 @@
           (productosActualizados)="onProductosActualizados($event)"
         ></app-evento-productos-tab>
 
-        <div *ngIf="mostrarPanelProductos && loadingProductosFlag" class="productos-pending-state dx-inline-loading" aria-live="polite"><span></span><span></span></div>
-        <div *ngIf="mostrarPanelProductos && !loadingProductosFlag && !tieneProductos" class="dx-empty">
+        <div *ngIf="mostrarPanelProductos && loadingProductosFlag && !isEventoFinalizado()" class="productos-pending-state dx-inline-loading" aria-live="polite"><span></span><span></span></div>
+        <div *ngIf="mostrarPanelProductos && !loadingProductosFlag && !tieneProductos && !isEventoFinalizado()" class="dx-empty">
           <span class="material-icons">inventory_2</span><h3>No hay productos disponibles</h3><p>Este evento todavía no tiene productos en preventa.</p>
           <button type="button" class="dx-text-button" (click)="setTabCompra('entradas')">Ver entradas</button>
         </div>
 
-        <div class="evento-accordion detalle-tab-panel" [hidden]="tabCompra !== 'entradas' || !isEventoFinalizado()">
-          <button class="accordion-header" (click)="toggleAcordeon('eventoFinalizado')" type="button">
-            <h3><span class="material-icons">event_busy</span>Evento finalizado</h3><span class="material-icons accordion-icon" [class.open]="acordeones.eventoFinalizado">expand_more</span>
-          </button>
-          <div class="accordion-content" [class.open]="acordeones.eventoFinalizado"><div class="evento-finalizado-message"><p>Este evento ya terminó. Las entradas no están disponibles para compra.</p></div></div>
-        </div>
         </div>
       </section>
 

@@ -1,5 +1,46 @@
 /* Dashboard organizador — extensiones mínimas sobre ev-intel-* */
 
+.ev-intel-topbar__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ev-intel-topbar__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 1px solid var(--ev-intel-border, rgba(15, 23, 42, 0.12));
+  border-radius: 0.75rem;
+  background: var(--ev-intel-card, #fff);
+  color: var(--ev-intel-ink, #0f172a);
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.ev-intel-topbar__icon-btn:hover:not(:disabled) {
+  border-color: var(--ev-intel-accent, #0d9488);
+  background: rgba(13, 148, 136, 0.08);
+  color: var(--ev-intel-accent-strong, #0f766e);
+}
+
+.ev-intel-topbar__icon-btn:focus-visible {
+  outline: 3px solid rgba(13, 148, 136, 0.24);
+  outline-offset: 2px;
+}
+
+.ev-intel-topbar__icon-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.ev-intel-topbar__icon-btn .material-icons {
+  font-size: 1.25rem;
+}
+
 .dash-org-error {
   display: flex;
   align-items: flex-start;

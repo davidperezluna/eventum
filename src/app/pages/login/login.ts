@@ -16,7 +16,7 @@ import { COMPRA_COPY } from '../../core/compra-copy';
   selector: 'app-login',
   imports: [CommonModule, RouterModule],
   templateUrl: './login.html',
-  styleUrl: './login.css',
+  styleUrl: './login-public.css',
 })
 export class Login implements OnInit {
   loading = false;

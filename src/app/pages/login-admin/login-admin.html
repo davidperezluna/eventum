@@ -1,91 +1,160 @@
-<div class="login-container">
-  <div class="login-bg" aria-hidden="true">
-    <div class="login-bg__gradient"></div>
-    <div class="login-bg__grid"></div>
-    <div class="login-bg__diag"></div>
-    <span class="login-bg__shape login-bg__shape--1"></span>
-    <span class="login-bg__shape login-bg__shape--2"></span>
-    <span class="login-bg__shape login-bg__shape--3"></span>
-  </div>
+<div class="login-page">
+  <header class="login-header">
+    <a routerLink="/eventos-cliente" class="login-brand" aria-label="Eventum, ir a eventos">
+      <img src="logo-eventum-text-only.svg" alt="Eventum" width="300" height="100" />
+    </a>
+    <a routerLink="/conocenos" class="login-help">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+        <path d="M4 13v-1a8 8 0 0 1 16 0v1M4 12H3v6h4v-6H4Zm16 0h1v6h-4v-6h3ZM20 18c0 3-3 3-6 3" />
+      </svg>
+      ¿Necesitas ayuda?
+    </a>
+  </header>
 
-  <div class="login-layout login-layout--admin">
-    <div class="login-shell login-shell--admin">
-      <div class="login-card login-card--glass login-card--admin">
-        <div class="login-header">
-          <div class="logo-container">
-            <img src="logo-eventum.svg" alt="Eventum" class="logo-icon" />
-          </div>
-          <div class="header-text">
-            <span class="badge-staff">Personal Eventum</span>
-            <h1>Iniciar sesión</h1>
-            <p class="subtitle">
-              Administradores, organizadores y lectores de escaneo QR<ng-container *ngIf="allowClienteLogin">; en pruebas también clientes con email y contraseña</ng-container>.
-            </p>
-            <p *ngIf="allowClienteLogin" class="dev-hint">
-              Modo pruebas ({{ envProfile }}): los clientes pueden iniciar aquí. En producción usan Google en /login.
-            </p>
-          </div>
+  <main class="login-ticket" aria-labelledby="login-admin-title">
+    <section class="login-experience" aria-labelledby="experience-admin-title">
+      <img
+        class="login-experience__image"
+        src="images/eventos/eventos-hero-concierto-v2.png"
+        alt="Público disfrutando de un concierto bajo las luces violetas del escenario"
+        width="1536"
+        height="1024"
+        fetchpriority="high"
+      />
+      <div class="login-experience__shade" aria-hidden="true"></div>
+      <div class="login-experience__top">
+        <span class="login-experience__label">Panel Eventum</span>
+      </div>
+      <div class="login-experience__copy">
+        <p class="login-experience__eyebrow">Detrás de cada experiencia.</p>
+        <h2 id="experience-admin-title">Todo listo<br />para <em>operar.</em></h2>
+        <p class="login-experience__description">
+          Eventos, equipo y lecturas QR<br class="login-desktop-break" /> en un solo lugar.
+        </p>
+      </div>
+      <div class="login-experience__bottom">
+        <p>Acceso solo para el equipo.</p>
+        <a routerLink="/conocenos" class="login-explore">
+          Conocer Eventum
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path d="M5 19 19 5M5 5h14v14" />
+          </svg>
+        </a>
+      </div>
+    </section>
+
+    <section class="login-access" aria-labelledby="login-admin-title">
+      <div class="login-access__content">
+        <div class="login-access__intro">
+          <p class="login-access__eyebrow">Personal Eventum</p>
+          <h1 id="login-admin-title">Tu panel<br />empieza aquí.</h1>
+          <p class="login-access__description">Gestiona eventos y accesos.</p>
         </div>
 
-        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
-          <div class="form-group">
-            <label for="email-admin">
-              <span class="material-icons">email</span>
-              Email
-            </label>
+        <form
+          class="login-admin-form"
+          [formGroup]="loginForm"
+          (ngSubmit)="onSubmit()"
+          [attr.aria-busy]="loading"
+        >
+          <p *ngIf="allowClienteLogin" class="login-notice login-notice--context" role="status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" /><path d="M12 11v6m0-10v1" />
+            </svg>
+            <span>Modo pruebas ({{ envProfile }}): también clientes con email.</span>
+          </p>
+
+          <div class="login-admin-field">
+            <label for="email-admin">Email</label>
             <input
               type="email"
               id="email-admin"
               formControlName="email"
               placeholder="tu@email.com"
               autocomplete="username"
-              [class.error]="email?.invalid && email?.touched"
+              [attr.aria-invalid]="email?.invalid && email?.touched ? true : null"
+              [attr.aria-describedby]="email?.invalid && email?.touched ? 'email-admin-error' : null"
             />
-            <div *ngIf="email?.invalid && email?.touched" class="error-message">
+            <p
+              *ngIf="email?.invalid && email?.touched"
+              id="email-admin-error"
+              class="login-admin-field__error"
+              role="alert"
+            >
               <span *ngIf="email?.errors?.['required']">El email es requerido</span>
               <span *ngIf="email?.errors?.['email']">Email inválido</span>
-            </div>
+            </p>
           </div>
 
-          <div class="form-group">
-            <label for="password-admin">
-              <span class="material-icons">lock</span>
-              Contraseña
-            </label>
+          <div class="login-admin-field">
+            <label for="password-admin">Contraseña</label>
             <input
               type="password"
               id="password-admin"
               formControlName="password"
               placeholder="••••••••"
               autocomplete="current-password"
-              [class.error]="password?.invalid && password?.touched"
+              [attr.aria-invalid]="password?.invalid && password?.touched ? true : null"
+              [attr.aria-describedby]="password?.invalid && password?.touched ? 'password-admin-error' : null"
             />
-            <div *ngIf="password?.invalid && password?.touched" class="error-message">
+            <p
+              *ngIf="password?.invalid && password?.touched"
+              id="password-admin-error"
+              class="login-admin-field__error"
+              role="alert"
+            >
               <span *ngIf="password?.errors?.['required']">La contraseña es requerida</span>
               <span *ngIf="password?.errors?.['minlength']">Mínimo 6 caracteres</span>
-            </div>
+            </p>
           </div>
 
-          <div *ngIf="error" class="alert-error">
-            <span class="material-icons">error</span>
+          <p *ngIf="error" class="login-notice login-notice--error" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" /><path d="M12 6v7m0 3v2" />
+            </svg>
             <span>{{ error }}</span>
-          </div>
+          </p>
 
-          <button type="submit" class="btn-login" [disabled]="loginForm.invalid || loading">
-            <span *ngIf="!loading" class="material-icons">login</span>
-            <span *ngIf="loading" class="spinner"></span>
-            {{ loading ? 'Iniciando sesión…' : 'Iniciar sesión' }}
+          <button
+            type="submit"
+            class="login-admin-submit"
+            [disabled]="loginForm.invalid || loading"
+          >
+            <span *ngIf="loading" class="login-admin-submit__spinner" aria-hidden="true"></span>
+            <span class="login-admin-submit__label">{{ loading ? 'Iniciando sesión…' : 'Iniciar sesión' }}</span>
+            <svg
+              *ngIf="!loading"
+              class="login-admin-submit__arrow"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              aria-hidden="true"
+            >
+              <path d="M4 12h16m-6-6 6 6-6 6" />
+            </svg>
           </button>
+          <span class="login-sr-only" role="status">{{ loading ? 'Validando credenciales. Espera un momento.' : '' }}</span>
+          <p class="login-account-hint">Administradores, organizadores y lectores</p>
         </form>
 
-        <div class="login-footer login-footer--staff">
-          <a routerLink="/login" class="btn-client-access">
-            <span class="material-icons">person</span>
-            Soy cliente — acceder con Google
+        <div class="login-staff">
+          <a routerLink="/login" class="login-staff__link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="8" r="3.5" />
+              <path d="M5.5 19.5c1.6-3.2 4-4.8 6.5-4.8s4.9 1.6 6.5 4.8" />
+            </svg>
+            Acceder con Google
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
           </a>
-          <p>© 2026 Eventum</p>
+          <p>Compra y consulta tus boletas</p>
         </div>
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
+
+  <footer class="login-footer">
+    <p>© 2026 Eventum <span aria-hidden="true">·</span> Acceso del equipo</p>
+    <a href="mailto:eventumeventum1@gmail.com">Hablemos <span aria-hidden="true">↗</span></a>
+  </footer>
 </div>
