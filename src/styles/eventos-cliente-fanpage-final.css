@@ -864,3 +864,42 @@
     will-change: auto;
   }
 }
+
+/* Compact archive preview; keep the existing mobile archive behavior. */
+.events-archive-compact .events-archive-label--desktop { display: none; }
+
+@media (min-width: 901px) {
+  .eventos-cliente-page .events-archive-compact .events-grid--past {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .eventos-cliente-page .events-archive-compact .events-grid--past:not(.events-grid--past-expanded) > .event-card:nth-child(n + 5) {
+    display: none;
+  }
+
+  .eventos-cliente-page .events-archive-compact .events-grid--past::after {
+    content: none;
+  }
+
+  .eventos-cliente-page .events-archive-compact .events-past-toggle {
+    display: flex;
+    justify-content: center;
+    min-height: 2.75rem;
+    margin: 1.5rem auto 0;
+    padding: 0.75rem 1.25rem;
+    opacity: 1;
+    animation: none;
+    transform: none;
+    color: #5930b8;
+    border: 1px solid #d8c9f5;
+    background: #f7f3fc;
+  }
+
+  .eventos-cliente-page .events-archive-compact .events-past-toggle:focus-visible {
+    outline: 2px solid #7040df;
+    outline-offset: 4px;
+  }
+
+  .events-archive-compact .events-archive-label--mobile { display: none; }
+  .events-archive-compact .events-archive-label--desktop { display: inline; }
+}

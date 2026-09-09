@@ -252,13 +252,13 @@
     </section>
 
     <!-- Eventos Finalizados -->
-    <section class="events-section events-section--past" *ngIf="!loading && !searchTerm && !categoriaFiltro && eventosFinalizados.length > 0">
+    <section class="events-section events-section--past events-archive-compact" *ngIf="!loading && !searchTerm && !categoriaFiltro && eventosFinalizados.length > 0">
       <div class="section-header">
         <div><p class="section-kicker">Archivo Eventum</p><h2>Eventos finalizados</h2></div>
         <span class="section-count">{{ eventosFinalizados.length }}</span>
       </div>
 
-      <div class="events-grid events-grid--past" [class.events-grid--past-expanded]="mostrarTodosFinalizados">
+      <div id="eventos-finalizados-grid" class="events-grid events-grid--past" [class.events-grid--past-expanded]="mostrarTodosFinalizados">
         <article *ngFor="let evento of eventosFinalizados; trackBy: trackByEventoId" class="event-card event-finalizado"
           [routerLink]="['/detalle-evento', evento.id]">
           <div class="event-thumb">
@@ -298,9 +298,11 @@
         *ngIf="eventosFinalizados.length > 4"
         type="button"
         class="events-past-toggle"
+        aria-controls="eventos-finalizados-grid"
         [attr.aria-expanded]="mostrarTodosFinalizados"
         (click)="toggleEventosFinalizados()">
-        <span>{{ mostrarTodosFinalizados ? 'Mostrar menos' : 'Ver eventos anteriores' }}</span>
+        <span class="events-archive-label--mobile">{{ mostrarTodosFinalizados ? 'Mostrar menos' : 'Ver eventos anteriores' }}</span>
+        <span class="events-archive-label--desktop">{{ mostrarTodosFinalizados ? 'Mostrar menos' : 'Ver todos los eventos finalizados (' + eventosFinalizados.length + ')' }}</span>
         <span class="material-icons" aria-hidden="true">
           {{ mostrarTodosFinalizados ? 'expand_less' : 'arrow_forward' }}
         </span>
