@@ -61,7 +61,6 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
   private heroTitleObserver: IntersectionObserver | null = null;
   private footerObserver: IntersectionObserver | null = null;
   private readonly refreshIndicatorDelayMs = 800;
-  private readonly maxProductosDestacados = 4;
   currentYear = new Date().getFullYear();
   readonly appVersion = environment.appVersion;
   readonly cuposEventumEnabled = cuposEventumEnabled;
@@ -477,10 +476,6 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
       seen.add(evento.id);
       return this.tieneProductosEvento(evento.id);
     });
-  }
-
-  get eventosConProductosPreview(): Evento[] {
-    return this.eventosConProductos.slice(0, this.maxProductosDestacados);
   }
 
   getProductosChipLabel(evento: Evento): string {

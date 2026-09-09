@@ -85,7 +85,6 @@
 
     <section
       class="events-section products-panel fanpage-essential fanpage-essential--products"
-      *ngIf="!loading && !searchTerm && !categoriaFiltro && eventosConProductosPreview.length > 0"
       aria-labelledby="productos-fanpage-title"
     >
       <div class="products-reminder">
@@ -98,18 +97,7 @@
           <p>Compra con anticipación y retira tus productos durante el evento con el QR de tu pedido.</p>
         </div>
         <div class="products-reminder__events">
-          <a
-            *ngFor="let evento of eventosConProductosPreview; trackBy: trackByEventoId"
-            [routerLink]="['/detalle-evento', evento.id]"
-            [queryParams]="{ tab: 'productos' }"
-            class="products-reminder__link"
-          >
-            <span>
-              <small>Ver productos</small>
-              <strong>{{ evento.titulo }}</strong>
-            </span>
-            <span class="material-icons" aria-hidden="true">arrow_forward</span>
-          </a>
+          <p class="products-reminder__note">Puedes comprar productos</p>
         </div>
       </div>
     </section>
@@ -223,7 +211,6 @@
     <section
       id="productos-destacados"
       class="events-section products-panel products-panel--mobile-order"
-      *ngIf="!loading && !searchTerm && !categoriaFiltro && eventosConProductosPreview.length > 0"
     >
       <div class="products-reminder">
         <div class="products-reminder__mark" aria-hidden="true">
@@ -235,18 +222,7 @@
           <p>Compra con anticipación y retira tus productos durante el evento con el QR de tu pedido.</p>
         </div>
         <div class="products-reminder__events">
-          <a
-            *ngFor="let evento of eventosConProductosPreview; trackBy: trackByEventoId"
-            [routerLink]="['/detalle-evento', evento.id]"
-            [queryParams]="{ tab: 'productos' }"
-            class="products-reminder__link"
-          >
-            <span>
-              <small>Ver productos</small>
-              <strong>{{ evento.titulo }}</strong>
-            </span>
-            <span class="material-icons" aria-hidden="true">arrow_forward</span>
-          </a>
+          <p class="products-reminder__note">Puedes comprar productos</p>
         </div>
       </div>
     </section>

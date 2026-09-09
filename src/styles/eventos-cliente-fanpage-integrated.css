@@ -162,6 +162,13 @@
     margin: 1.5rem 0 0;
   }
 
+  .eventos-cliente-page .fanpage-essentials--integrated .products-reminder__note {
+    color: #5930b8;
+    font-size: 0.85rem;
+    font-weight: 650;
+    text-align: left;
+  }
+
   .eventos-cliente-page .fanpage-essentials--integrated .products-reminder__events .products-reminder__link {
     position: relative;
     display: inline-flex;
