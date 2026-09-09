@@ -159,16 +159,19 @@ export class EventosCliente implements OnInit, AfterViewInit, OnDestroy {
     title.classList.add('eventos-hero__title--motion-ready');
     this.heroTitleObserver = new IntersectionObserver(entries => {
       entries.forEach(entry => {
-        const visible = window.matchMedia('(min-width: 901px)').matches
-          ? entry.isIntersecting && entry.intersectionRatio >= 0.35
-          : entry.isIntersecting;
+        const visible = entry.isIntersecting;
+        if (entry.target === title || entry.target.classList.contains('eventos-hero__copy')) {
+          title.classList.toggle('is-visible', visible);
+          return;
+        }
         entry.target.classList.toggle('is-visible', visible);
       });
     }, {
-      threshold: 0.35,
-      rootMargin: '-5% 0px -8% 0px'
+      threshold: [0, 0.15, 0.35],
+      rootMargin: '0px'
     });
-    this.heroTitleObserver.observe(title);
+    const heroCopy = this.hostElement.nativeElement.querySelector<HTMLElement>('.eventos-hero__copy');
+    this.heroTitleObserver.observe(heroCopy ?? title);
 
     // The desktop editorial banner uses the same enter/leave trigger as the hero.
     const bannerTitle = this.hostElement.nativeElement.querySelector<HTMLElement>('.fanpage-essentials__intro h2');

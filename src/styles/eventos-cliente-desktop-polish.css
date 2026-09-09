@@ -179,22 +179,8 @@
   }
 }
 
-/* Explicit desktop title motion, independent of scroll-timeline overrides. */
+/* Banner title enter/leave; hero letters and scroll motion live in fanpage-final. */
 @media (min-width: 901px) and (prefers-reduced-motion: no-preference) {
-  .eventos-cliente-page.eventos-desktop-polish .eventos-hero__copy {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
-  .eventos-cliente-page.eventos-desktop-polish .eventos-hero__title--motion-ready .eventos-hero__letter {
-    opacity: 0;
-    transform: translate3d(0, 0.24em, 0);
-    animation: none;
-  }
-  .eventos-cliente-page.eventos-desktop-polish .eventos-hero__title--motion-ready.is-visible .eventos-hero__letter {
-    animation: desktopEventumTitleIn 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
-    animation-delay: calc(100ms + var(--hero-letter-index, 0) * 25ms);
-  }
   .eventos-cliente-page.eventos-desktop-polish .eventos-banner-title--motion-ready {
     opacity: 0;
     transform: translate3d(0, 1.25rem, 0);
@@ -204,9 +190,4 @@
     opacity: 1;
     transform: none;
   }
-}
-
-@keyframes desktopEventumTitleIn {
-  from { opacity: 0; transform: translate3d(0, 0.24em, 0); }
-  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
