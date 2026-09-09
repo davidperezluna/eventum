@@ -191,3 +191,106 @@
     transform: none;
   }
 }
+
+/* Match the existing mobile action styles without changing mobile rules. */
+@media (min-width: 901px) {
+  .eventos-cliente-page.eventos-desktop-polish .eventos-search__go {
+    width: 2.65rem;
+    height: 2.65rem;
+    border: 0;
+    border-radius: 50%;
+    color: #fff;
+    background: linear-gradient(145deg, #8a52f5 8%, #ef3bad 100%);
+    box-shadow: 0 0.65rem 1.5rem rgba(205, 49, 177, 0.3);
+  }
+  .eventos-cliente-page.eventos-desktop-polish .eventos-search__go .material-icons {
+    color: #fff;
+    font-size: 1.2rem;
+  }
+
+  .eventos-cliente-page.eventos-desktop-polish .events-grid .event-card .event-cta,
+  .eventos-cliente-page.eventos-desktop-polish .events-archive-compact .events-past-toggle,
+  .eventos-cliente-page.eventos-desktop-polish .events-empty-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    width: auto;
+    height: auto;
+    min-height: 2rem;
+    padding: 0.5rem 0.8rem;
+    border: 0;
+    border-radius: 999px;
+    color: #fff;
+    background: linear-gradient(135deg, #a62ee5, #ed36aa);
+    box-shadow: none;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: filter 180ms ease, transform 180ms ease;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-grid .event-card .event-cta-text {
+    display: block;
+    color: #fff;
+    font-size: 0.67rem;
+    font-weight: 750;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-grid .event-card .event-cta ion-icon {
+    color: #fff;
+    font-size: 1.05rem;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-archive-compact .events-past-toggle {
+    display: flex;
+    width: fit-content;
+    min-height: 2.5rem;
+    padding-inline: 1.15rem;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-archive-compact .events-past-toggle .material-icons,
+  .eventos-cliente-page.eventos-desktop-polish .events-empty-cta ion-icon {
+    color: #fff;
+    font-size: 1.05rem;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .fanpage-essentials--integrated .products-reminder__events .products-reminder__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 1rem;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    color: #6535ce;
+    background: transparent;
+    box-shadow: none;
+    text-decoration: none;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .fanpage-essentials--integrated .products-reminder__link small {
+    display: block;
+    color: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .fanpage-essentials--integrated .products-reminder__link strong {
+    display: none;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .fanpage-essentials--integrated .products-reminder__link .material-icons {
+    color: #7446e8;
+    font-size: 1rem;
+  }
+  .eventos-cliente-page.eventos-desktop-polish .events-grid .event-card:hover .event-cta,
+  .eventos-cliente-page.eventos-desktop-polish .events-archive-compact .events-past-toggle:hover,
+  .eventos-cliente-page.eventos-desktop-polish .events-empty-cta:hover {
+    filter: brightness(1.08);
+  }
+  .eventos-cliente-page.eventos-desktop-polish :is(.events-past-toggle, .events-empty-cta, .products-reminder__link):focus-visible {
+    outline: 2px solid #7040df;
+    outline-offset: 4px;
+  }
+}
+
+@media (min-width: 901px) and (prefers-reduced-motion: reduce) {
+  .eventos-cliente-page.eventos-desktop-polish .events-grid .event-card .event-cta,
+  .eventos-cliente-page.eventos-desktop-polish .events-archive-compact .events-past-toggle,
+  .eventos-cliente-page.eventos-desktop-polish .events-empty-cta {
+    transition: none;
+  }
+}
