@@ -136,6 +136,12 @@ export const authGuard: CanActivateFn = async (route, state) => {
 
     console.log('Auth Guard - Usuario cargado:', usuario);
 
+    if (authService.esStaffConCuentaInactiva(usuario)) {
+      console.log('Auth Guard - Cuenta de staff inactiva; cerrando sesión');
+      await authService.logout('/login-admin');
+      return false;
+    }
+
     if (authService.isLector()) {
       console.log('Auth Guard - Lector redirigido a app de escaneo');
       router.navigate(['/lector/inicio']);

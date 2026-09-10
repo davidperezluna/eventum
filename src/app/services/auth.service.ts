@@ -300,6 +300,13 @@ export class AuthService {
           return;
         }
 
+        if (this.esStaffConCuentaInactiva(usuario)) {
+          console.warn('Cuenta de staff inactiva; se cierra la sesión:', usuario.id);
+          this.setUsuario(null);
+          void this.supabase.auth.signOut();
+          return;
+        }
+
         this.clearForcedLogoutFlag();
         this.setUsuario(usuario);
         console.log('Datos del usuario cargados correctamente:', usuario);
@@ -410,6 +417,18 @@ export class AuthService {
           usuario: null,
           error: {
             message: this.mensajeLoginAdminNoPermitido(usuario.tipo_usuario_id),
+          },
+        };
+      }
+
+      if (this.esStaffConCuentaInactiva(usuario)) {
+        console.warn('Cuenta inactiva; login rechazado:', usuario.id);
+        await this.supabase.auth.signOut();
+        return {
+          user: null,
+          usuario: null,
+          error: {
+            message: 'Tu cuenta está inactiva. Contacta al administrador.',
           },
         };
       }
@@ -767,6 +786,18 @@ export class AuthService {
     }
     return (
       tipoUsuarioId === RolesPermitidos.CLIENTE && this.isClienteLoginAdminEnabled()
+    );
+  }
+
+  /** Staff del panel (admin / organizador / lector) con `activo === false`. */
+  esStaffConCuentaInactiva(usuario: Usuario | null | undefined): boolean {
+    if (!usuario || usuario.activo !== false) {
+      return false;
+    }
+    return (
+      usuario.tipo_usuario_id === RolesPermitidos.ADMINISTRADOR ||
+      usuario.tipo_usuario_id === RolesPermitidos.ORGANIZADOR ||
+      usuario.tipo_usuario_id === RolesPermitidos.LECTOR
     );
   }
 

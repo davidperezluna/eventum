@@ -42,6 +42,12 @@ export const lectorAuthGuard: CanActivateFn = async (_route, state) => {
     return false;
   }
 
+  const usuario = authService.getUsuario();
+  if (authService.esStaffConCuentaInactiva(usuario)) {
+    await authService.logout('/login-admin');
+    return false;
+  }
+
   if (!authService.isLector()) {
     router.navigate(['/login-admin']);
     return false;
