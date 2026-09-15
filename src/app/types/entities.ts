@@ -284,6 +284,8 @@ export interface Compra {
 export interface BoletaComprada {
   id: number;
   compra_id: number;
+  /** Origen administrativo; compra_id es nulo en BD y negativo solo en la vista del cliente. */
+  compra_fantasma_id?: number | null;
   tipo_boleta_id: number;
   codigo_qr: string;
   codigo_barras?: string;

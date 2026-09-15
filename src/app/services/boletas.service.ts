@@ -6,7 +6,7 @@ import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { TimezoneService } from './timezone.service';
 import { AuthService } from './auth.service';
-import { BoletaComprada, TipoBoleta, BoletaFilters, PaginatedResponse, Palco, EstadoPalco } from '../types';
+import { BoletaComprada, TipoBoleta, BoletaFilters, PaginatedResponse, Palco, EstadoPalco, TipoEstadoPago, TipoEstadoCompra } from '../types';
 import { normalizarDocumentoIdentidad } from '../core/documento-identidad';
 
 @Injectable({
@@ -66,7 +66,8 @@ export class BoletasService {
    */
   async getBoletasCompradas(filters?: BoletaFilters): Promise<PaginatedResponse<BoletaComprada>> {
     let query = this.supabase.from('boletas_compradas')
-      .select(this.selectBoletaConRelaciones, { count: 'exact' });
+      .select(this.selectBoletaConRelaciones, { count: 'exact' })
+      .not('compra_id', 'is', null);
 
     // Aplicar filtros
     if (filters?.compra_id) {
@@ -105,6 +106,7 @@ export class BoletasService {
         let boletasQuery = this.supabase
           .from('boletas_compradas')
           .select(this.selectBoletaConRelaciones, { count: 'exact' })
+          .not('compra_id', 'is', null)
           .in('tipo_boleta_id', tipoIds);
         
         // Aplicar otros filtros
@@ -239,13 +241,29 @@ export class BoletasService {
     const { data, error } = await this.supabase
       .from('boletas_compradas')
       .select(this.selectBoletaConRelaciones)
-      .eq('titular_cliente_id', clienteId);
+      .eq('titular_cliente_id', clienteId)
+      .not('compra_id', 'is', null);
     if (error) {
       console.error('getBoletasCedidasTitular:', error);
       throw error;
     }
     const rows = ((data as any[]) || []).map((b) => this.normalizarBoletaConCompra(b));
+    // Solo traslados reales: titular distinto del comprador original.
     return rows.filter((b) => (b.compra?.cliente_id ?? 0) !== clienteId);
+  }
+
+  /** Entradas de emisiones administrativas (sin compra comercial) del titular actual. */
+  async getBoletasFantasmaTitular(clienteId: number): Promise<BoletaComprada[]> {
+    const { data, error } = await this.supabase
+      .from('boletas_compradas')
+      .select(this.selectBoletaConRelaciones)
+      .eq('titular_cliente_id', clienteId)
+      .not('compra_fantasma_id', 'is', null);
+    if (error) {
+      console.error('getBoletasFantasmaTitular:', error);
+      throw error;
+    }
+    return ((data as any[]) || []).map((b) => this.normalizarBoletaConCompra(b));
   }
 
   /**
@@ -510,6 +528,7 @@ export class BoletasService {
         .from('boletas_compradas')
         .update(update)
         .eq('id', boletaId)
+        .eq('estado', 'pendiente')
         .select()
         .single();
       
@@ -637,7 +656,48 @@ export class BoletasService {
    */
   private normalizarBoletaConCompra(boleta: any): BoletaComprada {
     const boletaNormalizada = { ...boleta } as BoletaComprada;
-    
+    if (boleta.compra_fantasma_id) {
+      // Contexto exclusivamente visual: no crea compra comercial ni pago en BD.
+      const titularId = Number(boleta.titular_cliente_id) || 0;
+      boletaNormalizada.compra_id = -Number(boleta.compra_fantasma_id);
+      boletaNormalizada.estado_pago = TipoEstadoPago.COMPLETADO;
+      boletaNormalizada.compra = {
+        id: boletaNormalizada.compra_id,
+        cliente_id: titularId,
+        numero_transaccion: String(boleta.compra_fantasma_id).padStart(8, '0'),
+        estado_pago: TipoEstadoPago.COMPLETADO,
+        estado_compra: TipoEstadoCompra.CONFIRMADA,
+      };
+
+      if (boleta.tipos_boleta) {
+        const tb = Array.isArray(boleta.tipos_boleta) ? boleta.tipos_boleta[0] : boleta.tipos_boleta;
+        if (tb?.eventos && !Array.isArray(tb.eventos)) {
+          (boletaNormalizada as any).evento = tb.eventos;
+        }
+        if (tb) {
+          boletaNormalizada.tipo_boleta_meta = {
+            nombre: tb.nombre,
+            personas_por_unidad: tb.personas_por_unidad,
+            es_palco: tb.es_palco,
+          };
+        }
+      }
+      if (boleta.validado_por != null) {
+        const vp = Array.isArray(boleta.validado_por) ? boleta.validado_por[0] : boleta.validado_por;
+        boletaNormalizada.validado_por = vp ?? null;
+      }
+      if (boleta.asistente_usuario != null) {
+        const au = Array.isArray(boleta.asistente_usuario)
+          ? boleta.asistente_usuario[0]
+          : boleta.asistente_usuario;
+        boletaNormalizada.asistente_usuario = au ?? null;
+      }
+      delete (boletaNormalizada as any).compras;
+      delete (boletaNormalizada as any).tipos_boleta;
+      delete (boletaNormalizada as any).palcos;
+      return boletaNormalizada;
+    }
+
     // Si viene el objeto compra, extraer estado_pago y estado_compra
     if (boleta.compras && Array.isArray(boleta.compras) && boleta.compras.length > 0) {
       const compra = boleta.compras[0];

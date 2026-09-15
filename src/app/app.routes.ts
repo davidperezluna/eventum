@@ -30,6 +30,8 @@ import { VentasProductos } from './pages/ventas-productos/ventas-productos';
 import { TransaccionesCheckout } from './pages/transacciones-checkout/transacciones-checkout';
 import { WompiReconcile } from './pages/wompi-reconcile/wompi-reconcile';
 import { VentasManual } from './pages/ventas-manual/ventas-manual';
+import { ComprasFantasma } from './pages/compras-fantasma/compras-fantasma';
+import { comprasFantasmaEnabled } from './core/compras-fantasma-feature';
 import { ProbarCompras } from './pages/probar-compras/probar-compras';
 import { Productos } from './pages/productos/productos';
 import { Usuarios } from './pages/usuarios/usuarios';
@@ -197,6 +199,7 @@ const appRoutes: Routes = [
       { path: 'transacciones-checkout', component: TransaccionesCheckout, data: { adminOnly: true } },
       { path: 'wompi-reconcile', component: WompiReconcile, data: { adminOnly: true } },
       ...ventasManualRoutes,
+      ...(comprasFantasmaEnabled ? [{ path: 'compras-fantasma', component: ComprasFantasma, canActivate: [authGuard], data: { adminOnly: true } }] : []),
       { path: 'probar-compras', component: ProbarCompras, data: { adminOnly: true } },
       {
         path: 'probar-compras/evento/:id',

@@ -1,0 +1,283 @@
+<div class="ventas-manual-page compras-fantasma-page">
+  <header class="ventas-manual-top">
+    <div class="ventas-manual-top__copy">
+      <p class="ventas-manual-eyebrow">
+        <span class="ventas-manual-eyebrow__dot" aria-hidden="true"></span>
+        Administración
+      </p>
+      <h1>Compras fantasma</h1>
+      <p>
+        Emite entradas individuales sin cobro. El titular las ve en Mis compras y puede
+        transferirlas o usarlas en puerta.
+      </p>
+    </div>
+  </header>
+
+  <ev-notice
+    *ngIf="error"
+    variant="danger"
+    density="compact"
+    title="No se pudo completar"
+    [message]="error"
+    class="cf-feedback"
+  />
+  <ev-notice
+    *ngIf="mensaje"
+    variant="success"
+    density="compact"
+    title="Listo"
+    [message]="mensaje"
+    class="cf-feedback"
+  />
+
+  <div class="ventas-manual-sheet">
+    <section class="ventas-manual-block" aria-labelledby="cf-quien">
+      <div class="ventas-manual-block__head ventas-manual-block__head--step">
+        <span class="ventas-manual-step" aria-hidden="true">1</span>
+        <div>
+          <h2 id="cf-quien">Evento y titular</h2>
+          <p>Elige el evento y la cuenta Eventum que recibirá las entradas.</p>
+        </div>
+      </div>
+
+      <div class="ventas-manual-who">
+        <label class="ev-field">
+          <span class="ev-field__label">Evento</span>
+          <ev-select
+            name="evento"
+            [(ngModel)]="eventoId"
+            (ngModelChange)="cambiarEvento()"
+            [options]="eventoOptions"
+            [searchable]="true"
+            [clearable]="true"
+            [fullWidth]="true"
+            [disabled]="guardando || cargando"
+            ariaLabel="Evento"
+            placeholder="Selecciona el evento"
+            mobileSheetTitle="Evento"
+          />
+        </label>
+
+        <label class="ev-field">
+          <span class="ev-field__label">Titular</span>
+          <ev-select
+            name="cliente"
+            [(ngModel)]="clienteId"
+            [options]="clienteOptions"
+            [searchable]="true"
+            [serverSideSearch]="true"
+            [minSearchLength]="2"
+            [loading]="buscando"
+            (searchTermChange)="buscarClientes($event)"
+            [clearable]="true"
+            [fullWidth]="true"
+            [disabled]="guardando"
+            ariaLabel="Titular"
+            placeholder="Buscar nombre o correo"
+            mobileSheetTitle="Titular"
+          />
+          <span class="ev-field__hint" *ngIf="buscando">Buscando usuarios…</span>
+        </label>
+      </div>
+
+      <div class="ventas-manual-chips" *ngIf="eventoSeleccionado || clienteSeleccionado">
+        <span class="ventas-manual-chip" *ngIf="eventoSeleccionado">
+          <span class="material-icons" aria-hidden="true">event</span>
+          {{ eventoSeleccionado.titulo }}
+        </span>
+        <span class="ventas-manual-chip" *ngIf="clienteSeleccionado">
+          <span class="material-icons" aria-hidden="true">person</span>
+          {{ clienteChipLabel }}
+        </span>
+      </div>
+    </section>
+
+    <section
+      class="ventas-manual-block"
+      aria-labelledby="cf-entradas"
+      [class.is-dimmed]="!eventoId"
+    >
+      <div class="ventas-manual-block__head ventas-manual-block__head--step">
+        <span class="ventas-manual-step" aria-hidden="true">2</span>
+        <div>
+          <h2 id="cf-entradas">Entradas a emitir</h2>
+          <p *ngIf="!eventoId">Selecciona un evento para ver los tipos disponibles.</p>
+          <p *ngIf="eventoId && cargandoTipos">Cargando tipos de boleta…</p>
+          <p *ngIf="eventoId && !cargandoTipos">
+            Solo boletas individuales. Máximo 100 por emisión. Sin cobro.
+          </p>
+        </div>
+      </div>
+
+      <p class="cf-empty" *ngIf="eventoId && !cargandoTipos && !tipos.length">
+        Este evento no tiene tipos individuales activos.
+      </p>
+
+      <div class="cf-tipos" *ngIf="eventoId && tipos.length">
+        <article class="cf-tipo" *ngFor="let tipo of tipos; trackBy: trackTipo">
+          <div class="cf-tipo__copy">
+            <strong>{{ tipo.nombre }}</strong>
+            <p>{{ tipo.precio | currency: 'COP' : 'symbol-narrow' : '1.0-0' }} · precio de lista</p>
+          </div>
+          <label class="ev-field cf-tipo__qty">
+            <span class="ev-field__label">Cantidad</span>
+            <ev-number-input
+              [ngModel]="cantidades[tipo.id] || 0"
+              (ngModelChange)="setCantidad(tipo.id, $event)"
+              [min]="0"
+              [max]="100"
+              [stepper]="true"
+              [fullWidth]="true"
+              [disabled]="guardando"
+            />
+          </label>
+        </article>
+      </div>
+
+      <label class="ev-field cf-motivo" *ngIf="eventoId">
+        <span class="ev-field__label">Motivo de emisión</span>
+        <textarea
+          name="motivo"
+          [(ngModel)]="motivo"
+          minlength="3"
+          maxlength="500"
+          rows="3"
+          placeholder="Ej. Cortesía prensa, reposición por incidencia…"
+          [disabled]="guardando"
+        ></textarea>
+        <span class="ev-field__hint">Entre 3 y 500 caracteres. Queda en el historial.</span>
+      </label>
+
+      <div class="cf-resumen" *ngIf="resumenLineas.length" aria-live="polite">
+        <p *ngFor="let linea of resumenLineas">
+          <strong>{{ linea.cantidad }}×</strong> {{ linea.nombre }}
+        </p>
+        <p class="cf-resumen__total">{{ total }} entradas · Sin cobro</p>
+      </div>
+    </section>
+  </div>
+
+  <div class="ventas-manual-dock" role="region" aria-label="Confirmar emisión">
+    <div class="ventas-manual-dock__meta">
+      <p class="ventas-manual-dock__status" *ngIf="!valido">
+        Completa evento, titular, al menos una entrada y el motivo.
+      </p>
+      <ng-container *ngIf="valido">
+        <p class="ventas-manual-dock__ready">
+          <span class="material-icons" aria-hidden="true">check_circle</span>
+          Listo para emitir
+        </p>
+        <p class="ventas-manual-dock__detail">{{ total }} entradas · Sin cobro</p>
+      </ng-container>
+    </div>
+    <ev-button
+      variant="primary"
+      size="md"
+      [disabled]="!valido || guardando || cargandoTipos"
+      [loading]="guardando"
+      (click)="emitir()"
+    >
+      {{ guardando ? 'Emitiendo…' : 'Emitir entradas' }}
+    </ev-button>
+  </div>
+
+  <section class="cf-historial" aria-labelledby="historial-titulo">
+    <header class="cf-historial__head">
+      <h2 id="historial-titulo">Historial de emisiones</h2>
+      <p>Estado de cada entrada: pendiente, usada o cancelada.</p>
+    </header>
+
+    <p class="cf-empty" *ngIf="!historial.length">No hay emisiones todavía.</p>
+
+    <div class="cf-historial__list" *ngIf="historial.length">
+      <article
+        class="cf-card"
+        *ngFor="let emision of historial; trackBy: trackEmision"
+        [class.cf-card--anulada]="emision.estado === 'cancelada'"
+      >
+        <header class="cf-card__head">
+          <div class="cf-card__title">
+            <p class="cf-card__kicker">Emisión #{{ emision.id }} · {{ emision.fecha_creacion | date: 'short' }}</p>
+            <h3>{{ emision.evento.titulo }}</h3>
+          </div>
+          <span
+            class="cf-pill"
+            [class.cf-pill--active]="emision.estado === 'activa'"
+            [class.cf-pill--cancel]="emision.estado === 'cancelada'"
+          >
+            {{ estadoEmisionLabel(emision.estado) }}
+          </span>
+        </header>
+
+        <dl class="cf-card__meta">
+          <div>
+            <dt>Titular</dt>
+            <dd>{{ emision.cliente.nombre }} {{ emision.cliente.apellido }}</dd>
+            <dd class="cf-card__muted">{{ emision.cliente.email }}</dd>
+          </div>
+          <div>
+            <dt>Motivo</dt>
+            <dd>{{ emision.motivo }}</dd>
+          </div>
+        </dl>
+
+        <ng-container *ngIf="resumenUso(emision) as uso">
+          <div class="cf-card__stats" *ngIf="emision.boletas.length">
+            <span class="cf-stat" *ngIf="uso.usadas > 0">{{ uso.usadas }} usada{{ uso.usadas === 1 ? '' : 's' }}</span>
+            <span class="cf-stat cf-stat--pending" *ngIf="uso.pendientes > 0">{{ uso.pendientes }} pendiente{{ uso.pendientes === 1 ? '' : 's' }}</span>
+            <span class="cf-stat cf-stat--cancel" *ngIf="uso.canceladas > 0">{{ uso.canceladas }} cancelada{{ uso.canceladas === 1 ? '' : 's' }}</span>
+            <span class="cf-stat cf-stat--neutral" *ngIf="!uso.usadas && !uso.pendientes && !uso.canceladas">
+              {{ emision.boletas.length }} entrada{{ emision.boletas.length === 1 ? '' : 's' }}
+            </span>
+          </div>
+
+          <ul class="cf-boletas" *ngIf="emision.boletas.length">
+            <li *ngFor="let b of emision.boletas; trackBy: trackBoleta">
+              <div class="cf-boleta__info">
+                <strong>{{ b.tipo.nombre || 'Entrada' }}</strong>
+                <span class="cf-boleta__sub">
+                  #{{ b.id }}
+                  <ng-container *ngIf="(b.estado || '').toLowerCase() === 'usada' && b.fecha_uso">
+                    · usada {{ b.fecha_uso | date: 'short' }}
+                  </ng-container>
+                </span>
+              </div>
+              <span [class]="estadoBoletaClass(b.estado)">{{ estadoBoletaLabel(b.estado) }}</span>
+            </li>
+          </ul>
+
+          <div class="cf-card__actions" *ngIf="emision.estado === 'activa' && uso.pendientes > 0">
+            <ev-button
+              variant="ghost"
+              size="sm"
+              [disabled]="guardando"
+              (click)="anular(emision.id)"
+            >
+              Anular pendientes
+            </ev-button>
+          </div>
+        </ng-container>
+      </article>
+    </div>
+
+    <nav class="cf-pager" aria-label="Páginas del historial" *ngIf="historial.length || pagina > 0">
+      <ev-button
+        variant="ghost"
+        size="sm"
+        [disabled]="pagina === 0 || guardando"
+        (click)="cargarHistorial(pagina - 1)"
+      >
+        Anterior
+      </ev-button>
+      <span>Página {{ pagina + 1 }}</span>
+      <ev-button
+        variant="ghost"
+        size="sm"
+        [disabled]="historial.length < 20 || guardando"
+        (click)="cargarHistorial(pagina + 1)"
+      >
+        Siguiente
+      </ev-button>
+    </nav>
+  </section>
+</div>

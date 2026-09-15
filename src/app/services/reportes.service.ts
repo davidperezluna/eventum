@@ -179,6 +179,7 @@ export class ReportesService {
       const { data: boletas, error: boletasError } = await this.supabase
         .from('boletas_compradas')
         .select('compra_id')
+        .is('compra_fantasma_id', null)
         .in('compra_id', compraIds);
 
       if (boletasError) {
@@ -324,6 +325,7 @@ export class ReportesService {
         this.supabase
           .from('boletas_compradas')
           .select('estado, compras!inner(estado_pago, evento_id)')
+          .is('compra_fantasma_id', null)
           .eq('compras.estado_pago', 'completado')
           .in('compras.evento_id', eventosIds)
           .range(from, to)
@@ -423,6 +425,7 @@ export class ReportesService {
       const { data: boletas } = await this.supabase
         .from('boletas_compradas')
         .select('estado, compras!inner(estado_pago)')
+        .is('compra_fantasma_id', null)
         .in('tipo_boleta_id', tiposIds)
         .eq('compras.estado_pago', 'completado');
 
@@ -535,6 +538,7 @@ export class ReportesService {
         let query = this.supabase
           .from('boletas_compradas')
           .select('tipo_boleta_id, tipos_boleta!inner(nombre), compras!inner(estado_pago, evento_id)')
+          .is('compra_fantasma_id', null)
           .eq('compras.estado_pago', 'completado');
         if (eventosIds) {
           query = query.in('compras.evento_id', eventosIds);
@@ -611,6 +615,7 @@ export class ReportesService {
         this.supabase
           .from('boletas_compradas')
           .select('compras!inner(estado_pago, evento_id)')
+          .is('compra_fantasma_id', null)
           .eq('compras.estado_pago', 'completado')
           .in('compras.evento_id', eventosIds)
           .range(from, to)
@@ -710,6 +715,7 @@ export class ReportesService {
         const { data: boletas, error: boletasError } = await this.supabase
           .from('boletas_compradas')
           .select('compra_id')
+          .is('compra_fantasma_id', null)
           .in('compra_id', compraIds);
 
         if (boletasError) {
@@ -791,6 +797,7 @@ export class ReportesService {
           .select(
             'tipo_boleta_id, precio_unitario, compra_id, consume_inventario, grupo_palco_id, compras!inner(estado_pago, evento_id, total, subtotal, descuento_total)'
           )
+          .is('compra_fantasma_id', null)
           .eq('compras.estado_pago', 'completado')
           .eq('compras.evento_id', eventoId)
           .range(from, to)

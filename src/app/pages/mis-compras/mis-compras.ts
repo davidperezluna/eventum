@@ -3028,10 +3028,35 @@ export class MisCompras implements OnInit, OnDestroy {
       this.comprasConBoletas = nextComprasConBoletas;
 
       try {
+        const fantasma = (await this.boletasService.getBoletasFantasmaTitular(uid)).filter(
+          (b) =>
+            !this.esBoletaCancelada(b) &&
+            b.compra?.estado_pago === TipoEstadoPago.COMPLETADO
+        );
+        const porEmision = new Map<number, BoletaComprada[]>();
+        for (const boleta of fantasma) {
+          const emisionId = Number(boleta.compra_fantasma_id);
+          if (!Number.isFinite(emisionId) || emisionId <= 0) continue;
+          const lista = porEmision.get(emisionId) ?? [];
+          lista.push(boleta);
+          porEmision.set(emisionId, lista);
+        }
+        for (const boletas of porEmision.values()) {
+          this.comprasConBoletas.push({
+            compra: this.compraVistaParaEmisionFantasma(boletas[0]),
+            boletas,
+          });
+        }
+      } catch (e) {
+        console.error('Error cargando entradas fantasma:', e);
+      }
+
+      try {
         this.entradasCedidas = (await this.boletasService.getBoletasCedidasTitular(uid))
           .filter(
             (b) =>
               !this.esBoletaCancelada(b) &&
+              !b.compra_fantasma_id &&
               b.compra?.estado_pago === TipoEstadoPago.COMPLETADO
           );
       } catch (e) {
@@ -4219,10 +4244,30 @@ export class MisCompras implements OnInit, OnDestroy {
       id: b.compra_id,
       cliente_id: c?.cliente_id ?? 0,
       evento_id: (c as { evento_id?: number })?.evento_id ?? b.evento?.id ?? 0,
-      numero_transaccion: c?.id ? `#${c.id}` : '-',
+      numero_transaccion: c?.numero_transaccion || (c?.id ? `#${c.id}` : '-'),
       total: 0,
       estado_pago: (c?.estado_pago as TipoEstadoPago | undefined) ?? TipoEstadoPago.COMPLETADO,
       estado_compra: c?.estado_compra
+    } as Compra;
+  }
+
+  /** Compra sintética para emisiones administrativas (no son traslados). */
+  private compraVistaParaEmisionFantasma(b: BoletaComprada): Compra {
+    const c = b.compra;
+    const emisionId = Number(b.compra_fantasma_id);
+    return {
+      id: b.compra_id,
+      cliente_id: c?.cliente_id ?? b.titular_cliente_id ?? 0,
+      evento_id: b.evento?.id ?? (c as { evento_id?: number })?.evento_id ?? 0,
+      numero_transaccion:
+        c?.numero_transaccion ||
+        (Number.isFinite(emisionId) && emisionId > 0
+          ? String(emisionId).padStart(8, '0')
+          : '—'),
+      total: 0,
+      estado_pago: TipoEstadoPago.COMPLETADO,
+      estado_compra: TipoEstadoCompra.CONFIRMADA,
+      evento: b.evento,
     } as Compra;
   }
 
@@ -4547,7 +4592,23 @@ export class MisCompras implements OnInit, OnDestroy {
       }
 
       const uid = this.authService.getUsuarioId();
-      if (uid && fresh.titular_cliente_id === uid) {
+      if (uid && fresh.titular_cliente_id === uid && fresh.compra_fantasma_id) {
+        const compraFantasma = this.compraVistaParaEmisionFantasma(fresh);
+        let entry = this.comprasConBoletas.find((x) => x.compra.id === compraFantasma.id);
+        if (!entry) {
+          entry = { compra: compraFantasma, boletas: [] };
+          this.comprasConBoletas.push(entry);
+        }
+        const index = entry.boletas.findIndex((b) => b.id === fresh.id);
+        if (index >= 0) {
+          entry.boletas[index] = { ...entry.boletas[index], ...patch };
+        } else {
+          entry.boletas.push(fresh);
+        }
+        return;
+      }
+
+      if (uid && fresh.titular_cliente_id === uid && !fresh.compra_fantasma_id) {
         const cedidaIndex = this.entradasCedidas.findIndex((b) => b.id === fresh.id);
         if (cedidaIndex >= 0) {
           this.entradasCedidas[cedidaIndex] = { ...this.entradasCedidas[cedidaIndex], ...patch };
@@ -4814,6 +4875,7 @@ export class MisCompras implements OnInit, OnDestroy {
     try {
       let cambio = false;
       let mostroIngreso = false;
+      let huboCancelacion = false;
 
       if (this.showProductoQrModal && this.productoFilaSeleccionada?.compra.id) {
         // Con QR de producto abierto: solo ese pedido.
@@ -4848,6 +4910,12 @@ export class MisCompras implements OnInit, OnDestroy {
           this.boletaSeleccionada.id,
         ]);
         for (const fresh of frescas || []) {
+          if (this.esBoletaCancelada(fresh)) {
+            huboCancelacion = true;
+            cambio = this.patchBoletaEnEstadoLocal(fresh.id, { estado: fresh.estado }) || cambio;
+            if (this.boletaSeleccionada?.id === fresh.id) this.cerrarBoletaModal();
+            continue;
+          }
           if (String(fresh.estado || '').toLowerCase() !== 'usada') {
             continue;
           }
@@ -4905,6 +4973,11 @@ export class MisCompras implements OnInit, OnDestroy {
         if (boletaIds.length) {
           const frescas = await this.boletasService.getBoletasByIds(boletaIds);
           for (const fresh of frescas || []) {
+            if (this.esBoletaCancelada(fresh)) {
+              huboCancelacion = true;
+              cambio = this.patchBoletaEnEstadoLocal(fresh.id, { estado: fresh.estado }) || cambio;
+              continue;
+            }
             if (String(fresh.estado || '').toLowerCase() !== 'usada') {
               continue;
             }
@@ -4935,7 +5008,7 @@ export class MisCompras implements OnInit, OnDestroy {
         this.reconstruirVistaTrasNotificacion();
         if (!mostroIngreso && !this.showMensajeIngresoModal) {
           void this.alertService.snackbar(
-            'Actualización en puerta. Tu acceso fue validado.',
+            huboCancelacion ? 'Se actualizó el estado de tus boletas.' : 'Actualización en puerta. Tu acceso fue validado.',
             { timerMs: 2800 }
           );
         }
@@ -5064,7 +5137,8 @@ export class MisCompras implements OnInit, OnDestroy {
     this.trasladosHistorial = state.trasladosHistorial || [];
     this.trasladosPendientesRecibir = state.trasladosPendientesRecibir || [];
     this.entradasCedidas = (state.entradasCedidas || []).filter(
-      (b: BoletaComprada) => b.compra?.estado_pago === TipoEstadoPago.COMPLETADO
+      (b: BoletaComprada) =>
+        !b.compra_fantasma_id && b.compra?.estado_pago === TipoEstadoPago.COMPLETADO
     );
     this.comprasCover = (state.comprasCover || []).filter(
       (compra) => (compra.estado_pago || '').toLowerCase() === TipoEstadoPago.COMPLETADO

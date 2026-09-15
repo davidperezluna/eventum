@@ -1,4 +1,5 @@
 import { AdminNavSection } from './admin-nav.types';
+import { comprasFantasmaEnabled } from '../../core/compras-fantasma-feature';
 
 /** Menú administrador — agrupado por secciones, rutas sin cambios. */
 export function buildAdminNavSections(
@@ -32,6 +33,7 @@ export function buildAdminNavSections(
               ? [{ path: '/ventas-manual', label: 'Venta manual', icon: 'point_of_sale' as const }]
               : []),
             { path: '/probar-compras', label: 'Probar compras', icon: 'storefront' },
+            ...(comprasFantasmaEnabled ? [{ path: '/compras-fantasma', label: 'Compras fantasma', icon: 'confirmation_number' }] : []),
           ],
         },
         { kind: 'link', path: '/lectores-parametrizacion', label: 'Lectores', icon: 'qr_code_scanner' },
