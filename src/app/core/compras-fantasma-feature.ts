@@ -1,5 +1,11 @@
 import { supabaseConfig } from '../config/supabase.config';
 
-/** El módulo se habilita inicialmente solo en el proyecto DEV autorizado. */
-export const comprasFantasmaEnabled =
-  supabaseConfig.url.replace(/\/$/, '') === 'https://modctxrsohemzlzlvlih.supabase.co';
+const COMPRAS_FANTASMA_URLS = new Set([
+  'https://modctxrsohemzlzlvlih.supabase.co', // DEV
+  'https://jiknhvnaavhfguqfqbod.supabase.co', // PROD
+]);
+
+/** Menú, ruta y RPCs solo en proyectos Supabase autorizados. */
+export const comprasFantasmaEnabled = COMPRAS_FANTASMA_URLS.has(
+  supabaseConfig.url.replace(/\/$/, '')
+);
