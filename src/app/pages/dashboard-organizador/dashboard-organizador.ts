@@ -4,7 +4,6 @@ import { RouterModule } from '@angular/router';
 import { OrgSalesRow, OrgSalesRowModel } from '../../components/org-sales-row';
 import { DemoDataProvider } from '../../demo/demo-data.provider';
 import { AuthService } from '../../services/auth.service';
-import { AppCacheService } from '../../services/app-cache.service';
 import { AlertService } from '../../services/alert.service';
 import { DashboardStats } from '../../types';
 import { formatFinanzasMonedaExacta, formatFinanzasMontoExacto } from '../../utils/dashboard-finanzas.view';
@@ -29,7 +28,6 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardOrganizador implements OnInit {
-  private readonly cacheTtlMs = 60 * 1000;
   isManualRefreshing = false;
   readonly padCountdown = padCountdown;
 
@@ -40,7 +38,6 @@ export class DashboardOrganizador implements OnInit {
   constructor(
     private demoDataProvider: DemoDataProvider,
     private authService: AuthService,
-    private appCacheService: AppCacheService,
     private alertService: AlertService,
     private cdr: ChangeDetectorRef,
   ) {}
@@ -93,18 +90,11 @@ export class DashboardOrganizador implements OnInit {
     const unsubscribe = this.authService.onAuthStateChange((user, usuario) => {
       if (usuario && usuario.tipo_usuario_id === 2) {
         this.organizadorId = usuario.id;
-        const cached = this.getCachedState();
-        if (cached) {
-          this.stats = cached.stats;
-          this.loading = false;
-          this.rebuildIntelView();
-          this.cdr.markForCheck();
-        } else {
-          this.loading = true;
-          this.intelView = null;
-          this.cdr.markForCheck();
-        }
-        void this.loadStats({ background: !!cached });
+        this.loading = true;
+        this.error = null;
+        this.intelView = null;
+        this.cdr.markForCheck();
+        void this.loadStats();
         unsubscribe();
       } else if (usuario !== null) {
         this.error = 'No se pudo identificar el organizador';
@@ -116,7 +106,7 @@ export class DashboardOrganizador implements OnInit {
     });
   }
 
-  async loadStats(options?: { background?: boolean; manual?: boolean }) {
+  async loadStats(options?: { manual?: boolean }) {
     if (!this.organizadorId) {
       this.error = 'ID de organizador no disponible';
       this.loading = false;
@@ -125,14 +115,17 @@ export class DashboardOrganizador implements OnInit {
       return;
     }
 
-    const hasVisibleData = !this.loading && !!this.intelView;
-    const background = options?.background ?? hasVisibleData;
     const manual = options?.manual ?? false;
     const offline = typeof navigator !== 'undefined' && !navigator.onLine;
 
-    if (offline && hasVisibleData) {
+    if (offline) {
       if (manual) {
-        void this.alertService.snackbar('Sin conexión. Mostrando datos guardados.');
+        void this.alertService.snackbar('Sin conexión. Intenta de nuevo cuando vuelva la red.');
+      } else {
+        this.error = 'Sin conexión. Verifica tu red e intenta de nuevo.';
+        this.loading = false;
+        this.intelView = null;
+        this.cdr.markForCheck();
       }
       return;
     }
@@ -141,7 +134,6 @@ export class DashboardOrganizador implements OnInit {
     if (manual) {
       this.isManualRefreshing = true;
       this.cdr.detectChanges();
-      // Deja pintar el spinner antes del fetch / rebuild pesado.
       await new Promise<void>((resolve) => {
         if (typeof requestAnimationFrame === 'undefined') {
           resolve();
@@ -149,21 +141,19 @@ export class DashboardOrganizador implements OnInit {
         }
         requestAnimationFrame(() => resolve());
       });
+    } else {
+      this.loading = true;
+      this.intelView = null;
+      this.cdr.markForCheck();
     }
 
-    this.loading = !background && !hasVisibleData;
     this.error = null;
-    if (this.loading) {
-      this.intelView = null;
-    }
-    this.cdr.markForCheck();
 
     try {
       const stats = await this.demoDataProvider.getOrganizerDashboardStats(this.organizadorId);
       this.stats = stats;
       this.loading = false;
       this.rebuildIntelView();
-      this.persistState();
       if (manual) {
         void this.alertService.snackbarSuccess('Dashboard actualizado', 'Los datos del organizador se recargaron.');
       }
@@ -314,26 +304,6 @@ export class DashboardOrganizador implements OnInit {
     }
 
     return items.slice(0, 5);
-  }
-
-  private get cacheKey(): string | null {
-    if (!this.organizadorId) return null;
-    return `eventum:cache:v2:dashboard-organizador:user:${this.organizadorId}`;
-  }
-
-  private getCachedState(): { stats: DashboardStats; lastUpdated: number } | null {
-    const key = this.cacheKey;
-    if (!key) return null;
-    const cached = this.appCacheService.get<{ stats: DashboardStats; lastUpdated: number }>(key, 'session');
-    if (!cached) return null;
-    if (Date.now() - cached.lastUpdated > this.cacheTtlMs) return null;
-    return cached;
-  }
-
-  private persistState(): void {
-    const key = this.cacheKey;
-    if (!key) return;
-    this.appCacheService.set(key, { stats: this.stats, lastUpdated: Date.now() }, 'session');
   }
 
   formatCurrency(value: number): string {
