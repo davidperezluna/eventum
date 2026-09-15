@@ -4779,7 +4779,18 @@ export class MisCompras implements OnInit, OnDestroy {
 
             if (!mostroIngreso) {
               if (esScanAcceso) {
-                void this.alertService.snackbar(`${titulo}. ${mensaje}`, { timerMs: 2800 });
+                // Solo toast/modal de puerta. Nunca snackbar "Entrada validada..."
+                // (el poll puede haber cerrado el QR y abierto el toast un instante antes).
+                if (!this.showMensajeIngresoModal) {
+                  const tipoUi = esEntradaValidada
+                    ? 'entrada'
+                    : esProductoRedimido
+                      ? 'producto'
+                      : esCoverSalida
+                        ? 'cover-salida'
+                        : 'cover';
+                  this.abrirMensajeIngresoDesdeNotificacion(tipoUi, metadata);
+                }
               } else {
                 void this.alertService.snackbar(`${titulo}. ${mensaje}`);
               }
