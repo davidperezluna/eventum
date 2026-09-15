@@ -22,9 +22,7 @@
     padding-top: env(safe-area-inset-top, 0px);
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
-    background: rgba(255, 255, 255, 0.94);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: #ffffff;
     border-bottom: 1px solid var(--ev-admin-sidebar-border);
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
     box-sizing: border-box;
@@ -114,13 +112,22 @@
     z-index: 999;
     touch-action: none;
     overscroll-behavior: none;
-    animation: evAdminOverlayIn 180ms ease forwards;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity 140ms ease,
+      visibility 0s linear 140ms;
   }
-}
 
-@keyframes evAdminOverlayIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  .ev-admin-sidebar__overlay--open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition:
+      opacity 140ms ease,
+      visibility 0s linear 0s;
+  }
 }
 
 /* ── Sidebar shell ── */
@@ -486,21 +493,24 @@
 
 @media (max-width: 768px) {
   .ev-admin-sidebar {
-    transform: translateX(-100%);
+    transform: translate3d(-100%, 0, 0);
     visibility: hidden;
     pointer-events: none;
-    box-shadow: var(--ev-admin-sidebar-shadow);
+    box-shadow: none;
+    /* Solo transform: evita width + shadow durante el slide (jank en dashboards pesados). */
     transition:
-      transform var(--ev-admin-sidebar-transition),
-      visibility 0s linear 220ms;
+      transform 150ms cubic-bezier(0.4, 0, 0.2, 1),
+      visibility 0s linear 150ms;
   }
 
   .ev-admin-sidebar--open {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
     visibility: visible;
     pointer-events: auto;
+    box-shadow: var(--ev-admin-sidebar-shadow);
+    will-change: transform;
     transition:
-      transform var(--ev-admin-sidebar-transition),
+      transform 150ms cubic-bezier(0.4, 0, 0.2, 1),
       visibility 0s linear 0s;
   }
 

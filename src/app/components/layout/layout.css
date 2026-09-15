@@ -43,6 +43,7 @@
   background: #f6f8fc;
   transition: margin-left 220ms cubic-bezier(0.4, 0, 0.2, 1);
   width: calc(100% - var(--ev-admin-sidebar-width, 272px));
+  min-width: 0;
 }
 
 .admin-layout--compact .main-content {
@@ -1143,6 +1144,9 @@
     padding: var(--spacing-md);
     padding-top: var(--ev-admin-mobile-content-offset);
     width: 100%;
+    transition: none;
+    /* Aísla el dashboard pesado del slide del menú. */
+    contain: layout paint;
   }
 
   .admin-layout--compact .main-content {

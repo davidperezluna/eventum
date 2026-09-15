@@ -16,10 +16,10 @@
   </div>
 </header>
 
-<!-- Overlay móvil -->
+<!-- Overlay móvil (siempre en DOM; evita recrear + jank al abrir/cerrar) -->
 <div
   class="ev-admin-sidebar__overlay"
-  *ngIf="open"
+  [class.ev-admin-sidebar__overlay--open]="open"
   (click)="closeSidebar.emit()"
   aria-hidden="true"
 ></div>

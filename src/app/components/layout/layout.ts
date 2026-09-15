@@ -488,22 +488,31 @@ export class Layout implements OnInit, OnDestroy {
 
   toggleSidebar() {
     this.sidebarOpen = !this.sidebarOpen;
-    this.syncBodyScrollLock();
+    this.scheduleBodyScrollLock();
   }
 
   closeSidebar() {
     this.sidebarOpen = false;
-    this.syncBodyScrollLock();
+    this.scheduleBodyScrollLock();
   }
 
   toggleClientMenu() {
     this.clientMenuOpen = !this.clientMenuOpen;
-    this.syncBodyScrollLock();
+    this.scheduleBodyScrollLock();
   }
 
   closeClientMenu() {
     this.clientMenuOpen = false;
-    this.syncBodyScrollLock();
+    this.scheduleBodyScrollLock();
+  }
+
+  /** Tras el paint del slide, para no pelear con el compositor en dashboards pesados. */
+  private scheduleBodyScrollLock(): void {
+    if (typeof requestAnimationFrame === 'undefined') {
+      this.syncBodyScrollLock();
+      return;
+    }
+    requestAnimationFrame(() => this.syncBodyScrollLock());
   }
 
   private syncBodyScrollLock(): void {

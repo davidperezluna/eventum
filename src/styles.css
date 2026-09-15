@@ -53,6 +53,12 @@ html.client-menu-open body {
   touch-action: none;
 }
 
+/* Menú admin abierto: reduce trabajo de pintura detrás del drawer. */
+html.client-menu-open .main-content {
+  pointer-events: none;
+  contain: layout paint;
+}
+
 /* ----- Estados de carga (todas las páginas): centrado consistente ----- */
 @keyframes app-loader-spin {
   to {

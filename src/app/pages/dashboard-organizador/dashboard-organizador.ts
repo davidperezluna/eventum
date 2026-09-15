@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { OrgSalesRow, OrgSalesRowModel } from '../../components/org-sales-row';
@@ -26,11 +26,16 @@ import {
     '../evento-inteligencia/evento-inteligencia.css',
     './dashboard-organizador.css',
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardOrganizador implements OnInit {
   private readonly cacheTtlMs = 60 * 1000;
   isManualRefreshing = false;
   readonly padCountdown = padCountdown;
+
+  /** Vista ya materializada: no reconstruir en cada CD (menú / refresh). */
+  intelView: DashboardOrgIntelView | null = null;
+  actionNowQueryParams: Record<string, string | number> | null = null;
 
   constructor(
     private demoDataProvider: DemoDataProvider,
@@ -92,15 +97,20 @@ export class DashboardOrganizador implements OnInit {
         if (cached) {
           this.stats = cached.stats;
           this.loading = false;
-          this.cdr.detectChanges();
+          this.rebuildIntelView();
+          this.cdr.markForCheck();
         } else {
           this.loading = true;
+          this.intelView = null;
+          this.cdr.markForCheck();
         }
         void this.loadStats({ background: !!cached });
         unsubscribe();
       } else if (usuario !== null) {
         this.error = 'No se pudo identificar el organizador';
         this.loading = false;
+        this.intelView = null;
+        this.cdr.markForCheck();
         unsubscribe();
       }
     });
@@ -110,10 +120,12 @@ export class DashboardOrganizador implements OnInit {
     if (!this.organizadorId) {
       this.error = 'ID de organizador no disponible';
       this.loading = false;
+      this.intelView = null;
+      this.cdr.markForCheck();
       return;
     }
 
-    const hasVisibleData = !this.loading;
+    const hasVisibleData = !this.loading && !!this.intelView;
     const background = options?.background ?? hasVisibleData;
     const manual = options?.manual ?? false;
     const offline = typeof navigator !== 'undefined' && !navigator.onLine;
@@ -129,73 +141,88 @@ export class DashboardOrganizador implements OnInit {
     if (manual) {
       this.isManualRefreshing = true;
       this.cdr.detectChanges();
+      // Deja pintar el spinner antes del fetch / rebuild pesado.
+      await new Promise<void>((resolve) => {
+        if (typeof requestAnimationFrame === 'undefined') {
+          resolve();
+          return;
+        }
+        requestAnimationFrame(() => resolve());
+      });
     }
 
     this.loading = !background && !hasVisibleData;
     this.error = null;
-    this.cdr.detectChanges();
+    if (this.loading) {
+      this.intelView = null;
+    }
+    this.cdr.markForCheck();
 
     try {
       const stats = await this.demoDataProvider.getOrganizerDashboardStats(this.organizadorId);
       this.stats = stats;
       this.loading = false;
+      this.rebuildIntelView();
       this.persistState();
       if (manual) {
         void this.alertService.snackbarSuccess('Dashboard actualizado', 'Los datos del organizador se recargaron.');
       }
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
     } catch (err) {
       console.error('Error cargando estadísticas:', err);
       this.error = 'Error al cargar las estadísticas. Verifica tu conexión con Supabase.';
       this.loading = false;
+      this.intelView = null;
       if (manual) {
         void this.alertService.snackbarError('No se pudo recargar', 'Ocurrió un error al actualizar el dashboard.');
       }
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
     } finally {
       if (manual) {
         this.isManualRefreshing = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       }
     }
   }
 
-  get intel(): DashboardOrgIntelView | null {
-    if (this.loading || this.error) return null;
-    return buildDashboardOrgIntelView({
+  private rebuildIntelView(): void {
+    if (this.loading || this.error) {
+      this.intelView = null;
+      this.actionNowQueryParams = null;
+      return;
+    }
+    const attentionItems = this.buildAttentionItems();
+    this.intelView = buildDashboardOrgIntelView({
       stats: this.stats,
       saludo: this.saludo,
       usuarioNombre: this.usuarioNombre,
       daysUntil: (f) => this.daysUntil(f),
       formatCurrency: (v) => this.formatCurrency(v),
       formatAmount: (v) => this.formatAmount(v),
-      attentionItems: this.buildAttentionItems(),
+      attentionItems,
     });
-  }
 
-  get actionNowQueryParams(): Record<string, string | number> | null {
-    const action = this.intel?.actionNow;
-    const route = this.intel?.actionNowRoute;
-    if (!action || !route) return null;
-    if (action.ctaLabel === 'Publicar' && Array.isArray(route) && route[0] === '/eventos') {
-      const item = this.filteredAttentionItems[0];
+    const action = this.intelView.actionNow;
+    const route = this.intelView.actionNowRoute;
+    this.actionNowQueryParams = null;
+    if (
+      action?.ctaLabel === 'Publicar' &&
+      Array.isArray(route) &&
+      route[0] === '/eventos'
+    ) {
+      const item = filterAttentionForHero(attentionItems, this.intelView.heroIdentity)[0];
       if (item?.key.startsWith('draft-')) {
         const id = Number(item.key.replace('draft-', ''));
-        if (Number.isFinite(id) && id > 0) return { edit: id };
+        if (Number.isFinite(id) && id > 0) {
+          this.actionNowQueryParams = { edit: id };
+        }
       }
     }
-    return null;
   }
 
   eventoIntelRoute(rowIndex: number): any[] {
-    const id = this.intel?.eventoIdsByRow[rowIndex];
+    const id = this.intelView?.eventoIdsByRow[rowIndex];
     return id ? ['/eventos', id, 'inteligencia'] : ['/eventos'];
-  }
-
-  private get filteredAttentionItems(): DashOrgAttentionItem[] {
-    const hero = this.intel?.heroIdentity;
-    if (!hero) return this.buildAttentionItems();
-    return filterAttentionForHero(this.buildAttentionItems(), hero);
   }
 
   get saludo(): string {
