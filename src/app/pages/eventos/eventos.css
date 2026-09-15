@@ -534,16 +534,16 @@
 }
 
 .ev-hub-btn--inteligencia {
-  border: 1px solid color-mix(in srgb, var(--ev-accent) 35%, transparent);
-  background: color-mix(in srgb, var(--ev-accent) 8%, #fff);
-  color: var(--ev-accent-strong, #7c3aed);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #fff;
+  color: var(--ev-ink, #0f172a);
 }
 
 .ev-hub-btn--inteligencia:not(.ev-hub-btn--current):hover {
-  background: color-mix(in srgb, var(--ev-accent) 14%, #fff);
-  border-color: color-mix(in srgb, var(--ev-accent) 50%, transparent);
+  background: var(--ev-soft, #f4f6fa);
+  border-color: rgba(15, 23, 42, 0.2);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.12);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
 }
 
 .ev-hub-btn--operaciones {
@@ -582,6 +582,91 @@
   min-height: 2.125rem;
   padding-inline: 0.85rem;
   font-size: 0.8125rem;
+}
+
+/* Topbar centros (Inteligencia ↔ Operaciones) — desktop */
+.ev-hub-pair--topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  width: auto;
+  max-width: 100%;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.ev-hub-pair--topbar .ev-hub-btn {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.ev-hub-btn--topbar.ev-hub-btn--locked {
+  opacity: 0.72;
+  cursor: pointer;
+}
+
+/* Topbar centros — móvil: misma estructura en intel y ops
+   Fila 1: atrás · Fila 2: hubs 50/50 a ancho completo */
+@media (max-width: 768px) {
+  .ev-intel-topbar,
+  .ev-ops-topbar {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0.85rem;
+    padding: 0.65rem 0 0.85rem;
+  }
+
+  .ev-intel-back,
+  .ev-ops-back {
+    flex: 0 0 auto;
+    align-self: flex-start;
+    max-width: 100%;
+    white-space: nowrap;
+    font-size: 0.8125rem;
+    gap: 0.25rem;
+  }
+
+  .ev-intel-back .material-icons,
+  .ev-ops-back .material-icons {
+    font-size: 1.05rem;
+  }
+
+  .ev-intel-topbar .ev-hub-pair--topbar,
+  .ev-ops-topbar .ev-hub-pair--topbar {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
+    gap: 0.35rem;
+    margin: 0;
+  }
+
+  .ev-intel-topbar .ev-hub-pair--topbar .ev-hub-btn,
+  .ev-ops-topbar .ev-hub-pair--topbar .ev-hub-btn {
+    flex: unset;
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .ev-intel-topbar .ev-hub-pair--topbar .ev-hub-btn--topbar,
+  .ev-ops-topbar .ev-hub-pair--topbar .ev-hub-btn--topbar {
+    min-height: 2.25rem;
+    padding-inline: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .ev-intel-topbar .ev-hub-pair--topbar .ev-hub-btn .material-icons,
+  .ev-ops-topbar .ev-hub-pair--topbar .ev-hub-btn .material-icons {
+    font-size: 1rem;
+  }
 }
 
 .ev-menu {

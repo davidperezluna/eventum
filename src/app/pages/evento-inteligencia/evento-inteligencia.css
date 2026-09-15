@@ -12,6 +12,11 @@
   --ev-intel-radius: 16px;
   --ev-intel-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   --ev-intel-gap: 1.75rem;
+  /* Tokens compartidos con hub Inteligencia ↔ Operaciones (eventos.css) */
+  --ev-accent: var(--ev-intel-accent);
+  --ev-accent-strong: var(--ev-intel-accent-strong);
+  --ev-ink: var(--ev-intel-ink);
+  --ev-soft: var(--ev-intel-soft);
   max-width: var(--ev-intel-max);
   margin: 0 auto;
   padding: 0 1rem 2.5rem;
@@ -54,28 +59,6 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 0.75rem 0 1rem;
-}
-
-.ev-intel-topbar .ev-hub-pair--topbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  width: auto;
-  max-width: 100%;
-  gap: 0.5rem;
-  margin: 0;
-}
-
-.ev-intel-topbar .ev-hub-pair--topbar .ev-hub-btn {
-  flex: 0 1 auto;
-  width: auto;
-  min-width: 0;
-}
-
-.ev-intel-topbar .ev-hub-btn--locked {
-  opacity: 0.72;
-  cursor: pointer;
 }
 
 .ev-intel-back {
@@ -2136,27 +2119,7 @@
 
 /* ---- Responsive — Mobile First ---- */
 
-@media (max-width: 720px) {
-  .ev-intel-topbar {
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    padding: 0.65rem 0 1rem;
-  }
-
-  .ev-intel-topbar .ev-hub-pair--topbar {
-    gap: 0.35rem;
-  }
-
-  .ev-intel-topbar .ev-hub-pair--topbar .ev-hub-btn--topbar {
-    min-height: 2rem;
-    padding-inline: 0.65rem;
-    font-size: 0.75rem;
-  }
-
-  .ev-intel-topbar .ev-hub-pair--topbar .ev-hub-btn .material-icons {
-    font-size: 1rem;
-  }
-
+@media (max-width: 768px) {
   .ev-intel-hero__main {
     grid-template-columns: 1fr;
     gap: 1.25rem;
