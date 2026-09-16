@@ -213,11 +213,12 @@
 
       <ng-container *ngIf="esBoletaDevolucion(boleta)">
         <p class="modal-kicker">DEVOLUCIÓN</p>
-        <h2 class="modal-title">Código para devolución</h2>
+        <h2 class="modal-title">Boleta lista para devolución</h2>
         <div class="modal-info">
           <div class="modal-row"><span>Tipo</span><strong>{{ nombreTipoBoleta }}</strong></div>
           <div class="modal-row"><span>Evento</span><strong>{{ tituloEvento }}</strong></div>
           <div class="modal-row"><span>Asistente</span><strong>{{ nombreAsistenteBoleta(boleta) }}</strong></div>
+          <div class="modal-row"><span>Valor de la boleta</span><strong>{{ boleta.precio_unitario | currency:'COP':'symbol-narrow':'1.0-0' }}</strong></div>
         </div>
         <button type="button" class="btn-validate btn-refund" (click)="marcarBoletaParaDevolucion()" [disabled]="validando">
           <span class="material-icons">currency_exchange</span>
@@ -235,6 +236,7 @@
           <div class="modal-row" *ngIf="documentoAsistenteBoleta(boleta) !== '—'">
             <span>Documento</span><strong>{{ documentoAsistenteBoleta(boleta) }}</strong>
           </div>
+          <div class="modal-row"><span>Valor de la boleta</span><strong>{{ boleta.precio_unitario | currency:'COP':'symbol-narrow':'1.0-0' }}</strong></div>
         </div>
         <button type="button" class="btn-validate" (click)="validarBoleta()" [disabled]="validando">
           <span class="material-icons">verified</span>

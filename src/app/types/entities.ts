@@ -324,6 +324,7 @@ export interface BoletaComprada {
   // Información de la compra (viene del join)
   compra?: {
     id: number;
+    evento_id?: number;
     cliente_id?: number;
     numero_transaccion?: string;
     estado_pago?: TipoEstadoPago;

@@ -618,18 +618,21 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
         return;
       }
     }
-    const { data: tipoBoleta } = await this.supabase
-      .from('tipos_boleta')
-      .select('evento_id, nombre, eventos(titulo)')
-      .eq('id', boleta.tipo_boleta_id)
-      .single();
+    const eventoId = Number(boleta.evento?.id || boleta.compra?.evento_id);
+    if (!boleta.evento && Number.isFinite(eventoId) && eventoId > 0) {
+      const { data: evento } = await this.supabase
+        .from('eventos')
+        .select('id, titulo, estado, imagen_principal, fecha_inicio, fecha_fin, lugar_id')
+        .eq('id', eventoId)
+        .maybeSingle();
+      if (evento) {
+        boleta.evento = evento as BoletaComprada['evento'];
+      }
+    }
 
-    const ev = tipoBoleta?.eventos as { titulo?: string } | { titulo?: string }[] | null;
-    const eventoTitulo = Array.isArray(ev) ? ev[0]?.titulo : ev?.titulo;
-
-    this.nombreTipoBoleta = (tipoBoleta as { nombre?: string })?.nombre || 'Entrada';
+    this.nombreTipoBoleta = boleta.tipo_boleta_meta?.nombre || 'Entrada';
     this.tituloEvento =
-      eventoTitulo || boleta.evento?.titulo || `Evento #${tipoBoleta?.evento_id ?? ''}`;
+      boleta.evento?.titulo || `Evento #${boleta.evento?.id ?? ''}`;
     this.boleta = boleta;
     this.productoItem = null;
     this.boletaCover = null;
@@ -726,13 +729,8 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
 
   private async verificarPermisoLector(boleta: BoletaComprada): Promise<boolean> {
     try {
-      const { data: tipoBoleta, error } = await this.supabase
-        .from('tipos_boleta')
-        .select('evento_id')
-        .eq('id', boleta.tipo_boleta_id)
-        .single();
-
-      if (error || !tipoBoleta) {
+      const eventoIdDirecto = Number(boleta.evento?.id || boleta.compra?.evento_id);
+      if (!Number.isFinite(eventoIdDirecto) || eventoIdDirecto <= 0) {
         this.errorPermiso = 'No se pudo verificar el evento de esta boleta.';
         if (this.modoBusqueda === 'manual') {
           this.avisoBusquedaDocumento = this.errorPermiso;
@@ -740,7 +738,7 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
         return false;
       }
 
-      const key = buildPermisoKey(tipoBoleta.evento_id, boleta.tipo_boleta_id);
+      const key = buildPermisoKey(eventoIdDirecto, boleta.tipo_boleta_id);
       if (!this.permisoKeys.has(key)) {
         this.errorPermiso =
           'Esta boleta no corresponde a un evento o tipo que tengas asignado para escanear.';
@@ -1212,11 +1210,16 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     let debeAutoAvanzar = false;
     if (this.boleta) {
       const estado = String(this.boleta.estado || '').toLowerCase();
-      debeAutoAvanzar =
+      // Una boleta de evento cancelado necesita permanecer visible para que
+      // el lector confirme la devolución, aunque el pago no esté disponible
+      // en la relación de la compra.
+      const esDevolucion = this.esBoletaDevolucion(this.boleta);
+      debeAutoAvanzar = !esDevolucion && (
         estado === 'usada' ||
         estado === 'cancelada' ||
         estado === 'reembolsada' ||
-        (estado === 'pendiente' && !this.puedeValidar(this.boleta));
+        (estado === 'pendiente' && !this.puedeValidar(this.boleta))
+      );
     } else if (this.productoItem) {
       const estadoProducto = String(this.productoItem.estado || '').toLowerCase();
       debeAutoAvanzar = estadoProducto === 'entregado' || !this.puedeValidarProducto(this.productoItem);

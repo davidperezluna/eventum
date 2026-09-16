@@ -717,6 +717,7 @@ export class BoletasService {
       boletaNormalizada.estado_pago = compra.estado_pago;
       boletaNormalizada.compra = {
         id: boleta.compra_id,
+        evento_id: compra.evento_id,
         cliente_id: compra.cliente_id,
         numero_transaccion: compra.numero_transaccion,
         estado_pago: compra.estado_pago,
@@ -733,6 +734,7 @@ export class BoletasService {
       boletaNormalizada.estado_pago = compra.estado_pago;
       boletaNormalizada.compra = {
         id: boleta.compra_id,
+        evento_id: compra.evento_id,
         cliente_id: compra.cliente_id,
         numero_transaccion: compra.numero_transaccion,
         estado_pago: compra.estado_pago,
