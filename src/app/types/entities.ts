@@ -255,6 +255,12 @@ export interface Compra {
     id: number;
     titulo: string;
     fecha_inicio: Date | string;
+    fecha_fin?: Date | string;
+    estado?: TipoEstadoEvento;
+    organizador?: {
+      id: number;
+      telefono?: string | null;
+    } | null;
     lugar_id?: number;
     imagen_principal?: string;
     lugar?: {
@@ -330,6 +336,7 @@ export interface BoletaComprada {
     id: number;
     titulo: string;
     fecha_inicio?: Date | string;
+    estado?: string;
     lugar_id?: number;
     imagen_principal?: string;
   };

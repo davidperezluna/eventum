@@ -138,6 +138,8 @@ interface EventoBoletasGrupo {
   fechaFin?: Date | string;
   lugar?: any;
   imagenPrincipal?: string;
+  estado?: string;
+  organizadorTelefono?: string | null;
   tipos: TipoBoletasGrupo[];
   compras: Compra[];
   comprasProductos: CompraProducto[];
@@ -387,6 +389,7 @@ export class MisCompras implements OnInit, OnDestroy {
 
         await this.loadBoletasPorCompra({ background: this.currentLoadBackground });
         await this.loadComprasProductos();
+        await this.cargarContactosOrganizadores();
         if (coversEventumEnabled) {
           await this.loadCoversPorTitular({ background: this.currentLoadBackground });
         } else {
@@ -1582,7 +1585,7 @@ export class MisCompras implements OnInit, OnDestroy {
     if (this.boletaPendienteAsignacion(boleta, compra)) {
       return 'blocked';
     }
-    if (!this.esDiaEventoBoleta(boleta, compra)) {
+    if (!this.eventoEstaCancelado(this.eventoVistaBoleta(boleta, compra)) && !this.esDiaEventoBoleta(boleta, compra)) {
       return 'blocked';
     }
     return 'ready';
@@ -1659,6 +1662,9 @@ export class MisCompras implements OnInit, OnDestroy {
     }
     if (this.boletaPendienteAsignacion(boleta, compra)) {
       return 'Envíala por correo a quien asistirá o asígnala a tu perfil. Sin asignación no hay QR.';
+    }
+    if (this.eventoEstaCancelado(this.eventoVistaBoleta(boleta, compra))) {
+      return 'Usa este código para coordinar la devolución con el organizador.';
     }
     return this.mensajeHabilitacionQrBoleta(boleta, compra);
   }
@@ -3091,6 +3097,8 @@ export class MisCompras implements OnInit, OnDestroy {
           titulo: evento?.titulo || compra.evento?.titulo || 'Evento',
           fechaInicio: evento?.fecha_inicio || compra.evento?.fecha_inicio,
           fechaFin: this.fechaFinEvento(evento),
+          estado: evento?.estado || compra.evento?.estado,
+          organizadorTelefono: evento?.organizador?.telefono || compra.evento?.organizador?.telefono || null,
           lugar: evento?.lugar || compra.evento?.lugar,
           tipos: [],
           compras: [],
@@ -3496,6 +3504,39 @@ export class MisCompras implements OnInit, OnDestroy {
     );
   }
 
+  eventoEstaCancelado(grupo: EventoBoletasGrupo | null | undefined): boolean {
+    return String(grupo?.estado || '').toLowerCase() === 'cancelado';
+  }
+
+  whatsappReintegroEvento(grupo: EventoBoletasGrupo | null | undefined): string | null {
+    const raw = String(grupo?.organizadorTelefono || '').trim();
+    if (!raw) return null;
+    const digits = raw.replace(/\D/g, '');
+    if (!digits) return null;
+    const phone = digits.startsWith('57') ? digits : `57${digits.replace(/^0+/, '')}`;
+    const text = `Hola, tengo boletas del evento ${grupo?.titulo || ''} y quisiera coordinar el reintegro por su cancelación.`;
+    return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+  }
+
+  telefonoOrganizadorEvento(grupo: EventoBoletasGrupo | null | undefined): string | null {
+    const raw = String(grupo?.organizadorTelefono || '').trim();
+    if (!raw) return null;
+    const digits = raw.replace(/\D/g, '');
+    if (!digits) return null;
+    return digits.startsWith('57') ? `+${digits}` : `+57 ${digits.replace(/^0+/, '')}`;
+  }
+
+  private async cargarContactosOrganizadores(): Promise<void> {
+    const grupos = this.eventosConBoletas.filter((grupo) => this.eventoEstaCancelado(grupo));
+    await Promise.all(grupos.map(async (grupo) => {
+      try {
+        grupo.organizadorTelefono = await this.eventosService.getContactoOrganizadorEvento(Number(grupo.key));
+      } catch (error) {
+        console.warn('No se pudo cargar el contacto del organizador:', error);
+      }
+    }));
+  }
+
   onEventoCompraCardActivate(event: Event, eventoKey: string): void {
     if (event instanceof KeyboardEvent && event.key !== 'Enter' && event.key !== ' ') return;
     if (event instanceof KeyboardEvent) event.preventDefault();
@@ -3622,6 +3663,7 @@ export class MisCompras implements OnInit, OnDestroy {
    * Aplica tanto a entradas sin asignar como a las ya vinculadas en «Sin usar».
    */
   puedeAsignarEntradaPorCorreoPalco(boleta: BoletaComprada, compra: Compra): boolean {
+    if (this.eventoEstaCancelado(this.eventoVistaBoleta(boleta, compra))) return false;
     if (compra.estado_pago !== 'completado') return false;
     if (!this.esTitularBoleta(boleta, compra)) return false;
     if (this.esBoletaUsada(boleta)) return false;
@@ -3961,6 +4003,7 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   abrirModalTraslado(boleta: BoletaComprada, compra: Compra): void {
+    if (this.eventoEstaCancelado(this.eventoVistaBoleta(boleta, compra))) return;
     if (!this.puedeAsignarEntradaPorCorreoPalco(boleta, compra)) {
       return;
     }
@@ -5479,7 +5522,9 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   puedeMostrarQrBoleta(boleta: BoletaComprada, compra: Compra): boolean {
-    return this.puedeAbrirVistaBoleta(boleta, compra) && !this.esBoletaUsada(boleta) && this.esDiaEventoBoleta(boleta, compra);
+    const eventoCancelado = this.eventoEstaCancelado(this.eventoVistaBoleta(boleta, compra));
+    return this.puedeAbrirVistaBoleta(boleta, compra) && !this.esBoletaUsada(boleta)
+      && (eventoCancelado || this.esDiaEventoBoleta(boleta, compra));
   }
 
   muestraDesprendibleBoleta(boleta: BoletaComprada, compra: Compra): boolean {
@@ -5496,6 +5541,9 @@ export class MisCompras implements OnInit, OnDestroy {
   }
 
   desprendibleBoletaSubtitulo(boleta: BoletaComprada, compra: Compra): string {
+    if (this.eventoEstaCancelado(this.eventoVistaBoleta(boleta, compra))) {
+      return 'Código para devolución';
+    }
     if (this.desprendibleBoletaListo(boleta, compra)) {
       return 'Toca aquí para ingresar al evento';
     }
@@ -5558,7 +5606,8 @@ export class MisCompras implements OnInit, OnDestroy {
     this.compraSeleccionada = compra;
     this.eventoSeleccionado = this.eventoVistaBoleta(boleta, compra);
     this.tipoBoletaSeleccionado = this.tipoBoletaVistaBoleta(boleta);
-    const debeGenerarQr = this.puedeMostrarQrBoleta(boleta, compra);
+    const eventoCancelado = this.eventoEstaCancelado(this.eventoVistaBoleta(boleta, compra));
+    const debeGenerarQr = eventoCancelado || this.puedeMostrarQrBoleta(boleta, compra);
     this.loadingQR = debeGenerarQr;
     this.showBoletaModal = true;
     this.sincronizarRealtimeNotificaciones();

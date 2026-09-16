@@ -225,6 +225,9 @@
               [alt]="'Imagen de ' + detalle.titulo"
               loading="eager"
             />
+            <div class="mc-evento-cancelado-watermark mc-evento-cancelado-watermark--hero" *ngIf="eventoEstaCancelado(detalle)" aria-hidden="true">
+              <span>Cancelado por el organizador</span>
+            </div>
           </figure>
 
           <div class="mc-evento-dx-hero__body">
@@ -233,6 +236,29 @@
               Tu evento
             </div>
             <h1 id="mc-evento-detalle-title">{{ detalle.titulo }}</h1>
+
+            <div class="mc-evento-cancelado-aviso mc-evento-cancelado-aviso--hero" *ngIf="eventoEstaCancelado(detalle)">
+              <div class="mc-evento-cancelado-aviso__icon" aria-hidden="true">
+                <span class="material-icons">currency_exchange</span>
+              </div>
+              <div class="mc-evento-cancelado-aviso__copy">
+                <span class="mc-evento-cancelado-aviso__eyebrow">REINTEGRO PENDIENTE</span>
+                <strong>Evento cancelado por el organizador</strong>
+                <span>Habla con el organizador para coordinar tu devolución.</span>
+                <span *ngIf="telefonoOrganizadorEvento(detalle) as telefono">Contacto: <strong>{{ telefono }}</strong></span>
+              </div>
+              <a
+                class="mc-evento-cancelado-aviso__action"
+                [class.mc-evento-cancelado-aviso__action--loading]="!whatsappReintegroEvento(detalle)"
+                [attr.href]="whatsappReintegroEvento(detalle)"
+                target="_blank"
+                rel="noopener noreferrer"
+                (click)="$event.stopPropagation()"
+              >
+                <span class="material-icons" aria-hidden="true">arrow_forward</span>
+                <span>{{ whatsappReintegroEvento(detalle) ? 'Coordinar devolución' : 'Cargando contacto…' }}</span>
+              </a>
+            </div>
 
             <p
               class="mc-evento-detalle-meta-line cupos-intro-lead client-page-header__subtitle--short mc-evento-dx-hero__meta-mobile"
@@ -575,12 +601,16 @@
       <article
         *ngFor="let grupo of eventosConBoletas"
         class="event-card mc-evento-compra-card"
+        [class.mc-evento-compra-card--cancelado]="eventoEstaCancelado(grupo)"
         tabindex="0"
         role="link"
         [attr.aria-label]="'Ver compras de ' + grupo.titulo"
         (click)="abrirDetalleEventoBoletas(grupo.key)"
         (keydown)="onEventoCompraCardActivate($event, grupo.key)"
       >
+        <div class="mc-evento-cancelado-watermark" *ngIf="eventoEstaCancelado(grupo)" aria-hidden="true">
+          <span>Cancelado por el organizador</span>
+        </div>
         <div class="event-card__main">
           <div class="event-thumb">
             <img [src]="getEventoListImageUrl(grupo)" [alt]="grupo.titulo" loading="lazy" />
@@ -611,7 +641,21 @@
           </div>
         </div>
 
-        <div class="event-quick-actions" *ngIf="mostrarQuickActionsEventoCompra(grupo)">
+        <div class="mc-evento-cancelado-card-action" *ngIf="eventoEstaCancelado(grupo)">
+          <span>Entra aquí para coordinar con el organizador</span>
+          <a
+            [class.mc-evento-cancelado-card-action__link--loading]="!whatsappReintegroEvento(grupo)"
+            [attr.href]="whatsappReintegroEvento(grupo)"
+            target="_blank"
+            rel="noopener noreferrer"
+            (click)="$event.stopPropagation()"
+          >
+            <span class="material-icons" aria-hidden="true">chat</span>
+            {{ whatsappReintegroEvento(grupo) ? 'Coordinar ahora' : 'Cargando…' }}
+          </a>
+        </div>
+
+        <div class="event-quick-actions" *ngIf="mostrarQuickActionsEventoCompra(grupo) && !eventoEstaCancelado(grupo)">
           <span class="event-quick-action" *ngIf="grupo.totalSinAsignar > 0">
             <span class="material-icons">person_add</span>
             <span class="event-quick-action__label">{{ grupo.totalSinAsignar }} sin asignar</span>

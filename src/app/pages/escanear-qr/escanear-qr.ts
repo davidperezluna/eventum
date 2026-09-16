@@ -141,6 +141,11 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     return this.modoApp === 'lector' || this.esLector;
   }
 
+  esBoletaDevolucion(boleta: BoletaComprada | null | undefined): boolean {
+    return String(boleta?.evento?.estado || '').toLowerCase() === 'cancelado'
+      && String(boleta?.estado || '').toLowerCase() === 'pendiente';
+  }
+
   async ngOnInit(): Promise<void> {
     this.modoApp = this.route.snapshot.data['modoApp'] === 'lector' ? 'lector' : 'admin';
     this.volverLink =
@@ -816,6 +821,34 @@ export class EscanearQr implements OnInit, AfterViewInit, OnDestroy {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error desconocido';
       await this.alertService.error('Error al validar', msg);
+    } finally {
+      this.validando = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  async marcarBoletaParaDevolucion(): Promise<void> {
+    if (!this.boleta || !this.esBoletaDevolucion(this.boleta)) return;
+
+    if (!this.esFlujoRapidoLector()) {
+      const ok = await this.alertService.confirm(
+        'Registrar devolución',
+        `¿Registrar la devolución de la boleta ${this.boleta.codigo_qr}?`
+      );
+      if (!ok) return;
+    }
+
+    this.validando = true;
+    this.cdr.markForCheck();
+    try {
+      const boleta = this.boleta;
+      await this.boletasService.marcarBoletaParaDevolucion(boleta.id);
+      this.cerrarModal();
+      void this.alertService.snackbar('Devolución registrada', { timerMs: 1800 });
+      if (this.requierePermisosLector) void this.reiniciarEscaneo();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'No se pudo registrar la devolución.';
+      await this.alertService.error('Error al devolver', msg);
     } finally {
       this.validando = false;
       this.cdr.markForCheck();

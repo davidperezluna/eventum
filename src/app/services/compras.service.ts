@@ -30,6 +30,9 @@ export class ComprasService {
             id,
             titulo,
             fecha_inicio,
+            fecha_fin,
+            estado,
+            organizador:usuarios!eventos_organizador_id_fkey(id, telefono),
             imagen_principal,
             lugar_id,
             lugar:lugares(id, nombre, direccion, ciudad, pais, telefono, email)
@@ -52,6 +55,9 @@ export class ComprasService {
             id,
             titulo,
             fecha_inicio,
+            fecha_fin,
+            estado,
+            organizador:usuarios!eventos_organizador_id_fkey(id, telefono),
             imagen_principal,
             lugar_id,
             lugar:lugares(id, nombre, direccion, ciudad, pais, telefono, email)

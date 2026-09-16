@@ -15,7 +15,7 @@ import { normalizarDocumentoIdentidad } from '../core/documento-identidad';
 export class BoletasService {
   /** Join estándar para listados y búsqueda de boletas (incluye meta del tipo para palcos). */
   private readonly selectBoletaConRelaciones =
-    '*, validado_por:usuarios!boletas_compradas_validado_por_usuario_id_fkey(id, nombre, apellido, email), asistente_usuario:usuarios!asistente_usuario_id(id, nombre, apellido, email, telefono, documento_identidad), palcos(numero), compras(estado_pago, estado_compra, evento_id, cliente_id, numero_transaccion, eventos(id, titulo, imagen_principal, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais)), cliente:usuarios(nombre, apellido, email, documento_identidad)), tipos_boleta(evento_id, nombre, personas_por_unidad, es_palco, eventos(id, titulo, imagen_principal, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais)))';
+    '*, validado_por:usuarios!boletas_compradas_validado_por_usuario_id_fkey(id, nombre, apellido, email), asistente_usuario:usuarios!asistente_usuario_id(id, nombre, apellido, email, telefono, documento_identidad), palcos(numero), compras(estado_pago, estado_compra, evento_id, cliente_id, numero_transaccion, eventos(id, titulo, estado, imagen_principal, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais)), cliente:usuarios(nombre, apellido, email, documento_identidad)), tipos_boleta(evento_id, nombre, personas_por_unidad, es_palco, eventos(id, titulo, estado, imagen_principal, fecha_inicio, fecha_fin, lugar_id, lugar:lugares(id, nombre, direccion, ciudad, pais)))';
 
   constructor(
     private supabase: SupabaseService,
@@ -541,6 +541,19 @@ export class BoletasService {
       console.error('Error en validarBoleta:', error);
       throw error;
     }
+  }
+
+  /** Marca como reembolsada una boleta de un evento cancelado, validando el permiso del lector en BD. */
+  async marcarBoletaParaDevolucion(boletaId: number): Promise<BoletaComprada> {
+    const { data, error } = await this.supabase.getClient().rpc(
+      'marcar_boleta_devolucion_evento_cancelado',
+      { p_boleta_id: boletaId }
+    );
+    if (error) {
+      console.error('Error marcando boleta para devolución:', error);
+      throw error;
+    }
+    return data as BoletaComprada;
   }
 
   /**

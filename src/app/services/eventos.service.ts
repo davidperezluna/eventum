@@ -163,6 +163,14 @@ export class EventosService {
     }
   }
 
+  async getContactoOrganizadorEvento(eventoId: number): Promise<string | null> {
+    const { data, error } = await this.supabase.getClient().rpc('obtener_contacto_organizador_evento', {
+      p_evento_id: eventoId,
+    });
+    if (error) throw error;
+    return typeof data === 'string' && data.trim() ? data.trim() : null;
+  }
+
   /**
    * Crea un nuevo evento
    */
