@@ -1,4 +1,5 @@
 {
+  "buildCommand": "node scripts/vercel-build.mjs",
   "outputDirectory": "dist/admin-panel/browser",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
   "headers": [
