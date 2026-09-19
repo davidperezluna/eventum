@@ -29,7 +29,7 @@ export const environment = {
     serviceWorkerPath: '/push/onesignal/OneSignalSDKWorker.js',
     serviceWorkerScope: '/push/onesignal/',
   },
-  maintenanceMode: false,
+  maintenanceMode: true,
   maintenanceMessage: 'Estamos en mantenimiento. Volvemos pronto.',
   googleTagId: 'GT-5TJZWP3P', // Google Tag ID
   /** Pixel solo en producción (`environment.prod`). */
